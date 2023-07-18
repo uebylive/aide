@@ -10,10 +10,14 @@ const performance = require('perf_hooks').performance;
 const product = require('../product.json');
 const readline = require('readline');
 const http = require('http');
+const dns = require('dns');
 
 perf.mark('code/server/start');
 // @ts-ignore
 global.vscodeServerStartTime = performance.now();
+
+// Refs https://github.com/nodejs/node/issues/40702
+dns.setDefaultResultOrder('ipv4first');
 
 async function start() {
 	const minimist = require('minimist');

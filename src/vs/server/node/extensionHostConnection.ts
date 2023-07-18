@@ -255,6 +255,9 @@ export class ExtensionHostConnection {
 				silent: true
 			};
 
+			// Refs https://github.com/nodejs/node/issues/40702
+			opts.execArgv.unshift('--dns-result-order=ipv4first');
+
 			// Run Extension Host as fork of current process
 			const args = ['--type=extensionHost', `--transformURIs`];
 			const useHostProxy = this._environmentService.args['use-host-proxy'];
