@@ -1,10 +1,11 @@
 import { MessageHandlerData } from "@estruyf/vscode";
-import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn, commands } from "vscode";
+import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn, commands, env } from "vscode";
 
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
 import { readJSONFromFile } from "../utilities/files";
 import logger from "../logger";
+import postHogClient from "../posthog/client";
 
 /**
  * This class manages the state and behavior of ChatView webview panels.
@@ -165,6 +166,13 @@ export class ChatViewPanel {
             logger.info("[send-prompt] We got a prompt from the frontend");
             logger.info(something);
             const prompt = something.prompt;
+            postHogClient.capture({
+              distinctId: env.machineId,
+              event: "debug_prompt_received",
+              properties: {
+                prompt: prompt,
+              },
+            });
             logger.info("[send-prompt] Prompt: " + prompt);
             commands.executeCommand("codestory.debug", message);
             break;
