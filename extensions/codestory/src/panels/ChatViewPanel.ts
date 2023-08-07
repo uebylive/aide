@@ -1,5 +1,5 @@
 import { MessageHandlerData } from "@estruyf/vscode";
-import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn } from "vscode";
+import { Disposable, Webview, WebviewPanel, window, Uri, ViewColumn, commands } from "vscode";
 
 import { getUri } from "../utilities/getUri";
 import { getNonce } from "../utilities/getNonce";
@@ -39,6 +39,10 @@ export class ChatViewPanel {
 
     // Set an event listener to listen for messages passed from the webview context
     this._setWebviewMessageListener(this._panel.webview);
+  }
+
+  public getView() {
+    return this._panel;
   }
 
   /**
@@ -134,7 +138,7 @@ export class ChatViewPanel {
 
   /**
    * Sets up an event listener to listen for messages passed from the webview context and
-   * executes code based on the message that is recieved.
+   * executes code based on the message that is received.
    *
    * @param webview A reference to the extension webview
    * @param context A reference to the extension context
@@ -142,8 +146,9 @@ export class ChatViewPanel {
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
       (message: any) => {
-        logger.info(`Webview message recieved: ${JSON.stringify(message)}`);
+        logger.info(`Webview message received: ${JSON.stringify(message)}`);
         const { command, requestId, payload } = message;
+        const something = payload;
 
         switch (command) {
           case "readData":
@@ -156,6 +161,13 @@ export class ChatViewPanel {
               payload,
             } as MessageHandlerData<Record<string, any>>);
             return;
+          case "sendPrompt":
+            logger.info("[send-prompt] We got a prompt from the frontend");
+            logger.info(something);
+            const prompt = something.prompt;
+            logger.info("[send-prompt] Prompt: " + prompt);
+            commands.executeCommand("codestory.debug", message);
+            break;
         }
       },
       undefined,

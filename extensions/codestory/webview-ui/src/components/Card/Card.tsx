@@ -32,119 +32,119 @@ const getTitleStyles = (
   eventType: EventType
 ): { title: string; border: string; text: string; emoji: JSX.Element } => {
   switch (eventType) {
-    case "initial_thinking":
+    case "initialThinking":
       return {
         title: "THINKING",
         border: "border-cs-answers-initial_thinking",
         text: "text-cs-answers-initial_thinking",
         emoji: <IconEmpathize />,
       };
-    case "planning_out":
+    case "planningOut":
       return {
         title: "PLANNING",
         border: "border-cs-answers-planning_out",
         text: "text-cs-answers-planning_out",
         emoji: <IconListDetails />,
       };
-    case "search_for_code_snippets":
+    case "searchForCodeSnippets":
       return {
         title: "SEARCHING THE CODEBASE",
         border: "border-cs-answers-search_for_code_snippets",
         text: "text-cs-answers-search_for_code_snippets",
         emoji: <IconSearch />,
       };
-    case "search_results":
+    case "searchResults":
       return {
         title: "SEARCH RESULTS",
         border: "border-cs-answers-search_results",
         text: "text-cs-answers-search_results",
         emoji: <IconListSearch />,
       };
-    case "branch_elements":
+    case "branchElements":
       return {
         title: "EXPLORATION",
         border: "border-cs-answers-branch_elements",
         text: "text-cs-answers-branch_elements",
         emoji: <IconBinaryTree2 />,
       };
-    case "code_symbol_modification_instruction":
+    case "codeSymbolModificationInstruction":
       return {
         title: "PROPOSED MODIFICATIONS️",
         border: "border-cs-answers-code_symbol_modification_instruction",
         text: "text-cs-answers-code_symbol_modification_instruction",
         emoji: <IconEdit />,
       };
-    case "code_symbol_modification_event":
+    case "codeSymbolModificationEvent":
       return {
         title: "MODIFICATIONS",
         border: "border-cs-answers-code_symbol_modification_event",
         text: "text-cs-answers-code_symbol_modification_event",
         emoji: <IconCode />,
       };
-    case "save_file":
+    case "saveFile":
       return {
         title: "WRITING TO FILE",
         border: "border-cs-answers-save_file",
         text: "text-cs-answers-save_file",
         emoji: <IconDeviceFloppy />,
       };
-    case "test_execution_harness":
+    case "testExecutionHarness":
       return {
         title: "SETTING UP TEST HARNESS",
         border: "border-cs-answers-test_execution_harness",
         text: "text-cs-answers-test_execution_harness",
         emoji: <IconShield />,
       };
-    case "terminal_execution":
+    case "terminalExecution":
       return {
         title: "EXECUTING COMMANDS",
         border: "border-cs-answers-terminal_execution",
         text: "text-cs-answers-terminal_execution",
         emoji: <IconPrompt />,
       };
-    case "execution_branch_finish_reason":
+    case "executionBranchFinishReason":
       return {
         title: "FINISHED",
         border: "border-cs-answers-execution_branch_finish_reason",
         text: "text-cs-answers-execution_branch_finish_reason",
         emoji: <IconReportAnalytics />,
       };
-    case "get_references_for_code_node":
+    case "getReferencesForCodeNode":
       return {
         title: "FIND REFERENCES",
         border: "border-cs-answers-get_references_for_code_node",
         text: "text-cs-answers-get_references_for_code_node",
         emoji: <IconHierarchy3 />,
       };
-    case "exploring_node_dfs":
+    case "exploringNodeDfs":
       return {
         title: "NAVIGATING THE CODEBASE",
         border: "border-cs-answers-exploring_node_dfs",
         text: "text-cs-answers-exploring_node_dfs",
         emoji: <IconRoute />,
       };
-    case "plan_changes_for_node":
-      return {
-        title: "CHANGES TO MAKE",
-        border: "border-cs-answers-plan_changes_for_node",
-        text: "text-cs-answers-plan_changes_for_node",
-        emoji: <IconClipboardList />,
-      };
-    case "lookup_code_snippets_for_symbols":
-      return {
-        title: "GETTING MORE CONTEXT",
-        border: "border-cs-answers-lookup_code_snippets_for_symbols",
-        text: "text-cs-answers-lookup_code_snippets_for_symbols",
-        emoji: <IconListSearch />,
-      };
-    case "changes_to_current_node_on_dfs":
-      return {
-        title: "MODIFICATIONS",
-        border: "border-cs-answers-changes_to_current_node_on_dfs",
-        text: "text-cs-answers-changes_to_current_node_on_dfs",
-        emoji: <IconEdit />,
-      };
-    case "task_complete":
+    // case "plan_changes_for_node":
+    //   return {
+    //     title: "CHANGES TO MAKE",
+    //     border: "border-cs-answers-plan_changes_for_node",
+    //     text: "text-cs-answers-plan_changes_for_node",
+    //     emoji: <IconClipboardList />,
+    //   };
+    // case "lookup_code_snippets_for_symbols":
+    //   return {
+    //     title: "GETTING MORE CONTEXT",
+    //     border: "border-cs-answers-lookup_code_snippets_for_symbols",
+    //     text: "text-cs-answers-lookup_code_snippets_for_symbols",
+    //     emoji: <IconListSearch />,
+    //   };
+    // case "changes_to_current_node_on_dfs":
+    //   return {
+    //     title: "MODIFICATIONS",
+    //     border: "border-cs-answers-changes_to_current_node_on_dfs",
+    //     text: "text-cs-answers-changes_to_current_node_on_dfs",
+    //     emoji: <IconEdit />,
+    //   };
+    case "taskComplete":
       return {
         title: "TASK COMPLETE",
         border: "border-cs-answers-task_complete",

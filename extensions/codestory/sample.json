@@ -4,7 +4,7 @@
       "event_id": "d1dfefb2-27ef-44be-a7e4-1d6989422caf",
       "event_type": "initial_thinking",
       "event_context": "llm_explore",
-      "event_input": "\nCan you make the relevant changes to pass down the logger to this function\n\n@backoff.on_exception(\n    backoff.expo,\n    Exception,\n    max_tries=8,\n)\nasync def generate_response_from_gpt4_with_messages(\n    messages: List[Any],\n    logger: logging.LoggerAdapter,\n) -> str:\n    response = await openai.ChatCompletion.acreate(\n        # We are using gpt-4 cause its faster than gpt4 (altho more expensive)\n        model=\"gpt-4-32k\",\n        max_tokens=12000,\n        messages=messages,\n        temperature=0.1,\n    )\n    return response[\"choices\"][0][\"message\"][\"content\"]\n\nI added the logger in this function can you update the other callsites and if required pass the logger properly to them as well? don't create it out of thin air I want proper dependency injection.\n",
+      "event_input": "I added a logger in the `generate_response_from_gpt4_with_messages ` function. Can you update the other callsites and if required pass the logger properly to them as well? Use dependency injection.",
       "event_output": null,
       "event_timestamp": 1691178996.2284071,
       "code_symbol_reference": null,

@@ -1,169 +1,217 @@
 export type EventType =
-  | "initial_thinking"
-  | "planning_out"
-  | "search_for_code_snippets"
-  | "search_results"
-  | "branch_elements"
-  | "code_symbol_modification_instruction"
-  | "code_symbol_modification_event"
-  | "save_file"
-  | "test_execution_harness"
-  | "terminal_execution"
-  | "execution_branch_finish_reason"
-  | "get_references_for_code_node"
-  | "exploring_node_dfs"
-  | "plan_changes_for_node"
-  | "lookup_code_snippets_for_symbols"
-  | "changes_to_current_node_on_dfs"
-  | "task_complete";
+  | "initialThinking"
+  | "planningOut"
+  | "searchForCodeSnippets"
+  | "searchResults"
+  | "branchElements"
+  | "codeSymbolModificationInstruction"
+  | "codeSymbolModificationEvent"
+  | "saveFile"
+  | "testExecutionHarness"
+  | "terminalExecution"
+  | "executionBranchFinishReason"
+  | "getReferencesForCodeNode"
+  | "exploringNodeDfs"
+  | "taskComplete";
 
 export interface AntonData {
   events: AntonEvent[];
-  save_destination: string;
+  saveDestination: string;
+}
+
+
+export type AntonDataResponse = {
+  antonData: AntonData;
+  setAntonData: (newAntonData: AntonData) => void;
+}
+
+// This is a direct copy of SymbolKind, we are using it to keep things free
+// of vscode dependencies
+export enum CodeSymbolKind {
+  file = 0,
+  module = 1,
+  namespace = 2,
+  package = 3,
+  class = 4,
+  method = 5,
+  property = 6,
+  field = 7,
+  constructor = 8,
+  enum = 9,
+  interface = 10,
+  function = 11,
+  variable = 12,
+  constant = 13,
+  string = 14,
+  number = 15,
+  boolean = 16,
+  array = 17,
+  object = 18,
+  key = 19,
+  null = 20,
+  enumMember = 21,
+  struct = 22,
+  event = 23,
+  operator = 24,
+  typeParameter = 25
+}
+
+export interface CodeSymbolInformation {
+  symbolName: string,
+  symbolKind: CodeSymbolKind,
+  symbolStartLine: number,
+  symbolEndLine: number,
+  codeSnippet:
+  { languageId: string; code: string },
+  extraSymbolHint: string | null,
+  dependencies: CodeSymbolDependencies[],
+  fsFilePath: string,
+  originalFilePath: string,
+  workingDirectory: string,
+  displayName: string,
+  originalName: string,
+  originalSymbolName: string,
+  globalScope: string,
+}
+
+export interface FileCodeSymbolInformation {
+  workingDirectory: string,
+  filePath: string,
+  codeSymbols: CodeSymbolInformation[],
+}
+
+
+export interface CodeSymbolDependencies {
+  codeSymbolName: string,
+  codeSymbolKind: CodeSymbolKind,
+  // The edges here are to the code symbol node in our graph
+  edges: CodeSymbolDependencyWithFileInformation[],
+}
+
+export interface CodeSymbolDependencyWithFileInformation {
+  codeSymbolName: string,
+  filePath: string,
+}
+
+export interface CodeSymbolInformationEmbeddings {
+  codeSymbolInformation: CodeSymbolInformation,
+  codeSymbolEmbedding: number[],
 }
 
 export interface AntonEvent {
-  event_id: string;
-  event_type: EventType;
-  event_context?: string;
-  event_input?: string;
-  event_output?: any;
-  event_timestamp: number;
-  code_symbol_reference?: Codesymbolreference[];
-  stdout?: string;
-  stderr?: string;
-  code_symbol_name?: string;
-  code_symbol_modification_instruction?: CodeSymbolModificationInstruction;
-  code_modification_context_and_diff?: CodeModificationContextAndDiff;
-  file_save_event?: Filesaveevent;
-  execution_event_id?: number;
-  test_execution_harness?: Testexecutionharness;
-  exit_code?: number;
-  args?: string[];
-  markdown_references?: MarkdownReference;
-  number_of_branch_elements?: number;
-  execution_branch_finish_reason?: string;
-  code_modification_instruction_list?: CodeSymbolModificationInstruction[];
-  code_node_references_for_symbol?: CodeNodeReferencesForSymbol;
-  plan_changes_for_node?: PlanChangesForNode;
-  lookup_code_snippet_for_symbols?: LookupCodeSnippetForSymbol;
-  changes_to_current_node_on_dfs?: ChangesToCurrentNodeOnDfs;
-}
-
-interface PlanChangesForNode {
-  lookup_types: string[];
-  current_node_changes: string[];
-  code_node: Codesymbolreference;
-}
-
-interface ChangesToCurrentNodeOnDfs {
-  code_generation: string;
-  current_code_node: Codesymbolreference;
-  next_steps: string[];
-}
-
-interface LookupCodeSnippetForSymbol {
-  current_code_node: Codesymbolreference;
-  symbols_to_snippets: MarkdownReference;
-}
-
-interface CodeNodeReferencesForSymbol {
-  code_node: Codesymbolreference;
-  references: Codesymbolreference[];
+  eventId: string;
+  eventType: EventType;
+  eventContext: string | null;
+  eventInput: string;
+  eventOutput: string | null;
+  eventTimestamp: number;
+  codeSymbolReference: CodeSymbolInformation[] | null;
+  stdout: string | null;
+  stderr: string | null;
+  codeSymbolName: string | null;
+  codeSymbolModificationInstruction: CodeSymbolModificationInstruction | null;
+  codeModificationContextAndDiff: CodeModificationContextAndDiff | null;
+  fileSaveEvent: FileSaveEvent | null;
+  executionEventId: string | null;
+  testExecutionHarness: TestExecutionHarness | null;
+  exitCode: number | null;
+  args: string[] | null;
+  markdownReferences: Record<string, CodeSymbolInformation> | null;
+  numberOfBranchElements: number | null;
+  executionBranchFinishReason: string | null;
+  codeModificationInstructionList: CodeSymbolModificationInstruction[] | null;
 }
 
 interface MarkdownReference {
-  parse_file_to_output?: ParseFileToOutput;
+  parseFileToOutput?: ParseFileToOutput;
 }
 
 interface ParseFileToOutput {
   id: string;
   name: string;
-  code_location: Codelocation;
+  codeLocation: CodeLocation;
   edges: string[];
-  storage_location: string;
-  class_information?: any;
-  function_information: Functioninformation;
+  storageLocation: string;
+  classInformation?: any;
+  functionInformation: FunctionInformation;
 }
 
-interface Testexecutionharness {
-  test_script: string;
+interface TestExecutionHarness {
+  testScript: string;
   imports: string;
-  plan_for_test_script_generation: string;
-  thoughts_with_explanation: string;
-  code_symbol_name: string;
-  test_setup_required: string;
-  test_file_location: string;
+  planForTestScriptGeneration: string;
+  thoughtsWithExplanation: string;
+  codeSymbolName: string;
+  testSetupRequired: string;
+  testFileLocation: string;
 }
 
-interface Filesaveevent {
-  file_path: Codelocation;
-  code_symbol_name: string;
+interface FileSaveEvent {
+  filePath: string;
+  codeSymbolName: string;
 }
 
 interface CodeModificationContextAndDiff {
-  code_modification: string;
-  code_diff: string;
+  codeModification: string;
+  codeDiff: string;
 }
 
 interface CodeSymbolModificationInstruction {
-  code_symbol_name: string;
+  codeSymbolName: string;
   instructions: string;
 }
 
-export interface Codesymbolreference {
+interface CodeSymbolReference {
   id: string;
   name: string;
-  code_location: Codelocation;
+  codeLocation: CodeLocation;
   edges: string[];
-  storage_location: string;
-  class_information?: any;
-  function_information: Functioninformation;
-  // This is not sent by the backend but is added during extension processing.
-  event_context: string;
+  storageLocation: string;
+  classInformation?: any;
+  functionInformation: FunctionInformation;
 }
 
-interface Functioninformation {
+interface FunctionInformation {
   name: string;
-  code_location: Codelocation;
+  codeLocation: CodeLocation;
   docstring?: any;
   decorators: string[];
-  scope_type: string;
-  class_name?: string;
-  is_async: boolean;
-  raw_code: string;
+  scopeType: string;
+  className?: string;
+  isAsync: boolean;
+  rawCode: string;
   comments: string[];
-  function_dependencies: Functiondependency[];
+  functionDependencies: FunctionDependency[];
 }
 
-interface Functiondependency {
-  function_call_information: Functioncallinformation;
-  jedi_type: Jeditype;
+interface FunctionDependency {
+  functionCallInformation: FunctionCallInformation;
+  jediType: JediType;
 }
 
-interface Jeditype {
-  fully_qualified_type?: string;
-  attribute_type: string;
-  module_path: string;
-  is_external_library_import: boolean;
+interface JediType {
+  fullyQualifiedType?: string;
+  attributeType: string;
+  modulePath: string;
+  isExternalLibraryImport: boolean;
 }
 
-interface Functioncallinformation {
+interface FunctionCallInformation {
   value: string;
   line: number;
-  start_column: number;
-  end_column: number;
+  startColumn: number;
+  endColumn: number;
 }
 
-interface Codelocation {
+interface CodeLocation {
   path: string;
-  line_start: Linestart;
-  line_end: Linestart;
+  lineStart: LineStart;
+  lineEnd: LineStart;
   directory: string;
-  file_name: string;
+  fileName: string;
 }
 
-interface Linestart {
+interface LineStart {
   line: number;
   column: number;
 }

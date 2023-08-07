@@ -8,18 +8,44 @@
   },
   "main": "./out/extension.js",
   "activationEvents": [],
+  "license": "UNLICENSED",
+  "repository": {
+    "url": "https://github.com/codestoryai"
+  },
+  "icon": "assets/cs-logomark.png",
   "contributes": {
     "commands": [
       {
         "command": "webview.showChatView",
         "title": "CodeStory: Show"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "codestory",
+          "title": "CodeStory",
+          "icon": "assets/cs-logomark.svg"
+        }
+      ]
+    },
+    "views": {
+      "codestory": [
+        {
+          "type": "webview",
+          "id": "codestory.webView",
+          "name": "CodeStory"
+        }
+      ]
+    }
   },
   "scripts": {
-    "install:all": "yarn install && cd webview-ui && yarn install",
+    "install:all": "yarn install && cd webview-ui && yarn install && cd ../webview-ui-sideview && yarn install",
     "start:webview": "cd webview-ui && npm run start",
+    "start:webview-sideview": "cd webview-ui-sideview && npm run start",
     "build:webview": "cd webview-ui && npm run build",
+    "start:webview_sideview": "cd webview-ui-sideview && npm run start",
+    "build:webview_sideview": "cd webview-ui-sideview && npm run build",
     "vscode:prepublish": "npm run compile",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",
@@ -27,8 +53,10 @@
     "lint": "eslint src --ext ts"
   },
   "devDependencies": {
+    "@types/diff": "^5.0.3",
     "@types/glob": "^7.1.3",
     "@types/node": "^12.11.7",
+    "@types/uuid": "^9.0.2",
     "@types/vscode": "^1.46.0",
     "@typescript-eslint/eslint-plugin": "^4.14.1",
     "@typescript-eslint/parser": "^4.14.1",
@@ -40,6 +68,12 @@
   },
   "dependencies": {
     "@estruyf/vscode": "^1.1.0",
+    "diff": "^5.1.0",
+    "mathjs": "^11.9.1",
+    "openai": "^3.3.0",
+    "posthog-node": "^3.1.1",
+    "shiki": "^0.14.3",
+    "ts-morph": "^19.0.0",
     "winston": "^3.10.0",
     "winston-vscode": "^1.0.0"
   }

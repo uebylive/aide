@@ -5,12 +5,28 @@ import { useAntonData } from "./hooks/useAntonData";
 import { useExplorationContext } from "./context";
 import { ReactComponent as AideLogo } from "./assets/aide-logo.svg";
 import { ReactComponent as CSLogo } from "./assets/cs-logomark.svg";
+import { EventData } from "@estruyf/vscode";
+import { Messenger } from "@estruyf/vscode/dist/client";
+import { useChangedAntonDataStore } from "./store";
 
 function App() {
   const [prompt, setPrompt] = useState("");
   const [promptForSubmission, setPromptForSubmission] = useState("");
   const { exploration } = useExplorationContext();
-  const { antonData, originalPrompt } = useAntonData(promptForSubmission);
+  const { setAntonData, antonData } = useChangedAntonDataStore();
+  const { originalPrompt } = useAntonData(promptForSubmission);
+
+  const listener = (message: MessageEvent<EventData<unknown>>) => {
+    console.log("[debugging] What is the message", message);
+    const { command, payload } = message.data;
+    if (command === "sendPrompt") {
+      console.log("Whats the payload");
+      console.log(payload);
+      setAntonData(payload as any);
+    }
+  };
+
+  Messenger.listen(listener);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -47,12 +63,12 @@ function App() {
             ? antonData.events
                 .filter(
                   (ev) =>
-                    ev.event_type !== "initial_thinking" &&
-                    (!ev.execution_event_id || ev.execution_event_id === exploration)
+                    ev.eventType !== "initialThinking" &&
+                    (!ev.executionEventId || ev.executionEventId === exploration.toString())
                 )
                 .map((e, i) => {
                   return (
-                    <div key={e.event_id}>
+                    <div key={e.eventId}>
                       <DataEvent originalPrompt={originalPrompt} data={e} isFirst={i === 0} />
                     </div>
                   );
