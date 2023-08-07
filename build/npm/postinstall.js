@@ -62,6 +62,7 @@ function yarnInstall(dir, opts) {
 		console.log(`Installing dependencies in ${dir}...`);
 		run(yarn, ['run', 'install:all', ...args], opts);
 		run(yarn, ['run', 'build:webview', ...args], opts);
+		run(yarn, ['run', 'build:webview_sideview', ...args], opts);
 	} else {
 		console.log(`Installing dependencies in ${dir}...`);
 		run(yarn, args, opts);
