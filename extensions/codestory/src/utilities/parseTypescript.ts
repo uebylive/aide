@@ -854,11 +854,17 @@ export class TSMorphProjectManagement {
         tsConfigPath: string,
     ) {
         const dirName = path.dirname(tsConfigPath);
-        const tsConfigProject = new Project({
-            tsConfigFilePath: tsConfigPath,
-        });
-        console.log('[ts-morph-project] adding tsconfig path: ' + tsConfigPath);
-        this.directoryToProjectMapping.set(dirName, tsConfigProject);
+        try {
+            const tsConfigProject = new Project({
+                tsConfigFilePath: tsConfigPath,
+            });
+            console.log('[ts-morph-project] adding tsconfig path: ' + tsConfigPath);
+            this.directoryToProjectMapping.set(dirName, tsConfigProject);
+        } catch (err) {
+            console.log("[ts-morph-project] Error while creating project: " + err);
+            console.log((err as Error).toString());
+            return;
+        }
     }
 
     // We might be comparing /a/b/c/ with /a/b/c (notice the missing "/" in one

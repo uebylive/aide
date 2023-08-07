@@ -4,20 +4,15 @@ import { CodeSymbolInformationEmbeddings } from "../utilities/types";
 import * as math from 'mathjs';
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
-    try {
-        if (vecA.length !== vecB.length) {
-            return -1;
-        }
-
-        const dotProduct = math.dot(vecA, vecB);
-        const magnitudeA = math.norm(vecA);
-        const magnitudeB = math.norm(vecB);
-
-        return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
-    } catch (error) {
-        console.error(`Error in calculating cosine similarity: ${error}`);
+    if (vecA.length !== vecB.length) {
         return -1;
     }
+
+    const dotProduct = math.dot(vecA, vecB);
+    const magnitudeA = math.norm(vecA);
+    const magnitudeB = math.norm(vecB);
+
+    return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
 }
 
 export class EmbeddingsSearch {
