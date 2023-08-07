@@ -334,6 +334,7 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
 				const extensionName = path.basename(extensionPath);
+				console.log('Found local extension:', extensionName);
 				return { name: extensionName, path: extensionPath, manifestPath: absoluteManifestPath };
 			})
 			.filter(({ name }) => excludedExtensions.indexOf(name) === -1)

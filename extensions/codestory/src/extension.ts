@@ -22,6 +22,9 @@ import { debug } from "./subscriptions/debug";
 
 export async function activate(context: ExtensionContext) {
   // Project root here
+  logger.info("[CodeStory] Chat view command registered");
+  logger.info(context.extensionUri);
+  logger.info("[CodeStory] skcd debugging");
   postHogClient.capture({
     distinctId: env.machineId,
     event: "extension_activated",

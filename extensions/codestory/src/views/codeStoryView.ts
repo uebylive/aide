@@ -42,7 +42,7 @@ export class CodeStoryViewProvider implements WebviewViewProvider {
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [
-                Uri.joinPath(this._extensionUri, "out"),
+                // Uri.joinPath(this._extensionUri, "out"),
                 Uri.joinPath(this._extensionUri, "webview-ui-sideview/build"),
             ],
         };
