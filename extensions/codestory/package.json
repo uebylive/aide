@@ -46,9 +46,11 @@
     "build:webview": "cd webview-ui && npm run build",
     "start:webview_sideview": "cd webview-ui-sideview && npm run start",
     "build:webview_sideview": "cd webview-ui-sideview && npm run build",
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run compile:tsc",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",
+    "compile:tsc": "tsc -p ./",
+    "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts"
   },
