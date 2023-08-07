@@ -8,35 +8,36 @@ import { MessageHandlerData } from "@estruyf/vscode";
 import { debuggingFlow } from "../llm/recipe/debugging";
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
+import { PromptState } from '../types';
 
 export const debug = (
-    provider: ChatViewPanel,
-    embeddingIndex: EmbeddingsSearch,
-    tsMorphProjectManagement: TSMorphProjectManagement,
-    codeGraph: CodeGraph,
-    repoName: string,
-    repoHash: string,
-    workingDirectory: string,
+	provider: ChatViewPanel,
+	embeddingIndex: EmbeddingsSearch,
+	tsMorphProjectManagement: TSMorphProjectManagement,
+	codeGraph: CodeGraph,
+	repoName: string,
+	repoHash: string,
+	workingDirectory: string,
 ) => {
-    return commands.registerCommand(
-        "codestory.debug",
-        async ({ payload, ...message }: MessageHandlerData<PromptState>) => {
-            logger.info("[CodeStory] Debugging");
-            logger.info(payload);
-            const toolingEventCollection = new ToolingEventCollection(
-                `/tmp/${uuidv4()}`,
-                codeGraph,
-                provider,
-                message.command,
-            );
-            await debuggingFlow(
-                payload.prompt,
-                toolingEventCollection,
-                codeGraph,
-                embeddingIndex,
-                tsMorphProjectManagement,
-                workingDirectory,
-            );
-        }
-    );
+	return commands.registerCommand(
+		"codestory.debug",
+		async ({ payload, ...message }: MessageHandlerData<PromptState>) => {
+			logger.info("[CodeStory] Debugging");
+			logger.info(payload);
+			const toolingEventCollection = new ToolingEventCollection(
+				`/tmp/${uuidv4()}`,
+				codeGraph,
+				provider,
+				message.command,
+			);
+			await debuggingFlow(
+				payload.prompt,
+				toolingEventCollection,
+				codeGraph,
+				embeddingIndex,
+				tsMorphProjectManagement,
+				workingDirectory,
+			);
+		}
+	);
 };
