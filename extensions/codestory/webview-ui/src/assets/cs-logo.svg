@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2310 1200">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #f7931e;
+      }
+
+      .cls-2 {
+        fill: #fbb03b;
+      }
+
+      .cls-3 {
+        font-family: AFParseGroteskMono-Black, 'AF Parse Grotesk Mono';
+        font-size: 200px;
+        font-weight: 800;
+      }
+    </style>
+  </defs>
+  <text class="cls-3" transform="translate(698.88 647.6)"><tspan x="0" y="0">CodeStory.AI</tspan></text>
+  <g>
+    <path class="cls-1" d="m211.36,863.97v-66.18l209.88-85.09-250.1-102.33,15.76-63.03,339.6,133.84-15.13,63.66-300.01,119.12Z"/>
+    <path class="cls-2" d="m510.03,336.03v66.18l-209.88,85.09,250.1,102.33-15.76,63.03-339.6-133.84,15.13-63.66,300.01-119.12Z"/>
+  </g>
+</svg>

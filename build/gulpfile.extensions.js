@@ -33,6 +33,7 @@ const compilations = [
 	'authentication-proxy/tsconfig.json',
 	'configuration-editing/build/tsconfig.json',
 	'configuration-editing/tsconfig.json',
+	'codestory/tsconfig.json',
 	'css-language-features/client/tsconfig.json',
 	'css-language-features/server/tsconfig.json',
 	'debug-auto-launch/tsconfig.json',
