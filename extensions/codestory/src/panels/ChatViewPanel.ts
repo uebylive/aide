@@ -57,6 +57,8 @@ export class ChatViewPanel {
       // If the webview panel already exists reveal it
       ChatViewPanel.currentPanel._panel.reveal(ViewColumn.One);
     } else {
+      console.log("Creating new webview panel");
+      console.log(extensionUri.fsPath);
       // If a webview panel does not already exist create and show a new one
       const panel = window.createWebviewPanel(
         // Panel view type
@@ -71,7 +73,7 @@ export class ChatViewPanel {
           enableScripts: true,
           // Restrict the webview to only load resources from the `out` and `webview-ui/build` directories
           localResourceRoots: [
-            Uri.joinPath(extensionUri, "out"),
+            // Uri.joinPath(extensionUri, "out"),
             Uri.joinPath(extensionUri, "webview-ui/build"),
           ],
         }
