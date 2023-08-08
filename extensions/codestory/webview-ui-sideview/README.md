@@ -8,3 +8,9 @@ Types of content that can be contained here:
 - JavaScript files
 - CSS files
 - Assets / resources (i.e. images, illustrations, etc.)
+
+
+### Super important
+- Please build this before doing anything else
+- If you dont build this independently of the rest of the things you will have a stale version of the extension
+- link: https://codestoryai.slack.com/archives/C05LRTYB5UK/p1691487108060929
