@@ -19,6 +19,10 @@
       {
         "command": "webview.showChatView",
         "title": "CodeStory: Show"
+      },
+      {
+        "command": "webview.copySettings",
+        "title": "Import settings and keybindings from VSCode"
       }
     ],
     "viewsContainers": {

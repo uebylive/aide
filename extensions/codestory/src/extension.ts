@@ -19,6 +19,7 @@ import { triggerCodeSymbolChange } from "./activeChanges/timeline";
 import { gitCommit } from "./subscriptions/gitCommit";
 import { getGitCurrentHash, getGitRepoName } from "./git/helper";
 import { debug } from "./subscriptions/debug";
+import { copySettings } from './utilities/copySettings';
 
 export async function activate(context: ExtensionContext) {
   // Project root here
@@ -75,6 +76,11 @@ export async function activate(context: ExtensionContext) {
         rootPath ?? "",
       )
     );
+  });
+
+  // Create the copy settings from vscode command for the extension
+  const registerCopySettingsCommand = commands.registerCommand("webview.copySettings", async () => {
+    await copySettings(rootPath ?? "", logger);
   });
 
   // Register the codestory view provider
@@ -154,4 +160,5 @@ export async function activate(context: ExtensionContext) {
     gitCommit(logger, repoName, repoHash),
   );
   context.subscriptions.push(showChatViewCommand);
+  context.subscriptions.push(registerCopySettingsCommand);
 }
