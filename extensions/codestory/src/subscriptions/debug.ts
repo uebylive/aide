@@ -30,14 +30,19 @@ export const debug = (
 				provider,
 				message.command,
 			);
-			await debuggingFlow(
-				payload.prompt,
-				toolingEventCollection,
-				codeGraph,
-				embeddingIndex,
-				tsMorphProjectManagement,
-				workingDirectory,
-			);
+			try {
+				await debuggingFlow(
+					payload.prompt,
+					toolingEventCollection,
+					codeGraph,
+					embeddingIndex,
+					tsMorphProjectManagement,
+					workingDirectory,
+				);
+			} catch (e) {
+				logger.info("[CodeStory] Debugging failed");
+				logger.error(e);
+			};
 		}
 	);
 };

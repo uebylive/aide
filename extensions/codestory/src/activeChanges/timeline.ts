@@ -11,7 +11,7 @@ import { Logger } from "winston";
 
 
 const configuration = new Configuration({
-    apiKey: "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",
+    apiKey: "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",
 });
 const openai = new OpenAIApi(configuration);
 

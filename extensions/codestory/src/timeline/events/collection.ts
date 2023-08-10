@@ -10,6 +10,7 @@ import { EventType } from "./type";
 import { writeFile } from "fs";
 import { writeFileContents } from "../../llm/recipe/helpers";
 import { ChatViewPanel } from "../../panels/ChatViewPanel";
+import logger from '../../logger';
 
 interface TestExecutionHarness {
     testScript: string;
@@ -503,58 +504,59 @@ export class ToolingEventCollection {
         this.panelCommand = panelCommand;
     }
 
-    private sendEventsToChatViewPanel() {
-        this.provider.getView().webview.postMessage({
+    private async sendEventsToChatViewPanel() {
+        const value = await this.provider.getView().webview.postMessage({
             payload: {
                 events: this.events,
                 saveDestination: this.saveDestination,
             },
             command: this.panelCommand,
         });
+        logger.info(`Sent events to chat view panel: ${value}`);
     }
 
-    public addThinkingEvent(userQuery: string, thinkingContext: string) {
+    public async addThinkingEvent(userQuery: string, thinkingContext: string) {
         this.events.push(thinkingEvent(userQuery, thinkingContext, []));
-        this.save();
+        await this.save();
     }
 
-    public addPlanForHelp(userQuery: string, planForHelp: string) {
+    public async addPlanForHelp(userQuery: string, planForHelp: string) {
         this.events.push(addPlanForHelp(userQuery, planForHelp));
-        this.save();
+        await this.save();
     }
 
-    public addSearchEvent(queries: string[]) {
+    public async addSearchEvent(queries: string[]) {
         this.events.push(searchForQuery(queries.join("\n")));
-        this.save();
+        await this.save();
     }
 
-    public addRelevantSearchResults(
+    public async addRelevantSearchResults(
         queries: string[],
         codeSymbolInformationList: CodeSymbolInformation[]
     ) {
         this.events.push(relevantSearchResults(queries, codeSymbolInformationList));
-        this.save();
+        await this.save();
     }
 
-    public branchingStartEvent(
+    public async branchingStartEvent(
         numberOfBranchElements: number,
         codeModificationInstructionList: CodeSymbolModificationInstruction[]
     ) {
         this.events.push(branchElementsEvents(numberOfBranchElements, codeModificationInstructionList));
-        this.save();
+        await this.save();
     }
 
-    public addInstructionsForModification(
+    public async addInstructionsForModification(
         executionEventId: number,
         codeSymbolModificationInstruction: CodeSymbolModificationInstruction
     ) {
         this.events.push(
             addInstructionsForModification(executionEventId, codeSymbolModificationInstruction)
         );
-        this.save();
+        await this.save();
     }
 
-    public addModificationDiffAndThoughts(
+    public async addModificationDiffAndThoughts(
         codeModificationContextAndDiff: CodeModificationContextAndDiff,
         codeSymbolName: string,
         executionEventId: string
@@ -566,25 +568,25 @@ export class ToolingEventCollection {
                 codeModificationContextAndDiff
             )
         );
-        this.save();
+        await this.save();
     }
 
-    public saveFileEvent(filePath: string, codeSymbolName: string, executionEventId: string) {
+    public async saveFileEvent(filePath: string, codeSymbolName: string, executionEventId: string) {
         this.events.push(saveFileToolingEvent(filePath, codeSymbolName, executionEventId));
-        this.save();
+        await this.save();
     }
 
-    public testExecutionEvent(
+    public async testExecutionEvent(
         codeSymbolName: string,
         fileLocation: string,
         testPlan: TestExecutionHarness,
         executionEventId: string
     ) {
         this.events.push(testExecutionEvent(codeSymbolName, fileLocation, testPlan, executionEventId));
-        this.save();
+        await this.save();
     }
 
-    public terminalEvent(
+    public async terminalEvent(
         codeSymbolName: string,
         fileLocation: string,
         stdout: string,
@@ -596,10 +598,10 @@ export class ToolingEventCollection {
         this.events.push(
             terminalEvent(codeSymbolName, fileLocation, stdout, stderr, exitCode, args, executionEventId)
         );
-        this.save();
+        await this.save();
     }
 
-    public executionBranchFinished(
+    public async executionBranchFinished(
         executionEventId: string,
         codeSymbolName: string,
         executionBranchFinishReason: string
@@ -607,12 +609,12 @@ export class ToolingEventCollection {
         this.events.push(
             executionBranchFinishEvent(executionEventId, codeSymbolName, executionBranchFinishReason)
         );
-        this.save();
+        await this.save();
     }
 
-    public taskComplete() {
+    public async taskComplete() {
         this.events.push(taskComplete());
-        this.save();
+        await this.save();
     }
 
     public async save() {

@@ -20,7 +20,7 @@ import { loadOrSaveToStorage } from "../../storage/types";
 import { indexRepository } from "../../storage/indexer";
 
 const configuration = new Configuration({
-    apiKey: "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",
+    apiKey: "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",
 });
 const openai = new OpenAIApi(configuration);
 
@@ -36,6 +36,8 @@ export const generateChatCompletion = async (
         messages: messages,
         max_tokens: 12000,
     });
+    console.log("data from openai");
+    console.log(data);
     if (data.choices.length !== 0) {
         return data.choices[0];
     }
@@ -50,7 +52,9 @@ export const debuggingFlow = async (
     tsMorphProjectManagement: TSMorphProjectManagement,
     workingDirectory: string,
 ): Promise<null> => {
-    toolingEventCollection.addThinkingEvent(prompt, "🤔 ...⌛ on how to help the user");
+    console.log("We are here debugging flow");
+    await toolingEventCollection.addThinkingEvent(prompt, "🤔 ...⌛ on how to help the user");
+    console.log("We are done with sending the first event");
     let initialMessages: ChatCompletionRequestMessage[] = [
         {
             content: systemPrompt(),
@@ -72,12 +76,12 @@ export const debuggingFlow = async (
     console.log("Whats the plan here");
     console.log(planAndQueries);
     // Adding tooling event for plan
-    toolingEventCollection.addPlanForHelp(
+    await toolingEventCollection.addPlanForHelp(
         prompt,
         planAndQueries?.additionalInstructions?.join("\n") ?? ""
     );
     // Adding tooling event for search
-    toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
+    await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
     // Now we will try and do the search over the symbols
     const relevantCodeSymbols = await generateCodeSymbolsForQueries(
         planAndQueries?.queries ?? [],
@@ -85,7 +89,7 @@ export const debuggingFlow = async (
     );
     console.log("What are the relevant code symbols", relevantCodeSymbols);
     // Add the search results here
-    toolingEventCollection.addRelevantSearchResults(
+    await toolingEventCollection.addRelevantSearchResults(
         planAndQueries?.queries ?? [],
         relevantCodeSymbols
     );
@@ -131,7 +135,7 @@ export const debuggingFlow = async (
     );
 
     // Now we start branching out, so we are going to send a event for this
-    toolingEventCollection.branchingStartEvent(
+    await toolingEventCollection.branchingStartEvent(
         codeSymbolModificationInstructions.codeSymbolModificationInstructionList.length,
         codeSymbolModificationInstructions.codeSymbolModificationInstructionList,
     );
@@ -146,7 +150,7 @@ export const debuggingFlow = async (
         );
 
         if (!filePathForCodeNode) {
-            toolingEventCollection.executionBranchFinished(
+            await toolingEventCollection.executionBranchFinished(
                 executionEventId.toString(),
                 codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
                 "File path not found",
@@ -159,7 +163,7 @@ export const debuggingFlow = async (
         const previousFileContent = await readFileContents(filePathForCodeNode);
 
         // Add tooling event for modification here
-        toolingEventCollection.addInstructionsForModification(
+        await toolingEventCollection.addInstructionsForModification(
             executionEventId,
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
         );
@@ -171,7 +175,7 @@ export const debuggingFlow = async (
             codeGraph,
         );
         if (!codeModificationInput) {
-            toolingEventCollection.executionBranchFinished(
+            await toolingEventCollection.executionBranchFinished(
                 executionEventId.toString(),
                 codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
                 "Code modification generation failure",
@@ -181,7 +185,7 @@ export const debuggingFlow = async (
         }
 
         // Add to the tooling event tracking
-        toolingEventCollection.addModificationDiffAndThoughts(
+        await toolingEventCollection.addModificationDiffAndThoughts(
             codeModificationInput,
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
             executionEventId.toString(),
@@ -195,7 +199,7 @@ export const debuggingFlow = async (
             [...initialMessages],
         );
         if (!newFileContent) {
-            toolingEventCollection.executionBranchFinished(
+            await toolingEventCollection.executionBranchFinished(
                 executionEventId.toString(),
                 codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
                 "New file generation failure",
@@ -212,7 +216,7 @@ export const debuggingFlow = async (
         );
 
         // Now we send the save to file event
-        toolingEventCollection.saveFileEvent(
+        await toolingEventCollection.saveFileEvent(
             filePathForCodeNode,
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
             executionEventId.toString(),
@@ -233,7 +237,7 @@ export const debuggingFlow = async (
 
         if (!testPlan) {
             // Send a failure event here
-            toolingEventCollection.executionBranchFinished(
+            await toolingEventCollection.executionBranchFinished(
                 executionEventId.toString(),
                 codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
                 "Test Plan generation failure",
@@ -242,7 +246,7 @@ export const debuggingFlow = async (
         }
 
         // Now we send the test execution event
-        toolingEventCollection.testExecutionEvent(
+        await toolingEventCollection.testExecutionEvent(
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
             filePathForCodeNode,
             testPlan,
@@ -266,7 +270,7 @@ export const debuggingFlow = async (
         // Now we need to compare the test exit code to see if its a success of failure
         if (testExitCode !== 0) {
             // TODO(codestory): Add context here why we are reverting the file
-            toolingEventCollection.saveFileEvent(
+            await toolingEventCollection.saveFileEvent(
                 filePathForCodeNode,
                 codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
                 executionEventId.toString(),
@@ -279,16 +283,17 @@ export const debuggingFlow = async (
         } else {
             branchFinishReason = "Test success";
         }
-        toolingEventCollection.executionBranchFinished(
+        await toolingEventCollection.executionBranchFinished(
             executionEventId.toString(),
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
             branchFinishReason,
         );
     };
-    toolingEventCollection.taskComplete();
-    toolingEventCollection.save();
+    await toolingEventCollection.taskComplete();
+    await toolingEventCollection.save();
     return null;
 };
+
 
 // void (async () => {
 //     const testingPrompt = `

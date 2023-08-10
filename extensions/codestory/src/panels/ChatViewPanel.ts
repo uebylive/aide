@@ -148,7 +148,7 @@ export class ChatViewPanel {
    */
   private _setWebviewMessageListener(webview: Webview) {
     webview.onDidReceiveMessage(
-      (message: any) => {
+      async (message: any) => {
         logger.info(`Webview message received: ${JSON.stringify(message)}`);
         const { command, requestId, payload } = message;
         const something = payload;
@@ -176,7 +176,7 @@ export class ChatViewPanel {
               },
             });
             logger.info("[send-prompt] Prompt: " + prompt);
-            commands.executeCommand("codestory.debug", message);
+            await commands.executeCommand("codestory.debug", message);
             break;
         }
       },
