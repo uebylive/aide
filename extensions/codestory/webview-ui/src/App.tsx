@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { DataEvent } from "./DataEvent";
 import { useAntonData } from "./hooks/useAntonData";
@@ -16,17 +16,27 @@ function App() {
   const { setAntonData, antonData } = useChangedAntonDataStore();
   const { originalPrompt } = useAntonData(promptForSubmission);
 
-  const listener = (message: MessageEvent<EventData<unknown>>) => {
-    console.log("[debugging] What is the message", message);
-    const { command, payload } = message.data;
-    if (command === "sendPrompt") {
-      console.log("Whats the payload");
-      console.log(payload);
-      setAntonData(payload as any);
-    }
-  };
+  useEffect(() => {
+    const listener = (message: MessageEvent<EventData<unknown>>) => {
+      console.log("[debugging] What is the message", message);
+      const { command, payload } = message.data;
+      if (command === "sendPrompt") {
+        console.log("Whats the payload");
+        console.log(payload);
+        console.log("We are done");
+        setAntonData(payload as any);
+        console.log("are we done here");
+      }
+    };
 
-  Messenger.listen(listener);
+    console.log("Listening to messages");
+    Messenger.listen(listener);
+
+    return () => {
+      console.log("Unregistering listener...");
+      Messenger.unlisten(listener);
+    }
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {

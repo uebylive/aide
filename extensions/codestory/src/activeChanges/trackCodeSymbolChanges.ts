@@ -16,7 +16,7 @@ import {
 import { Logger } from "winston";
 
 const configuration = new Configuration({
-    apiKey: "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",
+    apiKey: "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",
 });
 
 export const getFileExtension = (filePath: string): string => {
@@ -636,11 +636,11 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
             content: `
             You are a senior engineer helping another engineer write good commit messages for the set of related changes they are doing. You have to answer in 2-3 sentence description of the "how" of the change. It should also answer the question: "What was I doing?" which means the user will look at this to quickly understand the changes they have done in these related code symbol changes.
             Since the changes are linked together, you will be given the list of related changes and they are related almost always because they one of the code symbols uses the other one which was changed.
-            
+
             You have to generate the description of what has changed so the user can jump back to work after simply reading it.
-            
+
             When describing the change happening to the code symbols which are related, dont talk about which code symbols were changed, try to write like a human what the change was about,
-            
+
             for example if I am passing a new variable you can write: we are passing a new variable from function A to function B ... etc
             Always mention code symbols in markdown so they can rendered properly, you are also given the language in which the change was made, use that to figure out if there are common traits of the changes.. like
             - passing a variable through a repeated function call
@@ -668,7 +668,7 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
             You are given a json like structure with the fields name (name of the code symbol which changed)
             diffPatch: The changes made in the code symbol in a diff view
             lastEditTime: The last time the code symbol was edited
-            
+
             ${JSON.stringify(codeSymbolChanges)}
             `,
         },
