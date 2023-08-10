@@ -34,6 +34,10 @@ export async function activate(context: ExtensionContext) {
   if (!rootPath) {
     rootPath = "";
   }
+  if (rootPath === "") {
+    window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
+    return;
+  }
   const repoName = await getGitRepoName(
     rootPath,
   );
