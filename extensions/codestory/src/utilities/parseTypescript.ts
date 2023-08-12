@@ -83,7 +83,7 @@ function parseFunctionNode(
 ): CodeSymbolInformation | null {
     const currentFunction = functionNode;
     const functionName = currentFunction.getName();
-    console.log(`[ts-morph][parseFunctionNode] We found function with name: ${functionName}`);
+    // console.log(`[ts-morph][parseFunctionNode] We found function with name: ${functionName}`);
     if (functionName) {
         currentFunction.getStartLineNumber();
         currentFunction.getEndLineNumber();
@@ -162,9 +162,9 @@ function parseArrowFunctionNode(
                 symbolName = moduleName + "." + name[0].getText();
                 extraSymbolHint = TypescriptCodeType.typescriptArrowFunction;
             }
-            console.log(
-                `[ts-morph][parseArrowFunctionNode] We found arrow function with name: ${symbolName}`
-            );
+            // console.log(
+            //     `[ts-morph][parseArrowFunctionNode] We found arrow function with name: ${symbolName}`
+            // );
             const codeSymbolInformation = {
                 symbolName: symbolName,
                 symbolKind: CodeSymbolKind.function,
@@ -660,9 +660,9 @@ function parseCodeBlockForDependencies(
                 // if (declarations.length !== 0) {
                 //     return;
                 // }
-                console.log(
-                    "[dependency] Identifier: " + identifier.getText() + " " + symbol.getDeclarations()[0]
-                );
+                // console.log(
+                //     "[dependency] Identifier: " + identifier.getText() + " " + symbol.getDeclarations()[0]
+                // );
                 // Not sure why this is happening, but this was causing the
                 // extension to crash, so we guard against this
                 // if (symbol.getDeclarations()[0] === undefined) {
@@ -706,16 +706,16 @@ function parseCodeBlockForDependencies(
                 codeSymbolDependencies.push(dependency);
                 return;
             } else {
-                console.log("[dependency] No symbol found, probably imported from another file");
+                // console.log("[dependency] No symbol found, probably imported from another file");
             }
         });
     });
-    console.log(
-        "[dependency] Code symbol dependencies: " +
-        blockCodeSymbolName +
-        " " +
-        JSON.stringify(codeSymbolDependencies)
-    );
+    // console.log(
+    //     "[dependency] Code symbol dependencies: " +
+    //     blockCodeSymbolName +
+    //     " " +
+    //     JSON.stringify(codeSymbolDependencies)
+    // );
     return codeSymbolDependencies;
 }
 
@@ -769,30 +769,30 @@ export function parseSourceFile(
             project,
             originalFilePath
         );
-        console.log(
-            "[ts-morph]Class Symbols from ts-morph: " +
-            sourceFilePath +
-            "   " +
-            classSymbols.length +
-            " " +
-            JSON.stringify(classSymbols)
-        );
+        // console.log(
+        //     "[ts-morph]Class Symbols from ts-morph: " +
+        //     sourceFilePath +
+        //     "   " +
+        //     classSymbols.length +
+        //     " " +
+        //     JSON.stringify(classSymbols)
+        // );
         const functionSymbols = getFunctionSymbolFromFile(
             sourceFile,
             directoryPath,
             project,
             originalFilePath
         );
-        console.log(
-            "[ts-morph]Function Symbols from ts-morph: " +
-            sourceFilePath +
-            "   " +
-            functionSymbols.length +
-            " " +
-            JSON.stringify(
-                functionSymbols.map((value) => `${value.symbolName} ${value.extraSymbolHint}`)
-            )
-        );
+        // console.log(
+        //     "[ts-morph]Function Symbols from ts-morph: " +
+        //     sourceFilePath +
+        //     "   " +
+        //     functionSymbols.length +
+        //     " " +
+        //     JSON.stringify(
+        //         functionSymbols.map((value) => `${value.symbolName} ${value.extraSymbolHint}`)
+        //     )
+        // );
         const typeAliasSymbols = getTypeAliasFromFile(
             sourceFile,
             directoryPath,
@@ -858,11 +858,11 @@ export class TSMorphProjectManagement {
             const tsConfigProject = new Project({
                 tsConfigFilePath: tsConfigPath,
             });
-            console.log('[ts-morph-project] adding tsconfig path: ' + tsConfigPath);
+            // console.log('[ts-morph-project] adding tsconfig path: ' + tsConfigPath);
             this.directoryToProjectMapping.set(dirName, tsConfigProject);
         } catch (err) {
-            console.log("[ts-morph-project] Error while creating project: " + err);
-            console.log((err as Error).toString());
+            // console.log("[ts-morph-project] Error while creating project: " + err);
+            // console.log((err as Error).toString());
             return;
         }
     }
@@ -890,7 +890,7 @@ export class TSMorphProjectManagement {
     ): Project | null {
         const possibleTsConfig = this.fileToTSConfigDirectoryMapping.get(filePath);
         if (possibleTsConfig) {
-            console.log("Are we early bailing here?????", filePath);
+            // console.log("Are we early bailing here?????", filePath);
             return this.directoryToProjectMapping.get(possibleTsConfig) ?? null;
         }
         // TODO(skcd): This will break for windows 🪟, but we don't have that
@@ -920,7 +920,7 @@ export class TSMorphProjectManagement {
                         filePath,
                         directoryPath,
                     );
-                    console.log("Found ts config path :" + directoryPath);
+                    // console.log("Found ts config path :" + directoryPath);
                     return this.directoryToProjectMapping.get(directoryPath) ?? null;
                 }
             }
@@ -972,10 +972,10 @@ export const getProject = async (
     const tsConfigFiles = await getTsConfigFiles(
         workingDirectory,
     );
-    console.log("[getProject] What tsconfig files exist?: " + tsConfigFiles);
+    // console.log("[getProject] What tsconfig files exist?: " + tsConfigFiles);
     const filteredTsConfigFiles: string[] = [];
     for (const tsConfigFile of tsConfigFiles) {
-        console.log("[getProject] checking if file exists: " + tsConfigFile);
+        // console.log("[getProject] checking if file exists: " + tsConfigFile);
         const fileExists = await checkIfFileExists(tsConfigFile);
         if (fileExists) {
             filteredTsConfigFiles.push(tsConfigFile);

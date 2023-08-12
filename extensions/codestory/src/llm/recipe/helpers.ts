@@ -20,6 +20,10 @@ export const generateCodeSymbolsForQueries = async (
     for (let index = 0; index < queries.length; index++) {
         const query = queries[index];
         const codeSymbols = await embeddingsSearch.generateNodesRelevantForUser(query);
+        console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
+        console.log(codeSymbols.map(
+            (codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
+        ));
         for (let index = 0; index < codeSymbols.length; index++) {
             const codeSymbol = codeSymbols[index];
             if (!alreadySeenSymbols.has(codeSymbol.codeSymbolInformation.symbolName)) {

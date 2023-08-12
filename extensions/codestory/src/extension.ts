@@ -25,6 +25,7 @@ export async function activate(context: ExtensionContext) {
   // Project root here
   logger.info("[CodeStory] Chat view command registered");
   logger.info(context.extensionUri);
+  logger.info(context.globalStorageUri.fsPath);
   logger.info("[CodeStory] skcd debugging");
   postHogClient.capture({
     distinctId: env.machineId,
