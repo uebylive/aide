@@ -45,9 +45,9 @@ export function getExtensionVersion() {
 }
 
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
-	// Check if already running by calling /health
+	// Check if already running by calling /api/health
 	try {
-		const response = await fetch(`${serverUrl}/health`, {
+		const response = await fetch(`${serverUrl}/api/health`, {
 			method: 'POST',
 			headers: {
 				// eslint-disable-next-line @typescript-eslint/naming-convention
