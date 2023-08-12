@@ -1,7 +1,7 @@
 // We are going to setup the anton backend here
 
 import fetch from "node-fetch";
-import { workspace, window, ProgressLocation, extensions } from 'vscode';
+import { workspace, window, ProgressLocation, extensions, env } from "vscode";
 import * as path from "path";
 import * as fs from "fs";
 import fkill from "fkill";
@@ -9,8 +9,7 @@ import { promisify } from "util";
 import { spawn } from "child_process";
 import { exec } from "child_process";
 import * as os from "os";
-import { downloadFromGCPBucket } from './gcpBucket';
-
+import { downloadFromGCPBucket } from "./gcpBucket";
 
 export function getContinueServerUrl() {
 	// Passed in from launch.json
@@ -48,9 +47,15 @@ export function getExtensionVersion() {
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	// Check if already running by calling /health
 	try {
-		const response = await fetch(`${serverUrl}/health`);
+		const response = await fetch(`${serverUrl}/health`, {
+			method: 'POST',
+			headers: {
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				'Content-Type': 'application/json',
+			},
+		});
 		if (response.status === 200) {
-			console.log("Continue python server already running");
+			console.log("Aide python server already running");
 			return true;
 		} else {
 			return false;
@@ -87,8 +92,24 @@ function serverVersionPath(extensionGlobalStorage: string): string {
 	return path.join(serverPath(extensionGlobalStorage), "server_version.txt");
 }
 
+export const writeConfigFileForAnton = async (
+	workingDirectory: string,
+	sessionId: string,
+	preTestCommand: string[],
+) => {
+	const config = {
+		workingDirectory,
+		sessionId,
+		preTestCommand,
+	};
+	if (!fs.existsSync("/tmp/codestory")) {
+		fs.mkdirSync("/tmp/codestory");
+	}
+	const configPath = path.join(workingDirectory, ".codestory.json");
+	fs.writeFileSync(configPath, JSON.stringify(config));
+}
 
-export async function startAidePythonBackend(extensionBasePath: string) {
+export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string) {
 	// Check vscode settings
 	const serverUrl = getContinueServerUrl();
 	if (serverUrl !== "http://localhost:424242") {
@@ -122,9 +143,7 @@ export async function startAidePythonBackend(extensionBasePath: string) {
 	let shouldDownload = true;
 	if (fs.existsSync(destination)) {
 		// Check if the server is the correct version
-		const serverVersion = fs.readFileSync(
-			serverVersionPath(extensionBasePath), "utf8",
-		);
+		const serverVersion = fs.readFileSync(serverVersionPath(extensionBasePath), "utf8");
 		if (serverVersion === getExtensionVersion()) {
 			// The current version is already up and running, no need to run
 			console.log("Continue server already downloaded");
@@ -171,12 +190,10 @@ export async function startAidePythonBackend(extensionBasePath: string) {
 	let maxAttempts = 5;
 	let delay = 1000; // Delay between each attempt in milliseconds
 
-	const spawnChild = () => {
+	const spawnChild = async () => {
 		const retry = () => {
 			attempts++;
-			console.log(
-				`Error caught (likely EBUSY). Retrying attempt ${attempts}...`
-			);
+			console.log(`Error caught (likely EBUSY). Retrying attempt ${attempts}...`);
 			setTimeout(spawnChild, delay);
 		};
 		try {
@@ -189,11 +206,14 @@ export async function startAidePythonBackend(extensionBasePath: string) {
 				detached: true,
 				stdio: "ignore",
 			};
-			const settings: any =
-				os.platform() === "win32" ? windowsSettings : macLinuxSettings;
+			const settings: any = os.platform() === "win32" ? windowsSettings : macLinuxSettings;
 
 			// Spawn the server
-			const child = spawn(destination, settings);
+			// We need to write to /tmp/codestory/.codestory.json with the settings
+			// blob so the server can start up
+			await writeConfigFileForAnton(workingDirectory, env.machineId, []);
+			const args = ["start-server", "--port", "424242"];
+			const child = spawn(destination, args, settings);
 
 			// Either unref to avoid zombie process, or listen to events because you can
 			if (os.platform() === "win32") {
@@ -225,9 +245,8 @@ export async function startAidePythonBackend(extensionBasePath: string) {
 		}
 	};
 
-	spawnChild();
+	await spawnChild();
 
 	// Write the current version of vscode extension to a file called server_version.txt
 	fs.writeFileSync(serverVersionPath(extensionBasePath), getExtensionVersion());
 }
-
