@@ -26,7 +26,7 @@
       }
     ],
     "viewsContainers": {
-      "activitybar": [
+      "auxiliarybar": [
         {
           "id": "codestory",
           "title": "CodeStory",
