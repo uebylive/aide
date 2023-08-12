@@ -137,24 +137,26 @@ class ProgressiveIndexer {
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
-	logger.info(`[codestory] Activating extension: ${context.globalStorageUri.fsPath}`);
 	postHogClient.capture({
 		distinctId: env.machineId,
-		event: 'extension_activated',
+		event: "extension_activated",
 	});
-
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
-		rootPath = '';
+		rootPath = "";
 	}
-	if (rootPath === '') {
-		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
+	if (rootPath === "") {
+		window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
 		return;
 	}
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+	const repoName = await getGitRepoName(
+		rootPath,
+	);
+	const repoHash = await getGitCurrentHash(
+		rootPath,
+	);
 
-	const repoName = await getGitRepoName(rootPath);
-	const repoHash = await getGitCurrentHash(rootPath);
 
 	// Register chat provider
 	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, repoName, repoHash));
