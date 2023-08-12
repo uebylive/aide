@@ -2,16 +2,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { commands } from "vscode";
 import { EmbeddingsSearch } from "../codeGraph/embeddingsSearch";
 import { CodeGraph } from "../codeGraph/graph";
-import { ChatViewPanel } from "../panels/ChatViewPanel";
 import { TSMorphProjectManagement } from "../utilities/parseTypescript";
 import { MessageHandlerData } from "@estruyf/vscode";
 import { debuggingFlow } from "../llm/recipe/debugging";
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
+import { AgentViewProvider } from '../views/AgentView';
 
 export const debug = (
-	provider: ChatViewPanel,
+	provider: AgentViewProvider,
 	embeddingIndex: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	codeGraph: CodeGraph,
