@@ -22,6 +22,11 @@ export class EmbeddingsSearch {
         this._nodes = nodes;
     }
 
+    public updateNodes(nodes: CodeSymbolInformationEmbeddings) {
+        this._nodes.push(nodes);
+        console.log("Whats the length of all code symbols: " + this._nodes.length);
+    };
+
     public async generateNodesRelevantForUser(
         userQuery: string,
     ): Promise<CodeSymbolInformationEmbeddings[]> {
