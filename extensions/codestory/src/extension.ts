@@ -1,8 +1,8 @@
 import { commands, env, ExtensionContext, window } from "vscode";
 import { ChatViewPanel } from "./panels/ChatViewPanel";
-import { loadOrSaveToStorage } from "./storage/types";
+import { CodeStoryStorage, loadOrSaveToStorage } from "./storage/types";
 import { indexRepository } from "./storage/indexer";
-import { getProject } from "./utilities/parseTypescript";
+import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
 import { workspace } from "vscode";
 import logger from "./logger";
 import { generateCodeGraph } from "./codeGraph/graph";
@@ -20,6 +20,36 @@ import { gitCommit } from "./subscriptions/gitCommit";
 import { getGitCurrentHash, getGitRepoName } from "./git/helper";
 import { debug } from "./subscriptions/debug";
 import { copySettings } from './utilities/copySettings';
+
+
+import { EventEmitter } from "events";
+
+class ProgressiveIndexer {
+  private emitter: EventEmitter;
+
+  constructor() {
+    this.emitter = new EventEmitter();
+  }
+
+  async indexRepository(
+    storage: CodeStoryStorage,
+    projectManagement: TSMorphProjectManagement,
+    globalStorageUri: string,
+    workingDirectory: string,
+  ) {
+    await indexRepository(
+      storage,
+      projectManagement,
+      globalStorageUri,
+      workingDirectory,
+      this.emitter,
+    );
+  }
+
+  on(event: string, listener: (...args: any[]) => void) {
+    this.emitter.on(event, listener);
+  }
+}
 
 export async function activate(context: ExtensionContext) {
   // Project root here
@@ -52,15 +82,29 @@ export async function activate(context: ExtensionContext) {
   // Ts-morph project management
   const projectManagement = await getProject(rootPath);
   logger.info("[CodeStory] Project management created");
+
+  // Create an instance of the progressive indexer
+  const indexer = new ProgressiveIndexer();
   // Re-index or keep going as required (we will boost this tomorrow)
-  const symbolWithEmbeddings = await indexRepository(
+  // const symbolWithEmbeddings = await indexRepository(
+  //   codeStoryStorage,
+  //   projectManagement,
+  //   context.globalStorageUri.fsPath,
+  //   rootPath
+  // );
+  logger.info("[CodeStory] Indexing complete");
+  const embeddingsIndex = new EmbeddingsSearch([]);
+  indexer.on("partialData", (partialData) => {
+    logger.info("[CodeStory] Partial data received");
+    // Use partialData to update embeddingsIndex
+    embeddingsIndex.updateNodes(partialData);
+  });
+  indexer.indexRepository(
     codeStoryStorage,
     projectManagement,
     context.globalStorageUri.fsPath,
-    rootPath
+    rootPath,
   );
-  logger.info("[CodeStory] Indexing complete");
-  const embeddingsIndex = new EmbeddingsSearch(symbolWithEmbeddings);
 
   // Get the code graph
   const codeGraph = generateCodeGraph(projectManagement);

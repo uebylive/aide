@@ -13,6 +13,7 @@ import { generateEmbedding } from "../llm/embeddings/openai";
 import { ExtensionContext } from "vscode";
 import { getGitCurrentHash, getGitRepoName } from "../git/helper";
 import logger from "../logger";
+import EventEmitter = require('events');
 // import logger from "../logger";
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -38,10 +39,10 @@ const generateContextForEmbedding = (
     return `
         Code snippet:
         ${codeSnippet}
-        
+
         File path it belongs to:
         ${filePath}
-        
+
         Scope part:
         ${scopePart}
     `;
@@ -77,6 +78,7 @@ export async function storeCodeSymbolDescriptionToLocalStorage(
 export async function loadCodeSymbolDescriptionFromLocalStorage(
     globalStorageUri: string,
     remoteSession: string,
+    emitter: EventEmitter,
 ): Promise<CodeSymbolInformationEmbeddings[]> {
     const directoryPath = path.join(
         globalStorageUri,
@@ -99,6 +101,8 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
         try {
             const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
             logger.info("[indexing_start] parsed from json");
+            logger.info(codeSymbolInformationEmbeddings);
+            emitter.emit("partialData", codeSymbolInformationEmbeddings);
             codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
         } catch (error) {
             logger.info("[indexing_start] error");
@@ -167,7 +171,8 @@ export const indexRepository = async (
     storage: CodeStoryStorage,
     projectManagement: TSMorphProjectManagement,
     globalStorageUri: string,
-    workingDirectory: string
+    workingDirectory: string,
+    emitter: EventEmitter,
 ): Promise<CodeSymbolInformationEmbeddings[]> => {
     // One way to do this would be that we walk along the whole repo and index
     // it
@@ -188,6 +193,11 @@ export const indexRepository = async (
                 workingDirectory,
                 globalStorageUri
             );
+            codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+                logger.info("[indexing_start] Starting indexing for project");
+                logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
+                emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
+            });
             codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
         });
         storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
@@ -210,6 +220,7 @@ export const indexRepository = async (
                     workingDirectory,
                     globalStorageUri
                 );
+                emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
                 codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
             });
             storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
@@ -223,6 +234,7 @@ export const indexRepository = async (
             codeSymbolWithEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
                 globalStorageUri,
                 repoName,
+                emitter,
             );
             logger.info("[indexing_start] Loaded from local storage");
         }
