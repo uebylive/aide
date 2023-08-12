@@ -17,12 +17,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "webview.showChatView",
-        "title": "CodeStory: Show"
-      },
-      {
         "command": "webview.copySettings",
-        "title": "Import settings and keybindings from VSCode"
+        "title": "CodeStory: Import settings and keybindings from VSCode"
       }
     ],
     "viewsContainers": {
@@ -30,6 +26,13 @@
         {
           "id": "codestory",
           "title": "CodeStory",
+          "icon": "assets/cs-logomark.svg"
+        }
+      ],
+      "auxiliarybar": [
+        {
+          "id": "agent",
+          "title": "CodeStory Agent",
           "icon": "assets/cs-logomark.svg"
         }
       ]
@@ -40,6 +43,13 @@
           "type": "webview",
           "id": "codestory.webView",
           "name": "CodeStory"
+        }
+      ],
+      "agent": [
+        {
+          "type": "webview",
+          "id": "codestory.agentView",
+          "name": "CodeStory Agent"
         }
       ]
     },
