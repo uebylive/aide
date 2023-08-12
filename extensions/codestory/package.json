@@ -42,6 +42,17 @@
           "name": "CodeStory"
         }
       ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "Your Extension Settings",
+      "properties": {
+        "aide.activeDirectories": {
+          "type": "string",
+          "default": "",
+          "description": "Set the active directories for Aide to look at as comma separated values of absolute path. For example: /a/b/c , /d/e/f"
+        }
+      }
     }
   },
   "scripts": {

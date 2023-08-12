@@ -23,6 +23,7 @@ import { copySettings } from './utilities/copySettings';
 
 
 import { EventEmitter } from "events";
+import { readActiveDirectoriesConfiguration } from './utilities/activeDirectories';
 
 class ProgressiveIndexer {
   private emitter: EventEmitter;
@@ -80,7 +81,12 @@ export async function activate(context: ExtensionContext) {
   logger.info(codeStoryStorage);
   logger.info(rootPath);
   // Ts-morph project management
-  const projectManagement = await getProject(rootPath);
+  const activeDirectories = readActiveDirectoriesConfiguration(
+    rootPath,
+  );
+  logger.info("[CodeStory] Active directories read");
+  logger.info(activeDirectories);
+  const projectManagement = await getProject(activeDirectories);
   logger.info("[CodeStory] Project management created");
 
   // Create an instance of the progressive indexer
