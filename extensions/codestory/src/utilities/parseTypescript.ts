@@ -941,25 +941,28 @@ export const checkIfFileExists = async (filePath: string): Promise<boolean> => {
 
 
 export const getTsConfigFiles = async (
-    workingDirectory: string,
+    activeDirectories: string[],
 ): Promise<string[]> => {
-    // I have to run this command and get all the places where we have a tsconfig
-    // file and get them back
-    // find $(pwd) -name "tsconfig*.json" ! -path "./node_modules/*"
     const tsConfigFiles: string[] = [];
-    const findCommandOutput = await runCommandAsync(workingDirectory, "find", [
-        workingDirectory,
-        "-name",
-        "tsconfig*.json",
-        "!",
-        "-path",
-        "$(pwd)/*node_modules*",
-    ]);
-    const findCommandOutputLines = findCommandOutput.stdout?.toString().split("\n") ?? [];
-    // logger.info("[getTsConfigFiles] What did we get from find command: " + findCommandOutputLines);
-    for (const findCommandOutputLine of findCommandOutputLines) {
-        if (findCommandOutputLine.trim() !== "" && findCommandOutputLine) {
-            tsConfigFiles.push(findCommandOutputLine.trim());
+    for (let index = 0; index < activeDirectories.length; index++) {
+        // I have to run this command and get all the places where we have a tsconfig
+        // file and get them back
+        const workingDirectory = activeDirectories[index];
+        // find $(pwd) -name "tsconfig*.json" ! -path "./node_modules/*"
+        const findCommandOutput = await runCommandAsync(workingDirectory, "find", [
+            workingDirectory,
+            "-name",
+            "tsconfig*.json",
+            "!",
+            "-path",
+            "$(pwd)/*node_modules*",
+        ]);
+        const findCommandOutputLines = findCommandOutput.stdout?.toString().split("\n") ?? [];
+        // logger.info("[getTsConfigFiles] What did we get from find command: " + findCommandOutputLines);
+        for (const findCommandOutputLine of findCommandOutputLines) {
+            if (findCommandOutputLine.trim() !== "" && findCommandOutputLine) {
+                tsConfigFiles.push(findCommandOutputLine.trim());
+            }
         }
     }
     return tsConfigFiles.filter((value) => value.indexOf("node_modules") === -1);
@@ -967,10 +970,10 @@ export const getTsConfigFiles = async (
 
 
 export const getProject = async (
-    workingDirectory: string,
+    activeDirectories: string[],
 ): Promise<TSMorphProjectManagement> => {
     const tsConfigFiles = await getTsConfigFiles(
-        workingDirectory,
+        activeDirectories,
     );
     // console.log("[getProject] What tsconfig files exist?: " + tsConfigFiles);
     const filteredTsConfigFiles: string[] = [];
