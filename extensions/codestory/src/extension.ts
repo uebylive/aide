@@ -85,13 +85,6 @@ export async function activate(context: ExtensionContext) {
 
   // Create an instance of the progressive indexer
   const indexer = new ProgressiveIndexer();
-  // Re-index or keep going as required (we will boost this tomorrow)
-  // const symbolWithEmbeddings = await indexRepository(
-  //   codeStoryStorage,
-  //   projectManagement,
-  //   context.globalStorageUri.fsPath,
-  //   rootPath
-  // );
   logger.info("[CodeStory] Indexing complete");
   const embeddingsIndex = new EmbeddingsSearch([]);
   indexer.on("partialData", (partialData) => {

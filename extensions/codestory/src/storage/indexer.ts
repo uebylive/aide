@@ -14,6 +14,7 @@ import { ExtensionContext } from "vscode";
 import { getGitCurrentHash, getGitRepoName } from "../git/helper";
 import logger from "../logger";
 import EventEmitter = require('events');
+import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
 // import logger from "../logger";
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -30,23 +31,6 @@ async function ensureDirectoryExists(filePath: string): Promise<void> {
     // Create the directory
     fs.mkdirSync(parentDir);
 }
-
-const generateContextForEmbedding = (
-    codeSnippet: string,
-    filePath: string,
-    scopePart: string | null
-): string => {
-    return `
-        Code snippet:
-        ${codeSnippet}
-
-        File path it belongs to:
-        ${filePath}
-
-        Scope part:
-        ${scopePart}
-    `;
-};
 
 export async function storeCodeSymbolDescriptionToLocalStorage(
     codeSymbolName: string,
