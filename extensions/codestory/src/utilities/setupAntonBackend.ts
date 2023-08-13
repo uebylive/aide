@@ -4,10 +4,10 @@ import fetch from "node-fetch";
 import { workspace, window, ProgressLocation, extensions, env } from "vscode";
 import * as path from "path";
 import * as fs from "fs";
-import fkill from "fkill";
+import axios from "axios";
 import { promisify } from "util";
 import { spawn } from "child_process";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import * as os from "os";
 import { downloadFromGCPBucket } from "./gcpBucket";
 
@@ -19,7 +19,7 @@ export function getContinueServerUrl() {
 
 	return (
 		workspace.getConfiguration("aide").get<string>("pythonServerUrl") ||
-		"http://localhost:424242"
+		"http://localhost:42424"
 	);
 }
 
@@ -47,13 +47,7 @@ export function getExtensionVersion() {
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	// Check if already running by calling /api/health
 	try {
-		const response = await fetch(`${serverUrl}/api/health`, {
-			method: 'POST',
-			headers: {
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				'Content-Type': 'application/json',
-			},
-		});
+		const response = await axios.get(`${serverUrl}/api/health`);
 		if (response.status === 200) {
 			console.log("Aide python server already running");
 			return true;
@@ -65,12 +59,37 @@ async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	}
 }
 
+function killProcessOnPort(port: number) {
+	// Find the process ID using lsof (this command is for macOS/Linux)
+	exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}'`, (error, stdout) => {
+		if (error) {
+			console.error(`exec error: ${error}`);
+			return;
+		}
+
+		const pid = stdout.trim();
+
+		if (pid) {
+			// Kill the process
+			execFile("kill", ["-9", `${pid}`], (killError) => {
+				if (killError) {
+					console.error(`Error killing process: ${killError}`);
+					return;
+				}
+				console.log(`Killed process with PID: ${pid}`);
+			});
+		} else {
+			console.log(`No process running on port ${port}`);
+		}
+	});
+}
+
 async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 	const serverRunning = await checkServerRunning(serverUrl);
 	if (serverRunning) {
 		console.log("Killing server from old version of Aide");
 		try {
-			await fkill(":424242", { force: true });
+			killProcessOnPort(42424);
 		} catch (e: any) {
 			if (!e.message.includes("Process doesn't exist")) {
 				console.log("Failed to kill old server:", e);
@@ -112,7 +131,7 @@ export const writeConfigFileForAnton = async (
 export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string) {
 	// Check vscode settings
 	const serverUrl = getContinueServerUrl();
-	if (serverUrl !== "http://localhost:424242") {
+	if (serverUrl !== "http://localhost:42424") {
 		console.log("Continue server is being run manually, skipping start");
 		return;
 	}
@@ -122,6 +141,8 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 		console.log("Continue server already running");
 		return;
 	}
+
+	console.log("Starting Aide server right now");
 
 	// Download the server executable
 	const bucket = "aide-binary";
@@ -141,12 +162,13 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 
 	// First, check if the server is already downloaded
 	let shouldDownload = true;
+	console.log("Checking if server already downloaded");
 	if (fs.existsSync(destination)) {
 		// Check if the server is the correct version
 		const serverVersion = fs.readFileSync(serverVersionPath(extensionBasePath), "utf8");
 		if (serverVersion === getExtensionVersion()) {
 			// The current version is already up and running, no need to run
-			console.log("Continue server already downloaded");
+			console.log("Aide server already downloaded");
 			shouldDownload = false;
 		} else {
 			fs.unlinkSync(destination);
@@ -154,10 +176,11 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 	}
 
 	if (shouldDownload) {
+		console.log("Downloading the aide server...");
 		await window.withProgress(
 			{
 				location: ProgressLocation.Notification,
-				title: "Installing Continue server...",
+				title: "Installing Aide server...",
 				cancellable: false,
 			},
 			async () => {
@@ -212,7 +235,7 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 			// We need to write to /tmp/codestory/.codestory.json with the settings
 			// blob so the server can start up
 			await writeConfigFileForAnton(workingDirectory, env.machineId, []);
-			const args = ["start-server", "--port", "424242"];
+			const args = ["start-server", "--port", "42424"];
 			const child = spawn(destination, args, settings);
 
 			// Either unref to avoid zombie process, or listen to events because you can
@@ -250,3 +273,11 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 	// Write the current version of vscode extension to a file called server_version.txt
 	fs.writeFileSync(serverVersionPath(extensionBasePath), getExtensionVersion());
 }
+
+
+// void (async () => {
+// 	startAidePythonBackend(
+// 		"/Users/skcd/Desktop/",
+// 		"/Users/skcd/scratch/anton/"
+// 	);
+// })();
