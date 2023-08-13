@@ -18,6 +18,7 @@ import {
 import { Logger } from "winston";
 import { PythonServer } from '../utilities/pythonServerClient';
 import { fstat, writeFileSync } from 'fs';
+import EventEmitter from 'events';
 
 const configuration = new Configuration({
     apiKey: "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",
@@ -75,6 +76,7 @@ export class TrackCodeSymbolChanges {
     private fileOnSaveLastParsedTimestamp: Map<string, number>;
     private logger: Logger;
     private workingDirectory: string;
+    public statusUpdated: boolean;
 
     constructor(
         tsProject: TSMorphProjectManagement,
@@ -90,9 +92,28 @@ export class TrackCodeSymbolChanges {
         this.fileOnSaveLastParsedTimestamp = new Map<string, number>();
         this.fileSavedCodeSymbolTracked = new Map<string, FileSaveCodeSymbolInformation>();
         this.logger = logger;
+        this.statusUpdated = false;
     }
 
-    private async fileCodeSymbolFromCodePython(filePath: string, fileContentSinceHead: string) {
+    public async setFileOpenedCodeSymbolTracked(
+        filePath: string,
+        codeSymbolInformationList: CodeSymbolInformation[],
+    ) {
+        console.log(codeSymbolInformationList);
+        console.log("How many symbols have changed" + codeSymbolInformationList.length);
+        this.fileOpenedCodeSymbolTracked.set(filePath, {
+            codeSymbols: codeSymbolInformationList,
+            workingDirectory: this.workingDirectory,
+            filePath: filePath,
+        });
+        // Now pretend to save the file so we load all the changes
+        await this.fileSaved(Uri.file(filePath), this.logger);
+    }
+
+    private async fileCodeSymbolFromCodePython(
+        filePath: string,
+        fileContentSinceHead: string,
+    ): Promise<CodeSymbolInformation[]> {
         let dirName = path.dirname(filePath); // Get the directory name
         let extName = path.extname(filePath); // Get the extension name
         let newFileName = uuidV4(); // Your new file name without extension
@@ -116,19 +137,16 @@ export class TrackCodeSymbolChanges {
             );
             return codeSymbol;
         });
-        this.fileOpenedCodeSymbolTracked.set(filePath, {
-            codeSymbols: codeSymbolInformation,
-            workingDirectory: this.workingDirectory,
-            filePath: filePath,
-        });
-        // Now pretend to save the file so we load all the changes
-        await this.fileSaved(Uri.file(filePath), this.logger);
+        return codeSymbolInformation;
     }
 
-    private async fileCodeSymbolFromCodeTS(filePath: string, fileContentSinceHead: string) {
+    private async fileCodeSymbolFromCodeTS(
+        filePath: string,
+        fileContentSinceHead: string,
+    ): Promise<CodeSymbolInformation[]> {
         const tsProject = this.tsProject.getTsMorphProjectForFile(filePath);
         if (tsProject === null) {
-            return;
+            return [];
         }
         this.logger.info(`[changes][ts] We are going to track and create a source file ${filePath}`);
         let dirName = path.dirname(filePath); // Get the directory name
@@ -165,18 +183,17 @@ export class TrackCodeSymbolChanges {
                 codeSymbolInformation.map((codeSymbol) => codeSymbol.symbolName)
             )})))}`
         );
-        this.fileOpenedCodeSymbolTracked.set(filePath, {
-            codeSymbols: codeSymbolInformation,
-            workingDirectory: this.workingDirectory,
-            filePath: filePath,
-        });
-        // Now pretend to save the file so we load all the changes
-        await this.fileSaved(Uri.file(filePath), this.logger);
+        return codeSymbolInformation;
     }
 
-    public async filesChangedSinceLastCommit(filePath: string, fileContentSinceHead: string) {
+    public async filesChangedSinceLastCommit(
+        filePath: string,
+        fileContentSinceHead: string,
+        emitter: EventEmitter,
+    ) {
         // Now we try to get the extension of the file and see where it belongs
         // to
+        let codeSymbols: CodeSymbolInformation[] = [];
         const fileExtension = getFileExtension(filePath);
         if (
             fileExtension === ".ts" ||
@@ -184,13 +201,17 @@ export class TrackCodeSymbolChanges {
             fileExtension === ".tsx" ||
             fileExtension === ".js"
         ) {
-            await this.fileCodeSymbolFromCodeTS(filePath, fileContentSinceHead);
+            codeSymbols = await this.fileCodeSymbolFromCodeTS(filePath, fileContentSinceHead);
         }
         if (
             fileExtension === ".py"
         ) {
-            await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
+            codeSymbols = await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
         }
+        emitter.emit("fileChanged", {
+            filePath: filePath,
+            codeSymbols: codeSymbols,
+        });
     }
 
     private checkIfFileSaveCodeSymbolInformationIsStale(filePath: string): boolean {
@@ -343,6 +364,9 @@ export class TrackCodeSymbolChanges {
     }
 
     public async fileSaved(uri: Uri, logger: Logger) {
+        if (!this.statusUpdated) {
+            return;
+        }
         let lastParsedFileTimestamp = this.fileOnSaveLastParsedTimestamp.get(uri.fsPath);
         if (lastParsedFileTimestamp === undefined) {
             this.fileOnSaveLastParsedTimestamp.set(uri.fsPath, Date.now());
@@ -565,14 +589,6 @@ export class TrackCodeSymbolChanges {
                     `[changes][dfstree] Code Symbol ${codeSymbolChange.name} is in component ${i + 1}`
                 );
                 finalChangedNodes.push(codeSymbolChange);
-
-                // Now we want to get how the code symbol looked like before
-                // and how it looks now, to figure out the diff
-                const previous_declaration = this.fileOpenedCodeSymbolTracked
-                    .get(codeSymbolChange.codeSymbol.fsFilePath)
-                    ?.codeSymbols.find((codeSymbol) => {
-                        return codeSymbol.symbolName === codeSymbolChange.name;
-                    });
             });
         });
         this.logger.info(

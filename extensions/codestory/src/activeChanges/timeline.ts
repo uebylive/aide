@@ -94,6 +94,9 @@ export const triggerCodeSymbolChange = async (
     codeBlockDescriptionGenerator: CodeBlockChangeDescriptionGenerator,
     logger: Logger,
 ) => {
+    if (!trackCodeSymbolChanges.statusUpdated) {
+        return;
+    }
     if (!timeKeeperFileSaved.isInvocationAllowed(Date.now())) {
         return;
     }
