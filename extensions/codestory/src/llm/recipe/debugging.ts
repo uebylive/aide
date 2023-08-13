@@ -18,6 +18,7 @@ import { Type } from "ts-morph";
 import { readFileSync } from "fs";
 import { loadOrSaveToStorage } from "../../storage/types";
 import { indexRepository } from "../../storage/indexer";
+import { PythonServer } from '../../utilities/pythonServerClient';
 
 const configuration = new Configuration({
     apiKey: "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",
@@ -50,6 +51,7 @@ export const debuggingFlow = async (
     codeGraph: CodeGraph,
     embeddingsSearch: EmbeddingsSearch,
     tsMorphProjectManagement: TSMorphProjectManagement,
+    pythonServer: PythonServer,
     workingDirectory: string,
 ): Promise<null> => {
     console.log("We are here debugging flow");
@@ -113,6 +115,7 @@ export const debuggingFlow = async (
     const fileCodeSymbolInformationList = await generateFileInformationSummary(
         relevantCodeSymbols,
         tsMorphProjectManagement,
+        pythonServer,
         workingDirectory,
     );
     initialMessages.push(
@@ -262,6 +265,7 @@ export const debuggingFlow = async (
             codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
             codeGraph,
             tsMorphProjectManagement,
+            pythonServer,
             workingDirectory,
         );
 

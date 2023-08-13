@@ -9,11 +9,13 @@ import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
 import { AgentViewProvider } from '../views/AgentView';
+import { PythonServer } from '../utilities/pythonServerClient';
 
 export const debug = (
 	provider: AgentViewProvider,
 	embeddingIndex: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
+	pythonServer: PythonServer,
 	codeGraph: CodeGraph,
 	repoName: string,
 	repoHash: string,
@@ -37,6 +39,7 @@ export const debug = (
 					codeGraph,
 					embeddingIndex,
 					tsMorphProjectManagement,
+					pythonServer,
 					workingDirectory,
 				);
 			} catch (e) {
