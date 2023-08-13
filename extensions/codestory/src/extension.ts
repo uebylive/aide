@@ -73,6 +73,7 @@ export async function activate(context: ExtensionContext) {
     context.globalStorageUri.fsPath,
     rootPath,
   );
+  const pythonServer = new PythonServer(serverUrl);
   const repoName = await getGitRepoName(rootPath);
   const repoHash = await getGitCurrentHash(rootPath);
   // Get the storage object here
@@ -98,13 +99,13 @@ export async function activate(context: ExtensionContext) {
   indexer.indexRepository(
     codeStoryStorage,
     projectManagement,
-    new PythonServer(serverUrl),
+    pythonServer,
     context.globalStorageUri.fsPath,
     rootPath,
   );
 
   // Get the code graph
-  const codeGraph = generateCodeGraph(projectManagement);
+  const codeGraph = await generateCodeGraph(projectManagement, pythonServer, rootPath);
 
   // Register the agent view provider
   const agentViewProvider = new AgentViewProvider(context.extensionUri);
@@ -157,6 +158,7 @@ export async function activate(context: ExtensionContext) {
 
   let trackCodeSymbolChanges = new TrackCodeSymbolChanges(
     projectManagement,
+    pythonServer,
     rootPath ?? "",
     logger
   );

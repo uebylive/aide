@@ -4,6 +4,8 @@
 
 import { OutputChannel, Uri } from "vscode";
 import * as path from "path";
+import { v4 as uuidV4 } from "uuid";
+import * as fs from "fs";
 import { Graph, GraphDFS, WCCFinder, topoSort } from "./graphTopologicalSort";
 import { createPatch } from "diff";
 import { ChatCompletionRequestMessage, Configuration } from "openai";
@@ -14,6 +16,8 @@ import {
     parseSourceFile,
 } from "../utilities/parseTypescript";
 import { Logger } from "winston";
+import { PythonServer } from '../utilities/pythonServerClient';
+import { fstat, writeFileSync } from 'fs';
 
 const configuration = new Configuration({
     apiKey: "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",
@@ -61,6 +65,7 @@ const checkIfFileSaveCodeSymbolInformationIsStale = (
 
 export class TrackCodeSymbolChanges {
     private tsProject: TSMorphProjectManagement;
+    private pythonServer: PythonServer;
     private codeSymbolsWhichChanged: Map<Uri, CodeSymbolChange[]>;
     // This is used to track when the file has been opened
     private fileOpenedCodeSymbolTracked: Map<string, FileCodeSymbolInformation>;
@@ -73,16 +78,51 @@ export class TrackCodeSymbolChanges {
 
     constructor(
         tsProject: TSMorphProjectManagement,
+        pythonServer: PythonServer,
         workingDirectory: string,
         logger: Logger,
     ) {
         this.tsProject = tsProject;
+        this.pythonServer = pythonServer;
         this.codeSymbolsWhichChanged = new Map<Uri, CodeSymbolChange[]>();
         this.workingDirectory = workingDirectory;
         this.fileOpenedCodeSymbolTracked = new Map<string, FileCodeSymbolInformation>();
         this.fileOnSaveLastParsedTimestamp = new Map<string, number>();
         this.fileSavedCodeSymbolTracked = new Map<string, FileSaveCodeSymbolInformation>();
         this.logger = logger;
+    }
+
+    private async fileCodeSymbolFromCodePython(filePath: string, fileContentSinceHead: string) {
+        let dirName = path.dirname(filePath); // Get the directory name
+        let extName = path.extname(filePath); // Get the extension name
+        let newFileName = uuidV4(); // Your new file name without extension
+        let newFilePath = path.join(dirName, `${newFileName}${extName}`);
+        // write the content to this file for now
+        writeFileSync(newFilePath, fileContentSinceHead);
+        const codeSymbolInformationHackedTogether = await this.pythonServer.parseFile(newFilePath);
+        // delete the file at this point
+        fs.unlinkSync(newFilePath);
+        this.logger.info(
+            `[changes] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
+        );
+        const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+            codeSymbol.symbolName = codeSymbol.symbolName.replace(
+                newFileName,
+                path.basename(filePath).replace(extName, "")
+            );
+            codeSymbol.displayName = codeSymbol.displayName.replace(
+                newFileName,
+                path.basename(filePath).replace(extName, "")
+            );
+            return codeSymbol;
+        });
+        this.fileOpenedCodeSymbolTracked.set(filePath, {
+            codeSymbols: codeSymbolInformation,
+            workingDirectory: this.workingDirectory,
+            filePath: filePath,
+        });
+        // Now pretend to save the file so we load all the changes
+        await this.fileSaved(Uri.file(filePath), this.logger);
     }
 
     private async fileCodeSymbolFromCodeTS(filePath: string, fileContentSinceHead: string) {
@@ -146,6 +186,11 @@ export class TrackCodeSymbolChanges {
         ) {
             await this.fileCodeSymbolFromCodeTS(filePath, fileContentSinceHead);
         }
+        if (
+            fileExtension === ".py"
+        ) {
+            await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
+        }
     }
 
     private checkIfFileSaveCodeSymbolInformationIsStale(filePath: string): boolean {
@@ -190,6 +235,15 @@ export class TrackCodeSymbolChanges {
                 });
                 return data;
             }
+        }
+        if (
+            fileExtension === ".py"
+        ) {
+            const codeSymbolInformationHackedTogether = await this.pythonServer.parseFile(filePath);
+            this.fileSavedCodeSymbolTracked.set(filePath, {
+                codeSymbols: codeSymbolInformationHackedTogether,
+                timestamp: Date.now(),
+            });
         }
         return [];
     }
