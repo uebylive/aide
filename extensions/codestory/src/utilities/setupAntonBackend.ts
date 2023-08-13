@@ -128,18 +128,18 @@ export const writeConfigFileForAnton = async (
 	fs.writeFileSync(configPath, JSON.stringify(config));
 }
 
-export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string) {
+export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string): Promise<string> {
 	// Check vscode settings
 	const serverUrl = getContinueServerUrl();
 	if (serverUrl !== "http://localhost:42424") {
-		console.log("Continue server is being run manually, skipping start");
-		return;
+		console.log("CodeStory server is being run manually, skipping start");
+		return "http://localhost:42424";
 	}
 
 	// Check if server is already running
 	if (await checkOrKillRunningServer(serverUrl)) {
-		console.log("Continue server already running");
-		return;
+		console.log("CodeStory server already running");
+		return "http://localhost:42424";
 	}
 
 	console.log("Starting Aide server right now");
@@ -272,6 +272,7 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 
 	// Write the current version of vscode extension to a file called server_version.txt
 	fs.writeFileSync(serverVersionPath(extensionBasePath), getExtensionVersion());
+	return "http://localhost:42424";
 }
 
 
