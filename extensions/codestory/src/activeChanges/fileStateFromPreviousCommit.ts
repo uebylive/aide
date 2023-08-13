@@ -22,21 +22,16 @@ export const fileStateFromPreviousCommit = async (
     // First we need to get the list of files which changed by querying
     // git about it
     let fileList: string[] = [];
-    logger.info("Getting file list");
     try {
         const { stdout } = await promisify(exec)("git diff --name-only HEAD", { cwd: workingDirectory });
         fileList = stdout.split("\n").filter((file) => file !== "");
     } catch (error) {
-        logger.info("We got an error");
         logger.info((error as Error).toString());
     }
-    logger.info("got the file list");
-    logger.info(JSON.stringify(fileList));
 
     // Now that we the file list, lets get the content of the file at HEAD
     // so we have the initial state and the state of the file post HEAD
     // commit
-    logger.info("We are getting the previous file contents");
     const fileStateFromPreviousCommit: FileStateFromPreviousCommit[] = [];
     for (const file of fileList) {
         try {
@@ -49,6 +44,5 @@ export const fileStateFromPreviousCommit = async (
             logger.error((error as Error).toString());
         }
     }
-    logger.info("We got the previous file contents");
     return fileStateFromPreviousCommit;
 };

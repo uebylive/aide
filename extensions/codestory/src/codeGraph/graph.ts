@@ -5,6 +5,7 @@ import { getCodeSymbolList } from "../storage/indexer";
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from "../utilities/parseTypescript";
 import { PythonServer } from '../utilities/pythonServerClient';
 import { CodeSymbolInformation } from "../utilities/types";
+import { EventEmitter } from "events";
 
 
 
@@ -13,6 +14,10 @@ export class CodeGraph {
 
     constructor(nodes: CodeSymbolInformation[]) {
         this._nodes = nodes;
+    }
+
+    public addNodes(nodes: CodeSymbolInformation[]) {
+        this._nodes.push(...nodes);
     }
 
     public getNodeByLastName(
@@ -57,6 +62,7 @@ const parsePythonFilesForCodeSymbols = async (
     pythonServer: PythonServer,
     workingDirectory: string,
     filesToCheck: string[],
+    emitter: EventEmitter,
 ): Promise<CodeSymbolInformation[]> => {
     const codeSymbolInformationList: CodeSymbolInformation[] = [];
     for (let index = 0; index < filesToCheck.length; index++) {
@@ -67,6 +73,7 @@ const parsePythonFilesForCodeSymbols = async (
         const code = await pythonServer.parseFile(file);
         console.log("We are over here in python parsing the files");
         console.log(code);
+        emitter.emit("partialData", code);
         codeSymbolInformationList.push(...code);
     }
     return codeSymbolInformationList;
@@ -76,6 +83,7 @@ export const generateCodeGraph = async (
     projectManagement: TSMorphProjectManagement,
     pythonServer: PythonServer,
     workingDirectory: string,
+    emitter: EventEmitter,
 ): Promise<CodeGraph> => {
     const filesToTrack = await getFilesTrackedInWorkingDirectory(
         workingDirectory,
@@ -86,12 +94,14 @@ export const generateCodeGraph = async (
             project,
             workingDirectory,
         );
+        emitter.emit("partialData", codeSymbolInformationList);
         finalNodeList.push(...codeSymbolInformationList);
     });
     const pythonCodeSymbols = await parsePythonFilesForCodeSymbols(
         pythonServer,
         workingDirectory,
         filesToTrack,
+        emitter,
     );
     finalNodeList.push(...pythonCodeSymbols);
     return new CodeGraph(finalNodeList);
