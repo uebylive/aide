@@ -103,7 +103,7 @@ export class TrackCodeSymbolChanges {
         // delete the file at this point
         fs.unlinkSync(newFilePath);
         this.logger.info(
-            `[changes] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
+            `[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
         );
         const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
             codeSymbol.symbolName = codeSymbol.symbolName.replace(
@@ -130,7 +130,7 @@ export class TrackCodeSymbolChanges {
         if (tsProject === null) {
             return;
         }
-        this.logger.info(`[changes] We are going to track and create a source file ${filePath}`);
+        this.logger.info(`[changes][ts] We are going to track and create a source file ${filePath}`);
         let dirName = path.dirname(filePath); // Get the directory name
         let extName = path.extname(filePath); // Get the extension name
         let newFileName = "CODESTORY_RANDOM"; // Your new file name without extension
@@ -214,7 +214,7 @@ export class TrackCodeSymbolChanges {
             );
             return alreadyTrackedCodeSymbols ?? [];
         }
-        this.logger.info(`[track-code-symbols] We are going to track ${filePath}`);
+        this.logger.info(`[track-code-symbols][global] We are going to track ${filePath}`);
         if (
             fileExtension === ".ts" ||
             fileExtension === ".js" ||

@@ -4,6 +4,8 @@ import { CodeSymbolInformationEmbeddings } from "../utilities/types";
 import * as math from 'mathjs';
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
+    console.log("Whats the length of vecA", vecA.length);
+    console.log("Whats the length of vecB", vecB.length);
     if (vecA.length !== vecB.length) {
         return -1;
     }
@@ -23,6 +25,7 @@ export class EmbeddingsSearch {
     }
 
     public updateNodes(nodes: CodeSymbolInformationEmbeddings) {
+        console.log("Before updating we have " + this._nodes.length + " nodes");
         this._nodes.push(nodes);
         console.log("Whats the length of all code symbols: " + this._nodes.length);
     };
@@ -30,10 +33,13 @@ export class EmbeddingsSearch {
     public async generateNodesRelevantForUser(
         userQuery: string,
     ): Promise<CodeSymbolInformationEmbeddings[]> {
-        console.log("Whats the length of all code symbols: " + this._nodes.length);
+        console.log("[search] Whats the length of all code symbols: " + this._nodes.length);
+        const currentNodes = this._nodes;
+        console.log("[search][v2] Whats the length of all code symbols: " + currentNodes.length);
         const userQueryEmbedding = await generateEmbedding(userQuery);
 
-        const nodesWithSimilarity = this._nodes.map((node) => {
+        const nodesWithSimilarity = currentNodes.map((node) => {
+            console.log("Whats the current node we are going to search", node);
             const similarity = cosineSimilarity(
                 userQueryEmbedding,
                 node.codeSymbolEmbedding,
