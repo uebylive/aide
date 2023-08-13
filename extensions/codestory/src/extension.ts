@@ -1,4 +1,4 @@
-import { commands, env, ExtensionContext, window } from "vscode";
+import { commands, env, ExtensionContext, OutputChannel, window } from "vscode";
 import { CodeStoryStorage, loadOrSaveToStorage } from "./storage/types";
 import { indexRepository } from "./storage/indexer";
 import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
@@ -26,6 +26,40 @@ import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectorie
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { sleep } from './utilities/sleep';
+import winston from 'winston';
+
+
+class ProgressiveTrackSymbols {
+  private emitter: EventEmitter;
+
+  constructor() {
+    this.emitter = new EventEmitter();
+  }
+
+  async onLoadFromLastCommit(
+    trackCodeSymbolChanges: TrackCodeSymbolChanges,
+    workingDirectory: string,
+    logger: winston.Logger,
+  ) {
+    const filesChangedFromLastCommit = await fileStateFromPreviousCommit(
+      workingDirectory ?? "",
+      logger,
+    );
+
+    for (const fileChanged of filesChangedFromLastCommit) {
+      await trackCodeSymbolChanges.filesChangedSinceLastCommit(
+        fileChanged.filePath,
+        fileChanged.fileContent,
+        this.emitter,
+      );
+    }
+    trackCodeSymbolChanges.statusUpdated = true;
+  }
+
+  on(event: string, listener: (...args: any[]) => void) {
+    this.emitter.on(event, listener);
+  }
+}
 
 
 class ProgressiveGraphBuilder {
@@ -200,15 +234,18 @@ export async function activate(context: ExtensionContext) {
   const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
   const codeBlockDescriptionGenerator = new CodeBlockChangeDescriptionGenerator(logger);
   logger.info("[check 7]We are over here");
-  const filesChangedFromLastCommit = await fileStateFromPreviousCommit(rootPath ?? "", logger);
-  logger.info("[check 8]We are over here");
-
-  for (const fileChanged of filesChangedFromLastCommit) {
-    await trackCodeSymbolChanges.filesChangedSinceLastCommit(
-      fileChanged.filePath,
-      fileChanged.fileContent
+  const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
+  progressiveTrackSymbolsOnLoad.on("fileChanged", (fileChangedEvent) => {
+    trackCodeSymbolChanges.setFileOpenedCodeSymbolTracked(
+      fileChangedEvent.filePath,
+      fileChangedEvent.codeSymbols
     );
-  }
+  });
+  progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
+    trackCodeSymbolChanges,
+    rootPath ?? "",
+    logger,
+  );
   logger.info("[check 9]We are over here");
 
   // Also track the documents when they were last opened
