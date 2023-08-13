@@ -23,6 +23,7 @@ import { copySettings } from "./utilities/copySettings";
 
 import { EventEmitter } from "events";
 import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectories";
+import { startAidePythonBackend } from './utilities/setupAntonBackend';
 
 class ProgressiveIndexer {
   private emitter: EventEmitter;
@@ -65,6 +66,10 @@ export async function activate(context: ExtensionContext) {
     window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
     return;
   }
+  await startAidePythonBackend(
+    context.globalStorageUri.fsPath,
+    rootPath,
+  );
   const repoName = await getGitRepoName(rootPath);
   const repoHash = await getGitCurrentHash(rootPath);
   // Get the storage object here
