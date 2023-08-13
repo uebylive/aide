@@ -1,7 +1,9 @@
 // We have to generate the graph of the codebase here, so we can query for nodes
 
+import { getFilesTrackedInWorkingDirectory } from '../git/helper';
 import { getCodeSymbolList } from "../storage/indexer";
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from "../utilities/parseTypescript";
+import { PythonServer } from '../utilities/pythonServerClient';
 import { CodeSymbolInformation } from "../utilities/types";
 
 
@@ -51,9 +53,28 @@ export class CodeGraph {
     }
 }
 
-export const generateCodeGraph = (
+const parsePythonFilesForCodeSymbols = async (
+    pythonServer: PythonServer,
+    workingDirectory: string,
+    filesToCheck: string[],
+): Promise<CodeSymbolInformation[]> => {
+    const codeSymbolInformationList: CodeSymbolInformation[] = [];
+    for (let index = 0; index < filesToCheck.length; index++) {
+        const file = filesToCheck[index];
+        const code = await pythonServer.parseFile(file);
+        codeSymbolInformationList.push(...code);
+    }
+    return codeSymbolInformationList;
+};
+
+export const generateCodeGraph = async (
     projectManagement: TSMorphProjectManagement,
-): CodeGraph => {
+    pythonServer: PythonServer,
+    workingDirectory: string,
+): Promise<CodeGraph> => {
+    const filesToTrack = await getFilesTrackedInWorkingDirectory(
+        workingDirectory,
+    );
     const finalNodeList: CodeSymbolInformation[] = [];
     projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
         const codeSymbolInformationList = await getCodeSymbolList(
@@ -62,5 +83,11 @@ export const generateCodeGraph = (
         );
         finalNodeList.push(...codeSymbolInformationList);
     });
+    const pythonCodeSymbols = await parsePythonFilesForCodeSymbols(
+        pythonServer,
+        workingDirectory,
+        filesToTrack,
+    );
+    finalNodeList.push(...pythonCodeSymbols);
     return new CodeGraph(finalNodeList);
 }
