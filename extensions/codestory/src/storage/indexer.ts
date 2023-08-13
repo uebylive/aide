@@ -11,10 +11,11 @@ import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from "../utili
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from "../utilities/parseTypescript";
 import { generateEmbedding } from "../llm/embeddings/openai";
 import { ExtensionContext } from "vscode";
-import { getGitCurrentHash, getGitRepoName } from "../git/helper";
+import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from "../git/helper";
 import logger from "../logger";
 import EventEmitter = require('events');
 import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
+import { PythonServer } from '../utilities/pythonServerClient';
 // import logger from "../logger";
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -151,9 +152,38 @@ const generateAndStoreEmbeddings = async (
 };
 
 
+const generateAndStoreEmbeddingsForPythonFiles = async (
+    pythonClient: PythonServer,
+    workingDirectory: string,
+    filesToTrack: string[],
+    emitter: EventEmitter,
+    globalStorageUri: string,
+): Promise<CodeSymbolInformationEmbeddings[]> => {
+    const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+    for (let index = 0; index < filesToTrack.length; index++) {
+        const filePath = filesToTrack[index];
+        if (!filePath.endsWith(".py")) {
+            continue;
+        }
+        const codeSymbols = await pythonClient.parseFile(
+            filePath,
+        );
+        const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
+            codeSymbols,
+            workingDirectory,
+            globalStorageUri
+        );
+        emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
+        finalCodeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
+    }
+    return finalCodeSymbolWithEmbeddings;
+};
+
+
 export const indexRepository = async (
     storage: CodeStoryStorage,
     projectManagement: TSMorphProjectManagement,
+    pythonClient: PythonServer,
     globalStorageUri: string,
     workingDirectory: string,
     emitter: EventEmitter,
@@ -165,6 +195,7 @@ export const indexRepository = async (
     // ones
     // TODO(codestory): We need to only look at the changes later and index them
     // for now this is fine.
+    const filesToTrack = await getFilesTrackedInWorkingDirectory(workingDirectory);
     let codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
     logger.info("[indexing_start] Starting indexing", storage.isIndexed);
     if (!storage.isIndexed) {
@@ -184,6 +215,15 @@ export const indexRepository = async (
             });
             codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
         });
+        // parse the python files
+        const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
+            pythonClient,
+            workingDirectory,
+            filesToTrack,
+            emitter,
+            globalStorageUri,
+        );
+        codeSymbolWithEmbeddings.push(...pythonSymbols);
         storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
         storage.isIndexed = true;
         saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
@@ -207,6 +247,15 @@ export const indexRepository = async (
                 emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
                 codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
             });
+            // parse the python files
+            const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
+                pythonClient,
+                workingDirectory,
+                filesToTrack,
+                emitter,
+                globalStorageUri,
+            );
+            codeSymbolWithEmbeddings.push(...pythonSymbols);
             storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
             storage.isIndexed = true;
             saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);

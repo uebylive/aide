@@ -15,7 +15,7 @@ export class PythonServer {
 		this._serverUrl = serverUrl;
 	}
 
-	async parseFile(filePath: string): Promise<CodeSymbolInformationEmbeddings[]> {
+	async parseFile(filePath: string): Promise<CodeSymbolInformation[]> {
 		const endpoint = `${this._serverUrl}/api/get_file_information_for_plugin`;
 		try {
 			const { data } = await axios.post(endpoint, {
@@ -23,18 +23,7 @@ export class PythonServer {
 				file_path: filePath,
 			});
 			const codeSymbols = JSON.parse(data)["code_symbols"] as CodeSymbolInformation[];
-			const codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
-			for (const codeSymbol of codeSymbols) {
-				codeSymbolWithEmbeddings.push({
-					codeSymbolInformation: codeSymbol,
-					codeSymbolEmbedding: await generateEmbedding(generateContextForEmbedding(
-						codeSymbol.codeSnippet.code,
-						codeSymbol.fsFilePath,
-						codeSymbol.globalScope,
-					)),
-				});
-			}
-			return codeSymbolWithEmbeddings;
+			return codeSymbols;
 		} catch (e) {
 			console.log(e);
 		}

@@ -50,6 +50,17 @@ export const getGitCurrentHash = async (workingDirectory: string): Promise<strin
     }
 };
 
+export const getFilesTrackedInWorkingDirectory = async (workingDirectory: string): Promise<string[]> => {
+    try {
+        const { stdout } = await runCommandAsync(workingDirectory, "git", ["ls-files"]);
+        logger.info("Whats the stdout");
+        logger.info(stdout);
+        return stdout.trim().split("\n").filter((x) => x.length > 0);
+    } catch (error) {
+        return [];
+    }
+};
+
 // Example usage:
 // (async () => {
 //     const remoteUrl = await getGitRemoteUrl();

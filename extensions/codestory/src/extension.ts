@@ -24,6 +24,7 @@ import { copySettings } from "./utilities/copySettings";
 import { EventEmitter } from "events";
 import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectories";
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
+import { PythonServer } from './utilities/pythonServerClient';
 
 class ProgressiveIndexer {
   private emitter: EventEmitter;
@@ -35,12 +36,14 @@ class ProgressiveIndexer {
   async indexRepository(
     storage: CodeStoryStorage,
     projectManagement: TSMorphProjectManagement,
+    pythonServer: PythonServer,
     globalStorageUri: string,
     workingDirectory: string
   ) {
     await indexRepository(
       storage,
       projectManagement,
+      pythonServer,
       globalStorageUri,
       workingDirectory,
       this.emitter
@@ -66,7 +69,7 @@ export async function activate(context: ExtensionContext) {
     window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
     return;
   }
-  await startAidePythonBackend(
+  const serverUrl = await startAidePythonBackend(
     context.globalStorageUri.fsPath,
     rootPath,
   );
@@ -95,8 +98,9 @@ export async function activate(context: ExtensionContext) {
   indexer.indexRepository(
     codeStoryStorage,
     projectManagement,
+    new PythonServer(serverUrl),
     context.globalStorageUri.fsPath,
-    rootPath
+    rootPath,
   );
 
   // Get the code graph
