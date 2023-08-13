@@ -121,6 +121,7 @@ export async function activate(context: ExtensionContext) {
       agentViewProvider,
       embeddingsIndex,
       projectManagement,
+      pythonServer,
       codeGraph,
       repoName,
       repoHash,

@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import { generateChatCompletion } from "./debugging";
 import { ToolingEventCollection } from "../../timeline/events/collection";
 import { runCommandAsync } from "../../utilities/commandRunner";
+import { PythonServer } from '../../utilities/pythonServerClient';
 
 export const generateCodeSymbolsForQueries = async (
     queries: string[],
@@ -38,6 +39,7 @@ export const generateCodeSymbolsForQueries = async (
 export const generateFileInformationSummary = async (
     codeSymbolInformationList: CodeSymbolInformation[],
     tsMorphProjects: TSMorphProjectManagement,
+    pythonServer: PythonServer,
     workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
     // We want to get all the files being referenced here and then take all
@@ -53,21 +55,34 @@ export const generateFileInformationSummary = async (
     // Now that we have the fspath for each of them, we can generate the
     // file code symbol information
     for (let index = 0; index < fileList.length; index++) {
-        const project = tsMorphProjects.getTsMorphProjectForFile(fileList[index]);
-        if (!project) {
-            continue;
+        // get the file extension
+        const fileExtension = fileList[index].split(".").reverse()[0];
+        if (fileExtension === "py") {
+            const codeSymbols = await pythonServer.parseFile(
+                fileList[index],
+            );
+            fileCodeSymbolInformationList.push({
+                filePath: fileList[index],
+                codeSymbols: codeSymbols,
+                workingDirectory: workingDirectory,
+            });
+        } else if (fileExtension === "ts" || fileExtension === "tsx" || fileExtension === "js" || fileExtension === "jsx") {
+            const project = tsMorphProjects.getTsMorphProjectForFile(fileList[index]);
+            if (!project) {
+                continue;
+            }
+            const codeSymbols = parseFileUsingTsMorph(
+                fileList[index],
+                project,
+                workingDirectory,
+                fileList[index]
+            );
+            fileCodeSymbolInformationList.push({
+                filePath: fileList[index],
+                codeSymbols: codeSymbols,
+                workingDirectory: workingDirectory,
+            });
         }
-        const codeSymbols = parseFileUsingTsMorph(
-            fileList[index],
-            project,
-            workingDirectory,
-            fileList[index]
-        );
-        fileCodeSymbolInformationList.push({
-            filePath: fileList[index],
-            codeSymbols: codeSymbols,
-            workingDirectory: workingDirectory,
-        });
     }
     return fileCodeSymbolInformationList;
 };
@@ -279,6 +294,7 @@ export const executeTestHarness = async (
     codeSymbolNameMaybe: string,
     codeGraph: CodeGraph,
     tsMorphProjects: TSMorphProjectManagement,
+    pythonServer: PythonServer,
     workingDirectory: string,
 ): Promise<number> => {
     const codeNode = getCodeNodeForName(
@@ -287,6 +303,11 @@ export const executeTestHarness = async (
     );
     if (!codeNode) {
         return 1;
+    }
+
+    // Early bail here if this is a python file
+    if (codeNode.fsFilePath.endsWith(".py")) {
+        return 0;
     }
 
     const project = tsMorphProjects.getTsMorphProjectForFile(codeNode.fsFilePath);
