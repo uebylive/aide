@@ -4,7 +4,7 @@ import { indexRepository } from "./storage/indexer";
 import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
 import { workspace } from "vscode";
 import logger from "./logger";
-import { generateCodeGraph } from "./codeGraph/graph";
+import { CodeGraph, generateCodeGraph } from "./codeGraph/graph";
 import { EmbeddingsSearch } from "./codeGraph/embeddingsSearch";
 import postHogClient from "./posthog/client";
 import { AgentViewProvider } from "./views/AgentView";
@@ -26,6 +26,32 @@ import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectorie
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { sleep } from './utilities/sleep';
+
+
+class ProgressiveGraphBuilder {
+  private emitter: EventEmitter;
+
+  constructor() {
+    this.emitter = new EventEmitter();
+  }
+
+  async loadGraph(
+    projectManagement: TSMorphProjectManagement,
+    pythonServer: PythonServer,
+    workingDirectory: string,
+  ) {
+    await generateCodeGraph(
+      projectManagement,
+      pythonServer,
+      workingDirectory,
+      this.emitter,
+    );
+  }
+
+  on(event: string, listener: (...args: any[]) => void) {
+    this.emitter.on(event, listener);
+  }
+}
 
 class ProgressiveIndexer {
   private emitter: EventEmitter;
@@ -86,18 +112,13 @@ export async function activate(context: ExtensionContext) {
   logger.info(rootPath);
   // Ts-morph project management
   const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
-  logger.info("[CodeStory] Active directories read");
   logger.info(activeDirectories);
   const projectManagement = await getProject(activeDirectories);
-  logger.info("[CodeStory] Project management created");
 
   // Create an instance of the progressive indexer
   const indexer = new ProgressiveIndexer();
-  logger.info("[CodeStory] Indexing complete");
   const embeddingsIndex = new EmbeddingsSearch([]);
   indexer.on("partialData", (partialData) => {
-    logger.info("[CodeStory] Partial data received");
-    // Use partialData to update embeddingsIndex
     embeddingsIndex.updateNodes(partialData);
   });
   indexer.indexRepository(
@@ -108,8 +129,16 @@ export async function activate(context: ExtensionContext) {
     rootPath,
   );
 
-  // Get the code graph
-  const codeGraph = await generateCodeGraph(projectManagement, pythonServer, rootPath);
+  const progressiveGraphBuilder = new ProgressiveGraphBuilder();
+  const codeGraph = new CodeGraph([]);
+  progressiveGraphBuilder.on("partialData", (partialData) => {
+    codeGraph.addNodes(partialData);
+  });
+  progressiveGraphBuilder.loadGraph(
+    projectManagement,
+    pythonServer,
+    rootPath,
+  );
 
   // Register the agent view provider
   const agentViewProvider = new AgentViewProvider(context.extensionUri);
@@ -167,9 +196,12 @@ export async function activate(context: ExtensionContext) {
     rootPath ?? "",
     logger
   );
+  logger.info("[check 6]We are over here");
   const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
   const codeBlockDescriptionGenerator = new CodeBlockChangeDescriptionGenerator(logger);
+  logger.info("[check 7]We are over here");
   const filesChangedFromLastCommit = await fileStateFromPreviousCommit(rootPath ?? "", logger);
+  logger.info("[check 8]We are over here");
 
   for (const fileChanged of filesChangedFromLastCommit) {
     await trackCodeSymbolChanges.filesChangedSinceLastCommit(
@@ -177,6 +209,7 @@ export async function activate(context: ExtensionContext) {
       fileChanged.fileContent
     );
   }
+  logger.info("[check 9]We are over here");
 
   // Also track the documents when they were last opened
   context.subscriptions.push(
@@ -185,6 +218,8 @@ export async function activate(context: ExtensionContext) {
       await trackCodeSymbolChanges.fileOpened(uri, logger);
     })
   );
+
+  logger.info("[check 10]We are over here");
 
   // Now we parse the documents on save as well
   context.subscriptions.push(
