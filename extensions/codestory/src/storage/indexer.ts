@@ -165,6 +165,7 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
         if (!filePath.endsWith(".py")) {
             continue;
         }
+        console.log("Parsing python file" + filePath);
         const codeSymbols = await pythonClient.parseFile(
             filePath,
         );
@@ -173,7 +174,9 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
             workingDirectory,
             globalStorageUri
         );
-        emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
+        codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+            emitter.emit("partialData", codeSymbolWithEmbeddings);
+        });
         finalCodeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
     }
     return finalCodeSymbolWithEmbeddings;
@@ -211,7 +214,7 @@ export const indexRepository = async (
             codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
                 logger.info("[indexing_start] Starting indexing for project");
                 logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
-                emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
+                emitter.emit("partialData", codeSymbolWithEmbeddings);
             });
             codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
         });

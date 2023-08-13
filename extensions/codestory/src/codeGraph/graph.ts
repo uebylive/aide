@@ -61,7 +61,12 @@ const parsePythonFilesForCodeSymbols = async (
     const codeSymbolInformationList: CodeSymbolInformation[] = [];
     for (let index = 0; index < filesToCheck.length; index++) {
         const file = filesToCheck[index];
+        if (!file.endsWith(".py")) {
+            continue;
+        }
         const code = await pythonServer.parseFile(file);
+        console.log("We are over here in python parsing the files");
+        console.log(code);
         codeSymbolInformationList.push(...code);
     }
     return codeSymbolInformationList;

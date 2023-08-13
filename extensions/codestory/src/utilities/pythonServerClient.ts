@@ -22,10 +22,14 @@ export class PythonServer {
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				file_path: filePath,
 			});
-			const codeSymbols = JSON.parse(data)["code_symbols"] as CodeSymbolInformation[];
+			console.log("Whats the data after parsing the file");
+			console.log(data);
+			const codeSymbols = JSON.parse(data).code_symbols as CodeSymbolInformation[];
+			console.log("How many code symbols do we have: " + codeSymbols.length);
 			return codeSymbols;
 		} catch (e) {
 			console.log(e);
+			return [];
 		}
 		return [];
 	}
