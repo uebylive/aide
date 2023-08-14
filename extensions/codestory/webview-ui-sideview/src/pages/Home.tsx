@@ -70,7 +70,6 @@ export const Home = ({ setPage }: HomeProps) => {
 
 	return (
 		<div className='min-h-full w-full flex flex-col p-4'>
-			{/* @ts-ignore */}
 			<VSCodeTextArea
 				autofocus
 				className='w-full'
@@ -84,7 +83,6 @@ export const Home = ({ setPage }: HomeProps) => {
 				<>
 					{isSearching && searchResults.length === 0 ? (
 						<div className='w-full flex align-middle justify-center mt-24'>
-							{/* @ts-ignore */}
 							<VSCodeProgressRing />
 						</div>
 					) : (
@@ -106,7 +104,6 @@ export const Home = ({ setPage }: HomeProps) => {
 											{ '--linestart': result.lineStart } as React.CSSProperties
 										}
 										dangerouslySetInnerHTML={{
-											// @ts-ignore
 											__html: DOMPurify.sanitize(result.matchedCode, {
 												RETURN_TRUSTED_TYPE: true,
 											}),

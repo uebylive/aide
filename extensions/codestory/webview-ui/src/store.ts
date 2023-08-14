@@ -3,12 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { create } from 'zustand';
-import { AntonData, AntonDataResponse } from './types';
 
-export const useChangedAntonDataStore = create<AntonDataResponse>((set) => ({
-	antonData: {
-		events: [],
-		saveDestination: '',
-	},
-	setAntonData: (newAntonData: AntonData) => set({ antonData: newAntonData }),
+export const useDebuggingStore = create<{
+	exploration: number;
+	setExploration: (exploration: number) => void;
+}>((set) => ({
+	exploration: 0,
+	setExploration: (exploration) => set({ exploration }),
 }));

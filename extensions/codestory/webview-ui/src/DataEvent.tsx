@@ -2,17 +2,15 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import {
-	IconCornerDownRight,
-} from '@tabler/icons-react';
+import { IconCornerDownRight } from '@tabler/icons-react';
 
 import { Card } from './components/Card/Card';
 import { Markdown } from './components/Markdown/Markdown';
 import { AntonEvent } from './types';
 import { Terminal } from './components/Terminal/Terminal';
 import { DiffView } from './components/DiffView/DiffView';
-import { useExplorationContext } from './context';
 import { Breadcrumbs } from './components/Breadcrumbs/Breadcrumbs';
+import { useDebuggingStore } from './store';
 
 type DataEventProps = {
 	data: AntonEvent;
@@ -69,7 +67,7 @@ export const DataEvent = ({
 	originalPrompt,
 	isFirst,
 }: DataEventProps) => {
-	const { exploration, setExploration } = useExplorationContext();
+	const { exploration, setExploration } = useDebuggingStore();
 
 	const renderCardContents = () => {
 		switch (data.eventType) {
@@ -96,9 +94,8 @@ export const DataEvent = ({
 										</summary>
 										<Markdown
 											className='py-4'
-											children={`\`\`\`${result.fsFilePath.split('.').pop()}\n${
-												result.codeSnippet.code
-											}\n\`\`\``}
+											children={`\`\`\`${result.fsFilePath.split('.').pop()}\n${result.codeSnippet.code
+												}\n\`\`\``}
 										/>
 									</details>
 								</div>
@@ -112,13 +109,11 @@ export const DataEvent = ({
 						{(data.codeModificationInstructionList ?? []).map((_, i) => (
 							<div key={i} className='box-content flex flex-none snap-center'>
 								<div
-									className={`py-8 px-32 border cursor-pointer ${
-										exploration === i
-											? 'text-cs-textPrimary'
-											: 'text-cs-textSecondary'
-									} hover:text-cs-textPrimary ${
-										exploration === i ? 'font-bold' : ''
-									}`}
+									className={`py-8 px-32 border cursor-pointer ${exploration === i
+										? 'text-cs-textPrimary'
+										: 'text-cs-textSecondary'
+										} hover:text-cs-textPrimary ${exploration === i ? 'font-bold' : ''
+										}`}
 									onClick={() => setExploration(i)}
 								>
 									<p>Exploration {i + 1}</p>
@@ -180,9 +175,8 @@ export const DataEvent = ({
 				return (
 					<div>
 						<Terminal
-							children={`\`\`\`sh\n\n> ${data.args?.join(' ')}\n\n${
-								data.stdout
-							}\n\`\`\``}
+							children={`\`\`\`sh\n\n> ${data.args?.join(' ')}\n\n${data.stdout
+								}\n\`\`\``}
 						/>
 					</div>
 				);

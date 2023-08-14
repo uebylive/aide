@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import ReactDiffViewer from 'react-diff-viewer-continued';
 
+import { Markdown } from '../Markdown/Markdown';
+
 type GitDiffProps = {
 	gitDiff: string;
 	className?: string;
@@ -12,12 +14,16 @@ type GitDiffProps = {
 export const DiffView = ({ gitDiff, className }: GitDiffProps) => {
 	// Extract the ORIGINAL and UPDATED parts
 	const parts = gitDiff.split('====');
+	if (parts.length === 1) {
+		return <Markdown className={`${className} p-4`}>{gitDiff}</Markdown>;
+	}
+
 	const original = parts[0]
 		.replace('<<<< ORIGINAL\n', '')
 		.replace('```\n', '')
 		.replace(/^\n|\n$/g, '');
 	const updated = parts[1]
-		.replace('>>>> UPDATED\n```\n', '')
+		.replace('>>>> UPDATED\n```', '')
 		.replace(/^\n|\n$/g, '');
 
 	return (

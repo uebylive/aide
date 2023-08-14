@@ -2,44 +2,33 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
+import { EventData } from '@estruyf/vscode';
+import { Messenger } from '@estruyf/vscode/dist/client';
 
 import { DataEvent } from './DataEvent';
 import { useAntonData } from './hooks/useAntonData';
-import { useExplorationContext } from './context';
 import { ReactComponent as CSLogo } from './assets/cs-logomark.svg';
-import { EventData } from '@estruyf/vscode';
-import { Messenger } from '@estruyf/vscode/dist/client';
-import { useChangedAntonDataStore } from './store';
+import { useDebuggingStore } from './store';
 
 function App() {
 	const [prompt, setPrompt] = useState('');
 	const [promptForSubmission, setPromptForSubmission] = useState('');
-	const { exploration } = useExplorationContext();
-	const { setAntonData, antonData } = useChangedAntonDataStore();
-	const { originalPrompt } = useAntonData(promptForSubmission);
+	const { originalPrompt, antonData, setAntonData } = useAntonData(promptForSubmission);
+	const ref = useRef<HTMLDivElement>(null);
+	const { exploration, setExploration } = useDebuggingStore();
 
-	useEffect(() => {
-		const listener = (message: MessageEvent<EventData<unknown>>) => {
-			console.log('[debugging] What is the message', message);
-			const { command, payload } = message.data;
-			if (command === 'sendPrompt') {
-				console.log('Whats the payload');
-				console.log(payload);
-				console.log('We are done');
-				setAntonData(payload as any);
-				console.log('are we done here');
-			}
-		};
+	const listener = (message: MessageEvent<EventData<unknown>>) => {
+		console.log('[debugging] What is the message', message);
+		const { command, payload } = message.data;
+		if (command === 'sendPrompt') {
+			console.log('Whats the payload');
+			console.log(payload);
+			setAntonData(payload as any);
+		}
+	};
 
-		console.log('Listening to messages');
-		Messenger.listen(listener);
-
-		return () => {
-			console.log('Unregistering listener...');
-			Messenger.unlisten(listener);
-		};
-	}, [setAntonData]);
+	Messenger.listen(listener);
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === 'Enter' && !e.shiftKey) {
@@ -47,6 +36,22 @@ function App() {
 			e.preventDefault();
 		}
 	};
+
+	useEffect(() => {
+		if (!antonData) {
+			return;
+		}
+
+		// Get last element of antonData.events
+		const data = antonData.events[antonData.events.length - 1];
+		if (!!data.executionEventId && data.executionEventId !== exploration.toString()) {
+			setExploration(Number(data.executionEventId));
+		}
+
+		if (ref.current) {
+			ref.current.scrollIntoView({ behavior: 'smooth' });
+		}
+	}, [antonData]);
 
 	return (
 		<main className='bg-cs-bgPrimary min-h-screen'>
@@ -72,15 +77,27 @@ function App() {
 				<div className='flex flex-col'>
 					{antonData && antonData.events.length > 0
 						? antonData.events
+							.filter((ev) => ev.eventType !== 'initialThinking')
 							.filter(
-								(ev) =>
-									ev.eventType !== 'initialThinking' &&
-									(!ev.executionEventId ||
-										ev.executionEventId === exploration.toString())
+								(ev) => !ev.executionEventId || ev.executionEventId === exploration.toString()
 							)
 							.map((e, i) => {
 								return (
-									<div key={e.eventId}>
+									<div
+										key={e.eventId}
+										ref={
+											i ===
+												antonData.events
+													.filter((ev) => ev.eventType !== 'initialThinking')
+													.filter(
+														(ev) =>
+															!ev.executionEventId || ev.executionEventId === exploration.toString()
+													).length -
+												1
+												? ref
+												: undefined
+										}
+									>
 										<DataEvent
 											originalPrompt={originalPrompt}
 											data={e}

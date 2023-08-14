@@ -44,9 +44,8 @@ export const Commit = () => {
 			files: commitPrepData.changedFiles,
 			message: changeDescriptions.current
 				.map((change, index) => {
-					return `${change}${
-						changeReasons[index] !== '' ? `\n${changeReasons[index]}` : ''
-					}`;
+					return `${change}${changeReasons[index] !== '' ? `\n${changeReasons[index]}` : ''
+						}`;
 				})
 				.join('\n\n'),
 		};
@@ -58,7 +57,6 @@ export const Commit = () => {
 	return (
 		<div className='mx-3 mb-12 flex flex-col min-h-full text-vscode-sideBar-foreground'>
 			<p className='text-sm'>Summary</p>
-			{/* @ts-ignore */}
 			<VSCodeTextField
 				value={summary}
 				onInput={(e) => setSummary((e.target as HTMLTextAreaElement).value)}
@@ -88,7 +86,6 @@ export const Commit = () => {
 					</div>
 				))}
 			</div>
-			{/* @ts-ignore */}
 			<VSCodeButton className='mt-4' onClick={handleSubmit}>
 				Commit
 			</VSCodeButton>

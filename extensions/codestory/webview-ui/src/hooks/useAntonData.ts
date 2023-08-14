@@ -75,10 +75,15 @@ const fixReferenceLookupOrder = (antonData: AntonData) => {
 // Return a single event with `eventType` as `exploring_node_dfs` where the `code_symbol_reference` array
 // contains all the `code_symbol_reference` from all the `exploring_node_dfs` events. Also add the
 // `event_context` into each entry of the `code_symbol_reference` array.
-const coalesceNodeExplorationEvets = (antonData: AntonData) => {
+const coalesceNodeExplorationEvets = (antonData: AntonData): AntonData => {
 	const exploringNodeDfsEvents = antonData.events.filter(
 		(event) => event.eventType === 'exploringNodeDfs'
 	);
+
+	if (exploringNodeDfsEvents.length === 0) {
+		return antonData;
+	}
+
 	const codeSymbolReference = exploringNodeDfsEvents.reduce(
 		(acc, event) => [
 			...(acc ?? []),
@@ -91,10 +96,16 @@ const coalesceNodeExplorationEvets = (antonData: AntonData) => {
 	);
 
 	return {
-		...exploringNodeDfsEvents[0],
-		eventType: 'getReferencesForCodeNode',
-		code_symbol_reference: codeSymbolReference,
-	} as AntonData['events'][0];
+		...antonData,
+		events: [
+			...antonData.events,
+			{
+				...exploringNodeDfsEvents[0],
+				eventType: 'getReferencesForCodeNode',
+				codeSymbolReference,
+			},
+		],
+	};
 };
 
 const processAntonData = (antonData: AntonData): AntonData => {
@@ -102,11 +113,7 @@ const processAntonData = (antonData: AntonData): AntonData => {
 		(event) =>
 			event.eventType !== 'getReferencesForCodeNode' && event.eventType !== 'initialThinking'
 	);
-	const coalescedNodeExplorationEvent = coalesceNodeExplorationEvets({
-		...antonData,
-		events: filteredEvents,
-	});
-	const filteredData = { ...antonData, events: [...filteredEvents, coalescedNodeExplorationEvent] };
+	const filteredData = coalesceNodeExplorationEvets({ ...antonData, events: filteredEvents });
 	const sortedData = sortEvents(filteredData);
 	const fixedData = fixReferenceLookupOrder(sortedData);
 	return fixedData;
@@ -115,7 +122,6 @@ const processAntonData = (antonData: AntonData): AntonData => {
 export const useAntonData = (prompt: string) => {
 	const [originalPrompt, setOriginalPrompt] = useState<string>('');
 	const [antonData, setAntonData] = useState<AntonData | undefined>();
-	console.log(prompt);
 
 	useEffect(() => {
 		if (!prompt) { return; }
@@ -123,64 +129,45 @@ export const useAntonData = (prompt: string) => {
 		console.log('Sending message to the extension');
 		let interval: NodeJS.Timeout;
 
-		messageHandler.send('sendPrompt', {
-			prompt,
-		});
-
-		setOriginalPrompt(prompt);
-
-		// messageHandler
-		//   .request<any>('readData')
-		//   .then((data: AntonData) => {
-		//     console.log('Received data from the extension', data);
-		//     setOriginalPrompt(getOriginalPrompt(data));
-		//     const sortedData = processAntonData(data);
-		//     // Set interval and timeout to simulate loading. Remove this in production.
-		//     // Load the events one at a time, with a random delay between 1 and 5 seconds.
-		//     // This is to simulate the loading of events in the UI.
-		//     interval = setInterval(() => {
-		//       const event = sortedData.events.shift();
-		//       if (event) {
-		//         setAntonData((prevData) => {
-		//           return {
-		//             saveDestination: prevData?.saveDestination ?? '',
-		//             events: [...(prevData?.events ?? []), event],
-		//           };
-		//         });
-		//       }
-		//     }, Math.floor(Math.random() * 1000) + 0);
-		//   })
-		//   .catch((err) => {
-		//     console.log('Error while reading data', err);
-		//     // If environment is development, load the JSON data from the local file
-		//     if (process.env.NODE_ENV === 'development') {
-		//       import('../mocks/sample_test.json').then((sampleData) => {
-		//         console.log('Received data from local file', sampleData);
-		//         const data = sampleData.default as unknown as AntonData;
-		//         setOriginalPrompt(getOriginalPrompt(data));
-		//         const sortedData = processAntonData(data);
-		//         // Set interval and timeout to simulate loading. Remove this in production.
-		//         // Load the events one at a time, with a random delay between 1 and 5 seconds.
-		//         // This is to simulate the loading of events in the UI.
-		//         interval = setInterval(() => {
-		//           const event = sortedData.events.shift();
-		//           if (event) {
-		//             setAntonData((prevData) => {
-		//               return {
-		//                 saveDestination: prevData?.saveDestination ?? '',
-		//                 events: [...(prevData?.events ?? []), event],
-		//               };
-		//             });
-		//           }
-		//         }, Math.floor(Math.random() * 4000) + 1000);
-		//       });
-		//     }
+		// try {
+		//   messageHandler.send("sendPrompt", {
+		//     prompt,
 		//   });
+		//   setOriginalPrompt(prompt);
+		// } catch (err) {
+		// console.log("Error while reading data", err);
+		// If environment is development, load the JSON data from the local file
+		// if (process.env.NODE_ENV === "development") {
+		import('../mocks/sample_test.json').then((sampleData) => {
+			console.log('Received data from local file', sampleData);
+			const data = sampleData.default as unknown as AntonData;
+			setOriginalPrompt(getOriginalPrompt(data));
+			const sortedData = processAntonData(data);
+			// Set interval and timeout to simulate loading. Remove this in production.
+			// Load the events one at a time, with a random delay between 1 and 5 seconds.
+			// This is to simulate the loading of events in the UI.
+			// Clear the interval once all the events are loaded.
+			interval = setInterval(() => {
+				const event = sortedData.events.shift();
+				if (event) {
+					setAntonData((prevData) => {
+						return {
+							saveDestination: prevData?.saveDestination ?? '',
+							events: [...(prevData?.events ?? []), event],
+						};
+					});
+				} else {
+					clearInterval(interval);
+				}
+			}, Math.floor(Math.random() * 5000) + 3000);
+		});
+		// }
+		// }
 
-		// return () => {
-		//   clearInterval(interval);
-		// };
+		return () => {
+			clearInterval(interval);
+		};
 	}, [prompt]);
 
-	return { antonData, originalPrompt };
+	return { antonData, setAntonData, originalPrompt };
 };

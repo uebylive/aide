@@ -128,7 +128,6 @@ export const TimeLine = (): JSX.Element => {
 		e.stopPropagation();
 		e.preventDefault();
 
-		// @ts-ignore
 		const group = e.currentTarget?.value;
 		if (group) {
 			setGroupedChanges((oldChanges) => {
@@ -143,7 +142,7 @@ export const TimeLine = (): JSX.Element => {
 								if (
 									changes[changeGroup].files[file] &&
 									changes[changeGroup].selection.reason !==
-										'STAGED AUTOMATICALLY'
+									'STAGED AUTOMATICALLY'
 								) {
 									changes[changeGroup].selection = {
 										selected: newSelectedState,
@@ -202,9 +201,8 @@ export const TimeLine = (): JSX.Element => {
 				<p>CHANGES YOU HAVE DONE</p>
 				{changedCodeSymbols.length > 0 && (
 					<p
-						className={`cursor-pointer ${
-							commitMode ? 'text-vscode-button-background' : ''
-						}`}
+						className={`cursor-pointer ${commitMode ? 'text-vscode-button-background' : ''
+							}`}
 						onClick={toggleCommitMode}
 					>
 						{commitMode ? 'CANCEL' : 'COMMIT'}
@@ -227,7 +225,6 @@ export const TimeLine = (): JSX.Element => {
 												<p className='font-bold text-codestory-primary align-middle'>
 													{value.selection.reason}
 												</p>
-												{/* @ts-ignore */}
 												<VSCodeCheckbox
 													checked={value.selection.selected}
 													onClick={toggleGroupForCommit}
@@ -248,7 +245,7 @@ export const TimeLine = (): JSX.Element => {
 													{getRelativeTime(
 														value.reduce((prev, next) =>
 															prev.changeTime.getTime() <
-															next.changeTime.getTime()
+																next.changeTime.getTime()
 																? prev
 																: next
 														).changeTime
@@ -270,20 +267,19 @@ export const TimeLine = (): JSX.Element => {
 																}
 															>
 																<span
-																	className={`inline-block w-5 mr-2 text-center ${
-																		change.changeType === 'added'
-																			? 'text-green-500'
-																			: change.changeType === 'removed'
+																	className={`inline-block w-5 mr-2 text-center ${change.changeType === 'added'
+																		? 'text-green-500'
+																		: change.changeType === 'removed'
 																			? 'text-red-500'
 																			: 'text-gray-500'
-																	}`}
+																		}`}
 																>
 																	{change.changeType === 'added'
 																		? '+'
 																		: change.changeType === 'removed'
-																		? '-'
-																		// allow-any-unicode-next-line
-																		: '∗'}
+																			? '-'
+																			// allow-any-unicode-next-line
+																			: '∗'}
 																</span>
 																{change.displayName}
 															</p>
@@ -294,7 +290,6 @@ export const TimeLine = (): JSX.Element => {
 										);
 									})}
 									<p>
-										{/* @ts-ignore */}
 										<ReactMarkdown
 											children={
 												componentIdentifierToChange.get(key)?.summary ??
@@ -333,13 +328,12 @@ export const TimeLine = (): JSX.Element => {
 								([_, value]) =>
 									value.selection.reason === 'STAGED AUTOMATICALLY'
 							) && (
-								<p className='border-l-4 pl-2 border-vscode-foreground'>
-									Some change sets are staged automatically because CodeStory
-									only supports staging entire files currently.
-								</p>
-							)}
+									<p className='border-l-4 pl-2 border-vscode-foreground'>
+										Some change sets are staged automatically because CodeStory
+										only supports staging entire files currently.
+									</p>
+								)}
 							<div className='w-full flex justify-end mt-5'>
-								{/* @ts-ignore */}
 								<VSCodeButton
 									onClick={initiateCommit}
 									disabled={

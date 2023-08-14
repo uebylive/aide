@@ -18,7 +18,7 @@ export const Setup = () => {
 					ensure the backend is setup and try again.
 				</p>
 				<p className='text-center text-lg mb-4'>
-					If you are working on a Python project, you can {/* @ts-ignore */}
+					If you are working on a Python project, you can
 					<VSCodeLink
 						href='https://join.slack.com/t/codestoryai/shared_invite/zt-1x4zy3mk1-9fL5k~7XGSNNku7~iYr51w'
 						target='_blank'
@@ -29,7 +29,6 @@ export const Setup = () => {
 					</VSCodeLink>{' '}
 					and we'll be happy to help you onboard!
 				</p>
-				{/* @ts-ignore */}
 				<VSCodeButton onClick={handleRefresh}>Refresh</VSCodeButton>
 			</div>
 		</div>
