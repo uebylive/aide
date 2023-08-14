@@ -1,18 +1,21 @@
-// We want to get the active directories which we should be looking at
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from "vscode";
+import * as vscode from 'vscode';
 
 export const readActiveDirectoriesConfiguration = (workingDirectory: string): string[] => {
-	let aideConfiguration = vscode.workspace.getConfiguration("aide");
-	let directoryPaths = aideConfiguration.get("activeDirectories");
+	const aideConfiguration = vscode.workspace.getConfiguration('aide');
+	const directoryPaths = aideConfiguration.get('activeDirectories');
 	if (directoryPaths === undefined) {
 		return [workingDirectory];
 	}
-	if (directoryPaths === "") {
+	if (directoryPaths === '') {
 		return [workingDirectory];
 	}
-	if (typeof directoryPaths === "string") {
-		return directoryPaths.split(",").map((directoryPath: string) => {
+	if (typeof directoryPaths === 'string') {
+		return directoryPaths.split(',').map((directoryPath: string) => {
 			return directoryPath.trim();
 		});
 	}

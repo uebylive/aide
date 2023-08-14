@@ -1,14 +1,18 @@
-import { v4 as uuidv4 } from "uuid";
-import { CodeSymbolInformation } from "../../utilities/types";
-import { CodeGraph } from "../../codeGraph/graph";
-import { number } from "mathjs";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { v4 as uuidv4 } from 'uuid';
+import { CodeSymbolInformation } from '../../utilities/types';
+import { CodeGraph } from '../../codeGraph/graph';
+import { number } from 'mathjs';
 import {
 	CodeModificationContextAndDiff,
 	CodeSymbolModificationInstruction,
-} from "../../llm/recipe/prompts";
-import { EventType } from "./type";
-import { writeFile } from "fs";
-import { writeFileContents } from "../../llm/recipe/helpers";
+} from '../../llm/recipe/prompts';
+import { EventType } from './type';
+import { writeFile } from 'fs';
+import { writeFileContents } from '../../llm/recipe/helpers';
 import logger from '../../logger';
 import { WebviewView } from 'vscode';
 import { AgentViewProvider } from '../../views/AgentView';
@@ -68,7 +72,7 @@ export const thinkingEvent = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "initialThinking",
+		eventType: 'initialThinking',
 		eventContext: thinkingContext,
 		eventInput: userQuery,
 		eventOutput: null,
@@ -98,7 +102,7 @@ export const thinkingEvent = (
 export const addPlanForHelp = (userQuery: string, planForHelp: string): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "planningOut",
+		eventType: 'planningOut',
 		eventInput: userQuery,
 		eventOutput: null,
 		eventContext: planForHelp,
@@ -131,9 +135,9 @@ export const relevantSearchResults = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "searchResults",
+		eventType: 'searchResults',
 		eventOutput: null,
-		eventInput: queries.join("\n"),
+		eventInput: queries.join('\n'),
 		eventContext: null,
 		eventTimestamp: Date.now(),
 		codeSymbolReference: codeSymbolInformationList,
@@ -161,7 +165,7 @@ export const relevantSearchResults = (
 export const searchForQuery = (userQuery: string): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "searchForCodeSnippets",
+		eventType: 'searchForCodeSnippets',
 		eventOutput: null,
 		eventInput: userQuery,
 		eventContext: null,
@@ -194,9 +198,9 @@ export const branchElementsEvents = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "branchElements",
+		eventType: 'branchElements',
 		eventOutput: null,
-		eventInput: "About to start branching",
+		eventInput: 'About to start branching',
 		eventContext: null,
 		eventTimestamp: Date.now(),
 		numberOfBranchElements,
@@ -227,9 +231,9 @@ export const addInstructionsForModification = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "codeSymbolModificationInstruction",
+		eventType: 'codeSymbolModificationInstruction',
 		eventOutput: null,
-		eventInput: "Modification Instructions",
+		eventInput: 'Modification Instructions',
 		eventContext: null,
 		eventTimestamp: Date.now(),
 		numberOfBranchElements: null,
@@ -261,8 +265,8 @@ export const saveFileToolingEvent = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "saveFile",
-		eventInput: "File is going to be saved",
+		eventType: 'saveFile',
+		eventInput: 'File is going to be saved',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -294,8 +298,8 @@ export const addModificationDiffAndThoughts = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "codeSymbolModificationEvent",
-		eventInput: "Code symbol is going to be modified",
+		eventType: 'codeSymbolModificationEvent',
+		eventInput: 'Code symbol is going to be modified',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -324,8 +328,8 @@ export const addModificationDiffAndThoughts = (
 export const saveFileEvent = (filePath: string, codeSymbolName: string): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "saveFile",
-		eventInput: "File is going to be saved",
+		eventType: 'saveFile',
+		eventInput: 'File is going to be saved',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -362,8 +366,8 @@ export const testExecutionEvent = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "testExecutionHarness",
-		eventInput: "Test execution is going to be run",
+		eventType: 'testExecutionHarness',
+		eventInput: 'Test execution is going to be run',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -403,8 +407,8 @@ export const terminalEvent = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "terminalExecution",
-		eventInput: "Terminal event is going to be run",
+		eventType: 'terminalExecution',
+		eventInput: 'Terminal event is going to be run',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -436,8 +440,8 @@ export const executionBranchFinishEvent = (
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "executionBranchFinishReason",
-		eventInput: "Terminal event is going to be run",
+		eventType: 'executionBranchFinishReason',
+		eventInput: 'Terminal event is going to be run',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -462,8 +466,8 @@ export const executionBranchFinishEvent = (
 export const taskComplete = (): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
-		eventType: "taskComplete",
-		eventInput: "We finished the task",
+		eventType: 'taskComplete',
+		eventInput: 'We finished the task',
 		eventOutput: null,
 		eventContext: null,
 		eventTimestamp: Date.now(),
@@ -527,7 +531,7 @@ export class ToolingEventCollection {
 	}
 
 	public async addSearchEvent(queries: string[]) {
-		this.events.push(searchForQuery(queries.join("\n")));
+		this.events.push(searchForQuery(queries.join('\n')));
 		await this.save();
 	}
 

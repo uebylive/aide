@@ -1,10 +1,12 @@
-// Contains class and methods which allow us to talk to the python server
-// running in the background.
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 import { generateEmbedding } from '../llm/embeddings/openai';
 import { generateContextForEmbedding } from './embeddingsHelpers';
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings, FileCodeSymbolInformation } from './types';
-import axios from "axios";
+import axios from 'axios';
 
 const PORT = 42424;
 
@@ -19,13 +21,12 @@ export class PythonServer {
 		const endpoint = `${this._serverUrl}/api/get_file_information_for_plugin`;
 		try {
 			const { data } = await axios.post(endpoint, {
-				// eslint-disable-next-line @typescript-eslint/naming-convention
 				file_path: filePath,
 			});
-			console.log("Whats the data after parsing the file");
+			console.log('Whats the data after parsing the file');
 			console.log(data);
 			const codeSymbols = JSON.parse(data).code_symbols as CodeSymbolInformation[];
-			console.log("How many code symbols do we have: " + codeSymbols.length);
+			console.log('How many code symbols do we have: ' + codeSymbols.length);
 			return codeSymbols;
 		} catch (e) {
 			console.log(e);
@@ -38,6 +39,6 @@ export class PythonServer {
 
 // void (async () => {
 // 	const server = new PythonServer(`http://localhost:${PORT}`);
-// 	const result = await server.parseFile("/Users/skcd/scratch/anton/anton/server/start_server.py");
+// 	const result = await server.parseFile('/Users/skcd/scratch/anton/anton/server/start_server.py');
 // 	console.log(result);
 // })();

@@ -1,28 +1,31 @@
-import { commands, env, ExtensionContext, OutputChannel, window } from "vscode";
-import { CodeStoryStorage, loadOrSaveToStorage } from "./storage/types";
-import { indexRepository } from "./storage/indexer";
-import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
-import { workspace } from "vscode";
-import logger from "./logger";
-import { CodeGraph, generateCodeGraph } from "./codeGraph/graph";
-import { EmbeddingsSearch } from "./codeGraph/embeddingsSearch";
-import postHogClient from "./posthog/client";
-import { AgentViewProvider } from "./views/AgentView";
-import { CodeStoryViewProvider } from "./views/codeStoryView";
-import { healthCheck } from "./subscriptions/health";
-import { openFile, search } from "./subscriptions/search";
-import { TrackCodeSymbolChanges } from "./activeChanges/trackCodeSymbolChanges";
-import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from "./subscriptions/timekeeper";
-import { fileStateFromPreviousCommit } from "./activeChanges/fileStateFromPreviousCommit";
-import { CodeBlockChangeDescriptionGenerator } from "./activeChanges/codeBlockChangeDescriptionGenerator";
-import { triggerCodeSymbolChange } from "./activeChanges/timeline";
-import { gitCommit } from "./subscriptions/gitCommit";
-import { getGitCurrentHash, getGitRepoName } from "./git/helper";
-import { debug } from "./subscriptions/debug";
-import { copySettings } from "./utilities/copySettings";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { commands, env, ExtensionContext, window, workspace } from 'vscode';
+import { CodeStoryStorage, loadOrSaveToStorage } from './storage/types';
+import { indexRepository } from './storage/indexer';
+import { getProject, TSMorphProjectManagement } from './utilities/parseTypescript';
+import logger from './logger';
+import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
+import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
+import postHogClient from './posthog/client';
+import { AgentViewProvider } from './views/AgentView';
+import { CodeStoryViewProvider } from './views/codeStoryView';
+import { healthCheck } from './subscriptions/health';
+import { openFile, search } from './subscriptions/search';
+import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
+import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
+import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
+import { CodeBlockChangeDescriptionGenerator } from './activeChanges/codeBlockChangeDescriptionGenerator';
+import { triggerCodeSymbolChange } from './activeChanges/timeline';
+import { gitCommit } from './subscriptions/gitCommit';
+import { getGitCurrentHash, getGitRepoName } from './git/helper';
+import { debug } from './subscriptions/debug';
+import { copySettings } from './utilities/copySettings';
 
-import { EventEmitter } from "events";
-import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectories";
+import { EventEmitter } from 'events';
+import { readActiveDirectoriesConfiguration } from './utilities/activeDirectories';
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { sleep } from './utilities/sleep';
@@ -42,7 +45,7 @@ class ProgressiveTrackSymbols {
 		logger: winston.Logger,
 	) {
 		const filesChangedFromLastCommit = await fileStateFromPreviousCommit(
-			workingDirectory ?? "",
+			workingDirectory ?? '',
 			logger,
 		);
 
@@ -144,7 +147,7 @@ async function deferredStartup(
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
 	const embeddingsIndex = new EmbeddingsSearch([]);
-	indexer.on("partialData", (partialData) => {
+	indexer.on('partialData', (partialData) => {
 		embeddingsIndex.updateNodes(partialData);
 	});
 	indexer.indexRepository(
@@ -157,7 +160,7 @@ async function deferredStartup(
 
 	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
 	const codeGraph = new CodeGraph([]);
-	progressiveGraphBuilder.on("partialData", (partialData) => {
+	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
 	progressiveGraphBuilder.loadGraph(
@@ -176,13 +179,13 @@ async function deferredStartup(
 			codeGraph,
 			repoName,
 			repoHash,
-			rootPath ?? ""
+			rootPath ?? ''
 		)
 	);
 
 	// Now we want to register the HC
 	context.subscriptions.push(healthCheck(context, csViewProvider, repoName, repoHash));
-	commands.executeCommand("codestory.healthCheck");
+	commands.executeCommand('codestory.healthCheck');
 
 	// We register the search command
 	// Semantic search
@@ -191,18 +194,18 @@ async function deferredStartup(
 		openFile(logger)
 	);
 
-	let trackCodeSymbolChanges = new TrackCodeSymbolChanges(
+	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		projectManagement,
 		pythonServer,
-		rootPath ?? "",
+		rootPath ?? '',
 		logger
 	);
-	logger.info("[check 6]We are over here");
+	logger.info('[check 6]We are over here');
 	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
 	const codeBlockDescriptionGenerator = new CodeBlockChangeDescriptionGenerator(logger);
-	logger.info("[check 7]We are over here");
+	logger.info('[check 7]We are over here');
 	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
-	progressiveTrackSymbolsOnLoad.on("fileChanged", (fileChangedEvent) => {
+	progressiveTrackSymbolsOnLoad.on('fileChanged', (fileChangedEvent) => {
 		trackCodeSymbolChanges.setFileOpenedCodeSymbolTracked(
 			fileChangedEvent.filePath,
 			fileChangedEvent.codeSymbols
@@ -210,10 +213,10 @@ async function deferredStartup(
 	});
 	progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
 		trackCodeSymbolChanges,
-		rootPath ?? "",
+		rootPath ?? '',
 		logger,
 	);
-	logger.info("[check 9]We are over here");
+	logger.info('[check 9]We are over here');
 
 	// Also track the documents when they were last opened
 	context.subscriptions.push(
@@ -223,7 +226,7 @@ async function deferredStartup(
 		})
 	);
 
-	logger.info("[check 10]We are over here");
+	logger.info('[check 10]We are over here');
 
 	// Now we parse the documents on save as well
 	context.subscriptions.push(
@@ -251,14 +254,14 @@ export async function activate(context: ExtensionContext) {
 	// Project root here
 	postHogClient.capture({
 		distinctId: env.machineId,
-		event: "extension_activated",
+		event: 'extension_activated',
 	});
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
-		rootPath = "";
+		rootPath = '';
 	}
-	if (rootPath === "") {
-		window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
+	if (rootPath === '') {
+		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
 
@@ -281,9 +284,9 @@ export async function activate(context: ExtensionContext) {
 
 	// Create the copy settings from vscode command for the extension
 	const registerCopySettingsCommand = commands.registerCommand(
-		"webview.copySettings",
+		'webview.copySettings',
 		async () => {
-			await copySettings(rootPath ?? "", logger);
+			await copySettings(rootPath ?? '', logger);
 		}
 	);
 	context.subscriptions.push(registerCopySettingsCommand);

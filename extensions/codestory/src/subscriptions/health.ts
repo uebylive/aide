@@ -1,9 +1,13 @@
-import axios from "axios";
-import { MessageHandlerData } from "@estruyf/vscode";
-import { ExtensionContext, OutputChannel, commands, env } from "vscode";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import axios from 'axios';
+import { MessageHandlerData } from '@estruyf/vscode';
+import { ExtensionContext, OutputChannel, commands, env } from 'vscode';
 
-import { CodeStoryViewProvider } from "../views/codeStoryView";
-import postHogClient from "../posthog/client";
+import { CodeStoryViewProvider } from '../views/codeStoryView';
+import postHogClient from '../posthog/client';
 import { HealthState } from '../types';
 
 export const healthCheck = (
@@ -13,17 +17,17 @@ export const healthCheck = (
 	repoHash: string,
 ) => {
 	return commands.registerCommand(
-		"codestory.healthCheck",
+		'codestory.healthCheck',
 		async (message: MessageHandlerData<HealthState>) => {
 			postHogClient.capture({
 				distinctId: env.machineId,
-				event: "health_check",
+				event: 'health_check',
 				properties: {
 					repoName,
 					repoHash,
 				},
 			});
-			const health: HealthState = { status: "OK" };
+			const health: HealthState = { status: 'OK' };
 			const response: MessageHandlerData<HealthState> = {
 				...message,
 				payload: { status: health.status },

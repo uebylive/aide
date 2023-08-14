@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {
 	ExtensionContext,
 	OutputChannel,
@@ -8,20 +12,20 @@ import {
 	Position,
 	window,
 	env,
-} from "vscode";
-import { CodeStoryViewProvider } from "../views/codeStoryView";
-import { TSMorphProjectManagement } from "../utilities/parseTypescript";
-import { MessageHandlerData } from "@estruyf/vscode";
-import postHogClient from "../posthog/client";
-import { EmbeddingsSearch } from "../codeGraph/embeddingsSearch";
-import { getHighlighter, BUNDLED_THEMES, Theme } from "shiki";
-import { Logger } from "winston";
+} from 'vscode';
+import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { TSMorphProjectManagement } from '../utilities/parseTypescript';
+import { MessageHandlerData } from '@estruyf/vscode';
+import postHogClient from '../posthog/client';
+import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { getHighlighter, BUNDLED_THEMES, Theme } from 'shiki';
+import { Logger } from 'winston';
 import { SearchState, OpenFileState } from '../types';
 
-const workbenchConfig = workspace.getConfiguration("workbench");
-let workbenchTheme = workbenchConfig.get("colorTheme") as Theme;
+const workbenchConfig = workspace.getConfiguration('workbench');
+let workbenchTheme = workbenchConfig.get('colorTheme') as Theme;
 if (!BUNDLED_THEMES.includes(workbenchTheme)) {
-	workbenchTheme = "github-dark";
+	workbenchTheme = 'github-dark';
 }
 const highlighter = getHighlighter({ theme: workbenchTheme });
 
@@ -51,9 +55,9 @@ export const search = (
 	repoHash: string
 ) => {
 	return commands.registerCommand(
-		"codestory.search",
+		'codestory.search',
 		async ({ payload, ...message }: MessageHandlerData<SearchState>) => {
-			let searchResults: {
+			const searchResults: {
 				matchedCode: string;
 				filePath: string;
 				lineStart: number;
@@ -63,7 +67,7 @@ export const search = (
 			const { prompt } = payload;
 			postHogClient.capture({
 				distinctId: env.machineId,
-				event: "search",
+				event: 'search',
 				properties: {
 					prompt,
 					repoName,
@@ -71,7 +75,7 @@ export const search = (
 				},
 			});
 			const closestSymbols = await embeddingIndex.generateNodesRelevantForUser(prompt);
-			console.log("[search] Whats the length of closest symbols: " + closestSymbols.length);
+			console.log('[search] Whats the length of closest symbols: ' + closestSymbols.length);
 			for (const matchedCodeSymbol of closestSymbols) {
 				const highlighterResolved = await highlighter;
 				const highlightedCode = highlighterResolved.codeToHtml(
@@ -99,12 +103,12 @@ export const search = (
 
 export const openFile = (logger: Logger) => {
 	return commands.registerCommand(
-		"codestory.openFile",
+		'codestory.openFile',
 		async ({ payload }: MessageHandlerData<OpenFileState>) => {
 			const { filePath, lineStart } = payload;
 			const fileUri = Uri.file(filePath);
-			logger.info("Opening file: " + fileUri.toString());
-			logger.info("Opening file: " + fileUri.toString());
+			logger.info('Opening file: ' + fileUri.toString());
+			logger.info('Opening file: ' + fileUri.toString());
 
 			try {
 				logger.info(`[open-file] Whats the line start ${JSON.stringify(lineStart)}`);
@@ -116,7 +120,7 @@ export const openFile = (logger: Logger) => {
 					preview: false,
 				});
 			} catch (err) {
-				logger.error("Error opening file: " + (err as Error).toString());
+				logger.error('Error opening file: ' + (err as Error).toString());
 			}
 		}
 	);

@@ -1,7 +1,10 @@
-// We are going to download the anton binary here from the GCP bucket
-import { Storage } from "@google-cloud/storage";
-import * as path from "path";
-import * as fs from "fs";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { Storage } from '@google-cloud/storage';
+import * as path from 'path';
+import * as fs from 'fs';
 
 // https://storage.googleapis.com/aide-binary/run
 
@@ -37,17 +40,17 @@ export const downloadFromGCPBucket = async (bucketName: string, srcFilename: str
 	await storage.bucket(bucketName).file(srcFilename).download(options);
 };
 
-// const bucketName = "your-bucket-name";
-// const srcFilename = "path/in/bucket/filename.ext";
-// const destFilename = "local/path/filename.ext";
+// const bucketName = 'your-bucket-name';
+// const srcFilename = 'path/in/bucket/filename.ext';
+// const destFilename = 'local/path/filename.ext';
 
 
 // void (async () => {
-// 	const bucketName = "aide-binary";
-// 	const srcFilename = "run";
+// 	const bucketName = 'aide-binary';
+// 	const srcFilename = 'run';
 // 	await downloadFile(
 // 		bucketName,
 // 		srcFilename,
-// 		"/Users/skcd/Desktop/run",
+// 		'/Users/skcd/Desktop/run',
 // 	);
 // })();

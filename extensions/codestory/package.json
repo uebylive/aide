@@ -77,8 +77,7 @@
     "watch": "gulp watch-extension:codestory",
     "compile:tsc": "tsc -p ./",
     "watch:tsc": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts"
+    "pretest": "npm run compile"
   },
   "devDependencies": {
     "@types/diff": "^5.0.3",
@@ -87,11 +86,7 @@
     "@types/node": "^12.11.7",
     "@types/uuid": "^9.0.2",
     "@types/vscode": "^1.46.0",
-    "@typescript-eslint/eslint-plugin": "^4.14.1",
-    "@typescript-eslint/parser": "^4.14.1",
-    "eslint": "^7.19.0",
     "glob": "^7.1.6",
-    "prettier": "^2.2.1",
     "ts-jest": "^29.1.1",
     "typescript": "^4.1.3",
     "vscode-test": "^1.5.0"

@@ -1,13 +1,17 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 // Module to power git commits and help make that happen
 // from the extension
-
-import { MessageHandlerData } from "@estruyf/vscode";
-import { ExtensionContext, OutputChannel, commands, env, window } from "vscode";
-import { Logger } from "winston";
-import postHogClient from "../posthog/client";
+import { MessageHandlerData } from '@estruyf/vscode';
+import { ExtensionContext, OutputChannel, commands, env, window } from 'vscode';
+import { Logger } from 'winston';
+import postHogClient from '../posthog/client';
 import { GitCommitRequest } from '../types';
 
-const CODESTORY_GENERATED_MESSAGE = "CodeStory generated commit message";
+const CODESTORY_GENERATED_MESSAGE = 'CodeStory generated commit message';
 
 
 export const gitCommit = (
@@ -16,11 +20,11 @@ export const gitCommit = (
 	repoHash: string,
 ) => {
 	return commands.registerCommand(
-		"codestory.gitCommit",
+		'codestory.gitCommit',
 		async ({ payload, ...message }: MessageHandlerData<GitCommitRequest>) => {
 			postHogClient.capture({
 				distinctId: env.machineId,
-				event: "git_commit",
+				event: 'git_commit',
 				properties: {
 					repoName,
 					repoHash,
@@ -40,10 +44,10 @@ export const gitCommit = (
 			const fileList = payload.files.join(' ');
 
 			terminal.sendText(`git add ${fileList}`, true);
-			terminal.sendText(`git commit -m "${payload.message}"`, true);
+			terminal.sendText(`git commit -m '${payload.message}'`, true);
 
 			// log information to output channel
 			logger.info(`[CodeStory] Added files: ${fileList}`);
-			logger.info(`[CodeStory] Commit message: "${payload.message}\/n/n/${CODESTORY_GENERATED_MESSAGE}"`);
+			logger.info(`[CodeStory] Commit message: '${payload.message}\/n/n/${CODESTORY_GENERATED_MESSAGE}'`);
 		});
 };

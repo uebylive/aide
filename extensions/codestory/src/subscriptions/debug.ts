@@ -1,10 +1,14 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import { v4 as uuidv4 } from 'uuid';
-import { commands } from "vscode";
-import { EmbeddingsSearch } from "../codeGraph/embeddingsSearch";
-import { CodeGraph } from "../codeGraph/graph";
-import { TSMorphProjectManagement } from "../utilities/parseTypescript";
-import { MessageHandlerData } from "@estruyf/vscode";
-import { debuggingFlow } from "../llm/recipe/debugging";
+import { commands } from 'vscode';
+import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { CodeGraph } from '../codeGraph/graph';
+import { TSMorphProjectManagement } from '../utilities/parseTypescript';
+import { MessageHandlerData } from '@estruyf/vscode';
+import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
@@ -22,9 +26,9 @@ export const debug = (
 	workingDirectory: string,
 ) => {
 	return commands.registerCommand(
-		"codestory.debug",
+		'codestory.debug',
 		async ({ payload, ...message }: MessageHandlerData<PromptState>) => {
-			logger.info("[CodeStory] Debugging");
+			logger.info('[CodeStory] Debugging');
 			logger.info(payload);
 			const toolingEventCollection = new ToolingEventCollection(
 				`/tmp/${uuidv4()}`,
@@ -43,9 +47,9 @@ export const debug = (
 					workingDirectory,
 				);
 			} catch (e) {
-				logger.info("[CodeStory] Debugging failed");
+				logger.info('[CodeStory] Debugging failed');
 				logger.error(e);
-			};
+			}
 		}
 	);
 };
