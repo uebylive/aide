@@ -550,11 +550,17 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			registerReferenceProvider(selector: vscode.DocumentSelector, provider: vscode.ReferenceProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerReferenceProvider(extension, checkSelector(selector), provider);
 			},
+			getReferenceProvider(selector: vscode.DocumentSelector): vscode.ReferenceProvider[] {
+				return extHostLanguageFeatures.getReferenceProvider(checkSelector(selector));
+			},
 			registerRenameProvider(selector: vscode.DocumentSelector, provider: vscode.RenameProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerRenameProvider(extension, checkSelector(selector), provider);
 			},
 			registerDocumentSymbolProvider(selector: vscode.DocumentSelector, provider: vscode.DocumentSymbolProvider, metadata?: vscode.DocumentSymbolProviderMetadata): vscode.Disposable {
 				return extHostLanguageFeatures.registerDocumentSymbolProvider(extension, checkSelector(selector), provider, metadata);
+			},
+			getDocumentSymbolProvider(selector: vscode.DocumentSelector): vscode.DocumentSymbolProvider[] {
+				return extHostLanguageFeatures.getDocumentSymbolProvider(checkSelector(selector));
 			},
 			registerWorkspaceSymbolProvider(provider: vscode.WorkspaceSymbolProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerWorkspaceSymbolProvider(extension, provider);

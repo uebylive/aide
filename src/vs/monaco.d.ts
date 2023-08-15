@@ -6379,6 +6379,8 @@ declare namespace monaco.languages {
 	 */
 	export function registerReferenceProvider(languageSelector: LanguageSelector, provider: ReferenceProvider): IDisposable;
 
+	export function getReferenceProvider(languageSelector: LanguageSelector): ReferenceProvider[];
+
 	/**
 	 * Register a rename provider (used by e.g. rename symbol).
 	 */
@@ -6398,6 +6400,8 @@ declare namespace monaco.languages {
 	 * Register a document symbol provider (used by e.g. outline).
 	 */
 	export function registerDocumentSymbolProvider(languageSelector: LanguageSelector, provider: DocumentSymbolProvider): IDisposable;
+
+	export function getDocumentSymbolProvider(languageSelector: LanguageSelector): DocumentSymbolProvider[];
 
 	/**
 	 * Register a document highlight provider (used by e.g. highlight occurrences).

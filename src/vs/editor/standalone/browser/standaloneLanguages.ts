@@ -451,6 +451,11 @@ export function registerReferenceProvider(languageSelector: LanguageSelector, pr
 	return languageFeaturesService.referenceProvider.register(languageSelector, provider);
 }
 
+export function getReferenceProvider(languageSelector: LanguageSelector): languages.ReferenceProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.referenceProvider.getForLanguageSelector(languageSelector);
+}
+
 /**
  * Register a rename provider (used by e.g. rename symbol).
  */
@@ -498,6 +503,11 @@ export function registerHoverProvider(languageSelector: LanguageSelector, provid
 export function registerDocumentSymbolProvider(languageSelector: LanguageSelector, provider: languages.DocumentSymbolProvider): IDisposable {
 	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
 	return languageFeaturesService.documentSymbolProvider.register(languageSelector, provider);
+}
+
+export function getDocumentSymbolProvider(languageSelector: LanguageSelector): languages.DocumentSymbolProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.documentSymbolProvider.getForLanguageSelector(languageSelector);
 }
 
 /**
@@ -764,6 +774,7 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerSignatureHelpProvider: <any>registerSignatureHelpProvider,
 		registerHoverProvider: <any>registerHoverProvider,
 		registerDocumentSymbolProvider: <any>registerDocumentSymbolProvider,
+		getDocumentSymbolProvider: <any>getDocumentSymbolProvider,
 		registerDocumentHighlightProvider: <any>registerDocumentHighlightProvider,
 		registerLinkedEditingRangeProvider: <any>registerLinkedEditingRangeProvider,
 		registerDefinitionProvider: <any>registerDefinitionProvider,
