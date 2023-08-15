@@ -6414,6 +6414,8 @@ declare namespace monaco.languages {
 	 */
 	export function registerDefinitionProvider(languageSelector: LanguageSelector, provider: DefinitionProvider): IDisposable;
 
+	export function getDefinitionProvider(languageSelector: LanguageSelector): DefinitionProvider[];
+
 	/**
 	 * Register a implementation provider (used by e.g. go to implementation).
 	 */

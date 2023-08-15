@@ -84,6 +84,27 @@ export class QuickFixAction extends EditorAction {
 	}
 }
 
+
+export class AideFixAction extends EditorAction {
+	constructor() {
+		super({
+			id: autoFixCommandId,
+			label: nls.localize('aide.fix.label', "Aide ✨ Fix"),
+			alias: 'Aide ✨ Fix',
+			precondition: ContextKeyExpr.and(EditorContextKeys.writable, EditorContextKeys.hasCodeActionsProvider),
+			kbOpts: {
+				kbExpr: EditorContextKeys.textInputFocus,
+				primary: KeyMod.CtrlCmd | KeyCode.Shift | KeyCode.Period,
+				weight: KeybindingWeight.EditorContrib
+			}
+		});
+	}
+
+	public run(_accessor: ServicesAccessor, editor: ICodeEditor): void {
+		return triggerCodeActionsForEditorSelection(editor, nls.localize('editor.action.quickFix.noneMessage', "No code actions available"), undefined, undefined, CodeActionTriggerSource.AideFix);
+	}
+}
+
 export class CodeActionCommand extends EditorCommand {
 
 	constructor() {

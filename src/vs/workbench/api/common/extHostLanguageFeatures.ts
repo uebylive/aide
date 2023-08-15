@@ -187,8 +187,17 @@ class DefinitionAdapter {
 
 	constructor(
 		private readonly _documents: ExtHostDocuments,
-		private readonly _provider: vscode.DefinitionProvider
+		public readonly _provider: vscode.DefinitionProvider,
+		public readonly selector: vscode.DocumentSelector
 	) { }
+
+	getSelector(): vscode.DocumentSelector {
+		return this.selector;
+	}
+
+	getProvider(): vscode.DefinitionProvider {
+		return this._provider;
+	}
 
 	async provideDefinition(resource: URI, position: IPosition, token: CancellationToken): Promise<languages.LocationLink[]> {
 		const doc = this._documents.getDocument(resource);
@@ -1957,9 +1966,21 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 	// --- declaration
 
 	registerDefinitionProvider(extension: IExtensionDescription, selector: vscode.DocumentSelector, provider: vscode.DefinitionProvider): vscode.Disposable {
-		const handle = this._addNewAdapter(new DefinitionAdapter(this._documents, provider), extension);
+		const handle = this._addNewAdapter(new DefinitionAdapter(this._documents, provider, selector), extension);
 		this._proxy.$registerDefinitionSupport(handle, this._transformDocumentSelector(selector, extension));
 		return this._createDisposable(handle);
+	}
+
+	getDefinitionProvider(selector: vscode.DocumentSelector): vscode.DefinitionProvider[] {
+		const result: vscode.DefinitionProvider[] = [];
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof DefinitionAdapter) {
+				if (adapter.adapter.getSelector() === selector) {
+					result.push(adapter.adapter.getProvider());
+				}
+			}
+		}
+		return result;
 	}
 
 	$provideDefinition(handle: number, resource: UriComponents, position: IPosition, token: CancellationToken): Promise<languages.LocationLink[]> {
