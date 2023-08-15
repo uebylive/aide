@@ -64,7 +64,8 @@ export enum CodeActionTriggerSource {
 	AutoFix = 'auto fix',
 	QuickFixHover = 'quick fix hover window',
 	OnSave = 'save participants',
-	ProblemsView = 'problems view'
+	ProblemsView = 'problems view',
+	AideFix = 'aide fix',
 }
 
 export interface CodeActionFilter {

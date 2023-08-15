@@ -524,6 +524,11 @@ export function registerDefinitionProvider(languageSelector: LanguageSelector, p
 	return languageFeaturesService.definitionProvider.register(languageSelector, provider);
 }
 
+export function getDefinitionProvider(languageSelector: LanguageSelector): languages.DefinitionProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.definitionProvider.getForLanguageSelector(languageSelector);
+}
+
 /**
  * Register a implementation provider (used by e.g. go to implementation).
  */
@@ -762,6 +767,7 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerDocumentHighlightProvider: <any>registerDocumentHighlightProvider,
 		registerLinkedEditingRangeProvider: <any>registerLinkedEditingRangeProvider,
 		registerDefinitionProvider: <any>registerDefinitionProvider,
+		getDefinitionProvider: <any>getDefinitionProvider,
 		registerImplementationProvider: <any>registerImplementationProvider,
 		registerTypeDefinitionProvider: <any>registerTypeDefinitionProvider,
 		registerCodeLensProvider: <any>registerCodeLensProvider,

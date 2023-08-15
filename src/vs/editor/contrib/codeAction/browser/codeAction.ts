@@ -28,6 +28,7 @@ import { CodeActionFilter, CodeActionItem, CodeActionKind, CodeActionSet, CodeAc
 
 export const codeActionCommandId = 'editor.action.codeAction';
 export const quickFixCommandId = 'editor.action.quickFix';
+export const aideFixCommandId = 'editor.action.aide.fix';
 export const autoFixCommandId = 'editor.action.autoFix';
 export const refactorCommandId = 'editor.action.refactor';
 export const refactorPreviewCommandId = 'editor.action.refactor.preview';
