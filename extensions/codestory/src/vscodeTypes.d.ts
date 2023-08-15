@@ -12999,9 +12999,9 @@ declare module 'vscode' {
 
 		/**
 		 *
-		 * @param selector A selector that defines the documents this provider is applicable to.
-		 * @return A definition provider.
-		 */
+			* @param selector A selector that defines the documents this provider is applicable to.
+			* @return A definition provider.
+			*/
 		export function getDefinitionProvider(selector: DocumentSelector): DefinitionProvider[];
 
 		/**

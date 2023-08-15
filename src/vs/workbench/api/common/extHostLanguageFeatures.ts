@@ -1975,9 +1975,9 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 		const result: vscode.DefinitionProvider[] = [];
 		for (const adapter of this._adapter.values()) {
 			if (adapter.adapter instanceof DefinitionAdapter) {
-				if (adapter.adapter.getSelector() === selector) {
-					result.push(adapter.adapter.getProvider());
-				}
+				// if (adapter.adapter.getSelector() === selector) {
+				result.push(adapter.adapter.getProvider());
+				// }
 			}
 		}
 		return result;

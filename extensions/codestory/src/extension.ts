@@ -2,7 +2,7 @@ import { commands, env, ExtensionContext, OutputChannel, window } from "vscode";
 import { CodeStoryStorage, loadOrSaveToStorage } from "./storage/types";
 import { indexRepository } from "./storage/indexer";
 import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
-import { workspace } from "vscode";
+import { workspace, languages } from "vscode";
 import logger from "./logger";
 import { CodeGraph, generateCodeGraph } from "./codeGraph/graph";
 import { EmbeddingsSearch } from "./codeGraph/embeddingsSearch";
@@ -274,6 +274,13 @@ export async function activate(context: ExtensionContext) {
       );
     })
   );
+
+
+  // const providers = languages.getDefinitionProvider({
+  //   language: "typescript",
+  //   scheme: "file",
+  // });
+  // logger.info("[providers for language ss]" + providers.length);
 
   // Add git commit to the subscriptions here
   // Git commit

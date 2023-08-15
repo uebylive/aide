@@ -520,6 +520,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				return extHostLanguageFeatures.registerDefinitionProvider(extension, checkSelector(selector), provider);
 			},
 			getDefinitionProvider(selector: vscode.DocumentSelector): vscode.DefinitionProvider[] {
+				console.log("[getDefinitionProvider] selector: ", selector);
 				return extHostLanguageFeatures.getDefinitionProvider(checkSelector(selector));
 			},
 			registerDeclarationProvider(selector: vscode.DocumentSelector, provider: vscode.DeclarationProvider): vscode.Disposable {
