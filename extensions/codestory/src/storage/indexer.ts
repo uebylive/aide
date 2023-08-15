@@ -14,7 +14,7 @@ import {
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from '../utilities/types';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { generateEmbedding } from '../llm/embeddings/openai';
-import { ExtensionContext } from 'vscode';
+import { ExtensionContext, languages } from 'vscode';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from '../git/helper';
 import logger from '../logger';
 import EventEmitter = require('events');

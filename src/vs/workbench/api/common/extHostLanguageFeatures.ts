@@ -43,8 +43,17 @@ class DocumentSymbolAdapter {
 
 	constructor(
 		private readonly _documents: ExtHostDocuments,
-		private readonly _provider: vscode.DocumentSymbolProvider
+		private readonly _provider: vscode.DocumentSymbolProvider,
+		private readonly _documentSelector: vscode.DocumentSelector,
 	) { }
+
+	getDocumentSelector(): vscode.DocumentSelector {
+		return this._documentSelector;
+	}
+
+	getProvider(): vscode.DocumentSymbolProvider {
+		return this._provider;
+	}
 
 	async provideDocumentSymbols(resource: URI, token: CancellationToken): Promise<languages.DocumentSymbol[] | undefined> {
 		const doc = this._documents.getDocument(resource);
@@ -187,8 +196,17 @@ class DefinitionAdapter {
 
 	constructor(
 		private readonly _documents: ExtHostDocuments,
-		private readonly _provider: vscode.DefinitionProvider
+		public readonly _provider: vscode.DefinitionProvider,
+		public readonly selector: vscode.DocumentSelector
 	) { }
+
+	getSelector(): vscode.DocumentSelector {
+		return this.selector;
+	}
+
+	getProvider(): vscode.DefinitionProvider {
+		return this._provider;
+	}
 
 	async provideDefinition(resource: URI, position: IPosition, token: CancellationToken): Promise<languages.LocationLink[]> {
 		const doc = this._documents.getDocument(resource);
@@ -354,6 +372,10 @@ class ReferenceAdapter {
 		private readonly _documents: ExtHostDocuments,
 		private readonly _provider: vscode.ReferenceProvider
 	) { }
+
+	getProvider(): vscode.ReferenceProvider {
+		return this._provider;
+	}
 
 	async provideReferences(resource: URI, position: IPosition, context: languages.ReferenceContext, token: CancellationToken): Promise<languages.Location[] | undefined> {
 		const doc = this._documents.getDocument(resource);
@@ -1914,10 +1936,22 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 	// --- outline
 
 	registerDocumentSymbolProvider(extension: IExtensionDescription, selector: vscode.DocumentSelector, provider: vscode.DocumentSymbolProvider, metadata?: vscode.DocumentSymbolProviderMetadata): vscode.Disposable {
-		const handle = this._addNewAdapter(new DocumentSymbolAdapter(this._documents, provider), extension);
+		const handle = this._addNewAdapter(new DocumentSymbolAdapter(this._documents, provider, selector), extension);
 		const displayName = (metadata && metadata.label) || ExtHostLanguageFeatures._extLabel(extension);
 		this._proxy.$registerDocumentSymbolProvider(handle, this._transformDocumentSelector(selector, extension), displayName);
 		return this._createDisposable(handle);
+	}
+
+	getDocumentSymbolProvider(selector: vscode.DocumentSelector): vscode.DocumentSymbolProvider[] {
+		const result: vscode.DocumentSymbolProvider[] = [];
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof DocumentSymbolAdapter) {
+				// if (adapter.adapter.getSelector() === selector) {
+				result.push(adapter.adapter.getProvider());
+				// }
+			}
+		}
+		return result;
 	}
 
 	$provideDocumentSymbols(handle: number, resource: UriComponents, token: CancellationToken): Promise<languages.DocumentSymbol[] | undefined> {
@@ -1957,9 +1991,21 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 	// --- declaration
 
 	registerDefinitionProvider(extension: IExtensionDescription, selector: vscode.DocumentSelector, provider: vscode.DefinitionProvider): vscode.Disposable {
-		const handle = this._addNewAdapter(new DefinitionAdapter(this._documents, provider), extension);
+		const handle = this._addNewAdapter(new DefinitionAdapter(this._documents, provider, selector), extension);
 		this._proxy.$registerDefinitionSupport(handle, this._transformDocumentSelector(selector, extension));
 		return this._createDisposable(handle);
+	}
+
+	getDefinitionProvider(selector: vscode.DocumentSelector): vscode.DefinitionProvider[] {
+		const result: vscode.DefinitionProvider[] = [];
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof DefinitionAdapter) {
+				// if (adapter.adapter.getSelector() === selector) {
+				result.push(adapter.adapter.getProvider());
+				// }
+			}
+		}
+		return result;
 	}
 
 	$provideDefinition(handle: number, resource: UriComponents, position: IPosition, token: CancellationToken): Promise<languages.LocationLink[]> {
@@ -2080,6 +2126,18 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 		const handle = this._addNewAdapter(new ReferenceAdapter(this._documents, provider), extension);
 		this._proxy.$registerReferenceSupport(handle, this._transformDocumentSelector(selector, extension));
 		return this._createDisposable(handle);
+	}
+
+	getReferenceProvider(selector: vscode.DocumentSelector): vscode.ReferenceProvider[] {
+		const result: vscode.ReferenceProvider[] = [];
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof ReferenceAdapter) {
+				// if (adapter.adapter.getSelector() === selector) {
+				result.push(adapter.adapter.getProvider());
+				// }
+			}
+		}
+		return result;
 	}
 
 	$provideReferences(handle: number, resource: UriComponents, position: IPosition, context: languages.ReferenceContext, token: CancellationToken): Promise<languages.Location[] | undefined> {

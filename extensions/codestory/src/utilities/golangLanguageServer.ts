@@ -23,7 +23,7 @@ import fs = require('fs');
 import { workspace } from 'vscode';
 
 
-export const debugging = async () => {
+const debugging = async () => {
 
 	const serverOptions = {
 		run: {

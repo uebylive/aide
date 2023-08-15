@@ -451,6 +451,11 @@ export function registerReferenceProvider(languageSelector: LanguageSelector, pr
 	return languageFeaturesService.referenceProvider.register(languageSelector, provider);
 }
 
+export function getReferenceProvider(languageSelector: LanguageSelector): languages.ReferenceProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.referenceProvider.getForLanguageSelector(languageSelector);
+}
+
 /**
  * Register a rename provider (used by e.g. rename symbol).
  */
@@ -500,6 +505,11 @@ export function registerDocumentSymbolProvider(languageSelector: LanguageSelecto
 	return languageFeaturesService.documentSymbolProvider.register(languageSelector, provider);
 }
 
+export function getDocumentSymbolProvider(languageSelector: LanguageSelector): languages.DocumentSymbolProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.documentSymbolProvider.getForLanguageSelector(languageSelector);
+}
+
 /**
  * Register a document highlight provider (used by e.g. highlight occurrences).
  */
@@ -522,6 +532,11 @@ export function registerLinkedEditingRangeProvider(languageSelector: LanguageSel
 export function registerDefinitionProvider(languageSelector: LanguageSelector, provider: languages.DefinitionProvider): IDisposable {
 	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
 	return languageFeaturesService.definitionProvider.register(languageSelector, provider);
+}
+
+export function getDefinitionProvider(languageSelector: LanguageSelector): languages.DefinitionProvider[] {
+	const languageFeaturesService = StandaloneServices.get(ILanguageFeaturesService);
+	return languageFeaturesService.definitionProvider.getForLanguageSelector(languageSelector);
 }
 
 /**
@@ -754,14 +769,17 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		setTokensProvider: <any>setTokensProvider,
 		setMonarchTokensProvider: <any>setMonarchTokensProvider,
 		registerReferenceProvider: <any>registerReferenceProvider,
+		getReferenceProvider: <any>getReferenceProvider,
 		registerRenameProvider: <any>registerRenameProvider,
 		registerCompletionItemProvider: <any>registerCompletionItemProvider,
 		registerSignatureHelpProvider: <any>registerSignatureHelpProvider,
 		registerHoverProvider: <any>registerHoverProvider,
 		registerDocumentSymbolProvider: <any>registerDocumentSymbolProvider,
+		getDocumentSymbolProvider: <any>getDocumentSymbolProvider,
 		registerDocumentHighlightProvider: <any>registerDocumentHighlightProvider,
 		registerLinkedEditingRangeProvider: <any>registerLinkedEditingRangeProvider,
 		registerDefinitionProvider: <any>registerDefinitionProvider,
+		getDefinitionProvider: <any>getDefinitionProvider,
 		registerImplementationProvider: <any>registerImplementationProvider,
 		registerTypeDefinitionProvider: <any>registerTypeDefinitionProvider,
 		registerCodeLensProvider: <any>registerCodeLensProvider,

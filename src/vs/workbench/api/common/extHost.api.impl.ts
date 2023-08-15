@@ -516,7 +516,12 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				return extHostLanguageFeatures.registerCodeLensProvider(extension, checkSelector(selector), provider);
 			},
 			registerDefinitionProvider(selector: vscode.DocumentSelector, provider: vscode.DefinitionProvider): vscode.Disposable {
+				console.log('[registeredDefinitionProvider] selector: ', selector);
 				return extHostLanguageFeatures.registerDefinitionProvider(extension, checkSelector(selector), provider);
+			},
+			getDefinitionProvider(selector: vscode.DocumentSelector): vscode.DefinitionProvider[] {
+				console.log('[getDefinitionProvider] selector: ', selector);
+				return extHostLanguageFeatures.getDefinitionProvider(checkSelector(selector));
 			},
 			registerDeclarationProvider(selector: vscode.DocumentSelector, provider: vscode.DeclarationProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerDeclarationProvider(extension, checkSelector(selector), provider);
@@ -545,11 +550,17 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			registerReferenceProvider(selector: vscode.DocumentSelector, provider: vscode.ReferenceProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerReferenceProvider(extension, checkSelector(selector), provider);
 			},
+			getReferenceProvider(selector: vscode.DocumentSelector): vscode.ReferenceProvider[] {
+				return extHostLanguageFeatures.getReferenceProvider(checkSelector(selector));
+			},
 			registerRenameProvider(selector: vscode.DocumentSelector, provider: vscode.RenameProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerRenameProvider(extension, checkSelector(selector), provider);
 			},
 			registerDocumentSymbolProvider(selector: vscode.DocumentSelector, provider: vscode.DocumentSymbolProvider, metadata?: vscode.DocumentSymbolProviderMetadata): vscode.Disposable {
 				return extHostLanguageFeatures.registerDocumentSymbolProvider(extension, checkSelector(selector), provider, metadata);
+			},
+			getDocumentSymbolProvider(selector: vscode.DocumentSelector): vscode.DocumentSymbolProvider[] {
+				return extHostLanguageFeatures.getDocumentSymbolProvider(checkSelector(selector));
 			},
 			registerWorkspaceSymbolProvider(provider: vscode.WorkspaceSymbolProvider): vscode.Disposable {
 				return extHostLanguageFeatures.registerWorkspaceSymbolProvider(extension, provider);
