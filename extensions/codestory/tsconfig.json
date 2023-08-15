@@ -7,7 +7,14 @@
         "sourceMap": true,
         "rootDir": "src",
         "strict": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "typeRoots": ["node_modules/@types"]
     },
-    "exclude": ["node_modules", ".vscode-test", "webview-ui", "webview-ui-sideview"]
+    "exclude": [
+        "node_modules",
+        ".vscode-test",
+        "webview-ui",
+        "webview-ui-sideview",
+        "../../node_modules/@types/mocha"
+    ]
 }
