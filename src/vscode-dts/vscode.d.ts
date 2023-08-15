@@ -13111,6 +13111,13 @@ declare module 'vscode' {
 		export function registerDocumentSymbolProvider(selector: DocumentSelector, provider: DocumentSymbolProvider, metaData?: DocumentSymbolProviderMetadata): Disposable;
 
 		/**
+		 * Gives back all the document symbol providers registered, this allows us to talk
+		 * to the LSP and get more information
+		 * @param selector A selector that defines the documents this provider is applicable to.
+		 */
+		export function getDocumentSymbolProvider(selector: DocumentSelector): DocumentSymbolProvider[];
+
+		/**
 		 * Register a workspace symbol provider.
 		 *
 		 * Multiple providers can be registered. In that case providers are asked in parallel and
@@ -13134,6 +13141,12 @@ declare module 'vscode' {
 		 * @return A {@link Disposable} that unregisters this provider when being disposed.
 		 */
 		export function registerReferenceProvider(selector: DocumentSelector, provider: ReferenceProvider): Disposable;
+
+		/**
+		 * Returns all the references registered with the editor
+		 * @param selector A selector that defines the documents this provider is applicable to.
+		 */
+		export function getReferenceProvider(selector: DocumentSelector): ReferenceProvider[];
 
 		/**
 		 * Register a rename provider.
