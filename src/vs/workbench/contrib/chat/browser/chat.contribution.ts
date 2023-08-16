@@ -49,7 +49,6 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
 import { searchViewIcon } from 'vs/workbench/contrib/search/browser/searchIcons';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
-import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { SearchView } from 'vs/workbench/contrib/search/browser/searchView';
 
 // Register configuration
