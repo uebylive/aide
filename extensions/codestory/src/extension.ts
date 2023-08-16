@@ -28,6 +28,7 @@ import { PythonServer } from './utilities/pythonServerClient';
 import { sleep } from './utilities/sleep';
 import winston from 'winston';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
+import { getDocumentSymbols } from './utilities/lspApi';
 
 
 class ProgressiveTrackSymbols {
@@ -277,7 +278,9 @@ export async function activate(context: ExtensionContext) {
   );
 
   // activate the relevant LSPs here
-  await activateExtensions(context, getExtensionsInDirectory(rootPath));
+  // TODO(codestory): Enable this later on
+  // await activateExtensions(context, getExtensionsInDirectory(rootPath));
+  // await getDocumentSymbols();
 
   // Add git commit to the subscriptions here
   // Git commit
