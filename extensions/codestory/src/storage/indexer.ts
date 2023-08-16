@@ -72,8 +72,6 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
         "descriptions",
     );
     const files = await fs.promises.readdir(directoryPath);
-    logger.info("[indexing_start] loading from files");
-    logger.info(files.length);
     const codeSymbolInformationEmbeddingsList: CodeSymbolInformationEmbeddings[] = [];
     for (let index = 0; index < files.length; index++) {
         const file = files[index];
@@ -82,11 +80,8 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
         const filePath = path.join(directoryPath, file);
         logger.info(filePath);
         const fileContent = fs.readFileSync(filePath);
-        logger.info("[indexing_start] loaded from file");
         try {
             const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
-            logger.info("[indexing_start] parsed from json");
-            logger.info(codeSymbolInformationEmbeddings);
             emitter.emit("partialData", codeSymbolInformationEmbeddings);
             codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
         } catch (error) {
