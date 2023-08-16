@@ -28,13 +28,6 @@
           "title": "CodeStory",
           "icon": "assets/cs-logomark.svg"
         }
-      ],
-      "auxiliarybar": [
-        {
-          "id": "agent",
-          "title": "CodeStory Agent",
-          "icon": "assets/cs-logomark.svg"
-        }
       ]
     },
     "views": {
@@ -43,9 +36,7 @@
           "type": "webview",
           "id": "codestory.webView",
           "name": "CodeStory"
-        }
-      ],
-      "agent": [
+        },
         {
           "type": "webview",
           "id": "codestory.agentView",
