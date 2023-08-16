@@ -90,8 +90,12 @@ const activateTypeScriptExtensions = async () => {
 
 const activatePythonExtension = async () => {
 	const alreadyActivatedExtensions: Set<string> = new Set<string>();
+	extensions.all.forEach((extension) => {
+		logger.info("[extension][present] " + extension.id);
+	});
 	extensions.all.forEach(async (extension) => {
 		if (extension.isActive) {
+			logger.info("[extension] Already activated " + extension.id);
 			return;
 		}
 		if (alreadyActivatedExtensions.has(extension.id)) {
@@ -99,7 +103,8 @@ const activatePythonExtension = async () => {
 		}
 		if (extension.id.includes("python") || extension.id.includes("py")) {
 			logger.info(`[extension_activate][py] Activating ${extension.id}`);
-			await extension.activate();
+			const output = await extension.activate();
+			logger.info(`[extension_activate][py] Output: ${output}`);
 		}
 	});
 };
