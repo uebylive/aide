@@ -11,6 +11,9 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "enabledApiProposals": [
+    "interactive"
+  ],
   "license": "UNLICENSED",
   "repository": {
     "url": "https://github.com/codestoryai"
@@ -55,6 +58,13 @@
         }
       ]
     },
+    "interactiveSession": [
+      {
+        "id": "cs-chat",
+        "label": "CS Chat",
+        "icon": "assets/cs-logomark.png"
+      }
+    ],
     "configuration": {
       "type": "object",
       "title": "Aide Extension settings",
