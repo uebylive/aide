@@ -55,12 +55,17 @@
         },
         "configuration": {
             "type": "object",
-            "title": "Your Extension Settings",
+            "title": "Aide Extension settings",
             "properties": {
                 "aide.activeDirectories": {
                     "type": "string",
                     "default": "",
                     "description": "Set the active directories for Aide to look at as comma separated values of absolute path. For example: /a/b/c , /d/e/f"
+                },
+                "aide.testSuiteRunCommand": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Tell Aide how to run your test suite, for example for jest framework and when using yarn the command will be: `yarn run jest test`"
                 }
             }
         }
