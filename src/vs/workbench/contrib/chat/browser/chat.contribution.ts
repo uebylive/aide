@@ -46,10 +46,6 @@ import { alertFocusChange } from 'vs/workbench/contrib/accessibility/browser/acc
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { ChatWelcomeMessageModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
-import { searchViewIcon } from 'vs/workbench/contrib/search/browser/searchIcons';
-import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
-import { SearchView } from 'vs/workbench/contrib/search/browser/searchView';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -238,32 +234,3 @@ registerSingleton(IChatContributionService, ChatContributionService, Instantiati
 registerSingleton(IChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
 registerSingleton(IChatAccessibilityService, ChatAccessibilityService, InstantiationType.Delayed);
 registerSingleton(IChatWidgetHistoryService, ChatWidgetHistoryService, InstantiationType.Delayed);
-
-const viewcontainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
-	id: 'chat',
-	title: { value: nls.localize('chat', "Chat"), original: 'Chat' },
-	ctorDescriptor: new SyncDescriptor(
-		ViewPaneContainer,
-		['chat', { mergeViewWithContainerWhenSingleView: true }]
-	),
-	hideIfEmpty: true,
-	icon: searchViewIcon,
-	order: 0,
-}, ViewContainerLocation.AuxiliaryBar, { doNotRegisterOpenCommand: true });
-
-const viewDescriptor: IViewDescriptor = {
-	id: 'chat',
-	containerIcon: searchViewIcon,
-	name: nls.localize('chat', "Chat"),
-	ctorDescriptor: new SyncDescriptor(SearchView),
-	canToggleVisibility: false,
-	canMoveView: true,
-	openCommandActionDescriptor: {
-		id: viewcontainer.id,
-		mnemonicTitle: nls.localize('toggleChatView.mnemonicTitle', "Show Chat"),
-		keybindings: { primary: undefined, mac: undefined },
-		order: 0
-	},
-};
-
-Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDescriptor], viewcontainer);
