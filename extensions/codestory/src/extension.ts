@@ -130,6 +130,7 @@ class ProgressiveIndexer {
 
 export async function activate(context: ExtensionContext) {
   // Project root here
+  logger.info(`[codestory] Activating extension: ${context.globalStorageUri.fsPath}`);
   postHogClient.capture({
     distinctId: env.machineId,
     event: "extension_activated",
@@ -157,7 +158,8 @@ export async function activate(context: ExtensionContext) {
   const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
   const testSuiteRunCommand = readTestSuiteRunCommand();
   logger.info(activeDirectories);
-  const projectManagement = await getProject(activeDirectories);
+  const extensionSet = getExtensionsInDirectory(rootPath);
+  const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
 
   // Create an instance of the progressive indexer
   const indexer = new ProgressiveIndexer();

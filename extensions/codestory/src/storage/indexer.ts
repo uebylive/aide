@@ -100,6 +100,7 @@ export const getCodeSymbolList = async (
     const sourceFiles = project.getSourceFiles();
     const codeSymbolInformationList: CodeSymbolInformation[] = [];
     for (let index = 0; index < sourceFiles.length; index++) {
+        console.log(`Parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
         const sourceFile = sourceFiles[index];
         const sourceFilePath = sourceFile.getFilePath();
         const codeSymbolInformation = parseFileUsingTsMorph(
@@ -178,6 +179,23 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
 };
 
 
+const checkIfProjectWasIndexed = (
+    globalStorageUri: string,
+    remoteSession: string,
+): boolean => {
+    const directoryPath = path.join(
+        globalStorageUri,
+        remoteSession,
+        "code_symbol",
+        "descriptions",
+    );
+    if (fs.existsSync(directoryPath)) {
+        return true;
+    }
+    return false;
+}
+
+
 export const indexRepository = async (
     storage: CodeStoryStorage,
     projectManagement: TSMorphProjectManagement,
@@ -195,8 +213,16 @@ export const indexRepository = async (
     // for now this is fine.
     const filesToTrack = await getFilesTrackedInWorkingDirectory(workingDirectory);
     let codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+
+    const repoName = await getGitRepoName(workingDirectory);
     logger.info("[indexing_start] Starting indexing", storage.isIndexed);
-    if (!storage.isIndexed) {
+    // We also need to check if the storage directory exists, if it does not
+    // then we have to retrigger the indexing again
+    const wasProjectIndexed = checkIfProjectWasIndexed(
+        globalStorageUri,
+        repoName,
+    );
+    if (!storage.isIndexed || !wasProjectIndexed) {
         // logger.info("[indexing_start] Starting indexing");
         // Start re-indexing right now.
         for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
@@ -260,7 +286,6 @@ export const indexRepository = async (
         } else {
             // We should load all the code symbols with embeddings from the local storage
             // and return it
-            const repoName = await getGitRepoName(workingDirectory);
             logger.info("[indexing_start] Loading from local storage");
             codeSymbolWithEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
                 globalStorageUri,

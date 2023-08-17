@@ -850,6 +850,13 @@ export class TSMorphProjectManagement {
         this.directoryToProjectMapping = new Map();
     }
 
+    public addProjectWithDirectoryToMapping(
+        project: Project,
+        directoryPath: string,
+    ) {
+        this.directoryToProjectMapping.set(directoryPath, project);
+    }
+
     public addTsConfigPath(
         tsConfigPath: string,
     ) {
@@ -969,8 +976,68 @@ export const getTsConfigFiles = async (
 };
 
 
+const checkIfTypescriptLikeFiles = (
+    fileExtensionSet: Set<string>,
+): boolean => {
+    if (fileExtensionSet.has(".ts") || fileExtensionSet.has(".tsx") || fileExtensionSet.has(".js") || fileExtensionSet.has(".jsx")) {
+        return true;
+    }
+    return false;
+};
+
+const isMinifiedFile = (filePath: string): boolean => {
+    const fileExtension = path.extname(filePath);
+    if (fileExtension === ".min.js" || fileExtension === ".min.ts") {
+        return true;
+    }
+    return false;
+};
+
+
+const isDistFolder = (filePath: string): boolean => {
+    const fileParts = filePath.split("/");
+    const lastPart = fileParts[fileParts.length - 1];
+    if (lastPart === "dist") {
+        return true;
+    }
+    return false;
+};
+
+
+export const getTypescriptLikeFilesInDirectory = (directory: string): string[] => {
+    const interestedFiles: string[] = [];
+
+    function traverse(dir: string) {
+        const files = fs.readdirSync(dir);
+
+        for (const file of files) {
+            const filePath = path.join(dir, file);
+            const stat = fs.statSync(filePath);
+
+            // If directory, recurse. If file, extract extension.
+            if (stat.isDirectory()) {
+                traverse(filePath);
+            } else {
+                const ext = path.extname(filePath);
+                if (checkIfTypescriptLikeFiles(new Set([ext])) && !isMinifiedFile(filePath) && !isDistFolder(filePath)) {
+                    interestedFiles.push(filePath);
+                    console.log(`[adding] We are adding ${filePath}`);
+                } else {
+                    console.log(`[ignoring] We are ignoring ${filePath}`);
+                }
+            }
+        }
+    }
+
+    traverse(directory);
+    return interestedFiles;
+};
+
+
 export const getProject = async (
     activeDirectories: string[],
+    fileExtensionSet: Set<string>,
+    workingDirectory: string,
 ): Promise<TSMorphProjectManagement> => {
     const tsConfigFiles = await getTsConfigFiles(
         activeDirectories,
@@ -984,8 +1051,29 @@ export const getProject = async (
             filteredTsConfigFiles.push(tsConfigFile);
         }
     }
-    // Now we will filter out paths which are not in the file system
+
     const tsProjectManagement = new TSMorphProjectManagement();
+
+    if (filteredTsConfigFiles.length === 0 && checkIfTypescriptLikeFiles(fileExtensionSet)) {
+        // Here we will create a blank project and manually add all the files which
+        // are jsx or ts or js types to the project in the directory
+        const interestingFiles = getTypescriptLikeFilesInDirectory(workingDirectory);
+        const tsMorphProject = new Project();
+        interestingFiles.forEach((filePath) => {
+            console.log("[ts-morph][add file]: " + filePath);
+            try {
+                tsMorphProject.addSourceFileAtPath(filePath);
+            } catch (error) {
+                console.log("[ts-morph][add file][error]: " + error);
+            }
+        });
+        tsProjectManagement.addProjectWithDirectoryToMapping(
+            tsMorphProject,
+            workingDirectory,
+        );
+        return tsProjectManagement;
+    }
+    // Now we will filter out paths which are not in the file system
     for (const filteredTsConfig of filteredTsConfigFiles) {
         tsProjectManagement.addTsConfigPath(
             filteredTsConfig,
