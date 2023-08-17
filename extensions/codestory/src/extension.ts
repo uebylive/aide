@@ -105,7 +105,6 @@ class ProgressiveIndexer {
   ) {
     // Sleep for a bit before starting the heavy lifting, so other parts of the
     // extension can load up
-    await sleep(1000);
     await indexRepository(
       storage,
       projectManagement,
