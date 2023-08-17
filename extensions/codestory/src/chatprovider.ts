@@ -28,6 +28,11 @@ class CSChatSession implements vscode.InteractiveSession {
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
 
+	saveState(): CSChatSessionState {
+		logger.info('Saving state' + this.toString());
+		return new CSChatSessionState();
+	}
+
 	constructor(requester: CSChatParticipant, responder: CSChatParticipant, inputPlaceholder?: string | undefined) {
 		this.requester = requester;
 		this.responder = responder;
