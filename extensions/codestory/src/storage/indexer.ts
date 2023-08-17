@@ -199,20 +199,20 @@ export const indexRepository = async (
     if (!storage.isIndexed) {
         // logger.info("[indexing_start] Starting indexing");
         // Start re-indexing right now.
-        projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+        for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
             const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
             const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
                 codeSymbolInformationList,
                 workingDirectory,
                 globalStorageUri
             );
-            codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+            for (const codeSymbolWithEmbeddings of codeSymbolWithEmbeddingsForProject) {
                 logger.info("[indexing_start] Starting indexing for project");
                 logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
                 emitter.emit("partialData", codeSymbolWithEmbeddings);
-            });
+            }
             codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-        });
+        }
         // parse the python files
         const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
             pythonClient,
@@ -224,7 +224,7 @@ export const indexRepository = async (
         codeSymbolWithEmbeddings.push(...pythonSymbols);
         storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
         storage.isIndexed = true;
-        saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+        await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
     } else {
         // TODO(codestory): Only look at the delta and re-index these files which have changed.
         const currentHash = await getGitCurrentHash(workingDirectory);
@@ -234,7 +234,7 @@ export const indexRepository = async (
         if (currentHash !== storage.lastIndexedRepoHash) {
             // We need to re-index the repo
             // TODO(codestory): Repeated code here, we need to clean it up
-            projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+            for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
                 const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
                 logger.info("[indexing_start] Starting indexing for project");
                 const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
@@ -244,7 +244,7 @@ export const indexRepository = async (
                 );
                 emitter.emit("partialData", codeSymbolWithEmbeddingsForProject);
                 codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-            });
+            }
             // parse the python files
             const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
                 pythonClient,
@@ -256,7 +256,7 @@ export const indexRepository = async (
             codeSymbolWithEmbeddings.push(...pythonSymbols);
             storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
             storage.isIndexed = true;
-            saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+            await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
         } else {
             // We should load all the code symbols with embeddings from the local storage
             // and return it
@@ -270,5 +270,6 @@ export const indexRepository = async (
             logger.info("[indexing_start] Loaded from local storage");
         }
     }
+    console.log("[inside2] debugging wtf");
     return codeSymbolWithEmbeddings;
 };
