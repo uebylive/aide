@@ -12,6 +12,7 @@ import { useChangedAntonDataStore } from "./store";
 function App() {
   const [prompt, setPrompt] = useState("");
   const [promptForSubmission, setPromptForSubmission] = useState("");
+  const [testRunCommand, setTestRunCommand] = useState("NotPresent");
   const { exploration } = useExplorationContext();
   const { setAntonData, antonData } = useChangedAntonDataStore();
   const { originalPrompt } = useAntonData(promptForSubmission);
@@ -21,14 +22,10 @@ function App() {
       console.log("[debugging] What is the message", message);
       const { command, payload } = message.data;
       if (command === "sendPrompt") {
-        console.log("Whats the payload");
-        console.log(payload);
-        console.log("We are done");
         setAntonData(payload as any);
-        console.log("are we done here");
       }
       if (command == "testSuiteRunCommand") {
-        console.log("[testSuiteRunCommand] What is the payload", payload);
+        setTestRunCommand((payload as any)["testSuiteRunCommand"]);
       }
     };
 
@@ -36,7 +33,6 @@ function App() {
     Messenger.listen(listener);
 
     return () => {
-      console.log("Unregistering listener...");
       Messenger.unlisten(listener);
     }
   }, []);
