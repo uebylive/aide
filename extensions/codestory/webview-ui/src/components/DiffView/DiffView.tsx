@@ -8,6 +8,7 @@ type GitDiffProps = {
 export const DiffView = ({ gitDiff, className }: GitDiffProps) => {
   // Extract the ORIGINAL and UPDATED parts
   const parts = gitDiff.split("====");
+  console.log("[DiffView] gitdiff: ", gitDiff);
   const original = parts[0]
     .replace("<<<< ORIGINAL\n", "")
     .replace("```\n", "")

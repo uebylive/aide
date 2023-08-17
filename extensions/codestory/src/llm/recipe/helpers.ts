@@ -149,7 +149,7 @@ export const generateModificationInputForCodeSymbol = async (
     let fileCode = await readFileContents(codeSymbol.fsFilePath);
 
     // Now supporting big files for now, so we just return null here
-    if (fileCode.split("\n").length > 500) {
+    if (fileCode.split("\n").length > 2000) {
         console.log("File is too large to parse");
         return null;
     };

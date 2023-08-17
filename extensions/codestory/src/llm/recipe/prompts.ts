@@ -7,20 +7,20 @@ export const generatePlanAndQueriesPrompt = (): string => {
     * The code search engine is based on semantic similarity. Ask questions that involve code snippets, function references, or mention relevant file paths.
     * The user's instructions should be treated as the source of truth, but sometimes the user will not mention the entire context. In that case, you should add the missing context.
     * Gather files that are relevant, including dependencies and similar files in the codebase. For example, if the user asked to write tests, look at similar tests.
-    
+
     You MUST follow the following format delimited with XML tags:
-    
-    Step-by-step thoughts with explanations: 
+
+    Step-by-step thoughts with explanations:
     * Thought 1 - Explanation 1
     * Thought 2 - Explanation 2
     ...
-    
+
     <queries>
     * query 1
     * query 2
     * query 3
     </queries>
-    
+
     <additional_instructions>
     * additional instructions to be appended to the user's instructions
     </additional_instructions>
@@ -79,14 +79,14 @@ export const fileFunctionsToParsePrompt = (): string => {
     * There MUST modify_code_symbol XML tags
     * The list of code symbols to modify may be empty, but you MUST leave the XML tags with a single list element with "* None"
     * modify up to 5 code symbols
-    
+
     You MUST follow the following format delimited with XML tags:
-    
-    Step-by-step thoughts with explanations: 
+
+    Step-by-step thoughts with explanations:
     * Thought 1 - Explanation 1
     * Thought 2 - Explanation 2
     ...
-    
+
     <modify_code_symbol>
     * code_symbol_1: instructions_1
     * code_symbol_2: instructions_2
@@ -175,14 +175,14 @@ if example:
 
 def func():
     a = 3
-    
+
 </old_file>
 
 ---
 
 Code Planning:
 <code_planning>
-Step-by-step thoughts with explanations: 
+Step-by-step thoughts with explanations:
 * Thought 1 - Explanation 1
 * Thought 2 - Explanation 2
 ...
@@ -201,12 +201,13 @@ Lines to change in the file: (include multiple small changes as opposed to one l
 Code Generation:
 \`\`\`
 Generate a diff based on the given plan using the search and replace pairs in the following format.Always prefer the least amount of changes possible.Do not remove comments.
-
+<code_generation>
 <<<< ORIGINAL
 old_code
 ====
 new_code
 >>>> UPDATED
+</code_generation>
 \`\`\`
 
 Context: "Change hello to goodbye and change 3 to 4". Limit your changes to the context.
@@ -342,7 +343,7 @@ Detailed plan for changing the file content:
 Final file content:
 <final_file_content>
 ... (fill this with the new file content)
-</final_file_content>    
+</final_file_content>
     `;
 };
 
@@ -459,7 +460,7 @@ Test setup required required (no user input should be requested):
 Test script:
 <test_script>
 ... (fill this with the test script)
-</test_script>    
+</test_script>
     `;
 };
 
@@ -577,7 +578,7 @@ Generate the full test script, and repeat yourself event if its the same
 Test script:
 <test_script>
 ... (fill this with the test script)
-</test_script>    
+</test_script>
     `;
 };
 
