@@ -12,6 +12,7 @@ const dirs = [
 	'extensions',
 	'extensions/configuration-editing',
 	'extensions/codestory',
+	'extensions/cs-chat',
 	'extensions/css-language-features',
 	'extensions/css-language-features/server',
 	'extensions/debug-auto-launch',

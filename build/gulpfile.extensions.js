@@ -34,6 +34,7 @@ const compilations = [
 	'configuration-editing/build/tsconfig.json',
 	'configuration-editing/tsconfig.json',
 	'codestory/tsconfig.json',
+	'cs-chat/tsconfig.json',
 	'css-language-features/client/tsconfig.json',
 	'css-language-features/server/tsconfig.json',
 	'debug-auto-launch/tsconfig.json',

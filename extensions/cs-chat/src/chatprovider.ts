@@ -101,6 +101,74 @@ class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetai
 	}
 }
 
+class CSChatProgressContent implements vscode.InteractiveProgressContent {
+	content: string;
+
+	constructor(content: string) {
+		this.content = content;
+	}
+
+	toString(): string {
+		return `CSChatProgressContent { content: "${this.content}" }`;
+	}
+}
+
+class CSChatProgressId implements vscode.InteractiveProgressId {
+	responseId: string;
+
+	constructor(responseId: string) {
+		this.responseId = responseId;
+	}
+
+	toString(): string {
+		return `CSChatProgressId { responseId: "${this.responseId}" }`;
+	}
+}
+
+class CSChatFileTreeData implements vscode.FileTreeData {
+	label: string;
+	uri: vscode.Uri;
+	children?: vscode.FileTreeData[] | undefined;
+
+	constructor(label: string, uri: vscode.Uri, children?: vscode.FileTreeData[] | undefined) {
+		this.label = label;
+		this.uri = uri;
+		this.children = children;
+	}
+
+	toString(): string {
+		return `CSChatFileTreeData { label: "${this.label}", uri: "${this.uri}", children: ${JSON.stringify(this.children, null, 2)} }`;
+	}
+}
+
+class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
+	treeData: CSChatFileTreeData;
+
+	constructor(treeData: CSChatFileTreeData) {
+		this.treeData = treeData;
+	}
+
+	toString(): string {
+		return `CSChatProgressFileTree { treeData: "${this.treeData}" }`;
+	}
+}
+
+class CSChatProgressTask implements vscode.InteractiveProgressTask {
+	placeholder: string;
+	resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>;
+
+	constructor(placeholder: string, resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>) {
+		this.placeholder = placeholder;
+		this.resolvedContent = resolvedContent;
+	}
+
+	toString(): string {
+		return `CSChatProgressTask { placeholder: "${this.placeholder}", resolvedContent: "${this.resolvedContent}" }`;
+	}
+}
+
+type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
+
 class CSChatResponseForProgress implements vscode.InteractiveResponseForProgress {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
 
@@ -130,7 +198,11 @@ class CSChatCancellationToken implements vscode.CancellationToken {
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', initialState, token);
-		return new CSChatSession(new CSChatParticipant('Requester'), new CSChatParticipant('Responder'));
+		return new CSChatSession(
+			new CSChatParticipant('Requester'),
+			new CSChatParticipant('Responder'),
+			'What can I help you accomplish today?'
+		);
 	}
 
 	resolveRequest(session: CSChatSession, context: CSChatRequestArgs | string, token: CSChatCancellationToken): vscode.ProviderResult<CSChatRequest> {
@@ -138,9 +210,10 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return new CSChatRequest(session, context.toString());
 	}
 
-	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<vscode.InteractiveProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
+	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgres', request, progress, token);
-		return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Hello there!'));
+		progress.report(new CSChatProgressContent('Hello there!'));
+		return new CSChatResponseForProgress();
 	}
 
 	removeRequest(session: CSChatSession, requestId: string) {
