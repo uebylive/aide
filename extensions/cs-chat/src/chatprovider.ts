@@ -5,14 +5,8 @@
 import * as vscode from 'vscode';
 
 import logger from './logger';
-import { CSChatState } from './chatState/state';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
-	public chatContext: CSChatState;
-
-	constructor() {
-		this.chatContext = new CSChatState();
-	}
 }
 
 class CSChatParticipant implements vscode.InteractiveSessionParticipantInformation {
@@ -33,18 +27,11 @@ class CSChatSession implements vscode.InteractiveSession {
 	requester: CSChatParticipant;
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
-	public chatSessionState: CSChatSessionState;
 
-	saveState(): CSChatSessionState {
-		logger.info('Saving state' + this.toString());
-		return this.chatSessionState;
-	}
-
-	constructor(requester: CSChatParticipant, responder: CSChatParticipant, initialState: CSChatSessionState | undefined, inputPlaceholder?: string | undefined) {
+	constructor(requester: CSChatParticipant, responder: CSChatParticipant, inputPlaceholder?: string | undefined) {
 		this.requester = requester;
 		this.responder = responder;
 		this.inputPlaceholder = inputPlaceholder;
-		this.chatSessionState = initialState ?? new CSChatSessionState();
 	}
 
 	toString(): string {
@@ -209,37 +196,23 @@ class CSChatCancellationToken implements vscode.CancellationToken {
 }
 
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
-	private _chatSessionState: CSChatSessionState;
-
-	constructor() {
-		this._chatSessionState = new CSChatSessionState();
-	}
-
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', initialState, token);
 		return new CSChatSession(
 			new CSChatParticipant('Requester'),
 			new CSChatParticipant('Responder'),
-			initialState,
 			'Ask CodeStory a question or type \'/\' for topics?'
 		);
 	}
 
 	resolveRequest(session: CSChatSession, context: CSChatRequestArgs | string, token: CSChatCancellationToken): vscode.ProviderResult<CSChatRequest> {
 		logger.info('resolveRequest', session, context, token);
-		// Here there can be actions from the / commands or just normal string
-		// followup, so we need to handle both of them separately
-		session.chatSessionState.chatContext.addUserMessage(context.toString());
-		logger.info(`[codestory][message_length][resolveRequest] ${this._chatSessionState.chatContext.getMessageLength()}`);
 		return new CSChatRequest(session, context.toString());
 	}
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
-		logger.info('provideResponseWithProgress', request, progress, token);
+		logger.info('provideResponseWithProgres', request, progress, token);
 		progress.report(new CSChatProgressContent('Hello there!'));
-		this._chatSessionState.chatContext.addUserMessage(request.message.toString());
-		this._chatSessionState.chatContext.addCodeStoryMessage('Hello there!');
-		logger.info(`[codestory][message_length][provideResponseWithProgress] ${this._chatSessionState.chatContext.getMessageLength()}`);
 		return new CSChatResponseForProgress();
 	}
 
