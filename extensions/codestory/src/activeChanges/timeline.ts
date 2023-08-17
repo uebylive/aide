@@ -1,137 +1,141 @@
-import * as path from "path";
-import { createPatch } from "diff";
-import { Configuration, OpenAIApi } from "openai";
-import { ExtensionContext, OutputChannel, workspace } from "vscode";
-import { CodeSymbolChange, CodeSymbolChangeType, TrackCodeSymbolChanges } from "./trackCodeSymbolChanges";
-import { stateManager } from "../utilities/stateManager";
-import { CodeStoryViewProvider } from "../views/codeStoryView";
-import { TimeKeeper } from "../subscriptions/timekeeper";
-import { CodeBlockChangeDescriptionGenerator } from "./codeBlockChangeDescriptionGenerator";
-import { Logger } from "winston";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import * as path from 'path';
+import { createPatch } from 'diff';
+import { Configuration, OpenAIApi } from 'openai';
+import { ExtensionContext, OutputChannel, workspace } from 'vscode';
+import { CodeSymbolChange, CodeSymbolChangeType, TrackCodeSymbolChanges } from './trackCodeSymbolChanges';
+import { stateManager } from '../utilities/stateManager';
+import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { TimeKeeper } from '../subscriptions/timekeeper';
+import { CodeBlockChangeDescriptionGenerator } from './codeBlockChangeDescriptionGenerator';
+import { Logger } from 'winston';
 
 
 const configuration = new Configuration({
-    apiKey: "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",
+	apiKey: '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',
 });
 const openai = new OpenAIApi(configuration);
 
 // The data we need to send over to the webview for rendering the timeline
 export interface CodeSymbolChangeWebView {
-    name: string;
-    startLine: number;
-    endLine: number;
-    changeType: CodeSymbolChangeType;
-    filePath: string;
-    workingDirectory: string;
-    changeTime: Date;
-    relativePath: string;
-    componentIdentifier: string;
-    commitIdentifier: string;
-    displayName: string;
-    diffPatch: string;
+	name: string;
+	startLine: number;
+	endLine: number;
+	changeType: CodeSymbolChangeType;
+	filePath: string;
+	workingDirectory: string;
+	changeTime: Date;
+	relativePath: string;
+	componentIdentifier: string;
+	commitIdentifier: string;
+	displayName: string;
+	diffPatch: string;
 }
 
 export const onDidOpenTextDocument = (
-    context: ExtensionContext,
-    logger: OutputChannel
+	context: ExtensionContext,
+	logger: OutputChannel
 ) =>
-    workspace.onDidOpenTextDocument((doc) => {
-        stateManager(context).updateDocuments(doc.uri.fsPath, doc.getText());
-    });
+	workspace.onDidOpenTextDocument((doc) => {
+		stateManager(context).updateDocuments(doc.uri.fsPath, doc.getText());
+	});
 
 export const onTextDocumentChange = (context: ExtensionContext, logger: OutputChannel) => {
-    const state = stateManager(context);
-    return workspace.onDidSaveTextDocument(async (doc) => {
-        const documents = state.getDocuments();
-        console.log("something");
-        if (doc.uri.fsPath in documents) {
-            const checkpoint = new Date();
-            const oldText = documents[doc.uri.fsPath] || "";
-            const newText = doc.getText();
-            console.log("something");
+	const state = stateManager(context);
+	return workspace.onDidSaveTextDocument(async (doc) => {
+		const documents = state.getDocuments();
+		console.log('something');
+		if (doc.uri.fsPath in documents) {
+			const checkpoint = new Date();
+			const oldText = documents[doc.uri.fsPath] || '';
+			const newText = doc.getText();
+			console.log('something');
 
-            const diff =
-                `${checkpoint.toLocaleString("en-US")}\n` +
-                createPatch(doc.uri.fsPath, oldText, newText) +
-                "\n";
+			const diff =
+				`${checkpoint.toLocaleString('en-US')}\n` +
+				createPatch(doc.uri.fsPath, oldText, newText) +
+				'\n';
 
-            state.setCheckpoint(checkpoint);
-            state.appendChanges(diff);
-            state.updateDocuments(doc.uri.fsPath, newText);
-        }
-    });
+			state.setCheckpoint(checkpoint);
+			state.appendChanges(diff);
+			state.updateDocuments(doc.uri.fsPath, newText);
+		}
+	});
 };
 
 const codeSymbolChangeForWebview = (codeSymbolChanges: CodeSymbolChange[]): CodeSymbolChangeWebView[] => {
-    const messageChanges: CodeSymbolChangeWebView[] = [];
-    codeSymbolChanges.forEach((codeSymbolChange) => {
-        messageChanges.push({
-            name: codeSymbolChange.name,
-            startLine: codeSymbolChange.codeSymbol.symbolStartLine,
-            endLine: codeSymbolChange.codeSymbol.symbolEndLine,
-            changeType: codeSymbolChange.changeType,
-            filePath: codeSymbolChange.codeSymbol.fsFilePath,
-            workingDirectory: codeSymbolChange.codeSymbol.workingDirectory,
-            changeTime: codeSymbolChange.changeTime,
-            relativePath: path.relative(
-                codeSymbolChange.codeSymbol.workingDirectory,
-                codeSymbolChange.codeSymbol.fsFilePath
-            ),
-            componentIdentifier: codeSymbolChange.componentIdentifier,
-            commitIdentifier: codeSymbolChange.commitIdentifier,
-            displayName: codeSymbolChange.codeSymbol.displayName,
-            diffPatch: codeSymbolChange.diffPatch,
-        });
-    });
-    return messageChanges;
+	const messageChanges: CodeSymbolChangeWebView[] = [];
+	codeSymbolChanges.forEach((codeSymbolChange) => {
+		messageChanges.push({
+			name: codeSymbolChange.name,
+			startLine: codeSymbolChange.codeSymbol.symbolStartLine,
+			endLine: codeSymbolChange.codeSymbol.symbolEndLine,
+			changeType: codeSymbolChange.changeType,
+			filePath: codeSymbolChange.codeSymbol.fsFilePath,
+			workingDirectory: codeSymbolChange.codeSymbol.workingDirectory,
+			changeTime: codeSymbolChange.changeTime,
+			relativePath: path.relative(
+				codeSymbolChange.codeSymbol.workingDirectory,
+				codeSymbolChange.codeSymbol.fsFilePath
+			),
+			componentIdentifier: codeSymbolChange.componentIdentifier,
+			commitIdentifier: codeSymbolChange.commitIdentifier,
+			displayName: codeSymbolChange.codeSymbol.displayName,
+			diffPatch: codeSymbolChange.diffPatch,
+		});
+	});
+	return messageChanges;
 };
 
 export const triggerCodeSymbolChange = async (
-    provider: CodeStoryViewProvider,
-    trackCodeSymbolChanges: TrackCodeSymbolChanges,
-    timeKeeperFileSaved: TimeKeeper,
-    documentWhichWasSaved: string,
-    codeBlockDescriptionGenerator: CodeBlockChangeDescriptionGenerator,
-    logger: Logger,
+	provider: CodeStoryViewProvider,
+	trackCodeSymbolChanges: TrackCodeSymbolChanges,
+	timeKeeperFileSaved: TimeKeeper,
+	documentWhichWasSaved: string,
+	codeBlockDescriptionGenerator: CodeBlockChangeDescriptionGenerator,
+	logger: Logger,
 ) => {
-    if (!trackCodeSymbolChanges.statusUpdated) {
-        return;
-    }
-    if (!timeKeeperFileSaved.isInvocationAllowed(Date.now())) {
-        return;
-    }
-    const trackedCodeSymbolChanges = await trackCodeSymbolChanges.getTreeListOfChangesWeHaveToCommit(
-        trackCodeSymbolChanges.getChangedCodeSymbols()
-    );
+	if (!trackCodeSymbolChanges.statusUpdated) {
+		return;
+	}
+	if (!timeKeeperFileSaved.isInvocationAllowed(Date.now())) {
+		return;
+	}
+	const trackedCodeSymbolChanges = await trackCodeSymbolChanges.getTreeListOfChangesWeHaveToCommit(
+		trackCodeSymbolChanges.getChangedCodeSymbols()
+	);
 
-    const messageChanges = codeSymbolChangeForWebview(trackedCodeSymbolChanges);
+	const messageChanges = codeSymbolChangeForWebview(trackedCodeSymbolChanges);
 
-    logger.info(`[timeline-debugging] Got changelog ${JSON.stringify(messageChanges)}`);
+	logger.info(`[timeline-debugging] Got changelog ${JSON.stringify(messageChanges)}`);
 
-    const view = provider.getView();
-    if (view === undefined) {
-        logger.info("no view present yet.....");
-    }
+	const view = provider.getView();
+	if (view === undefined) {
+		logger.info('no view present yet.....');
+	}
 
-    provider.getView()?.webview.postMessage({
-        command: "getChangeLog",
-        payload: {
-            changes: messageChanges,
-        },
-    });
+	provider.getView()?.webview.postMessage({
+		command: 'getChangeLog',
+		payload: {
+			changes: messageChanges,
+		},
+	});
 
-    // Now we generate the descriptions of the changes in the code block and pass
-    // it to the webview
-    const changeDescriptionData = await codeBlockDescriptionGenerator.generateDescriptionOfCodeBlockChange(
-        trackedCodeSymbolChanges, documentWhichWasSaved,
-    );
-    logger.info("[triggerCodeSymbolChange] Got change description data: " + JSON.stringify(changeDescriptionData));
-    if (changeDescriptionData) {
-        provider.getView()?.webview.postMessage({
-            command: "getComponentChangeDescription",
-            payload: {
-                ...changeDescriptionData,
-            },
-        });
-    }
+	// Now we generate the descriptions of the changes in the code block and pass
+	// it to the webview
+	const changeDescriptionData = await codeBlockDescriptionGenerator.generateDescriptionOfCodeBlockChange(
+		trackedCodeSymbolChanges, documentWhichWasSaved,
+	);
+	logger.info('[triggerCodeSymbolChange] Got change description data: ' + JSON.stringify(changeDescriptionData));
+	if (changeDescriptionData) {
+		provider.getView()?.webview.postMessage({
+			command: 'getComponentChangeDescription',
+			payload: {
+				...changeDescriptionData,
+			},
+		});
+	}
 };

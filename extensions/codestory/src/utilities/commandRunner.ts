@@ -1,36 +1,40 @@
-import { spawn } from "child_process";
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { spawn } from 'child_process';
 
 export async function runCommandAsync(
-    workingDirectory: string,
-    cmd: string,
-    args: string[] = []
+	workingDirectory: string,
+	cmd: string,
+	args: string[] = []
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
-    return new Promise((resolve, reject) => {
-        let stdout = "";
-        let stderr = "";
+	return new Promise((resolve, reject) => {
+		let stdout = '';
+		let stderr = '';
 
-        const child = spawn(cmd, args, {
-            cwd: workingDirectory,
-        });
+		const child = spawn(cmd, args, {
+			cwd: workingDirectory,
+		});
 
-        child.stdout.on("data", (data) => {
-            stdout += data;
-        });
+		child.stdout.on('data', (data) => {
+			stdout += data;
+		});
 
-        child.stderr.on("data", (data) => {
-            stderr += data;
-        });
+		child.stderr.on('data', (data) => {
+			stderr += data;
+		});
 
-        child.on("close", (code) => {
-            if (code !== 0) {
-                reject(new Error(`Command exited with code: ${code}, stderr: ${stderr}`));
-            } else {
-                resolve({ stdout, stderr, exitCode: code });
-            }
-        });
+		child.on('close', (code) => {
+			if (code !== 0) {
+				reject(new Error(`Command exited with code: ${code}, stderr: ${stderr}`));
+			} else {
+				resolve({ stdout, stderr, exitCode: code });
+			}
+		});
 
-        child.on("error", (error) => {
-            reject(error);
-        });
-    });
+		child.on('error', (error) => {
+			reject(error);
+		});
+	});
 }

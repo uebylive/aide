@@ -64,8 +64,6 @@ async function tryBuild(options, didBuild) {
  */
 module.exports.run = async function (config, args, didBuild) {
 	console.log('Running esbuild...');
-	console.log(`config: ${JSON.stringify(config, null, 2)}`);
-	console.log(`args: ${JSON.stringify(args, null, 2)}`);
 
 	let outdir = config.outdir;
 	const outputRootIndex = args.indexOf('--outputRoot');

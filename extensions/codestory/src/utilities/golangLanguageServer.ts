@@ -1,5 +1,7 @@
-// import { workspace } from 'vscode';
-// import { LanguageClient } from 'vscode-languageclient/node';
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 
 // let serverOptions = {
@@ -14,41 +16,41 @@
 // 	{}
 // );
 // client.start();
-// client.sendRequest("initialize", {});
-import { LanguageClient, TransportKind, DocumentSymbolRequest } from "vscode-languageclient/node";
-import { TextDocumentIdentifier } from "vscode-languageserver-protocol";
-import fs = require("fs");
+// client.sendRequest('initialize', {});
+import { LanguageClient, TransportKind, DocumentSymbolRequest } from 'vscode-languageclient/node';
+import { TextDocumentIdentifier } from 'vscode-languageserver-protocol';
+import fs = require('fs');
 import { workspace } from 'vscode';
 
 
 const debugging = async () => {
 
-	let serverOptions = {
+	const serverOptions = {
 		run: {
-			command: "/Users/skcd/go/bin/gopls",
-			args: ["serve"],
+			command: '/Users/skcd/go/bin/gopls',
+			args: ['serve'],
 		},
 		debug: {
-			command: "/Users/skcd/go/bin/gopls",
+			command: '/Users/skcd/go/bin/gopls',
 		},
 	};
 
-	let clientOptions = {
-		documentSelector: [{ scheme: "file", language: "go" }],
+	const clientOptions = {
+		documentSelector: [{ scheme: 'file', language: 'go' }],
 		synchronize: {
-			fileEvents: workspace.createFileSystemWatcher("**/*.go"),
+			fileEvents: workspace.createFileSystemWatcher('**/*.go'),
 		},
 		initializationOptions: {
 			processId: process.pid,
-			rootPath: "/Users/skcd/Downloads/mugavari-main",
+			rootPath: '/Users/skcd/Downloads/mugavari-main',
 			capabilities: {}, // Put your client's capabilities here if needed
-			trace: "off",
+			trace: 'off',
 		},
 	};
 
-	let client = new LanguageClient(
-		"goLanguageServer",
-		"Go Language Server",
+	const client = new LanguageClient(
+		'goLanguageServer',
+		'Go Language Server',
 		serverOptions,
 		clientOptions,
 	);
@@ -58,21 +60,21 @@ const debugging = async () => {
 	// client.onReady().then(() => {
 	// Send initialization request
 	// const reply = await client
-	// 	.sendRequest("initialize", {
+	// 	.sendRequest('initialize', {
 	// 		processId: process.pid,
-	// 		rootPath: "/Users/skcd/Downloads/mugavari-main",
+	// 		rootPath: '/Users/skcd/Downloads/mugavari-main',
 	// 		capabilities: {}, // Put your client's capabilities here if needed
-	// 		trace: "off",
+	// 		trace: 'off',
 	// 	});
 	// 	.then(() => {
-	const docURI = "file:///Users/skcd/Downloads/mugavari-main/internal/app/reaper/reaper.go";
+	const docURI = 'file:///Users/skcd/Downloads/mugavari-main/internal/app/reaper/reaper.go';
 
-	// "Open" the document
-	const fileContent = fs.readFileSync(docURI.slice(7), "utf8");
-	client.sendNotification("textDocument/didOpen", {
+	// 'Open' the document
+	const fileContent = fs.readFileSync(docURI.slice(7), 'utf8');
+	client.sendNotification('textDocument/didOpen', {
 		textDocument: {
 			uri: docURI,
-			languageId: "go",
+			languageId: 'go',
 			version: 1,
 			text: fileContent,
 		},

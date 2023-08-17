@@ -1,15 +1,18 @@
-// We are going to setup the anton backend here
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
-import fetch from "node-fetch";
-import { workspace, window, ProgressLocation, extensions, env } from "vscode";
-import * as path from "path";
-import * as fs from "fs";
-import axios from "axios";
-import { promisify } from "util";
-import { spawn } from "child_process";
-import { exec, execFile } from "child_process";
-import * as os from "os";
-import { downloadFromGCPBucket } from "./gcpBucket";
+// We are going to setup the anton backend here
+import fetch from 'node-fetch';
+import { workspace, window, ProgressLocation, extensions, env } from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
+import axios from 'axios';
+import { promisify } from 'util';
+import { spawn, exec, execFile } from 'child_process';
+import * as os from 'os';
+import { downloadFromGCPBucket } from './gcpBucket';
 
 export function getContinueServerUrl() {
 	// Passed in from launch.json
@@ -18,30 +21,32 @@ export function getContinueServerUrl() {
 	}
 
 	return (
-		workspace.getConfiguration("aide").get<string>("pythonServerUrl") ||
-		"http://localhost:42424"
+		workspace.getConfiguration('aide').get<string>('pythonServerUrl') ||
+		'http://localhost:42424'
 	);
 }
 
 async function runCommand(cmd: string): Promise<[string, string | undefined]> {
-	var stdout = "";
-	var stderr = "";
+	let stdout = '';
+	let stderr = '';
 	try {
-		var { stdout, stderr } = await promisify(exec)(cmd, {
-			shell: process.platform === "win32" ? "powershell.exe" : undefined,
+		const output = await promisify(exec)(cmd, {
+			shell: process.platform === 'win32' ? 'powershell.exe' : undefined,
 		});
+		stdout = output.stdout;
+		stderr = output.stderr;
 	} catch (e: any) {
 		stderr = e.stderr;
 		stdout = e.stdout;
 	}
 
-	const stderrOrUndefined = stderr === "" ? undefined : stderr;
+	const stderrOrUndefined = stderr === '' ? undefined : stderr;
 	return [stdout, stderrOrUndefined];
 }
 
 export function getExtensionVersion() {
-	const extension = extensions.getExtension("codestory-ghost.codestoryai");
-	return extension?.packageJSON.version || "";
+	const extension = extensions.getExtension('codestory-ghost.codestoryai');
+	return extension?.packageJSON.version || '';
 }
 
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
@@ -49,7 +54,7 @@ async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	try {
 		const response = await axios.get(`${serverUrl}/api/health`);
 		if (response.status === 200) {
-			console.log("Aide python server already running");
+			console.log('Aide python server already running');
 			return true;
 		} else {
 			return false;
@@ -71,7 +76,7 @@ function killProcessOnPort(port: number) {
 
 		if (pid) {
 			// Kill the process
-			execFile("kill", ["-9", `${pid}`], (killError) => {
+			execFile('kill', ['-9', `${pid}`], (killError) => {
 				if (killError) {
 					console.error(`Error killing process: ${killError}`);
 					return;
@@ -87,12 +92,12 @@ function killProcessOnPort(port: number) {
 async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 	const serverRunning = await checkServerRunning(serverUrl);
 	if (serverRunning) {
-		console.log("Killing server from old version of Aide");
+		console.log('Killing server from old version of Aide');
 		try {
 			killProcessOnPort(42424);
 		} catch (e: any) {
-			if (!e.message.includes("Process doesn't exist")) {
-				console.log("Failed to kill old server:", e);
+			if (!e.message.includes('Process doesn\'t exist')) {
+				console.log('Failed to kill old server:', e);
 			}
 		}
 	}
@@ -100,7 +105,7 @@ async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 }
 
 function serverPath(extensionGlobalStorage: string): string {
-	const sPath = path.join(extensionGlobalStorage, "server");
+	const sPath = path.join(extensionGlobalStorage, 'server');
 	if (!fs.existsSync(sPath)) {
 		fs.mkdirSync(sPath);
 	}
@@ -108,7 +113,7 @@ function serverPath(extensionGlobalStorage: string): string {
 }
 
 function serverVersionPath(extensionGlobalStorage: string): string {
-	return path.join(serverPath(extensionGlobalStorage), "server_version.txt");
+	return path.join(serverPath(extensionGlobalStorage), 'server_version.txt');
 }
 
 export const writeConfigFileForAnton = async (
@@ -121,54 +126,54 @@ export const writeConfigFileForAnton = async (
 		sessionId,
 		preTestCommand,
 	};
-	if (!fs.existsSync("/tmp/codestory")) {
-		fs.mkdirSync("/tmp/codestory");
+	if (!fs.existsSync('/tmp/codestory')) {
+		fs.mkdirSync('/tmp/codestory');
 	}
-	const configPath = path.join(workingDirectory, ".codestory.json");
+	const configPath = path.join(workingDirectory, '.codestory.json');
 	fs.writeFileSync(configPath, JSON.stringify(config));
-}
+};
 
 export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string): Promise<string> {
 	// Check vscode settings
 	const serverUrl = getContinueServerUrl();
-	if (serverUrl !== "http://localhost:42424") {
-		console.log("CodeStory server is being run manually, skipping start");
-		return "http://localhost:42424";
+	if (serverUrl !== 'http://localhost:42424') {
+		console.log('CodeStory server is being run manually, skipping start');
+		return 'http://localhost:42424';
 	}
 
 	// Check if server is already running
 	if (await checkOrKillRunningServer(serverUrl)) {
-		console.log("CodeStory server already running");
-		return "http://localhost:42424";
+		console.log('CodeStory server already running');
+		return 'http://localhost:42424';
 	}
 
-	console.log("Starting Aide server right now");
+	console.log('Starting Aide server right now');
 
 	// Download the server executable
-	const bucket = "aide-binary";
+	const bucket = 'aide-binary';
 	const fileName =
-		os.platform() === "win32"
-			? "windows/run.exe"
-			: os.platform() === "darwin"
-				? "mac/run"
-				: "linux/run";
+		os.platform() === 'win32'
+			? 'windows/run.exe'
+			: os.platform() === 'darwin'
+				? 'mac/run'
+				: 'linux/run';
 
 	const destination = path.join(
 		extensionBasePath,
-		"server",
-		"exe",
-		`run${os.platform() === "win32" ? ".exe" : ""}`
+		'server',
+		'exe',
+		`run${os.platform() === 'win32' ? '.exe' : ''}`
 	);
 
 	// First, check if the server is already downloaded
 	let shouldDownload = true;
-	console.log("Checking if server already downloaded");
+	console.log('Checking if server already downloaded');
 	if (fs.existsSync(destination)) {
 		// Check if the server is the correct version
-		const serverVersion = fs.readFileSync(serverVersionPath(extensionBasePath), "utf8");
+		const serverVersion = fs.readFileSync(serverVersionPath(extensionBasePath), 'utf8');
 		if (serverVersion === getExtensionVersion()) {
 			// The current version is already up and running, no need to run
-			console.log("Aide server already downloaded");
+			console.log('Aide server already downloaded');
 			shouldDownload = false;
 		} else {
 			fs.unlinkSync(destination);
@@ -176,11 +181,11 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 	}
 
 	if (shouldDownload) {
-		console.log("Downloading the aide server...");
+		console.log('Downloading the aide server...');
 		await window.withProgress(
 			{
 				location: ProgressLocation.SourceControl,
-				title: "Installing Aide server...",
+				title: 'Installing Aide server...',
 				cancellable: false,
 			},
 			async () => {
@@ -189,13 +194,13 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 		);
 	}
 
-	console.log("Downloaded server executable at ", destination);
+	console.log('Downloaded server executable at ', destination);
 	// Get name of the corresponding executable for platform
-	if (os.platform() === "darwin") {
+	if (os.platform() === 'darwin') {
 		// Add necessary permissions
 		fs.chmodSync(destination, 0o7_5_5);
 		await runCommand(`xattr -dr com.apple.quarantine ${destination}`);
-	} else if (os.platform() === "linux") {
+	} else if (os.platform() === 'linux') {
 		// Add necessary permissions
 		fs.chmodSync(destination, 0o7_5_5);
 	}
@@ -208,10 +213,10 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 	}
 
 	// Run the executable
-	console.log("Starting Aide server");
+	console.log('Starting Aide server');
 	let attempts = 0;
-	let maxAttempts = 5;
-	let delay = 1000; // Delay between each attempt in milliseconds
+	const maxAttempts = 5;
+	const delay = 1000; // Delay between each attempt in milliseconds
 
 	const spawnChild = async () => {
 		const retry = () => {
@@ -227,43 +232,43 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 			};
 			const macLinuxSettings = {
 				detached: true,
-				stdio: "ignore",
+				stdio: 'ignore',
 			};
-			const settings: any = os.platform() === "win32" ? windowsSettings : macLinuxSettings;
+			const settings: any = os.platform() === 'win32' ? windowsSettings : macLinuxSettings;
 
 			// Spawn the server
 			// We need to write to /tmp/codestory/.codestory.json with the settings
 			// blob so the server can start up
 			await writeConfigFileForAnton(workingDirectory, env.machineId, []);
-			const args = ["start-server", "--port", "42424"];
+			const args = ['start-server', '--port', '42424'];
 			const child = spawn(destination, args, settings);
 
 			// Either unref to avoid zombie process, or listen to events because you can
-			if (os.platform() === "win32") {
-				child.stdout.on("data", (data: any) => {
+			if (os.platform() === 'win32') {
+				child.stdout.on('data', (data: any) => {
 					// console.log(`stdout: ${data}`);
 				});
-				child.stderr.on("data", (data: any) => {
+				child.stderr.on('data', (data: any) => {
 					console.log(`stderr: ${data}`);
 				});
-				child.on("error", (err: any) => {
+				child.on('error', (err: any) => {
 					if (attempts < maxAttempts) {
 						retry();
 					} else {
-						console.error("Failed to start subprocess.", err);
+						console.error('Failed to start subprocess.', err);
 					}
 				});
-				child.on("exit", (code: any, signal: any) => {
-					console.log("Subprocess exited with code", code, signal);
+				child.on('exit', (code: any, signal: any) => {
+					console.log('Subprocess exited with code', code, signal);
 				});
-				child.on("close", (code: any, signal: any) => {
-					console.log("Subprocess closed with code", code, signal);
+				child.on('close', (code: any, signal: any) => {
+					console.log('Subprocess closed with code', code, signal);
 				});
 			} else {
 				child.unref();
 			}
 		} catch (e: any) {
-			console.log("Error starting server:", e);
+			console.log('Error starting server:', e);
 			retry();
 		}
 	};
@@ -272,13 +277,13 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 
 	// Write the current version of vscode extension to a file called server_version.txt
 	fs.writeFileSync(serverVersionPath(extensionBasePath), getExtensionVersion());
-	return "http://localhost:42424";
+	return 'http://localhost:42424';
 }
 
 
 // void (async () => {
 // 	startAidePythonBackend(
-// 		"/Users/skcd/Desktop/",
-// 		"/Users/skcd/scratch/anton/"
+// 		'/Users/skcd/Desktop/',
+// 		'/Users/skcd/scratch/anton/'
 // 	);
 // })();

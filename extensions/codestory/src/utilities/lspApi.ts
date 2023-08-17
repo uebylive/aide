@@ -1,8 +1,11 @@
-// Here we are going to store all the LSP apis we get access to.
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 import { DocumentSymbol, Position, SymbolInformation, SymbolKind, Uri, languages, workspace } from 'vscode';
 import logger from '../logger';
-import * as path from "path";
+import * as path from 'path';
 import { sleep } from './sleep';
 import * as fs from 'fs';
 import { CodeSymbolInformation, CodeSymbolKind } from './types';
@@ -58,8 +61,6 @@ function convertVSCodeSymbolKind(symbolKind: SymbolKind): CodeSymbolKind {
 			return CodeSymbolKind.number;
 		case SymbolKind.Boolean:
 			return CodeSymbolKind.boolean;
-		case SymbolKind.Array:
-			return CodeSymbolKind.array;
 		case SymbolKind.Object:
 			return CodeSymbolKind.object;
 		case SymbolKind.Key:
@@ -90,8 +91,8 @@ export const getCodeLocationPath = (directoryPath: string, filePath: string): st
 	const relativePath = path.relative(directoryPath, filePathWithoutExt);
 
 	// Replace backslashes with forward slashes to make it work consistently across different platforms (Windows uses backslashes)
-	return relativePath.replace(/\//g, ".");
-}
+	return relativePath.replace(/\//g, '.');
+};
 
 function convertDocumentSymbolToCodeSymbolInformation(
 	documentSymbol: DocumentSymbol,
@@ -101,13 +102,13 @@ function convertDocumentSymbolToCodeSymbolInformation(
 	workingDirectory: string,
 ): CodeSymbolInformation {
 	const codeSymbolInformation: CodeSymbolInformation = {
-		symbolName: getCodeLocationPath(workingDirectory, fsFilePath) + "." + documentSymbol.name,
+		symbolName: getCodeLocationPath(workingDirectory, fsFilePath) + '.' + documentSymbol.name,
 		symbolKind: convertVSCodeSymbolKind(documentSymbol.kind),
 		symbolStartLine: documentSymbol.range.start.line,
 		symbolEndLine: documentSymbol.range.end.line,
 		codeSnippet: {
 			languageId,
-			code: fileSplitLines.slice(documentSymbol.range.start.line, documentSymbol.range.end.line).join("\n"),
+			code: fileSplitLines.slice(documentSymbol.range.start.line, documentSymbol.range.end.line).join('\n'),
 		},
 		extraSymbolHint: documentSymbol.detail,
 		fsFilePath,
@@ -116,7 +117,7 @@ function convertDocumentSymbolToCodeSymbolInformation(
 		displayName: documentSymbol.name,
 		originalName: documentSymbol.detail,
 		originalSymbolName: documentSymbol.name,
-		globalScope: "global",
+		globalScope: 'global',
 		dependencies: [],
 	};
 	return codeSymbolInformation;
@@ -160,9 +161,9 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	workingDirectory: string,
 ): Promise<CodeSymbolInformation[]> => {
 	// Do something here
-	const fileSplitLines = fs.readFileSync(filePath).toString().split("\n");
+	const fileSplitLines = fs.readFileSync(filePath).toString().split('\n');
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		"typescript"
+		'typescript'
 	);
 	const uri = Uri.file(filePath);
 	const textDocument = await workspace.openTextDocument(uri);
@@ -199,14 +200,14 @@ export const getSymbolsFromDocumentUsingLSP = async (
 
 export const getDocumentSymbols = async () => {
 	await sleep(1000);
-	logger.info("[document-symbols-testing] we are here");
+	logger.info('[document-symbols-testing] we are here');
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		"typescript"
+		'typescript'
 	);
-	logger.info("[document-symbol-providers] length " + documentSymbolProviders.length);
+	logger.info('[document-symbol-providers] length ' + documentSymbolProviders.length);
 	const uri = Uri.file('/Users/skcd/scratch/anton/anton/llm/tool_event_collection.py');
 	const textDocument = await workspace.openTextDocument(uri);
-	logger.info("[text documents]");
+	logger.info('[text documents]');
 	logger.info(textDocument.getText());
 	for (let index = 0; index < documentSymbolProviders.length; index++) {
 		const documentSymbols = await documentSymbolProviders[index].provideDocumentSymbols(
@@ -218,29 +219,29 @@ export const getDocumentSymbols = async () => {
 		);
 		// Now we want to write this to a file
 		if (documentSymbols?.length === 0) {
-			logger.info("[document-symbols-testing] no symbols found");
+			logger.info('[document-symbols-testing] no symbols found');
 			continue;
 		}
-		logger.info("[document-symbols-testing]");
+		logger.info('[document-symbols-testing]');
 		logger.info(documentSymbols);
-		fs.writeFileSync("/tmp/documentSymbols", JSON.stringify(documentSymbols), 'utf-8');
+		fs.writeFileSync('/tmp/documentSymbols', JSON.stringify(documentSymbols), 'utf-8');
 	}
 };
 
 export const lspHacking = async () => {
 	await sleep(1000);
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		"typescript"
+		'typescript'
 	);
-	logger.info("[document-symbol-providers golang]");
+	logger.info('[document-symbol-providers golang]');
 	logger.info(documentSymbolProviders);
 	const uri = Uri.file('/Users/skcd/test_repo/ripgrep/crates/core/logger.rs');
 	const textDocument = await workspace.openTextDocument(uri);
 	for (let index = 0; index < documentSymbolProviders.length; index++) {
-		logger.info("[text documents]");
+		logger.info('[text documents]');
 		logger.info(workspace.textDocuments.map(document => document.uri.fsPath));
 		if (textDocument) {
-			logger.info("[textDocuments]");
+			logger.info('[textDocuments]');
 			const documentSymbols = await documentSymbolProviders[index].provideDocumentSymbols(
 				textDocument,
 				{
@@ -248,22 +249,22 @@ export const lspHacking = async () => {
 					onCancellationRequested: () => ({ dispose() { } }),
 				},
 			);
-			logger.info("[symbolsDocument]");
+			logger.info('[symbolsDocument]');
 			logger.info(documentSymbols?.map((symbol) => symbol.name));
 		} else {
-			logger.info("file not found");
+			logger.info('file not found');
 		}
 	}
-	logger.info("[document-symbol-providers] " + documentSymbolProviders.length);
+	logger.info('[document-symbol-providers] ' + documentSymbolProviders.length);
 
 
 	const providers = languages.getDefinitionProvider({
-		language: "typescript",
-		scheme: "file",
+		language: 'typescript',
+		scheme: 'file',
 	});
-	logger.info("[providers for language ss]" + providers.length);
+	logger.info('[providers for language ss]' + providers.length);
 	for (let index = 0; index < providers.length; index++) {
-		logger.info("asking for definitions");
+		logger.info('asking for definitions');
 		try {
 			const definitions = await providers[index].provideDefinition(
 				textDocument,
@@ -273,7 +274,7 @@ export const lspHacking = async () => {
 					onCancellationRequested: () => ({ dispose() { } }),
 				}
 			);
-			logger.info("[definitions sss]");
+			logger.info('[definitions sss]');
 			logger.info(definitions);
 		} catch (e) {
 			logger.info(e);
@@ -281,13 +282,13 @@ export const lspHacking = async () => {
 	}
 
 	const referencesProviders = languages.getReferenceProvider({
-		language: "typescript",
-		scheme: "file",
+		language: 'typescript',
+		scheme: 'file',
 	});
-	logger.info("[references for language ss]" + referencesProviders.length);
+	logger.info('[references for language ss]' + referencesProviders.length);
 	for (let index = 0; index < referencesProviders.length; index++) {
 		try {
-			logger.info("asking for references");
+			logger.info('asking for references');
 			const references = await referencesProviders[index].provideReferences(
 				textDocument,
 				new Position(25, 16),
@@ -299,7 +300,7 @@ export const lspHacking = async () => {
 					onCancellationRequested: () => ({ dispose() { } }),
 				}
 			);
-			logger.info("[references sss]");
+			logger.info('[references sss]');
 			logger.info(references);
 		} catch (e) {
 			logger.info(e);

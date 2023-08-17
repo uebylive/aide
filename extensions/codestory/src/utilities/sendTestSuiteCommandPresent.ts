@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 // We want to send this information to the frontend if the test suite command
 // is present, if its not then we can show it as disabled on the UI
 
@@ -19,5 +23,5 @@ export const sendTestSuiteRunCommand = async (testSuiteRunCommand: string | unde
 		},
 		command: 'testSuiteRunCommand',
 	});
-	console.log("We are sending the request to the webview" + value);
+	console.log('We are sending the request to the webview' + value);
 };

@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import {
 	Webview,
 	Uri,
@@ -7,16 +11,16 @@ import {
 	WebviewViewResolveContext,
 	commands,
 	env,
-} from "vscode";
-import { MessageHandlerData } from "@estruyf/vscode";
+} from 'vscode';
+import { MessageHandlerData } from '@estruyf/vscode';
 
-import postHogClient from "../posthog/client";
-import { getNonce } from "../utilities/getNonce";
-import { getUri } from "../utilities/getUri";
+import postHogClient from '../posthog/client';
+import { getNonce } from '../utilities/getNonce';
+import { getUri } from '../utilities/getUri';
 import { readJSONFromFile } from '../utilities/files';
 
 export class AgentViewProvider implements WebviewViewProvider {
-	public static readonly viewType = "codestory.agentView";
+	public static readonly viewType = 'codestory.agentView';
 	private _view?: WebviewView;
 
 	constructor(private readonly _extensionUri: Uri) { }
@@ -31,8 +35,8 @@ export class AgentViewProvider implements WebviewViewProvider {
 		webviewView.webview.options = {
 			enableScripts: true,
 			localResourceRoots: [
-				// Uri.joinPath(this._extensionUri, "out"),
-				Uri.joinPath(this._extensionUri, "webview-ui/build"),
+				// Uri.joinPath(this._extensionUri, 'out'),
+				Uri.joinPath(this._extensionUri, 'webview-ui/build'),
 			],
 		};
 
@@ -58,29 +62,29 @@ export class AgentViewProvider implements WebviewViewProvider {
 	 */
 	private _getWebviewContent(webview: Webview, extensionUri: Uri) {
 		// The CSS file from the React build output
-		const stylesUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.css"]);
+		const stylesUri = getUri(webview, extensionUri, ['webview-ui', 'build', 'assets', 'index.css']);
 		// The JS file from the React build output
-		const scriptUri = getUri(webview, extensionUri, ["webview-ui", "build", "assets", "index.js"]);
+		const scriptUri = getUri(webview, extensionUri, ['webview-ui', 'build', 'assets', 'index.js']);
 
 		const nonce = getNonce();
 
 		// Tip: Install the es6-string-html VS Code extension to enable code highlighting below
 		return /*html*/ `
-        <!DOCTYPE html>
-        <html lang="en">
-          <head>
-            <meta charset="UTF-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; require-trusted-types-for 'script';">
-            <link rel="stylesheet" type="text/css" href="${stylesUri}">
-            <title>CodeStory</title>
-          </head>
-          <body>
-            <div id="root"></div>
-            <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
-          </body>
-        </html>
-      `;
+			<!DOCTYPE html>
+			<html lang='en'>
+			<head>
+				<meta charset='UTF-8' />
+				<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+				<meta http-equiv='Content-Security-Policy' content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; require-trusted-types-for 'script';">
+				<link rel='stylesheet' type='text/css' href='${stylesUri}'>
+				<title>CodeStory</title>
+			</head>
+			<body>
+				<div id='root'></div>
+				<script type='module' nonce='${nonce}' src='${scriptUri}'></script>
+			</body>
+			</html>
+		`;
 	}
 
 	/**
@@ -96,7 +100,7 @@ export class AgentViewProvider implements WebviewViewProvider {
 				const { command, requestId, payload } = message;
 
 				switch (command) {
-					case "readData":
+					case 'readData': {
 						const responsePayload = readJSONFromFile();
 						webview.postMessage({
 							command,
@@ -104,17 +108,19 @@ export class AgentViewProvider implements WebviewViewProvider {
 							payload: responsePayload,
 						} as MessageHandlerData<Record<string, any>>);
 						return;
-					case "sendPrompt":
+					}
+					case 'sendPrompt': {
 						const prompt = payload.prompt;
 						postHogClient.capture({
 							distinctId: env.machineId,
-							event: "debug_prompt_received",
+							event: 'debug_prompt_received',
 							properties: {
 								prompt: prompt,
 							},
 						});
-						await commands.executeCommand("codestory.debug", message);
+						await commands.executeCommand('codestory.debug', message);
 						return;
+					}
 					default:
 						return;
 				}
