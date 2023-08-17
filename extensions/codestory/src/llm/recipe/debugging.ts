@@ -16,7 +16,7 @@ import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, genera
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
-import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, stripPrefix, writeFileContents } from './helpers';
+import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
 import { Type } from 'ts-morph';
 import { readFileSync } from 'fs';
@@ -57,6 +57,7 @@ export const debuggingFlow = async (
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
 	workingDirectory: string,
+	testSuiteRunCommand: string,
 ): Promise<null> => {
 	console.log('We are here debugging flow');
 	// allow-any-unicode-next-line
@@ -229,6 +230,15 @@ export const debuggingFlow = async (
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 			executionEventId.toString(),
 		);
+
+		if (!shouldExecuteTestHarness(testSuiteRunCommand)) {
+			await toolingEventCollection.executionBranchFinished(
+				executionEventId.toString(),
+				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+				'Test harness not configured, skipping test execution',
+			);
+			continue;
+		}
 
 		// Now we are at the test plan generation phase
 		const testPlan = await generateTestScriptForChange(

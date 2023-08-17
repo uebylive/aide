@@ -75,7 +75,7 @@ export const generateFileInformationSummary = async (
 			if (!project) {
 				continue;
 			}
-			const codeSymbols = parseFileUsingTsMorph(
+			const codeSymbols = await parseFileUsingTsMorph(
 				fileList[index],
 				project,
 				workingDirectory,
@@ -153,7 +153,7 @@ export const generateModificationInputForCodeSymbol = async (
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 
 	// Now supporting big files for now, so we just return null here
-	if (fileCode.split('\n').length > 500) {
+	if (fileCode.split('\n').length > 2000) {
 		console.log('File is too large to parse');
 		return null;
 	}
@@ -195,7 +195,7 @@ export const generateModifiedFileContentAfterDiff = async (
 	const codeSymbol = possibleCodeNodes[0];
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 	// Now supporting big files for now, so we just return null here
-	if (fileCode.split('\n').length > 500) {
+	if (fileCode.split('\n').length > 2000) {
 		return null;
 	}
 
@@ -321,7 +321,7 @@ export const executeTestHarness = async (
 
 	// We also need the new code symbol content so we are going to parse it
 	// from the file
-	const newCodeSymbolNodes = parseFileUsingTsMorph(
+	const newCodeSymbolNodes = await parseFileUsingTsMorph(
 		codeNode.fsFilePath,
 		project,
 		workingDirectory,
@@ -408,4 +408,12 @@ export const executeTestHarness = async (
 		executionEventId,
 	);
 	return exitCode;
+};
+
+
+export const shouldExecuteTestHarness = (testRunCommand: string): boolean => {
+	if (testRunCommand === 'NotPresent') {
+		return false;
+	}
+	return true;
 };

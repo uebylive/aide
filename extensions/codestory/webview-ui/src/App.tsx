@@ -15,21 +15,30 @@ import { ExpandingTextArea } from './components/TextArea/TextArea';
 function App() {
 	const [prompt, setPrompt] = useState('');
 	const [promptForSubmission, setPromptForSubmission] = useState('');
+	const [testRunCommand, setTestRunCommand] = useState('NotPresent');
 	const { originalPrompt, antonData, setAntonData } = useAntonData(promptForSubmission);
 	const ref = useRef<HTMLDivElement>(null);
 	const { exploration, setExploration } = useDebuggingStore();
 
-	const listener = (message: MessageEvent<EventData<unknown>>) => {
-		console.log('[debugging] What is the message', message);
-		const { command, payload } = message.data;
-		if (command === 'sendPrompt') {
-			console.log('Whats the payload');
-			console.log(payload);
-			setAntonData(payload as any);
-		}
-	};
+	useEffect(() => {
+		const listener = (message: MessageEvent<EventData<unknown>>) => {
+			console.log('[debugging] What is the message', message);
+			const { command, payload } = message.data;
+			if (command === 'sendPrompt') {
+				console.log('Whats the payload');
+				console.log(payload);
+				setAntonData(payload as any);
+			} else if (command === 'testSuiteRunCommand') {
+				setTestRunCommand((payload as any)['testSuiteRunCommand']);
+			}
+		};
+		Messenger.listen(listener);
 
-	Messenger.listen(listener);
+		return () => {
+			Messenger.unlisten(listener);
+		}
+	}, []);
+
 
 	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 		if (e.key === 'Enter' && !e.shiftKey) {

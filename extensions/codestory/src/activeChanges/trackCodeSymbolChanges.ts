@@ -251,7 +251,7 @@ export class TrackCodeSymbolChanges {
 			const tsProject = this.tsProject.getTsMorphProjectForFile(filePath);
 			if (tsProject) {
 				this.logger.info(`[track-code-symbols] we have a ts project`);
-				const data = parseFileUsingTsMorph(filePath, tsProject, this.workingDirectory, filePath);
+				const data = await parseFileUsingTsMorph(filePath, tsProject, this.workingDirectory, filePath);
 				this.logger.info(`[track-code-symbols] we have some symbols here ${data.length}`);
 				this.fileSavedCodeSymbolTracked.set(filePath, {
 					codeSymbols: data,

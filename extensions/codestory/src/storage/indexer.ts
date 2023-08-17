@@ -14,7 +14,7 @@ import {
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from '../utilities/types';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { generateEmbedding } from '../llm/embeddings/openai';
-import { ExtensionContext, languages } from 'vscode';
+import { ExtensionContext, Uri, languages, workspace } from 'vscode';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from '../git/helper';
 import logger from '../logger';
 import EventEmitter = require('events');
@@ -76,8 +76,6 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 		'descriptions',
 	);
 	const files = await fs.promises.readdir(directoryPath);
-	logger.info('[indexing_start] loading from files');
-	logger.info(files.length);
 	const codeSymbolInformationEmbeddingsList: CodeSymbolInformationEmbeddings[] = [];
 	for (let index = 0; index < files.length; index++) {
 		const file = files[index];
@@ -86,11 +84,8 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 		const filePath = path.join(directoryPath, file);
 		logger.info(filePath);
 		const fileContent = fs.readFileSync(filePath);
-		logger.info('[indexing_start] loaded from file');
 		try {
 			const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
-			logger.info('[indexing_start] parsed from json');
-			logger.info(codeSymbolInformationEmbeddings);
 			emitter.emit('partialData', codeSymbolInformationEmbeddings);
 			codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
 		} catch (error) {
@@ -102,6 +97,7 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 	return codeSymbolInformationEmbeddingsList;
 }
 
+
 export const getCodeSymbolList = async (
 	project: Project,
 	workingDirectory: string
@@ -109,14 +105,16 @@ export const getCodeSymbolList = async (
 	const sourceFiles = project.getSourceFiles();
 	const codeSymbolInformationList: CodeSymbolInformation[] = [];
 	for (let index = 0; index < sourceFiles.length; index++) {
+		console.log(`Parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
 		const sourceFile = sourceFiles[index];
 		const sourceFilePath = sourceFile.getFilePath();
-		const codeSymbolInformation = parseFileUsingTsMorph(
+		const codeSymbolInformation = await parseFileUsingTsMorph(
 			sourceFilePath,
 			project,
 			workingDirectory,
 			sourceFilePath
 		);
+		console.log(`[parsed_code_symbol_list] Parsed file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
 		codeSymbolInformationList.push(...codeSymbolInformation);
 	}
 	return codeSymbolInformationList;
@@ -187,6 +185,23 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
 };
 
 
+const checkIfProjectWasIndexed = (
+	globalStorageUri: string,
+	remoteSession: string,
+): boolean => {
+	const directoryPath = path.join(
+		globalStorageUri,
+		remoteSession,
+		'code_symbol',
+		'descriptions',
+	);
+	if (fs.existsSync(directoryPath)) {
+		return true;
+	}
+	return false;
+};
+
+
 export const indexRepository = async (
 	storage: CodeStoryStorage,
 	projectManagement: TSMorphProjectManagement,
@@ -204,24 +219,32 @@ export const indexRepository = async (
 	// for now this is fine.
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(workingDirectory);
 	let codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+
+	const repoName = await getGitRepoName(workingDirectory);
 	logger.info('[indexing_start] Starting indexing', storage.isIndexed);
-	if (!storage.isIndexed) {
+	// We also need to check if the storage directory exists, if it does not
+	// then we have to retrigger the indexing again
+	const wasProjectIndexed = checkIfProjectWasIndexed(
+		globalStorageUri,
+		repoName,
+	);
+	if (!storage.isIndexed || !wasProjectIndexed) {
 		// logger.info('[indexing_start] Starting indexing');
 		// Start re-indexing right now.
-		projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+		for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
 			const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
 			const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
 				codeSymbolInformationList,
 				workingDirectory,
 				globalStorageUri
 			);
-			codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+			for (const codeSymbolWithEmbeddings of codeSymbolWithEmbeddingsForProject) {
 				logger.info('[indexing_start] Starting indexing for project');
 				logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
 				emitter.emit('partialData', codeSymbolWithEmbeddings);
-			});
+			}
 			codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-		});
+		}
 		// parse the python files
 		const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 			pythonClient,
@@ -233,7 +256,7 @@ export const indexRepository = async (
 		codeSymbolWithEmbeddings.push(...pythonSymbols);
 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 		storage.isIndexed = true;
-		saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+		await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
 	} else {
 		// TODO(codestory): Only look at the delta and re-index these files which have changed.
 		const currentHash = await getGitCurrentHash(workingDirectory);
@@ -243,7 +266,7 @@ export const indexRepository = async (
 		if (currentHash !== storage.lastIndexedRepoHash) {
 			// We need to re-index the repo
 			// TODO(codestory): Repeated code here, we need to clean it up
-			projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+			for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
 				const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
 				logger.info('[indexing_start] Starting indexing for project');
 				const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
@@ -253,7 +276,7 @@ export const indexRepository = async (
 				);
 				emitter.emit('partialData', codeSymbolWithEmbeddingsForProject);
 				codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-			});
+			}
 			// parse the python files
 			const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 				pythonClient,
@@ -265,11 +288,10 @@ export const indexRepository = async (
 			codeSymbolWithEmbeddings.push(...pythonSymbols);
 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 			storage.isIndexed = true;
-			saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+			await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
 		} else {
 			// We should load all the code symbols with embeddings from the local storage
 			// and return it
-			const repoName = await getGitRepoName(workingDirectory);
 			logger.info('[indexing_start] Loading from local storage');
 			codeSymbolWithEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
 				globalStorageUri,

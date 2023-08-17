@@ -184,7 +184,7 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 		console.log('Downloading the aide server...');
 		await window.withProgress(
 			{
-				location: ProgressLocation.Notification,
+				location: ProgressLocation.SourceControl,
 				title: 'Installing Aide server...',
 				cancellable: false,
 			},

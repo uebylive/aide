@@ -24,6 +24,7 @@ export const debug = (
 	repoName: string,
 	repoHash: string,
 	workingDirectory: string,
+	testSuiteRunCommand: string,
 ) => {
 	return commands.registerCommand(
 		'codestory.debug',
@@ -45,6 +46,7 @@ export const debug = (
 					tsMorphProjectManagement,
 					pythonServer,
 					workingDirectory,
+					testSuiteRunCommand,
 				);
 			} catch (e) {
 				logger.info('[CodeStory] Debugging failed');

@@ -205,12 +205,13 @@ Lines to change in the file: (include multiple small changes as opposed to one l
 Code Generation:
 \`\`\`
 Generate a diff based on the given plan using the search and replace pairs in the following format.Always prefer the least amount of changes possible.Do not remove comments.
-
+<code_generation>
 <<<< ORIGINAL
 old_code
 ====
 new_code
 >>>> UPDATED
+</code_generation>
 \`\`\`
 
 Context: 'Change hello to goodbye and change 3 to 4'. Limit your changes to the context.
