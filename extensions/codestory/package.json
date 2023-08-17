@@ -11,6 +11,9 @@
   "activationEvents": [
     "onStartupFinished"
   ],
+  "enabledApiProposals": [
+    "interactive"
+  ],
   "license": "UNLICENSED",
   "repository": {
     "url": "https://github.com/codestoryai"
