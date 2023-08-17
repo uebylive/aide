@@ -270,6 +270,5 @@ export const indexRepository = async (
             logger.info("[indexing_start] Loaded from local storage");
         }
     }
-    console.log("[inside2] debugging wtf");
     return codeSymbolWithEmbeddings;
 };

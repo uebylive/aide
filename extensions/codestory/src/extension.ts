@@ -22,13 +22,14 @@ import { debug } from "./subscriptions/debug";
 import { copySettings } from "./utilities/copySettings";
 
 import { EventEmitter } from "events";
-import { readActiveDirectoriesConfiguration } from "./utilities/activeDirectories";
+import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from "./utilities/activeDirectories";
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { sleep } from './utilities/sleep';
 import winston from 'winston';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { getDocumentSymbols } from './utilities/lspApi';
+import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
 
 
 class ProgressiveTrackSymbols {
@@ -118,10 +119,8 @@ class ProgressiveIndexer {
           workingDirectory,
           this.emitter
         );
-        console.log("[inside] debugging wtf")
       }
     );
-    console.log("We are done with the indexing magic right now...");
   }
 
   on(event: string, listener: (...args: any[]) => void) {
@@ -156,6 +155,7 @@ export async function activate(context: ExtensionContext) {
   logger.info(rootPath);
   // Ts-morph project management
   const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
+  const testSuiteRunCommand = readTestSuiteRunCommand();
   logger.info(activeDirectories);
   const projectManagement = await getProject(activeDirectories);
 
@@ -294,4 +294,6 @@ export async function activate(context: ExtensionContext) {
   // Git commit
   context.subscriptions.push(gitCommit(logger, repoName, repoHash));
   context.subscriptions.push(registerCopySettingsCommand);
+  // Set the test run command here
+  sendTestSuiteRunCommand(testSuiteRunCommand, agentViewProvider);
 }
