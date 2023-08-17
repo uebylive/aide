@@ -25,9 +25,7 @@ export class EmbeddingsSearch {
     }
 
     public updateNodes(nodes: CodeSymbolInformationEmbeddings) {
-        console.log("Before updating we have " + this._nodes.length + " nodes");
         this._nodes.push(nodes);
-        console.log("Whats the length of all code symbols: " + this._nodes.length);
     };
 
     public async generateNodesRelevantForUser(

@@ -27,6 +27,9 @@ function App() {
         setAntonData(payload as any);
         console.log("are we done here");
       }
+      if (command == "testSuiteRunCommand") {
+        console.log("[testSuiteRunCommand] What is the payload", payload);
+      }
     };
 
     console.log("Listening to messages");
