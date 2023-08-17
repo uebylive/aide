@@ -8,8 +8,9 @@ import { Messenger } from '@estruyf/vscode/dist/client';
 
 import { DataEvent } from './DataEvent';
 import { useAntonData } from './hooks/useAntonData';
-import { ReactComponent as CSLogo } from './assets/cs-logomark.svg';
+import { ReactComponent as AideLogo } from './assets/both-logos.svg';
 import { useDebuggingStore } from './store';
+import { ExpandingTextArea } from './components/TextArea/TextArea';
 
 function App() {
 	const [prompt, setPrompt] = useState('');
@@ -54,26 +55,25 @@ function App() {
 	}, [antonData]);
 
 	return (
-		<main className='bg-cs-bgPrimary min-h-screen'>
-			<div className='flex flex-col items-center justify-center gap-1 py-16'>
+		<main className='bg-cs-bgPrimary h-screen'>
+			<div className='flex flex-col items-center justify-center gap-1 py-8'>
 				<div className='flex items-center'>
-					<CSLogo className='h-16 md:h-24' />
-					<p className='text-2xl md:text-4xl font-bold'>CodeStory</p>
+					<AideLogo className='h-16 md:h-24' />
 				</div>
 			</div>
-			<div className='container max-w-screen-lg mx-auto px-5 pb-16'>
-				<div className='mb-16'>
-					<p className='mb-2'>Go on, ask me something.</p>
-					<form onSubmit={() => setPromptForSubmission(prompt)}>
-						<textarea
-							placeholder='What can I help you accomplish today?'
-							value={prompt}
-							onChange={(e) => setPrompt(e.target.value)}
-							onKeyDown={handleKeyDown}
-							className='h-32 w-full p-2 rounded border border-cs-textSecondary bg-cs-bgSecondary'
-						/>
-					</form>
-				</div>
+			<div className='w-full p-4'>
+				<p className='mb-2'>Go on, ask me something.</p>
+				<form onSubmit={() => setPromptForSubmission(prompt)}>
+					<ExpandingTextArea
+						placeholder='What can I help you accomplish today?'
+						value={prompt}
+						onChange={(e) => setPrompt(e.target.value)}
+						onKeyDown={handleKeyDown}
+						className='w-full p-2'
+					/>
+				</form>
+			</div>
+			<div className='container max-w-screen-lg mx-auto px-4 pb-16'>
 				<div className='flex flex-col'>
 					{antonData && antonData.events.length > 0
 						? antonData.events
