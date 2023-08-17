@@ -1,4 +1,4 @@
-import { commands, env, ExtensionContext, extensions, OutputChannel, Position, window } from "vscode";
+import { commands, env, ExtensionContext, extensions, OutputChannel, Position, ProgressLocation, window } from "vscode";
 import { CodeStoryStorage, loadOrSaveToStorage } from "./storage/types";
 import { indexRepository } from "./storage/indexer";
 import { getProject, TSMorphProjectManagement } from "./utilities/parseTypescript";
@@ -103,16 +103,25 @@ class ProgressiveIndexer {
     globalStorageUri: string,
     workingDirectory: string
   ) {
-    // Sleep for a bit before starting the heavy lifting, so other parts of the
-    // extension can load up
-    await indexRepository(
-      storage,
-      projectManagement,
-      pythonServer,
-      globalStorageUri,
-      workingDirectory,
-      this.emitter
+    await window.withProgress(
+      {
+        location: ProgressLocation.Window,
+        title: "[CodeStory] Indexing repository",
+        cancellable: false,
+      },
+      async () => {
+        await indexRepository(
+          storage,
+          projectManagement,
+          pythonServer,
+          globalStorageUri,
+          workingDirectory,
+          this.emitter
+        );
+        console.log("[inside] debugging wtf")
+      }
     );
+    console.log("We are done with the indexing magic right now...");
   }
 
   on(event: string, listener: (...args: any[]) => void) {
