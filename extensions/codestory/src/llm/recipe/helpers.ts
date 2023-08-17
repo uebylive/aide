@@ -191,7 +191,7 @@ export const generateModifiedFileContentAfterDiff = async (
     const codeSymbol = possibleCodeNodes[0];
     let fileCode = await readFileContents(codeSymbol.fsFilePath);
     // Now supporting big files for now, so we just return null here
-    if (fileCode.split("\n").length > 500) {
+    if (fileCode.split("\n").length > 2000) {
         return null;
     };
 
@@ -404,4 +404,12 @@ export const executeTestHarness = async (
         executionEventId,
     );
     return exitCode;
+};
+
+
+export const shouldExecuteTestHarness = (testRunCommand: string): boolean => {
+    if (testRunCommand === "NotPresent") {
+        return false;
+    }
+    return true;
 };
