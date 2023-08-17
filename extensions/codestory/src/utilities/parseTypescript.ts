@@ -21,6 +21,8 @@ import {
 } from "./types";
 import { exec } from "child_process";
 import { runCommandAsync } from "./commandRunner";
+import { Uri, languages, workspace } from 'vscode';
+import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 
 export const getCodeLocationPath = (directoryPath: string, filePath: string): string => {
     // Parse the filePath to get an object that includes properties like root, dir, base, ext and name
@@ -813,19 +815,27 @@ export function parseSourceFile(
     }
 }
 
-export function parseFileUsingTsMorph(
+export async function parseFileUsingTsMorph(
     sourceFilePath: string,
     project: Project,
     directoryPath: string,
     originalFilePath: string
-): CodeSymbolInformation[] {
+): Promise<CodeSymbolInformation[]> {
     const sourceFile = project.getSourceFile(sourceFilePath);
     // We sync from the fs again if the file has changed meanwhile, this is not
     // important for onboarding but super important when we are doing things live
     // and on every save
     const syncData = sourceFile?.refreshFromFileSystemSync();
     if (sourceFile) {
-        return parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+        const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+        if (codeSymbols.length === 0) {
+            return await getSymbolsFromDocumentUsingLSP(
+                sourceFilePath,
+                "typescript",
+                directoryPath,
+            );
+        }
+        return codeSymbols;
     } else {
         return [];
     }

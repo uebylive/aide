@@ -10,7 +10,7 @@ import {
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from "../utilities/types";
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from "../utilities/parseTypescript";
 import { generateEmbedding } from "../llm/embeddings/openai";
-import { ExtensionContext, languages } from "vscode";
+import { ExtensionContext, Uri, languages, workspace } from "vscode";
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from "../git/helper";
 import logger from "../logger";
 import EventEmitter = require('events');
@@ -93,6 +93,7 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
     return codeSymbolInformationEmbeddingsList;
 }
 
+
 export const getCodeSymbolList = async (
     project: Project,
     workingDirectory: string
@@ -103,12 +104,13 @@ export const getCodeSymbolList = async (
         console.log(`Parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
         const sourceFile = sourceFiles[index];
         const sourceFilePath = sourceFile.getFilePath();
-        const codeSymbolInformation = parseFileUsingTsMorph(
+        const codeSymbolInformation = await parseFileUsingTsMorph(
             sourceFilePath,
             project,
             workingDirectory,
             sourceFilePath
         );
+        console.log(`[parsed_code_symbol_list] Parsed file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
         codeSymbolInformationList.push(...codeSymbolInformation);
     }
     return codeSymbolInformationList;
