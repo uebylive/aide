@@ -71,7 +71,7 @@ export const generateFileInformationSummary = async (
             if (!project) {
                 continue;
             }
-            const codeSymbols = parseFileUsingTsMorph(
+            const codeSymbols = await parseFileUsingTsMorph(
                 fileList[index],
                 project,
                 workingDirectory,
@@ -317,7 +317,7 @@ export const executeTestHarness = async (
 
     // We also need the new code symbol content so we are going to parse it
     // from the file
-    const newCodeSymbolNodes = parseFileUsingTsMorph(
+    const newCodeSymbolNodes = await parseFileUsingTsMorph(
         codeNode.fsFilePath,
         project,
         workingDirectory,
