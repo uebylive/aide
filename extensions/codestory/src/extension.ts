@@ -202,7 +202,8 @@ export async function activate(context: ExtensionContext) {
       codeGraph,
       repoName,
       repoHash,
-      rootPath ?? ""
+      rootPath ?? "",
+      testSuiteRunCommand,
     )
   );
 
