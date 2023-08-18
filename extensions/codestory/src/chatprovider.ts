@@ -287,10 +287,12 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			return new CSChatResponseForProgress();
 		} else {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
+			this._chatSessionState.chatContext.cleanupChatHistory();
 			this._chatSessionState.chatContext.addUserMessage(request.message.toString());
 			if (selectionContext) {
 				this._chatSessionState.chatContext.addCodeContext(
 					selectionContext.selectedText,
+					selectionContext.extraSurroundingText,
 				);
 				const llmReply = async () => {
 					const response = await generateChatCompletion(
