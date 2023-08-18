@@ -59,4 +59,13 @@ export class EmbeddingsSearch {
 			return nodeWithSimilarity.node;
 		});
 	}
+
+	public async generateNodesRelevantForUserFromFiles(
+		useQuery: string,
+		openFiles: string[],
+	): Promise<CodeSymbolInformationEmbeddings[]> {
+		// So here we have to find the code symbols from the open files which
+		// are relevant for the user query
+		return [];
+	}
 }

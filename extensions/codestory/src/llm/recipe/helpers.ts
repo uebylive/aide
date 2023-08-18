@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import * as vscode from 'vscode';
 import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from 'openai';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
 import { getCodeSymbolList } from '../../storage/indexer';
@@ -15,6 +16,20 @@ import { generateChatCompletion } from './debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { runCommandAsync } from '../../utilities/commandRunner';
 import { PythonServer } from '../../utilities/pythonServerClient';
+
+
+export const getOpenFilesInWorkspace = (): string[] => {
+	const openEditors = vscode.window.visibleTextEditors;
+
+	// Filter out non-file editors (like output or debug console)
+	const openFiles = openEditors
+		.filter(editor => editor.document.uri.scheme === 'file')
+		.map(editor => editor.document.uri.fsPath);
+
+	// Display a message box to the user with open files
+	return openFiles;
+};
+
 
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
