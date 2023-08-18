@@ -75,10 +75,10 @@ function App() {
 				</div>
 			</div>
 			<div className='w-full p-4'>
-				<p className='mb-2'>Go on, ask me something.</p>
+				<p className='mb-2'>Ask me to debug or make changes</p>
 				<form onSubmit={() => setPromptForSubmission(prompt)}>
 					<ExpandingTextArea
-						placeholder='What can I help you accomplish today?'
+						placeholder='Ask me to do debug something? I can use debug on the current open file or selected code if you say so or I will make repo wide changes.'
 						value={prompt}
 						onChange={(e) => setPrompt(e.target.value)}
 						onKeyDown={handleKeyDown}
