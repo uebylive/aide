@@ -8,8 +8,6 @@ import { CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as math from 'mathjs';
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
-	console.log('Whats the length of vecA', vecA.length);
-	console.log('Whats the length of vecB', vecB.length);
 	if (vecA.length !== vecB.length) {
 		return -1;
 	}
@@ -113,6 +111,8 @@ export class EmbeddingsSearch {
 			userQuery,
 			activeFilesTracker,
 		);
+		console.log('What are the nodes from active files');
+		console.log(nodesFromActiveFiles);
 		// Now we sort and merge these together
 		const alreadySeenFiles: Set<string> = new Set();
 		for (let index = 0; index < nodesFromActiveFiles.length; index++) {
