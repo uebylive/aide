@@ -9,6 +9,7 @@ export interface SelectionData {
 	documentFilePath: string;
 	selection: vscode.Selection;
 	selectedText: string;
+	extraSurroundingText: string;
 	labelInformation: {
 		label: string;
 		hyperlink: string;
@@ -44,10 +45,22 @@ export const getSelectedCodeContext = (workingDirectory: string): SelectionData 
 
 		// Get the selected text
 		const selectedText = document.getText(selection);
+		// Now we will expand the context a bit more, ideally we should use tree-sitter
+		// here to expand to the last open and close branch point, but for now this will do
+		// we will expand to 50 lines above and 50 lines below
+		const startLine = Math.max(0, selection.start.line - 50);
+		const endLine = Math.min(document.lineCount - 1, selection.end.line + 50);
+		const extraSurroundingSelection = new vscode.Selection(
+			new vscode.Position(startLine, 0),
+			new vscode.Position(endLine, document.lineAt(endLine).text.length)
+		);
+		const extraSurroundingText = document.getText(extraSurroundingSelection);
+
 		return {
 			documentFilePath: document.fileName,
 			selection: selection,
 			selectedText: selectedText,
+			extraSurroundingText,
 			labelInformation: getLabelForSelectedContext(workingDirectory, document.fileName, selection),
 		};
 	}
