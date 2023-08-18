@@ -218,6 +218,20 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._chatSessionState = new CSChatSessionState();
 	}
 
+	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
+		logger.info('provideSlashCommands', session);
+		return [
+			{
+				command: 'help',
+				kind: vscode.CompletionItemKind.Text,
+				detail: 'Get help on how to use Aide',
+				shouldRepopulate: true,
+				followupPlaceholder: 'Ask me a question or type \'/\' for topics?',
+				executeImmediately: false,
+			}
+		];
+	}
+
 	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.InteractiveWelcomeMessageContent[]> {
 		logger.info('provideWelcomeMessage', token);
 		return [
@@ -247,14 +261,27 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgress', request, progress, token);
-		const selectionContext = getSelectedCodeContext(this._workingDirectory);
-		if (selectionContext) {
-			progress.report(new CSChatProgressContent(`Using context:\n [${selectionContext.labelInformation.label}](${selectionContext.labelInformation.hyperlink})\n`));
+		logger.info('[codestory][message][provideResponseWithProgress]');
+		if (request.message.toString().startsWith('/help')) {
+			progress.report(new CSChatProgressContent(
+				`Here are some helpful docs for resolving the most common issues: [Code Story](https://docs.codestory.ai)\n`
+			));
+			return new CSChatResponseForProgress();
 		}
-		this._chatSessionState.chatContext.addUserMessage(request.message.toString());
-		this._chatSessionState.chatContext.addCodeStoryMessage('Hello there!');
-		logger.info(`[codestory][message_length][provideResponseWithProgress] ${this._chatSessionState.chatContext.getMessageLength()}`);
-		return new CSChatResponseForProgress();
+		else {
+			const selectionContext = getSelectedCodeContext(this._workingDirectory);
+			if (selectionContext) {
+				progress.report(new CSChatProgressContent(`Using context:\n [${selectionContext.labelInformation.label}](${selectionContext.labelInformation.hyperlink})\n`));
+			}
+			if (typeof request.message === 'string') {
+				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
+				this._chatSessionState.chatContext.addCodeStoryMessage('Hello there!');
+				logger.info(`[codestory][message_length][provideResponseWithProgress] ${this._chatSessionState.chatContext.getMessageLength()}`);
+				return new CSChatResponseForProgress();
+			} else {
+				// do something here
+			}
+		}
 	}
 
 	removeRequest(session: CSChatSession, requestId: string) {
