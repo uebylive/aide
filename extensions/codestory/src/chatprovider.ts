@@ -250,6 +250,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return [
 			'Hi! How can I help you?',
 			'Ask CodeStory a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
+			'From the developers @ codestory: We dont have streaming output yet, we are working on it!'
 		];
 	}
 
