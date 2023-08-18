@@ -226,7 +226,14 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				kind: vscode.CompletionItemKind.Text,
 				detail: 'Get help on how to use Aide',
 				shouldRepopulate: true,
-				followupPlaceholder: 'Ask me a question or type \'/\' for topics?',
+				followupPlaceholder: 'Ask me a question or type \'/\' for bb?',
+				executeImmediately: false,
+			},
+			{
+				command: 'agent',
+				kind: vscode.CompletionItemKind.Text,
+				detail: 'Invoke the Aide agent to do codebase wide changes',
+				shouldRepopulate: true,
 				executeImmediately: false,
 			}
 		];
@@ -267,8 +274,10 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				`Here are some helpful docs for resolving the most common issues: [Code Story](https://docs.codestory.ai)\n`
 			));
 			return new CSChatResponseForProgress();
-		}
-		else {
+		} else if (request.message.toString().startsWith('/agent')) {
+			// TODO(ghost): Start implementing invoking the agent from here
+			// and strip the /agent at the start
+		} else {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
 			if (selectionContext) {
 				progress.report(new CSChatProgressContent(`Using context:\n [${selectionContext.labelInformation.label}](${selectionContext.labelInformation.hyperlink})\n`));
