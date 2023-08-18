@@ -82,7 +82,8 @@ export const fileFunctionsToParsePrompt = (): string => {
 		* Be concrete with instructions and do not write 'check for x' or 'look for y'. Simply write 'add x' or 'change y to z'.
 		* There MUST modify_code_symbol XML tags
 		* The list of code symbols to modify may be empty, but you MUST leave the XML tags with a single list element with '* None'
-		* modify up to 5 code symbols
+		* modify up to 5 code symbols.
+		You must list only a single code symbol for modification per line
 
 		You MUST follow the following format delimited with XML tags:
 
