@@ -272,7 +272,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return new CSChatRequest(session, context.toString());
 	}
 
-	async provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
+	async provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): Promise<vscode.ProviderResult<CSChatResponseForProgress>> {
 		logger.info('provideResponseWithProgress', request, progress, token);
 		if (request.message.toString().startsWith('/help')) {
 			progress.report(new CSChatProgressContent(
