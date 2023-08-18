@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import logger from './logger';
 import { CSChatState } from './chatState/state';
 import { getSelectedCodeContext } from './utilities/getSelectionContext';
+import { generateChatCompletion } from './chatState/openai';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -268,7 +269,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgress', request, progress, token);
-		logger.info('[codestory][message][provideResponseWithProgress]');
 		if (request.message.toString().startsWith('/help')) {
 			progress.report(new CSChatProgressContent(
 				`Here are some helpful docs for resolving the most common issues: [Code Story](https://docs.codestory.ai)\n`
@@ -279,17 +279,46 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			// and strip the /agent at the start
 		} else {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
+			this._chatSessionState.chatContext.addUserMessage(request.message.toString());
 			if (selectionContext) {
-				progress.report(new CSChatProgressContent(`Using context:\n [${selectionContext.labelInformation.label}](${selectionContext.labelInformation.hyperlink})\n`));
-			}
-			if (typeof request.message === 'string') {
-				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
-				this._chatSessionState.chatContext.addCodeStoryMessage('Hello there!');
-				logger.info(`[codestory][message_length][provideResponseWithProgress] ${this._chatSessionState.chatContext.getMessageLength()}`);
-				return new CSChatResponseForProgress();
+				this._chatSessionState.chatContext.addCodeContext(
+					selectionContext.selectedText,
+				);
+				const llmReply = async () => {
+					const response = await generateChatCompletion(
+						this._chatSessionState.chatContext.getMessages(),
+					);
+					const responseMessageText = response?.message?.content;
+					if (responseMessageText) {
+						this._chatSessionState.chatContext.addCodeStoryMessage(responseMessageText);
+						return new CSChatProgressContent(responseMessageText);
+					} else {
+						return new CSChatProgressContent('No response from LLM 🥲, please report this to the developers or try again');
+					}
+				};
+				progress.report(new CSChatProgressTask(
+					'Thinking 🤔',
+					llmReply(),
+				));
 			} else {
-				// do something here
+				const llmReply = async () => {
+					const response = await generateChatCompletion(
+						this._chatSessionState.chatContext.getMessages(),
+					);
+					const responseMessageText = response?.message?.content;
+					if (responseMessageText) {
+						this._chatSessionState.chatContext.addCodeStoryMessage(responseMessageText);
+						return new CSChatProgressContent(responseMessageText);
+					} else {
+						return new CSChatProgressContent('No response from LLM 🥲, please report this to the developers or try again');
+					}
+				};
+				progress.report(new CSChatProgressTask(
+					'Thinking 🤔',
+					llmReply(),
+				));
 			}
+			return new CSChatResponseForProgress();
 		}
 	}
 

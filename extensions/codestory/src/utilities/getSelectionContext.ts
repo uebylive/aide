@@ -38,6 +38,10 @@ export const getSelectedCodeContext = (workingDirectory: string): SelectionData 
 		const document = editor.document;
 		const selection = editor.selection;
 
+		if (selection.start.line === selection.end.line && selection.start.character === selection.end.character) {
+			return null;
+		}
+
 		// Get the selected text
 		const selectedText = document.getText(selection);
 		return {
