@@ -87,7 +87,7 @@ export const DataEvent = ({
 										<summary className='cursor-pointer'>
 											<p className='inline text-sm font-bold'>
 												{result.symbolName.split('.').pop()}
-												<span className='inline-block text-xs font-normal ml-2 text-cs-textSecondary'>
+												<span className='inline-block text-xs font-normal ml-2 text-cs-textSecondary break-all'>
 													{result.fsFilePath}
 												</span>
 											</p>

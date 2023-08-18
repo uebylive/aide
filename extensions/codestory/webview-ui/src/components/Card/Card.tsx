@@ -182,21 +182,19 @@ export const Card = ({
 
 	return (
 		<div
-			className={`border ${border} rounded bg-cs-bgSecondary p-2 transition-transform ${
-				loaded ? 'translate-y-0' : 'translate-y-6'
-			}`}
+			className={`border ${border} rounded bg-cs-bgPrimary p-2 transition-transform ${loaded ? 'translate-y-0' : 'translate-y-6'
+				}`}
 		>
 			<div
-				className={`bg-cs-bgPrimary rounded px-4 py-2 mb-2 cursor-pointer ${
-					summaryExpanded ? '' : 'h-8'
-				} overflow-y-hidden`}
+				className={`bg-cs-bgSecondary rounded px-4 py-2 mb-2 cursor-pointer ${summaryExpanded ? '' : 'h-8'
+					} overflow-y-hidden`}
 				onClick={() => setSummaryExpanded((expanded) => !expanded)}
 			>
 				<p className='text-sm transition-colors text-cs-inactive hover:text-cs-textPrimary'>
 					{cardContext.trim()}
 				</p>
 			</div>
-			<div className='sticky top-0 bg-cs-bgPrimary rounded-t px-4 py-2'>
+			<div className='sticky top-0 bg-cs-bgSecondary rounded-t px-4 py-2'>
 				<div className='flex items-center font-bold'>
 					{emoji}
 					<p className={`pl-2 ${text}`}>{title}</p>
