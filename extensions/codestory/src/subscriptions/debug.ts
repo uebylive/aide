@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { v4 as uuidv4 } from 'uuid';
-import { commands } from 'vscode';
+import { commands, env } from 'vscode';
 import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
 import { CodeGraph } from '../codeGraph/graph';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
@@ -14,6 +14,7 @@ import logger from '../logger';
 import { PromptState } from '../types';
 import { AgentViewProvider } from '../views/AgentView';
 import { PythonServer } from '../utilities/pythonServerClient';
+import postHogClient from '../posthog/client';
 
 export const debug = (
 	provider: AgentViewProvider,
@@ -38,6 +39,15 @@ export const debug = (
 				message.command,
 			);
 			try {
+				postHogClient.capture({
+					distinctId: env.machineId,
+					event: 'debug_prompt_received',
+					properties: {
+						prompt: payload.prompt,
+						repoName,
+						repoHash,
+					},
+				});
 				await debuggingFlow(
 					payload.prompt,
 					toolingEventCollection,
