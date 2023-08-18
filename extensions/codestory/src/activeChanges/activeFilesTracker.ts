@@ -13,6 +13,10 @@ export class ActiveFilesTracker {
 		this._activeFiles = [];
 	}
 
+	getActiveFiles(): string[] {
+		return this._activeFiles;
+	}
+
 	openTextDocument(document: TextDocument) {
 		if (document.uri.scheme !== 'file') {
 			return;

@@ -228,6 +228,7 @@ export async function activate(context: ExtensionContext) {
 			repoHash,
 			rootPath ?? '',
 			testSuiteRunCommand,
+			activeFilesTracker,
 		)
 	);
 

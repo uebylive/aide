@@ -23,6 +23,7 @@ import { readFileSync } from 'fs';
 import { loadOrSaveToStorage } from '../../storage/types';
 import { indexRepository } from '../../storage/indexer';
 import { PythonServer } from '../../utilities/pythonServerClient';
+import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 
 const configuration = new Configuration({
 	apiKey: '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',
@@ -58,6 +59,7 @@ export const debuggingFlow = async (
 	pythonServer: PythonServer,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
+	activeFilesTracker: ActiveFilesTracker,
 ): Promise<null> => {
 	console.log('We are here debugging flow');
 	// allow-any-unicode-next-line
@@ -93,7 +95,8 @@ export const debuggingFlow = async (
 	// Now we will try and do the search over the symbols
 	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
-		embeddingsSearch
+		embeddingsSearch,
+		activeFilesTracker,
 	);
 	console.log('What are the relevant code symbols', relevantCodeSymbols);
 	// Add the search results here
