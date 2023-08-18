@@ -138,6 +138,7 @@ export async function activate(context: ExtensionContext) {
 		distinctId: env.machineId,
 		event: 'extension_activated',
 	});
+
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
 		rootPath = '';
@@ -146,13 +147,21 @@ export async function activate(context: ExtensionContext) {
 		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
+	const repoName = await getGitRepoName(rootPath);
+	const repoHash = await getGitCurrentHash(rootPath);
+
+	// Register chat provider
+	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, repoName, repoHash));
+	context.subscriptions.push(interactiveSession);
+	await commands.executeCommand('workbench.action.chat.clear');
+
+	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
 	const pythonServer = new PythonServer(serverUrl);
-	const repoName = await getGitRepoName(rootPath);
-	const repoHash = await getGitCurrentHash(rootPath);
+
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
 	logger.info(codeStoryStorage);
@@ -211,10 +220,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(openAgentViewCommand);
-
-	// Register chat provider
-	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, repoName, repoHash));
-	context.subscriptions.push(interactiveSession);
 
 	context.subscriptions.push(
 		debug(
