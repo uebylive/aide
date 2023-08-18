@@ -28,7 +28,7 @@ module.exports = {
 					textPrimary: 'var(--vscode-editor-foreground)',
 					textSecondary: 'var(--vscode-icon-foreground)',
 					bgPrimary: 'var(--vscode-panel-background)',
-					bgSecondary: 'var(--vscode-activityBar-background)',
+					bgSecondary: 'var(--vscode-dropdown-background)',
 					inactive: 'var(--vscode-activityBar-inactiveForeground)',
 				},
 				'cs-answers': {

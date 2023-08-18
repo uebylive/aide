@@ -68,7 +68,7 @@ function App() {
 	}, [antonData]);
 
 	return (
-		<main className='bg-cs-bgPrimary h-screen'>
+		<main className='bg-cs-bgSecondary h-screen'>
 			<div className='flex flex-col items-center justify-center gap-1 py-8'>
 				<div className='flex items-center'>
 					<AideLogo className='h-16 md:h-24' />

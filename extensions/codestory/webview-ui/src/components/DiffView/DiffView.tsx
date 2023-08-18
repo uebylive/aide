@@ -27,7 +27,7 @@ export const DiffView = ({ gitDiff, className }: GitDiffProps) => {
 		.replace(/^\n|\n$/g, '');
 
 	return (
-		<div className={`${className} border p-4 bg-cs-bgPrimary`}>
+		<div className={`${className} border p-4 bg-cs-bgSecondary`}>
 			<ReactDiffViewer
 				oldValue={original}
 				newValue={updated}
