@@ -15,6 +15,7 @@ import { PromptState } from '../types';
 import { AgentViewProvider } from '../views/AgentView';
 import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
+import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 
 export const debug = (
 	provider: AgentViewProvider,
@@ -26,6 +27,7 @@ export const debug = (
 	repoHash: string,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
+	activeFilesTracker: ActiveFilesTracker,
 ) => {
 	return commands.registerCommand(
 		'codestory.debug',
@@ -57,6 +59,7 @@ export const debug = (
 					pythonServer,
 					workingDirectory,
 					testSuiteRunCommand,
+					activeFilesTracker,
 				);
 			} catch (e) {
 				logger.info('[CodeStory] Debugging failed');

@@ -16,6 +16,7 @@ import { generateChatCompletion } from './debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { runCommandAsync } from '../../utilities/commandRunner';
 import { PythonServer } from '../../utilities/pythonServerClient';
+import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 
 
 export const getOpenFilesInWorkspace = (): string[] => {
@@ -33,13 +34,14 @@ export const getOpenFilesInWorkspace = (): string[] => {
 
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
-	embeddingsSearch: EmbeddingsSearch
+	embeddingsSearch: EmbeddingsSearch,
+	activeFilesTracker: ActiveFilesTracker,
 ): Promise<CodeSymbolInformation[]> => {
 	const alreadySeenSymbols: Set<string> = new Set();
 	const finalCodeSymbolList: CodeSymbolInformation[] = [];
 	for (let index = 0; index < queries.length; index++) {
 		const query = queries[index];
-		const codeSymbols = await embeddingsSearch.generateNodesRelevantForUser(query);
+		const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query, activeFilesTracker);
 		console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
 		console.log(codeSymbols.map(
 			(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
