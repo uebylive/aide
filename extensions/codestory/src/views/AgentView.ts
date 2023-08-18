@@ -117,13 +117,6 @@ export class AgentViewProvider implements WebviewViewProvider {
 					}
 					case 'sendPrompt': {
 						const prompt = payload.prompt;
-						postHogClient.capture({
-							distinctId: env.machineId,
-							event: 'debug_prompt_received',
-							properties: {
-								prompt: prompt,
-							},
-						});
 						await commands.executeCommand('codestory.debug', message);
 						return;
 					}
