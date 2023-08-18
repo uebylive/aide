@@ -224,7 +224,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			{
 				command: 'help',
 				kind: vscode.CompletionItemKind.Text,
-				detail: 'Get help on how to use Aide',
+				detail: 'Get help on how to use CodeStory',
 				shouldRepopulate: true,
 				followupPlaceholder: 'Ask me a question or type \'/\' for bb?',
 				executeImmediately: false,
@@ -232,7 +232,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			{
 				command: 'agent',
 				kind: vscode.CompletionItemKind.Text,
-				detail: 'Invoke the Aide agent to do codebase wide changes',
+				detail: 'Invoke the CodeStory agent to do codebase wide changes',
 				shouldRepopulate: true,
 				executeImmediately: false,
 			}
@@ -243,7 +243,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		logger.info('provideWelcomeMessage', token);
 		return [
 			'Hi! How can I help you?',
-			'Ask Aide a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
+			'Ask CodeStory a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
 		];
 	}
 
@@ -251,9 +251,9 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		logger.info('prepareSession', initialState, token);
 		return new CSChatSession(
 			new CSChatParticipant('Requester'),
-			new CSChatParticipant('Aide'),
+			new CSChatParticipant('CodeStory'),
 			initialState,
-			'Ask Aide a question or type \'/\' for topics?'
+			'Ask CodeStory a question or type \'/\' for topics?'
 		);
 	}
 
