@@ -6,7 +6,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 export const ExpandingTextArea = (
-	{ value, style, ...props }: React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>
+	{ value, style, className, ...props }: React.DetailedHTMLProps<React.TextareaHTMLAttributes<HTMLTextAreaElement>, HTMLTextAreaElement>
 ) => {
 	const [rows, setRows] = useState(1);
 	const ref = useRef<HTMLTextAreaElement>(null);
@@ -21,7 +21,7 @@ export const ExpandingTextArea = (
 	return (
 		<textarea
 			ref={ref}
-			className='h-auto rounded border border-cs-textSecondary bg-cs-bgSecondary resize-none'
+			className={`${className} h-auto rounded border border-cs-textSecondary text-cs-textSecondary bg-cs-bgSecondary resize-none`}
 			style={{ height: `${rows * 16}px`, ...style }}
 			value={value}
 			{...props}
