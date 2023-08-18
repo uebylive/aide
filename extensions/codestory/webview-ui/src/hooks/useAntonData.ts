@@ -129,40 +129,40 @@ export const useAntonData = (prompt: string) => {
 		console.log('Sending message to the extension');
 		let interval: NodeJS.Timeout;
 
-		// try {
-		//   messageHandler.send("sendPrompt", {
-		//     prompt,
-		//   });
-		//   setOriginalPrompt(prompt);
-		// } catch (err) {
-		// console.log("Error while reading data", err);
-		// If environment is development, load the JSON data from the local file
-		// if (process.env.NODE_ENV === "development") {
-		import('../mocks/sample_test.json').then((sampleData) => {
-			console.log('Received data from local file', sampleData);
-			const data = sampleData.default as unknown as AntonData;
-			setOriginalPrompt(getOriginalPrompt(data));
-			const sortedData = processAntonData(data);
-			// Set interval and timeout to simulate loading. Remove this in production.
-			// Load the events one at a time, with a random delay between 1 and 5 seconds.
-			// This is to simulate the loading of events in the UI.
-			// Clear the interval once all the events are loaded.
-			interval = setInterval(() => {
-				const event = sortedData.events.shift();
-				if (event) {
-					setAntonData((prevData) => {
-						return {
-							saveDestination: prevData?.saveDestination ?? '',
-							events: [...(prevData?.events ?? []), event],
-						};
-					});
-				} else {
-					clearInterval(interval);
-				}
-			}, Math.floor(Math.random() * 5000) + 3000);
-		});
-		// }
-		// }
+		try {
+			messageHandler.send('sendPrompt', {
+				prompt,
+			});
+			setOriginalPrompt(prompt);
+		} catch (err) {
+			console.log('Error while reading data', err);
+			// If environment is development, load the JSON data from the local file
+			if (process.env.NODE_ENV === 'development') {
+				import('../mocks/sample_test.json').then((sampleData) => {
+					console.log('Received data from local file', sampleData);
+					const data = sampleData.default as unknown as AntonData;
+					setOriginalPrompt(getOriginalPrompt(data));
+					const sortedData = processAntonData(data);
+					// Set interval and timeout to simulate loading. Remove this in production.
+					// Load the events one at a time, with a random delay between 1 and 5 seconds.
+					// This is to simulate the loading of events in the UI.
+					// Clear the interval once all the events are loaded.
+					interval = setInterval(() => {
+						const event = sortedData.events.shift();
+						if (event) {
+							setAntonData((prevData) => {
+								return {
+									saveDestination: prevData?.saveDestination ?? '',
+									events: [...(prevData?.events ?? []), event],
+								};
+							});
+						} else {
+							clearInterval(interval);
+						}
+					}, Math.floor(Math.random() * 5000) + 3000);
+				});
+			}
+		}
 
 		return () => {
 			clearInterval(interval);

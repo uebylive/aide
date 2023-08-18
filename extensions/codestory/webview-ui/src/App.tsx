@@ -30,13 +30,17 @@ function App() {
 				setAntonData(payload as any);
 			} else if (command === 'testSuiteRunCommand') {
 				setTestRunCommand((payload as any)['testSuiteRunCommand']);
+			} else if (command === 'launchAgent') {
+				const { prompt: launchPrompt } = payload as any;
+				setPrompt(launchPrompt);
+				setPromptForSubmission(launchPrompt);
 			}
 		};
 		Messenger.listen(listener);
 
 		return () => {
 			Messenger.unlisten(listener);
-		}
+		};
 	}, []);
 
 

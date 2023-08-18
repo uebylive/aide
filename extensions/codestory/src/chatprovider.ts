@@ -275,8 +275,16 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			));
 			return new CSChatResponseForProgress();
 		} else if (request.message.toString().startsWith('/agent')) {
-			// TODO(ghost): Start implementing invoking the agent from here
-			// and strip the /agent at the start
+			const prompt = request.message.toString().slice(7).trim();
+			if (prompt.length === 0) {
+				return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
+			}
+
+			progress.report(new CSChatProgressContent(
+				`Agent getting to work for: ${prompt}\n`
+			));
+			vscode.commands.executeCommand('codestory.launchAgent', prompt);
+			return new CSChatResponseForProgress();
 		} else {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
 			if (selectionContext) {
