@@ -49,6 +49,12 @@ export class AgentViewProvider implements WebviewViewProvider {
 		return this._view;
 	}
 
+	public show() {
+		if (this._view) {
+			this._view.show();
+		}
+	}
+
 	/**
 	 * Defines and returns the HTML that should be rendered within the webview panel.
 	 *

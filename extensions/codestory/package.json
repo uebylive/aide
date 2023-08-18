@@ -32,13 +32,11 @@
           "id": "codestory",
           "title": "CodeStory",
           "icon": "assets/cs-logomark.svg"
-        }
-      ],
-      "auxiliarybar": [
+        },
         {
           "id": "agent",
           "title": "CodeStory Agent",
-          "icon": "assets/cs-logomark.svg"
+          "icon": "assets/aide-white.svg"
         }
       ]
     },
@@ -62,7 +60,7 @@
       {
         "id": "cs-chat",
         "label": "CS Chat",
-        "icon": "assets/cs-logomark.png"
+        "icon": "assets/message-code.svg"
       }
     ],
     "configuration": {
