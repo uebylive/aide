@@ -222,7 +222,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		logger.info('provideWelcomeMessage', token);
 		return [
 			'Hi! How can I help you?',
-			'Ask Aide a question or type \'/\' for topics? I am an AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
+			'Ask Aide a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
 		];
 	}
 
