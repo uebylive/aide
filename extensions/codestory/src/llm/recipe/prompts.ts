@@ -159,7 +159,7 @@ ${codeSnippet}
 
 ---
 
-Context: '${instructions}'. Limit your changes to the context.
+Context: '${instructions}'. Limit your changes to the context. Don't include the name of the language when doing the code generation step so after \`\`\` don't write the name of the language right after, as it messes up the parsing logic.
 Instructions:
 1. Complete the Code Planning step
 2. Complete the Code Generation step
@@ -310,6 +310,7 @@ export const newFileContentAndDiffPrompt = (
 Think step-by-step regarding the instructions and how you can create new file content after applying the diff.
 Include any new dependencies which you think are missing in the file (we take care of installing it)
 Don't change any part of the code which is not mentioned in the diff and DON't modify the logic or remove comments.
+When you put code in \`\`\` don't include the name of the language right after, never do that as it leads to errors when parsing.
 
 <file_name>
 ${fileName}
