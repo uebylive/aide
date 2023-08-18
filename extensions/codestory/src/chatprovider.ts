@@ -8,6 +8,7 @@ import logger from './logger';
 import { CSChatState } from './chatState/state';
 import { getSelectedCodeContext } from './utilities/getSelectionContext';
 import { generateChatCompletion } from './chatState/openai';
+import { logChatPrompt } from './posthog/logChatPrompt';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -213,10 +214,14 @@ class CSChatCancellationToken implements vscode.CancellationToken {
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
 	private _workingDirectory: string;
+	private _repoName: string;
+	private _repoHash: string;
 
-	constructor(workingDirectory: string) {
+	constructor(workingDirectory: string, repoName: string, repoHash: string) {
 		this._workingDirectory = workingDirectory;
 		this._chatSessionState = new CSChatSessionState();
+		this._repoHash = repoHash;
+		this._repoName = repoName;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -267,7 +272,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return new CSChatRequest(session, context.toString());
 	}
 
-	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
+	async provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgress', request, progress, token);
 		if (request.message.toString().startsWith('/help')) {
 			progress.report(new CSChatProgressContent(
@@ -289,6 +294,11 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
 			this._chatSessionState.chatContext.cleanupChatHistory();
 			this._chatSessionState.chatContext.addUserMessage(request.message.toString());
+			await logChatPrompt(
+				request.message.toString(),
+				this._repoName,
+				this._repoHash,
+			);
 			if (selectionContext) {
 				this._chatSessionState.chatContext.addCodeContext(
 					selectionContext.selectedText,

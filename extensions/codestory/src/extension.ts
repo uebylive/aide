@@ -210,7 +210,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(openAgentViewCommand);
 
 	// Register chat provider
-	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath));
+	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, repoName, repoHash));
 	context.subscriptions.push(interactiveSession);
 
 	context.subscriptions.push(
