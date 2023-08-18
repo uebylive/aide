@@ -98,7 +98,7 @@ class InputEditorDecorations extends Disposable {
 			const extensionPlaceholder = this.widget.viewModel?.inputPlaceholder;
 			const defaultPlaceholder = slashCommands?.length ?
 				localize('interactive.input.placeholderWithCommands', "Ask a question or type '/' for topics") :
-				localize('interactive.input.placeholderNoCommands', "Ask a question");
+				localize('interactive.input.placeholderNoCommands', "Initializing the chat...");
 			const placeholder = extensionPlaceholder ?? defaultPlaceholder;
 			const decoration: IDecorationOptions[] = [
 				{
