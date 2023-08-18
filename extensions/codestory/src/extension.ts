@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, env, ExtensionContext, interactive, ProgressLocation, window, workspace } from 'vscode';
+import { commands, env, ExtensionContext, interactive, ProgressLocation, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -32,6 +32,7 @@ import { PythonServer } from './utilities/pythonServerClient';
 import { getExtensionsInDirectory } from './utilities/activateLSP';
 import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
 import { CSChatProvider } from './chatprovider';
+import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 
 
 class ProgressiveTrackSymbols {
@@ -162,6 +163,8 @@ export async function activate(context: ExtensionContext) {
 	logger.info(activeDirectories);
 	const extensionSet = getExtensionsInDirectory(rootPath);
 	const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
+	// Active files tracker
+	const activeFilesTracker = new ActiveFilesTracker();
 
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
@@ -318,4 +321,19 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(registerCopySettingsCommand);
 	// Set the test run command here
 	sendTestSuiteRunCommand(testSuiteRunCommand, agentViewProvider);
+
+	// Listen for document opened events
+	workspace.onDidOpenTextDocument((document: TextDocument) => {
+		activeFilesTracker.openTextDocument(document);
+	});
+
+	// Listen for document closed events
+	workspace.onDidCloseTextDocument((document: TextDocument) => {
+		activeFilesTracker.onCloseTextDocument(document);
+	});
+
+	// Listen for active editor change events (user navigating between files)
+	window.onDidChangeActiveTextEditor((editor) => {
+		activeFilesTracker.onDidChangeActiveTextEditor(editor);
+	});
 }

@@ -7,7 +7,7 @@ import { env } from 'vscode';
 import postHogClient from './client';
 
 
-export const logChatPrompt = async (
+export const logChatPrompt = (
 	prompt: string,
 	githubRepoName: string,
 	githubRepoHash: string,
