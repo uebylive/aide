@@ -26,6 +26,10 @@ export class CSChatState {
 		this.addSystemPrompt();
 	}
 
+	getMessages(): ChatCompletionRequestMessage[] {
+		return this._messages;
+	}
+
 	getMessageLength(): number {
 		return this._messages.length;
 	}
@@ -48,6 +52,18 @@ export class CSChatState {
 		this._messages.push({
 			role: ChatCompletionRequestMessageRoleEnum.Assistant,
 			content: message,
+		});
+	}
+
+	addCodeContext(codeContext: string): void {
+		this._messages.push({
+			role: ChatCompletionRequestMessageRoleEnum.User,
+			content: `
+The code in question is the following:
+<code_context>
+${codeContext}
+</code_context>
+			`,
 		});
 	}
 }
