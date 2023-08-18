@@ -6,6 +6,7 @@ import * as vscode from 'vscode';
 
 import logger from './logger';
 import { CSChatState } from './chatState/state';
+import { getSelectedCodeContext } from './utilities/getSelectionContext';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -210,9 +211,19 @@ class CSChatCancellationToken implements vscode.CancellationToken {
 
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
+	private _workingDirectory: string;
 
-	constructor() {
+	constructor(workingDirectory: string) {
+		this._workingDirectory = workingDirectory;
 		this._chatSessionState = new CSChatSessionState();
+	}
+
+	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.InteractiveWelcomeMessageContent[]> {
+		logger.info('provideWelcomeMessage', token);
+		return [
+			'Hi! How can I help you?',
+			'Ask CodeStory a question or type \'/\' for topics? I am an AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
+		];
 	}
 
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
@@ -236,7 +247,10 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgress', request, progress, token);
-		progress.report(new CSChatProgressContent('Hello there!'));
+		const selectionContext = getSelectedCodeContext(this._workingDirectory);
+		if (selectionContext) {
+			progress.report(new CSChatProgressContent(`Using context:\n [${selectionContext.labelInformation.label}](${selectionContext.labelInformation.hyperlink})\n`));
+		}
 		this._chatSessionState.chatContext.addUserMessage(request.message.toString());
 		this._chatSessionState.chatContext.addCodeStoryMessage('Hello there!');
 		logger.info(`[codestory][message_length][provideResponseWithProgress] ${this._chatSessionState.chatContext.getMessageLength()}`);
