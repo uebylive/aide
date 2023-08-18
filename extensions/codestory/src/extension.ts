@@ -155,6 +155,27 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
 
+	// Register the agent view provider
+	const agentViewProvider = new AgentViewProvider(context.extensionUri);
+	context.subscriptions.push(
+		window.registerWebviewViewProvider(AgentViewProvider.viewType, agentViewProvider, {
+			webviewOptions: { retainContextWhenHidden: true },
+		})
+	);
+
+	// Create the copy settings from vscode command for the extension
+	const openAgentViewCommand = commands.registerCommand(
+		'codestory.launchAgent',
+		async (prompt: string) => {
+			agentViewProvider.show();
+			await agentViewProvider.getView()?.webview.postMessage({
+				command: 'launchAgent',
+				payload: { prompt }
+			});
+		}
+	);
+	context.subscriptions.push(openAgentViewCommand);
+
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
@@ -199,27 +220,6 @@ export async function activate(context: ExtensionContext) {
 		pythonServer,
 		rootPath,
 	);
-
-	// Register the agent view provider
-	const agentViewProvider = new AgentViewProvider(context.extensionUri);
-	context.subscriptions.push(
-		window.registerWebviewViewProvider(AgentViewProvider.viewType, agentViewProvider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		})
-	);
-
-	// Create the copy settings from vscode command for the extension
-	const openAgentViewCommand = commands.registerCommand(
-		'codestory.launchAgent',
-		async (prompt: string) => {
-			agentViewProvider.show();
-			await agentViewProvider.getView()?.webview.postMessage({
-				command: 'launchAgent',
-				payload: { prompt }
-			});
-		}
-	);
-	context.subscriptions.push(openAgentViewCommand);
 
 	context.subscriptions.push(
 		debug(
