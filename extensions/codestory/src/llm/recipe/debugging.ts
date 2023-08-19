@@ -5,12 +5,7 @@
 
 // We are powering the debugging route here.
 import {
-	ChatCompletionRequestMessage,
-	ChatCompletionRequestMessageRoleEnum,
-	ChatCompletionResponseMessage,
-	Configuration,
-	CreateChatCompletionResponseChoicesInner,
-	OpenAIApi,
+	OpenAI,
 } from 'openai';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
@@ -18,34 +13,27 @@ import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
 import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
-import { Type } from 'ts-morph';
-import { readFileSync } from 'fs';
-import { loadOrSaveToStorage } from '../../storage/types';
-import { indexRepository } from '../../storage/indexer';
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
 	apiKey: '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',
 });
-const openai = new OpenAIApi(configuration);
 
 const systemPrompt = (): string => {
 	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
 };
 
 export const generateChatCompletion = async (
-	messages: ChatCompletionRequestMessage[]
-): Promise<CreateChatCompletionResponseChoicesInner | null> => {
-	const { data } = await openai.createChatCompletion({
+	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]
+): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
+	const completions = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
 		messages: messages,
 		max_tokens: 12000,
 	});
-	console.log('data from openai');
-	console.log(data);
-	if (data.choices.length !== 0) {
-		return data.choices[0];
+	if (completions.choices.length !== 0) {
+		return completions.choices[0];
 	}
 	return null;
 };
@@ -65,18 +53,18 @@ export const debuggingFlow = async (
 	// allow-any-unicode-next-line
 	await toolingEventCollection.addThinkingEvent(prompt, '🤔 ...⌛ on how to help the user');
 	console.log('We are done with sending the first event');
-	let initialMessages: ChatCompletionRequestMessage[] = [
+	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: systemPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.System,
+			role: 'system',
 		},
 		{
 			content: prompt,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 		{
 			content: generatePlanAndQueriesPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 	];
 	const response = await generateChatCompletion(initialMessages);
@@ -109,15 +97,15 @@ export const debuggingFlow = async (
 	initialMessages = [
 		{
 			content: systemPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.System,
+			role: 'system',
 		},
 		{
 			content: prompt,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 		{
 			content: planAndQueries?.additionalInstructions.join('\n') ?? '',
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 	];
 	// Now we get all the file information for the symbols
@@ -132,13 +120,13 @@ export const debuggingFlow = async (
 			content: await formatFileInformationListForPrompt(
 				fileCodeSymbolInformationList,
 			),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 	initialMessages.push(
 		{
 			content: fileFunctionsToParsePrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 	const fileFilterInformation = await generateChatCompletion(initialMessages);

@@ -4,12 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import {
-	ChatCompletionRequestMessage,
-	ChatCompletionRequestMessageRoleEnum,
-	ChatCompletionResponseMessage,
-	Configuration,
-	CreateChatCompletionResponseChoicesInner,
-	OpenAIApi,
+	OpenAI
 } from 'openai';
 
 
@@ -22,7 +17,6 @@ import {
 	decodeGenerator,
 	decodeAsyncGenerator,
 } from 'gpt-tokenizer';
-import ChatMessage from "gpt-tokenizer";
 
 
 const chatSystemPrompt = (): string => {
@@ -31,24 +25,25 @@ const chatSystemPrompt = (): string => {
 
 
 type RoleString = 'system' | 'user' | 'assistant' | undefined;
+type RoleStringForOpenai = 'system' | 'user' | 'assistant' | 'function';
 
 
-const convertRoleToString = (role: ChatCompletionRequestMessageRoleEnum): RoleString => {
+const convertRoleToString = (role: RoleStringForOpenai): RoleString => {
 	switch (role) {
-		case ChatCompletionRequestMessageRoleEnum.System:
+		case 'system':
 			return 'system';
-		case ChatCompletionRequestMessageRoleEnum.User:
+		case 'user':
 			return 'user';
-		case ChatCompletionRequestMessageRoleEnum.Assistant:
+		case 'assistant':
 			return 'assistant';
 		default:
 			return undefined;
 	}
-}
+};
 
 
 export class CSChatState {
-	private _messages: ChatCompletionRequestMessage[];
+	private _messages: OpenAI.Chat.CreateChatCompletionRequestMessage[];
 	private _tokenLimit: number;
 
 	constructor() {
@@ -69,7 +64,7 @@ export class CSChatState {
 				content: message.content ?? '',
 			};
 		});
-		const finalMessages = [];
+		const finalMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [];
 		const maxTokenLimit = 6000;
 		// Now we walk backwards
 		let totalTokenCount = encode(chatSystemPrompt()).length;
@@ -84,7 +79,7 @@ export class CSChatState {
 		}
 		finalMessages.push(
 			{
-				role: ChatCompletionRequestMessageRoleEnum.System,
+				role: 'system',
 				content: chatSystemPrompt(),
 			}
 		);
@@ -92,7 +87,7 @@ export class CSChatState {
 		this._messages = finalMessages;
 	}
 
-	getMessages(): ChatCompletionRequestMessage[] {
+	getMessages(): OpenAI.Chat.CreateChatCompletionRequestMessage[] {
 		return this._messages;
 	}
 
@@ -102,28 +97,28 @@ export class CSChatState {
 
 	addSystemPrompt(): void {
 		this._messages.push({
-			role: ChatCompletionRequestMessageRoleEnum.System,
+			role: 'system',
 			content: chatSystemPrompt(),
 		});
 	}
 
 	addUserMessage(message: string): void {
 		this._messages.push({
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 			content: message,
 		});
 	}
 
 	addCodeStoryMessage(message: string): void {
 		this._messages.push({
-			role: ChatCompletionRequestMessageRoleEnum.Assistant,
+			role: 'assistant',
 			content: message,
 		});
 	}
 
 	addCodeContext(codeContext: string, extraSurroundingContext: string): void {
 		this._messages.push({
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 			content: `
 The code in question is the following:
 <code_context>

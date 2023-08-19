@@ -2,15 +2,13 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { OutputChannel } from 'vscode';
 import { CodeSymbolChange, getCodeSymbolsChangedInSameBlockDescription } from './trackCodeSymbolChanges';
-import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 import { Logger } from 'winston';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
 	apiKey: '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',
 });
-const openai = new OpenAIApi(configuration);
 
 
 interface CodeBlockChangeDescriptionForWebView {
@@ -32,13 +30,13 @@ const getLanguageId = (filePath: string): string | null => {
 	return null;
 };
 
-export const generateChatCompletionWithGPT4 = async (messages: ChatCompletionRequestMessage[]) => {
-	const completion = await openai.createChatCompletion({
+export const generateChatCompletionWithGPT4 = async (messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]) => {
+	const completion = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
 		messages,
 		max_tokens: 756,
 	});
-	const completionText = completion.data.choices[0].message?.content || '';
+	const completionText = completion.choices[0].message?.content || '';
 	return completionText;
 };
 

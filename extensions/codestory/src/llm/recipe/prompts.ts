@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from 'openai';
+import { OpenAI } from 'openai';
 
 export const generatePlanAndQueriesPrompt = (): string => {
 	return `
@@ -166,8 +166,8 @@ Instructions:
 `;
 };
 
-export const generateModifyCodeHallucinationPrompt = (): ChatCompletionRequestMessage[] => {
-	const modifyCodeHallucinationPrompt = [
+export const generateModifyCodeHallucinationPrompt = (): OpenAI.Chat.CreateChatCompletionRequestMessage[] => {
+	const modifyCodeHallucinationPrompt: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: `
 File Name: (non-existent example)
@@ -219,7 +219,7 @@ Context: 'Change hello to goodbye and change 3 to 4'. Limit your changes to the 
 Instructions:
 1. Complete the Code Planning step
 2. Complete the Code Generation step`,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 		{
 			content: `
@@ -259,7 +259,7 @@ def func():
 >>>> UPDATED
 < /code_generation>
 \`\`\``,
-			role: ChatCompletionRequestMessageRoleEnum.Assistant,
+			role: 'assistant',
 		},
 	];
 	return modifyCodeHallucinationPrompt;
