@@ -12,7 +12,7 @@ import { v4 as uuidV4 } from 'uuid';
 import * as fs from 'fs';
 import { Graph, GraphDFS, WCCFinder, topoSort } from './graphTopologicalSort';
 import { createPatch } from 'diff';
-import { ChatCompletionRequestMessage, Configuration } from 'openai';
+import { OpenAI } from 'openai';
 import { CodeSymbolInformation, FileCodeSymbolInformation } from '../utilities/types';
 import {
 	TSMorphProjectManagement,
@@ -22,10 +22,6 @@ import {
 import { Logger } from 'winston';
 import { PythonServer } from '../utilities/pythonServerClient';
 import EventEmitter from 'events';
-
-const configuration = new Configuration({
-	apiKey: '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',
-});
 
 export const getFileExtension = (filePath: string): string => {
 	const fileExtension = path.extname(filePath);
@@ -703,7 +699,7 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
 		lastEditTime: number;
 		languageId: string;
 	}[]
-): ChatCompletionRequestMessage[] => [
+): OpenAI.Chat.CreateChatCompletionRequestMessage[] => [
 		{
 			role: 'system',
 			content: `

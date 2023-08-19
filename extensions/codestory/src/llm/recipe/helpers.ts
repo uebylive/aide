@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from 'openai';
+import { OpenAI } from 'openai';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
 import { getCodeSymbolList } from '../../storage/indexer';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../../utilities/parseTypescript';
@@ -156,7 +156,7 @@ export const writeFileContents = async (
 
 export const generateModificationInputForCodeSymbol = async (
 	codeSymbolModificationInstruction: CodeSymbolModificationInstruction,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	codeGraph: CodeGraph
 ): Promise<CodeModificationContextAndDiff | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
@@ -187,7 +187,7 @@ export const generateModificationInputForCodeSymbol = async (
 	messages.push(
 		{
 			content: promptForModification,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 
@@ -201,7 +201,7 @@ export const generateModifiedFileContentAfterDiff = async (
 	codeModificationInput: CodeSymbolModificationInstruction,
 	modificationContext: CodeModificationContextAndDiff,
 	codeGraph: CodeGraph,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 ): Promise<NewFileContentAndDiffResponse | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
 		codeModificationInput.codeSymbolName
@@ -229,7 +229,7 @@ export const generateModifiedFileContentAfterDiff = async (
 	messages.push(
 		{
 			content: promptForModification,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 
@@ -266,7 +266,7 @@ export const generateTestScriptForChange = async (
 	codeSymbolNameMaybe: string,
 	codeGraph: CodeGraph,
 	codeModificationContext: CodeModificationContextAndDiff,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	moduleName: string,
 	previousFileContent: string,
 ): Promise<TextExecutionHarness | null> => {
@@ -290,7 +290,7 @@ export const generateTestScriptForChange = async (
 	const messages = [...previousMessages];
 	messages.push({
 		content: prompt,
-		role: ChatCompletionRequestMessageRoleEnum.User,
+		role: 'user',
 	});
 	const response = await generateChatCompletion(messages);
 	return parseTestPlanResponseForHarness(
@@ -309,7 +309,7 @@ export const stripPrefix = (input: string, prefix: string): string => {
 
 export const executeTestHarness = async (
 	testPlan: TextExecutionHarness,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	toolingEventCollection: ToolingEventCollection,
 	executionEventId: string,
 	codeSymbolNameMaybe: string,
@@ -379,7 +379,7 @@ export const executeTestHarness = async (
 	const messages = [...previousMessages];
 	messages.push({
 		content: prompt,
-		role: ChatCompletionRequestMessageRoleEnum.User,
+		role: 'user',
 	});
 	const response = await generateChatCompletion(messages);
 	const testSetupFinalResult = parseTestExecutionFinalSetupResponse(

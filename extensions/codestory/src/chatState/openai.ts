@@ -3,23 +3,28 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ChatCompletionRequestMessage, Configuration, CreateChatCompletionResponseChoicesInner, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
 	apiKey: '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',
 });
-const openai = new OpenAIApi(configuration);
 
 export const generateChatCompletion = async (
-	messages: ChatCompletionRequestMessage[]
-): Promise<CreateChatCompletionResponseChoicesInner | null> => {
-	const { data } = await openai.createChatCompletion({
+	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]
+): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
+	const completion = await openai.chat.completions.create({
 		model: 'gpt-4',
 		messages: messages,
 		max_tokens: 1000,
+		stream: false,
 	});
-	if (data.choices.length !== 0) {
-		return data.choices[0];
+	// for await (const data of completion) {
+	// 	if (data === 'completion') {
+	// 		return data;
+	// 	}
+	// }
+	if (completion.choices.length !== 0) {
+		return completion.choices[0];
 	}
 	return null;
 };
