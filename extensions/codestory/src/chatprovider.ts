@@ -9,6 +9,7 @@ import { CSChatState } from './chatState/state';
 import { getSelectedCodeContext } from './utilities/getSelectionContext';
 import { generateChatCompletion } from './chatState/openai';
 import { logChatPrompt } from './posthog/logChatPrompt';
+import { reportFromStreamToProgress } from './chatState/convertStreamToMessage';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -117,7 +118,7 @@ class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetai
 	}
 }
 
-class CSChatProgressContent implements vscode.InteractiveProgressContent {
+export class CSChatProgressContent implements vscode.InteractiveProgressContent {
 	content: string;
 
 	constructor(content: string) {
@@ -169,7 +170,7 @@ class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
 	}
 }
 
-class CSChatProgressTask implements vscode.InteractiveProgressTask {
+export class CSChatProgressTask implements vscode.InteractiveProgressTask {
 	placeholder: string;
 	resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>;
 
@@ -183,7 +184,7 @@ class CSChatProgressTask implements vscode.InteractiveProgressTask {
 	}
 }
 
-type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
+export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
 
 class CSChatResponseForProgress implements vscode.InteractiveResponseForProgress {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
@@ -197,7 +198,7 @@ class CSChatResponseForProgress implements vscode.InteractiveResponseForProgress
 	}
 }
 
-class CSChatCancellationToken implements vscode.CancellationToken {
+export class CSChatCancellationToken implements vscode.CancellationToken {
 	isCancellationRequested: boolean;
 	onCancellationRequested: vscode.Event<any>;
 
@@ -301,45 +302,28 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				this._repoHash,
 			);
 			if (selectionContext) {
-				this._chatSessionState.chatContext.addCodeContext(
-					selectionContext.selectedText,
-					selectionContext.extraSurroundingText,
-				);
-				const llmReply = async () => {
-					const response = await generateChatCompletion(
+				return (async () => {
+					this._chatSessionState.chatContext.addCodeContext(
+						selectionContext.selectedText,
+						selectionContext.extraSurroundingText,
+					);
+					const streamingResponse = generateChatCompletion(
 						this._chatSessionState.chatContext.getMessages(),
 					);
-					const responseMessageText = response?.message?.content;
-					if (responseMessageText) {
-						this._chatSessionState.chatContext.addCodeStoryMessage(responseMessageText);
-						return new CSChatProgressContent(responseMessageText);
-					} else {
-						return new CSChatProgressContent('No response from LLM 🥲, please report this to the developers or try again');
-					}
-				};
-				progress.report(new CSChatProgressTask(
-					'Thinking 🤔',
-					llmReply(),
-				));
+					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
+					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+					return new CSChatResponseForProgress();
+				})();
 			} else {
-				const llmReply = async () => {
-					const response = await generateChatCompletion(
+				return (async () => {
+					const streamingResponse = generateChatCompletion(
 						this._chatSessionState.chatContext.getMessages(),
 					);
-					const responseMessageText = response?.message?.content;
-					if (responseMessageText) {
-						this._chatSessionState.chatContext.addCodeStoryMessage(responseMessageText);
-						return new CSChatProgressContent(responseMessageText);
-					} else {
-						return new CSChatProgressContent('No response from LLM 🥲, please report this to the developers or try again');
-					}
-				};
-				progress.report(new CSChatProgressTask(
-					'Thinking 🤔',
-					llmReply(),
-				));
+					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
+					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+					return new CSChatResponseForProgress();
+				})();
 			}
-			return new CSChatResponseForProgress();
 		}
 	}
 

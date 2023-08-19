@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { OpenAI } from 'openai';
+import { Stream } from 'openai/streaming';
 
 const openai = new OpenAI({
 	apiKey: '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',
@@ -11,20 +12,12 @@ const openai = new OpenAI({
 
 export const generateChatCompletion = async (
 	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]
-): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
-	const completion = await openai.chat.completions.create({
+): Promise<Stream<OpenAI.Chat.Completions.ChatCompletionChunk> | null> => {
+	const completion: Stream<OpenAI.Chat.Completions.ChatCompletionChunk> = await openai.chat.completions.create({
 		model: 'gpt-4',
 		messages: messages,
 		max_tokens: 1000,
-		stream: false,
+		stream: true,
 	});
-	// for await (const data of completion) {
-	// 	if (data === 'completion') {
-	// 		return data;
-	// 	}
-	// }
-	if (completion.choices.length !== 0) {
-		return completion.choices[0];
-	}
-	return null;
+	return completion;
 };
