@@ -112,6 +112,7 @@ export interface FileFunctionsToParseResponse {
 export function generateFileFunctionsResponseParser(
 	response: string
 ): FileFunctionsToParseResponse {
+	console.log('[generateFileFunctionsResponseParser] what kind of response', response);
 	if (!response.includes('<modify_code_symbol>') || !response.includes('</modify_code_symbol>')) {
 		return {
 			codeSymbolModificationInstructionList: [],

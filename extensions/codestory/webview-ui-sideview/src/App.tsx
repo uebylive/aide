@@ -68,7 +68,6 @@ function App() {
 				console.log('[debugging] What is the changelog payload', payload);
 				const payloadData = (payload as { changes: CodeSymbolChange[] })
 					.changes;
-				console.log('[debugging] What is the changelog', payloadData);
 				setChangedCodeSymbol(
 					payloadData.map((change) => ({
 						...change,
@@ -76,7 +75,6 @@ function App() {
 					}))
 				);
 			} else if (command === 'getComponentChangeDescription') {
-				console.log('[debugging] whats the payload we have here', payload);
 				const payloadData = payload as {
 					codeBlockChangeDescriptions: CodeBlockChangeDescription[];
 				};

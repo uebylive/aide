@@ -17,6 +17,7 @@ import { ToolingEventCollection } from '../../timeline/events/collection';
 import { runCommandAsync } from '../../utilities/commandRunner';
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
 
 
 export const getOpenFilesInWorkspace = (): string[] => {
@@ -214,6 +215,19 @@ export const generateModifiedFileContentAfterDiff = async (
 	// Now supporting big files for now, so we just return null here
 	if (fileCode.split('\n').length > 2000) {
 		return null;
+	}
+
+	const newFileContent = generateNewFileFromPatch(
+		modificationContext.codeDiff,
+		fileCode,
+	);
+
+	if (newFileContent) {
+		console.log('[patchGeneratedFile] Generated file content with path no AI');
+		console.log(newFileContent);
+		return {
+			newFileContent: newFileContent,
+		};
 	}
 
 	const promptForModification = newFileContentAndDiffPrompt(
