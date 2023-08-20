@@ -163,6 +163,7 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 	globalStorageUri: string,
 ): Promise<CodeSymbolInformationEmbeddings[]> => {
 	console.log('[golang] Generating symbols');
+	return [];
 	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
 	for (let index = 0; index < filesToTrack.length; index++) {
 		const filePath = filesToTrack[index];
