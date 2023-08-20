@@ -29,10 +29,14 @@ import { copySettings } from './utilities/copySettings';
 import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
-import { getExtensionsInDirectory } from './utilities/activateLSP';
+import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
 import { CSChatProvider } from './chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
+import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
+import * as fs from 'fs';
+import { parseDependenciesForCodeSymbols } from './utilities/treeSitterGoLang';
+import { GoLangParser } from './languages/goCodeSymbols';
 
 
 class ProgressiveTrackSymbols {
@@ -104,6 +108,7 @@ class ProgressiveIndexer {
 		storage: CodeStoryStorage,
 		projectManagement: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		globalStorageUri: string,
 		workingDirectory: string
 	) {
@@ -118,6 +123,7 @@ class ProgressiveIndexer {
 					storage,
 					projectManagement,
 					pythonServer,
+					goLangParser,
 					globalStorageUri,
 					workingDirectory,
 					this.emitter
@@ -147,6 +153,8 @@ export async function activate(context: ExtensionContext) {
 		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
+	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+
 	const repoName = await getGitRepoName(rootPath);
 	const repoHash = await getGitCurrentHash(rootPath);
 
@@ -182,6 +190,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath,
 	);
 	const pythonServer = new PythonServer(serverUrl);
+	const goLangParser = new GoLangParser(rootPath ?? '');
 
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
@@ -206,6 +215,7 @@ export async function activate(context: ExtensionContext) {
 		codeStoryStorage,
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
@@ -318,8 +328,19 @@ export async function activate(context: ExtensionContext) {
 
 	// activate the relevant LSPs here
 	// TODO(codestory): Enable this later on
-	// await activateExtensions(context, getExtensionsInDirectory(rootPath));
-	// await getDocumentSymbols();
+	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+	// const filePath = '/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go';
+	// const symbols = await getSymbolsFromDocumentUsingLSP(
+	// 	'/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go',
+	// 	'golang',
+	// 	rootPath ?? '',
+	// );
+	// logger.info(symbols);
+	// fs.writeFileSync('/tmp/documentSymbolsSomething', JSON.stringify(symbols), 'utf-8');
+	// await parseDependenciesForCodeSymbols(
+	// 	filePath,
+	// 	rootPath ?? '',
+	// );
 
 	// Add git commit to the subscriptions here
 	// Git commit

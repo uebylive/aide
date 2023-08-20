@@ -100,7 +100,29 @@ function convertDocumentSymbolToCodeSymbolInformation(
 	languageId: string,
 	fsFilePath: string,
 	workingDirectory: string,
-): CodeSymbolInformation {
+	scope: string = 'global',
+	extractChildren: boolean = true,
+): CodeSymbolInformation[] {
+	// For now I will look at the child of the class and see what I can get
+	const codeSymbols: CodeSymbolInformation[] = [];
+	if (documentSymbol.kind === SymbolKind.Class && extractChildren) {
+		for (let index = 0; index < documentSymbol.children.length; index++) {
+			const childSymbol = documentSymbol.children[index];
+			if (childSymbol.kind === SymbolKind.Method) {
+				codeSymbols.push(
+					...convertDocumentSymbolToCodeSymbolInformation(
+						childSymbol,
+						fileSplitLines,
+						languageId,
+						fsFilePath,
+						workingDirectory,
+						'class_function',
+						false,
+					)
+				);
+			}
+		}
+	}
 	const codeSymbolInformation: CodeSymbolInformation = {
 		symbolName: getCodeLocationPath(workingDirectory, fsFilePath) + '.' + documentSymbol.name,
 		symbolKind: convertVSCodeSymbolKind(documentSymbol.kind),
@@ -117,10 +139,10 @@ function convertDocumentSymbolToCodeSymbolInformation(
 		displayName: documentSymbol.name,
 		originalName: documentSymbol.detail,
 		originalSymbolName: documentSymbol.name,
-		globalScope: 'global',
+		globalScope: scope,
 		dependencies: [],
 	};
-	return codeSymbolInformation;
+	return [codeSymbolInformation, ...codeSymbols];
 }
 
 const convertDocumentSymbolOutputToCodeSymbol = (
@@ -139,14 +161,18 @@ const convertDocumentSymbolOutputToCodeSymbol = (
 	if (isDocumentSymbolArray(documentSymbols)) {
 		for (let index = 0; index < documentSymbols.length; index++) {
 			const documentInformation = documentSymbols[index];
-			if (documentInformation.kind === SymbolKind.Class || documentInformation.kind === SymbolKind.Function || documentInformation.kind === SymbolKind.Interface || documentInformation.kind === SymbolKind.Enum) {
+			// TODO(codestory): Figure out the relevant symbols we want to pick
+			// up globally for each language later on
+			if (true) {
 				codeSymbols.push(
-					convertDocumentSymbolToCodeSymbolInformation(
+					...convertDocumentSymbolToCodeSymbolInformation(
 						documentInformation,
 						fileSplitLines,
 						languageId,
 						fsFilePath,
 						workingDirectory,
+						'global',
+						true,
 					)
 				);
 			}
@@ -189,8 +215,6 @@ export const getSymbolsFromDocumentUsingLSP = async (
 			symbols ?? [],
 		);
 		if (codeSymbolInformation.length !== 0) {
-			console.log(`[lsp-code-symbol] file path: ${filePath} ${codeSymbolInformation.length}`);
-			console.log(codeSymbolInformation);
 			return codeSymbolInformation;
 		}
 	}
@@ -198,35 +222,35 @@ export const getSymbolsFromDocumentUsingLSP = async (
 };
 
 
-export const getDocumentSymbols = async () => {
-	await sleep(1000);
-	logger.info('[document-symbols-testing] we are here');
-	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		'typescript'
-	);
-	logger.info('[document-symbol-providers] length ' + documentSymbolProviders.length);
-	const uri = Uri.file('/Users/skcd/scratch/anton/anton/llm/tool_event_collection.py');
-	const textDocument = await workspace.openTextDocument(uri);
-	logger.info('[text documents]');
-	logger.info(textDocument.getText());
-	for (let index = 0; index < documentSymbolProviders.length; index++) {
-		const documentSymbols = await documentSymbolProviders[index].provideDocumentSymbols(
-			textDocument,
-			{
-				isCancellationRequested: false,
-				onCancellationRequested: () => ({ dispose() { } }),
-			},
-		);
-		// Now we want to write this to a file
-		if (documentSymbols?.length === 0) {
-			logger.info('[document-symbols-testing] no symbols found');
-			continue;
-		}
-		logger.info('[document-symbols-testing]');
-		logger.info(documentSymbols);
-		fs.writeFileSync('/tmp/documentSymbols', JSON.stringify(documentSymbols), 'utf-8');
-	}
-};
+// export const getDocumentSymbols = async () => {
+// 	await sleep(1000);
+// 	logger.info('[document-symbols-testing] we are here');
+// 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
+// 		'typescript'
+// 	);
+// 	logger.info('[document-symbol-providers] length ' + documentSymbolProviders.length);
+// 	const uri = Uri.file('/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go');
+// 	const textDocument = await workspace.openTextDocument(uri);
+// 	logger.info('[text documents]');
+// 	logger.info(textDocument.getText());
+// 	for (let index = 0; index < documentSymbolProviders.length; index++) {
+// 		const documentSymbols = await documentSymbolProviders[index].provideDocumentSymbols(
+// 			textDocument,
+// 			{
+// 				isCancellationRequested: false,
+// 				onCancellationRequested: () => ({ dispose() { } }),
+// 			},
+// 		);
+// 		// Now we want to write this to a file
+// 		if (documentSymbols === null || documentSymbols === undefined || documentSymbols?.length === 0) {
+// 			logger.info('[document-symbols-testing] no symbols found');
+// 			continue;
+// 		}
+// 		logger.info('[document-symbols-testing]');
+// 		logger.info(documentSymbols);
+// 		fs.writeFileSync('/tmp/documentSymbols', JSON.stringify(documentSymbols), 'utf-8');
+// 	}
+// };
 
 export const lspHacking = async () => {
 	await sleep(1000);

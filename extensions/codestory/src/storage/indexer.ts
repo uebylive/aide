@@ -20,6 +20,7 @@ import logger from '../logger';
 import EventEmitter = require('events');
 import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
 import { PythonServer } from '../utilities/pythonServerClient';
+import { GoLangParser } from '../languages/goCodeSymbols';
 // import logger from '../logger';
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -154,6 +155,49 @@ const generateAndStoreEmbeddings = async (
 };
 
 
+const generateAndStoreEmbeddingsForGolangFiles = async (
+	goLangParser: GoLangParser,
+	workingDirectory: string,
+	filesToTrack: string[],
+	emitter: EventEmitter,
+	globalStorageUri: string,
+): Promise<CodeSymbolInformationEmbeddings[]> => {
+	console.log('[golang] Generating symbols');
+	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		if (!filePath.endsWith('.go')) {
+			continue;
+		}
+		const _ = await goLangParser.parseFileWithoutDependency(
+			filePath,
+		);
+		console.log('[golang][generateSymbols] ' + filePath);
+	}
+
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		if (!filePath.endsWith('.go')) {
+			continue;
+		}
+		const codeSymbolsWithDependencies = await goLangParser.parseFileWithDependencies(
+			filePath,
+		);
+		console.log('[golang][generateSymbols][dependencies] ' + filePath);
+		const codeSymbolsWithEmbeddings = await generateAndStoreEmbeddings(
+			codeSymbolsWithDependencies,
+			workingDirectory,
+			globalStorageUri
+		);
+		codeSymbolsWithEmbeddings.forEach((codeSymbolsWithEmbeddings) => {
+			emitter.emit('partialData', codeSymbolsWithEmbeddings);
+		});
+		finalCodeSymbolWithEmbeddings.push(...codeSymbolsWithEmbeddings);
+	}
+	return finalCodeSymbolWithEmbeddings;
+};
+
+
 const generateAndStoreEmbeddingsForPythonFiles = async (
 	pythonClient: PythonServer,
 	workingDirectory: string,
@@ -167,7 +211,6 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
 		if (!filePath.endsWith('.py')) {
 			continue;
 		}
-		console.log('Parsing python file' + filePath);
 		const codeSymbols = await pythonClient.parseFile(
 			filePath,
 		);
@@ -206,6 +249,7 @@ export const indexRepository = async (
 	storage: CodeStoryStorage,
 	projectManagement: TSMorphProjectManagement,
 	pythonClient: PythonServer,
+	goLangParser: GoLangParser,
 	globalStorageUri: string,
 	workingDirectory: string,
 	emitter: EventEmitter,
@@ -253,6 +297,14 @@ export const indexRepository = async (
 			emitter,
 			globalStorageUri,
 		);
+		const goLangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
+			goLangParser,
+			workingDirectory,
+			filesToTrack,
+			emitter,
+			globalStorageUri,
+		);
+		codeSymbolWithEmbeddings.push(...goLangSymbols);
 		codeSymbolWithEmbeddings.push(...pythonSymbols);
 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 		storage.isIndexed = true;
@@ -285,6 +337,14 @@ export const indexRepository = async (
 				emitter,
 				globalStorageUri,
 			);
+			const golangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
+				goLangParser,
+				workingDirectory,
+				filesToTrack,
+				emitter,
+				globalStorageUri,
+			);
+			codeSymbolWithEmbeddings.push(...golangSymbols);
 			codeSymbolWithEmbeddings.push(...pythonSymbols);
 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 			storage.isIndexed = true;

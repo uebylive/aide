@@ -639,89 +639,95 @@ function parseCodeBlockForDependencies(
 	project: Project,
 	sourceFile: SourceFile
 ): CodeSymbolDependencies[] {
-	const codeSymbolDependencies: CodeSymbolDependencies[] = [];
-	block.getDescendantsOfKind(SyntaxKind.CallExpression).forEach((callExpression) => {
-		callExpression.getDescendantsOfKind(SyntaxKind.Identifier).forEach((identifier) => {
-			const symbol = identifier.getSymbol();
-			if (symbol) {
-				const qualifiedNamesFromAliasSymbol: CodeSymbolDependencyWithFileInformation[] | undefined =
-					symbol
-						.getAliasedSymbol()
-						?.getDeclarations()
-						.map((declaration) => {
-							return {
-								codeSymbolName: declaration.getSymbol()?.getFullyQualifiedName(),
-								filePath: declaration.getSourceFile().getFilePath(),
-							};
-						})
-						.filter((codeSymbolInformation) => codeSymbolInformation.codeSymbolName !== undefined)
-						.map(
-							// Stupid typescript type checker
-							(codeSymbolInformation) =>
-								codeSymbolInformation as CodeSymbolDependencyWithFileInformation
-						);
-				const declarations = symbol.getDeclarations();
-				// if (declarations.length !== 0) {
-				//     return;
-				// }
-				// console.log(
-				//     '[dependency] Identifier: ' + identifier.getText() + ' ' + symbol.getDeclarations()[0]
-				// );
-				// Not sure why this is happening, but this was causing the
-				// extension to crash, so we guard against this
-				// if (symbol.getDeclarations()[0] === undefined) {
-				//     return;
-				// }
-				// Fix this later
-				let originalDeclaration: CodeSymbolDependencyWithFileInformation = {
-					codeSymbolName: symbol.getFullyQualifiedName(),
-					filePath: 'symbol.getDeclarations()[0].getSourceFile().getFilePath()',
-				};
+	try {
+		const codeSymbolDependencies: CodeSymbolDependencies[] = [];
+		block.getDescendantsOfKind(SyntaxKind.CallExpression).forEach((callExpression) => {
+			callExpression.getDescendantsOfKind(SyntaxKind.Identifier).forEach((identifier) => {
+				const symbol = identifier.getSymbol();
+				if (symbol) {
+					const qualifiedNamesFromAliasSymbol: CodeSymbolDependencyWithFileInformation[] | undefined =
+						symbol
+							.getAliasedSymbol()
+							?.getDeclarations()
+							.map((declaration) => {
+								return {
+									codeSymbolName: declaration.getSymbol()?.getFullyQualifiedName(),
+									filePath: declaration.getSourceFile().getFilePath(),
+								};
+							})
+							.filter((codeSymbolInformation) => codeSymbolInformation.codeSymbolName !== undefined)
+							.map(
+								// Stupid typescript type checker
+								(codeSymbolInformation) =>
+									codeSymbolInformation as CodeSymbolDependencyWithFileInformation
+							);
+					const declarations = symbol.getDeclarations();
+					// if (declarations.length !== 0) {
+					//     return;
+					// }
+					// console.log(
+					//     '[dependency] Identifier: ' + identifier.getText() + ' ' + symbol.getDeclarations()[0]
+					// );
+					// Not sure why this is happening, but this was causing the
+					// extension to crash, so we guard against this
+					// if (symbol.getDeclarations()[0] === undefined) {
+					//     return;
+					// }
+					// Fix this later
+					let originalDeclaration: CodeSymbolDependencyWithFileInformation = {
+						codeSymbolName: symbol.getFullyQualifiedName(),
+						filePath: 'symbol.getDeclarations()[0].getSourceFile().getFilePath()',
+					};
 
-				// We pick the aliased symbol name if its present
-				if (
-					qualifiedNamesFromAliasSymbol !== undefined &&
-					qualifiedNamesFromAliasSymbol?.length !== 0
-				) {
-					for (const aliasQualifiedName of qualifiedNamesFromAliasSymbol) {
-						if (aliasQualifiedName !== undefined) {
-							originalDeclaration = aliasQualifiedName;
+					// We pick the aliased symbol name if its present
+					if (
+						qualifiedNamesFromAliasSymbol !== undefined &&
+						qualifiedNamesFromAliasSymbol?.length !== 0
+					) {
+						for (const aliasQualifiedName of qualifiedNamesFromAliasSymbol) {
+							if (aliasQualifiedName !== undefined) {
+								originalDeclaration = aliasQualifiedName;
+							}
 						}
 					}
-				}
-				const relativeDependency = checkIfSymbolIsImportedFromWorkspace(
-					originalDeclaration.codeSymbolName,
-					workingDirectoryPath,
-					moduleName
-				);
-				if (relativeDependency === null) {
+					const relativeDependency = checkIfSymbolIsImportedFromWorkspace(
+						originalDeclaration.codeSymbolName,
+						workingDirectoryPath,
+						moduleName
+					);
+					if (relativeDependency === null) {
+						return;
+					}
+					const dependency: CodeSymbolDependencies = {
+						codeSymbolName: blockCodeSymbolName,
+						codeSymbolKind: CodeSymbolKind.function,
+						edges: [
+							{
+								codeSymbolName: relativeDependency,
+								filePath: originalDeclaration.filePath,
+							},
+						],
+					};
+					codeSymbolDependencies.push(dependency);
 					return;
+				} else {
+					// console.log('[dependency] No symbol found, probably imported from another file');
 				}
-				const dependency: CodeSymbolDependencies = {
-					codeSymbolName: blockCodeSymbolName,
-					codeSymbolKind: CodeSymbolKind.function,
-					edges: [
-						{
-							codeSymbolName: relativeDependency,
-							filePath: originalDeclaration.filePath,
-						},
-					],
-				};
-				codeSymbolDependencies.push(dependency);
-				return;
-			} else {
-				// console.log('[dependency] No symbol found, probably imported from another file');
-			}
+			});
 		});
-	});
-	// console.log(
-	//     '[dependency] Code symbol dependencies: ' +
-	//     blockCodeSymbolName +
-	//     ' ' +
-	//     JSON.stringify(codeSymbolDependencies)
-	// );
-	return codeSymbolDependencies;
-}
+		// console.log(
+		//     '[dependency] Code symbol dependencies: ' +
+		//     blockCodeSymbolName +
+		//     ' ' +
+		//     JSON.stringify(codeSymbolDependencies)
+		// );
+		return codeSymbolDependencies;
+	} catch (e) {
+		console.log('[dependency] Why is this not working??');
+		console.log(e);
+		return [];
+	}
+};
 
 export function parseCodeBlocksForDependencies(
 	sourceFile: SourceFile,
@@ -1033,9 +1039,7 @@ export const getTypescriptLikeFilesInDirectory = (directory: string): string[] =
 				const ext = path.extname(filePath);
 				if (checkIfTypescriptLikeFiles(new Set([ext])) && !isMinifiedFile(filePath) && !isDistFolder(filePath)) {
 					interestedFiles.push(filePath);
-					console.log(`[adding] We are adding ${filePath}`);
 				} else {
-					console.log(`[ignoring] We are ignoring ${filePath}`);
 				}
 			}
 		}
