@@ -26,7 +26,7 @@ export function getContinueServerUrl() {
 	);
 }
 
-async function runCommand(cmd: string): Promise<[string, string | undefined]> {
+export async function runCommand(cmd: string): Promise<[string, string | undefined]> {
 	let stdout = '';
 	let stderr = '';
 	try {
