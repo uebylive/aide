@@ -149,6 +149,8 @@ export const debuggingFlow = async (
 			codeGraph,
 		);
 
+		console.log('Whats the code symbol modification instructions', codeSymbolModificationInstructions);
+
 		if (!filePathForCodeNode) {
 			await toolingEventCollection.executionBranchFinished(
 				executionEventId.toString(),

@@ -36,17 +36,11 @@ export class CodeGraph {
 					const element = splittedSymbolName[index];
 					if (index === 0) {
 						accumulator = element;
-						if (symbolName === 'src.codeGraph.embeddingsSearch.cosineSimilarity') {
-							console.log('What are we searching for', accumulator, lastName);
-						}
 						if (accumulator === lastName) {
 							return true;
 						}
 					} else {
 						accumulator = `${element}.${accumulator}`;
-						if (symbolName === 'src.codeGraph.embeddingsSearch.cosineSimilarity') {
-							console.log('What are we searching for', accumulator, lastName);
-						}
 						if (accumulator === lastName) {
 							return true;
 						}

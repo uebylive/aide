@@ -25,8 +25,6 @@ function App() {
 			console.log('[debugging] What is the message', message);
 			const { command, payload } = message.data;
 			if (command === 'sendPrompt') {
-				console.log('Whats the payload');
-				console.log(payload);
 				setAntonData(payload as any);
 			} else if (command === 'testSuiteRunCommand') {
 				setTestRunCommand((payload as any)['testSuiteRunCommand']);

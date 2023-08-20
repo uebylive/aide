@@ -19,7 +19,7 @@ const lStripMax = (
 		}
 	}
 	return str.slice(count);
-}
+};
 
 
 const getSnippetWithPadding = (
@@ -246,6 +246,7 @@ const slidingWindowReplacement = (
 	}
 
 	// Now we will try to get the snippet with padding
+	// here we have to check for both tabs and spaces
 	const snippetPadding = getSnippetWithPadding(
 		oldFileLines,
 		matchingIndex.index,
@@ -261,7 +262,7 @@ const slidingWindowReplacement = (
 		// Now we get the modified lines
 		const spaces = oldFileLines[matchingIndex.index].length - oldFileLines[matchingIndex.index].trimLeft().length;
 		finalModifiedLines = newChunkLines.map((line) => {
-			return spaces + lStripMax(line, [' '], spaces);
+			return snippetPadding.spaces + lStripMax(line, [' '], spaces);
 		});
 	} else {
 		finalModifiedLines = newChunkLines.map((line) => {
@@ -299,9 +300,11 @@ export const generateNewFileFromPatch = (
 			const parts = match.split(/====[^\n=]*\n/);
 			const leftContent = parts[0].replace(/<<<<.*?\n/, '');
 			const rightContent = parts[1].replace(/>>>>\n?/, '');
+			// We get trailing \n at the end of these strings, so we need to
+			// replace them with '' instead, so we don't mess things up later on
 			oldAndNewChunks.push({
-				oldChunk: leftContent,
-				newChunk: rightContent,
+				oldChunk: leftContent.replace(/\n$/, ''),
+				newChunk: rightContent.replace(/\n$/, ''),
 			});
 		}
 	}
@@ -343,133 +346,250 @@ export const generateNewFileFromPatch = (
 
 // void (async () => {
 // 	const originalFile = `
-// import logging
-// import os
+// import { Project } from "ts-morph";
+// import * as fs from "fs";
+// import * as path from "path";
 
-// from pathlib import Path
+// import {
+// 	CodeStoryStorage,
+// 	saveCodeStoryStorageObjectToStorage,
+// 	saveCodeStoryStorageToStorage,
+// } from "./types";
+// import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from "../utilities/types";
+// import { TSMorphProjectManagement, parseFileUsingTsMorph } from "../utilities/parseTypescript";
+// import { generateEmbedding } from "../llm/embeddings/openai";
+// import { ExtensionContext } from "vscode";
+// import { getGitCurrentHash, getGitRepoName } from "../git/helper";
+// import logger from "../logger";
+// // import logger from "../logger";
 
-// import openai
-// import typer
+// async function ensureDirectoryExists(filePath: string): Promise<void> {
+// 	const parentDir = path.dirname(filePath);
 
-// from dotenv import load_dotenv
+// 	if (fs.existsSync(parentDir)) {
+// 		// The parent directory already exists, so we don't need to create it
+// 		return;
+// 	}
 
-// from gpt_engineer.ai import AI
-// from gpt_engineer.collect import collect_learnings
-// from gpt_engineer.db import DB, DBs, archive
-// from gpt_engineer.learning import collect_consent
-// from gpt_engineer.steps import STEPS, Config as StepsConfig
+// 	// Recursively create the parent directory
+// 	await ensureDirectoryExists(parentDir);
 
-// app = typer.Typer()  # creates a CLI app
+// 	// Create the directory
+// 	fs.mkdirSync(parentDir);
+// }
 
+// const generateContextForEmbedding = (
+// 	codeSnippet: string,
+// 	filePath: string,
+// 	scopePart: string | null
+// ): string => {
+// 	return \`
+// 		Code snippet:
+// 		\${codeSnippet}
 
-// def load_env_if_needed():
-// 	if os.getenv("OPENAI_API_KEY") is None:
-// 		load_dotenv()
-// 	openai.api_key = os.getenv("OPENAI_API_KEY")
+// 		File path it belongs to:
+// 		\${filePath}
 
+// 		Scope part:
+// 		\${scopePart}
+// 	\`;
+// };
 
-// @app.command()
-// def main(
-// 	project_path: str = typer.Argument("projects/example", help="path"),
-// 	model: str = typer.Argument("gpt-4", help="model id string"),
-// 	temperature: float = 0.1,
-// 	steps_config: StepsConfig = typer.Option(
-// 		StepsConfig.DEFAULT, "--steps", "-s", help="decide which steps to run"
-// 	),
-// 	improve_option: bool = typer.Option(
-// 		False,
-// 		"--improve",
-// 		"-i",
-// 		help="Improve code from existing project.",
-// 	),
-// 	verbose: bool = typer.Option(False, "--verbose", "-v"),
-// ):
-// 	logging.basicConfig(level=logging.DEBUG if verbose else logging.INFO)
-
-// 	# For the improve option take current project as path and add .gpteng folder
-// 	# By now, ignoring the 'project_path' argument
-// 	if improve_option:
-// 		# The default option for the --improve is the IMPROVE_CODE, not DEFAULT
-// 		if steps_config == StepsConfig.DEFAULT:
-// 			steps_config = StepsConfig.IMPROVE_CODE
-
-// 	load_env_if_needed()
-
-// 	ai = AI(
-// 		model_name=model,
-// 		temperature=temperature,
-// 	)
-
-// 	input_path = Path(project_path).absolute()
-// 	memory_path = input_path / "memory"
-// 	workspace_path = input_path / "workspace"
-// 	archive_path = input_path / "archive"
-
-// 	dbs = DBs(
-// 		memory=DB(memory_path),
-// 		logs=DB(memory_path / "logs"),
-// 		input=DB(input_path),
-// 		workspace=DB(workspace_path),
-// 		preprompts=DB(
-// 			Path(__file__).parent / "preprompts"
-// 		),  # Loads preprompts from the preprompts directory
-// 		archive=DB(archive_path),
-// 	)
-
-// 	if steps_config not in [
-// 		StepsConfig.EXECUTE_ONLY,
-// 		StepsConfig.USE_FEEDBACK,
-// 		StepsConfig.EVALUATE,
-// 	]:
-// 		archive(dbs)
-
-// 	steps = STEPS[steps_config]
-// 	for step in steps:
-// 		messages = step(ai, dbs)
-// 		dbs.logs[step.__name__] = AI.serialize_messages(messages)
-
-// 	if collect_consent():
-// 		collect_learnings(model, temperature, steps, dbs)
-
-// 	dbs.logs["token_usage"] = ai.format_token_usage_log()
+// export async function storeCodeSymbolDescriptionToLocalStorage(
+// 	codeSymbolName: string,
+// 	remoteSession: string,
+// 	globalStorageUri: string,
+// 	data: CodeSymbolInformationEmbeddings
+// ) {
+// 	const filePath = path.join(
+// 		globalStorageUri,
+// 		remoteSession,
+// 		"code_symbol",
+// 		"descriptions",
+// 		codeSymbolName
+// 	);
+// 	await ensureDirectoryExists(filePath);
+// 	console.log("Writing to file: " + filePath);
+// 	// Now we have ensured the directory exists we can safely write to it
+// 	await fs.promises
+// 		.writeFile(filePath, JSON.stringify(data))
+// 		.then(() => {
+// 			console.log("Successfully wrote file: " + filePath);
+// 		})
+// 		.catch((err) => {
+// 			console.error("Error writing file: " + err.toString());
+// 		});
+// }
 
 
-// import subprocess
-// import venv
+// export async function loadCodeSymbolDescriptionFromLocalStorage(
+// 	globalStorageUri: string,
+// 	remoteSession: string,
+// ): Promise<CodeSymbolInformationEmbeddings[]> {
+// 	const directoryPath = path.join(
+// 		globalStorageUri,
+// 		remoteSession,
+// 		"code_symbol",
+// 		"descriptions",
+// 	);
+// 	const files = await fs.promises.readdir(directoryPath);
+// 	logger.info("[indexing_start] loading from files");
+// 	logger.info(files.length);
+// 	const codeSymbolInformationEmbeddingsList: CodeSymbolInformationEmbeddings[] = [];
+// 	for (let index = 0; index < files.length; index++) {
+// 		const file = files[index];
+// 		logger.info(index);
+// 		logger.info(file);
+// 		const filePath = path.join(directoryPath, file);
+// 		logger.info(filePath);
+// 		const fileContent = fs.readFileSync(filePath);
+// 		logger.info("[indexing_start] loaded from file");
+// 		try {
+// 			const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
+// 			logger.info("[indexing_start] parsed from json");
+// 			codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
+// 		} catch (error) {
+// 			logger.info("[indexing_start] error");
+// 			logger.info(error);
+// 		}
+// 	}
+// 	logger.info("[indexing_start] loaded from files");
+// 	return codeSymbolInformationEmbeddingsList;
+// }
 
-// def handle_python_dependencies():
-// 	venv.create('venv', with_pip=True)
-// 	subprocess.run(['venv/bin/pip', 'install', '-r', 'requirements.txt'])
-// 	subprocess.run(['venv/bin/pip', 'freeze', '>', 'requirements.txt'])
+// export const getCodeSymbolList = async (
+// 	project: Project,
+// 	workingDirectory: string
+// ): Promise<CodeSymbolInformation[]> => {
+// 	const sourceFiles = project.getSourceFiles();
+// 	const codeSymbolInformationList: CodeSymbolInformation[] = [];
+// 	for (let index = 0; index < sourceFiles.length; index++) {
+// 		const sourceFile = sourceFiles[index];
+// 		const sourceFilePath = sourceFile.getFilePath();
+// 		const codeSymbolInformation = parseFileUsingTsMorph(
+// 			sourceFilePath,
+// 			project,
+// 			workingDirectory,
+// 			sourceFilePath
+// 		);
+// 		codeSymbolInformationList.push(...codeSymbolInformation);
+// 	}
+// 	return codeSymbolInformationList;
+// };
 
-// def handle_node_dependencies():
-// 	if not os.path.exists('package.json'):
-// 		subprocess.run(['npm', 'init', '-y'])
-// 	with open('package.json', 'r') as f:
-// 		package_json = json.load(f)
-// 	for dependency in package_json['dependencies']:
-// 		subprocess.run(['npm', 'install', dependency])
+// const generateAndStoreEmbeddings = async (
+// 	codeSymbolInformationList: CodeSymbolInformation[],
+// 	workingDirectory: string,
+// 	globalStorageUri: string
+// ): Promise<CodeSymbolInformationEmbeddings[]> => {
+// 	const codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+// 	for (let index = 0; index < codeSymbolInformationList.length; index++) {
+// 		const codeSymbol = codeSymbolInformationList[index];
+// 		const codeContent = codeSymbol.codeSnippet.code;
+// 		const filePath = codeSymbol.fsFilePath;
+// 		const scopePart = codeSymbol.globalScope;
+// 		const relativePath = filePath.replace(workingDirectory, "");
+// 		const contextForEmbedding = generateContextForEmbedding(codeContent, relativePath, scopePart);
+// 		// We generate the embeddings here
+// 		const embeddings = await generateEmbedding(contextForEmbedding);
+// 		codeSymbolWithEmbeddings.push({
+// 			codeSymbolInformation: codeSymbol,
+// 			codeSymbolEmbedding: embeddings,
+// 		});
+// 		// We store it locally to our local storage
+// 		await storeCodeSymbolDescriptionToLocalStorage(
+// 			codeSymbol.symbolName,
+// 			await getGitRepoName(workingDirectory),
+// 			globalStorageUri,
+// 			{
+// 				codeSymbolInformation: codeSymbol,
+// 				codeSymbolEmbedding: embeddings,
+// 			}
+// 		);
+// 	}
+// 	return codeSymbolWithEmbeddings;
+// };
 
-// if __name__ == "__main__":
-// 	handle_python_dependencies()
-// 	handle_node_dependencies()
-// 	app()
+
+// export const indexRepository = async (
+// 	storage: CodeStoryStorage,
+// 	projectManagement: TSMorphProjectManagement,
+// 	globalStorageUri: string,
+// 	workingDirectory: string
+// ): Promise<CodeSymbolInformationEmbeddings[]> => {
+// 	// One way to do this would be that we walk along the whole repo and index
+// 	// it
+// 	// After which is the repo is already indexed, then we should figure out
+// 	// how to take care of deletions and moved files, these are the most important
+// 	// ones
+// 	// TODO(codestory): We need to only look at the changes later and index them
+// 	// for now this is fine.
+// 	let codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+// 	logger.info("[indexing_start] Starting indexing", storage.isIndexed);
+// 	if (!storage.isIndexed) {
+// 		// logger.info("[indexing_start] Starting indexing");
+// 		// Start re-indexing right now.
+// 		projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+// 			const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
+// 			const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
+// 				codeSymbolInformationList,
+// 				workingDirectory,
+// 				globalStorageUri
+// 			);
+// 			codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
+// 		});
+// 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
+// 		storage.isIndexed = true;
+// 		saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+// 	} else {
+// 		// TODO(codestory): Only look at the delta and re-index these files which have changed.
+// 		const currentHash = await getGitCurrentHash(workingDirectory);
+// 		logger.info("[indexing_start] hash for current checkout");
+// 		logger.info(currentHash);
+// 		logger.info(storage.lastIndexedRepoHash);
+// 		if (currentHash !== storage.lastIndexedRepoHash) {
+// 			// We need to re-index the repo
+// 			// TODO(codestory): Repeated code here, we need to clean it up
+// 			projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+// 				const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
+// 				logger.info("[indexing_start] Starting indexing for project");
+// 				const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
+// 					codeSymbolInformationList,
+// 					workingDirectory,
+// 					globalStorageUri
+// 				);
+// 				codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
+// 			});
+// 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
+// 			storage.isIndexed = true;
+// 			saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+// 		} else {
+// 			// We should load all the code symbols with embeddings from the local storage
+// 			// and return it
+// 			const repoName = await getGitRepoName(workingDirectory);
+// 			logger.info("[indexing_start] Loading from local storage");
+// 			codeSymbolWithEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
+// 				globalStorageUri,
+// 				repoName,
+// 			);
+// 			logger.info("[indexing_start] Loaded from local storage");
+// 		}
+// 	}
+// 	return codeSymbolWithEmbeddings;
+// };
 // 	`;
 // 	const modifyFileResponse = `
 // \`\`\`
 // <<<< ORIGINAL
-// def handle_node_dependencies():
-//     if not os.path.exists('package.json'):
-//         subprocess.run(['npm', 'init', '-y'])
-//     with open('package.json', 'r') as f:
-//         package_json = json.load(f)
-//     for dependency in package_json['dependencies']:
-//         subprocess.run(['npm', 'install', dependency])
+//         const filePath = path.join(directoryPath, file);
+//         logger.info(filePath);
+//         const fileContent = fs.readFileSync(filePath);
+//         logger.info("[indexing_start] loaded from file");
 // ====
-// def handle_node_dependencies():
-//     if not os.path.exists('package.json'):
-//         subprocess.run(['npm', 'init', '-y'])
-//     subprocess.run(['npm', 'install'])
+//         const filePath = path.join(directoryPath, file);
+//         logger.info("[indexing_start] Loading from file path: " + filePath);
+//         const fileContent = fs.readFileSync(filePath);
+//         logger.info("[indexing_start] Successfully loaded from: " + filePath);
 // >>>> UPDATED
 // \`\`\`
 // 	`;
