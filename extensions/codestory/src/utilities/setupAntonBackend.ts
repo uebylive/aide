@@ -190,16 +190,11 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 			},
 			async () => {
 				try {
-					await downloadUsingURL(bucket, fileName, destination);
+					await downloadFromGCPBucket(bucket, fileName, destination);
 				} catch (e) {
-					console.log('Failed to download using URL, trying GCP bucket: ', e);
+					console.log('Failed to download from GCP bucket, trying using URL: ', e);
+					await downloadUsingURL(bucket, fileName, destination);
 				}
-				// try {
-				// 	await downloadFromGCPBucket(bucket, fileName, destination);
-				// } catch (e) {
-				// 	console.log('Failed to download from GCP bucket, trying using URL: ', e);
-				// 	await downloadUsingURL(bucket, fileName, destination);
-				// }
 			}
 		);
 	}
