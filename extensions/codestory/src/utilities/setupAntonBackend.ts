@@ -12,12 +12,12 @@ import axios from 'axios';
 import { promisify } from 'util';
 import { spawn, exec, execFile } from 'child_process';
 import * as os from 'os';
-import { downloadFromGCPBucket } from './gcpBucket';
+import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
 
-export function getContinueServerUrl() {
+export function getAideServerUrl() {
 	// Passed in from launch.json
-	if (process.env.CONTINUE_SERVER_URL) {
-		return process.env.CONTINUE_SERVER_URL;
+	if (process.env.CODESTORY_SERVER_URL) {
+		return process.env.CODESTORY_SERVER_URL;
 	}
 
 	return (
@@ -122,20 +122,20 @@ export const writeConfigFileForAnton = async (
 	preTestCommand: string[],
 ) => {
 	const config = {
-		workingDirectory,
-		sessionId,
-		preTestCommand,
+		'directory_location': workingDirectory,
+		'session_id': sessionId,
+		'pre_test_command': preTestCommand,
 	};
 	if (!fs.existsSync('/tmp/codestory')) {
 		fs.mkdirSync('/tmp/codestory');
 	}
-	const configPath = path.join(workingDirectory, '.codestory.json');
+	const configPath = path.join('/tmp/codestory', '.codestory.json');
 	fs.writeFileSync(configPath, JSON.stringify(config));
 };
 
 export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string): Promise<string> {
 	// Check vscode settings
-	const serverUrl = getContinueServerUrl();
+	const serverUrl = getAideServerUrl();
 	if (serverUrl !== 'http://localhost:42424') {
 		console.log('CodeStory server is being run manually, skipping start');
 		return 'http://localhost:42424';
@@ -189,7 +189,17 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 				cancellable: false,
 			},
 			async () => {
-				await downloadFromGCPBucket(bucket, fileName, destination);
+				try {
+					await downloadUsingURL(bucket, fileName, destination);
+				} catch (e) {
+					console.log('Failed to download using URL, trying GCP bucket: ', e);
+				}
+				// try {
+				// 	await downloadFromGCPBucket(bucket, fileName, destination);
+				// } catch (e) {
+				// 	console.log('Failed to download from GCP bucket, trying using URL: ', e);
+				// 	await downloadUsingURL(bucket, fileName, destination);
+				// }
 			}
 		);
 	}
@@ -239,7 +249,12 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 			// Spawn the server
 			// We need to write to /tmp/codestory/.codestory.json with the settings
 			// blob so the server can start up
-			await writeConfigFileForAnton(workingDirectory, env.machineId, []);
+			try {
+				await writeConfigFileForAnton(workingDirectory, env.machineId, []);
+				console.log('Wrote config file for Anton');
+			} catch (e) {
+				console.error('Failed to write config file for Anton:', e);
+			}
 			const args = ['start-server', '--port', '42424'];
 			const child = spawn(destination, args, settings);
 
