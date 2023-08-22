@@ -5,6 +5,8 @@
 import { Storage } from '@google-cloud/storage';
 import * as path from 'path';
 import * as fs from 'fs';
+import fetch from 'node-fetch';
+import axios from 'axios';
 
 // https://storage.googleapis.com/aide-binary/run
 
@@ -40,17 +42,31 @@ export const downloadFromGCPBucket = async (bucketName: string, srcFilename: str
 	await storage.bucket(bucketName).file(srcFilename).download(options);
 };
 
+
+export const downloadUsingURL = async (bucketName: string, srcFileName: string, destFileName: string) => {
+	const url = `https://storage.googleapis.com/${bucketName}/${srcFileName}`;
+	const response = await axios.get(url, { responseType: 'stream' });
+	const writer = fs.createWriteStream(destFileName);
+
+	response.data.pipe(writer);
+
+	return new Promise((resolve, reject) => {
+		writer.on('finish', resolve);
+		writer.on('error', reject);
+	});
+};
+
 // const bucketName = 'your-bucket-name';
 // const srcFilename = 'path/in/bucket/filename.ext';
 // const destFilename = 'local/path/filename.ext';
 
 
-// void (async () => {
-// 	const bucketName = 'aide-binary';
-// 	const srcFilename = 'run';
-// 	await downloadFile(
-// 		bucketName,
-// 		srcFilename,
-// 		'/Users/skcd/Desktop/run',
-// 	);
-// })();
+void (async () => {
+	const bucketName = 'aide-binary';
+	const srcFilename = 'run';
+	await downloadUsingURL(
+		bucketName,
+		srcFilename,
+		'/Users/skcd/Desktop/run',
+	);
+})();
