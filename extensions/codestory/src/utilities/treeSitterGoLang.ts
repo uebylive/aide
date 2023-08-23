@@ -143,35 +143,3 @@ export const parseDependenciesForCodeSymbols = async (filePath: string, workingD
 	}
 	return [];
 };
-
-
-// void (async () => {
-// 	const code = `
-// 	func (h *HeartBeat) Start(ctx context.Context) {
-// 		if h.TickInterval <= 0 {
-// 			log.Ctx(ctx).Info().Msg("Heartbeat has been disabled")
-// 			return
-// 		}
-
-// 		ticker := time.NewTicker(time.Duration(h.TickInterval) * time.Second)
-// 		go func() {
-// 			for {
-// 				select {
-// 				case <-ctx.Done():
-// 					log.Ctx(ctx).Info().Msg("Shutting down heartbeat")
-// 					return
-// 				case <-ticker.C:
-// 					log.Ctx(ctx).Info().Msg("Sending heartbeat to NPCI")
-// 					h.sendHeartBeat(ctx)
-// 				}
-// 			}
-// 		}()
-// 	}
-// 	`;
-// 	const parsedOutput = await parseGoCodeTreeSitter(code);
-// 	console.log(parsedOutput);
-// 	const codeSymbols = parseDependenciesForCodeSymbols(
-// 		'/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go',
-// 		'Users/skcd/Downloads/mugavari-main/',
-// 	);
-// })();
