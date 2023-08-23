@@ -61,12 +61,12 @@ export const downloadUsingURL = async (bucketName: string, srcFileName: string, 
 // const destFilename = 'local/path/filename.ext';
 
 
-void (async () => {
-	const bucketName = 'aide-binary';
-	const srcFilename = 'run';
-	await downloadUsingURL(
-		bucketName,
-		srcFilename,
-		'/Users/skcd/Desktop/run',
-	);
-})();
+// void (async () => {
+// 	const bucketName = 'aide-binary';
+// 	const srcFilename = 'run';
+// 	await downloadUsingURL(
+// 		bucketName,
+// 		srcFilename,
+// 		'/Users/skcd/Desktop/run',
+// 	);
+// })();
