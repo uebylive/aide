@@ -80,6 +80,8 @@ import { TextSearchCompleteMessage } from 'vs/workbench/services/search/common/s
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 import { INotebookService } from 'vs/workbench/contrib/notebook/common/notebookService';
 import { ILogService } from 'vs/platform/log/common/log';
+import { renderIcon } from 'vs/base/browser/ui/iconLabel/iconLabels';
+import { Codicon } from 'vs/base/common/codicons';
 
 const $ = dom.$;
 
@@ -292,7 +294,7 @@ export class SearchView extends ViewPane {
 
 	toggleSemanticSearch(): void {
 		this.isSemanticSearch = !this.isSemanticSearch;
-		this.searchWidget.showActionsOnSearch(!this.isSemanticSearch);
+		this.searchWidget.setIsSemantic(this.isSemanticSearch);
 		this.triggerQueryChange();
 	}
 
@@ -340,6 +342,13 @@ export class SearchView extends ViewPane {
 		this.container = dom.append(parent, dom.$('.search-view'));
 
 		this.searchWidgetsContainerElement = dom.append(this.container, $('.search-widgets-container'));
+
+		const searchExplainer = dom.append(this.searchWidgetsContainerElement, dom.$('.search-explainer'));
+		const explainerText = dom.append(searchExplainer, dom.$('h4'));
+		explainerText.textContent = nls.localize('useSemanticSearch', "use the magic wand for semantic search");
+		const wandIcon = dom.append(searchExplainer, renderIcon(Codicon.wand));
+		wandIcon.classList.add('icon');
+
 		this.createSearchWidget(this.searchWidgetsContainerElement);
 
 		const history = this.searchHistoryService.load();

@@ -293,8 +293,13 @@ export class SearchWidget extends Widget {
 		}
 	}
 
-	showActionsOnSearch(showActions: boolean) {
-		this.searchInput?.setShowCommonFindToggles(showActions);
+	setIsSemantic(isSemantic: boolean) {
+		this.searchInput?.setShowCommonFindToggles(!isSemantic);
+		if (isSemantic) {
+			this.toggleReplaceButton?.dispose();
+		} else if (this.domNode) {
+			this.renderToggleReplaceButton(this.domNode);
+		}
 	}
 
 	getSearchHistory(): string[] {

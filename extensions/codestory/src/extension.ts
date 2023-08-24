@@ -33,11 +33,9 @@ import { activateExtensions, getExtensionsInDirectory } from './utilities/activa
 import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
 import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
-import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
-import * as fs from 'fs';
-import { parseDependenciesForCodeSymbols } from './utilities/treeSitterGoLang';
 import { GoLangParser } from './languages/goCodeSymbols';
 import { SemanticSearchProvider } from './providers/SemanticSearch';
+import { CodeSymbolInformationEmbeddings } from './utilities/types';
 
 
 class ProgressiveTrackSymbols {
@@ -232,7 +230,7 @@ export async function activate(context: ExtensionContext) {
 
 
 	// Register the semantic search command here
-	commands.registerCommand('codestory.semanticSearch', async (prompt: string) => {
+	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
 		const results = await embeddingsIndex.generateNodesForUserQuery(prompt, activeFilesTracker);
 		return results;

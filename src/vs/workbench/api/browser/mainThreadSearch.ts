@@ -9,9 +9,9 @@ import { URI, UriComponents } from 'vs/base/common/uri';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
-import { IFileMatch, IFileQuery, IRawFileMatch2, ISearchComplete, ISearchCompleteStats, ISearchProgressItem, ISearchResultProvider, ISearchService, ITextQuery, QueryType, SearchProviderType } from 'vs/workbench/services/search/common/search';
+import { IFileMatch, IFileQuery, IRawFileMatch2, ISearchComplete, ISearchCompleteStats, ISearchProgressItem, ISearchResultProvider, ISearchService, ITextQuery, ITextSearchMatch, QueryType, SearchProviderType } from 'vs/workbench/services/search/common/search';
 import { ExtHostContext, ExtHostSearchShape, MainContext, MainThreadSearchShape } from '../common/extHost.protocol';
-import { CommandsRegistry, ICommandService } from "vs/platform/commands/common/commands";
+import { CommandsRegistry, ICommandService } from 'vs/platform/commands/common/commands';
 
 @extHostNamedCustomer(MainContext.MainThreadSearch)
 export class MainThreadSearch implements MainThreadSearchShape {
@@ -124,37 +124,56 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 		return this.doSearch(query, undefined, token);
 	}
 
-	doSemanticSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
+	async doSemanticSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
 		// So here I will be getting the query
 		const search = new SearchOperation(onProgress);
 		const semanticSearchCommand = CommandsRegistry.getCommand('codestory.semanticSearch');
 		if (semanticSearchCommand) {
 			console.log('[semanticSearch] command is defined and we are working with it');
-			return Promise.resolve(this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern)).then((result) => {
-				// TODO(codestory): Sending data here, we have to fix the format here
-				// and send it over properly to the SearchOperation above
-				// by doing
-				// search.addMatch({...});
-
-				console.log("[semanticSearch][extensionAnswer] :", result);
-				return {
-					results: Array.from(search.matches.values()),
-					stats: { type: 'searchProcess' },
-					limitHit: false,
-					messages: []
+			const results = await this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern);
+			console.log('[semanticSearch][extensionAnswer] :', results);
+			results.forEach((result: any) => {
+				const previewText = result.codeSymbolInformation.codeSnippet.code.split('\n')[0];
+				const searchResult: ITextSearchMatch = {
+					preview: {
+						matches: [{
+							startLineNumber: 0,
+							startColumn: 0,
+							endLineNumber: 0,
+							endColumn: previewText.length - 1,
+						}],
+						text: previewText
+					},
+					ranges: [{
+						startLineNumber: result.codeSymbolInformation.symbolStartLine,
+						startColumn: 0,
+						endLineNumber: result.codeSymbolInformation.symbolEndLine,
+						endColumn: 0,
+					}],
 				};
+				search.addMatch({
+					resource: URI.file(result.codeSymbolInformation.fsFilePath),
+					results: [searchResult]
+				});
 			});
+			const response: ISearchComplete = {
+				results: Array.from(search.matches.values()),
+				stats: {
+					type: 'textSearchProvider',
+				},
+				limitHit: false,
+				messages: []
+			};
+			console.log('[semanticSearch][extensionAnswer] :', response);
+			return response;
 		} else {
 			return Promise.reject('command is not defined');
 		}
 	}
 
 	textSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
-		// So here I will be getting the query
 		if (query.useSemantic) {
-			return this.doSemanticSearch(
-				query, onProgress, token
-			);
+			return this.doSemanticSearch(query, onProgress, token);
 		}
 		return this.doSearch(query, onProgress, token);
 	}
