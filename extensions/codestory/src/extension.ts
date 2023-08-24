@@ -196,8 +196,8 @@ export async function activate(context: ExtensionContext) {
 
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string) => {
-		logger.info('[semanticSearch] We are executing semantic search');
-		return [];
+		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+		return 'blahblah';
 	});
 
 	// Setup python server here

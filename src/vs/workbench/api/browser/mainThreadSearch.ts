@@ -11,6 +11,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
 import { IFileMatch, IFileQuery, IRawFileMatch2, ISearchComplete, ISearchCompleteStats, ISearchProgressItem, ISearchResultProvider, ISearchService, ITextQuery, QueryType, SearchProviderType } from 'vs/workbench/services/search/common/search';
 import { ExtHostContext, ExtHostSearchShape, MainContext, MainThreadSearchShape } from '../common/extHost.protocol';
+import { CommandsRegistry, ICommandService } from "vs/platform/commands/common/commands";
 
 @extHostNamedCustomer(MainContext.MainThreadSearch)
 export class MainThreadSearch implements MainThreadSearchShape {
@@ -23,6 +24,7 @@ export class MainThreadSearch implements MainThreadSearchShape {
 		@ISearchService private readonly _searchService: ISearchService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 		@IConfigurationService _configurationService: IConfigurationService,
+		@ICommandService private readonly _commandService: ICommandService,
 	) {
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostSearch);
 		this._proxy.$enableExtensionHostSearch();
@@ -34,11 +36,11 @@ export class MainThreadSearch implements MainThreadSearchShape {
 	}
 
 	$registerTextSearchProvider(handle: number, scheme: string): void {
-		this._searchProvider.set(handle, new RemoteSearchProvider(this._searchService, SearchProviderType.text, scheme, handle, this._proxy));
+		this._searchProvider.set(handle, new RemoteSearchProvider(this._searchService, SearchProviderType.text, scheme, handle, this._proxy, this._commandService));
 	}
 
 	$registerFileSearchProvider(handle: number, scheme: string): void {
-		this._searchProvider.set(handle, new RemoteSearchProvider(this._searchService, SearchProviderType.file, scheme, handle, this._proxy));
+		this._searchProvider.set(handle, new RemoteSearchProvider(this._searchService, SearchProviderType.file, scheme, handle, this._proxy, this._commandService));
 	}
 
 	$unregisterProvider(handle: number): void {
@@ -108,7 +110,8 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 		type: SearchProviderType,
 		private readonly _scheme: string,
 		private readonly _handle: number,
-		private readonly _proxy: ExtHostSearchShape
+		private readonly _proxy: ExtHostSearchShape,
+		@ICommandService private readonly _commandService: ICommandService,
 	) {
 		this._registrations.add(searchService.registerSearchResultProvider(this._scheme, type, this));
 	}
@@ -121,13 +124,32 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 		return this.doSearch(query, undefined, token);
 	}
 
+	doSemanticSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
+		// So here I will be getting the query
+		const search = new SearchOperation(onProgress);
+		const semanticSearchCommand = CommandsRegistry.getCommand('codestory.semanticSearch');
+		if (semanticSearchCommand) {
+			console.log('[semanticSearch] command is defined and we are working with it');
+			return Promise.resolve(this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern)).then((result) => {
+				console.log("[semanticSearch][extensionAnswer] :", result);
+				return {
+					results: Array.from(search.matches.values()),
+					stats: { type: 'searchProcess' },
+					limitHit: false,
+					messages: []
+				};
+			});
+		} else {
+			return Promise.reject('command is not defined');
+		}
+	}
+
 	textSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
 		// So here I will be getting the query
-		console.log("[textSearch] whats the query?: ", query);
 		if (query.useSemantic) {
-			const queryString = query.contentPattern.pattern;
-			// Now somehow I need to get the semantic search over here
-			// const _ = Promise.resolve(commands.executeCommand('codestory.semanticSearch', query));
+			return this.doSemanticSearch(
+				query, onProgress, token
+			);
 		}
 		return this.doSearch(query, onProgress, token);
 	}
@@ -146,6 +168,8 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 
 		return Promise.resolve(searchP).then((result: ISearchCompleteStats) => {
 			this._searches.delete(search.id);
+			console.log('[doSearch] results: ', result);
+			console.log('[doSearch] matches: ', search.matches);
 			return { results: Array.from(search.matches.values()), stats: result.stats, limitHit: result.limitHit, messages: result.messages };
 		}, err => {
 			this._searches.delete(search.id);
