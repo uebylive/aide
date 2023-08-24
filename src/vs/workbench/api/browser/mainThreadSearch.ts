@@ -122,6 +122,7 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 	}
 
 	textSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
+		// So here I will be getting the query
 		return this.doSearch(query, onProgress, token);
 	}
 
