@@ -5,7 +5,7 @@
 // We want to send this information to the frontend if the test suite command
 // is present, if its not then we can show it as disabled on the UI
 
-import { AgentViewProvider } from '../views/AgentView';
+import { AgentViewProvider } from '../providers/AgentView';
 import { sleep } from './sleep';
 
 

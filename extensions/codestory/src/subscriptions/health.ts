@@ -6,7 +6,7 @@ import axios from 'axios';
 import { MessageHandlerData } from '@estruyf/vscode';
 import { ExtensionContext, OutputChannel, commands, env } from 'vscode';
 
-import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import postHogClient from '../posthog/client';
 import { HealthState } from '../types';
 

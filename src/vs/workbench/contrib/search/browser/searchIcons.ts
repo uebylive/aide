@@ -21,6 +21,7 @@ export const searchCollapseAllIcon = registerIcon('search-collapse-results', Cod
 export const searchExpandAllIcon = registerIcon('search-expand-results', Codicon.expandAll, localize('searchExpandAllIcon', 'Icon for expand results in the search view.'));
 export const searchShowAsTree = registerIcon('search-tree', Codicon.listTree, localize('searchShowAsTree', 'Icon for viewing results as a tree in the search view.'));
 export const searchShowAsList = registerIcon('search-list', Codicon.listFlat, localize('searchShowAsList', 'Icon for viewing results as a list in the search view.'));
+export const searchToggleSearchType = registerIcon('search-toggle-search-type', Codicon.wand, localize('searchToggleSearchType', 'Icon for toggling search type in the search view.'));
 export const searchClearIcon = registerIcon('search-clear-results', Codicon.clearAll, localize('searchClearIcon', 'Icon for clear results in the search view.'));
 export const searchStopIcon = registerIcon('search-stop', Codicon.searchStop, localize('searchStopIcon', 'Icon for stop in the search view.'));
 

@@ -80,6 +80,8 @@ import { TextSearchCompleteMessage } from 'vs/workbench/services/search/common/s
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 import { INotebookService } from 'vs/workbench/contrib/notebook/common/notebookService';
 import { ILogService } from 'vs/platform/log/common/log';
+import { renderIcon } from 'vs/base/browser/ui/iconLabel/iconLabels';
+import { Codicon } from 'vs/base/common/codicons';
 
 const $ = dom.$;
 
@@ -154,6 +156,7 @@ export class SearchView extends ViewPane {
 
 	private treeAccessibilityProvider: SearchAccessibilityProvider;
 
+	private semanticSearchKey: IContextKey<boolean>;
 	private treeViewKey: IContextKey<boolean>;
 
 	private _visibleMatches: number = 0;
@@ -212,6 +215,7 @@ export class SearchView extends ViewPane {
 		this.hasFilePatternKey = Constants.ViewHasFilePatternKey.bindTo(this.contextKeyService);
 		this.hasSomeCollapsibleResultKey = Constants.ViewHasSomeCollapsibleKey.bindTo(this.contextKeyService);
 		this.treeViewKey = Constants.InTreeViewKey.bindTo(this.contextKeyService);
+		this.semanticSearchKey = Constants.IsSemanticSearchKey.bindTo(this.contextKeyService);
 
 		// scoped
 		this.contextKeyService = this._register(this.contextKeyService.createScoped(this.container));
@@ -280,6 +284,20 @@ export class SearchView extends ViewPane {
 		}));
 	}
 
+	get isSemanticSearch(): boolean {
+		return this.semanticSearchKey.get() ?? false;
+	}
+
+	private set isSemanticSearch(value: boolean) {
+		this.semanticSearchKey.set(value);
+	}
+
+	toggleSemanticSearch(): void {
+		this.isSemanticSearch = !this.isSemanticSearch;
+		this.searchWidget.setIsSemantic(this.isSemanticSearch);
+		this.triggerQueryChange();
+	}
+
 	get isTreeLayoutViewVisible(): boolean {
 		return this.treeViewKey.get() ?? false;
 	}
@@ -324,6 +342,13 @@ export class SearchView extends ViewPane {
 		this.container = dom.append(parent, dom.$('.search-view'));
 
 		this.searchWidgetsContainerElement = dom.append(this.container, $('.search-widgets-container'));
+
+		const searchExplainer = dom.append(this.searchWidgetsContainerElement, dom.$('.search-explainer'));
+		const explainerText = dom.append(searchExplainer, dom.$('h4'));
+		explainerText.textContent = nls.localize('useSemanticSearch', "use the magic wand for semantic search");
+		const wandIcon = dom.append(searchExplainer, renderIcon(Codicon.wand));
+		wandIcon.classList.add('icon');
+
 		this.createSearchWidget(this.searchWidgetsContainerElement);
 
 		const history = this.searchHistoryService.load();
@@ -483,6 +508,7 @@ export class SearchView extends ViewPane {
 		const replaceHistory = history.replace || this.viewletState['query.replaceHistory'] || [];
 		const showReplace = typeof this.viewletState['view.showReplace'] === 'boolean' ? this.viewletState['view.showReplace'] : true;
 		const preserveCase = this.viewletState['query.preserveCase'] === true;
+		const isSemanticSearch = typeof this.viewletState['view.isSemanticSearch'] === 'boolean' ? this.viewletState['view.isSemanticSearch'] : false;
 
 		const isInNotebookMarkdownInput = this.viewletState['query.isInNotebookMarkdownInput'] ?? true;
 		const isInNotebookMarkdownPreview = this.viewletState['query.isInNotebookMarkdownPreview'] ?? true;
@@ -493,6 +519,7 @@ export class SearchView extends ViewPane {
 		this.searchWidget = this._register(this.instantiationService.createInstance(SearchWidget, container, {
 			value: contentPattern,
 			replaceValue: replaceText,
+			isSemanticSearch: isSemanticSearch,
 			isRegex: isRegex,
 			isCaseSensitive: isCaseSensitive,
 			isWholeWords: isWholeWords,
@@ -506,7 +533,8 @@ export class SearchView extends ViewPane {
 				isInNotebookMarkdownPreview,
 				isInNotebookCellInput,
 				isInNotebookCellOutput,
-			}
+			},
+			_hideReplaceToggle: isSemanticSearch
 		}));
 
 		if (!this.searchWidget.searchInput || !this.searchWidget.replaceInput) {
@@ -1437,6 +1465,8 @@ export class SearchView extends ViewPane {
 			return;
 		}
 
+		const isSemanticSearch = this.searchWidget.searchInput.getShowCommonFindToggles();
+
 		const isRegex = this.searchWidget.searchInput.getRegex();
 		const isInNotebookMarkdownInput = this.searchWidget.getNotebookFilters().markupInput;
 		const isInNotebookMarkdownPreview = this.searchWidget.getNotebookFilters().markupPreview;
@@ -1491,6 +1521,7 @@ export class SearchView extends ViewPane {
 				matchLines: 1,
 				charsPerLine
 			},
+			isSemantic: isSemanticSearch,
 			isSmartCase: this.searchConfig.smartCase,
 			expandPatterns: true
 		};
@@ -2029,6 +2060,9 @@ export class SearchView extends ViewPane {
 		const onlyOpenEditors = this.inputPatternIncludes?.onlySearchInOpenEditors() ?? false;
 		const useExcludesAndIgnoreFiles = this.inputPatternExcludes?.useExcludesAndIgnoreFiles() ?? true;
 		const preserveCase = this.viewModel.preserveCase;
+
+		const isSemanticSearch = this.searchWidget.searchInput?.getShowCommonFindToggles();
+		this.viewletState['view.isSemanticSearch'] = isSemanticSearch;
 
 		if (this.searchWidget.searchInput) {
 			const isRegex = this.searchWidget.searchInput.getRegex();

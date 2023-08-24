@@ -112,6 +112,7 @@ export interface ITextQueryProps<U extends UriComponents> extends ICommonQueryPr
 	beforeContext?: number;
 
 	userDisabledExcludesAndIgnoreFiles?: boolean;
+	useSemantic?: boolean;
 }
 
 export type IFileQuery = IFileQueryProps<URI>;

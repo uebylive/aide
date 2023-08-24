@@ -10,13 +10,11 @@ import {
 	WebviewViewProvider,
 	WebviewViewResolveContext,
 	commands,
-	OutputChannel,
 } from 'vscode';
 
 import { getNonce } from '../utilities/getNonce';
 import { getUri } from '../utilities/getUri';
 import { MessageHandlerData } from '@estruyf/vscode';
-import postHogClient from '../posthog/client';
 
 export class CodeStoryViewProvider implements WebviewViewProvider {
 	public static readonly viewType = 'codestory.webView';

@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../chatprovider';
+import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat

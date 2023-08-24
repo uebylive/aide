@@ -9,10 +9,12 @@
   },
   "main": "./out/extension.js",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onSearch:text"
   ],
   "enabledApiProposals": [
-    "interactive"
+    "interactive",
+    "textSearchProvider"
   ],
   "license": "UNLICENSED",
   "repository": {
