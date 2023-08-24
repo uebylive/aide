@@ -194,6 +194,12 @@ export async function activate(context: ExtensionContext) {
 		)
 	);
 
+	// Register the semantic search command here
+	commands.registerCommand('codestory.semanticSearch', async (prompt: string) => {
+		logger.info('[semanticSearch] We are executing semantic search');
+		return [];
+	});
+
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,

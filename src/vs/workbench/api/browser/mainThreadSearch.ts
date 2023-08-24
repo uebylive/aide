@@ -123,6 +123,12 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 
 	textSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
 		// So here I will be getting the query
+		console.log("[textSearch] whats the query?: ", query);
+		if (query.useSemantic) {
+			const queryString = query.contentPattern.pattern;
+			// Now somehow I need to get the semantic search over here
+			// const _ = Promise.resolve(commands.executeCommand('codestory.semanticSearch', query));
+		}
 		return this.doSearch(query, onProgress, token);
 	}
 
