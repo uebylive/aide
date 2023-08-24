@@ -13,7 +13,7 @@ import {
 	window,
 	env,
 } from 'vscode';
-import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { MessageHandlerData } from '@estruyf/vscode';
 import postHogClient from '../posthog/client';

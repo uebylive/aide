@@ -12,7 +12,7 @@ import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
-import { AgentViewProvider } from '../views/AgentView';
+import { AgentViewProvider } from '../providers/AgentView';
 import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';

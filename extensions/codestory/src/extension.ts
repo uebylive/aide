@@ -13,8 +13,8 @@ import logger from './logger';
 import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
 import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
 import postHogClient from './posthog/client';
-import { AgentViewProvider } from './views/AgentView';
-import { CodeStoryViewProvider } from './views/codeStoryView';
+import { AgentViewProvider } from './providers/AgentView';
+import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
 import { openFile, search } from './subscriptions/search';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
@@ -31,12 +31,13 @@ import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
-import { CSChatProvider } from './chatprovider';
+import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
 import * as fs from 'fs';
 import { parseDependenciesForCodeSymbols } from './utilities/treeSitterGoLang';
 import { GoLangParser } from './languages/goCodeSymbols';
+import { SemanticSearchProvider } from './providers/SemanticSearch';
 
 
 class ProgressiveTrackSymbols {
@@ -183,6 +184,15 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(openAgentViewCommand);
+
+	// Register the semantic search provider
+	const semanticSearchProvider = new SemanticSearchProvider();
+	context.subscriptions.push(
+		workspace.registerTextSearchProvider(
+			SemanticSearchProvider.providerType,
+			semanticSearchProvider,
+		)
+	);
 
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(

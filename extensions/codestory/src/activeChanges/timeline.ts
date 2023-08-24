@@ -8,7 +8,7 @@ import { OpenAI } from 'openai';
 import { ExtensionContext, OutputChannel, workspace } from 'vscode';
 import { CodeSymbolChange, CodeSymbolChangeType, TrackCodeSymbolChanges } from './trackCodeSymbolChanges';
 import { stateManager } from '../utilities/stateManager';
-import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TimeKeeper } from '../subscriptions/timekeeper';
 import { CodeBlockChangeDescriptionGenerator } from './codeBlockChangeDescriptionGenerator';
 import { Logger } from 'winston';

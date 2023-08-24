@@ -15,7 +15,7 @@ import { writeFile } from 'fs';
 import { writeFileContents } from '../../llm/recipe/helpers';
 import logger from '../../logger';
 import { WebviewView } from 'vscode';
-import { AgentViewProvider } from '../../views/AgentView';
+import { AgentViewProvider } from '../../providers/AgentView';
 
 interface TestExecutionHarness {
 	testScript: string;
