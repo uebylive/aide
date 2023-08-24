@@ -194,12 +194,6 @@ export async function activate(context: ExtensionContext) {
 		)
 	);
 
-	// Register the semantic search command here
-	commands.registerCommand('codestory.semanticSearch', async (prompt: string) => {
-		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
-		return 'blahblah';
-	});
-
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
@@ -235,6 +229,14 @@ export async function activate(context: ExtensionContext) {
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
+
+
+	// Register the semantic search command here
+	commands.registerCommand('codestory.semanticSearch', async (prompt: string) => {
+		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+		const results = await embeddingsIndex.generateNodesForUserQuery(prompt, activeFilesTracker);
+		return results;
+	});
 
 	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
 	const codeGraph = new CodeGraph([]);

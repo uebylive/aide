@@ -131,6 +131,11 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 		if (semanticSearchCommand) {
 			console.log('[semanticSearch] command is defined and we are working with it');
 			return Promise.resolve(this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern)).then((result) => {
+				// TODO(codestory): Sending data here, we have to fix the format here
+				// and send it over properly to the SearchOperation above
+				// by doing
+				// search.addMatch({...});
+
 				console.log("[semanticSearch][extensionAnswer] :", result);
 				return {
 					results: Array.from(search.matches.values()),
