@@ -1456,6 +1456,8 @@ export class SearchView extends ViewPane {
 			return;
 		}
 
+		const isSemanticSearch = this.searchWidget.searchInput.getShowCommonFindToggles();
+
 		const isRegex = this.searchWidget.searchInput.getRegex();
 		const isInNotebookMarkdownInput = this.searchWidget.getNotebookFilters().markupInput;
 		const isInNotebookMarkdownPreview = this.searchWidget.getNotebookFilters().markupPreview;
@@ -1510,6 +1512,7 @@ export class SearchView extends ViewPane {
 				matchLines: 1,
 				charsPerLine
 			},
+			isSemantic: isSemanticSearch,
 			isSmartCase: this.searchConfig.smartCase,
 			expandPatterns: true
 		};

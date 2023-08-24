@@ -112,7 +112,6 @@ export interface ITextQueryProps<U extends UriComponents> extends ICommonQueryPr
 	beforeContext?: number;
 
 	userDisabledExcludesAndIgnoreFiles?: boolean;
-	// TODO(codestory): Make it more permanent elsewhere
 	useSemantic?: boolean;
 }
 
