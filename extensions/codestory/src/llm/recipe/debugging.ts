@@ -30,7 +30,8 @@ export const generateChatCompletion = async (
 	const completions = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
 		messages: messages,
-		max_tokens: 11000,
+		// TODO(codestory): Need to toggle this better
+		max_tokens: 10000,
 	});
 	if (completions.choices.length !== 0) {
 		return completions.choices[0];
