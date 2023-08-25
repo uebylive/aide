@@ -133,6 +133,7 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 			const results = await this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern);
 			console.log('[semanticSearch][extensionAnswer] :', results);
 			results.forEach((result: any) => {
+				console.log('[semanticSearch][previewText] :', result.codeSymbolInformation.codeSnippet.code);
 				const previewText = result.codeSymbolInformation.codeSnippet.code.split('\n')[0];
 				const searchResult: ITextSearchMatch = {
 					preview: {

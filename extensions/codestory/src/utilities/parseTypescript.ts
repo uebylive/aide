@@ -727,7 +727,7 @@ function parseCodeBlockForDependencies(
 		console.log(e);
 		return [];
 	}
-};
+}
 
 export function parseCodeBlocksForDependencies(
 	sourceFile: SourceFile,
@@ -829,13 +829,16 @@ export async function parseFileUsingTsMorph(
 	directoryPath: string,
 	originalFilePath: string
 ): Promise<CodeSymbolInformation[]> {
+	console.log('[ts-morph] Parsing file: ' + sourceFilePath);
 	const sourceFile = project.getSourceFile(sourceFilePath);
 	// We sync from the fs again if the file has changed meanwhile, this is not
 	// important for onboarding but super important when we are doing things live
 	// and on every save
-	const syncData = sourceFile?.refreshFromFileSystemSync();
+	const syncData = await sourceFile?.refreshFromFileSystem();
+	console.log('[ts-morph] Refreshed data: ' + syncData);
 	if (sourceFile) {
 		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
 		if (codeSymbols.length === 0) {
 			return await getSymbolsFromDocumentUsingLSP(
 				sourceFilePath,
