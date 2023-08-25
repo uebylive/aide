@@ -32,11 +32,22 @@ export class EmbeddingsSearch {
 
 	public async generateNodesRelevantForUser(
 		userQuery: string,
+		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const currentNodes = this._nodes;
 		const userQueryEmbedding = await generateEmbedding(userQuery);
 
-		const nodesWithSimilarity = currentNodes.map((node) => {
+		const nodesWithSimilarity = currentNodes.filter((node) => {
+			if (!filePathsToSearch) {
+				return true;
+			}
+
+			if (node.codeSymbolInformation.fsFilePath in filePathsToSearch) {
+				return true;
+			}
+			return false;
+		}).map((node) => {
+			console.log('Whats the current node we are going to search', node);
 			const similarity = cosineSimilarity(
 				userQueryEmbedding,
 				node.codeSymbolEmbedding,
@@ -59,10 +70,16 @@ export class EmbeddingsSearch {
 	public async generateNodesRelevantForUserFromFiles(
 		userQuery: string,
 		activeFilesTracker: ActiveFilesTracker,
+		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		// So here we have to find the code symbols from the open files which
 		// are relevant for the user query
 		const interestingNodes = this._nodes.filter((node) => {
+			if (filePathsToSearch) {
+				if (!filePathsToSearch.includes(node.codeSymbolInformation.fsFilePath)) {
+					return false;
+				}
+			}
 			const activeFiles = activeFilesTracker.getActiveFiles();
 			const activeFile = activeFiles.find((file) => {
 				return file === node.codeSymbolInformation.fsFilePath;
@@ -99,13 +116,16 @@ export class EmbeddingsSearch {
 	public async generateNodesForUserQuery(
 		userQuery: string,
 		activeFilesTracker: ActiveFilesTracker,
+		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const nodesFromAllOverTheCodeBase = await this.generateNodesRelevantForUser(
 			userQuery,
+			filePathsToSearch,
 		);
 		const nodesFromActiveFiles = await this.generateNodesRelevantForUserFromFiles(
 			userQuery,
 			activeFilesTracker,
+			filePathsToSearch,
 		);
 		console.log('What are the nodes from active files');
 		console.log(nodesFromActiveFiles);

@@ -132,6 +132,7 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 			results.forEach((result: any) => {
 				const previewText = result.codeSymbolInformation.codeSnippet.code.split('\n')[0];
 				const searchResult: ITextSearchMatch = {
+					uri: URI.file(result.codeSymbolInformation.fsFilePath),
 					preview: {
 						matches: [{
 							startLineNumber: 0,
@@ -144,7 +145,7 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 					ranges: [{
 						startLineNumber: result.codeSymbolInformation.symbolStartLine,
 						startColumn: 0,
-						endLineNumber: result.codeSymbolInformation.symbolEndLine,
+						endLineNumber: result.codeSymbolInformation.symbolStartLine,
 						endColumn: 0,
 					}],
 				};

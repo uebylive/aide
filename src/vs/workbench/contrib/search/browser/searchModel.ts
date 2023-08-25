@@ -510,7 +510,7 @@ export class FileMatch extends Disposable implements IFileMatch {
 	private updateMatchesForModel(): void {
 		// this is called from a timeout and might fire
 		// after the model has been disposed
-		if (!this._model) {
+		if (!this._model || this._parent.query?.useSemantic) {
 			return;
 		}
 		this._textMatches = new Map<string, Match>();

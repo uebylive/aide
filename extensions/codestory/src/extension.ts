@@ -34,7 +34,6 @@ import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent
 import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { GoLangParser } from './languages/goCodeSymbols';
-import { SemanticSearchProvider } from './providers/SemanticSearch';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 
 
@@ -182,15 +181,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(openAgentViewCommand);
-
-	// Register the semantic search provider
-	const semanticSearchProvider = new SemanticSearchProvider();
-	context.subscriptions.push(
-		workspace.registerTextSearchProvider(
-			SemanticSearchProvider.providerType,
-			semanticSearchProvider,
-		)
-	);
 
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(

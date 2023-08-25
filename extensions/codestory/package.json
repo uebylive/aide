@@ -13,8 +13,7 @@
     "onSearch:text"
   ],
   "enabledApiProposals": [
-    "interactive",
-    "textSearchProvider"
+    "interactive"
   ],
   "license": "UNLICENSED",
   "repository": {
