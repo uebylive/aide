@@ -98,7 +98,7 @@ function parseFunctionNode(
 			symbolEndLine: currentFunction.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: functionNode.getBody()?.getText() || '',
+				code: functionNode.getText() || '',
 			},
 			extraSymbolHint: TypescriptCodeType.typescriptFunction,
 			dependencies: currentFunction
@@ -176,7 +176,7 @@ function parseArrowFunctionNode(
 				symbolEndLine: currentArrowExpression.getEndLineNumber(),
 				codeSnippet: {
 					languageId: 'typescript',
-					code: arrowFunction.getBody()?.getText() || '',
+					code: arrowFunction.getText() || '',
 				},
 				extraSymbolHint,
 				dependencies: currentArrowExpression
@@ -226,7 +226,7 @@ function parseMethodDeclaration(
 			symbolEndLine: methodDeclaration.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: methodDeclaration.getBody()?.getText() || '',
+				code: methodDeclaration.getText() || '',
 			},
 			dependencies: methodDeclaration
 				.getChildrenOfKind(SyntaxKind.Block)
@@ -727,7 +727,7 @@ function parseCodeBlockForDependencies(
 		console.log(e);
 		return [];
 	}
-};
+}
 
 export function parseCodeBlocksForDependencies(
 	sourceFile: SourceFile,
@@ -829,13 +829,16 @@ export async function parseFileUsingTsMorph(
 	directoryPath: string,
 	originalFilePath: string
 ): Promise<CodeSymbolInformation[]> {
+	console.log('[ts-morph] Parsing file: ' + sourceFilePath);
 	const sourceFile = project.getSourceFile(sourceFilePath);
 	// We sync from the fs again if the file has changed meanwhile, this is not
 	// important for onboarding but super important when we are doing things live
 	// and on every save
-	const syncData = sourceFile?.refreshFromFileSystemSync();
+	const syncData = await sourceFile?.refreshFromFileSystem();
+	console.log('[ts-morph] Refreshed data: ' + syncData);
 	if (sourceFile) {
 		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
 		if (codeSymbols.length === 0) {
 			return await getSymbolsFromDocumentUsingLSP(
 				sourceFilePath,

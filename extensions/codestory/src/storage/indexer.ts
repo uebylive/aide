@@ -107,16 +107,23 @@ export const getCodeSymbolList = async (
 	const codeSymbolInformationList: CodeSymbolInformation[] = [];
 	for (let index = 0; index < sourceFiles.length; index++) {
 		console.log(`Parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
-		const sourceFile = sourceFiles[index];
-		const sourceFilePath = sourceFile.getFilePath();
-		const codeSymbolInformation = await parseFileUsingTsMorph(
-			sourceFilePath,
-			project,
-			workingDirectory,
-			sourceFilePath
-		);
-		console.log(`[parsed_code_symbol_list] Parsed file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
-		codeSymbolInformationList.push(...codeSymbolInformation);
+		try {
+			const sourceFile = sourceFiles[index];
+			const sourceFilePath = sourceFile.getFilePath();
+			console.log(`[parsed_code_symbol_list] Got file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			const codeSymbolInformation = await parseFileUsingTsMorph(
+				sourceFilePath,
+				project,
+				workingDirectory,
+				sourceFilePath
+			);
+			console.log(`[parsed_code_symbol_list] Parsing complete ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			codeSymbolInformationList.push(...codeSymbolInformation);
+			console.log(`[parsed_code_symbol_list] Parsed file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+		} catch (error) {
+			console.log(`[parsed_code_symbol_list] Error parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			console.log(error);
+		}
 	}
 	return codeSymbolInformationList;
 };

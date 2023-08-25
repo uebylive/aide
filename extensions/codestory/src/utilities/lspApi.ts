@@ -103,6 +103,7 @@ function convertDocumentSymbolToCodeSymbolInformation(
 	scope: string = 'global',
 	extractChildren: boolean = true,
 ): CodeSymbolInformation[] {
+	console.log(`[convertDocumentSymbolToCodeSymbolInformation] ${fsFilePath} ${documentSymbol.name} ${documentSymbol.kind}`);
 	// For now I will look at the child of the class and see what I can get
 	const codeSymbols: CodeSymbolInformation[] = [];
 	if (documentSymbol.kind === SymbolKind.Class && extractChildren) {
@@ -152,6 +153,7 @@ const convertDocumentSymbolOutputToCodeSymbol = (
 	fsFilePath: string,
 	documentSymbols: SymbolInformation[] | DocumentSymbol[]
 ): CodeSymbolInformation[] => {
+	console.log(`[convertDocumentSymbolOutputToCodeSymbol] ${fsFilePath} ${documentSymbols.length} symbols found`);
 	const codeSymbols: CodeSymbolInformation[] = [];
 	if (isSymbolInformationArray(documentSymbols)) {
 		for (let index = 0; index < documentSymbols.length; index++) {
@@ -187,35 +189,62 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	workingDirectory: string,
 ): Promise<CodeSymbolInformation[]> => {
 	// Do something here
+	console.log('[getSymbolsFromDocumentUsingLSP][wtf1] ' + filePath);
 	const fileSplitLines = fs.readFileSync(filePath).toString().split('\n');
+	console.log('[document-symbol-providers][start] ');
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
 		'typescript'
 	);
+	console.log('[document-symbol-providers] ');
+	console.log(documentSymbolProviders);
 	const uri = Uri.file(filePath);
+	console.log('[documentSymbolsProvider] ' + documentSymbolProviders.length);
 	const textDocument = await workspace.openTextDocument(uri);
+
+	const timeout = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms, 'Timed out'));
+
 	for (let index = 0; index < documentSymbolProviders.length; index++) {
-		const symbols = await documentSymbolProviders[index].provideDocumentSymbols(
-			textDocument,
-			{
-				isCancellationRequested: false,
-				onCancellationRequested: () => ({ dispose() { } }),
-			},
-		);
-		if (symbols === undefined || symbols === null) {
-			continue;
-		}
-		if (symbols?.length === 0) {
-			continue;
-		}
-		const codeSymbolInformation = convertDocumentSymbolOutputToCodeSymbol(
-			workingDirectory,
-			fileSplitLines,
-			languageId,
-			filePath,
-			symbols ?? [],
-		);
-		if (codeSymbolInformation.length !== 0) {
-			return codeSymbolInformation;
+		console.log('[text documents] loading from lsp');
+		console.log('[text_document]');
+		console.log(documentSymbolProviders[index]);
+		try {
+			const symbols = await Promise.race([
+				documentSymbolProviders[index].provideDocumentSymbols(
+					textDocument,
+					{
+						isCancellationRequested: false,
+						onCancellationRequested: () => ({ dispose() { } }),
+					},
+				),
+				timeout(1000)
+			]);
+
+			// if promise timed out, continue to next iteration
+			if (symbols === 'Timed out') {
+				console.log('provideDocumentSymbols timed out!');
+				continue;
+			}
+
+			console.log('[wtf2] we are never hitting this');
+			const castSymbols = symbols as SymbolInformation[] | DocumentSymbol[] | null | undefined;
+			if (castSymbols === undefined || castSymbols === null) {
+				continue;
+			}
+			if (castSymbols?.length === 0) {
+				continue;
+			}
+			const codeSymbolInformation = convertDocumentSymbolOutputToCodeSymbol(
+				workingDirectory,
+				fileSplitLines,
+				languageId,
+				filePath,
+				castSymbols ?? [],
+			);
+			if (codeSymbolInformation.length !== 0) {
+				return codeSymbolInformation;
+			}
+		} catch (e) {
+			console.log('[wtf3] we ran into an error' + e);
 		}
 	}
 	return [];
