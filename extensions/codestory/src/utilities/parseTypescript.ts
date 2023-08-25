@@ -98,7 +98,7 @@ function parseFunctionNode(
 			symbolEndLine: currentFunction.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: functionNode.getBody()?.getText() || '',
+				code: functionNode.getText() || '',
 			},
 			extraSymbolHint: TypescriptCodeType.typescriptFunction,
 			dependencies: currentFunction
@@ -176,7 +176,7 @@ function parseArrowFunctionNode(
 				symbolEndLine: currentArrowExpression.getEndLineNumber(),
 				codeSnippet: {
 					languageId: 'typescript',
-					code: arrowFunction.getBody()?.getText() || '',
+					code: arrowFunction.getText() || '',
 				},
 				extraSymbolHint,
 				dependencies: currentArrowExpression
@@ -226,7 +226,7 @@ function parseMethodDeclaration(
 			symbolEndLine: methodDeclaration.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: methodDeclaration.getBody()?.getText() || '',
+				code: methodDeclaration.getText() || '',
 			},
 			dependencies: methodDeclaration
 				.getChildrenOfKind(SyntaxKind.Block)
