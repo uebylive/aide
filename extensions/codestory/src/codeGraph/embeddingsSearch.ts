@@ -33,13 +33,10 @@ export class EmbeddingsSearch {
 	public async generateNodesRelevantForUser(
 		userQuery: string,
 	): Promise<CodeSymbolInformationEmbeddings[]> {
-		console.log('[search] Whats the length of all code symbols: ' + this._nodes.length);
 		const currentNodes = this._nodes;
-		console.log('[search][v2] Whats the length of all code symbols: ' + currentNodes.length);
 		const userQueryEmbedding = await generateEmbedding(userQuery);
 
 		const nodesWithSimilarity = currentNodes.map((node) => {
-			console.log('Whats the current node we are going to search', node);
 			const similarity = cosineSimilarity(
 				userQueryEmbedding,
 				node.codeSymbolEmbedding,
@@ -79,7 +76,6 @@ export class EmbeddingsSearch {
 		const userQueryEmbedding = await generateEmbedding(userQuery);
 
 		const nodesWithSimilarity = interestingNodes.map((node) => {
-			console.log('Whats the current node we are going to search', node);
 			const similarity = cosineSimilarity(
 				userQueryEmbedding,
 				node.codeSymbolEmbedding,

@@ -125,15 +125,11 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 	}
 
 	async doSemanticSearch(query: ITextQuery, onProgress?: (p: ISearchProgressItem) => void, token: CancellationToken = CancellationToken.None): Promise<ISearchComplete> {
-		// So here I will be getting the query
 		const search = new SearchOperation(onProgress);
 		const semanticSearchCommand = CommandsRegistry.getCommand('codestory.semanticSearch');
 		if (semanticSearchCommand) {
-			console.log('[semanticSearch] command is defined and we are working with it');
 			const results = await this._commandService.executeCommand(semanticSearchCommand.id, query.contentPattern.pattern);
-			console.log('[semanticSearch][extensionAnswer] :', results);
 			results.forEach((result: any) => {
-				console.log('[semanticSearch][previewText] :', result.codeSymbolInformation.codeSnippet.code);
 				const previewText = result.codeSymbolInformation.codeSnippet.code.split('\n')[0];
 				const searchResult: ITextSearchMatch = {
 					preview: {
@@ -157,6 +153,8 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 					results: [searchResult]
 				});
 			});
+			console.log('[semanticSearch]');
+			console.log(search.matches.values());
 			const response: ISearchComplete = {
 				results: Array.from(search.matches.values()),
 				stats: {
@@ -193,8 +191,8 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 
 		return Promise.resolve(searchP).then((result: ISearchCompleteStats) => {
 			this._searches.delete(search.id);
-			console.log('[doSearch] results: ', result);
-			console.log('[doSearch] matches: ', search.matches);
+			console.log('[normalSearch]');
+			console.log(search.matches.values());
 			return { results: Array.from(search.matches.values()), stats: result.stats, limitHit: result.limitHit, messages: result.messages };
 		}, err => {
 			this._searches.delete(search.id);

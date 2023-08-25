@@ -28,7 +28,6 @@ export class ActiveFilesTracker {
 			// Append the document to the end of our list if it's a new open
 			this._activeFiles.push(document.uri.fsPath);
 		}
-		console.log('Whats the active files', this._activeFiles);
 	}
 
 	onCloseTextDocument(document: TextDocument) {
@@ -41,7 +40,6 @@ export class ActiveFilesTracker {
 		if (index !== -1) {
 			this._activeFiles.splice(index, 1);
 		}
-		console.log('Whats the active files', this._activeFiles);
 	}
 
 	onDidChangeActiveTextEditor(editor: TextEditor | undefined) {
@@ -60,6 +58,5 @@ export class ActiveFilesTracker {
 				this._activeFiles.push(editor.document.uri.fsPath);
 			}
 		}
-		console.log('Whats the active files', this._activeFiles);
 	}
 }
