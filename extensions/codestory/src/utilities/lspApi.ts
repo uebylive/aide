@@ -188,17 +188,11 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	languageId: string,
 	workingDirectory: string,
 ): Promise<CodeSymbolInformation[]> => {
-	// Do something here
-	console.log('[getSymbolsFromDocumentUsingLSP][wtf1] ' + filePath);
 	const fileSplitLines = fs.readFileSync(filePath).toString().split('\n');
-	console.log('[document-symbol-providers][start] ');
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
 		'typescript'
 	);
-	console.log('[document-symbol-providers] ');
-	console.log(documentSymbolProviders);
 	const uri = Uri.file(filePath);
-	console.log('[documentSymbolsProvider] ' + documentSymbolProviders.length);
 	const textDocument = await workspace.openTextDocument(uri);
 
 	const timeout = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms, 'Timed out'));
@@ -225,7 +219,6 @@ export const getSymbolsFromDocumentUsingLSP = async (
 				continue;
 			}
 
-			console.log('[wtf2] we are never hitting this');
 			const castSymbols = symbols as SymbolInformation[] | DocumentSymbol[] | null | undefined;
 			if (castSymbols === undefined || castSymbols === null) {
 				continue;
