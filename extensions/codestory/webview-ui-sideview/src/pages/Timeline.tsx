@@ -196,159 +196,161 @@ export const TimeLine = (): JSX.Element => {
 	};
 
 	return (
-		<div className='mb-12 h-full text-vscode-sideBar-foreground'>
-			<div className='w-full flex flex-row justify-between text-xs mb-3'>
-				<p>CHANGES YOU HAVE DONE</p>
-				{changedCodeSymbols.length > 0 && (
-					<p
-						className={`cursor-pointer ${commitMode ? 'text-vscode-button-background' : ''
-							}`}
-						onClick={toggleCommitMode}
-					>
-						{commitMode ? 'CANCEL' : 'COMMIT'}
-					</p>
+		<div className='min-h-full w-full flex flex-col p-4'>
+			<div className='mb-12 h-full text-vscode-sideBar-foreground'>
+				<div className='w-full flex flex-row justify-between text-xs mb-3'>
+					<p>CHANGES YOU HAVE DONE</p>
+					{changedCodeSymbols.length > 0 && (
+						<p
+							className={`cursor-pointer ${commitMode ? 'text-vscode-button-background' : ''
+								}`}
+							onClick={toggleCommitMode}
+						>
+							{commitMode ? 'CANCEL' : 'COMMIT'}
+						</p>
+					)}
+				</div>
+				{changedCodeSymbols?.length === 0 ? (
+					<div className='w-full flex align-middle justify-center mt-24'>
+						<p>No changes yet</p>
+					</div>
+				) : (
+					<>
+						{Object.entries(groupedChanges).map(([key, value]) => {
+							return (
+								<div key={key} className='mb-5'>
+									<div className='p-3 border border-vscode-foreground rounded-lg'>
+										{commitMode && (
+											<div>
+												<div className='flex justify-between leading-7'>
+													<p className='font-bold text-codestory-primary align-middle'>
+														{value.selection.reason}
+													</p>
+													<VSCodeCheckbox
+														checked={value.selection.selected}
+														onClick={toggleGroupForCommit}
+														value={key}
+														className='mr-2'
+													/>
+												</div>
+												<hr className='border-vscode-foreground my-2' />
+											</div>
+										)}
+										{Object.entries(value.files).map(([key, value]) => {
+											return (
+												<div key={key} className='text-base mb-2 last:mb-0'>
+													<p className='text-sm text-vscode-button-background'>
+														{key}
+													</p>
+													<p className='text-xs text-gray-500'>
+														{getRelativeTime(
+															value.reduce((prev, next) =>
+																prev.changeTime.getTime() <
+																	next.changeTime.getTime()
+																	? prev
+																	: next
+															).changeTime
+														)}
+													</p>
+													<ul>
+														{value.map((change, i) => (
+															<li
+																key={i}
+																className='text-vscode-sideBar-foreground'
+															>
+																<p
+																	className='hover:cursor-pointer'
+																	onClick={() =>
+																		handleOpenFile(
+																			change.filePath,
+																			change.startLine
+																		)
+																	}
+																>
+																	<span
+																		className={`inline-block w-5 mr-2 text-center ${change.changeType === 'added'
+																			? 'text-green-500'
+																			: change.changeType === 'removed'
+																				? 'text-red-500'
+																				: 'text-gray-500'
+																			}`}
+																	>
+																		{change.changeType === 'added'
+																			? '+'
+																			: change.changeType === 'removed'
+																				? '-'
+																				// allow-any-unicode-next-line
+																				: '∗'}
+																	</span>
+																	{change.displayName}
+																</p>
+															</li>
+														))}
+													</ul>
+												</div>
+											);
+										})}
+										<p>
+											<ReactMarkdown
+												children={
+													componentIdentifierToChange.get(key)?.summary ??
+													// allow-any-unicode-next-line
+													'No changelog generated yet, please wait 🚏'
+												}
+												className='p-3 bg-vscode-input-background overflow-x-hidden'
+												remarkPlugins={[remarkGfm]}
+												components={{
+													code({ node, inline, className, children, ...props }) {
+														const match = /language-(\w+)/.exec(className || '');
+														return !inline && match ? (
+															// @ts-ignore
+															<SyntaxHighlighter
+																{...props}
+																children={String(children).replace(/\n$/, '')}
+																language={match[1]}
+																PreTag='div'
+															/>
+														) : (
+															<code {...props} className={className}>
+																{children}
+															</code>
+														);
+													},
+												}}
+											></ReactMarkdown>
+										</p>
+									</div>
+								</div>
+							);
+						})}
+						{commitMode && (
+							<>
+								{Object.entries(groupedChanges).some(
+									([_, value]) =>
+										value.selection.reason === 'STAGED AUTOMATICALLY'
+								) && (
+										<p className='border-l-4 pl-2 border-vscode-foreground'>
+											Some change sets are staged automatically because CodeStory
+											only supports staging entire files currently.
+										</p>
+									)}
+								<div className='w-full flex justify-end mt-5'>
+									<VSCodeButton
+										onClick={initiateCommit}
+										disabled={
+											!Object.entries(groupedChanges).some(
+												([_, value]) => value.selection.selected
+											)
+										}
+									>
+										COMMIT
+									</VSCodeButton>
+								</div>
+							</>
+						)}
+					</>
 				)}
 			</div>
-			{changedCodeSymbols?.length === 0 ? (
-				<div className='w-full flex align-middle justify-center mt-24'>
-					<p>No changes yet</p>
-				</div>
-			) : (
-				<>
-					{Object.entries(groupedChanges).map(([key, value]) => {
-						return (
-							<div key={key} className='mb-5'>
-								<div className='p-3 border border-vscode-foreground rounded-lg'>
-									{commitMode && (
-										<div>
-											<div className='flex justify-between leading-7'>
-												<p className='font-bold text-codestory-primary align-middle'>
-													{value.selection.reason}
-												</p>
-												<VSCodeCheckbox
-													checked={value.selection.selected}
-													onClick={toggleGroupForCommit}
-													value={key}
-													className='mr-2'
-												/>
-											</div>
-											<hr className='border-vscode-foreground my-2' />
-										</div>
-									)}
-									{Object.entries(value.files).map(([key, value]) => {
-										return (
-											<div key={key} className='text-base mb-2 last:mb-0'>
-												<p className='text-sm text-vscode-button-background'>
-													{key}
-												</p>
-												<p className='text-xs text-gray-500'>
-													{getRelativeTime(
-														value.reduce((prev, next) =>
-															prev.changeTime.getTime() <
-																next.changeTime.getTime()
-																? prev
-																: next
-														).changeTime
-													)}
-												</p>
-												<ul>
-													{value.map((change, i) => (
-														<li
-															key={i}
-															className='text-vscode-sideBar-foreground'
-														>
-															<p
-																className='hover:cursor-pointer'
-																onClick={() =>
-																	handleOpenFile(
-																		change.filePath,
-																		change.startLine
-																	)
-																}
-															>
-																<span
-																	className={`inline-block w-5 mr-2 text-center ${change.changeType === 'added'
-																		? 'text-green-500'
-																		: change.changeType === 'removed'
-																			? 'text-red-500'
-																			: 'text-gray-500'
-																		}`}
-																>
-																	{change.changeType === 'added'
-																		? '+'
-																		: change.changeType === 'removed'
-																			? '-'
-																			// allow-any-unicode-next-line
-																			: '∗'}
-																</span>
-																{change.displayName}
-															</p>
-														</li>
-													))}
-												</ul>
-											</div>
-										);
-									})}
-									<p>
-										<ReactMarkdown
-											children={
-												componentIdentifierToChange.get(key)?.summary ??
-												// allow-any-unicode-next-line
-												'No changelog generated yet, please wait 🚏'
-											}
-											className='p-3 bg-vscode-input-background overflow-x-hidden'
-											remarkPlugins={[remarkGfm]}
-											components={{
-												code({ node, inline, className, children, ...props }) {
-													const match = /language-(\w+)/.exec(className || '');
-													return !inline && match ? (
-														// @ts-ignore
-														<SyntaxHighlighter
-															{...props}
-															children={String(children).replace(/\n$/, '')}
-															language={match[1]}
-															PreTag='div'
-														/>
-													) : (
-														<code {...props} className={className}>
-															{children}
-														</code>
-													);
-												},
-											}}
-										></ReactMarkdown>
-									</p>
-								</div>
-							</div>
-						);
-					})}
-					{commitMode && (
-						<>
-							{Object.entries(groupedChanges).some(
-								([_, value]) =>
-									value.selection.reason === 'STAGED AUTOMATICALLY'
-							) && (
-									<p className='border-l-4 pl-2 border-vscode-foreground'>
-										Some change sets are staged automatically because CodeStory
-										only supports staging entire files currently.
-									</p>
-								)}
-							<div className='w-full flex justify-end mt-5'>
-								<VSCodeButton
-									onClick={initiateCommit}
-									disabled={
-										!Object.entries(groupedChanges).some(
-											([_, value]) => value.selection.selected
-										)
-									}
-								>
-									COMMIT
-								</VSCodeButton>
-							</div>
-						</>
-					)}
-				</>
-			)}
 		</div>
 	);
 };

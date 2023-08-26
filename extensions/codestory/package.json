@@ -30,9 +30,9 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codestory",
-          "title": "CodeStory",
-          "icon": "assets/cs-logomark.svg"
+          "id": "changeTracker",
+          "title": "Change Tracker",
+          "icon": "assets/versions.svg"
         },
         {
           "id": "agent",
@@ -42,11 +42,11 @@
       ]
     },
     "views": {
-      "codestory": [
+      "changeTracker": [
         {
           "type": "webview",
           "id": "codestory.webView",
-          "name": "CodeStory"
+          "name": "Change Tracker"
         }
       ],
       "agent": [
