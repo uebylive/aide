@@ -8,14 +8,35 @@
 // the AST and figure out what symbols are relevant
 
 import { exec } from 'child_process';
+const Parser = require('web-tree-sitter');
 import * as fs from 'fs';
+import * as path from 'path';
 import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid';
 import { CodeSymbolInformation } from './types';
 import { Definition, LocationLink, Position, TextDocument, Uri, languages, workspace } from 'vscode';
 import logger from '../logger';
+import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 
 const TAB_LENGTH = 4;
+
+
+// This is the tree sitter parser we are using for parsing
+// the file system
+let GO_PARSER: any | null = null;
+
+
+const setGoParser = async () => {
+	if (GO_PARSER) {
+		return;
+	}
+	await Parser.init();
+	const parser = new Parser();
+	const filePath = path.join(__dirname, 'tree-sitter-go.wasm');
+	const goLang = await Parser.Language.load(filePath);
+	parser.setLanguage(goLang);
+	GO_PARSER = parser;
+};
 
 
 export interface GoParserNodeInformation {
@@ -36,44 +57,36 @@ const countTabLength = (line: string[]): number => {
 	return match ? match[0].length : 0;
 };
 
-async function runCommand(cmd: string): Promise<[string, string | undefined]> {
-	let stdout = '';
-	let stderr = '';
-	try {
-		const output = await promisify(exec)(cmd, {
-			shell: process.platform === 'win32' ? 'powershell.exe' : undefined,
-		});
-		stdout = output.stdout;
-		stderr = output.stderr;
-	} catch (e: any) {
-		stderr = e.stderr;
-		stdout = e.stdout;
-	}
 
-	const stderrOrUndefined = stderr === '' ? undefined : stderr;
-	return [stdout, stderrOrUndefined];
+const parseGoLangCodeUsingTreeSitter = (code: string): GoParserNodeInformation[] => {
+	const parsedNode = GO_PARSER.parse(code);
+	const rootNode = parsedNode.rootNode;
+	const nodes: GoParserNodeInformation[] = [];
+	const traverse = (node: any) => {
+		if (node.type === 'identifier' || node.type === 'field_identifier') {
+			nodes.push({
+				type: node.type,
+				startLine: node.startPosition.row,
+				StartColumn: node.startPosition.column,
+				endLine: node.endPosition.row,
+				endColumn: node.endPosition.column,
+				text: node.text,
+			});
+		}
+		for (const child of node.children) {
+			traverse(child);
+		}
+	};
+	traverse(rootNode);
+	return nodes;
 }
 
 
 // We are just parsing identifier and field identifier types here
 export const parseGoCodeTreeSitter = async (code: string): Promise<GoParserNodeInformation[]> => {
-	// First we need write this to a file
-	// Second we pass that file location as argument to the python script
-	// Third we read the stdout of the python script and parse it to get the final
-	// results, which will look somewhat like this
-	const codePath = `/tmp/codestory/${uuidv4()}`;
-	const outputPath = `/tmp/codestory/${uuidv4()}`;
-	fs.writeFileSync(codePath, code);
-	// Now we will exec the python script here
-	// TODO(codestory): Fix this here and remove dependency from local host here
-	const _ = await runCommand(`/opt/miniconda3/bin/python3 /Users/skcd/scratch/anton/anton/tooling/tree_sitter_parsing.py ${codePath} ${outputPath}`);
-	// Now we will read from the output file and parse it back to the type frontend needs
-	const outputString = fs.readFileSync(outputPath, 'utf8');
-	const outputJSON = JSON.parse(outputString);
-	// We are going to parse out only those which are identifier or filed identifier types here
-	// and pray to the gods that we can create a graph hopefully
-	const possibleNodes = outputJSON as GoParserNodeInformation[];
-	return possibleNodes.filter((node) => {
+	await setGoParser();
+	const parsedNodes = parseGoLangCodeUsingTreeSitter(code);
+	return parsedNodes.filter((node) => {
 		return node.type === 'identifier' || node.type === 'field_identifier';
 	});
 };
@@ -116,14 +129,14 @@ export const parseDependenciesForCodeSymbols = async (filePath: string, workingD
 	// First we load all the symbols which we know about and then try to parse
 	// them internally
 	logger.info('[CodeStory] Parsing dependencies for code symbols');
-	const symbolLocation = '/tmp/documentSymbolsSomething';
-	const symbolOutput = fs.readFileSync(symbolLocation, 'utf8');
-	const uri = Uri.file(filePath);
-	const textDocument = await workspace.openTextDocument(uri);
-	logger.info('[parseDependenciesForCodeSymbols] textDocument opened');
-	const codeSymbolNodes = JSON.parse(symbolOutput) as CodeSymbolInformation[];
+	const codeSymbolNodes = await getSymbolsFromDocumentUsingLSP(filePath, 'go', workingDirectory);
+	const textDocument = await workspace.openTextDocument(Uri.file(filePath));
+	// const codeSymbolNodes = JSON.parse(symbolOutput) as CodeSymbolInformation[];
 	for (let index = 0; index < codeSymbolNodes.length; index++) {
 		const currentCodeSymbol = codeSymbolNodes[index];
+		console.log('[parseDependenciesForCodeSymbols]');
+		console.log(currentCodeSymbol.codeSnippet.code);
+		console.log(currentCodeSymbol.symbolStartLine, currentCodeSymbol.symbolEndLine);
 		const codeSnippet = currentCodeSymbol.codeSnippet.code;
 		const dependentNodes = await parseGoCodeTreeSitter(codeSnippet);
 		// Lets fix the position here by first counting the number of tabs at
@@ -137,7 +150,9 @@ export const parseDependenciesForCodeSymbols = async (filePath: string, workingD
 				const startColumn = dependency.StartColumn + tabCount * TAB_LENGTH - tabCount + 1;
 				const endColumn = dependency.endColumn + tabCount * TAB_LENGTH - tabCount + 1;
 				// Go to definition now
-				const definition = await getGoToDefinition(textDocument, startLine - 1, startColumn - 1);
+				console.log('[goToDefinition] ', startLine - 1, startColumn - 1, dependency.text);
+				const definition = await getGoToDefinition(textDocument, startLine, startColumn - 1);
+				// console.log('[definition] ', startLine, definition);
 			}
 		}
 	}
