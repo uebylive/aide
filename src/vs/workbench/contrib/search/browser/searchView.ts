@@ -80,8 +80,6 @@ import { TextSearchCompleteMessage } from 'vs/workbench/services/search/common/s
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 import { INotebookService } from 'vs/workbench/contrib/notebook/common/notebookService';
 import { ILogService } from 'vs/platform/log/common/log';
-import { renderIcon } from 'vs/base/browser/ui/iconLabel/iconLabels';
-import { Codicon } from 'vs/base/common/codicons';
 
 const $ = dom.$;
 
@@ -92,6 +90,10 @@ export enum SearchViewPosition {
 
 const SEARCH_CANCELLED_MESSAGE = nls.localize('searchCanceled', "Search was canceled before any results could be found - ");
 const DEBOUNCE_DELAY = 75;
+
+const USING_SEMANTIC_SEARCH = nls.localize('usingSemanticSearch', "semantic search query");
+const USING_LEXICAL_SEARCH = nls.localize('usingLexicalSearch', "lexical search query");
+
 export class SearchView extends ViewPane {
 
 	private static readonly ACTIONS_RIGHT_CLASS_NAME = 'actions-right';
@@ -292,10 +294,17 @@ export class SearchView extends ViewPane {
 		this.semanticSearchKey.set(value);
 	}
 
-	toggleSemanticSearch(): void {
-		this.isSemanticSearch = !this.isSemanticSearch;
+	setUseSemanticSearch(useSemanticSearch: boolean): void {
+		this.isSemanticSearch = useSemanticSearch;
 		this.searchWidget.setIsSemantic(this.isSemanticSearch);
 		this.triggerQueryChange();
+		const searchExplainer = this.searchWidgetsContainerElement.querySelector('.search-explainer');
+		if (searchExplainer) {
+			const explainerText = searchExplainer.querySelector('h4');
+			if (explainerText) {
+				explainerText.textContent = this.isSemanticSearch ? USING_SEMANTIC_SEARCH : USING_LEXICAL_SEARCH;
+			}
+		}
 	}
 
 	get isTreeLayoutViewVisible(): boolean {
@@ -345,9 +354,7 @@ export class SearchView extends ViewPane {
 
 		const searchExplainer = dom.append(this.searchWidgetsContainerElement, dom.$('.search-explainer'));
 		const explainerText = dom.append(searchExplainer, dom.$('h4'));
-		explainerText.textContent = nls.localize('useSemanticSearch', "use the magic wand for semantic search");
-		const wandIcon = dom.append(searchExplainer, renderIcon(Codicon.wand));
-		wandIcon.classList.add('icon');
+		explainerText.textContent = this.isSemanticSearch ? USING_SEMANTIC_SEARCH : USING_LEXICAL_SEARCH;
 
 		this.createSearchWidget(this.searchWidgetsContainerElement);
 
@@ -1465,7 +1472,7 @@ export class SearchView extends ViewPane {
 			return;
 		}
 
-		const isSemanticSearch = this.searchWidget.searchInput.getShowCommonFindToggles();
+		const isSemanticSearch = !this.searchWidget.searchInput.getShowCommonFindToggles();
 
 		const isRegex = this.searchWidget.searchInput.getRegex();
 		const isInNotebookMarkdownInput = this.searchWidget.getNotebookFilters().markupInput;
