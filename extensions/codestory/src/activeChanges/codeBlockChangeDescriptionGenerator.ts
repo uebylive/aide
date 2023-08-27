@@ -27,6 +27,9 @@ const getLanguageId = (filePath: string): string | null => {
 	if (fileExtension === '.py') {
 		return 'python';
 	}
+	if (fileExtension === '.go') {
+		return 'go';
+	}
 	return null;
 };
 
