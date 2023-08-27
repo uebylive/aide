@@ -103,7 +103,7 @@ export class TrackCodeSymbolChanges {
 		codeSymbolInformationList: CodeSymbolInformation[],
 	) {
 		console.log(codeSymbolInformationList);
-		console.log('How many symbols have changed' + codeSymbolInformationList.length);
+		console.log('How many symbols have changed: ' + codeSymbolInformationList.length + ' ' + filePath);
 		this.fileOpenedCodeSymbolTracked.set(filePath, {
 			codeSymbols: codeSymbolInformationList,
 			workingDirectory: this.workingDirectory,
@@ -312,6 +312,7 @@ export class TrackCodeSymbolChanges {
 		) {
 			console.log('getting codesymbol information for golang ' + filePath);
 			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
+			console.log('got codesymbol information for golang ' + codeSymbolInformationHackedTogether.length);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
