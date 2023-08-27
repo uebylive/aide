@@ -1472,7 +1472,7 @@ export class SearchView extends ViewPane {
 			return;
 		}
 
-		const isSemanticSearch = !this.searchWidget.searchInput.getShowCommonFindToggles();
+		const isSemanticSearch = this.searchWidget.searchInput.getIsSemantic();
 
 		const isRegex = this.searchWidget.searchInput.getRegex();
 		const isInNotebookMarkdownInput = this.searchWidget.getNotebookFilters().markupInput;
@@ -2073,7 +2073,7 @@ export class SearchView extends ViewPane {
 		const useExcludesAndIgnoreFiles = this.inputPatternExcludes?.useExcludesAndIgnoreFiles() ?? true;
 		const preserveCase = this.viewModel.preserveCase;
 
-		const isSemanticSearch = this.searchWidget.searchInput?.getShowCommonFindToggles();
+		const isSemanticSearch = this.searchWidget.searchInput?.getIsSemantic() ?? false;
 		this.viewletState['view.isSemanticSearch'] = isSemanticSearch;
 
 		if (this.searchWidget.searchInput) {

@@ -8,7 +8,7 @@ import { ICommandHandler } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchListFocusContextKey } from 'vs/platform/list/browser/listService';
 import { IViewsService } from 'vs/workbench/common/views';
-import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchStopIcon, searchUseLexicalSearch, searchUseSemanticSearch } from 'vs/workbench/contrib/search/browser/searchIcons';
+import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchStopIcon, searchToggleSearchType } from 'vs/workbench/contrib/search/browser/searchIcons';
 import * as Constants from 'vs/workbench/contrib/search/common/constants';
 import { ISearchHistoryService } from 'vs/workbench/contrib/search/common/searchHistoryService';
 import { FileMatch, FolderMatch, FolderMatchNoRoot, FolderMatchWorkspaceRoot, Match, SearchResult } from 'vs/workbench/contrib/search/browser/searchModel';
@@ -19,6 +19,7 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { SearchStateKey, SearchUIState } from 'vs/workbench/contrib/search/common/search';
 import { category, getSearchView } from 'vs/workbench/contrib/search/browser/searchActionsBase';
+import { ToggleSearchTypeKeybinding } from 'vs/editor/contrib/find/browser/findModel';
 
 //#region Actions
 registerAction2(class ClearSearchHistoryCommandAction extends Action2 {
@@ -229,56 +230,34 @@ registerAction2(class ViewAsListAction extends Action2 {
 	}
 });
 
-registerAction2(class UseSemanticSearchCommandAction extends Action2 {
+registerAction2(class ToggleSearchTypeCommandAction extends Action2 {
 	constructor() {
 		super({
-			id: Constants.UseSemanticSearchActionId,
+			id: Constants.ToggleSearchTypeActionId,
 			title: {
-				value: nls.localize('UseSemanticSearchAction.label', "Use Semantic Search"),
-				original: 'Use Semantic Search'
+				value: nls.localize('ToggleSearchTypeAction.label', "Toggle Search Type"),
+				original: 'Toggle Search Type'
 			},
 			category,
-			icon: searchUseSemanticSearch,
+			icon: searchToggleSearchType,
 			f1: true,
 			menu: [{
 				id: MenuId.ViewTitle,
 				group: 'navigation',
 				order: -1,
-				when: ContextKeyExpr.and(ContextKeyExpr.equals('view', VIEW_ID), Constants.IsSemanticSearchKey.toNegated()),
-			}]
+				when: ContextKeyExpr.equals('view', VIEW_ID),
+			}],
+			keybinding: Object.assign({
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: Constants.SearchViewVisibleKey, WorkbenchListFocusContextKey,
+			}, ToggleSearchTypeKeybinding),
 		});
 	}
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const searchView = getSearchView(accessor.get(IViewsService));
 		if (searchView) {
-			searchView.setUseSemanticSearch(true);
-		}
-	}
-});
-
-registerAction2(class UseLexicalSearchCommandAction extends Action2 {
-	constructor() {
-		super({
-			id: Constants.UseLexicalSearchActionId,
-			title: {
-				value: nls.localize('UseLexicalSearchAction.label', "Use Lexical Search"),
-				original: 'Use Lexical Search'
-			},
-			category,
-			icon: searchUseLexicalSearch,
-			f1: true,
-			menu: [{
-				id: MenuId.ViewTitle,
-				group: 'navigation',
-				order: -1,
-				when: ContextKeyExpr.and(ContextKeyExpr.equals('view', VIEW_ID), Constants.IsSemanticSearchKey),
-			}]
-		});
-	}
-	run(accessor: ServicesAccessor, ...args: any[]) {
-		const searchView = getSearchView(accessor.get(IViewsService));
-		if (searchView) {
-			searchView.setUseSemanticSearch(false);
+			const isSemantic = searchView.isSemanticSearch;
+			searchView.setUseSemanticSearch(!isSemantic);
 		}
 	}
 });
