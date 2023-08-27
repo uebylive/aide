@@ -80,11 +80,13 @@ class ProgressiveGraphBuilder {
 	async loadGraph(
 		projectManagement: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		workingDirectory: string,
 	) {
 		await generateCodeGraph(
 			projectManagement,
 			pythonServer,
+			goLangParser,
 			workingDirectory,
 			this.emitter,
 		);
@@ -236,6 +238,7 @@ export async function activate(context: ExtensionContext) {
 	progressiveGraphBuilder.loadGraph(
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		rootPath,
 	);
 
