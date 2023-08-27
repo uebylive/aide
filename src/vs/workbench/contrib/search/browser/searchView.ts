@@ -2046,7 +2046,12 @@ export class SearchView extends ViewPane {
 	}
 
 	private get searchConfig(): ISearchConfigurationProperties {
-		return this.configurationService.getValue<ISearchConfigurationProperties>('search');
+		const config = this.configurationService.getValue<ISearchConfigurationProperties>('search');
+		if (this.isSemanticSearch) {
+			config.sortOrder = SearchSortOrder.None;
+		}
+
+		return config;
 	}
 
 	private clearHistory(): void {

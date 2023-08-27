@@ -366,6 +366,7 @@ export const enum ViewMode {
 }
 
 export const enum SearchSortOrder {
+	None = 'none',
 	Default = 'default',
 	FileNames = 'fileNames',
 	Type = 'type',

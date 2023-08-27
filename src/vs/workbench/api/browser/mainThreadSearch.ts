@@ -132,7 +132,6 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 			results.forEach((result: any) => {
 				const previewText = result.codeSymbolInformation.codeSnippet.code.split('\n')[0];
 				const searchResult: ITextSearchMatch = {
-					uri: URI.file(result.codeSymbolInformation.fsFilePath),
 					preview: {
 						matches: [{
 							startLineNumber: 0,
