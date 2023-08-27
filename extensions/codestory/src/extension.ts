@@ -332,10 +332,7 @@ export async function activate(context: ExtensionContext) {
 		})
 	);
 
-	// activate the relevant LSPs here
-	// TODO(codestory): Enable this later on
-	await activateExtensions(context, getExtensionsInDirectory(rootPath));
-	// const filePath = '/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go';
+	// const filePath = '/Users/skcd/test_repo/cli/pkg/cmd/org/org.go';
 	// const symbols = await getSymbolsFromDocumentUsingLSP(
 	// 	'/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go',
 	// 	'golang',
