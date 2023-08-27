@@ -313,11 +313,10 @@ export async function activate(context: ExtensionContext) {
 
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
-	// 	workspace.onDidOpenTextDocument(async (doc) => {
-	// 		const uri = doc.uri;
-	// 		await trackCodeSymbolChanges.fileOpened(uri, logger);
-	// 	})
-	// );
+	workspace.onDidOpenTextDocument(async (doc) => {
+		const uri = doc.uri;
+		await trackCodeSymbolChanges.fileOpened(uri, logger);
+	});
 
 	logger.info('[check 10]We are over here');
 
