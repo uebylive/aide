@@ -55,9 +55,9 @@ export class FindInput extends Widget {
 
 	protected isSemantic?: boolean;
 	protected readonly controls: HTMLDivElement;
-	protected regex?: RegexToggle;
-	protected wholeWords?: WholeWordsToggle;
-	protected caseSensitive?: CaseSensitiveToggle;
+	protected readonly regex?: RegexToggle;
+	protected readonly wholeWords?: WholeWordsToggle;
+	protected readonly caseSensitive?: CaseSensitiveToggle;
 	protected additionalToggles: Toggle[] = [];
 	public readonly domNode: HTMLElement;
 	public readonly inputBox: HistoryInputBox;
@@ -91,6 +91,9 @@ export class FindInput extends Widget {
 		this.label = options.label || NLS_DEFAULT_LABEL;
 		this.showCommonFindToggles = !!options.showCommonFindToggles;
 
+		const appendCaseSensitiveLabel = this.renderOptions.appendCaseSensitiveLabel || '';
+		const appendWholeWordsLabel = this.renderOptions.appendWholeWordsLabel || '';
+		const appendRegexLabel = this.renderOptions.appendRegexLabel || '';
 		const history = options.history || [];
 		const flexibleHeight = !!options.flexibleHeight;
 		const flexibleWidth = !!options.flexibleWidth;
@@ -112,48 +115,6 @@ export class FindInput extends Widget {
 			flexibleMaxHeight,
 			inputBoxStyles: options.inputBoxStyles,
 		}));
-
-		this.renderCommonFindInputToggles();
-
-		this.controls = document.createElement('div');
-		this.controls.className = 'controls';
-		this.controls.style.display = this.showCommonFindToggles ? '' : 'none';
-		if (this.caseSensitive) {
-			this.controls.append(this.caseSensitive.domNode);
-		}
-		if (this.wholeWords) {
-			this.controls.appendChild(this.wholeWords.domNode);
-		}
-		if (this.regex) {
-			this.controls.appendChild(this.regex.domNode);
-		}
-
-		this.setAdditionalToggles(options?.additionalToggles);
-
-		if (this.controls) {
-			this.domNode.appendChild(this.controls);
-		}
-
-		parent?.appendChild(this.domNode);
-
-		this._register(dom.addDisposableListener(this.inputBox.inputElement, 'compositionstart', (e: CompositionEvent) => {
-			this.imeSessionInProgress = true;
-		}));
-		this._register(dom.addDisposableListener(this.inputBox.inputElement, 'compositionend', (e: CompositionEvent) => {
-			this.imeSessionInProgress = false;
-			this._onInput.fire();
-		}));
-
-		this.onkeydown(this.inputBox.inputElement, (e) => this._onKeyDown.fire(e));
-		this.onkeyup(this.inputBox.inputElement, (e) => this._onKeyUp.fire(e));
-		this.oninput(this.inputBox.inputElement, (e) => this._onInput.fire());
-		this.onmousedown(this.inputBox.inputElement, (e) => this._onMouseDown.fire(e));
-	}
-
-	private renderCommonFindInputToggles(): void {
-		const appendCaseSensitiveLabel = this.renderOptions.appendCaseSensitiveLabel || '';
-		const appendWholeWordsLabel = this.renderOptions.appendWholeWordsLabel || '';
-		const appendRegexLabel = this.renderOptions.appendRegexLabel || '';
 
 		if (this.showCommonFindToggles) {
 			this.regex = this._register(new RegexToggle({
@@ -229,16 +190,41 @@ export class FindInput extends Widget {
 					}
 				}
 			});
-		} else {
-			this.regex?.dispose();
-			this.wholeWords?.dispose();
-			this.caseSensitive?.dispose();
 		}
 
-		if (this.controls) {
-			this.controls.style.display = this.showCommonFindToggles ? '' : 'none';
+		this.controls = document.createElement('div');
+		this.controls.className = 'controls';
+		this.controls.style.display = this.showCommonFindToggles ? '' : 'none';
+		if (this.caseSensitive) {
+			this.controls.append(this.caseSensitive.domNode);
 		}
-		this.updateInputBoxPadding(!this.showCommonFindToggles);
+		if (this.wholeWords) {
+			this.controls.appendChild(this.wholeWords.domNode);
+		}
+		if (this.regex) {
+			this.controls.appendChild(this.regex.domNode);
+		}
+
+		this.setAdditionalToggles(options?.additionalToggles);
+
+		if (this.controls) {
+			this.domNode.appendChild(this.controls);
+		}
+
+		parent?.appendChild(this.domNode);
+
+		this._register(dom.addDisposableListener(this.inputBox.inputElement, 'compositionstart', (e: CompositionEvent) => {
+			this.imeSessionInProgress = true;
+		}));
+		this._register(dom.addDisposableListener(this.inputBox.inputElement, 'compositionend', (e: CompositionEvent) => {
+			this.imeSessionInProgress = false;
+			this._onInput.fire();
+		}));
+
+		this.onkeydown(this.inputBox.inputElement, (e) => this._onKeyDown.fire(e));
+		this.onkeyup(this.inputBox.inputElement, (e) => this._onKeyUp.fire(e));
+		this.oninput(this.inputBox.inputElement, (e) => this._onInput.fire());
+		this.onmousedown(this.inputBox.inputElement, (e) => this._onMouseDown.fire(e));
 	}
 
 	public get isImeSessionInProgress(): boolean {
@@ -297,7 +283,8 @@ export class FindInput extends Widget {
 	public setIsSemantic(isSemantic: boolean): void {
 		this.isSemantic = isSemantic;
 		this.showCommonFindToggles = !isSemantic;
-		this.renderCommonFindInputToggles();
+		this.controls.style.display = !isSemantic ? '' : 'none';
+		this.updateInputBoxPadding(isSemantic);
 	}
 
 	public setAdditionalToggles(toggles: Toggle[] | undefined): void {
