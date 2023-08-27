@@ -5,6 +5,7 @@
 
 // We have to generate the graph of the codebase here, so we can query for nodes
 import { getFilesTrackedInWorkingDirectory } from '../git/helper';
+import { GoLangParser } from '../languages/goCodeSymbols';
 import { getCodeSymbolList } from '../storage/indexer';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { PythonServer } from '../utilities/pythonServerClient';
@@ -77,9 +78,29 @@ const parsePythonFilesForCodeSymbols = async (
 	return codeSymbolInformationList;
 };
 
+
+const parseGoFilesForCodeSymbols = async (
+	goLangParser: GoLangParser,
+	workingDirectory: string,
+	filesToCheck: string[],
+	emitter: EventEmitter,
+): Promise<CodeSymbolInformation[]> => {
+	const codeSymbolInformationList: CodeSymbolInformation[] = [];
+	for (let index = 0; index < filesToCheck.length; index++) {
+		const file = filesToCheck[index];
+		if (!file.endsWith('.go')) {
+			continue;
+		}
+		const code = await goLangParser.parseFileWithDependencies(file);
+		codeSymbolInformationList.push(...code);
+	}
+	return codeSymbolInformationList;
+}
+
 export const generateCodeGraph = async (
 	projectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string,
 	emitter: EventEmitter,
 ): Promise<CodeGraph> => {
@@ -102,5 +123,12 @@ export const generateCodeGraph = async (
 		emitter,
 	);
 	finalNodeList.push(...pythonCodeSymbols);
+	const goLangCodeSymbols = await parseGoFilesForCodeSymbols(
+		goLangParser,
+		workingDirectory,
+		filesToTrack,
+		emitter,
+	);
+	finalNodeList.push(...goLangCodeSymbols);
 	return new CodeGraph(finalNodeList);
 };

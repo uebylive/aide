@@ -103,7 +103,6 @@ function convertDocumentSymbolToCodeSymbolInformation(
 	scope: string = 'global',
 	extractChildren: boolean = true,
 ): CodeSymbolInformation[] {
-	console.log(`[convertDocumentSymbolToCodeSymbolInformation] ${fsFilePath} ${documentSymbol.name} ${documentSymbol.kind}`);
 	// For now I will look at the child of the class and see what I can get
 	const codeSymbols: CodeSymbolInformation[] = [];
 	if (documentSymbol.kind === SymbolKind.Class && extractChildren) {
@@ -153,7 +152,6 @@ const convertDocumentSymbolOutputToCodeSymbol = (
 	fsFilePath: string,
 	documentSymbols: SymbolInformation[] | DocumentSymbol[]
 ): CodeSymbolInformation[] => {
-	console.log(`[convertDocumentSymbolOutputToCodeSymbol] ${fsFilePath} ${documentSymbols.length} symbols found`);
 	const codeSymbols: CodeSymbolInformation[] = [];
 	if (isSymbolInformationArray(documentSymbols)) {
 		for (let index = 0; index < documentSymbols.length; index++) {
