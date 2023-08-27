@@ -139,16 +139,17 @@ class ProgressiveIndexer {
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
+	logger.info(`[CodeStory] Activating extension with storage: ${context.globalStorageUri}`);
 	postHogClient.capture({
 		distinctId: env.machineId,
-		event: "extension_activated",
+		event: 'extension_activated',
 	});
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
-		rootPath = "";
+		rootPath = '';
 	}
-	if (rootPath === "") {
-		window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
+	if (rootPath === '') {
+		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
@@ -336,19 +337,6 @@ export async function activate(context: ExtensionContext) {
 			);
 		})
 	);
-
-	// const filePath = '/Users/skcd/test_repo/cli/pkg/cmd/org/org.go';
-	// const symbols = await getSymbolsFromDocumentUsingLSP(
-	// 	'/Users/skcd/Downloads/mugavari-main/internal/pkg/health/heartbeat.go',
-	// 	'golang',
-	// 	rootPath ?? '',
-	// );
-	// logger.info(symbols);
-	// fs.writeFileSync('/tmp/documentSymbolsSomething', JSON.stringify(symbols), 'utf-8');
-	// await parseDependenciesForCodeSymbols(
-	// 	filePath,
-	// 	rootPath ?? '',
-	// );
 
 	// Add git commit to the subscriptions here
 	// Git commit

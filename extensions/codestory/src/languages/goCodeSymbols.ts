@@ -291,4 +291,8 @@ export class GoLangParser {
 		await this.fixDependenciesForCodeSymbols(filePath);
 		return this._fileToCodeSymbols.get(filePath) ?? [];
 	}
+
+	async parseFileWithDependenciesGivenContent(filePath: string, content: string): Promise<CodeSymbolInformation[]> {
+		return [];
+	}
 }
