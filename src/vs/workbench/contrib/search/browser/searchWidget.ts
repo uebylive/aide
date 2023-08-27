@@ -300,6 +300,13 @@ export class SearchWidget extends Widget {
 		} else if (this.domNode) {
 			this.renderToggleReplaceButton(this.domNode);
 		}
+
+		if (this.isReplaceShown()) {
+			this.toggleReplace(false);
+			if (this.isReplaceActive()) {
+				this.updateReplaceActiveState();
+			}
+		}
 	}
 
 	getSearchHistory(): string[] {
