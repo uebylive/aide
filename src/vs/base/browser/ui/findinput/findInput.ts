@@ -53,6 +53,7 @@ export class FindInput extends Widget {
 	private additionalTogglesDisposables: DisposableStore = new DisposableStore();
 	private readonly renderOptions: IFindInputOptions;
 
+	protected isSemantic?: boolean;
 	protected readonly controls: HTMLDivElement;
 	protected regex?: RegexToggle;
 	protected wholeWords?: WholeWordsToggle;
@@ -112,7 +113,7 @@ export class FindInput extends Widget {
 			inputBoxStyles: options.inputBoxStyles,
 		}));
 
-		this.renderCommonFindInputToggles(this.showCommonFindToggles);
+		this.renderCommonFindInputToggles();
 
 		this.controls = document.createElement('div');
 		this.controls.className = 'controls';
@@ -149,12 +150,12 @@ export class FindInput extends Widget {
 		this.onmousedown(this.inputBox.inputElement, (e) => this._onMouseDown.fire(e));
 	}
 
-	private renderCommonFindInputToggles(showCommonFindToggles: boolean): void {
+	private renderCommonFindInputToggles(): void {
 		const appendCaseSensitiveLabel = this.renderOptions.appendCaseSensitiveLabel || '';
 		const appendWholeWordsLabel = this.renderOptions.appendWholeWordsLabel || '';
 		const appendRegexLabel = this.renderOptions.appendRegexLabel || '';
 
-		if (showCommonFindToggles) {
+		if (this.showCommonFindToggles) {
 			this.regex = this._register(new RegexToggle({
 				appendTitle: appendRegexLabel,
 				isChecked: false,
@@ -233,6 +234,11 @@ export class FindInput extends Widget {
 			this.wholeWords?.dispose();
 			this.caseSensitive?.dispose();
 		}
+
+		if (this.controls) {
+			this.controls.style.display = this.showCommonFindToggles ? '' : 'none';
+		}
+		this.updateInputBoxPadding(!this.showCommonFindToggles);
 	}
 
 	public get isImeSessionInProgress(): boolean {
@@ -284,15 +290,14 @@ export class FindInput extends Widget {
 		}
 	}
 
-	public getShowCommonFindToggles(): boolean {
-		return this.showCommonFindToggles;
+	public getIsSemantic(): boolean {
+		return this.isSemantic ?? false;
 	}
 
-	public setShowCommonFindToggles(showCommonFindToggles: boolean): void {
-		this.showCommonFindToggles = showCommonFindToggles;
-		this.renderCommonFindInputToggles(showCommonFindToggles);
-		this.controls.style.display = this.showCommonFindToggles ? '' : 'none';
-		this.updateInputBoxPadding(!showCommonFindToggles);
+	public setIsSemantic(isSemantic: boolean): void {
+		this.isSemantic = isSemantic;
+		this.showCommonFindToggles = !isSemantic;
+		this.renderCommonFindInputToggles();
 	}
 
 	public setAdditionalToggles(toggles: Toggle[] | undefined): void {

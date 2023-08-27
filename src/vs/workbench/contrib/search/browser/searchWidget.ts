@@ -294,7 +294,7 @@ export class SearchWidget extends Widget {
 	}
 
 	setIsSemantic(isSemantic: boolean) {
-		this.searchInput?.setShowCommonFindToggles(!isSemantic);
+		this.searchInput?.setIsSemantic(isSemantic);
 		if (isSemantic) {
 			this.toggleReplaceButton?.dispose();
 		} else if (this.domNode) {
@@ -403,7 +403,7 @@ export class SearchWidget extends Widget {
 			showHistoryHint: () => showHistoryKeybindingHint(this.keybindingService),
 			flexibleHeight: true,
 			flexibleMaxHeight: SearchWidget.INPUT_MAX_HEIGHT,
-			showCommonFindToggles: !options.isSemanticSearch,
+			showCommonFindToggles: !!!options.isSemanticSearch,
 			inputBoxStyles: options.inputBoxStyles,
 			toggleStyles: options.toggleStyles
 		};
@@ -414,7 +414,7 @@ export class SearchWidget extends Widget {
 
 		this.searchInput.onKeyDown((keyboardEvent: IKeyboardEvent) => this.onSearchInputKeyDown(keyboardEvent));
 		this.searchInput.setValue(options.value || '');
-		this.searchInput.setShowCommonFindToggles(!options.isSemanticSearch);
+		this.searchInput.setIsSemantic(!!options.isSemanticSearch);
 		this.searchInput.setRegex(!!options.isRegex);
 		this.searchInput.setCaseSensitive(!!options.isCaseSensitive);
 		this.searchInput.setWholeWords(!!options.isWholeWords);
