@@ -93,6 +93,7 @@ export class CodeBlockChangeDescriptionGenerator {
 			}));
 			this.logger.info('[codeBlockChangeDescriptionGenerator] Generated code block change description: ' + JSON.stringify(codeBlockChangeDescription));
 			const descriptionOfChange = await generateChatCompletionWithGPT4(codeBlockChangeDescription);
+			this.logger.info('[codeBlockChangeDescriptionGenerator][generateChatCompletionWithGPT4] Generated code block change description: ' + descriptionOfChange);
 			codeBlockChangeDescriptions.push({
 				componentIdentifier,
 				changeDescription: JSON.parse(descriptionOfChange),

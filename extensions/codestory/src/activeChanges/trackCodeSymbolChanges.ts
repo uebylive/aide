@@ -6,7 +6,7 @@
 // We want to keep track of the code symbols which have changed so we can provide
 // an overview of what changes have been done up until now
 // This will be useful in creating a better what was I doing feature
-import { OutputChannel, Uri } from 'vscode';
+import { OutputChannel, Uri, workspace } from 'vscode';
 import * as path from 'path';
 import { v4 as uuidV4 } from 'uuid';
 import * as fs from 'fs';
@@ -125,7 +125,12 @@ export class TrackCodeSymbolChanges {
 		fs.writeFileSync(newFilePath, fileContentSinceHead);
 		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(newFilePath);
 		// delete the file at this point
-		fs.unlinkSync(newFilePath);
+		await workspace.fs.delete(Uri.file(newFilePath));
+		try {
+			fs.unlinkSync(newFilePath);
+		} catch (e) {
+			console.log(e);
+		}
 		this.logger.info(
 			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
 		);
@@ -244,7 +249,6 @@ export class TrackCodeSymbolChanges {
 		if (
 			fileExtension === '.go'
 		) {
-			console.log("parsing go code and emitting");
 			codeSymbols = await this.fileCodeSymbolFromCodeGo(filePath, fileContentSinceHead);
 			console.log(codeSymbols);
 		}
@@ -267,6 +271,9 @@ export class TrackCodeSymbolChanges {
 		// This config is important if we want to force the fetch to happen
 		shouldAnywaysFetch: boolean = false
 	): Promise<CodeSymbolInformation[]> {
+		if (filePath.endsWith('.git')) {
+			filePath = filePath.slice(0, -'.git'.length);
+		}
 		console.log('[codeSymbolInformationFromFilePath] tracking :' + filePath);
 		const fileExtension = getFileExtension(filePath);
 		if (!shouldAnywaysFetch && !this.checkIfFileSaveCodeSymbolInformationIsStale(filePath)) {
@@ -306,17 +313,21 @@ export class TrackCodeSymbolChanges {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
 			});
+			return codeSymbolInformationHackedTogether;
 		}
 		if (
 			fileExtension === '.go'
 		) {
+			this.logger.info('getting codesymbol information for golang ' + filePath);
 			console.log('getting codesymbol information for golang ' + filePath);
 			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
 			console.log('got codesymbol information for golang ' + codeSymbolInformationHackedTogether.length);
+			this.logger.info('got codesymbol information for golang ' + codeSymbolInformationHackedTogether.length);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
 			});
+			return codeSymbolInformationHackedTogether;
 		}
 		return [];
 	}
@@ -329,6 +340,10 @@ export class TrackCodeSymbolChanges {
 			return;
 		}
 		logger.info(`[changes] File ${uri.fsPath} was opened`);
+		logger.info(`[changes] Whats the uri for the file path`);
+		logger.info(uri.fsPath);
+		logger.info(uri.scheme);
+		logger.info(uri.path);
 		const codeSymbolInformation = await this.getCodeSymbolInformationFromFilePath(uri.fsPath, true);
 		fileCodeSymbolInformation = {
 			workingDirectory: this.workingDirectory,
@@ -450,7 +465,7 @@ export class TrackCodeSymbolChanges {
 		// Update the last saved timestamp of the file
 		this.fileOnSaveLastParsedTimestamp.set(uri.fsPath, Date.now());
 		logger.info(
-			`[changes] File ${uri.fsPath} was saved and we found ${codeSymbolsWhichChanged.length} code symbols which changed`
+			`[fileSaved][changes] File ${uri.fsPath} was saved and we found ${codeSymbolsWhichChanged.length} code symbols which changed`
 		);
 	}
 
