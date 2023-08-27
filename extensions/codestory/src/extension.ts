@@ -141,14 +141,14 @@ export async function activate(context: ExtensionContext) {
 	// Project root here
 	postHogClient.capture({
 		distinctId: env.machineId,
-		event: "extension_activated",
+		event: 'extension_activated',
 	});
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
-		rootPath = "";
+		rootPath = '';
 	}
-	if (rootPath === "") {
-		window.showErrorMessage("Please open a folder in VS Code to use CodeStory");
+	if (rootPath === '') {
+		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
