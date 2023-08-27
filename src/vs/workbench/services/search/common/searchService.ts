@@ -408,7 +408,7 @@ export class SearchService extends Disposable implements ISearchService {
 		const localResults = new ResourceMap<IFileMatch | null>(uri => this.uriIdentityService.extUri.getComparisonKey(uri));
 		let limitHit = false;
 
-		if (query.type === QueryType.Text) {
+		if (query.type === QueryType.Text && !query.useSemantic) {
 			const canonicalToOriginalResources = new ResourceMap<URI>();
 			for (const editorInput of this.editorService.editors) {
 				const canonical = EditorResourceAccessor.getCanonicalUri(editorInput, { supportSideBySide: SideBySideEditor.PRIMARY });

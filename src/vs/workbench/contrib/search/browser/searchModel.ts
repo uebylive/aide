@@ -1467,6 +1467,8 @@ export function searchMatchComparer(elementA: RenderableMatch, elementB: Rendera
 				return compareFileExtensions(elementA.name(), elementB.name());
 			case SearchSortOrder.FileNames:
 				return compareFileNames(elementA.name(), elementB.name());
+			case SearchSortOrder.None:
+				return 0;
 			// Fall through otherwise
 			default:
 				if (!elementA.resource || !elementB.resource) {
@@ -1491,9 +1493,10 @@ export function searchMatchComparer(elementA: RenderableMatch, elementB: Rendera
 				const fileStatB = elementB.fileStat;
 				if (fileStatA && fileStatB) {
 					return fileStatB.mtime - fileStatA.mtime;
-
 				}
 			}
+			case SearchSortOrder.None:
+				return 0;
 			// Fall through otherwise
 			default:
 				return comparePaths(elementA.resource.fsPath, elementB.resource.fsPath) || compareFileNames(elementA.name(), elementB.name());
