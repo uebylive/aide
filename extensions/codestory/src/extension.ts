@@ -289,6 +289,7 @@ export async function activate(context: ExtensionContext) {
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		rootPath ?? '',
 		logger
 	);
@@ -303,20 +304,20 @@ export async function activate(context: ExtensionContext) {
 			fileChangedEvent.codeSymbols
 		);
 	});
-	// progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
-	//   trackCodeSymbolChanges,
-	//   rootPath ?? ',
-	//   logger,
-	// );
+	progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
+		trackCodeSymbolChanges,
+		rootPath ?? '',
+		logger,
+	);
 	logger.info('[check 9]We are over here');
 
 	// Also track the documents when they were last opened
-	context.subscriptions.push(
-		workspace.onDidOpenTextDocument(async (doc) => {
-			const uri = doc.uri;
-			await trackCodeSymbolChanges.fileOpened(uri, logger);
-		})
-	);
+	// context.subscriptions.push(
+	// 	workspace.onDidOpenTextDocument(async (doc) => {
+	// 		const uri = doc.uri;
+	// 		await trackCodeSymbolChanges.fileOpened(uri, logger);
+	// 	})
+	// );
 
 	logger.info('[check 10]We are over here');
 

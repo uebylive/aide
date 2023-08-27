@@ -22,6 +22,7 @@ import {
 import { Logger } from 'winston';
 import { PythonServer } from '../utilities/pythonServerClient';
 import EventEmitter from 'events';
+import { GoLangParser } from '../languages/goCodeSymbols';
 
 export const getFileExtension = (filePath: string): string => {
 	const fileExtension = path.extname(filePath);
@@ -66,6 +67,7 @@ const checkIfFileSaveCodeSymbolInformationIsStale = (
 export class TrackCodeSymbolChanges {
 	private tsProject: TSMorphProjectManagement;
 	private pythonServer: PythonServer;
+	private goLangParser: GoLangParser;
 	private codeSymbolsWhichChanged: Map<Uri, CodeSymbolChange[]>;
 	// This is used to track when the file has been opened
 	private fileOpenedCodeSymbolTracked: Map<string, FileCodeSymbolInformation>;
@@ -80,11 +82,13 @@ export class TrackCodeSymbolChanges {
 	constructor(
 		tsProject: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		workingDirectory: string,
 		logger: Logger,
 	) {
 		this.tsProject = tsProject;
 		this.pythonServer = pythonServer;
+		this.goLangParser = goLangParser;
 		this.codeSymbolsWhichChanged = new Map<Uri, CodeSymbolChange[]>();
 		this.workingDirectory = workingDirectory;
 		this.fileOpenedCodeSymbolTracked = new Map<string, FileCodeSymbolInformation>();
@@ -107,6 +111,36 @@ export class TrackCodeSymbolChanges {
 		});
 		// Now pretend to save the file so we load all the changes
 		await this.fileSaved(Uri.file(filePath), this.logger);
+	}
+
+	private async fileCodeSymbolFromCodeGo(
+		filePath: string,
+		fileContentSinceHead: string,
+	): Promise<CodeSymbolInformation[]> {
+		const dirName = path.dirname(filePath); // Get the directory name
+		const extName = path.extname(filePath); // Get the extension name
+		const newFileName = uuidV4(); // Your new file name without extension
+		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
+		// write the content to this file for now
+		fs.writeFileSync(newFilePath, fileContentSinceHead);
+		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(newFilePath);
+		// delete the file at this point
+		fs.unlinkSync(newFilePath);
+		this.logger.info(
+			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
+		);
+		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+			codeSymbol.symbolName = codeSymbol.symbolName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			codeSymbol.displayName = codeSymbol.displayName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			return codeSymbol;
+		});
+		return codeSymbolInformation;
 	}
 
 	private async fileCodeSymbolFromCodePython(
@@ -207,6 +241,13 @@ export class TrackCodeSymbolChanges {
 		) {
 			codeSymbols = await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
 		}
+		if (
+			fileExtension === '.go'
+		) {
+			console.log("parsing go code and emitting");
+			codeSymbols = await this.fileCodeSymbolFromCodeGo(filePath, fileContentSinceHead);
+			console.log(codeSymbols);
+		}
 		emitter.emit('fileChanged', {
 			filePath: filePath,
 			codeSymbols: codeSymbols,
@@ -226,6 +267,7 @@ export class TrackCodeSymbolChanges {
 		// This config is important if we want to force the fetch to happen
 		shouldAnywaysFetch: boolean = false
 	): Promise<CodeSymbolInformation[]> {
+		console.log('[codeSymbolInformationFromFilePath] tracking :' + filePath);
 		const fileExtension = getFileExtension(filePath);
 		if (!shouldAnywaysFetch && !this.checkIfFileSaveCodeSymbolInformationIsStale(filePath)) {
 			const alreadyTrackedCodeSymbols = this.fileSavedCodeSymbolTracked.get(filePath)?.codeSymbols;
@@ -260,6 +302,16 @@ export class TrackCodeSymbolChanges {
 			fileExtension === '.py'
 		) {
 			const codeSymbolInformationHackedTogether = await this.pythonServer.parseFile(filePath);
+			this.fileSavedCodeSymbolTracked.set(filePath, {
+				codeSymbols: codeSymbolInformationHackedTogether,
+				timestamp: Date.now(),
+			});
+		}
+		if (
+			fileExtension === '.go'
+		) {
+			console.log('getting codesymbol information for golang ' + filePath);
+			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
@@ -364,6 +416,7 @@ export class TrackCodeSymbolChanges {
 
 	public async fileSaved(uri: Uri, logger: Logger) {
 		if (!this.statusUpdated) {
+			console.log('[fileSaved] status not updated yet');
 			return;
 		}
 		const lastParsedFileTimestamp = this.fileOnSaveLastParsedTimestamp.get(uri.fsPath);

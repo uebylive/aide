@@ -196,9 +196,6 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	const timeout = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms, 'Timed out'));
 
 	for (let index = 0; index < documentSymbolProviders.length; index++) {
-		console.log('[text documents] loading from lsp');
-		console.log('[text_document]');
-		console.log(documentSymbolProviders[index]);
 		try {
 			const symbols = await Promise.race([
 				documentSymbolProviders[index].provideDocumentSymbols(
