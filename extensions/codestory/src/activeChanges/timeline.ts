@@ -12,10 +12,11 @@ import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TimeKeeper } from '../subscriptions/timekeeper';
 import { CodeBlockChangeDescriptionGenerator } from './codeBlockChangeDescriptionGenerator';
 import { Logger } from 'winston';
+import { getOpenAIApiKey } from '../utilities/getOpenAIKey';
 
 
 const openai = new OpenAI({
-	apiKey: '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',
+	apiKey: getOpenAIApiKey(),
 });
 
 // The data we need to send over to the webview for rendering the timeline

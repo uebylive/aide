@@ -5,9 +5,10 @@
 import { CodeSymbolChange, getCodeSymbolsChangedInSameBlockDescription } from './trackCodeSymbolChanges';
 import { OpenAI } from 'openai';
 import { Logger } from 'winston';
+import { getOpenAIApiKey } from '../utilities/getOpenAIKey';
 
 const openai = new OpenAI({
-	apiKey: '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',
+	apiKey: getOpenAIApiKey(),
 });
 
 
