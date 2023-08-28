@@ -176,6 +176,7 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 		if (!filePath.endsWith('.go')) {
 			continue;
 		}
+		logger.info('[golang][generateSymbols][without-dependency][indexer] ' + filePath);
 		const _ = await goLangParser.parseFileWithoutDependency(
 			filePath,
 		);
@@ -187,10 +188,11 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 		if (!filePath.endsWith('.go')) {
 			continue;
 		}
+		logger.info('[golang][generateSymbols][with-dependency][indexer] ' + filePath);
 		const codeSymbolsWithDependencies = await goLangParser.parseFileWithDependencies(
 			filePath,
 		);
-		console.log('[golang][generateSymbols][dependencies] ' + filePath);
+		logger.info('[golang][generateSymbols][dependencies] ' + filePath);
 		const codeSymbolsWithEmbeddings = await generateAndStoreEmbeddings(
 			codeSymbolsWithDependencies,
 			workingDirectory,
