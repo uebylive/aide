@@ -15,9 +15,10 @@ import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSym
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
 
 const openai = new OpenAI({
-	apiKey: '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',
+	apiKey: getOpenAIApiKey(),
 });
 // const openai = new OpenAI({
 // 	apiKey: 'EMPTY',
