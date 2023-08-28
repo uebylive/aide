@@ -291,14 +291,16 @@ export class GoLangParser {
 	// This parses the file and also resolves the dependencies
 	// Ideally we will be passing the file -> Vec<CodeSymbolInformation> here
 	// but right now we use the instance from the class internally
-	async parseFileWithDependencies(filePath: string): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+		if (useCache) {
+			const codeSymbols = this._fileToCodeSymbols.get(filePath);
+			if (codeSymbols) {
+				return codeSymbols;
+			}
+		}
 		const codeSymbols = await this.parseFileWithoutDependency(filePath);
 		this._fileToCodeSymbols.set(filePath, codeSymbols);
 		await this.fixDependenciesForCodeSymbols(filePath);
 		return this._fileToCodeSymbols.get(filePath) ?? [];
-	}
-
-	async parseFileWithDependenciesGivenContent(filePath: string, content: string): Promise<CodeSymbolInformation[]> {
-		return [];
 	}
 }

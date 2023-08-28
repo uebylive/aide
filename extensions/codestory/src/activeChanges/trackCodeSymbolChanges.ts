@@ -318,11 +318,7 @@ export class TrackCodeSymbolChanges {
 		if (
 			fileExtension === '.go'
 		) {
-			this.logger.info('getting codesymbol information for golang ' + filePath);
-			console.log('getting codesymbol information for golang ' + filePath);
 			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
-			console.log('got codesymbol information for golang ' + codeSymbolInformationHackedTogether.length);
-			this.logger.info('got codesymbol information for golang ' + codeSymbolInformationHackedTogether.length);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
@@ -339,11 +335,6 @@ export class TrackCodeSymbolChanges {
 		if (fileCodeSymbolInformation !== undefined) {
 			return;
 		}
-		logger.info(`[changes] File ${uri.fsPath} was opened`);
-		logger.info(`[changes] Whats the uri for the file path`);
-		logger.info(uri.fsPath);
-		logger.info(uri.scheme);
-		logger.info(uri.path);
 		const codeSymbolInformation = await this.getCodeSymbolInformationFromFilePath(uri.fsPath, true);
 		fileCodeSymbolInformation = {
 			workingDirectory: this.workingDirectory,
@@ -351,9 +342,6 @@ export class TrackCodeSymbolChanges {
 			codeSymbols: codeSymbolInformation,
 		};
 		this.fileOpenedCodeSymbolTracked.set(uri.fsPath, fileCodeSymbolInformation);
-		logger.info(
-			`[changes][file_opened] File ${uri.fsPath} was opened and we found ${codeSymbolInformation.length} code symbols`
-		);
 	}
 
 	private async parseFileCodeSymbolDiff(
@@ -786,13 +774,13 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
 				I want you to output the final answer in a JSON properly formatted as:
 				\`\`\`
 				{
-					'changes': [
-						'First change',
-						'Second change',
-						'Third change',
-								....
+					"changes": [
+						"First change",
+						"Second change",
+						"Third change",
+						....
 					],
-					'summary': 'This is a summary of the changes',
+					"summary": "This is a summary of the changes"
 				}
 				\`\`\`
 				when talking about the change only mention the what of the change in the codeblocks combined together. Be concise in your answer and dont try to fill in the list of changes if you can describe it in a concise way.
