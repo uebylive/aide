@@ -305,7 +305,7 @@ export async function activate(context: ExtensionContext) {
 			fileChangedEvent.codeSymbols
 		);
 	});
-	progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
+	await progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
 		trackCodeSymbolChanges,
 		rootPath ?? '',
 		logger,
