@@ -149,6 +149,7 @@ export const getGoToDefinition = async (
 	});
 	for (let index = 0; index < referencesProviders.length; index++) {
 		try {
+			logger.info('[getGoToDefinition] ' + currentCodeSymbol + ' ' + lineNumber + ' ' + columnNumber + ' ' + dependencyStrings);
 			const definitions = await referencesProviders[index].provideDefinition(
 				textDocument,
 				new Position(lineNumber, columnNumber),
@@ -157,6 +158,7 @@ export const getGoToDefinition = async (
 					onCancellationRequested: () => ({ dispose() { } }),
 				}
 			);
+			logger.info('[getGoToDefinition] definitions ' + JSON.stringify(definitions));
 			if (definitions) {
 				return definitionInformation(definitions);
 			}
@@ -196,15 +198,17 @@ export class GoLangParser {
 			'go',
 			this._workingDirectory,
 		);
+		logger.info('[parseFileWithoutDependency] code symbols: ' + filePath + ' ' + codeSymbols.length);
 		this._fileToCodeSymbols.set(filePath, codeSymbols);
 		return codeSymbols;
 	}
 
-	getSymbolAtLineNumber(filePath: string, lineNumber: number): CodeSymbolInformation | null {
-		const codeSymbols = this._fileToCodeSymbols.get(filePath);
+	async getSymbolAtLineNumber(filePath: string, lineNumber: number): Promise<CodeSymbolInformation | null> {
+		let codeSymbols = this._fileToCodeSymbols.get(filePath);
 		if (!codeSymbols) {
 			return null;
 		}
+		codeSymbols = this._fileToCodeSymbols.get(filePath) ?? [];
 		for (let index = 0; index < codeSymbols.length; index++) {
 			const codeSymbol = codeSymbols[index];
 			if (codeSymbol.symbolStartLine <= lineNumber && codeSymbol.symbolEndLine >= lineNumber) {
@@ -236,7 +240,8 @@ export class GoLangParser {
 					const endColumn = dependency.endColumn;
 					// Go to definition now
 					try {
-						const definition = await getGoToDefinition(textDocument, startLine, startColumn - 1, currentCodeSymbol.symbolName, dependency.text);
+						const definition = await getGoToDefinition(textDocument, startLine, startColumn, currentCodeSymbol.symbolName, dependency.text);
+						logger.info('[fixDependenciesForCodeSymbols] definition: ' + currentCodeSymbol.symbolName + ' ' + startLine + ' ' + startColumn + ' ' + JSON.stringify(definition));
 						let codeSymbolForDefinition: CodeSymbolInformation | null = null;
 						if (definition === null) {
 							continue;
@@ -246,18 +251,19 @@ export class GoLangParser {
 								// We are in the same function block, so no need to regard this as a dependency
 							} else {
 								// Find the symbol in the filePath whose line start matches up
-								codeSymbolForDefinition = this.getSymbolAtLineNumber(
+								codeSymbolForDefinition = await this.getSymbolAtLineNumber(
 									definition.fsFilePath,
 									definition.startPosition.line,
 								);
 							}
 						} else {
-							codeSymbolForDefinition = this.getSymbolAtLineNumber(
+							codeSymbolForDefinition = await this.getSymbolAtLineNumber(
 								definition.fsFilePath,
 								definition.startPosition.line,
 							);
 						}
 						if (codeSymbolForDefinition) {
+							logger.info('[fixDependenciesForCodeSymbols] found dependency: ' + currentCodeSymbol.symbolName + ' ' + codeSymbolForDefinition.symbolName);
 							currentCodeSymbol.dependencies.push({
 								codeSymbolName: codeSymbolForDefinition.symbolName,
 								codeSymbolKind: codeSymbolForDefinition.symbolKind,
@@ -266,14 +272,17 @@ export class GoLangParser {
 									codeSymbolName: codeSymbolForDefinition.symbolName,
 								}],
 							});
+						} else {
+							logger.info('[fixDependenciesForCodeSymbols] could not find dependency: ' + currentCodeSymbol.symbolName + ' ' + startLine + ' ' + startColumn + ' ' + JSON.stringify(definition));
 						}
 					} catch (e) {
 						logger.info('[fixDependenciesForCodeSymbols] error');
-						logger.info(currentCodeSymbol.symbolName + " " + startLine + " " + startColumn);
+						logger.info(currentCodeSymbol.symbolName + ' ' + startLine + ' ' + startColumn);
 						logger.error(e);
 					}
 				}
 			}
+			logger.info('[fixDependenciesForCodeSymbols] fixed dependencies: ' + currentCodeSymbol.symbolName + ' ' + currentCodeSymbol.dependencies.length);
 			newCodeSymbols.push(currentCodeSymbol);
 		}
 		this._fileToCodeSymbols.set(filePath, newCodeSymbols);
@@ -283,9 +292,6 @@ export class GoLangParser {
 	// Ideally we will be passing the file -> Vec<CodeSymbolInformation> here
 	// but right now we use the instance from the class internally
 	async parseFileWithDependencies(filePath: string): Promise<CodeSymbolInformation[]> {
-		if (this._fileToCodeSymbols.has(filePath)) {
-			return this._fileToCodeSymbols.get(filePath) ?? [];
-		}
 		const codeSymbols = await this.parseFileWithoutDependency(filePath);
 		this._fileToCodeSymbols.set(filePath, codeSymbols);
 		await this.fixDependenciesForCodeSymbols(filePath);

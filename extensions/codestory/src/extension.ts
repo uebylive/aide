@@ -214,7 +214,7 @@ export async function activate(context: ExtensionContext) {
 	indexer.on('partialData', (partialData) => {
 		embeddingsIndex.updateNodes(partialData);
 	});
-	indexer.indexRepository(
+	await indexer.indexRepository(
 		codeStoryStorage,
 		projectManagement,
 		pythonServer,
@@ -236,7 +236,7 @@ export async function activate(context: ExtensionContext) {
 	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
-	progressiveGraphBuilder.loadGraph(
+	await progressiveGraphBuilder.loadGraph(
 		projectManagement,
 		pythonServer,
 		goLangParser,
