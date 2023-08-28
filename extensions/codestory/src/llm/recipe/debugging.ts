@@ -19,6 +19,10 @@ import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 const openai = new OpenAI({
 	apiKey: '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',
 });
+// const openai = new OpenAI({
+// 	apiKey: 'EMPTY',
+// });
+// openai.baseURL = 'http://20.245.250.159:8080/v1'
 
 const systemPrompt = (): string => {
 	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
@@ -31,7 +35,7 @@ export const generateChatCompletion = async (
 		model: 'gpt-4-32k',
 		messages: messages,
 		// TODO(codestory): Need to toggle this better
-		max_tokens: 10000,
+		max_tokens: 9000,
 	});
 	if (completions.choices.length !== 0) {
 		return completions.choices[0];
