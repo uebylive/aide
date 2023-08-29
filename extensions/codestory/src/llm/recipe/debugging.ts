@@ -36,7 +36,7 @@ export const generateChatCompletion = async (
 		model: 'gpt-4-32k',
 		messages: messages,
 		// TODO(codestory): Need to toggle this better
-		max_tokens: 9000,
+		max_tokens: 8000,
 	});
 	if (completions.choices.length !== 0) {
 		return completions.choices[0];

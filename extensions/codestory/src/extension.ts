@@ -161,11 +161,6 @@ export async function activate(context: ExtensionContext) {
 	);
 
 
-	// Register chat provider
-	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, repoName, repoHash));
-	context.subscriptions.push(interactiveSession);
-	await commands.executeCommand('workbench.action.chat.clear');
-
 	// Register the agent view provider
 	const agentViewProvider = new AgentViewProvider(context.extensionUri);
 	context.subscriptions.push(
@@ -251,6 +246,11 @@ export async function activate(context: ExtensionContext) {
 		goLangParser,
 		rootPath,
 	);
+
+	// Register chat provider
+	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, codeGraph, repoName, repoHash));
+	context.subscriptions.push(interactiveSession);
+	await commands.executeCommand('workbench.action.chat.clear');
 
 	context.subscriptions.push(
 		debug(

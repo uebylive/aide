@@ -93,6 +93,11 @@ export const generateFileInformationSummary = async (
 			if (!project) {
 				continue;
 			}
+			// Hack here so we only take in the embeddings search file, we will
+			// solve it better later on
+			if (!fileList[index].includes('embeddingsSearch')) {
+				continue;
+			}
 			const codeSymbols = await parseFileUsingTsMorph(
 				fileList[index],
 				project,

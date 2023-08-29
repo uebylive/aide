@@ -20,7 +20,7 @@ import {
 
 
 const chatSystemPrompt = (): string => {
-	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
+	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies. You must always use markdown when referring to code symbols.';
 };
 
 
@@ -130,6 +130,13 @@ The surrounding code for the code in question is the following:
 ${extraSurroundingContext}
 </code_context_surrounding>
 			`,
+		});
+	}
+
+	addExplainCodeContext(codeContext: string): void {
+		this._messages.push({
+			role: 'user',
+			content: codeContext,
 		});
 	}
 }

@@ -55,6 +55,51 @@ export class CodeGraph {
 		}
 		return nodes;
 	}
+
+	public getNodeFromLineRangeAndFile(
+		filePath: string,
+		lineNumber: number,
+	): CodeSymbolInformation | null {
+		const nodes = this._nodes.filter(
+			(node) => {
+				if (node.fsFilePath === filePath) {
+					if (node.symbolStartLine <= lineNumber && node.symbolEndLine >= lineNumber) {
+						return true;
+					}
+				}
+				return false;
+			},
+		);
+		if (nodes.length === 0) {
+			return null;
+		}
+		return nodes[0];
+	}
+
+	public getReferenceLocationsForCodeSymbol(
+		node: CodeSymbolInformation,
+	): CodeSymbolInformation[] {
+		console.log(`code symbol we are searching for ${node.symbolName}`);
+		const references: CodeSymbolInformation[] = [];
+		const nodeSymbolsForReference: Set<string> = new Set();
+		for (const currentNode of this._nodes) {
+			if (currentNode.symbolName === 'src.codeGraph.embeddingsSearch.EmbeddingsSearch.generateNodesRelevantForUser') {
+				console.log('what are the dependencies');
+				console.log(currentNode.dependencies);
+				for (const edges of currentNode.dependencies) {
+					console.log(edges.edges.map((edge) => edge.codeSymbolName));
+					console.log(edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName));
+					if (edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName)) {
+						if (nodeSymbolsForReference.has(currentNode.symbolName) === false) {
+							references.push(currentNode);
+							nodeSymbolsForReference.add(currentNode.symbolName);
+						}
+					}
+				}
+			}
+		}
+		return references;
+	}
 }
 
 const parsePythonFilesForCodeSymbols = async (

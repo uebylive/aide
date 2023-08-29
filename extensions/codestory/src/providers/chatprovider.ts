@@ -10,6 +10,8 @@ import { getSelectedCodeContext } from '../utilities/getSelectionContext';
 import { generateChatCompletion } from '../chatState/openai';
 import { logChatPrompt } from '../posthog/logChatPrompt';
 import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
+import { CodeGraph } from '../codeGraph/graph';
+import { createContextPrompt, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -214,12 +216,14 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
+	private _codeGraph: CodeGraph;
 	private _workingDirectory: string;
 	private _repoName: string;
 	private _repoHash: string;
 
-	constructor(workingDirectory: string, repoName: string, repoHash: string) {
+	constructor(workingDirectory: string, codeGraph: CodeGraph, repoName: string, repoHash: string) {
 		this._workingDirectory = workingDirectory;
+		this._codeGraph = codeGraph;
 		this._chatSessionState = new CSChatSessionState();
 		this._repoHash = repoHash;
 		this._repoName = repoName;
@@ -242,7 +246,14 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				detail: 'Invoke the CodeStory agent to do codebase wide changes',
 				shouldRepopulate: true,
 				executeImmediately: false,
-			}
+			},
+			{
+				command: 'explain',
+				kind: vscode.CompletionItemKind.Text,
+				detail: 'Explain the code for the selection at a local and global level',
+				shouldRepopulate: true,
+				executeImmediately: false,
+			},
 		];
 	}
 
@@ -292,6 +303,27 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			));
 			vscode.commands.executeCommand('codestory.launchAgent', prompt);
 			return new CSChatResponseForProgress();
+		} else if (request.message.toString().startsWith('/explain')) {
+			// Implement the explain feature here
+			const relevantContext = getRelevantContextForCodeSelection(this._codeGraph);
+			if (relevantContext === null) {
+				progress.report(new CSChatProgressContent(
+					`There is no relevant context to explain the code\n`
+				));
+				return new CSChatResponseForProgress();
+			}
+
+			return (async () => {
+				const contextForPrompt = createContextPrompt(relevantContext);
+				// We add the code context here for generating the response
+				this._chatSessionState.chatContext.addExplainCodeContext(contextForPrompt);
+				const streamingResponse = generateChatCompletion(
+					this._chatSessionState.chatContext.getMessages(),
+				);
+				const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
+				this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+				return new CSChatResponseForProgress();
+			})();
 		} else {
 			const selectionContext = getSelectedCodeContext(this._workingDirectory);
 			this._chatSessionState.chatContext.cleanupChatHistory();
