@@ -67,7 +67,7 @@ export const search = (
 			const { prompt } = payload;
 			postHogClient.capture({
 				distinctId: env.machineId,
-				event: 'search',
+				event: 'webview_search',
 				properties: {
 					prompt,
 					repoName,
