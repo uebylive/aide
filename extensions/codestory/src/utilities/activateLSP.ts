@@ -8,7 +8,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { ExtensionContext, extensions } from 'vscode';
+import { ExtensionContext, commands, extensions } from 'vscode';
 import logger from '../logger';
 
 
@@ -128,6 +128,14 @@ const activateGoExtension = async () => {
 			await extension.activate();
 		}
 	});
+};
+
+
+const restartGoLSP = async () => {
+	// Use the most popular go lsp and restart it
+	// This comes from here:
+	// https://github.com/golang/vscode-go/blob/master/package.json#L501C21-L501C46
+	await commands.executeCommand('go.languageserver.restart');
 };
 
 
