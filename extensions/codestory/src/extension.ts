@@ -227,6 +227,15 @@ export async function activate(context: ExtensionContext) {
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+		postHogClient.capture({
+			distinctId: env.machineId,
+			event: 'search',
+			properties: {
+				prompt,
+				repoName,
+				repoHash,
+			},
+		});
 		const results = await embeddingsIndex.generateNodesForUserQuery(prompt, activeFilesTracker);
 		return results;
 	});
