@@ -103,7 +103,7 @@ export class TrackCodeSymbolChanges {
 		codeSymbolInformationList: CodeSymbolInformation[],
 	) {
 		console.log(codeSymbolInformationList);
-		console.log('How many symbols have changed: ' + codeSymbolInformationList.length + ' ' + filePath);
+		this.logger.info('How many symbols have changed: ' + codeSymbolInformationList.length + ' ' + filePath);
 		this.fileOpenedCodeSymbolTracked.set(filePath, {
 			codeSymbols: codeSymbolInformationList,
 			workingDirectory: this.workingDirectory,
@@ -122,10 +122,13 @@ export class TrackCodeSymbolChanges {
 		const newFileName = uuidV4(); // Your new file name without extension
 		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
 		// write the content to this file for now
-		fs.writeFileSync(newFilePath, fileContentSinceHead);
+		await workspace.fs.writeFile(Uri.file(newFilePath), Buffer.from(fileContentSinceHead));
 		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(newFilePath);
 		// delete the file at this point
-		await workspace.fs.delete(Uri.file(newFilePath));
+		await workspace.fs.delete(Uri.file(newFilePath), {
+			recursive: false,
+			useTrash: true,
+		});
 		try {
 			fs.unlinkSync(newFilePath);
 		} catch (e) {
@@ -249,8 +252,8 @@ export class TrackCodeSymbolChanges {
 		if (
 			fileExtension === '.go'
 		) {
+			this.logger.info(`[filesChangedSinceLastCommit][fileCodeSymbolFromCodeGo]: ${filePath}`);
 			codeSymbols = await this.fileCodeSymbolFromCodeGo(filePath, fileContentSinceHead);
-			console.log(codeSymbols);
 		}
 		emitter.emit('fileChanged', {
 			filePath: filePath,
