@@ -29,7 +29,6 @@ export const fileStateFromPreviousCommit = async (
 	} catch (error) {
 		logger.info((error as Error).toString());
 	}
-	console.log('[fileStateFromPreviousCommit] fileList', fileList);
 
 	// Now that we the file list, lets get the content of the file at HEAD
 	// so we have the initial state and the state of the file post HEAD
