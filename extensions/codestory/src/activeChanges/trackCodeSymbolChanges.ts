@@ -129,11 +129,6 @@ export class TrackCodeSymbolChanges {
 			recursive: false,
 			useTrash: true,
 		});
-		try {
-			fs.unlinkSync(newFilePath);
-		} catch (e) {
-			console.log(e);
-		}
 		this.logger.info(
 			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
 		);

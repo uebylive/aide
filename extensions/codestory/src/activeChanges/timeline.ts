@@ -99,9 +99,11 @@ export const triggerCodeSymbolChange = async (
 	logger: Logger,
 ) => {
 	if (!trackCodeSymbolChanges.statusUpdated) {
+		logger.info('[timeline-debugging] status not updated yet');
 		return;
 	}
 	if (!timeKeeperFileSaved.isInvocationAllowed(Date.now())) {
+		logger.info('[timeline-debugging] invocation not allowed yet because of time difference');
 		return;
 	}
 	const trackedCodeSymbolChanges = await trackCodeSymbolChanges.getTreeListOfChangesWeHaveToCommit(
