@@ -55,10 +55,6 @@ export const getRelevantContextForCodeSelection = (
 
 
 export const createContextPrompt = (selectionReferenceData: SelectionReferenceData): string => {
-	console.log("something here");
-	console.log(selectionReferenceData.symbolUsedInReferences.map((reference) => {
-		return `<code_symbol_name>${reference.symbolName}</code_symbol_name>\n<code_snippet_for_symbol>${reference.codeSnippet}</code_snippet_for_symbol>\n`;
-	}));
 	return `
 You are given the context for the following code snippet:
 ${selectionReferenceData.currentSelection}
