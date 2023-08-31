@@ -42,24 +42,6 @@ export interface GoParserNodeInformation {
 	'text': string[];
 }
 
-async function runCommand(cmd: string): Promise<[string, string | undefined]> {
-	let stdout = '';
-	let stderr = '';
-	try {
-		const output = await promisify(exec)(cmd, {
-			shell: process.platform === 'win32' ? 'powershell.exe' : undefined,
-		});
-		stdout = output.stdout;
-		stderr = output.stderr;
-	} catch (e: any) {
-		stderr = e.stderr;
-		stdout = e.stdout;
-	}
-
-	const stderrOrUndefined = stderr === '' ? undefined : stderr;
-	return [stdout, stderrOrUndefined];
-}
-
 
 const parseGoLangCodeUsingTreeSitter = (code: string): GoParserNodeInformation[] => {
 	const parsedNode = GO_PARSER.parse(code);
@@ -82,7 +64,7 @@ const parseGoLangCodeUsingTreeSitter = (code: string): GoParserNodeInformation[]
 	};
 	traverse(rootNode);
 	return nodes;
-}
+};
 
 
 export const definitionInformation = (

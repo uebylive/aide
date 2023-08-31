@@ -16,12 +16,14 @@ import { AgentViewProvider } from '../providers/AgentView';
 import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
+import { GoLangParser } from '../languages/goCodeSymbols';
 
 export const debug = (
 	provider: AgentViewProvider,
 	embeddingIndex: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	codeGraph: CodeGraph,
 	repoName: string,
 	repoHash: string,
@@ -57,6 +59,7 @@ export const debug = (
 					embeddingIndex,
 					tsMorphProjectManagement,
 					pythonServer,
+					goLangParser,
 					workingDirectory,
 					testSuiteRunCommand,
 					activeFilesTracker,

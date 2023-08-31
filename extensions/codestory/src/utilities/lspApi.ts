@@ -186,6 +186,8 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	languageId: string,
 	workingDirectory: string,
 ): Promise<CodeSymbolInformation[]> => {
+	console.log('[getSymbolsFromDocumentUsingLSP][filePath] ' + filePath);
+	console.log(filePath);
 	const fileSplitLines = fs.readFileSync(filePath).toString().split('\n');
 	const documentSymbolProviders = languages.getDocumentSymbolProvider(
 		'typescript'
@@ -205,7 +207,7 @@ export const getSymbolsFromDocumentUsingLSP = async (
 						onCancellationRequested: () => ({ dispose() { } }),
 					},
 				),
-				timeout(1000)
+				timeout(3000)
 			]);
 
 			// if promise timed out, continue to next iteration
@@ -229,6 +231,7 @@ export const getSymbolsFromDocumentUsingLSP = async (
 				castSymbols ?? [],
 			);
 			if (codeSymbolInformation.length !== 0) {
+				logger.info('[getSymbolsFromDocumentUsingLSP][codeSymbolInformation][length] ' + codeSymbolInformation.length + ' ' + filePath);
 				return codeSymbolInformation;
 			}
 		} catch (e) {

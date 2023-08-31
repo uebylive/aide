@@ -259,6 +259,7 @@ export async function activate(context: ExtensionContext) {
 			embeddingsIndex,
 			projectManagement,
 			pythonServer,
+			goLangParser,
 			codeGraph,
 			repoName,
 			repoHash,
