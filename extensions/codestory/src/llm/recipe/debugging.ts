@@ -16,6 +16,7 @@ import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../ut
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
+import { GoLangParser } from '../../languages/goCodeSymbols';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
@@ -51,6 +52,7 @@ export const debuggingFlow = async (
 	embeddingsSearch: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
@@ -119,8 +121,11 @@ export const debuggingFlow = async (
 		relevantCodeSymbols,
 		tsMorphProjectManagement,
 		pythonServer,
+		goLangParser,
 		workingDirectory,
 	);
+	console.log('[fileCodeSymbolInformationList] what are the file code symbol information list');
+	console.log(fileCodeSymbolInformationList);
 	initialMessages.push(
 		{
 			content: await formatFileInformationListForPrompt(
@@ -136,6 +141,7 @@ export const debuggingFlow = async (
 		}
 	);
 	const fileFilterInformation = await generateChatCompletion(initialMessages);
+	console.log(fileFilterInformation);
 	const codeSymbolModificationInstructions = generateFileFunctionsResponseParser(
 		fileFilterInformation?.message?.content ?? '',
 	);

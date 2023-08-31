@@ -137,6 +137,7 @@ const parseGoFilesForCodeSymbols = async (
 			continue;
 		}
 		const code = await goLangParser.parseFileWithDependencies(file, true);
+		emitter.emit('partialData', code);
 		codeSymbolInformationList.push(...code);
 	}
 	return codeSymbolInformationList;

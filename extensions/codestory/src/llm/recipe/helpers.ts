@@ -18,6 +18,7 @@ import { runCommandAsync } from '../../utilities/commandRunner';
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
+import { GoLangParser } from '../../languages/goCodeSymbols';
 
 
 export const getOpenFilesInWorkspace = (): string[] => {
@@ -62,6 +63,7 @@ export const generateFileInformationSummary = async (
 	codeSymbolInformationList: CodeSymbolInformation[],
 	tsMorphProjects: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
 	// We want to get all the files being referenced here and then take all
@@ -98,6 +100,16 @@ export const generateFileInformationSummary = async (
 				project,
 				workingDirectory,
 				fileList[index]
+			);
+			fileCodeSymbolInformationList.push({
+				filePath: fileList[index],
+				codeSymbols: codeSymbols,
+				workingDirectory: workingDirectory,
+			});
+		} else if (fileExtension === 'go') {
+			const codeSymbols = await goLangParser.parseFileWithDependencies(
+				fileList[index],
+				true,
 			);
 			fileCodeSymbolInformationList.push({
 				filePath: fileList[index],
