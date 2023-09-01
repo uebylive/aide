@@ -80,7 +80,7 @@ export const fileFunctionsToParsePrompt = (): string => {
 		* Only modify code symbols that definitely need to be touched
 		* Use detailed, natural language instructions on what to modify, with reference to variable names
 		* Be concrete with instructions and do not write 'check for x' or 'look for y'. Simply write 'add x' or 'change y to z'.
-		* There MUST modify_code_symbol XML tags
+		* There MUST be modify_code_symbol XML tags
 		* The list of code symbols to modify may be empty, but you MUST leave the XML tags with a single list element with '* None'
 		* modify up to 5 code symbols.
 		You must list only a single code symbol for modification per line
@@ -154,13 +154,18 @@ File Name: ${filename}
 ${code}
 </old_file>
 
+---
+
+User's request:
+${instructions}
+
 <code_snippet_to_change_for_instructions>
 ${codeSnippet}
 </code_snippet_to_change_for_instructions>
 
 ---
 
-Context: '${instructions}'. Limit your changes to the context. Don't include the name of the language when doing the code generation step so after \`\`\` don't write the name of the language right after, as it messes up the parsing logic.
+Limit your changes to the context. Don't include the name of the language when doing the code generation step so after \`\`\` don't write the name of the language right after, as it messes up the parsing logic.
 Instructions:
 1. Complete the Code Planning step
 2. Complete the Code Modification step, remembering to NOT write ellipses, code things out in full, and use multiple small hunks.
@@ -168,19 +173,21 @@ Instructions:
 };
 
 export const generateModifyCodeHallucinationPrompt = (): OpenAI.Chat.CreateChatCompletionRequestMessage[] => {
-	const modifyCodeHallucinationPrompt: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
+	const modifyCodeHallucinationPrompt2: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: `
-File Name: (non-existent example)
 <old_file>
 example = True
 if example:
 	x = 1 # comment
-	print('hello')
+	print("hello")
 	x = 2
 
-def func():
-	a = 3
+class Example:
+	foo: int = 1
+
+	def func():
+		a = 3
 
 </old_file>
 
@@ -189,18 +196,133 @@ def func():
 Code Planning:
 <code_planning>
 Step-by-step thoughts with explanations:
-* Thought 1 - Explanation 1
-* Thought 2 - Explanation 2
+* Thought 1
+* Thought 2
 ...
 
 Detailed plan of modifications:
 * Modification 1
 * Modification 2
 ...
+</code_planning>
+
+Code Generation:
+\`\`\`
+Generate a diff based on the given plan using the search and replace pairs in the format below.
+* Always prefer the least amount of changes possible, but ensure the solution is complete
+* Prefer multiple small changes over a single large change.
+* NEVER write ellipses anywhere in the diffs.Simply write two diff hunks: one for the beginning and another for the end.
+* Always add lines before and after.The ORIGINAL section should be at least 5 lines long.
+
+The format is as follows:
+
+<code_generation>
+<<<< ORIGINAL
+line_before
+old_code
+line_after
+====
+line_before
+new_code
+line_after
+>>>> UPDATED
+</code_generation>
+\`\`\`
+
+Commit message: "the commit message"
+
+Request: "Change hello to goodbye and change 3 to 4". Limit your changes to the request.
+
+Instructions:
+1. Complete the Code Planning step
+2. Complete the Code Generation step
+			`,
+			role: 'user',
+		},
+		{
+			content: `
+Code Planning:
+<code_planning>
+Step-by-step thoughts with explanations:
+* We need to print "goodbye" instead of "hello".
+* We need to update the value of the variable a from 3 to 4.
+
+Detailed plan of modifications:
+* Change the output of the print statement from "hello" to "goodbye" as an example modification.
+* I will update the value of a from 3 to 4.
+</code_planning>
+
+Code Generation:
+\`\`\`
+<code_generation>
+<<<< ORIGINAL
+example = True
+if example:
+x = 1 # comment
+	print("hello")
+	x = 2
+====
+example = True
+if example:
+x = 1 # comment
+	print("goodbye")
+	x = 2
+>>>> UPDATED
+
+<<<< ORIGINAL
+class Example:
+foo: int = 1
+
+	def func():
+	a = 3
+====
+class Example:
+foo: int = 1
+
+	def func():
+	a = 4
+>>>> UPDATED
+</code_generation>
+\`\`\`
+
+Commit message: "Changed goodbye to hello and 3 to 4
+				`,
+			role: 'assistant',
+		}
+	];
+	const modifyCodeHallucinationPrompt: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
+		{
+			content: `
+File Name: (non - existent example)
+<old_file>
+example = True
+if example:
+		x = 1 # comment
+	print('hello')
+	x = 2
+
+def func():
+	a = 3
+
+		< /old_file>
+
+	---
+
+		Code Planning:
+	<code_planning>
+		Step - by - step thoughts with explanations:
+* Thought 1 - Explanation 1
+		* Thought 2 - Explanation 2
+...
+
+Detailed plan of modifications:
+* Modification 1
+	* Modification 2
+...
 
 Lines to change in the file: (include multiple small changes as opposed to one large change)
-* lines a-b: Do x
-* lines c: Change to y
+* lines a - b: Do x
+	* lines c: Change to y
 ...
 </code_planning>
 
@@ -263,7 +385,7 @@ def func():
 			role: 'assistant',
 		},
 	];
-	return modifyCodeHallucinationPrompt;
+	return modifyCodeHallucinationPrompt2;
 };
 
 export interface CodeModificationContextAndDiff {

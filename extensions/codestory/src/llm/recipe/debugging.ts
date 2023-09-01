@@ -141,10 +141,14 @@ export const debuggingFlow = async (
 		}
 	);
 	const fileFilterInformation = await generateChatCompletion(initialMessages);
-	console.log(fileFilterInformation);
 	const codeSymbolModificationInstructions = generateFileFunctionsResponseParser(
 		fileFilterInformation?.message?.content ?? '',
 	);
+	// We want to remove the prompts here which sends over the data about the which
+	// files we need to parse to get the result,
+	// We should move this state management to its own component soon
+	initialMessages.pop();
+	initialMessages.pop();
 
 	// Now we start branching out, so we are going to send a event for this
 	await toolingEventCollection.branchingStartEvent(

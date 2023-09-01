@@ -26,4 +26,4 @@ export const getOpenAIApiKey = (): string => {
 		}
 	}
 	return OPENAI_API_KEY;
-}
+};
