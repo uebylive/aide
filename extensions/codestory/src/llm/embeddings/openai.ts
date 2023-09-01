@@ -10,10 +10,14 @@ const openai = new OpenAI({
 });
 
 export const generateEmbedding = async (prompt: string): Promise<number[]> => {
-	const response = await openai.embeddings.create({
-		model: 'text-embedding-ada-002',
-		input: prompt,
-	});
-	const [{ embedding }] = response.data;
-	return embedding;
+	try {
+		const response = await openai.embeddings.create({
+			model: 'text-embedding-ada-002',
+			input: prompt,
+		});
+		const [{ embedding }] = response.data;
+		return embedding;
+	} catch (error) {
+		return Array(1536).fill(0);
+	}
 };
