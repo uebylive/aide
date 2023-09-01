@@ -163,7 +163,7 @@ ${codeSnippet}
 Context: '${instructions}'. Limit your changes to the context. Don't include the name of the language when doing the code generation step so after \`\`\` don't write the name of the language right after, as it messes up the parsing logic.
 Instructions:
 1. Complete the Code Planning step
-2. Complete the Code Generation step
+2. Complete the Code Modification step, remembering to NOT write ellipses, code things out in full, and use multiple small hunks.
 `;
 };
 
