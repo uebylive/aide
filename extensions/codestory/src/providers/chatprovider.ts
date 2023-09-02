@@ -121,9 +121,9 @@ class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetai
 }
 
 export class CSChatProgressContent implements vscode.InteractiveProgressContent {
-	content: string;
+	content: string | vscode.MarkdownString;
 
-	constructor(content: string) {
+	constructor(content: string | vscode.MarkdownString) {
 		this.content = content;
 	}
 
@@ -144,7 +144,7 @@ class CSChatProgressId implements vscode.InteractiveProgressId {
 	}
 }
 
-class CSChatFileTreeData implements vscode.FileTreeData {
+export class CSChatFileTreeData implements vscode.FileTreeData {
 	label: string;
 	uri: vscode.Uri;
 	children?: vscode.FileTreeData[] | undefined;
@@ -160,7 +160,7 @@ class CSChatFileTreeData implements vscode.FileTreeData {
 	}
 }
 
-class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
+export class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
 	treeData: CSChatFileTreeData;
 
 	constructor(treeData: CSChatFileTreeData) {
