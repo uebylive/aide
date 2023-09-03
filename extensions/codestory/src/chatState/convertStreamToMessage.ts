@@ -64,52 +64,50 @@ export const reportFromStreamToProgress = async (
 };
 
 
-export const reportFromStreamToProgressAx = async (
-	streamPromise: Promise<ReadableStream<string> | null>,
-	progress: vscode.Progress<CSChatProgress>,
-	cancellationToken: CSChatCancellationToken,
-): Promise<string> => {
-	let finalMessage = '';
-	const stream = await streamPromise;
-	if (!stream) {
-		return 'No reply from the LLM 🥲';
-	}
+// export const reportFromStreamToProgressAx = async (
+// 	streamPromise: Promise<ReadableStream<string> | null>,
+// 	progress: vscode.Progress<CSChatProgress>,
+// 	cancellationToken: CSChatCancellationToken,
+// ): Promise<string> => {
+// 	let finalMessage = '';
+// 	const stream = await streamPromise;
+// 	if (!stream) {
+// 		return 'No reply from the LLM 🥲';
+// 	}
 
-	if (cancellationToken.isCancellationRequested) {
-		return finalMessage;
-	}
+// 	if (cancellationToken.isCancellationRequested) {
+// 		return finalMessage;
+// 	}
 
-	const reader = stream.getReader();
+// 	let hasCalledFirstPartOfMessage = false;
+// 	let firstPartOfMessage: (part: CSChatProgressContent) => void;
+// 	const promise = new Promise<CSChatProgressContent>((resolve) => {
+// 		firstPartOfMessage = resolve;
+// 	});
 
-	const firstPartOfMessage = async () => {
-		const firstPart = await reader.read();
-		if (firstPart.done) {
-			reader.releaseLock();
-			return new CSChatProgressContent(''); // Handle when iterator is done
-		}
-		reader.releaseLock();
-		finalMessage += firstPart.value ?? '';
-		return new CSChatProgressContent(firstPart.value ?? '');
-	};
+// 	// This polls the firstPartOfMessage() function and when its finished,
+// 	// we move on to the next bits.
+// 	progress.report(new CSChatProgressTask(
+// 		'Thinking... 🤔',
+// 		promise,
+// 	));
 
-	// This polls the firstPartOfMessage() function and when its finished,
-	// we move on to the next bits.
-	progress.report(new CSChatProgressTask(
-		'Thinking... 🤔',
-		firstPartOfMessage(),
-	));
+// 	if (cancellationToken.isCancellationRequested) {
+// 		return finalMessage;
+// 	}
 
-	if (cancellationToken.isCancellationRequested) {
-		return finalMessage;
-	}
+// 	for await (const part of StreamToIterable(stream)) {
+// 		if (!hasCalledFirstPartOfMessage) {
+// 			firstPartOfMessage(new CSChatProgressContent(part ?? ''));
+// 			hasCalledFirstPartOfMessage = true;
+// 		}
 
-	for await (const part of StreamToIterable(stream)) {
-		finalMessage += part ?? '';
-		if (cancellationToken.isCancellationRequested) {
-			return finalMessage;
-		}
-		progress.report(new CSChatProgressContent(part ?? ''));
-	}
+// 		finalMessage += part ?? '';
+// 		if (cancellationToken.isCancellationRequested) {
+// 			return finalMessage;
+// 		}
+// 		progress.report(new CSChatProgressContent(part ?? ''));
+// 	}
 
-	return finalMessage;
-};
+// 	return finalMessage;
+// };
