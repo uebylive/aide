@@ -7,35 +7,9 @@ import * as vscode from 'vscode';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatProgressFileTree, CSChatFileTreeData } from '../providers/chatprovider';
-
-export const invokeAgent = async (
-	propmt: string,
-	progress: vscode.Progress<CSChatProgress>,
-	cancellationToken: CSChatCancellationToken,
-) => {
-	const getTree = async () => {
-		const fileTree = new CSChatProgressFileTree(
-			new CSChatFileTreeData(
-				'website',
-				vscode.Uri.parse('file:///Users/nareshr/github/codestory/website'),
-				[
-					new CSChatFileTreeData(
-						'utils',
-						vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils'),
-						[new CSChatFileTreeData(
-							'date-formatter.tsx',
-							vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils/date-formatter.tsx'),
-						)])]
-			));
-		return fileTree;
-	};
-
-	progress.report(new CSChatProgressTask(
-		'Generating tree...',
-		getTree(),
-	));
-};
+import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
+import { OpenAIChatTypes } from '@axflow/models/openai/chat';
+import { StreamToIterable } from '@axflow/models/shared';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
@@ -90,3 +64,54 @@ export const reportFromStreamToProgress = async (
 
 	return finalMessage;
 };
+
+
+// export const reportFromStreamToProgressAx = async (
+// 	streamPromise: Promise<ReadableStream<string> | null>,
+// 	progress: vscode.Progress<CSChatProgress>,
+// 	cancellationToken: CSChatCancellationToken,
+// ): Promise<string> => {
+// 	let finalMessage = '';
+// 	const stream = await streamPromise;
+// 	if (!stream) {
+//      // allow-any-unicode-next-line
+// 		return 'No reply from the LLM 🥲';
+// 	}
+
+// 	if (cancellationToken.isCancellationRequested) {
+// 		return finalMessage;
+// 	}
+
+// 	let hasCalledFirstPartOfMessage = false;
+// 	let firstPartOfMessage: (part: CSChatProgressContent) => void;
+// 	const promise = new Promise<CSChatProgressContent>((resolve) => {
+// 		firstPartOfMessage = resolve;
+// 	});
+
+// 	// This polls the firstPartOfMessage() function and when its finished,
+// 	// we move on to the next bits.
+// 	progress.report(new CSChatProgressTask(
+// 		// allow-any-unicode-next-line
+// 		'Thinking... 🤔',
+// 		promise,
+// 	));
+
+// 	if (cancellationToken.isCancellationRequested) {
+// 		return finalMessage;
+// 	}
+
+// 	for await (const part of StreamToIterable(stream)) {
+// 		if (!hasCalledFirstPartOfMessage) {
+// 			firstPartOfMessage(new CSChatProgressContent(part ?? ''));
+// 			hasCalledFirstPartOfMessage = true;
+// 		}
+
+// 		finalMessage += part ?? '';
+// 		if (cancellationToken.isCancellationRequested) {
+// 			return finalMessage;
+// 		}
+// 		progress.report(new CSChatProgressContent(part ?? ''));
+// 	}
+
+// 	return finalMessage;
+// };

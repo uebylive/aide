@@ -7,6 +7,7 @@
 import {
 	OpenAI,
 } from 'openai';
+import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
@@ -33,7 +34,9 @@ const systemPrompt = (): string => {
 };
 
 export const generateChatCompletion = async (
-	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]
+	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	context: string,
+	uniqueId: string,
 ): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
 	const completions = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
@@ -42,6 +45,14 @@ export const generateChatCompletion = async (
 		max_tokens: 8000,
 	});
 	if (completions.choices.length !== 0) {
+		posthogClient.capture({
+			distinctId: uniqueId,
+			event: `[gpt4]${context}`,
+			properties: {
+				context: context,
+				completion: completions.choices[0].message,
+			},
+		});
 		return completions.choices[0];
 	}
 	return null;
@@ -58,10 +69,9 @@ export const debuggingFlow = async (
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
+	uniqueId: string,
 ): Promise<null> => {
-	console.log('We are here debugging flow');
 	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');
-	console.log('We are done with sending the first event');
 	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: systemPrompt(),
@@ -76,12 +86,12 @@ export const debuggingFlow = async (
 			role: 'user',
 		},
 	];
-	const response = await generateChatCompletion(initialMessages);
-	console.log('We are here....');
-	console.log(response);
+	const response = await generateChatCompletion(
+		initialMessages,
+		'initial_plan_and_queries',
+		uniqueId,
+	);
 	const planAndQueries = generatePlanAndQueriesResponseParser(response?.message?.content ?? '');
-	console.log('Whats the plan here');
-	console.log(planAndQueries);
 	// Adding tooling event for plan
 	await toolingEventCollection.addPlanForHelp(
 		prompt,
@@ -95,7 +105,6 @@ export const debuggingFlow = async (
 		embeddingsSearch,
 		activeFilesTracker,
 	);
-	console.log('What are the relevant code symbols', relevantCodeSymbols);
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
 		planAndQueries?.queries ?? [],
@@ -125,8 +134,6 @@ export const debuggingFlow = async (
 		goLangParser,
 		workingDirectory,
 	);
-	console.log('[fileCodeSymbolInformationList] what are the file code symbol information list');
-	console.log(fileCodeSymbolInformationList);
 	initialMessages.push(
 		{
 			content: await formatFileInformationListForPrompt(
@@ -141,7 +148,11 @@ export const debuggingFlow = async (
 			role: 'user',
 		}
 	);
-	const fileFilterInformation = await generateChatCompletion(initialMessages);
+	const fileFilterInformation = await generateChatCompletion(
+		initialMessages,
+		'file_filtering',
+		uniqueId,
+	);
 	const codeSymbolModificationInstructions = generateFileFunctionsResponseParser(
 		fileFilterInformation?.message?.content ?? '',
 	);
@@ -166,7 +177,6 @@ export const debuggingFlow = async (
 			codeGraph,
 		);
 
-		console.log('Whats the code symbol modification instructions', codeSymbolModificationInstructions);
 
 		if (!filePathForCodeNode) {
 			await toolingEventCollection.executionBranchFinished(
@@ -174,6 +184,15 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'File path not found',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]file_path_not_found',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					prompt,
+				},
+			});
 			//TODO(codestory) Send a failure event here
 			continue;
 		}
@@ -192,6 +211,7 @@ export const debuggingFlow = async (
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
 			[...initialMessages],
 			codeGraph,
+			uniqueId,
 		);
 		if (!codeModificationInput) {
 			await toolingEventCollection.executionBranchFinished(
@@ -199,6 +219,16 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'Code modification generation failure',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]code_modification_generation_failure',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					fileContent: previousFileContent,
+					prompt,
+				},
+			});
 			//TODO(codestory): Send a failure event here
 			continue;
 		}
@@ -216,6 +246,7 @@ export const debuggingFlow = async (
 			codeModificationInput,
 			codeGraph,
 			[...initialMessages],
+			uniqueId,
 		);
 		if (!newFileContent) {
 			await toolingEventCollection.executionBranchFinished(
@@ -261,6 +292,7 @@ export const debuggingFlow = async (
 				workingDirectory,
 			),
 			previousFileContent,
+			uniqueId,
 		);
 
 		if (!testPlan) {
@@ -292,6 +324,7 @@ export const debuggingFlow = async (
 			tsMorphProjectManagement,
 			pythonServer,
 			workingDirectory,
+			uniqueId,
 		);
 
 		let branchFinishReason = '';
