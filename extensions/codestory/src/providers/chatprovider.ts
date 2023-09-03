@@ -3,15 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
 import { getSelectedCodeContext } from '../utilities/getSelectionContext';
 import { generateChatCompletion } from '../chatState/openai';
 import { logChatPrompt } from '../posthog/logChatPrompt';
-import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
+import { invokeAgent, reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
+import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { TSMorphProjectManagement } from '../utilities/parseTypescript';
+import { PythonServer } from '../utilities/pythonServerClient';
+import { debuggingFlow } from '../llm/recipe/debugging';
+import { ToolingEventCollection } from '../timeline/events/collection';
+import { GoLangParser } from '../languages/goCodeSymbols';
+import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -90,7 +98,7 @@ class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
 	}
 }
 
-class CSChatRequest implements vscode.InteractiveRequest {
+export class CSChatRequest implements vscode.InteractiveRequest {
 	session: CSChatSession;
 	message: string | CSChatReplyFollowup;
 
@@ -216,17 +224,41 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
+
 	private _codeGraph: CodeGraph;
+	private _embeddingsIndex: EmbeddingsSearch;
+	private _projectManagement: TSMorphProjectManagement;
+	private _pythonServer: PythonServer;
+	private _golangParser: GoLangParser;
 	private _workingDirectory: string;
+	private _testSuiteRunCommand: string;
+	private _activeFilesTracker: ActiveFilesTracker;
 	private _repoName: string;
 	private _repoHash: string;
 
-	constructor(workingDirectory: string, codeGraph: CodeGraph, repoName: string, repoHash: string) {
+	constructor(
+		workingDirectory: string,
+		codeGraph: CodeGraph,
+		repoName: string,
+		repoHash: string,
+		embeddingsIndex: EmbeddingsSearch,
+		projectManagement: TSMorphProjectManagement,
+		pythonServer: PythonServer,
+		golangParser: GoLangParser,
+		testSuiteRunCommand: string,
+		activeFilesTracker: ActiveFilesTracker,
+	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
 		this._chatSessionState = new CSChatSessionState();
 		this._repoHash = repoHash;
 		this._repoName = repoName;
+		this._embeddingsIndex = embeddingsIndex;
+		this._projectManagement = projectManagement;
+		this._pythonServer = pythonServer;
+		this._golangParser = golangParser;
+		this._testSuiteRunCommand = testSuiteRunCommand;
+		this._activeFilesTracker = activeFilesTracker;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -262,14 +294,13 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return [
 			'Hi! How can I help you?',
 			'Ask CodeStory a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
-			'From the developers @ codestory: We dont have streaming output yet, we are working on it!'
 		];
 	}
 
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', initialState, token);
 		return new CSChatSession(
-			new CSChatParticipant('Requester'),
+			new CSChatParticipant('You'),
 			new CSChatParticipant('CodeStory'),
 			initialState,
 			'Ask CodeStory a question or type \'/\' for topics?'
@@ -298,11 +329,29 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
 			}
 
-			progress.report(new CSChatProgressContent(
-				`Agent getting to work for: ${prompt}\n`
-			));
-			vscode.commands.executeCommand('codestory.launchAgent', prompt);
-			return new CSChatResponseForProgress();
+			return (async () => {
+				const toolingEventCollection = new ToolingEventCollection(
+					`/tmp/${uuidv4()}`,
+					this._codeGraph,
+					undefined,
+					{ progress, cancellationToken: token },
+					prompt,
+				);
+
+				await debuggingFlow(
+					prompt,
+					toolingEventCollection,
+					this._codeGraph,
+					this._embeddingsIndex,
+					this._projectManagement,
+					this._pythonServer,
+					this._golangParser,
+					this._workingDirectory,
+					this._testSuiteRunCommand,
+					this._activeFilesTracker
+				);
+				return new CSChatResponseForProgress();
+			})();
 		} else if (request.message.toString().startsWith('/explain')) {
 			// Implement the explain feature here
 			const relevantContext = getRelevantContextForCodeSelection(this._codeGraph);

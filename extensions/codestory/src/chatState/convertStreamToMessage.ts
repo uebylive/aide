@@ -9,6 +9,34 @@ import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
 import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatProgressFileTree, CSChatFileTreeData } from '../providers/chatprovider';
 
+export const invokeAgent = async (
+	propmt: string,
+	progress: vscode.Progress<CSChatProgress>,
+	cancellationToken: CSChatCancellationToken,
+) => {
+	const getTree = async () => {
+		const fileTree = new CSChatProgressFileTree(
+			new CSChatFileTreeData(
+				'website',
+				vscode.Uri.parse('file:///Users/nareshr/github/codestory/website'),
+				[
+					new CSChatFileTreeData(
+						'utils',
+						vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils'),
+						[new CSChatFileTreeData(
+							'date-formatter.tsx',
+							vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils/date-formatter.tsx'),
+						)])]
+			));
+		return fileTree;
+	};
+
+	progress.report(new CSChatProgressTask(
+		'Generating tree...',
+		getTree(),
+	));
+};
+
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
 export const reportFromStreamToProgress = async (
@@ -42,28 +70,6 @@ export const reportFromStreamToProgress = async (
 		// allow-any-unicode-next-line
 		'Thinking... 🤔',
 		firstPartOfMessage(),
-	));
-
-	const getTree = async () => {
-		const fileTree = new CSChatProgressFileTree(
-			new CSChatFileTreeData(
-				'website',
-				vscode.Uri.parse('file:///Users/nareshr/github/codestory/website'),
-				[
-					new CSChatFileTreeData(
-						'utils',
-						vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils'),
-						[new CSChatFileTreeData(
-							'date-formatter.tsx',
-							vscode.Uri.parse('file:///Users/nareshr/github/codestory/website/utils/date-formatter.tsx'),
-						)])]
-			));
-		return fileTree;
-	};
-
-	progress.report(new CSChatProgressTask(
-		'Generating tree...',
-		getTree(),
 	));
 
 	if (cancellationToken.isCancellationRequested) {

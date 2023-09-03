@@ -248,7 +248,14 @@ export async function activate(context: ExtensionContext) {
 	);
 
 	// Register chat provider
-	const interactiveSession = interactive.registerInteractiveSessionProvider('cs-chat', new CSChatProvider(rootPath, codeGraph, repoName, repoHash));
+	const chatProvider = new CSChatProvider(
+		rootPath, codeGraph, repoName, repoHash,
+		embeddingsIndex, projectManagement, pythonServer, goLangParser,
+		testSuiteRunCommand, activeFilesTracker,
+	);
+	const interactiveSession = interactive.registerInteractiveSessionProvider(
+		'cs-chat', chatProvider
+	);
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
 
@@ -256,6 +263,7 @@ export async function activate(context: ExtensionContext) {
 		debug(
 			// TODO(codestory): Fix this properly later on
 			agentViewProvider,
+			chatProvider,
 			embeddingsIndex,
 			projectManagement,
 			pythonServer,

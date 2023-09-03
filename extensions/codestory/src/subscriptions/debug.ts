@@ -17,9 +17,11 @@ import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { GoLangParser } from '../languages/goCodeSymbols';
+import { CSChatProvider } from '../providers/chatprovider';
 
 export const debug = (
 	provider: AgentViewProvider,
+	csChatProvider: CSChatProvider,
 	embeddingIndex: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
@@ -40,6 +42,7 @@ export const debug = (
 				`/tmp/${uuidv4()}`,
 				codeGraph,
 				provider,
+				undefined,
 				message.command,
 			);
 			try {
