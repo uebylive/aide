@@ -170,7 +170,8 @@ export const writeFileContents = async (
 export const generateModificationInputForCodeSymbol = async (
 	codeSymbolModificationInstruction: CodeSymbolModificationInstruction,
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
-	codeGraph: CodeGraph
+	codeGraph: CodeGraph,
+	uniqueId: string,
 ): Promise<CodeModificationContextAndDiff | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
 		codeSymbolModificationInstruction.codeSymbolName
@@ -204,8 +205,11 @@ export const generateModificationInputForCodeSymbol = async (
 		}
 	);
 
-	console.log('[generateModificationInputForCodeSymbol] What is the prompt', messages);
-	const completion = await generateChatCompletion(messages);
+	const completion = await generateChatCompletion(
+		messages,
+		'generateModificationInputForCodeSymbol',
+		uniqueId,
+	);
 	return parseCodeModificationResponse(completion?.message?.content ?? '');
 };
 
@@ -215,6 +219,7 @@ export const generateModifiedFileContentAfterDiff = async (
 	modificationContext: CodeModificationContextAndDiff,
 	codeGraph: CodeGraph,
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	uniqueId: string,
 ): Promise<NewFileContentAndDiffResponse | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
 		codeModificationInput.codeSymbolName
@@ -259,7 +264,11 @@ export const generateModifiedFileContentAfterDiff = async (
 		}
 	);
 
-	const completion = await generateChatCompletion(messages);
+	const completion = await generateChatCompletion(
+		messages,
+		'generateModifiedFileContentAfterDiff',
+		uniqueId,
+	);
 	return generateNewFileContentAndDiffResponseParser(
 		completion?.message?.content ?? '',
 	);
@@ -295,6 +304,7 @@ export const generateTestScriptForChange = async (
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	moduleName: string,
 	previousFileContent: string,
+	uniqueId: string,
 ): Promise<TextExecutionHarness | null> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
@@ -318,7 +328,11 @@ export const generateTestScriptForChange = async (
 		content: prompt,
 		role: 'user',
 	});
-	const response = await generateChatCompletion(messages);
+	const response = await generateChatCompletion(
+		messages,
+		'generateTestScriptForChange',
+		uniqueId,
+	);
 	return parseTestPlanResponseForHarness(
 		response?.message?.content ?? '',
 		codeSymbolNameMaybe,
@@ -343,6 +357,7 @@ export const executeTestHarness = async (
 	tsMorphProjects: TSMorphProjectManagement,
 	pythonServer: PythonServer,
 	workingDirectory: string,
+	uniqueId: string,
 ): Promise<number> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
@@ -407,7 +422,11 @@ export const executeTestHarness = async (
 		content: prompt,
 		role: 'user',
 	});
-	const response = await generateChatCompletion(messages);
+	const response = await generateChatCompletion(
+		messages,
+		'executeTestHarness',
+		uniqueId,
+	);
 	const testSetupFinalResult = parseTestExecutionFinalSetupResponse(
 		response?.message?.content ?? '',
 	);

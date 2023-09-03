@@ -31,13 +31,14 @@ export const debug = (
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
 ) => {
+	const uniqueId = uuidv4();
 	return commands.registerCommand(
 		'codestory.debug',
 		async ({ payload, ...message }: MessageHandlerData<PromptState>) => {
 			logger.info('[CodeStory] Debugging');
 			logger.info(payload);
 			const toolingEventCollection = new ToolingEventCollection(
-				`/tmp/${uuidv4()}`,
+				`/tmp/${uniqueId}`,
 				codeGraph,
 				provider,
 				message.command,
@@ -63,6 +64,7 @@ export const debug = (
 					workingDirectory,
 					testSuiteRunCommand,
 					activeFilesTracker,
+					uniqueId,
 				);
 			} catch (e) {
 				logger.info('[CodeStory] Debugging failed');
