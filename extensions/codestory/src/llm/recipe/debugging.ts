@@ -57,10 +57,8 @@ export const debuggingFlow = async (
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
 ): Promise<null> => {
-	console.log('We are here debugging flow');
 	// allow-any-unicode-next-line
 	await toolingEventCollection.addThinkingEvent(prompt, '🤔 ...⌛ on how to help the user');
-	console.log('We are done with sending the first event');
 	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: systemPrompt(),
@@ -76,11 +74,7 @@ export const debuggingFlow = async (
 		},
 	];
 	const response = await generateChatCompletion(initialMessages);
-	console.log('We are here....');
-	console.log(response);
 	const planAndQueries = generatePlanAndQueriesResponseParser(response?.message?.content ?? '');
-	console.log('Whats the plan here');
-	console.log(planAndQueries);
 	// Adding tooling event for plan
 	await toolingEventCollection.addPlanForHelp(
 		prompt,
@@ -94,7 +88,6 @@ export const debuggingFlow = async (
 		embeddingsSearch,
 		activeFilesTracker,
 	);
-	console.log('What are the relevant code symbols', relevantCodeSymbols);
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
 		planAndQueries?.queries ?? [],
@@ -124,8 +117,6 @@ export const debuggingFlow = async (
 		goLangParser,
 		workingDirectory,
 	);
-	console.log('[fileCodeSymbolInformationList] what are the file code symbol information list');
-	console.log(fileCodeSymbolInformationList);
 	initialMessages.push(
 		{
 			content: await formatFileInformationListForPrompt(
@@ -165,7 +156,6 @@ export const debuggingFlow = async (
 			codeGraph,
 		);
 
-		console.log('Whats the code symbol modification instructions', codeSymbolModificationInstructions);
 
 		if (!filePathForCodeNode) {
 			await toolingEventCollection.executionBranchFinished(
