@@ -21,6 +21,7 @@ export const reportFromStreamToProgress = async (
 	let finalMessage = '';
 	const stream = await streamPromise;
 	if (!stream) {
+		// allow-any-unicode-next-line
 		return 'No reply from the LLM 🥲';
 	}
 
@@ -40,6 +41,7 @@ export const reportFromStreamToProgress = async (
 	};
 
 	progress.report(new CSChatProgressTask(
+		// allow-any-unicode-next-line
 		'Thinking... 🤔',
 		firstPartOfMessage(),
 	));
@@ -72,6 +74,7 @@ export const reportFromStreamToProgress = async (
 // 	let finalMessage = '';
 // 	const stream = await streamPromise;
 // 	if (!stream) {
+//      // allow-any-unicode-next-line
 // 		return 'No reply from the LLM 🥲';
 // 	}
 
@@ -88,6 +91,7 @@ export const reportFromStreamToProgress = async (
 // 	// This polls the firstPartOfMessage() function and when its finished,
 // 	// we move on to the next bits.
 // 	progress.report(new CSChatProgressTask(
+// 		// allow-any-unicode-next-line
 // 		'Thinking... 🤔',
 // 		promise,
 // 	));

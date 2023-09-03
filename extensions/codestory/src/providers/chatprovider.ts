@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
@@ -12,6 +13,13 @@ import { logChatPrompt } from '../posthog/logChatPrompt';
 import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
+import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { TSMorphProjectManagement } from '../utilities/parseTypescript';
+import { PythonServer } from '../utilities/pythonServerClient';
+import { debuggingFlow } from '../llm/recipe/debugging';
+import { ToolingEventCollection } from '../timeline/events/collection';
+import { GoLangParser } from '../languages/goCodeSymbols';
+import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
@@ -91,7 +99,7 @@ class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
 	}
 }
 
-class CSChatRequest implements vscode.InteractiveRequest {
+export class CSChatRequest implements vscode.InteractiveRequest {
 	session: CSChatSession;
 	message: string | CSChatReplyFollowup;
 
@@ -122,9 +130,9 @@ class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetai
 }
 
 export class CSChatProgressContent implements vscode.InteractiveProgressContent {
-	content: string;
+	content: string | vscode.MarkdownString;
 
-	constructor(content: string) {
+	constructor(content: string | vscode.MarkdownString) {
 		this.content = content;
 	}
 
@@ -145,7 +153,7 @@ class CSChatProgressId implements vscode.InteractiveProgressId {
 	}
 }
 
-class CSChatFileTreeData implements vscode.FileTreeData {
+export class CSChatFileTreeData implements vscode.FileTreeData {
 	label: string;
 	uri: vscode.Uri;
 	children?: vscode.FileTreeData[] | undefined;
@@ -161,7 +169,7 @@ class CSChatFileTreeData implements vscode.FileTreeData {
 	}
 }
 
-class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
+export class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
 	treeData: CSChatFileTreeData;
 
 	constructor(treeData: CSChatFileTreeData) {
@@ -217,17 +225,41 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 
 export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
+
 	private _codeGraph: CodeGraph;
+	private _embeddingsIndex: EmbeddingsSearch;
+	private _projectManagement: TSMorphProjectManagement;
+	private _pythonServer: PythonServer;
+	private _golangParser: GoLangParser;
 	private _workingDirectory: string;
+	private _testSuiteRunCommand: string;
+	private _activeFilesTracker: ActiveFilesTracker;
 	private _repoName: string;
 	private _repoHash: string;
 
-	constructor(workingDirectory: string, codeGraph: CodeGraph, repoName: string, repoHash: string) {
+	constructor(
+		workingDirectory: string,
+		codeGraph: CodeGraph,
+		repoName: string,
+		repoHash: string,
+		embeddingsIndex: EmbeddingsSearch,
+		projectManagement: TSMorphProjectManagement,
+		pythonServer: PythonServer,
+		golangParser: GoLangParser,
+		testSuiteRunCommand: string,
+		activeFilesTracker: ActiveFilesTracker,
+	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
 		this._chatSessionState = new CSChatSessionState();
 		this._repoHash = repoHash;
 		this._repoName = repoName;
+		this._embeddingsIndex = embeddingsIndex;
+		this._projectManagement = projectManagement;
+		this._pythonServer = pythonServer;
+		this._golangParser = golangParser;
+		this._testSuiteRunCommand = testSuiteRunCommand;
+		this._activeFilesTracker = activeFilesTracker;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -276,7 +308,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', initialState, token);
 		return new CSChatSession(
-			new CSChatParticipant('Requester'),
+			new CSChatParticipant('You'),
 			new CSChatParticipant('CodeStory'),
 			initialState,
 			'Ask CodeStory a question or type \'/\' for topics?'
@@ -310,10 +342,28 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
 				}
 
-				progress.report(new CSChatProgressContent(
-					`Agent getting to work for: ${prompt}\n`
-				));
-				vscode.commands.executeCommand('codestory.launchAgent', prompt);
+				const toolingEventCollection = new ToolingEventCollection(
+					`/tmp/${uuidv4()}`,
+					this._codeGraph,
+					undefined,
+					{ progress, cancellationToken: token },
+					prompt,
+				);
+
+				const uniqueId = uuidv4();
+				await debuggingFlow(
+					prompt,
+					toolingEventCollection,
+					this._codeGraph,
+					this._embeddingsIndex,
+					this._projectManagement,
+					this._pythonServer,
+					this._golangParser,
+					this._workingDirectory,
+					this._testSuiteRunCommand,
+					this._activeFilesTracker,
+					uniqueId
+				);
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
@@ -338,6 +388,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				})();
 			} else if (requestType === 'search') {
 				progress.report(new CSChatProgressContent(
+					// allow-any-unicode-next-line
 					'Under construction 🏗️, use the semantic search feature in the normal search bar instead. devs@codestory.ai will push updates here'
 				));
 				return new CSChatResponseForProgress();

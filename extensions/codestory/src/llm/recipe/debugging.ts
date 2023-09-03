@@ -18,6 +18,8 @@ import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
 import { GoLangParser } from '../../languages/goCodeSymbols';
+import { Progress } from 'vscode';
+import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
@@ -69,8 +71,7 @@ export const debuggingFlow = async (
 	activeFilesTracker: ActiveFilesTracker,
 	uniqueId: string,
 ): Promise<null> => {
-	// allow-any-unicode-next-line
-	await toolingEventCollection.addThinkingEvent(prompt, '🤔 ...⌛ on how to help the user');
+	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');
 	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: systemPrompt(),
@@ -191,7 +192,7 @@ export const debuggingFlow = async (
 					initialMessages,
 					prompt,
 				},
-			})
+			});
 			//TODO(codestory) Send a failure event here
 			continue;
 		}

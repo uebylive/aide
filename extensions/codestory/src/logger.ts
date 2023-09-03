@@ -18,7 +18,8 @@ const logger = createLogger({
 		format.splat(),
 		format.printf(({ message }: { message: string }) => {
 			return message;
-		})
+		}),
+		format.errors({ stack: true })
 	),
 	transports: [transport],
 });

@@ -3,20 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import {
-	OpenAI
-} from 'openai';
-
-
-import {
-	encode,
-	encodeChat,
-	decode,
-	isWithinTokenLimit,
-	encodeGenerator,
-	decodeGenerator,
-	decodeAsyncGenerator,
-} from 'gpt-tokenizer';
+import { OpenAI } from 'openai';
+import { encode } from 'gpt-tokenizer';
 
 
 const chatSystemPrompt = (): string => {

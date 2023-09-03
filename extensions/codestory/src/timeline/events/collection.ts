@@ -2,20 +2,20 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import { Progress, Uri } from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
+
 import { CodeSymbolInformation } from '../../utilities/types';
 import { CodeGraph } from '../../codeGraph/graph';
-import { number } from 'mathjs';
 import {
 	CodeModificationContextAndDiff,
 	CodeSymbolModificationInstruction,
 } from '../../llm/recipe/prompts';
 import { EventType } from './type';
-import { writeFile } from 'fs';
 import { writeFileContents } from '../../llm/recipe/helpers';
 import logger from '../../logger';
-import { WebviewView } from 'vscode';
 import { AgentViewProvider } from '../../providers/AgentView';
+import { CSChatCancellationToken, CSChatFileTreeData, CSChatProgress, CSChatProgressContent, CSChatProgressFileTree, CSChatProgressTask } from '../../providers/chatprovider';
 
 interface TestExecutionHarness {
 	testScript: string;
@@ -489,28 +489,36 @@ export const taskComplete = (): ToolingEvent => {
 	};
 };
 
+type ChatProgress = {
+	progress: Progress<CSChatProgress>;
+	cancellationToken: CSChatCancellationToken;
+};
+
 export class ToolingEventCollection {
 	events: ToolingEvent[];
 	saveDestination: string;
 	codeGraph: CodeGraph;
-	provider: AgentViewProvider;
+	provider?: AgentViewProvider;
+	chatProgress?: ChatProgress;
 	panelCommand: string;
 
 	constructor(
 		saveDestination: string,
 		codeGraph: CodeGraph,
-		provider: AgentViewProvider,
+		provider: AgentViewProvider | undefined,
+		chatProgress: ChatProgress | undefined,
 		panelCommand: string
 	) {
 		this.events = [];
 		this.codeGraph = codeGraph;
 		this.saveDestination = saveDestination;
 		this.provider = provider;
+		this.chatProgress = chatProgress;
 		this.panelCommand = panelCommand;
 	}
 
 	private async sendEventsToChatViewPanel() {
-		const value = await this.provider.getView()?.webview.postMessage({
+		const value = await this.provider?.getView()?.webview.postMessage({
 			payload: {
 				events: this.events,
 				saveDestination: this.saveDestination,
@@ -521,25 +529,89 @@ export class ToolingEventCollection {
 	}
 
 	public async addThinkingEvent(userQuery: string, thinkingContext: string) {
-		this.events.push(thinkingEvent(userQuery, thinkingContext, []));
+		const event = thinkingEvent(userQuery, thinkingContext, []);
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Initializing',
+				Promise.resolve(new CSChatProgressContent(`${event.eventContext ?? ''}\n\n---\n`))
+			)
+		);
 		await this.save();
 	}
 
 	public async addPlanForHelp(userQuery: string, planForHelp: string) {
-		this.events.push(addPlanForHelp(userQuery, planForHelp));
+		const event = addPlanForHelp(userQuery, planForHelp);
+		this.events.push(event);
 		await this.save();
 	}
 
 	public async addSearchEvent(queries: string[]) {
-		this.events.push(searchForQuery(queries.join('\n')));
+		const event = searchForQuery(queries.join('\n'));
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Searching the codebase',
+				Promise.resolve(new CSChatProgressContent(
+					`## Searching the codebase\n\n\`\`\`\n${event.eventInput ?? ''}\`\`\``
+				))
+			)
+		);
 		await this.save();
+	}
+
+	createFileTreeFromCodeSymbols(codeSymbols: CodeSymbolInformation[]): CSChatProgressFileTree {
+		// Create a root CSChatFileTreeData object with an empty label and URI
+		const rootTreeData = new CSChatFileTreeData('', Uri.file(''));
+
+		// Iterate through codeSymbols and build the file tree
+		for (const codeSymbol of codeSymbols) {
+			const filePathSegments = codeSymbol.fsFilePath.split('/');
+			let currentNode = rootTreeData;
+
+			// Traverse the tree, creating any missing nodes
+			for (const segment of filePathSegments) {
+				if (!currentNode.children) {
+					currentNode.children = [];
+				}
+
+				// Check if a node with the same label already exists
+				let childNode = currentNode.children.find((node) => node.label === segment);
+
+				if (!childNode) {
+					// Create a new node for the segment
+					const uri = Uri.file(codeSymbol.fsFilePath);
+					childNode = new CSChatFileTreeData(segment, uri);
+					currentNode.children.push(childNode);
+				}
+
+				// Update the currentNode to the child node for the next iteration
+				currentNode = childNode;
+			}
+		}
+
+		// Create and return the CSChatProgressFileTree
+		return new CSChatProgressFileTree(rootTreeData);
 	}
 
 	public async addRelevantSearchResults(
 		queries: string[],
 		codeSymbolInformationList: CodeSymbolInformation[]
 	) {
-		this.events.push(relevantSearchResults(queries, codeSymbolInformationList));
+		const event = relevantSearchResults(queries, codeSymbolInformationList);
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Generating search results',
+				Promise.resolve(this.createFileTreeFromCodeSymbols((event.codeSymbolReference ?? []).slice(0, 5)))
+			)
+		);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Generating search results',
+				Promise.resolve(new CSChatProgressContent(`\n-- -\n`))
+			)
+		);
 		await this.save();
 	}
 
@@ -555,9 +627,8 @@ export class ToolingEventCollection {
 		executionEventId: number,
 		codeSymbolModificationInstruction: CodeSymbolModificationInstruction
 	) {
-		this.events.push(
-			addInstructionsForModification(executionEventId, codeSymbolModificationInstruction)
-		);
+		const event = addInstructionsForModification(executionEventId, codeSymbolModificationInstruction);
+		this.events.push(event);
 		await this.save();
 	}
 
@@ -566,18 +637,31 @@ export class ToolingEventCollection {
 		codeSymbolName: string,
 		executionEventId: string
 	) {
-		this.events.push(
-			addModificationDiffAndThoughts(
-				executionEventId,
-				codeSymbolName,
-				codeModificationContextAndDiff
+		const event = addModificationDiffAndThoughts(
+			executionEventId,
+			codeSymbolName,
+			codeModificationContextAndDiff
+		);
+		this.events.push(event);
+		const codeModificationEvent = event.codeModificationContextAndDiff;
+		const codeModification = codeModificationEvent?.codeModification ?? '';
+		const codeModificationPlan = codeModification.split('Detailed plan of modifications:')[1];
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Modifications',
+				Promise.resolve(new CSChatProgressContent(
+					`## Modification #${Number(executionEventId) + 1}\n${codeModificationPlan}\n\`\`\`
+${codeModificationEvent?.codeDiff ?? ''}
+\`\`\``
+				))
 			)
 		);
 		await this.save();
 	}
 
 	public async saveFileEvent(filePath: string, codeSymbolName: string, executionEventId: string) {
-		this.events.push(saveFileToolingEvent(filePath, codeSymbolName, executionEventId));
+		const event = saveFileToolingEvent(filePath, codeSymbolName, executionEventId);
+		this.events.push(event);
 		await this.save();
 	}
 
@@ -587,7 +671,18 @@ export class ToolingEventCollection {
 		testPlan: TestExecutionHarness,
 		executionEventId: string
 	) {
-		this.events.push(testExecutionEvent(codeSymbolName, fileLocation, testPlan, executionEventId));
+		const event = testExecutionEvent(codeSymbolName, fileLocation, testPlan, executionEventId);
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Testing',
+				Promise.resolve(new CSChatProgressContent(
+					`${event.testExecutionHarness?.planForTestScriptGeneration ?? ''}
+\`\`\`\n\n${event.testExecutionHarness?.testScript ?? ''}\n\`\`\`
+\n---\n
+					`))
+			)
+		);
 		await this.save();
 	}
 
@@ -600,8 +695,15 @@ export class ToolingEventCollection {
 		args: string[],
 		executionEventId: string
 	) {
-		this.events.push(
-			terminalEvent(codeSymbolName, fileLocation, stdout, stderr, exitCode, args, executionEventId)
+		const event = terminalEvent(codeSymbolName, fileLocation, stdout, stderr, exitCode, args, executionEventId);
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Running commands',
+				Promise.resolve(new CSChatProgressContent(
+					`## Running commands\n\`\`\`sh\n\n> ${event.args?.join(' ')}\n\n${event.stdout}\n\`\`\``
+				))
+			)
 		);
 		await this.save();
 	}
@@ -611,14 +713,28 @@ export class ToolingEventCollection {
 		codeSymbolName: string,
 		executionBranchFinishReason: string
 	) {
-		this.events.push(
-			executionBranchFinishEvent(executionEventId, codeSymbolName, executionBranchFinishReason)
+		const event = executionBranchFinishEvent(executionEventId, codeSymbolName, executionBranchFinishReason);
+		this.events.push(event);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Completed exploration',
+				Promise.resolve(new CSChatProgressContent(event.executionBranchFinishReason ?? ''))
+			)
+		);
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask(
+				'Completed exploration',
+				Promise.resolve(new CSChatProgressContent(`\n---\n`))
+			)
 		);
 		await this.save();
 	}
 
 	public async taskComplete() {
 		this.events.push(taskComplete());
+		this.chatProgress?.progress.report(
+			new CSChatProgressTask('## Task complete!', Promise.resolve(new CSChatProgressContent('## Task complete!')))
+		);
 		await this.save();
 	}
 
