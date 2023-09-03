@@ -7,6 +7,7 @@
 import {
 	OpenAI,
 } from 'openai';
+import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
@@ -31,7 +32,9 @@ const systemPrompt = (): string => {
 };
 
 export const generateChatCompletion = async (
-	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]
+	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	context: string,
+	uniqueId: string,
 ): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
 	const completions = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
@@ -40,6 +43,14 @@ export const generateChatCompletion = async (
 		max_tokens: 8000,
 	});
 	if (completions.choices.length !== 0) {
+		posthogClient.capture({
+			distinctId: uniqueId,
+			event: `[gpt4]${context}`,
+			properties: {
+				context: context,
+				completion: completions.choices[0].message,
+			},
+		});
 		return completions.choices[0];
 	}
 	return null;
@@ -56,6 +67,7 @@ export const debuggingFlow = async (
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
+	uniqueId: string,
 ): Promise<null> => {
 	// allow-any-unicode-next-line
 	await toolingEventCollection.addThinkingEvent(prompt, '🤔 ...⌛ on how to help the user');
@@ -73,7 +85,11 @@ export const debuggingFlow = async (
 			role: 'user',
 		},
 	];
-	const response = await generateChatCompletion(initialMessages);
+	const response = await generateChatCompletion(
+		initialMessages,
+		'initial_plan_and_queries',
+		uniqueId,
+	);
 	const planAndQueries = generatePlanAndQueriesResponseParser(response?.message?.content ?? '');
 	// Adding tooling event for plan
 	await toolingEventCollection.addPlanForHelp(
@@ -131,7 +147,11 @@ export const debuggingFlow = async (
 			role: 'user',
 		}
 	);
-	const fileFilterInformation = await generateChatCompletion(initialMessages);
+	const fileFilterInformation = await generateChatCompletion(
+		initialMessages,
+		'file_filtering',
+		uniqueId,
+	);
 	const codeSymbolModificationInstructions = generateFileFunctionsResponseParser(
 		fileFilterInformation?.message?.content ?? '',
 	);
@@ -163,6 +183,15 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'File path not found',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]file_path_not_found',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					prompt,
+				},
+			})
 			//TODO(codestory) Send a failure event here
 			continue;
 		}
@@ -181,6 +210,7 @@ export const debuggingFlow = async (
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
 			[...initialMessages],
 			codeGraph,
+			uniqueId,
 		);
 		if (!codeModificationInput) {
 			await toolingEventCollection.executionBranchFinished(
@@ -188,6 +218,16 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'Code modification generation failure',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]code_modification_generation_failure',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					fileContent: previousFileContent,
+					prompt,
+				},
+			});
 			//TODO(codestory): Send a failure event here
 			continue;
 		}
@@ -205,6 +245,7 @@ export const debuggingFlow = async (
 			codeModificationInput,
 			codeGraph,
 			[...initialMessages],
+			uniqueId,
 		);
 		if (!newFileContent) {
 			await toolingEventCollection.executionBranchFinished(
@@ -250,6 +291,7 @@ export const debuggingFlow = async (
 				workingDirectory,
 			),
 			previousFileContent,
+			uniqueId,
 		);
 
 		if (!testPlan) {
@@ -281,6 +323,7 @@ export const debuggingFlow = async (
 			tsMorphProjectManagement,
 			pythonServer,
 			workingDirectory,
+			uniqueId,
 		);
 
 		let branchFinishReason = '';
