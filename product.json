@@ -1681,33 +1681,10 @@
 		"^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
 	],
 	"crashReporter": {
-		"productName": "VSCode",
-		"companyName": "Microsoft"
+		"productName": "Aide",
+		"companyName": "CodeStory"
 	},
-	"appCenter": {
-		"win32-ia32": "appcenter://code?aid=f4289815-a66e-4ad9-b74f-d8e5bc093e41",
-		"win32-x64": "appcenter://code?aid=a4e3233c-699c-46ec-b4f4-9c2a77254662",
-		"win32-arm64": "appcenter://code?aid=3712d786-7cc8-4f11-8b08-cc12eab6d4f7",
-		"linux-x64": "appcenter://code?aid=fba07a4d-84bd-4fc8-a125-9640fc8ce171",
-		"darwin": "appcenter://code?aid=860d6632-f65b-490b-85a8-3e72944f7774",
-		"darwin-arm64": "appcenter://code?aid=be71415d-3893-4ae5-b453-e537b9668a10",
-		"darwin-universal": "appcenter://code?aid=de75e3cc-e22f-4f42-a03f-1409c21d8af8"
-	},
-	"enableTelemetry": true,
-	"aiConfig": {
-		"ariaKey": "5bbf946d11a54f6783919c455abaddaf-fd62977b-c92d-4714-a45d-649d06980372-7168"
-	},
-	"msftInternalDomains": [
-		"redmond.corp.microsoft.com",
-		"northamerica.corp.microsoft.com",
-		"fareast.corp.microsoft.com",
-		"ntdev.corp.microsoft.com",
-		"wingroup.corp.microsoft.com",
-		"southpacific.corp.microsoft.com",
-		"wingroup.windeploy.ntdev.microsoft.com",
-		"ddnet.microsoft.com",
-		"europe.corp.microsoft.com"
-	],
+	"enableTelemetry": false,
 	"documentationUrl": "https://docs.codestory.ai",
 	"releaseNotesUrl": "https://codestory.ai/changelog",
 	"twitterUrl": "https://twitter.com/codestoryai",
