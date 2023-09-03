@@ -733,7 +733,7 @@ ${codeModificationEvent?.codeDiff ?? ''}
 	public async taskComplete() {
 		this.events.push(taskComplete());
 		this.chatProgress?.progress.report(
-			new CSChatProgressTask('## Task complete!', Promise.resolve(new CSChatProgressContent('## Task complete!')))
+			new CSChatProgressTask('## Finished my work, please review and let me know!', Promise.resolve(new CSChatProgressContent('## Task complete!')))
 		);
 		await this.save();
 	}
