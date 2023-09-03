@@ -7,9 +7,9 @@ import * as vscode from 'vscode';
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
 import { getSelectedCodeContext } from '../utilities/getSelectionContext';
-import { generateChatCompletion } from '../chatState/openai';
+import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
 import { logChatPrompt } from '../posthog/logChatPrompt';
-import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
+import { reportFromStreamToProgress, reportFromStreamToProgressAx } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 
