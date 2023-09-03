@@ -12,7 +12,6 @@ import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
-import { AgentViewProvider } from '../providers/AgentView';
 import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
@@ -20,7 +19,6 @@ import { GoLangParser } from '../languages/goCodeSymbols';
 import { CSChatProvider } from '../providers/chatprovider';
 
 export const debug = (
-	provider: AgentViewProvider,
 	csChatProvider: CSChatProvider,
 	embeddingIndex: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
@@ -42,7 +40,6 @@ export const debug = (
 			const toolingEventCollection = new ToolingEventCollection(
 				`/tmp/${uniqueId}`,
 				codeGraph,
-				provider,
 				undefined,
 				message.command,
 			);

@@ -13,8 +13,6 @@ import {
 } from '../../llm/recipe/prompts';
 import { EventType } from './type';
 import { writeFileContents } from '../../llm/recipe/helpers';
-import logger from '../../logger';
-import { AgentViewProvider } from '../../providers/AgentView';
 import { CSChatCancellationToken, CSChatFileTreeData, CSChatProgress, CSChatProgressContent, CSChatProgressFileTree, CSChatProgressTask } from '../../providers/chatprovider';
 
 interface TestExecutionHarness {
@@ -498,34 +496,20 @@ export class ToolingEventCollection {
 	events: ToolingEvent[];
 	saveDestination: string;
 	codeGraph: CodeGraph;
-	provider?: AgentViewProvider;
 	chatProgress?: ChatProgress;
 	panelCommand: string;
 
 	constructor(
 		saveDestination: string,
 		codeGraph: CodeGraph,
-		provider: AgentViewProvider | undefined,
 		chatProgress: ChatProgress | undefined,
 		panelCommand: string
 	) {
 		this.events = [];
 		this.codeGraph = codeGraph;
 		this.saveDestination = saveDestination;
-		this.provider = provider;
 		this.chatProgress = chatProgress;
 		this.panelCommand = panelCommand;
-	}
-
-	private async sendEventsToChatViewPanel() {
-		const value = await this.provider?.getView()?.webview.postMessage({
-			payload: {
-				events: this.events,
-				saveDestination: this.saveDestination,
-			},
-			command: this.panelCommand,
-		});
-		logger.info(`Sent events to chat view panel: ${value}`);
 	}
 
 	public async addThinkingEvent(userQuery: string, thinkingContext: string) {
@@ -739,8 +723,6 @@ ${codeModificationEvent?.codeDiff ?? ''}
 	}
 
 	public async save() {
-		// We always want to send it to the view
-		this.sendEventsToChatViewPanel();
 		await writeFileContents(
 			this.saveDestination,
 			JSON.stringify({
