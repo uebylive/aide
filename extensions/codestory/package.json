@@ -60,7 +60,7 @@
     "interactiveSession": [
       {
         "id": "cs-chat",
-        "label": "CS Chat",
+        "label": "CodeStory Agent",
         "icon": "assets/message-code.svg"
       }
     ],
