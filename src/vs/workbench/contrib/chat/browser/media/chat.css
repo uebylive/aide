@@ -469,3 +469,39 @@
 	border-radius: 4px;
 	width: auto;
 }
+
+/* #region Quick Chat */
+
+.monaco-workbench > .hover-chat-container {
+	position: absolute;
+	z-index: 1000;
+	right: 10px;
+	bottom: 29px;
+	display: block;
+}
+
+.hover-chat-container .interactive-session .interactive-input-part {
+	padding: 8px 6px 6px 6px;
+}
+
+.hover-chat-container .interactive-session .interactive-input-part .interactive-execute-toolbar {
+	bottom: 1px;
+}
+
+.hover-chat-container .interactive-session .interactive-input-and-execute-toolbar {
+	margin: 0;
+	border-radius: 2px;
+	padding: 0 6px;
+}
+
+.hover-chat-container .interactive-session .interactive-input-and-execute-toolbar .interactive-input-editor {
+	width: 346px;
+	height: 36px;
+}
+
+.hover-chat-container .interactive-list {
+	border-bottom-right-radius: 6px;
+	border-bottom-left-radius: 6px;
+}
+
+/* #endregion */

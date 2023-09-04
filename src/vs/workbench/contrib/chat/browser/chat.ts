@@ -12,6 +12,7 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
 export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');
+export const IHoverChatService = createDecorator<IHoverChatService>('hoverChatService');
 export const IChatAccessibilityService = createDecorator<IChatAccessibilityService>('chatAccessibilityService');
 
 export interface IChatWidgetService {
@@ -41,6 +42,14 @@ export interface IQuickChatService {
 	focus(): void;
 	open(): void;
 	close(): void;
+	openInChatView(): void;
+}
+
+export interface IHoverChatService {
+	readonly _serviceBrand: undefined;
+	readonly enabled: boolean;
+	open(): void;
+	focus(): void;
 	openInChatView(): void;
 }
 

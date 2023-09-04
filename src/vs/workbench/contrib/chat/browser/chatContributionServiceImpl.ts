@@ -16,6 +16,7 @@ import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneCont
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { getClearAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
+import { getHoverActionForProvider } from 'vs/workbench/contrib/chat/browser/actions/chatHoverActions';
 import { getMoveToEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/chat/browser/actions/chatQuickInputActions';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
@@ -146,6 +147,7 @@ export class ChatContributionService implements IChatContributionService {
 		// "Open Chat" Actions
 		disposables.add(registerAction2(getOpenChatEditorAction(providerDescriptor.id, providerDescriptor.label, providerDescriptor.when)));
 		disposables.add(registerAction2(getQuickChatActionForProvider(providerDescriptor.id, providerDescriptor.label)));
+		disposables.add(registerAction2(getHoverActionForProvider(providerDescriptor.id, providerDescriptor.label)));
 
 		return {
 			dispose: () => {
