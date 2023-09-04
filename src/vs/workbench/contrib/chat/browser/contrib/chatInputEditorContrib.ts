@@ -5,6 +5,7 @@
 
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Iterable } from 'vs/base/common/iterator';
+// import { Iterable } from 'vs/base/common/iterator';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
@@ -15,6 +16,8 @@ import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList }
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { localize } from 'vs/nls';
+import { CommandsRegistry } from 'vs/platform/commands/common/commands';
+// import { ICommandService } from 'vs/platform/commands/common/commands';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -179,11 +182,15 @@ class InputEditorDecorations extends Disposable {
 
 		const variables = this.chatVariablesService.getVariables();
 		const variableReg = /(^|\s)@(\w+)(:\d+)?(?=(\s|$))/ig;
+		// console.log(variableReg.exec(inputValue));
 		let match: RegExpMatchArray | null;
 		const varDecorations: IDecorationOptions[] = [];
 		while (match = variableReg.exec(inputValue)) {
 			const varName = match[2];
+			// if (true) {
+			console.log('we are trying to decorate inside here');
 			if (Iterable.find(variables, v => v.name === varName)) {
+				console.log('what iterable are we hooking up with');
 				varDecorations.push({
 					range: {
 						startLineNumber: 1,
@@ -353,24 +360,34 @@ class VariableCompletions extends Disposable {
 
 	private static readonly VariableNameDef = /@\w*/g; // MUST be using `g`-flag
 
+	public static previousDropDown: string | undefined;
+
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
 		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
+		// @ICodeEditorService private readonly codeEditorService: ICodeEditorService,
+		// @ICommandService private readonly commandService: ICommandService,
 	) {
+		console.log('[variablecompletions] how many times is this constructed');
 		super();
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatVariables',
 			triggerCharacters: ['@'],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const selectionType = VariableCompletions.previousDropDown;
+				console.log(`triggering again: ${VariableCompletions.previousDropDown}`);
+				VariableCompletions.previousDropDown = undefined;
 
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+
 				if (!widget) {
 					return null;
 				}
 
 				const varWord = getWordAtText(position.column, VariableCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				console.log('[varWord] ' + varWord?.word);
 				if (!varWord && model.getWordUntilPosition(position).word) {
 					// inside a "normal" word
 					return null;
@@ -388,6 +405,31 @@ class VariableCompletions extends Disposable {
 				const history = widget.viewModel!.getItems()
 					.filter(isResponseVM);
 
+				if (selectionType === 'file') {
+					const fileLabelCompletions = [
+						{
+							label: '@someFile.txt',
+							detail: '/Users/skcd/testing/someFile.txt',
+							insertText: '@someFile.txt' + ' ',
+							kind: CompletionItemKind.Text,
+							range: { insert, replace },
+							sortText: '005',
+						},
+						{
+							label: '@someFileElse.txt',
+							detail: '/Users/skcd/testing/someFileElse.txt',
+							insertText: '@someFileElse.txt' + ' ',
+							kind: CompletionItemKind.Text,
+							range: { insert, replace },
+							sortText: '006',
+						},
+					];
+					return <CompletionList>{
+						suggestions: [...fileLabelCompletions],
+						incomplete: true,
+					};
+				}
+
 				// TODO@roblourens work out a real API for this- maybe it can be part of the two-step flow that @file will probably use
 				const historyItems = history.map((h, i): CompletionItem => ({
 					label: `@response:${i + 1}`,
@@ -395,7 +437,11 @@ class VariableCompletions extends Disposable {
 					insertText: `@response:${String(i + 1).padStart(String(history.length).length, '0')} `,
 					kind: CompletionItemKind.Text,
 					range: { insert, replace },
+					sortText: '003',
 				}));
+
+				console.log('[sckd] what are the variables');
+				console.log(Array.from(this.chatVariablesService.getVariables()).map(v => v.name));
 
 				const variableItems = Array.from(this.chatVariablesService.getVariables()).map(v => {
 					const withAt = `@${v.name}`;
@@ -405,15 +451,64 @@ class VariableCompletions extends Disposable {
 						insertText: withAt + ' ',
 						detail: v.description,
 						kind: CompletionItemKind.Text, // The icons are disabled here anyway,
+						sortText: '002',
 					};
 				});
 
+				// when the user selects the this completion option I want to
+				// repopulate the completion options using a custom context,
+				// how do I do that? basically I want to retrigger the completion
+				// items again
+				const completionOptions = [
+					{
+						label: '@file',
+						detail: 'Insert the contents of a file',
+						insertText: '@',
+						kind: CompletionItemKind.Text,
+						range: { insert, replace },
+						sortText: '001',
+						command: { // Here's the new part
+							id: 'codestorychat.input.completion.file', // The command we registered
+							title: 'Trigger File completions',
+							args: ['file'],
+						},
+					},
+				];
+
+				const fileLabelCompletions = [
+					{
+						label: '@someFile.txt',
+						detail: '/Users/skcd/testing/someFile.txt',
+						insertText: '@someFile.txt' + ' ',
+						kind: CompletionItemKind.Text,
+						range: { insert, replace },
+						sortText: '005',
+					},
+					{
+						label: '@someFileElse.txt',
+						detail: '/Users/skcd/testing/someFileElse.txt',
+						insertText: '@someFileElse.txt' + ' ',
+						kind: CompletionItemKind.Text,
+						range: { insert, replace },
+						sortText: '006',
+					},
+				];
+
 				return <CompletionList>{
-					suggestions: [...variableItems, ...historyItems]
+					suggestions: [...variableItems, ...historyItems, ...completionOptions, ...fileLabelCompletions],
+					incomplete: true,
 				};
-			}
+			},
 		}));
 	}
 }
+
+CommandsRegistry.registerCommand('codestorychat.input.completion.file', async (accessor, ...args) => {
+	const editorService = accessor.get(ICodeEditorService);
+	console.log('we are calling this with args');
+	console.log(args);
+	VariableCompletions.previousDropDown = 'file';
+	editorService.getFocusedCodeEditor()?.trigger('keyboard', 'editor.action.triggerSuggest', {});
+});
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);

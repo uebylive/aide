@@ -109,6 +109,7 @@ export class ChatVariablesService implements IChatVariablesService {
 
 	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable {
 		const key = data.name.toLowerCase();
+		console.log(`[chatvariables] registering a new variable: ${key}`);
 		if (this._resolver.has(key)) {
 			throw new Error(`A chat variable with the name '${data.name}' already exists.`);
 		}

@@ -20,6 +20,8 @@ class ChatHistoryVariables extends Disposable {
 				return undefined;
 			}
 
+			console.log(`[history][variable] we have some history here: ${arg}`);
+
 			const responseNum = parseInt(arg, 10);
 			const response = model.getRequests()[responseNum - 1].response;
 			if (!response) {
@@ -32,3 +34,34 @@ class ChatHistoryVariables extends Disposable {
 }
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(ChatHistoryVariables, LifecyclePhase.Eventually);
+
+
+
+// TODO(skcd): Figure out how to link this up properly later
+class CurrentFilePointer extends Disposable {
+	constructor(
+		@IChatVariablesService chatVariablesService: IChatVariablesService,
+	) {
+		super();
+
+		console.log('[currentFilePointer] we are calling the current file pointer here');
+
+		this._register(chatVariablesService.registerVariable({ name: 'currentFile', description: '', canTakeArgument: true, hidden: false }, async (message, arg, model, token) => {
+			// will this even work???
+			console.log('we are registering something here');
+			// workspace.textDocuments.forEach((document) => {
+			// 	console.log(document);
+			// });
+			if (!arg) {
+				console.log('[filepointervariable] are we returning over here for some reason');
+				return undefined;
+			}
+			console.log('skcd success something');
+			console.log(arg);
+
+			return [{ level: 'full', value: arg }];
+		}));
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(CurrentFilePointer, LifecyclePhase.Eventually);
