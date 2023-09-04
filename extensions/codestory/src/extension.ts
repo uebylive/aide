@@ -13,7 +13,6 @@ import logger from './logger';
 import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
 import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
 import postHogClient from './posthog/client';
-import { AgentViewProvider } from './providers/AgentView';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
 import { openFile, search } from './subscriptions/search';
@@ -30,7 +29,6 @@ import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './u
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
-import { sendTestSuiteRunCommand } from './utilities/sendTestSuiteCommandPresent';
 import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { GoLangParser } from './languages/goCodeSymbols';
@@ -160,28 +158,6 @@ export async function activate(context: ExtensionContext) {
 		rootPath,
 	);
 
-
-	// Register the agent view provider
-	const agentViewProvider = new AgentViewProvider(context.extensionUri);
-	context.subscriptions.push(
-		window.registerWebviewViewProvider(AgentViewProvider.viewType, agentViewProvider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		})
-	);
-
-	// Create the copy settings from vscode command for the extension
-	const openAgentViewCommand = commands.registerCommand(
-		'codestory.launchAgent',
-		async (prompt: string) => {
-			agentViewProvider.show();
-			await agentViewProvider.getView()?.webview.postMessage({
-				command: 'launchAgent',
-				payload: { prompt }
-			});
-		}
-	);
-	context.subscriptions.push(openAgentViewCommand);
-
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
@@ -262,7 +238,6 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(
 		debug(
 			// TODO(codestory): Fix this properly later on
-			agentViewProvider,
 			chatProvider,
 			embeddingsIndex,
 			projectManagement,
@@ -360,8 +335,6 @@ export async function activate(context: ExtensionContext) {
 	// Git commit
 	context.subscriptions.push(gitCommit(logger, repoName, repoHash));
 	context.subscriptions.push(registerCopySettingsCommand);
-	// Set the test run command here
-	sendTestSuiteRunCommand(testSuiteRunCommand, agentViewProvider);
 
 	// Listen for document opened events
 	workspace.onDidOpenTextDocument((document: TextDocument) => {

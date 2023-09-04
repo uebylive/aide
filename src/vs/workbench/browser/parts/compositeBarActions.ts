@@ -13,11 +13,10 @@ import { IThemeService, IColorTheme } from 'vs/platform/theme/common/themeServic
 import { TextBadge, NumberBadge, IBadge, IconBadge, ProgressBadge } from 'vs/workbench/services/activity/common/activity';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { contrastBorder } from 'vs/platform/theme/common/colorRegistry';
-import { DelayedDragHandler } from 'vs/base/browser/dnd';
 import { IActivity } from 'vs/workbench/common/activity';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { Emitter, Event } from 'vs/base/common/event';
-import { CompositeDragAndDropObserver, ICompositeDragAndDrop, Before2D, toggleDropEffect } from 'vs/workbench/browser/dnd';
+import { ICompositeDragAndDrop, Before2D } from 'vs/workbench/browser/dnd';
 import { Color } from 'vs/base/common/color';
 import { IBaseActionViewItemOptions, BaseActionViewItem } from 'vs/base/browser/ui/actionbar/actionViewItems';
 import { Codicon } from 'vs/base/common/codicons';
@@ -563,6 +562,7 @@ export class CompositeActionViewItem extends ActivityActionViewItem {
 		private readonly toggleCompositeBadgeAction: IAction,
 		private readonly compositeContextMenuActionsProvider: (compositeId: string) => IAction[],
 		private readonly contextMenuActionsProvider: () => IAction[],
+		// @ts-ignore
 		private readonly dndHandler: ICompositeDragAndDrop,
 		private readonly compositeBar: ICompositeBar,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
@@ -599,6 +599,7 @@ export class CompositeActionViewItem extends ActivityActionViewItem {
 			this.showContextMenu(container);
 		}));
 
+		/*
 		// Allow to drag
 		let insertDropBefore: Before2D | undefined = undefined;
 		this._register(CompositeDragAndDropObserver.INSTANCE.registerDraggable(this.container, () => { return { type: 'composite', id: this.activity.id }; }, {
@@ -637,10 +638,12 @@ export class CompositeActionViewItem extends ActivityActionViewItem {
 				this.action.run();
 			}
 		})));
+		*/
 
 		this.updateStyles();
 	}
 
+	// @ts-ignore
 	private updateFromDragging(element: HTMLElement, showFeedback: boolean, event: DragEvent): Before2D | undefined {
 		const rect = element.getBoundingClientRect();
 		const posX = event.clientX;

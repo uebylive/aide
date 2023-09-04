@@ -345,7 +345,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				const toolingEventCollection = new ToolingEventCollection(
 					`/tmp/${uuidv4()}`,
 					this._codeGraph,
-					undefined,
 					{ progress, cancellationToken: token },
 					prompt,
 				);

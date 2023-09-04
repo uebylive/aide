@@ -33,11 +33,6 @@
           "id": "changeTracker",
           "title": "Change Tracker",
           "icon": "assets/versions.svg"
-        },
-        {
-          "id": "agent",
-          "title": "CodeStory Agent",
-          "icon": "assets/aide-white.svg"
         }
       ]
     },
@@ -47,13 +42,6 @@
           "type": "webview",
           "id": "codestory.webView",
           "name": "Change Tracker"
-        }
-      ],
-      "agent": [
-        {
-          "type": "webview",
-          "id": "codestory.agentView",
-          "name": "CodeStory Agent"
         }
       ]
     },
@@ -87,10 +75,7 @@
     }
   },
   "scripts": {
-    "install:all": "yarn install && cd webview-ui && yarn install && cd ../webview-ui-sideview && yarn install",
-    "start:webview": "cd webview-ui && npm run start",
-    "start:webview-sideview": "cd webview-ui-sideview && npm run start",
-    "build:webview": "cd webview-ui && npm run build",
+    "install:all": "yarn install && cd webview-ui-sideview && yarn install",
     "start:webview_sideview": "cd webview-ui-sideview && npm run start",
     "build:webview_sideview": "cd webview-ui-sideview && npm run build",
     "vscode:prepublish": "npm run compile:tsc",
