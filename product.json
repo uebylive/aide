@@ -1691,7 +1691,6 @@
 	"privacyStatementUrl": "https://codestoryai.notion.site/Privacy-report-913ee2b268bc498a9ee8f60b30374af9",
 	"showTelemetryOptOut": true,
 	"checksumFailMoreInfoUrl": "https://go.microsoft.com/fwlink/?LinkId=828886",
-	"electronRepository": "Microsoft/vscode-electron-prebuilt",
 	"extensionEnabledApiProposals": {
 		"ms-vscode.vscode-selfhost-test-provider": [
 			"testObserver"
@@ -2203,17 +2202,5 @@
 			"title": "GitHub Copilot",
 			"description": "Supercharge your coding experience for as little as $10/month with cutting edge AI code generation."
 		}
-	],
-	"commit": "6c3e3dba23e8fadc360aed75ce363ba185c49794",
-	"date": "2023-08-09T22:20:33.924Z",
-	"checksums": {
-		"vs/base/parts/sandbox/electron-sandbox/preload.js": "mEeZz8bQId773IlVos9j0w",
-		"vs/workbench/workbench.desktop.main.js": "cjwCWJWho7N8UilsECdBhw",
-		"vs/workbench/workbench.desktop.main.css": "qBiQX8lIy8W9ATVysZJ0iQ",
-		"vs/workbench/api/node/extensionHostProcess.js": "L6RN9Re/hAUQJAOutL3wcA",
-		"vs/code/electron-sandbox/workbench/workbench.html": "Nei/i2NoxE9Pdo7ZULeFgA",
-		"vs/code/electron-sandbox/workbench/workbench.js": "dlNxybltK+ACKwMnl2p8Uw"
-	},
-	"version": "1.81.1",
-	"darwinUniversalAssetId": "darwin-universal"
+	]
 }
