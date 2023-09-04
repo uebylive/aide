@@ -119,7 +119,7 @@ export class ChatContributionService implements IChatContributionService {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.Sidebar);
+		}, ViewContainerLocation.AuxiliaryBar);
 
 		// Register View
 		const viewId = this.getViewIdForProvider(providerDescriptor.id);
