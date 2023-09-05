@@ -785,6 +785,28 @@ export class GettingStartedPage extends EditorPane {
 			$('p.subtitle.description', {}, localize({ key: 'gettingStarted.editingEvolved', comment: ['Shown as subtitle on the Welcome page.'] }, "An AI-powered mod of VSCode"))
 		);
 
+		const leftFeatures = $('.categories-column.categories-column-left', {},
+			$('.feature', {},
+				$('img.feature-image', { src: URI.parse(require.toUrl('./media/agent.png')).toString(true), width: '100%', height: 'auto' }),
+				$('p.feature-text', {}, localize('feature1', "Get all your work done with the AI agent living in your editor")),
+			),
+			$('.feature', {},
+				$('img.feature-image', { src: URI.parse(require.toUrl('./media/search.png')).toString(true), width: '100%', height: 'auto' }),
+				$('p.feature-text', {}, localize('feature2', "Search for code by meaning, not just keywords")),
+			),
+		);
+
+		const rightFeatures = $('.categories-column.categories-column-right', {},
+			$('.feature', {},
+				$('img.feature-image', { src: URI.parse(require.toUrl('./media/hoverchat.png')).toString(true), width: '100%', height: 'auto' }),
+				$('p.feature-text', {}, localize('feature3', "Use the floating chat window to get help from the AI agent anytime")),
+			),
+			$('.feature', {},
+				$('img.feature-image', { src: URI.parse(require.toUrl('./media/changetracker.png')).toString(true), width: '100%', height: 'auto' }),
+				$('p.feature-text', {}, localize('feature4', "See your changes being grouped and summarised in real time")),
+			),
+		);
+
 		const leftColumn = $('.categories-column.categories-column-left', {},);
 		const rightColumn = $('.categories-column.categories-column-right', {},);
 
@@ -843,7 +865,7 @@ export class GettingStartedPage extends EditorPane {
 		gettingStartedList.onDidChange(layoutLists);
 		layoutLists();
 
-		reset(this.categoriesSlide, $('.gettingStartedCategoriesContainer', {}, header, leftColumn, rightColumn, footer,));
+		reset(this.categoriesSlide, $('.gettingStartedCategoriesContainer', {}, header, leftFeatures, rightFeatures, footer,));
 		this.categoriesPageScrollbar?.scanDomNode();
 
 		this.updateCategoryProgress();
