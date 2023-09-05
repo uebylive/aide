@@ -477,7 +477,7 @@
 	right: 13px;
 	bottom: 34px;
 	display: block;
-	backdrop-filter: blur(10px);
+	/* backdrop-filter: blur(10px); */
 	border: 1px solid var(--vscode-chat-requestBorder);
 	padding: 2px;
 }
