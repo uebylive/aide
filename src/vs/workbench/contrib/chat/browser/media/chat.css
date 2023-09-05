@@ -474,9 +474,19 @@
 
 .monaco-workbench > .hover-chat-container {
 	position: fixed;
-	right: 6px;
-	bottom: 27px;
+	right: 13px;
+	bottom: 34px;
 	display: block;
+	backdrop-filter: blur(10px);
+	border: 1px solid var(--vscode-chat-requestBorder);
+	padding: 2px;
+}
+
+.hover-chat-container .hover-chat-hint {
+	margin: 0;
+	padding-left: 8px;
+	margin-bottom: -4px;
+	color: var(--vscode-editorGhostText-foreground);
 }
 
 .hover-chat-container .interactive-session .interactive-input-part {
@@ -489,7 +499,7 @@
 
 .hover-chat-container .interactive-session .interactive-input-and-execute-toolbar {
 	margin: 0;
-	border-radius: 2px;
+	border-radius: 4px;
 	padding: 0 6px;
 }
 

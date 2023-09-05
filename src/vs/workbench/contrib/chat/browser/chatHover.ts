@@ -64,6 +64,10 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 		if (!this._container) {
 			this._container = document.createElement('div');
 			this._container.classList.add('hover-chat-container');
+			const hint = document.createElement('p');
+			hint.classList.add('hover-chat-hint');
+			hint.innerText = 'Press shift twice to focus';
+			this._container.appendChild(hint);
 			this.workbenchLayoutService.container.appendChild(this._container);
 		}
 
@@ -72,6 +76,18 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 				providerId: providerInfo.id,
 			});
 			this._register(this._currentChat.onDidAcceptInput(() => this.close()));
+			this._register(this._currentChat.onFocusInput(() => {
+				const hint = this._container?.querySelector('.hover-chat-hint') as HTMLElement;
+				if (hint) {
+					hint.style.display = 'none';
+				}
+			}));
+			this._register(this._currentChat.onBlurInput(() => {
+				const hint = this._container?.querySelector('.hover-chat-hint') as HTMLElement;
+				if (hint) {
+					hint.style.display = 'block';
+				}
+			}));
 			this._currentChat.render(this._container);
 		}
 
@@ -109,6 +125,10 @@ class HoverChat extends Disposable {
 
 	private readonly _onDidAcceptInput = this._register(new Emitter<void>());
 	readonly onDidAcceptInput = this._onDidAcceptInput.event;
+	private readonly _onFocusInput = this._register(new Emitter<void>());
+	readonly onFocusInput = this._onFocusInput.event;
+	private readonly _onBlurInput = this._register(new Emitter<void>());
+	readonly onBlurInput = this._onBlurInput.event;
 
 	constructor(
 		private readonly _options: IChatViewOptions,
@@ -135,6 +155,8 @@ class HoverChat extends Disposable {
 			}
 		);
 		this._register(this.widget.onDidAcceptInput((input) => this.openChatView(input)));
+		this._register(this.widget.onDidFocus(() => this._onFocusInput.fire()));
+		this._register(this.widget.onDidBlur(() => this._onBlurInput.fire()));
 		this.widget.render(parent);
 		this.widget.setVisible(true);
 		this.updateModel();

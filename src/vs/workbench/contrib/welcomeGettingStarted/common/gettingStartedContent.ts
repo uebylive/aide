@@ -52,7 +52,6 @@ export type BuiltinGettingStartedStartEntry = {
 };
 
 type GettingStartedWalkthroughContent = BuiltinGettingStartedCategory[];
-type PickThemeWalkthroughContent = BuiltinGettingStartedCategory[];
 type GettingStartedStartEntryContent = BuiltinGettingStartedStartEntry[];
 
 export const startEntries: GettingStartedStartEntryContent = [
