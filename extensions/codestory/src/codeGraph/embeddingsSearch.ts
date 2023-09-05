@@ -127,8 +127,6 @@ export class EmbeddingsSearch {
 			activeFilesTracker,
 			filePathsToSearch,
 		);
-		console.log('What are the nodes from active files');
-		console.log(nodesFromActiveFiles);
 		// Now we sort and merge these together
 		const alreadySeenFiles: Set<string> = new Set();
 		for (let index = 0; index < nodesFromActiveFiles.length; index++) {

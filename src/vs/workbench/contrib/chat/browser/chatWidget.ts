@@ -672,14 +672,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number): void {
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number, documentSymbolName: string): void {
 		if (this.chatUserProvidedContext === undefined) {
 			this.chatUserProvidedContext = {
 				fileContext: [],
-				codeSymbolsContext: [{ filePath, startLineNumber, endLineNumber }],
+				codeSymbolsContext: [{ filePath, startLineNumber, endLineNumber, documentSymbolName }],
 			};
 		} else {
-			this.chatUserProvidedContext?.codeSymbolsContext.push({ filePath, startLineNumber, endLineNumber });
+			this.chatUserProvidedContext?.codeSymbolsContext.push({ filePath, startLineNumber, endLineNumber, documentSymbolName });
 		}
 	}
 
