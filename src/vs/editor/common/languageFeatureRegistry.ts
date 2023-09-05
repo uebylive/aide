@@ -87,6 +87,10 @@ export class LanguageFeatureRegistry<T> {
 		});
 	}
 
+	getForAllLanguages(): T[] {
+		return this._entries.map((entry) => entry.provider);
+	}
+
 	getForLanguageSelector(selector: LanguageSelector): T[] {
 		return this._entries.filter(entry => entry.selector === selector).map(entry => entry.provider);
 	}
