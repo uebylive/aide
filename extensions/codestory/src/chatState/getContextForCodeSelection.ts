@@ -18,7 +18,7 @@ export interface SelectionReferenceData {
 	currentSelection: string;
 	currentCodeSymbol: CodeSymbolInformation;
 	symbolUsedInReferences: CodeSymbolInformation[];
-};
+}
 
 
 export const getRelevantContextForCodeSelection = (

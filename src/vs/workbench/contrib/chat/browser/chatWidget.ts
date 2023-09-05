@@ -55,6 +55,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidFocus = this._register(new Emitter<void>());
 	readonly onDidFocus = this._onDidFocus.event;
 
+	private _onDidBlur = this._register(new Emitter<void>());
+	readonly onDidBlur = this._onDidBlur.event;
+
 	private _onDidChangeViewModel = this._register(new Emitter<void>());
 	readonly onDidChangeViewModel = this._onDidChangeViewModel.event;
 
@@ -175,6 +178,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		if (this.viewContext.renderOnlyInput) {
 			this.renderer.setVisible(false);
+			this.listContainer.style.display = 'none';
 		}
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
@@ -357,6 +361,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidFocus(() => {
 			this._onDidFocus.fire();
 		}));
+		this._register(this.tree.onDidBlur(() => {
+			this._onDidBlur.fire();
+		}));
 	}
 
 	private onContextMenu(e: ITreeContextMenuEvent<ChatTreeItem | null>): void {
@@ -396,6 +403,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.render(container, '', this);
 
 		this._register(this.inputPart.onDidFocus(() => this._onDidFocus.fire()));
+		this._register(this.inputPart.onDidBlur(() => this._onDidBlur.fire()));
 		this._register(this.inputPart.onDidAcceptFollowup(followup => this.acceptInput(followup)));
 		this._register(this.inputPart.onDidChangeHeight(() => this.bodyDimension && this.layout(this.bodyDimension.height, this.bodyDimension.width)));
 	}

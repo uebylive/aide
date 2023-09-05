@@ -110,7 +110,6 @@ export class StartupPageContribution implements IWorkbenchContribution {
 			if (!this.editorService.activeEditor || this.layoutService.openedDefaultEditors) {
 				const startupEditorSetting = this.configurationService.inspect<string>(configurationKey);
 
-
 				const isStartupEditorReadme = startupEditorSetting.value === 'readme';
 				const isStartupEditorUserReadme = startupEditorSetting.userValue === 'readme';
 				const isStartupEditorDefaultReadme = startupEditorSetting.defaultValue === 'readme';

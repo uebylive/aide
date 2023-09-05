@@ -729,7 +729,7 @@ export class GettingStartedPage extends EditorPane {
 
 		this.categoriesSlide = $('.gettingStartedSlideCategories.gettingStartedSlide');
 
-		const prevButton = $('button.prev-button.button-link', { 'x-dispatch': 'scrollPrev' }, $('span.scroll-button.codicon.codicon-chevron-left'), $('span.moreText', {}, localize('welcome', "Welcome")));
+		const prevButton = $('button.prev-button.button-link', { 'x-dispatch': 'scrollPrev' }, $('span.scroll-button.codicon.codicon-chevron-left'), $('span.moreText', {}, localize('Get started', "Get started")));
 		this.stepsSlide = $('.gettingStartedSlideDetails.gettingStartedSlide', {}, prevButton);
 
 		this.stepsContent = $('.gettingStartedDetailsContent', {});
@@ -780,7 +780,7 @@ export class GettingStartedPage extends EditorPane {
 
 		const header = $('.header', {},
 			$('h1.product-name.caption', {}, this.productService.nameLong),
-			$('p.subtitle.description', {}, localize({ key: 'gettingStarted.editingEvolved', comment: ['Shown as subtitle on the Welcome page.'] }, "Editing evolved"))
+			$('p.subtitle.description', {}, localize({ key: 'gettingStarted.editingEvolved', comment: ['Shown as subtitle on the Welcome page.'] }, "Coding, re-imagined for the future"))
 		);
 
 		const leftColumn = $('.categories-column.categories-column-left', {},);
@@ -798,14 +798,16 @@ export class GettingStartedPage extends EditorPane {
 			));
 
 		const layoutLists = () => {
-			if (gettingStartedList.itemCount) {
-				this.container.classList.remove('noWalkthroughs');
-				reset(rightColumn, featuredExtensionList.getDomElement(), gettingStartedList.getDomElement());
-			}
-			else {
-				this.container.classList.add('noWalkthroughs');
-				reset(rightColumn, featuredExtensionList.getDomElement());
-			}
+			this.container.classList.remove('noWalkthroughs');
+			reset(rightColumn, featuredExtensionList.getDomElement(), gettingStartedList.getDomElement());
+			// ================================================================
+			// Commenting this condition out, because we want a static starting state
+			// if (gettingStartedList.itemCount) {
+			// }
+			// else {
+			// 	this.container.classList.add('noWalkthroughs');
+			// 	reset(rightColumn, featuredExtensionList.getDomElement());
+			// }
 			setTimeout(() => this.categoriesPageScrollbar?.scanDomNode(), 50);
 			layoutRecentList();
 		};
@@ -1057,7 +1059,7 @@ export class GettingStartedPage extends EditorPane {
 
 		const gettingStartedList = this.gettingStartedList = new GettingStartedIndexList(
 			{
-				title: localize('walkthroughs', "Walkthroughs"),
+				title: localize('walkthroughs', "Customize Aide"),
 				klass: 'getting-started',
 				limit: 5,
 				footer: $('span.button-link.see-all-walkthroughs', { 'x-dispatch': 'seeAllWalkthroughs', 'tabindex': 0 }, localize('showAll', "More...")),

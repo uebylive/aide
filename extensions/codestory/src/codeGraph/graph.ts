@@ -141,7 +141,7 @@ const parseGoFilesForCodeSymbols = async (
 		codeSymbolInformationList.push(...code);
 	}
 	return codeSymbolInformationList;
-}
+};
 
 export const generateCodeGraph = async (
 	projectManagement: TSMorphProjectManagement,

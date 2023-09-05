@@ -67,9 +67,9 @@ const matchString = (
 	startIndex: number | null,
 	exactMatch: boolean,
 ): {
-	index: number,
-	maxSimilarity: number,
-	currentHits: number,
+	index: number;
+	maxSimilarity: number;
+	currentHits: number;
 } => {
 	let maxSimilarity = 0;
 	let index = -1;
