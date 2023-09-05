@@ -2152,6 +2152,7 @@ export namespace ChatCodeSymbolContext {
 		return {
 			filePath: codeSymbolContext.filePath,
 			startLineNumber: codeSymbolContext.startLineNumber,
+			endLineNumber: codeSymbolContext.endLineNumber,
 		};
 	}
 
@@ -2159,6 +2160,7 @@ export namespace ChatCodeSymbolContext {
 		return {
 			filePath: codeSymbolContext.filePath,
 			startLineNumber: codeSymbolContext.startLineNumber,
+			endLineNumber: codeSymbolContext.endLineNumber,
 		};
 	}
 }
