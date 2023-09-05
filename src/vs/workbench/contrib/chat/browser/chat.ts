@@ -112,7 +112,7 @@ export interface IChatWidget {
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
 	addFileContextForUserMessage(filePath: string): void;
-	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number): void;
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number, documentSymbolName: string): void;
 	// TODO(skcd): Figure out the right api for this
 	getCodeContextProvidedByUser(): IChatUserProvidedContext | undefined;
 	clear(): void;

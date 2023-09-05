@@ -38,21 +38,44 @@ export const generateCodeSymbolsForQueries = async (
 	queries: string[],
 	embeddingsSearch: EmbeddingsSearch,
 	activeFilesTracker: ActiveFilesTracker,
+	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 ): Promise<CodeSymbolInformation[]> => {
 	const alreadySeenSymbols: Set<string> = new Set();
 	const finalCodeSymbolList: CodeSymbolInformation[] = [];
-	for (let index = 0; index < queries.length; index++) {
-		const query = queries[index];
-		const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query, activeFilesTracker);
-		console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
-		console.log(codeSymbols.map(
-			(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
-		));
-		for (let index = 0; index < codeSymbols.length; index++) {
-			const codeSymbol = codeSymbols[index];
-			if (!alreadySeenSymbols.has(codeSymbol.codeSymbolInformation.symbolName)) {
-				alreadySeenSymbols.add(codeSymbol.codeSymbolInformation.symbolName);
-				finalCodeSymbolList.push(codeSymbol.codeSymbolInformation);
+	if (userProvidedContext === undefined) {
+		for (let index = 0; index < queries.length; index++) {
+			const query = queries[index];
+			const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query, activeFilesTracker);
+			console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
+			console.log(codeSymbols.map(
+				(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
+			));
+			for (let index = 0; index < codeSymbols.length; index++) {
+				const codeSymbol = codeSymbols[index];
+				if (!alreadySeenSymbols.has(codeSymbol.codeSymbolInformation.symbolName)) {
+					alreadySeenSymbols.add(codeSymbol.codeSymbolInformation.symbolName);
+					finalCodeSymbolList.push(codeSymbol.codeSymbolInformation);
+				}
+			}
+		}
+	}
+	// Also use the user provided context here so we can prioritize those symbols
+	if (userProvidedContext) {
+		for (let index = 0; index < userProvidedContext.codeSymbolsContext.length; index++) {
+			const userQuery = userProvidedContext.codeSymbolsContext[index].documentSymbolName;
+			const codeSymbolsFromFile = await embeddingsSearch.generateNodesRelevantForUserFromFiles(
+				userQuery,
+				activeFilesTracker,
+				[
+					userProvidedContext.codeSymbolsContext[index].filePath,
+				]
+			);
+			if (codeSymbolsFromFile.length > 0) {
+				const codeSymbolInterested = codeSymbolsFromFile[0];
+				if (!alreadySeenSymbols.has(codeSymbolInterested.codeSymbolInformation.symbolName)) {
+					alreadySeenSymbols.add(codeSymbolInterested.codeSymbolInformation.symbolName);
+					finalCodeSymbolList.push(codeSymbolInterested.codeSymbolInformation);
+				}
 			}
 		}
 	}
