@@ -80,5 +80,8 @@ export const deterministicClassifier = (userMessage: string): UserMessageType | 
 	if (userMessage.startsWith('/agent')) {
 		return 'instruction';
 	}
+	if (userMessage.startsWith('/general')) {
+		return 'general';
+	}
 	return null;
 };

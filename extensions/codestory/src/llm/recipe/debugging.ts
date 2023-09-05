@@ -7,6 +7,7 @@
 import {
 	OpenAI,
 } from 'openai';
+import * as vscode from 'vscode';
 import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
@@ -69,6 +70,7 @@ export const debuggingFlow = async (
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
+	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	uniqueId: string,
 ): Promise<null> => {
 	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');

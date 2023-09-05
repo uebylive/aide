@@ -12,7 +12,7 @@ import { generateChatCompletion, generateChatCompletionAx } from '../chatState/o
 import { logChatPrompt } from '../posthog/logChatPrompt';
 import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
-import { createContextPrompt, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
+import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { PythonServer } from '../utilities/pythonServerClient';
@@ -289,12 +289,19 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				executeImmediately: false,
 			},
 			{
-				command: 'search',
+				command: 'general',
 				kind: vscode.CompletionItemKind.Text,
-				detail: 'Search for the relevant code symbols from the codebase',
+				detail: 'Ask any kind of general questions to the AI with our without context',
 				shouldRepopulate: true,
 				executeImmediately: false,
 			},
+			// {
+			// 	command: 'search',
+			// 	kind: vscode.CompletionItemKind.Text,
+			// 	detail: 'Search for the relevant code symbols from the codebase',
+			// 	shouldRepopulate: true,
+			// 	executeImmediately: false,
+			// },
 		];
 	}
 
@@ -315,7 +322,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					'Explain the active file in the editor'
 				),
 				new CSChatReplyFollowup(
-					'What is a race condition?',
+					'Where are the race conditions in the selected code?',
 				),
 			],
 			'You can start your request with \'**`/`**\' to give me specific instructions and type \'**`@`**\' to find files and code symbols that I can use to narrow down the context of your request.',
@@ -334,7 +341,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			new CSChatParticipant('You'),
 			new CSChatParticipant('Aide', iconUri),
 			initialState,
-			'Ask me a question or type \'/\' for help.'
+			'Ask away and use @ to give code, files to the AI'
 		);
 	}
 
@@ -354,6 +361,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
 			const deterministicRequestType = deterministicClassifier(request.message.toString());
 			const requestType = deterministicRequestType ?? await promptClassifier(request.message.toString());
+			const userProvidedContext = request.userProvidedContext ? getContextForPromptFromUserContext(request.userProvidedContext) : null;
 			logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
 			if (requestType === 'help') {
 				progress.report(new CSChatProgressContent(
@@ -385,26 +393,34 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					this._workingDirectory,
 					this._testSuiteRunCommand,
 					this._activeFilesTracker,
+					request.userProvidedContext,
 					uniqueId
 				);
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
 				const relevantContext = getRelevantContextForCodeSelection(this._codeGraph);
-				if (relevantContext === null) {
-					progress.report(new CSChatProgressContent(
-						`There is no relevant context to explain the code\n`
-					));
-					return new CSChatResponseForProgress();
-				}
 
 				return (async () => {
-					const contextForPrompt = createContextPrompt(relevantContext);
-					// We add the code context here for generating the response
-					this._chatSessionState.chatContext.addExplainCodeContext(contextForPrompt);
+					if (relevantContext) {
+						const contextForPrompt = createContextPrompt(relevantContext);
+						// We add the code context here for generating the response
+						this._chatSessionState.chatContext.addExplainCodeContext(contextForPrompt);
+					}
+					if (userProvidedContext) {
+						console.log(`[explain][userProvidedContext] ${userProvidedContext}`);
+						this._chatSessionState.chatContext.addExplainCodeContext(userProvidedContext);
+					}
+					this._chatSessionState.chatContext.addUserMessage(
+						'Remember to be concise and explain the code like a professor in computer science, use the references provided to quote how its used in the codebase. Don\'t ask me what the issue is, you need to explain the code context I provided to you.'
+					);
+					console.log(`[explain][messages] ${this._chatSessionState.chatContext.getMessages()}`);
+					console.log(this._chatSessionState.chatContext.getMessages());
 					const streamingResponse = generateChatCompletion(
 						this._chatSessionState.chatContext.getMessages(),
 					);
+					// Remove the message here too
+					this._chatSessionState.chatContext.removeLastMessage();
 					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
 					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
 					return new CSChatResponseForProgress();
@@ -429,20 +445,18 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 						selectionContext.selectedText,
 						selectionContext.extraSurroundingText,
 					);
-					const streamingResponse = generateChatCompletion(
-						this._chatSessionState.chatContext.getMessages(),
-					);
-					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
-					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
-					return new CSChatResponseForProgress();
-				} else {
-					const streamingResponse = generateChatCompletion(
-						this._chatSessionState.chatContext.getMessages(),
-					);
-					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
-					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
-					return new CSChatResponseForProgress();
 				}
+				if (userProvidedContext) {
+					this._chatSessionState.chatContext.addExplainCodeContext(
+						userProvidedContext,
+					);
+				}
+				const streamingResponse = generateChatCompletion(
+					this._chatSessionState.chatContext.getMessages(),
+				);
+				const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
+				this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+				return new CSChatResponseForProgress();
 			}
 		})();
 	}

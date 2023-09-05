@@ -64,6 +64,7 @@ export const debug = (
 					workingDirectory,
 					testSuiteRunCommand,
 					activeFilesTracker,
+					undefined,
 					uniqueId,
 				);
 			} catch (e) {
