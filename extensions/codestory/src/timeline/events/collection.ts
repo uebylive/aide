@@ -544,7 +544,7 @@ export class ToolingEventCollection {
 		await this.save();
 	}
 
-	createFileTreeFromCodeSymbols(codeSymbols: CodeSymbolInformation[]): CSChatProgressFileTree {
+	createFileTreeFromCodeSymbols(codeSymbols: CodeSymbolInformation[], workingDirectory: string): CSChatProgressFileTree {
 		// Create a root CSChatFileTreeData object with an empty label and URI
 		const rootTreeData = new CSChatFileTreeData('', Uri.file(''));
 
@@ -574,26 +574,35 @@ export class ToolingEventCollection {
 			}
 		}
 
+		// Remove working directory from the label of root node
+		rootTreeData.label = rootTreeData.label.replace(workingDirectory, '');
+
 		// Create and return the CSChatProgressFileTree
 		return new CSChatProgressFileTree(rootTreeData);
 	}
 
 	public async addRelevantSearchResults(
 		queries: string[],
-		codeSymbolInformationList: CodeSymbolInformation[]
+		codeSymbolInformationList: CodeSymbolInformation[],
+		workingDirectory: string
 	) {
 		const event = relevantSearchResults(queries, codeSymbolInformationList);
 		this.events.push(event);
 		this.chatProgress?.progress.report(
 			new CSChatProgressTask(
 				'Generating search results',
-				Promise.resolve(this.createFileTreeFromCodeSymbols((event.codeSymbolReference ?? []).slice(0, 5)))
+				Promise.resolve(
+					this.createFileTreeFromCodeSymbols(
+						(event.codeSymbolReference ?? []).slice(0, 5),
+						workingDirectory
+					),
+				)
 			)
 		);
 		this.chatProgress?.progress.report(
 			new CSChatProgressTask(
 				'Generating search results',
-				Promise.resolve(new CSChatProgressContent(`\n-- -\n`))
+				Promise.resolve(new CSChatProgressContent(`\n---\n`))
 			)
 		);
 		await this.save();
@@ -619,7 +628,7 @@ export class ToolingEventCollection {
 	public async addModificationDiffAndThoughts(
 		codeModificationContextAndDiff: CodeModificationContextAndDiff,
 		codeSymbolName: string,
-		executionEventId: string
+		executionEventId: string,
 	) {
 		const event = addModificationDiffAndThoughts(
 			executionEventId,
@@ -634,9 +643,7 @@ export class ToolingEventCollection {
 			new CSChatProgressTask(
 				'Modifications',
 				Promise.resolve(new CSChatProgressContent(
-					`## Modification #${Number(executionEventId) + 1}\n${codeModificationPlan}\n\`\`\`
-${codeModificationEvent?.codeDiff ?? ''}
-\`\`\``
+					`## Modification #${Number(executionEventId) + 1}\n${codeModificationPlan}\n`
 				))
 			)
 		);
@@ -728,7 +735,8 @@ ${codeModificationEvent?.codeDiff ?? ''}
 			JSON.stringify({
 				events: this.events,
 				saveDestination: this.saveDestination,
-			})
+			}),
+			true
 		);
 	}
 }

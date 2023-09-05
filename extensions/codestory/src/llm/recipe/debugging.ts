@@ -108,7 +108,8 @@ export const debuggingFlow = async (
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
 		planAndQueries?.queries ?? [],
-		relevantCodeSymbols
+		relevantCodeSymbols,
+		workingDirectory
 	);
 
 	// Now we swap the memory of the agent

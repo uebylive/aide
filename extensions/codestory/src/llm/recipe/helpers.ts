@@ -162,8 +162,28 @@ export const readFileContents = async (
 export const writeFileContents = async (
 	filePath: string,
 	fileContent: string,
+	isScratchFile: boolean = false,
 ): Promise<void> => {
-	return fs.writeFileSync(filePath, fileContent);
+	const resp = fs.writeFileSync(filePath, fileContent);
+
+	if (!isScratchFile) {
+		// Open the file in the editor
+		await vscode.commands.executeCommand(
+			'vscode.open',
+			vscode.Uri.file(filePath),
+		);
+
+		// Call the git.refresh command to refresh the git status in the extension
+		await vscode.commands.executeCommand('git.refresh');
+
+		// Open the diff view for the file
+		await vscode.commands.executeCommand(
+			'git.openChange',
+			vscode.Uri.file(filePath),
+		);
+	}
+
+	return resp;
 };
 
 
