@@ -108,6 +108,9 @@ class VariableCompletionsCustom extends Disposable {
 					for (let activeEditorIndex = 0; activeEditorIndex < activeEditors.length; activeEditorIndex++) {
 						let alreadyAdded = false;
 						const fileUri = activeEditors[activeEditorIndex].editor.resource;
+						if (activeEditors[activeEditorIndex].editor.resource === undefined) {
+							continue;
+						}
 						const document = this.modelService.getModel(activeEditors[activeEditorIndex].editor.resource!);
 						if (!document || !fileUri) {
 							continue;
