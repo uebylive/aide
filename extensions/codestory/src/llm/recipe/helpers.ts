@@ -68,7 +68,8 @@ export const generateCodeSymbolsForQueries = async (
 				activeFilesTracker,
 				[
 					userProvidedContext.codeSymbolsContext[index].filePath,
-				]
+				],
+				true,
 			);
 			if (codeSymbolsFromFile.length > 0) {
 				const codeSymbolInterested = codeSymbolsFromFile[0];

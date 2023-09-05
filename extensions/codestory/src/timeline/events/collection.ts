@@ -598,7 +598,7 @@ export class ToolingEventCollection {
 			new CSChatProgressContent(
 				`## Using user provided context:
 
-Looking at the following files
+Looking at the following files:
 ${userContext.fileContext.map((filePath) => {
 					return `* ${filePath}`;
 				}).join('\n')}

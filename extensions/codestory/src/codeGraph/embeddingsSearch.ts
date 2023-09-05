@@ -71,6 +71,7 @@ export class EmbeddingsSearch {
 		userQuery: string,
 		activeFilesTracker: ActiveFilesTracker,
 		filePathsToSearch?: string[],
+		skipActiveFilesTracker: boolean = false,
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		// So here we have to find the code symbols from the open files which
 		// are relevant for the user query
@@ -78,6 +79,9 @@ export class EmbeddingsSearch {
 			if (filePathsToSearch) {
 				if (!filePathsToSearch.includes(node.codeSymbolInformation.fsFilePath)) {
 					return false;
+				}
+				if (skipActiveFilesTracker) {
+					return true;
 				}
 			}
 			const activeFiles = activeFilesTracker.getActiveFiles();
