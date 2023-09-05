@@ -234,6 +234,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
+	await commands.executeCommand('workbench.action.toggleHoverChat.cs-chat');
 
 	context.subscriptions.push(
 		debug(

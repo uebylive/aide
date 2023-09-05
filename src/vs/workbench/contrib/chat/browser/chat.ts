@@ -12,6 +12,7 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
 export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');
+export const IHoverChatService = createDecorator<IHoverChatService>('hoverChatService');
 export const IChatAccessibilityService = createDecorator<IChatAccessibilityService>('chatAccessibilityService');
 
 export interface IChatWidgetService {
@@ -44,6 +45,13 @@ export interface IQuickChatService {
 	openInChatView(): void;
 }
 
+export interface IHoverChatService {
+	readonly _serviceBrand: undefined;
+	readonly enabled: boolean;
+	toggle(providerId?: string): void;
+	open(providerId?: string): void;
+}
+
 export interface IChatAccessibilityService {
 	readonly _serviceBrand: undefined;
 	acceptRequest(): void;
@@ -65,6 +73,7 @@ export interface IChatFileTreeInfo {
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IBaseChatWidgetViewContext {
+	renderOnlyInput?: boolean;
 	renderInputOnTop?: boolean;
 	renderStyle?: 'default' | 'compact';
 }
@@ -81,7 +90,7 @@ export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewCon
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
-	readonly onDidAcceptInput: Event<void>;
+	readonly onDidAcceptInput: Event<void | string>;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;
