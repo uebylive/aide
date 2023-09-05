@@ -85,7 +85,7 @@ export const saveCodeStoryStorageObjectToStorage = async (
 		workingDirectory,
 	);
 	const pathForStorage = path.join(storagePath, repoName, 'codestory');
-	ensureDirectoryExists(pathForStorage);
+	await ensureDirectoryExists(pathForStorage);
 	const codeStoryStorageString = JSON.stringify(codeStoryStorage);
 	fs.writeFileSync(pathForStorage, codeStoryStorageString);
 	return JSON.parse(codeStoryStorageString) as CodeStoryStorage;

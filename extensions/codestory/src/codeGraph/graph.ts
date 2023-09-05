@@ -5,6 +5,7 @@
 
 // We have to generate the graph of the codebase here, so we can query for nodes
 import { getFilesTrackedInWorkingDirectory } from '../git/helper';
+import { GoLangParser } from '../languages/goCodeSymbols';
 import { getCodeSymbolList } from '../storage/indexer';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { PythonServer } from '../utilities/pythonServerClient';
@@ -36,17 +37,11 @@ export class CodeGraph {
 					const element = splittedSymbolName[index];
 					if (index === 0) {
 						accumulator = element;
-						if (symbolName === 'src.codeGraph.embeddingsSearch.cosineSimilarity') {
-							console.log('What are we searching for', accumulator, lastName);
-						}
 						if (accumulator === lastName) {
 							return true;
 						}
 					} else {
 						accumulator = `${element}.${accumulator}`;
-						if (symbolName === 'src.codeGraph.embeddingsSearch.cosineSimilarity') {
-							console.log('What are we searching for', accumulator, lastName);
-						}
 						if (accumulator === lastName) {
 							return true;
 						}
@@ -59,6 +54,51 @@ export class CodeGraph {
 			return null;
 		}
 		return nodes;
+	}
+
+	public getNodeFromLineRangeAndFile(
+		filePath: string,
+		lineNumber: number,
+	): CodeSymbolInformation | null {
+		const nodes = this._nodes.filter(
+			(node) => {
+				if (node.fsFilePath === filePath) {
+					if (node.symbolStartLine <= lineNumber && node.symbolEndLine >= lineNumber) {
+						return true;
+					}
+				}
+				return false;
+			},
+		);
+		if (nodes.length === 0) {
+			return null;
+		}
+		return nodes[0];
+	}
+
+	public getReferenceLocationsForCodeSymbol(
+		node: CodeSymbolInformation,
+	): CodeSymbolInformation[] {
+		console.log(`code symbol we are searching for ${node.symbolName}`);
+		const references: CodeSymbolInformation[] = [];
+		const nodeSymbolsForReference: Set<string> = new Set();
+		for (const currentNode of this._nodes) {
+			if (currentNode.symbolName === 'src.codeGraph.embeddingsSearch.EmbeddingsSearch.generateNodesRelevantForUser') {
+				console.log('what are the dependencies');
+				console.log(currentNode.dependencies);
+				for (const edges of currentNode.dependencies) {
+					console.log(edges.edges.map((edge) => edge.codeSymbolName));
+					console.log(edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName));
+					if (edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName)) {
+						if (nodeSymbolsForReference.has(currentNode.symbolName) === false) {
+							references.push(currentNode);
+							nodeSymbolsForReference.add(currentNode.symbolName);
+						}
+					}
+				}
+			}
+		}
+		return references;
 	}
 }
 
@@ -83,9 +123,30 @@ const parsePythonFilesForCodeSymbols = async (
 	return codeSymbolInformationList;
 };
 
+
+const parseGoFilesForCodeSymbols = async (
+	goLangParser: GoLangParser,
+	workingDirectory: string,
+	filesToCheck: string[],
+	emitter: EventEmitter,
+): Promise<CodeSymbolInformation[]> => {
+	const codeSymbolInformationList: CodeSymbolInformation[] = [];
+	for (let index = 0; index < filesToCheck.length; index++) {
+		const file = filesToCheck[index];
+		if (!file.endsWith('.go')) {
+			continue;
+		}
+		const code = await goLangParser.parseFileWithDependencies(file, true);
+		emitter.emit('partialData', code);
+		codeSymbolInformationList.push(...code);
+	}
+	return codeSymbolInformationList;
+};
+
 export const generateCodeGraph = async (
 	projectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string,
 	emitter: EventEmitter,
 ): Promise<CodeGraph> => {
@@ -108,5 +169,12 @@ export const generateCodeGraph = async (
 		emitter,
 	);
 	finalNodeList.push(...pythonCodeSymbols);
+	const goLangCodeSymbols = await parseGoFilesForCodeSymbols(
+		goLangParser,
+		workingDirectory,
+		filesToTrack,
+		emitter,
+	);
+	finalNodeList.push(...goLangCodeSymbols);
 	return new CodeGraph(finalNodeList);
 };

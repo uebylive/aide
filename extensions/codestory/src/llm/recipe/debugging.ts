@@ -5,46 +5,55 @@
 
 // We are powering the debugging route here.
 import {
-	ChatCompletionRequestMessage,
-	ChatCompletionRequestMessageRoleEnum,
-	ChatCompletionResponseMessage,
-	Configuration,
-	CreateChatCompletionResponseChoicesInner,
-	OpenAIApi,
+	OpenAI,
 } from 'openai';
+import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
-import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, stripPrefix, writeFileContents } from './helpers';
+import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
-import { Type } from 'ts-morph';
-import { readFileSync } from 'fs';
-import { loadOrSaveToStorage } from '../../storage/types';
-import { indexRepository } from '../../storage/indexer';
 import { PythonServer } from '../../utilities/pythonServerClient';
+import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
+import { GoLangParser } from '../../languages/goCodeSymbols';
+import { Progress } from 'vscode';
+import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
 
-const configuration = new Configuration({
-	apiKey: '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',
+const openai = new OpenAI({
+	apiKey: getOpenAIApiKey(),
 });
-const openai = new OpenAIApi(configuration);
+// const openai = new OpenAI({
+// 	apiKey: 'EMPTY',
+// });
+// openai.baseURL = 'http://20.245.250.159:8080/v1'
 
 const systemPrompt = (): string => {
 	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
 };
 
 export const generateChatCompletion = async (
-	messages: ChatCompletionRequestMessage[]
-): Promise<CreateChatCompletionResponseChoicesInner | null> => {
-	const { data } = await openai.createChatCompletion({
+	messages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	context: string,
+	uniqueId: string,
+): Promise<OpenAI.Chat.Completions.ChatCompletion.Choice | null> => {
+	const completions = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
 		messages: messages,
-		max_tokens: 12000,
+		// TODO(codestory): Need to toggle this better
+		max_tokens: 8000,
 	});
-	console.log('data from openai');
-	console.log(data);
-	if (data.choices.length !== 0) {
-		return data.choices[0];
+	if (completions.choices.length !== 0) {
+		posthogClient.capture({
+			distinctId: uniqueId,
+			event: `[gpt4]${context}`,
+			properties: {
+				context: context,
+				completion: completions.choices[0].message,
+			},
+		});
+		return completions.choices[0];
 	}
 	return null;
 };
@@ -56,32 +65,33 @@ export const debuggingFlow = async (
 	embeddingsSearch: EmbeddingsSearch,
 	tsMorphProjectManagement: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string,
+	testSuiteRunCommand: string,
+	activeFilesTracker: ActiveFilesTracker,
+	uniqueId: string,
 ): Promise<null> => {
-	console.log('We are here debugging flow');
-	// allow-any-unicode-next-line
-	await toolingEventCollection.addThinkingEvent(prompt, '🤔 ...⌛ on how to help the user');
-	console.log('We are done with sending the first event');
-	let initialMessages: ChatCompletionRequestMessage[] = [
+	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');
+	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: systemPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.System,
+			role: 'system',
 		},
 		{
 			content: prompt,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 		{
 			content: generatePlanAndQueriesPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 	];
-	const response = await generateChatCompletion(initialMessages);
-	console.log('We are here....');
-	console.log(response);
+	const response = await generateChatCompletion(
+		initialMessages,
+		'initial_plan_and_queries',
+		uniqueId,
+	);
 	const planAndQueries = generatePlanAndQueriesResponseParser(response?.message?.content ?? '');
-	console.log('Whats the plan here');
-	console.log(planAndQueries);
 	// Adding tooling event for plan
 	await toolingEventCollection.addPlanForHelp(
 		prompt,
@@ -92,9 +102,9 @@ export const debuggingFlow = async (
 	// Now we will try and do the search over the symbols
 	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
-		embeddingsSearch
+		embeddingsSearch,
+		activeFilesTracker,
 	);
-	console.log('What are the relevant code symbols', relevantCodeSymbols);
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
 		planAndQueries?.queries ?? [],
@@ -105,15 +115,15 @@ export const debuggingFlow = async (
 	initialMessages = [
 		{
 			content: systemPrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.System,
+			role: 'system',
 		},
 		{
 			content: prompt,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 		{
 			content: planAndQueries?.additionalInstructions.join('\n') ?? '',
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		},
 	];
 	// Now we get all the file information for the symbols
@@ -121,6 +131,7 @@ export const debuggingFlow = async (
 		relevantCodeSymbols,
 		tsMorphProjectManagement,
 		pythonServer,
+		goLangParser,
 		workingDirectory,
 	);
 	initialMessages.push(
@@ -128,19 +139,28 @@ export const debuggingFlow = async (
 			content: await formatFileInformationListForPrompt(
 				fileCodeSymbolInformationList,
 			),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 	initialMessages.push(
 		{
 			content: fileFunctionsToParsePrompt(),
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
-	const fileFilterInformation = await generateChatCompletion(initialMessages);
+	const fileFilterInformation = await generateChatCompletion(
+		initialMessages,
+		'file_filtering',
+		uniqueId,
+	);
 	const codeSymbolModificationInstructions = generateFileFunctionsResponseParser(
 		fileFilterInformation?.message?.content ?? '',
 	);
+	// We want to remove the prompts here which sends over the data about the which
+	// files we need to parse to get the result,
+	// We should move this state management to its own component soon
+	initialMessages.pop();
+	initialMessages.pop();
 
 	// Now we start branching out, so we are going to send a event for this
 	await toolingEventCollection.branchingStartEvent(
@@ -157,12 +177,22 @@ export const debuggingFlow = async (
 			codeGraph,
 		);
 
+
 		if (!filePathForCodeNode) {
 			await toolingEventCollection.executionBranchFinished(
 				executionEventId.toString(),
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'File path not found',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]file_path_not_found',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					prompt,
+				},
+			});
 			//TODO(codestory) Send a failure event here
 			continue;
 		}
@@ -181,6 +211,7 @@ export const debuggingFlow = async (
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
 			[...initialMessages],
 			codeGraph,
+			uniqueId,
 		);
 		if (!codeModificationInput) {
 			await toolingEventCollection.executionBranchFinished(
@@ -188,6 +219,16 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'Code modification generation failure',
 			);
+			posthogClient.capture({
+				distinctId: uniqueId,
+				event: '[error]code_modification_generation_failure',
+				properties: {
+					codeSymbolName: codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+					initialMessages,
+					fileContent: previousFileContent,
+					prompt,
+				},
+			});
 			//TODO(codestory): Send a failure event here
 			continue;
 		}
@@ -205,6 +246,7 @@ export const debuggingFlow = async (
 			codeModificationInput,
 			codeGraph,
 			[...initialMessages],
+			uniqueId,
 		);
 		if (!newFileContent) {
 			await toolingEventCollection.executionBranchFinished(
@@ -230,6 +272,15 @@ export const debuggingFlow = async (
 			executionEventId.toString(),
 		);
 
+		if (!shouldExecuteTestHarness(testSuiteRunCommand)) {
+			await toolingEventCollection.executionBranchFinished(
+				executionEventId.toString(),
+				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
+				'Test harness not configured, skipping test execution',
+			);
+			continue;
+		}
+
 		// Now we are at the test plan generation phase
 		const testPlan = await generateTestScriptForChange(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
@@ -241,6 +292,7 @@ export const debuggingFlow = async (
 				workingDirectory,
 			),
 			previousFileContent,
+			uniqueId,
 		);
 
 		if (!testPlan) {
@@ -272,6 +324,7 @@ export const debuggingFlow = async (
 			tsMorphProjectManagement,
 			pythonServer,
 			workingDirectory,
+			uniqueId,
 		);
 
 		let branchFinishReason = '';

@@ -2,18 +2,22 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
+import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
 
-const configuration = new Configuration({
-	apiKey: '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',
+const openai = new OpenAI({
+	apiKey: getOpenAIApiKey(),
 });
-const openai = new OpenAIApi(configuration);
 
 export const generateEmbedding = async (prompt: string): Promise<number[]> => {
-	const response = await openai.createEmbedding({
-		model: 'text-embedding-ada-002',
-		input: prompt,
-	});
-	const [{ embedding }] = response.data.data;
-	return embedding;
+	try {
+		const response = await openai.embeddings.create({
+			model: 'text-embedding-ada-002',
+			input: prompt,
+		});
+		const [{ embedding }] = response.data;
+		return embedding;
+	} catch (error) {
+		return Array(1536).fill(0);
+	}
 };

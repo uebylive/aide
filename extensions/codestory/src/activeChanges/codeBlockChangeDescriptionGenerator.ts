@@ -2,15 +2,14 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { OutputChannel } from 'vscode';
 import { CodeSymbolChange, getCodeSymbolsChangedInSameBlockDescription } from './trackCodeSymbolChanges';
-import { ChatCompletionRequestMessage, Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 import { Logger } from 'winston';
+import { getOpenAIApiKey } from '../utilities/getOpenAIKey';
 
-const configuration = new Configuration({
-	apiKey: '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',
+const openai = new OpenAI({
+	apiKey: getOpenAIApiKey(),
 });
-const openai = new OpenAIApi(configuration);
 
 
 interface CodeBlockChangeDescriptionForWebView {
@@ -29,16 +28,19 @@ const getLanguageId = (filePath: string): string | null => {
 	if (fileExtension === '.py') {
 		return 'python';
 	}
+	if (fileExtension === '.go') {
+		return 'go';
+	}
 	return null;
 };
 
-export const generateChatCompletionWithGPT4 = async (messages: ChatCompletionRequestMessage[]) => {
-	const completion = await openai.createChatCompletion({
+export const generateChatCompletionWithGPT4 = async (messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]) => {
+	const completion = await openai.chat.completions.create({
 		model: 'gpt-4-32k',
 		messages,
 		max_tokens: 756,
 	});
-	const completionText = completion.data.choices[0].message?.content || '';
+	const completionText = completion.choices[0].message?.content || '';
 	return completionText;
 };
 
@@ -92,6 +94,7 @@ export class CodeBlockChangeDescriptionGenerator {
 			}));
 			this.logger.info('[codeBlockChangeDescriptionGenerator] Generated code block change description: ' + JSON.stringify(codeBlockChangeDescription));
 			const descriptionOfChange = await generateChatCompletionWithGPT4(codeBlockChangeDescription);
+			this.logger.info('[codeBlockChangeDescriptionGenerator][generateChatCompletionWithGPT4] Generated code block change description: ' + descriptionOfChange);
 			codeBlockChangeDescriptions.push({
 				componentIdentifier,
 				changeDescription: JSON.parse(descriptionOfChange),

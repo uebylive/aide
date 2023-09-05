@@ -47,11 +47,13 @@ export class FindInput extends Widget {
 	private placeholder: string;
 	private validation?: IInputValidator;
 	private label: string;
-	private readonly showCommonFindToggles: boolean;
+	private showCommonFindToggles: boolean;
 	private fixFocusOnOptionClickEnabled = true;
 	private imeSessionInProgress = false;
 	private additionalTogglesDisposables: DisposableStore = new DisposableStore();
+	private readonly renderOptions: IFindInputOptions;
 
+	protected isSemantic?: boolean;
 	protected readonly controls: HTMLDivElement;
 	protected readonly regex?: RegexToggle;
 	protected readonly wholeWords?: WholeWordsToggle;
@@ -83,14 +85,15 @@ export class FindInput extends Widget {
 
 	constructor(parent: HTMLElement | null, contextViewProvider: IContextViewProvider | undefined, options: IFindInputOptions) {
 		super();
+		this.renderOptions = options;
 		this.placeholder = options.placeholder || '';
 		this.validation = options.validation;
 		this.label = options.label || NLS_DEFAULT_LABEL;
 		this.showCommonFindToggles = !!options.showCommonFindToggles;
 
-		const appendCaseSensitiveLabel = options.appendCaseSensitiveLabel || '';
-		const appendWholeWordsLabel = options.appendWholeWordsLabel || '';
-		const appendRegexLabel = options.appendRegexLabel || '';
+		const appendCaseSensitiveLabel = this.renderOptions.appendCaseSensitiveLabel || '';
+		const appendWholeWordsLabel = this.renderOptions.appendWholeWordsLabel || '';
+		const appendRegexLabel = this.renderOptions.appendRegexLabel || '';
 		const history = options.history || [];
 		const flexibleHeight = !!options.flexibleHeight;
 		const flexibleWidth = !!options.flexibleWidth;
@@ -117,7 +120,7 @@ export class FindInput extends Widget {
 			this.regex = this._register(new RegexToggle({
 				appendTitle: appendRegexLabel,
 				isChecked: false,
-				...options.toggleStyles
+				...this.renderOptions.toggleStyles
 			}));
 			this._register(this.regex.onChange(viaKeyboard => {
 				this._onDidOptionChange.fire(viaKeyboard);
@@ -133,7 +136,7 @@ export class FindInput extends Widget {
 			this.wholeWords = this._register(new WholeWordsToggle({
 				appendTitle: appendWholeWordsLabel,
 				isChecked: false,
-				...options.toggleStyles
+				...this.renderOptions.toggleStyles
 			}));
 			this._register(this.wholeWords.onChange(viaKeyboard => {
 				this._onDidOptionChange.fire(viaKeyboard);
@@ -146,7 +149,7 @@ export class FindInput extends Widget {
 			this.caseSensitive = this._register(new CaseSensitiveToggle({
 				appendTitle: appendCaseSensitiveLabel,
 				isChecked: false,
-				...options.toggleStyles
+				...this.renderOptions.toggleStyles
 			}));
 			this._register(this.caseSensitive.onChange(viaKeyboard => {
 				this._onDidOptionChange.fire(viaKeyboard);
@@ -271,6 +274,17 @@ export class FindInput extends Widget {
 		} else {
 			this.disable();
 		}
+	}
+
+	public getIsSemantic(): boolean {
+		return this.isSemantic ?? false;
+	}
+
+	public setIsSemantic(isSemantic: boolean): void {
+		this.isSemantic = isSemantic;
+		this.showCommonFindToggles = !isSemantic;
+		this.controls.style.display = !isSemantic ? '' : 'none';
+		this.updateInputBoxPadding(isSemantic);
 	}
 
 	public setAdditionalToggles(toggles: Toggle[] | undefined): void {

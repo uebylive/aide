@@ -8,7 +8,13 @@
     "vscode": "^1.75.0"
   },
   "main": "./out/extension.js",
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished",
+    "onSearch:text"
+  ],
+  "enabledApiProposals": [
+    "interactive"
+  ],
   "license": "UNLICENSED",
   "repository": {
     "url": "https://github.com/codestoryai"
@@ -24,43 +30,59 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "codestory",
-          "title": "CodeStory",
-          "icon": "assets/cs-logomark.svg"
+          "id": "changeTracker",
+          "title": "Change Tracker",
+          "icon": "assets/versions.svg"
         }
       ]
     },
     "views": {
-      "codestory": [
+      "changeTracker": [
         {
           "type": "webview",
           "id": "codestory.webView",
-          "name": "CodeStory"
-        },
-        {
-          "type": "webview",
-          "id": "codestory.agentView",
-          "name": "CodeStory Agent"
+          "name": "Change Tracker"
         }
       ]
     },
+    "interactiveSession": [
+      {
+        "id": "cs-chat",
+        "label": "CodeStory Agent",
+        "icon": "assets/message-code.svg"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "workbench.action.focusHoverChat.cs-chat",
+        "key": "shift shift",
+        "mac": "shift shift"
+      }
+    ],
     "configuration": {
       "type": "object",
-      "title": "Your Extension Settings",
+      "title": "Aide Extension settings",
       "properties": {
         "aide.activeDirectories": {
           "type": "string",
           "default": "",
           "description": "Set the active directories for Aide to look at as comma separated values of absolute path. For example: /a/b/c , /d/e/f"
+        },
+        "aide.testSuiteRunCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Tell Aide how to run your test suite, for example for jest framework and when using yarn the command will be: `yarn run jest test`"
+        },
+        "codestory.openaiApiKey": {
+          "type": "string",
+          "default": "NOT_SET",
+          "description": "Use a custom api key for OpenAI"
         }
       }
     }
   },
   "scripts": {
-    "install:all": "yarn install && cd webview-ui && yarn install && cd ../webview-ui-sideview && yarn install",
-    "start:webview": "cd webview-ui && npm run start",
-    "start:webview-sideview": "cd webview-ui-sideview && npm run start",
-    "build:webview": "cd webview-ui && npm run build",
+    "install:all": "yarn install && cd webview-ui-sideview && yarn install",
     "start:webview_sideview": "cd webview-ui-sideview && npm run start",
     "build:webview_sideview": "cd webview-ui-sideview && npm run build",
     "vscode:prepublish": "npm run compile:tsc",
@@ -87,6 +109,7 @@
     "vscode-test": "^1.5.0"
   },
   "dependencies": {
+    "@axflow/models": "^0.0.1-beta.3",
     "@estruyf/vscode": "^1.1.0",
     "@google-cloud/storage": "^7.0.1",
     "balanced-match": "^2.0.0",
@@ -94,17 +117,22 @@
     "core-util-is": "^1.0.3",
     "diff": "^5.1.0",
     "fkill": "^8.1.1",
+    "gpt-tokenizer": "^2.1.1",
     "isarray": "^2.0.5",
     "jest": "^29.6.2",
     "mathjs": "^11.9.1",
     "node-fetch": "^3.3.2",
-    "openai": "^3.3.0",
+    "node-gyp": "^9.4.0",
+    "openai": "^4.0.1",
     "posthog-node": "^3.1.1",
     "process-nextick-args": "^2.0.1",
     "shiki": "^0.14.3",
+    "tree-sitter": "^0.20.5",
+    "tree-sitter-go": "^0.20.0",
     "ts-morph": "^19.0.0",
     "vscode-languageclient": "^8.1.0",
     "vscode-languageserver": "^8.1.0",
+    "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",
     "winston-vscode": "^1.0.0"
   }

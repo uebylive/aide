@@ -14,12 +14,13 @@ import {
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from '../utilities/types';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { generateEmbedding } from '../llm/embeddings/openai';
-import { ExtensionContext, languages } from 'vscode';
+import { ExtensionContext, Uri, languages, workspace } from 'vscode';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from '../git/helper';
 import logger from '../logger';
 import EventEmitter = require('events');
 import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
 import { PythonServer } from '../utilities/pythonServerClient';
+import { GoLangParser } from '../languages/goCodeSymbols';
 // import logger from '../logger';
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -76,8 +77,6 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 		'descriptions',
 	);
 	const files = await fs.promises.readdir(directoryPath);
-	logger.info('[indexing_start] loading from files');
-	logger.info(files.length);
 	const codeSymbolInformationEmbeddingsList: CodeSymbolInformationEmbeddings[] = [];
 	for (let index = 0; index < files.length; index++) {
 		const file = files[index];
@@ -86,11 +85,8 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 		const filePath = path.join(directoryPath, file);
 		logger.info(filePath);
 		const fileContent = fs.readFileSync(filePath);
-		logger.info('[indexing_start] loaded from file');
 		try {
 			const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
-			logger.info('[indexing_start] parsed from json');
-			logger.info(codeSymbolInformationEmbeddings);
 			emitter.emit('partialData', codeSymbolInformationEmbeddings);
 			codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
 		} catch (error) {
@@ -102,6 +98,7 @@ export async function loadCodeSymbolDescriptionFromLocalStorage(
 	return codeSymbolInformationEmbeddingsList;
 }
 
+
 export const getCodeSymbolList = async (
 	project: Project,
 	workingDirectory: string
@@ -109,15 +106,24 @@ export const getCodeSymbolList = async (
 	const sourceFiles = project.getSourceFiles();
 	const codeSymbolInformationList: CodeSymbolInformation[] = [];
 	for (let index = 0; index < sourceFiles.length; index++) {
-		const sourceFile = sourceFiles[index];
-		const sourceFilePath = sourceFile.getFilePath();
-		const codeSymbolInformation = parseFileUsingTsMorph(
-			sourceFilePath,
-			project,
-			workingDirectory,
-			sourceFilePath
-		);
-		codeSymbolInformationList.push(...codeSymbolInformation);
+		console.log(`Parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+		try {
+			const sourceFile = sourceFiles[index];
+			const sourceFilePath = sourceFile.getFilePath();
+			console.log(`[parsed_code_symbol_list] Got file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			const codeSymbolInformation = await parseFileUsingTsMorph(
+				sourceFilePath,
+				project,
+				workingDirectory,
+				sourceFilePath
+			);
+			console.log(`[parsed_code_symbol_list] Parsing complete ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			codeSymbolInformationList.push(...codeSymbolInformation);
+			console.log(`[parsed_code_symbol_list] Parsed file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+		} catch (error) {
+			console.log(`[parsed_code_symbol_list] Error parsing file ${index} of ${sourceFiles.length} value: ${sourceFiles[index].getFilePath()}`);
+			console.log(error);
+		}
 	}
 	return codeSymbolInformationList;
 };
@@ -156,6 +162,51 @@ const generateAndStoreEmbeddings = async (
 };
 
 
+const generateAndStoreEmbeddingsForGolangFiles = async (
+	goLangParser: GoLangParser,
+	workingDirectory: string,
+	filesToTrack: string[],
+	emitter: EventEmitter,
+	globalStorageUri: string,
+): Promise<CodeSymbolInformationEmbeddings[]> => {
+	console.log('[golang] Generating symbols');
+	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		if (!filePath.endsWith('.go')) {
+			continue;
+		}
+		logger.info('[golang][generateSymbols][without-dependency][indexer] ' + filePath);
+		const _ = await goLangParser.parseFileWithoutDependency(
+			filePath,
+		);
+		console.log('[golang][generateSymbols] ' + filePath);
+	}
+
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		if (!filePath.endsWith('.go')) {
+			continue;
+		}
+		logger.info('[golang][generateSymbols][with-dependency][indexer] ' + filePath);
+		const codeSymbolsWithDependencies = await goLangParser.parseFileWithDependencies(
+			filePath,
+		);
+		logger.info('[golang][generateSymbols][dependencies] ' + filePath);
+		const codeSymbolsWithEmbeddings = await generateAndStoreEmbeddings(
+			codeSymbolsWithDependencies,
+			workingDirectory,
+			globalStorageUri
+		);
+		codeSymbolsWithEmbeddings.forEach((codeSymbolsWithEmbeddings) => {
+			emitter.emit('partialData', codeSymbolsWithEmbeddings);
+		});
+		finalCodeSymbolWithEmbeddings.push(...codeSymbolsWithEmbeddings);
+	}
+	return finalCodeSymbolWithEmbeddings;
+};
+
+
 const generateAndStoreEmbeddingsForPythonFiles = async (
 	pythonClient: PythonServer,
 	workingDirectory: string,
@@ -169,7 +220,6 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
 		if (!filePath.endsWith('.py')) {
 			continue;
 		}
-		console.log('Parsing python file' + filePath);
 		const codeSymbols = await pythonClient.parseFile(
 			filePath,
 		);
@@ -187,10 +237,28 @@ const generateAndStoreEmbeddingsForPythonFiles = async (
 };
 
 
+const checkIfProjectWasIndexed = (
+	globalStorageUri: string,
+	remoteSession: string,
+): boolean => {
+	const directoryPath = path.join(
+		globalStorageUri,
+		remoteSession,
+		'code_symbol',
+		'descriptions',
+	);
+	if (fs.existsSync(directoryPath)) {
+		return true;
+	}
+	return false;
+};
+
+
 export const indexRepository = async (
 	storage: CodeStoryStorage,
 	projectManagement: TSMorphProjectManagement,
 	pythonClient: PythonServer,
+	goLangParser: GoLangParser,
 	globalStorageUri: string,
 	workingDirectory: string,
 	emitter: EventEmitter,
@@ -204,24 +272,32 @@ export const indexRepository = async (
 	// for now this is fine.
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(workingDirectory);
 	let codeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+
+	const repoName = await getGitRepoName(workingDirectory);
 	logger.info('[indexing_start] Starting indexing', storage.isIndexed);
-	if (!storage.isIndexed) {
+	// We also need to check if the storage directory exists, if it does not
+	// then we have to retrigger the indexing again
+	const wasProjectIndexed = checkIfProjectWasIndexed(
+		globalStorageUri,
+		repoName,
+	);
+	if (!storage.isIndexed || !wasProjectIndexed) {
 		// logger.info('[indexing_start] Starting indexing');
 		// Start re-indexing right now.
-		projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+		for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
 			const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
 			const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
 				codeSymbolInformationList,
 				workingDirectory,
 				globalStorageUri
 			);
-			codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+			for (const codeSymbolWithEmbeddings of codeSymbolWithEmbeddingsForProject) {
 				logger.info('[indexing_start] Starting indexing for project');
 				logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
 				emitter.emit('partialData', codeSymbolWithEmbeddings);
-			});
+			}
 			codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-		});
+		}
 		// parse the python files
 		const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 			pythonClient,
@@ -230,10 +306,18 @@ export const indexRepository = async (
 			emitter,
 			globalStorageUri,
 		);
+		const goLangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
+			goLangParser,
+			workingDirectory,
+			filesToTrack,
+			emitter,
+			globalStorageUri,
+		);
+		codeSymbolWithEmbeddings.push(...goLangSymbols);
 		codeSymbolWithEmbeddings.push(...pythonSymbols);
 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 		storage.isIndexed = true;
-		saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+		await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
 	} else {
 		// TODO(codestory): Only look at the delta and re-index these files which have changed.
 		const currentHash = await getGitCurrentHash(workingDirectory);
@@ -243,7 +327,7 @@ export const indexRepository = async (
 		if (currentHash !== storage.lastIndexedRepoHash) {
 			// We need to re-index the repo
 			// TODO(codestory): Repeated code here, we need to clean it up
-			projectManagement.directoryToProjectMapping.forEach(async (project, workingDirectory) => {
+			for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
 				const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
 				logger.info('[indexing_start] Starting indexing for project');
 				const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
@@ -253,7 +337,7 @@ export const indexRepository = async (
 				);
 				emitter.emit('partialData', codeSymbolWithEmbeddingsForProject);
 				codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-			});
+			}
 			// parse the python files
 			const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 				pythonClient,
@@ -262,14 +346,21 @@ export const indexRepository = async (
 				emitter,
 				globalStorageUri,
 			);
+			const golangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
+				goLangParser,
+				workingDirectory,
+				filesToTrack,
+				emitter,
+				globalStorageUri,
+			);
+			codeSymbolWithEmbeddings.push(...golangSymbols);
 			codeSymbolWithEmbeddings.push(...pythonSymbols);
 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 			storage.isIndexed = true;
-			saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
+			await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
 		} else {
 			// We should load all the code symbols with embeddings from the local storage
 			// and return it
-			const repoName = await getGitRepoName(workingDirectory);
 			logger.info('[indexing_start] Loading from local storage');
 			codeSymbolWithEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
 				globalStorageUri,

@@ -80,6 +80,7 @@ export interface ITextQueryBuilderOptions extends ICommonQueryBuilderOptions {
 	beforeContext?: number;
 	afterContext?: number;
 	isSmartCase?: boolean;
+	isSemantic?: boolean;
 	notebookSearchConfig?: {
 		includeMarkupInput: boolean;
 		includeMarkupPreview: boolean;
@@ -119,7 +120,7 @@ export class QueryBuilder {
 			beforeContext: options.beforeContext,
 			afterContext: options.afterContext,
 			userDisabledExcludesAndIgnoreFiles: options.disregardExcludeSettings && options.disregardIgnoreFiles,
-
+			useSemantic: options.isSemantic,
 		};
 	}
 

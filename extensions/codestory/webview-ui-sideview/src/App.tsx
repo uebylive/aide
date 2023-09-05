@@ -6,11 +6,10 @@ import { EventData } from '@estruyf/vscode';
 import { Messenger } from '@estruyf/vscode/dist/client';
 import { useEffect } from 'react';
 
-import { ReactComponent as CSLogoMark } from './assets/cs-logomark.svg';
 import { Explain } from './pages/Explain';
-import { Home } from './pages/Home';
 import { Setup } from './pages/Setup';
 import { Commit } from './pages/Commit';
+import { TimeLine } from './pages';
 import {
 	usePageStore,
 	useExplanationStore,
@@ -19,25 +18,11 @@ import {
 	useChangedCodeBlockChangeDescriptionStore,
 } from './store';
 import {
-	PageType,
 	ExplanationData,
 	HealthState,
 	CodeSymbolChange,
 	CodeBlockChangeDescription,
 } from './types';
-
-const getPageName = (page: PageType): string => {
-	switch (page) {
-		case 'search':
-			return 'Search';
-		case 'explain':
-			return 'Explain';
-		case 'commit':
-			return 'Commit';
-		default:
-			return 'CodeStory';
-	}
-};
 
 function App() {
 	const { page, setPage } = usePageStore();
@@ -68,7 +53,6 @@ function App() {
 				console.log('[debugging] What is the changelog payload', payload);
 				const payloadData = (payload as { changes: CodeSymbolChange[] })
 					.changes;
-				console.log('[debugging] What is the changelog', payloadData);
 				setChangedCodeSymbol(
 					payloadData.map((change) => ({
 						...change,
@@ -76,7 +60,6 @@ function App() {
 					}))
 				);
 			} else if (command === 'getComponentChangeDescription') {
-				console.log('[debugging] whats the payload we have here', payload);
 				const payloadData = payload as {
 					codeBlockChangeDescriptions: CodeBlockChangeDescription[];
 				};
@@ -99,11 +82,7 @@ function App() {
 
 	return (
 		<main className='h-screen bg-vscode-sideBar-background'>
-			<div className='fixed w-full top-0 py-2 flex flex-row grow bg-vscode-sideBar-background z-10'>
-				<CSLogoMark className='h-12 mx-1' />
-				<h1 className='text-xl font-bold self-center'>{getPageName(page)}</h1>
-			</div>
-			<div className='h-full pt-16 relative w-full overflow-x-hidden'>
+			<div className='h-full relative w-full overflow-x-hidden'>
 				{(() => {
 					switch (page) {
 						case 'setup':
@@ -113,7 +92,7 @@ function App() {
 						case 'commit':
 							return <Commit />;
 						default:
-							return <Home setPage={setPage} />;
+							return <TimeLine />;
 					}
 				})()}
 			</div>

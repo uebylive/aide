@@ -2,7 +2,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { workspace, languages, Uri, commands, env, ExtensionContext, OutputChannel, Position, window } from 'vscode';
+import { commands, env, ExtensionContext, interactive, ProgressLocation, TextDocument, window, workspace } from 'vscode';
+import { EventEmitter } from 'events';
+import winston from 'winston';
+
 import { CodeStoryStorage, loadOrSaveToStorage } from './storage/types';
 import { indexRepository } from './storage/indexer';
 import { getProject, TSMorphProjectManagement } from './utilities/parseTypescript';
@@ -10,8 +13,7 @@ import logger from './logger';
 import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
 import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
 import postHogClient from './posthog/client';
-import { AgentViewProvider } from './views/AgentView';
-import { CodeStoryViewProvider } from './views/codeStoryView';
+import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
 import { openFile, search } from './subscriptions/search';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
@@ -23,13 +25,14 @@ import { gitCommit } from './subscriptions/gitCommit';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
-
-import { EventEmitter } from 'events';
-import { readActiveDirectoriesConfiguration } from './utilities/activeDirectories';
+import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
 import { startAidePythonBackend } from './utilities/setupAntonBackend';
 import { PythonServer } from './utilities/pythonServerClient';
-import { sleep } from './utilities/sleep';
-import winston from 'winston';
+import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
+import { CSChatProvider } from './providers/chatprovider';
+import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
+import { GoLangParser } from './languages/goCodeSymbols';
+import { CodeSymbolInformationEmbeddings } from './utilities/types';
 
 
 class ProgressiveTrackSymbols {
@@ -75,11 +78,13 @@ class ProgressiveGraphBuilder {
 	async loadGraph(
 		projectManagement: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		workingDirectory: string,
 	) {
 		await generateCodeGraph(
 			projectManagement,
 			pythonServer,
+			goLangParser,
 			workingDirectory,
 			this.emitter,
 		);
@@ -101,19 +106,27 @@ class ProgressiveIndexer {
 		storage: CodeStoryStorage,
 		projectManagement: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		globalStorageUri: string,
 		workingDirectory: string
 	) {
-		// Sleep for a bit before starting the heavy lifting, so other parts of the
-		// extension can load up
-		await sleep(1000);
-		await indexRepository(
-			storage,
-			projectManagement,
-			pythonServer,
-			globalStorageUri,
-			workingDirectory,
-			this.emitter
+		await window.withProgress(
+			{
+				location: ProgressLocation.Window,
+				title: '[CodeStory] Indexing repository',
+				cancellable: false,
+			},
+			async () => {
+				await indexRepository(
+					storage,
+					projectManagement,
+					pythonServer,
+					goLangParser,
+					globalStorageUri,
+					workingDirectory,
+					this.emitter
+				);
+			}
 		);
 	}
 
@@ -122,32 +135,49 @@ class ProgressiveIndexer {
 	}
 }
 
-async function deferredStartup(
-	context: ExtensionContext,
-	rootPath: string,
-	agentViewProvider: AgentViewProvider,
-	csViewProvider: CodeStoryViewProvider,
-) {
-	const repoName = await getGitRepoName(rootPath);
-	const repoHash = await getGitCurrentHash(rootPath);
+export async function activate(context: ExtensionContext) {
+	// Project root here
+	logger.info(`[CodeStory] Activating extension with storage: ${context.globalStorageUri}`);
+	postHogClient.capture({
+		distinctId: env.machineId,
+		event: 'extension_activated',
+	});
+	let rootPath = workspace.rootPath;
+	if (!rootPath) {
+		rootPath = '';
+	}
+	if (rootPath === '') {
+		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
+		return;
+	}
+	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+	const repoName = await getGitRepoName(
+		rootPath,
+	);
+	const repoHash = await getGitCurrentHash(
+		rootPath,
+	);
 
-	// Now we want to register the HC
-	context.subscriptions.push(healthCheck(context, csViewProvider, repoName, repoHash));
-	commands.executeCommand('codestory.healthCheck');
-
+	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
 	const pythonServer = new PythonServer(serverUrl);
+	const goLangParser = new GoLangParser(rootPath ?? '');
+
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
 	logger.info(codeStoryStorage);
 	logger.info(rootPath);
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
+	const testSuiteRunCommand = readTestSuiteRunCommand();
 	logger.info(activeDirectories);
-	const projectManagement = await getProject(activeDirectories);
+	const extensionSet = getExtensionsInDirectory(rootPath);
+	const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
+	// Active files tracker
+	const activeFilesTracker = new ActiveFilesTracker();
 
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
@@ -155,49 +185,106 @@ async function deferredStartup(
 	indexer.on('partialData', (partialData) => {
 		embeddingsIndex.updateNodes(partialData);
 	});
-	indexer.indexRepository(
+	await indexer.indexRepository(
 		codeStoryStorage,
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
+
+
+	// Register the semantic search command here
+	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
+		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+		postHogClient.capture({
+			distinctId: env.machineId,
+			event: 'search',
+			properties: {
+				prompt,
+				repoName,
+				repoHash,
+			},
+		});
+		const results = await embeddingsIndex.generateNodesForUserQuery(prompt, activeFilesTracker);
+		return results;
+	});
 
 	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
 	const codeGraph = new CodeGraph([]);
 	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
-	progressiveGraphBuilder.loadGraph(
+	await progressiveGraphBuilder.loadGraph(
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		rootPath,
 	);
+
+	// Register chat provider
+	const chatProvider = new CSChatProvider(
+		rootPath, codeGraph, repoName, repoHash,
+		embeddingsIndex, projectManagement, pythonServer, goLangParser,
+		testSuiteRunCommand, activeFilesTracker,
+	);
+	const interactiveSession = interactive.registerInteractiveSessionProvider(
+		'cs-chat', chatProvider
+	);
+	context.subscriptions.push(interactiveSession);
+	await commands.executeCommand('workbench.action.chat.clear');
+	await commands.executeCommand('workbench.action.toggleHoverChat.cs-chat');
 
 	context.subscriptions.push(
 		debug(
 			// TODO(codestory): Fix this properly later on
-			agentViewProvider,
+			chatProvider,
 			embeddingsIndex,
 			projectManagement,
 			pythonServer,
+			goLangParser,
 			codeGraph,
 			repoName,
 			repoHash,
-			rootPath ?? ''
+			rootPath ?? '',
+			testSuiteRunCommand,
+			activeFilesTracker,
 		)
 	);
+
+	// Create the copy settings from vscode command for the extension
+	const registerCopySettingsCommand = commands.registerCommand(
+		'webview.copySettings',
+		async () => {
+			await copySettings(rootPath ?? '', logger);
+		}
+	);
+
+	// Register the codestory view provider
+	// Create a new CodeStoryViewProvider instance and register it with the extension's context
+	const provider = new CodeStoryViewProvider(context.extensionUri, new Date());
+	context.subscriptions.push(
+		window.registerWebviewViewProvider(CodeStoryViewProvider.viewType, provider, {
+			webviewOptions: { retainContextWhenHidden: true },
+		})
+	);
+
+	// Now we want to register the HC
+	context.subscriptions.push(healthCheck(context, provider, repoName, repoHash));
+	commands.executeCommand('codestory.healthCheck');
 
 	// We register the search command
 	// Semantic search
 	context.subscriptions.push(
-		search(csViewProvider, embeddingsIndex, repoName, repoHash),
+		search(provider, embeddingsIndex, repoName, repoHash),
 		openFile(logger)
 	);
 
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		projectManagement,
 		pythonServer,
+		goLangParser,
 		rootPath ?? '',
 		logger
 	);
@@ -212,20 +299,19 @@ async function deferredStartup(
 			fileChangedEvent.codeSymbols
 		);
 	});
-	// progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
-	//   trackCodeSymbolChanges,
-	//   rootPath ?? '',
-	//   logger,
-	// );
+	await progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
+		trackCodeSymbolChanges,
+		rootPath ?? '',
+		logger,
+	);
 	logger.info('[check 9]We are over here');
 
 	// Also track the documents when they were last opened
-	context.subscriptions.push(
-		workspace.onDidOpenTextDocument(async (doc) => {
-			const uri = doc.uri;
-			await trackCodeSymbolChanges.fileOpened(uri, logger);
-		})
-	);
+	// context.subscriptions.push(
+	workspace.onDidOpenTextDocument(async (doc) => {
+		const uri = doc.uri;
+		await trackCodeSymbolChanges.fileOpened(uri, logger);
+	});
 
 	logger.info('[check 10]We are over here');
 
@@ -236,7 +322,7 @@ async function deferredStartup(
 			const fsPath = doc.uri.fsPath;
 			await trackCodeSymbolChanges.fileSaved(uri, logger);
 			await triggerCodeSymbolChange(
-				csViewProvider,
+				provider,
 				trackCodeSymbolChanges,
 				timeKeeperFileSaved,
 				fsPath,
@@ -246,128 +332,23 @@ async function deferredStartup(
 		})
 	);
 
-	await sleep(1000);
-	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		'typescript'
-	);
-	logger.info('[document-symbol-providers golang]');
-	logger.info(documentSymbolProviders);
-	const uri = Uri.file('/Users/skcd/test_repo/ripgrep/crates/core/logger.rs');
-	const textDocument = await workspace.openTextDocument(uri);
-	for (let index = 0; index < documentSymbolProviders.length; index++) {
-		logger.info('[text documents]');
-		logger.info(workspace.textDocuments.map(document => document.uri.fsPath));
-		if (textDocument) {
-			logger.info('[textDocuments]');
-			const documentSymbols = await documentSymbolProviders[index].provideDocumentSymbols(
-				textDocument,
-				{
-					isCancellationRequested: false,
-					onCancellationRequested: () => ({ dispose() { } }),
-				},
-			);
-			logger.info('[symbolsDocument]');
-			logger.info(documentSymbols?.map((symbol) => symbol.name));
-		} else {
-			logger.info('file not found');
-		}
-	}
-	logger.info('[document-symbol-providers] ' + documentSymbolProviders.length);
-
-
-	const providers = languages.getDefinitionProvider({
-		language: 'typescript',
-		scheme: 'file',
-	});
-	logger.info('[providers for language ss]' + providers.length);
-	for (let index = 0; index < providers.length; index++) {
-		logger.info('asking for definitions');
-		try {
-			const definitions = await providers[index].provideDefinition(
-				textDocument,
-				new Position(37, 29),
-				{
-					isCancellationRequested: false,
-					onCancellationRequested: () => ({ dispose() { } }),
-				}
-			);
-			logger.info('[definitions sss]');
-			logger.info(definitions);
-		} catch (e) {
-			logger.info(e);
-		}
-	}
-
-	const referencesProviders = languages.getReferenceProvider({
-		language: 'typescript',
-		scheme: 'file',
-	});
-	logger.info('[references for language ss]' + referencesProviders.length);
-	for (let index = 0; index < referencesProviders.length; index++) {
-		try {
-			logger.info('asking for references');
-			const references = await referencesProviders[index].provideReferences(
-				textDocument,
-				new Position(25, 16),
-				{
-					includeDeclaration: true,
-				},
-				{
-					isCancellationRequested: false,
-					onCancellationRequested: () => ({ dispose() { } }),
-				}
-			);
-			logger.info('[references sss]');
-			logger.info(references);
-		} catch (e) {
-			logger.info(e);
-		}
-	}
-
 	// Add git commit to the subscriptions here
 	// Git commit
 	context.subscriptions.push(gitCommit(logger, repoName, repoHash));
-}
-
-export async function activate(context: ExtensionContext) {
-	// Project root here
-	postHogClient.capture({
-		distinctId: env.machineId,
-		event: 'extension_activated',
-	});
-	let rootPath = workspace.rootPath;
-	if (!rootPath) {
-		rootPath = '';
-	}
-	if (rootPath === '') {
-		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
-		return;
-	}
-
-	// Create the copy settings from vscode command for the extension
-	const registerCopySettingsCommand = commands.registerCommand(
-		'webview.copySettings',
-		async () => {
-			await copySettings(rootPath ?? '', logger);
-		}
-	);
 	context.subscriptions.push(registerCopySettingsCommand);
 
-	// Register the agent view provider
-	const agentViewProvider = new AgentViewProvider(context.extensionUri);
-	context.subscriptions.push(
-		window.registerWebviewViewProvider(AgentViewProvider.viewType, agentViewProvider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		})
-	);
+	// Listen for document opened events
+	workspace.onDidOpenTextDocument((document: TextDocument) => {
+		activeFilesTracker.openTextDocument(document);
+	});
 
-	// Register the codestory view provider
-	const csViewProvider = new CodeStoryViewProvider(context.extensionUri, new Date());
-	context.subscriptions.push(
-		window.registerWebviewViewProvider(CodeStoryViewProvider.viewType, csViewProvider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		})
-	);
+	// Listen for document closed events
+	workspace.onDidCloseTextDocument((document: TextDocument) => {
+		activeFilesTracker.onCloseTextDocument(document);
+	});
 
-	deferredStartup(context, rootPath, agentViewProvider, csViewProvider);
+	// Listen for active editor change events (user navigating between files)
+	window.onDidChangeActiveTextEditor((editor) => {
+		activeFilesTracker.onDidChangeActiveTextEditor(editor);
+	});
 }

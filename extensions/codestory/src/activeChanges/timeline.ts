@@ -4,20 +4,20 @@
  *--------------------------------------------------------------------------------------------*/
 import * as path from 'path';
 import { createPatch } from 'diff';
-import { Configuration, OpenAIApi } from 'openai';
+import { OpenAI } from 'openai';
 import { ExtensionContext, OutputChannel, workspace } from 'vscode';
 import { CodeSymbolChange, CodeSymbolChangeType, TrackCodeSymbolChanges } from './trackCodeSymbolChanges';
 import { stateManager } from '../utilities/stateManager';
-import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TimeKeeper } from '../subscriptions/timekeeper';
 import { CodeBlockChangeDescriptionGenerator } from './codeBlockChangeDescriptionGenerator';
 import { Logger } from 'winston';
+import { getOpenAIApiKey } from '../utilities/getOpenAIKey';
 
 
-const configuration = new Configuration({
-	apiKey: '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',
+const openai = new OpenAI({
+	apiKey: getOpenAIApiKey(),
 });
-const openai = new OpenAIApi(configuration);
 
 // The data we need to send over to the webview for rendering the timeline
 export interface CodeSymbolChangeWebView {
@@ -99,9 +99,11 @@ export const triggerCodeSymbolChange = async (
 	logger: Logger,
 ) => {
 	if (!trackCodeSymbolChanges.statusUpdated) {
+		logger.info('[timeline-debugging] status not updated yet');
 		return;
 	}
 	if (!timeKeeperFileSaved.isInvocationAllowed(Date.now())) {
+		logger.info('[timeline-debugging] invocation not allowed yet because of time difference');
 		return;
 	}
 	const trackedCodeSymbolChanges = await trackCodeSymbolChanges.getTreeListOfChangesWeHaveToCommit(

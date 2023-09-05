@@ -143,17 +143,17 @@ export const startEntries: GettingStartedStartEntryContent = [
 			command: 'command:welcome.showAllWalkthroughs',
 		}
 	},
-	// {
-	// 	id: 'topLevelRemoteOpen',
-	// 	title: localize('gettingStarted.topLevelRemoteOpen.title', "Connect to..."),
-	// 	description: localize('gettingStarted.topLevelRemoteOpen.description', "Connect to remote development workspaces."),
-	// 	when: '!isWeb && showRemoteStartEntry',
-	// 	icon: Codicon.remote,
-	// 	content: {
-	// 		type: 'startEntry',
-	// 		command: 'command:workbench.action.remote.showMenu',
-	// 	}
-	// },
+	{
+		id: 'topLevelRemoteOpen',
+		title: localize('gettingStarted.topLevelRemoteOpen.title', "Connect to..."),
+		description: localize('gettingStarted.topLevelRemoteOpen.description', "Connect to remote development workspaces."),
+		when: '!isWeb',
+		icon: Codicon.remote,
+		content: {
+			type: 'startEntry',
+			command: 'command:workbench.action.remote.showMenu',
+		}
+	},
 	{
 		id: 'topLevelOpenTunnel',
 		title: localize('gettingStarted.topLevelOpenTunnel.title', "Open Tunnel..."),

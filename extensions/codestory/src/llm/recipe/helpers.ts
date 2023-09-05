@@ -2,7 +2,8 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { ChatCompletionRequestMessage, ChatCompletionRequestMessageRoleEnum } from 'openai';
+import * as vscode from 'vscode';
+import { OpenAI } from 'openai';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
 import { getCodeSymbolList } from '../../storage/indexer';
 import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../../utilities/parseTypescript';
@@ -15,16 +16,34 @@ import { generateChatCompletion } from './debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { runCommandAsync } from '../../utilities/commandRunner';
 import { PythonServer } from '../../utilities/pythonServerClient';
+import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
+import { GoLangParser } from '../../languages/goCodeSymbols';
+
+
+export const getOpenFilesInWorkspace = (): string[] => {
+	const openEditors = vscode.window.visibleTextEditors;
+
+	// Filter out non-file editors (like output or debug console)
+	const openFiles = openEditors
+		.filter(editor => editor.document.uri.scheme === 'file')
+		.map(editor => editor.document.uri.fsPath);
+
+	// Display a message box to the user with open files
+	return openFiles;
+};
+
 
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
-	embeddingsSearch: EmbeddingsSearch
+	embeddingsSearch: EmbeddingsSearch,
+	activeFilesTracker: ActiveFilesTracker,
 ): Promise<CodeSymbolInformation[]> => {
 	const alreadySeenSymbols: Set<string> = new Set();
 	const finalCodeSymbolList: CodeSymbolInformation[] = [];
 	for (let index = 0; index < queries.length; index++) {
 		const query = queries[index];
-		const codeSymbols = await embeddingsSearch.generateNodesRelevantForUser(query);
+		const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query, activeFilesTracker);
 		console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
 		console.log(codeSymbols.map(
 			(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
@@ -44,6 +63,7 @@ export const generateFileInformationSummary = async (
 	codeSymbolInformationList: CodeSymbolInformation[],
 	tsMorphProjects: TSMorphProjectManagement,
 	pythonServer: PythonServer,
+	goLangParser: GoLangParser,
 	workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
 	// We want to get all the files being referenced here and then take all
@@ -75,11 +95,21 @@ export const generateFileInformationSummary = async (
 			if (!project) {
 				continue;
 			}
-			const codeSymbols = parseFileUsingTsMorph(
+			const codeSymbols = await parseFileUsingTsMorph(
 				fileList[index],
 				project,
 				workingDirectory,
 				fileList[index]
+			);
+			fileCodeSymbolInformationList.push({
+				filePath: fileList[index],
+				codeSymbols: codeSymbols,
+				workingDirectory: workingDirectory,
+			});
+		} else if (fileExtension === 'go') {
+			const codeSymbols = await goLangParser.parseFileWithDependencies(
+				fileList[index],
+				true,
 			);
 			fileCodeSymbolInformationList.push({
 				filePath: fileList[index],
@@ -139,8 +169,9 @@ export const writeFileContents = async (
 
 export const generateModificationInputForCodeSymbol = async (
 	codeSymbolModificationInstruction: CodeSymbolModificationInstruction,
-	previousMessages: ChatCompletionRequestMessage[],
-	codeGraph: CodeGraph
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	codeGraph: CodeGraph,
+	uniqueId: string,
 ): Promise<CodeModificationContextAndDiff | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
 		codeSymbolModificationInstruction.codeSymbolName
@@ -153,7 +184,7 @@ export const generateModificationInputForCodeSymbol = async (
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 
 	// Now supporting big files for now, so we just return null here
-	if (fileCode.split('\n').length > 500) {
+	if (fileCode.split('\n').length > 2000) {
 		console.log('File is too large to parse');
 		return null;
 	}
@@ -170,12 +201,15 @@ export const generateModificationInputForCodeSymbol = async (
 	messages.push(
 		{
 			content: promptForModification,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 
-	console.log('[generateModificationInputForCodeSymbol] What is the prompt', messages);
-	const completion = await generateChatCompletion(messages);
+	const completion = await generateChatCompletion(
+		messages,
+		'generateModificationInputForCodeSymbol',
+		uniqueId,
+	);
 	return parseCodeModificationResponse(completion?.message?.content ?? '');
 };
 
@@ -184,7 +218,8 @@ export const generateModifiedFileContentAfterDiff = async (
 	codeModificationInput: CodeSymbolModificationInstruction,
 	modificationContext: CodeModificationContextAndDiff,
 	codeGraph: CodeGraph,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	uniqueId: string,
 ): Promise<NewFileContentAndDiffResponse | null> => {
 	const possibleCodeNodes = codeGraph.getNodeByLastName(
 		codeModificationInput.codeSymbolName
@@ -195,8 +230,21 @@ export const generateModifiedFileContentAfterDiff = async (
 	const codeSymbol = possibleCodeNodes[0];
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 	// Now supporting big files for now, so we just return null here
-	if (fileCode.split('\n').length > 500) {
+	if (fileCode.split('\n').length > 2000) {
 		return null;
+	}
+
+	const newFileContent = generateNewFileFromPatch(
+		modificationContext.codeDiff,
+		fileCode,
+	);
+
+	if (newFileContent) {
+		console.log('[patchGeneratedFile] Generated file content with path no AI');
+		console.log(newFileContent);
+		return {
+			newFileContent: newFileContent,
+		};
 	}
 
 	const promptForModification = newFileContentAndDiffPrompt(
@@ -212,11 +260,15 @@ export const generateModifiedFileContentAfterDiff = async (
 	messages.push(
 		{
 			content: promptForModification,
-			role: ChatCompletionRequestMessageRoleEnum.User,
+			role: 'user',
 		}
 	);
 
-	const completion = await generateChatCompletion(messages);
+	const completion = await generateChatCompletion(
+		messages,
+		'generateModifiedFileContentAfterDiff',
+		uniqueId,
+	);
 	return generateNewFileContentAndDiffResponseParser(
 		completion?.message?.content ?? '',
 	);
@@ -249,9 +301,10 @@ export const generateTestScriptForChange = async (
 	codeSymbolNameMaybe: string,
 	codeGraph: CodeGraph,
 	codeModificationContext: CodeModificationContextAndDiff,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	moduleName: string,
 	previousFileContent: string,
+	uniqueId: string,
 ): Promise<TextExecutionHarness | null> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
@@ -273,9 +326,13 @@ export const generateTestScriptForChange = async (
 	const messages = [...previousMessages];
 	messages.push({
 		content: prompt,
-		role: ChatCompletionRequestMessageRoleEnum.User,
+		role: 'user',
 	});
-	const response = await generateChatCompletion(messages);
+	const response = await generateChatCompletion(
+		messages,
+		'generateTestScriptForChange',
+		uniqueId,
+	);
 	return parseTestPlanResponseForHarness(
 		response?.message?.content ?? '',
 		codeSymbolNameMaybe,
@@ -292,7 +349,7 @@ export const stripPrefix = (input: string, prefix: string): string => {
 
 export const executeTestHarness = async (
 	testPlan: TextExecutionHarness,
-	previousMessages: ChatCompletionRequestMessage[],
+	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	toolingEventCollection: ToolingEventCollection,
 	executionEventId: string,
 	codeSymbolNameMaybe: string,
@@ -300,6 +357,7 @@ export const executeTestHarness = async (
 	tsMorphProjects: TSMorphProjectManagement,
 	pythonServer: PythonServer,
 	workingDirectory: string,
+	uniqueId: string,
 ): Promise<number> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
@@ -321,7 +379,7 @@ export const executeTestHarness = async (
 
 	// We also need the new code symbol content so we are going to parse it
 	// from the file
-	const newCodeSymbolNodes = parseFileUsingTsMorph(
+	const newCodeSymbolNodes = await parseFileUsingTsMorph(
 		codeNode.fsFilePath,
 		project,
 		workingDirectory,
@@ -362,9 +420,13 @@ export const executeTestHarness = async (
 	const messages = [...previousMessages];
 	messages.push({
 		content: prompt,
-		role: ChatCompletionRequestMessageRoleEnum.User,
+		role: 'user',
 	});
-	const response = await generateChatCompletion(messages);
+	const response = await generateChatCompletion(
+		messages,
+		'executeTestHarness',
+		uniqueId,
+	);
 	const testSetupFinalResult = parseTestExecutionFinalSetupResponse(
 		response?.message?.content ?? '',
 	);
@@ -408,4 +470,12 @@ export const executeTestHarness = async (
 		executionEventId,
 	);
 	return exitCode;
+};
+
+
+export const shouldExecuteTestHarness = (testRunCommand: string): boolean => {
+	if (testRunCommand === 'NotPresent') {
+		return false;
+	}
+	return true;
 };

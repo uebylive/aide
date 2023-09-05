@@ -23,6 +23,8 @@ import {
 } from './types';
 import { exec } from 'child_process';
 import { runCommandAsync } from './commandRunner';
+import { Uri, languages, workspace } from 'vscode';
+import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 
 export const getCodeLocationPath = (directoryPath: string, filePath: string): string => {
 	// Parse the filePath to get an object that includes properties like root, dir, base, ext and name
@@ -96,7 +98,7 @@ function parseFunctionNode(
 			symbolEndLine: currentFunction.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: functionNode.getBody()?.getText() || '',
+				code: functionNode.getText() || '',
 			},
 			extraSymbolHint: TypescriptCodeType.typescriptFunction,
 			dependencies: currentFunction
@@ -174,7 +176,7 @@ function parseArrowFunctionNode(
 				symbolEndLine: currentArrowExpression.getEndLineNumber(),
 				codeSnippet: {
 					languageId: 'typescript',
-					code: arrowFunction.getBody()?.getText() || '',
+					code: arrowFunction.getText() || '',
 				},
 				extraSymbolHint,
 				dependencies: currentArrowExpression
@@ -224,7 +226,7 @@ function parseMethodDeclaration(
 			symbolEndLine: methodDeclaration.getEndLineNumber(),
 			codeSnippet: {
 				languageId: 'typescript',
-				code: methodDeclaration.getBody()?.getText() || '',
+				code: methodDeclaration.getText() || '',
 			},
 			dependencies: methodDeclaration
 				.getChildrenOfKind(SyntaxKind.Block)
@@ -637,88 +639,94 @@ function parseCodeBlockForDependencies(
 	project: Project,
 	sourceFile: SourceFile
 ): CodeSymbolDependencies[] {
-	const codeSymbolDependencies: CodeSymbolDependencies[] = [];
-	block.getDescendantsOfKind(SyntaxKind.CallExpression).forEach((callExpression) => {
-		callExpression.getDescendantsOfKind(SyntaxKind.Identifier).forEach((identifier) => {
-			const symbol = identifier.getSymbol();
-			if (symbol) {
-				const qualifiedNamesFromAliasSymbol: CodeSymbolDependencyWithFileInformation[] | undefined =
-					symbol
-						.getAliasedSymbol()
-						?.getDeclarations()
-						.map((declaration) => {
-							return {
-								codeSymbolName: declaration.getSymbol()?.getFullyQualifiedName(),
-								filePath: declaration.getSourceFile().getFilePath(),
-							};
-						})
-						.filter((codeSymbolInformation) => codeSymbolInformation.codeSymbolName !== undefined)
-						.map(
-							// Stupid typescript type checker
-							(codeSymbolInformation) =>
-								codeSymbolInformation as CodeSymbolDependencyWithFileInformation
-						);
-				const declarations = symbol.getDeclarations();
-				// if (declarations.length !== 0) {
-				//     return;
-				// }
-				// console.log(
-				//     '[dependency] Identifier: ' + identifier.getText() + ' ' + symbol.getDeclarations()[0]
-				// );
-				// Not sure why this is happening, but this was causing the
-				// extension to crash, so we guard against this
-				// if (symbol.getDeclarations()[0] === undefined) {
-				//     return;
-				// }
-				// Fix this later
-				let originalDeclaration: CodeSymbolDependencyWithFileInformation = {
-					codeSymbolName: symbol.getFullyQualifiedName(),
-					filePath: 'symbol.getDeclarations()[0].getSourceFile().getFilePath()',
-				};
+	try {
+		const codeSymbolDependencies: CodeSymbolDependencies[] = [];
+		block.getDescendantsOfKind(SyntaxKind.CallExpression).forEach((callExpression) => {
+			callExpression.getDescendantsOfKind(SyntaxKind.Identifier).forEach((identifier) => {
+				const symbol = identifier.getSymbol();
+				if (symbol) {
+					const qualifiedNamesFromAliasSymbol: CodeSymbolDependencyWithFileInformation[] | undefined =
+						symbol
+							.getAliasedSymbol()
+							?.getDeclarations()
+							.map((declaration) => {
+								return {
+									codeSymbolName: declaration.getSymbol()?.getFullyQualifiedName(),
+									filePath: declaration.getSourceFile().getFilePath(),
+								};
+							})
+							.filter((codeSymbolInformation) => codeSymbolInformation.codeSymbolName !== undefined)
+							.map(
+								// Stupid typescript type checker
+								(codeSymbolInformation) =>
+									codeSymbolInformation as CodeSymbolDependencyWithFileInformation
+							);
+					const declarations = symbol.getDeclarations();
+					// if (declarations.length !== 0) {
+					//     return;
+					// }
+					// console.log(
+					//     '[dependency] Identifier: ' + identifier.getText() + ' ' + symbol.getDeclarations()[0]
+					// );
+					// Not sure why this is happening, but this was causing the
+					// extension to crash, so we guard against this
+					// if (symbol.getDeclarations()[0] === undefined) {
+					//     return;
+					// }
+					// Fix this later
+					let originalDeclaration: CodeSymbolDependencyWithFileInformation = {
+						codeSymbolName: symbol.getFullyQualifiedName(),
+						filePath: 'symbol.getDeclarations()[0].getSourceFile().getFilePath()',
+					};
 
-				// We pick the aliased symbol name if its present
-				if (
-					qualifiedNamesFromAliasSymbol !== undefined &&
-					qualifiedNamesFromAliasSymbol?.length !== 0
-				) {
-					for (const aliasQualifiedName of qualifiedNamesFromAliasSymbol) {
-						if (aliasQualifiedName !== undefined) {
-							originalDeclaration = aliasQualifiedName;
+					// We pick the aliased symbol name if its present
+					if (
+						qualifiedNamesFromAliasSymbol !== undefined &&
+						qualifiedNamesFromAliasSymbol?.length !== 0
+					) {
+						for (const aliasQualifiedName of qualifiedNamesFromAliasSymbol) {
+							if (aliasQualifiedName !== undefined) {
+								originalDeclaration = aliasQualifiedName;
+							}
 						}
 					}
-				}
-				const relativeDependency = checkIfSymbolIsImportedFromWorkspace(
-					originalDeclaration.codeSymbolName,
-					workingDirectoryPath,
-					moduleName
-				);
-				if (relativeDependency === null) {
+					const relativeDependency = checkIfSymbolIsImportedFromWorkspace(
+						originalDeclaration.codeSymbolName,
+						workingDirectoryPath,
+						moduleName
+					);
+					if (relativeDependency === null) {
+						return;
+					}
+					const dependency: CodeSymbolDependencies = {
+						codeSymbolName: blockCodeSymbolName,
+						codeSymbolKind: CodeSymbolKind.function,
+						edges: [
+							{
+								codeSymbolName: relativeDependency,
+								filePath: originalDeclaration.filePath,
+							},
+						],
+					};
+					codeSymbolDependencies.push(dependency);
 					return;
+				} else {
+					// console.log('[dependency] No symbol found, probably imported from another file');
 				}
-				const dependency: CodeSymbolDependencies = {
-					codeSymbolName: blockCodeSymbolName,
-					codeSymbolKind: CodeSymbolKind.function,
-					edges: [
-						{
-							codeSymbolName: relativeDependency,
-							filePath: originalDeclaration.filePath,
-						},
-					],
-				};
-				codeSymbolDependencies.push(dependency);
-				return;
-			} else {
-				// console.log('[dependency] No symbol found, probably imported from another file');
-			}
+			});
 		});
-	});
-	// console.log(
-	//     '[dependency] Code symbol dependencies: ' +
-	//     blockCodeSymbolName +
-	//     ' ' +
-	//     JSON.stringify(codeSymbolDependencies)
-	// );
-	return codeSymbolDependencies;
+		// console.log(
+		//     '[dependency] Code symbol dependencies: ' +
+		//     blockCodeSymbolName +
+		//     ' ' +
+		//     JSON.stringify(codeSymbolDependencies)
+		// );
+		return codeSymbolDependencies;
+	} catch (e) {
+		console.log('[dependency] Why is this not working??');
+		console.log(e);
+		return [];
+	}
 }
 
 export function parseCodeBlocksForDependencies(
@@ -815,19 +823,30 @@ export function parseSourceFile(
 	}
 }
 
-export function parseFileUsingTsMorph(
+export async function parseFileUsingTsMorph(
 	sourceFilePath: string,
 	project: Project,
 	directoryPath: string,
 	originalFilePath: string
-): CodeSymbolInformation[] {
+): Promise<CodeSymbolInformation[]> {
+	console.log('[ts-morph] Parsing file: ' + sourceFilePath);
 	const sourceFile = project.getSourceFile(sourceFilePath);
 	// We sync from the fs again if the file has changed meanwhile, this is not
 	// important for onboarding but super important when we are doing things live
 	// and on every save
-	const syncData = sourceFile?.refreshFromFileSystemSync();
+	const syncData = await sourceFile?.refreshFromFileSystem();
+	console.log('[ts-morph] Refreshed data: ' + syncData);
 	if (sourceFile) {
-		return parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
+		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
+		if (codeSymbols.length === 0) {
+			return await getSymbolsFromDocumentUsingLSP(
+				sourceFilePath,
+				'typescript',
+				directoryPath,
+			);
+		}
+		return codeSymbols;
 	} else {
 		return [];
 	}
@@ -850,6 +869,13 @@ export class TSMorphProjectManagement {
 	constructor() {
 		this.fileToTSConfigDirectoryMapping = new Map();
 		this.directoryToProjectMapping = new Map();
+	}
+
+	public addProjectWithDirectoryToMapping(
+		project: Project,
+		directoryPath: string,
+	) {
+		this.directoryToProjectMapping.set(directoryPath, project);
 	}
 
 	public addTsConfigPath(
@@ -971,8 +997,66 @@ export const getTsConfigFiles = async (
 };
 
 
+const checkIfTypescriptLikeFiles = (
+	fileExtensionSet: Set<string>,
+): boolean => {
+	if (fileExtensionSet.has('.ts') || fileExtensionSet.has('.tsx') || fileExtensionSet.has('.js') || fileExtensionSet.has('.jsx')) {
+		return true;
+	}
+	return false;
+};
+
+const isMinifiedFile = (filePath: string): boolean => {
+	const fileExtension = path.extname(filePath);
+	if (fileExtension === '.min.js' || fileExtension === '.min.ts') {
+		return true;
+	}
+	return false;
+};
+
+
+const isDistFolder = (filePath: string): boolean => {
+	const fileParts = filePath.split('/');
+	const lastPart = fileParts[fileParts.length - 1];
+	if (lastPart === 'dist') {
+		return true;
+	}
+	return false;
+};
+
+
+export const getTypescriptLikeFilesInDirectory = (directory: string): string[] => {
+	const interestedFiles: string[] = [];
+
+	function traverse(dir: string) {
+		const files = fs.readdirSync(dir);
+
+		for (const file of files) {
+			const filePath = path.join(dir, file);
+			const stat = fs.statSync(filePath);
+
+			// If directory, recurse. If file, extract extension.
+			if (stat.isDirectory()) {
+				traverse(filePath);
+			} else {
+				const ext = path.extname(filePath);
+				if (checkIfTypescriptLikeFiles(new Set([ext])) && !isMinifiedFile(filePath) && !isDistFolder(filePath)) {
+					interestedFiles.push(filePath);
+				} else {
+				}
+			}
+		}
+	}
+
+	traverse(directory);
+	return interestedFiles;
+};
+
+
 export const getProject = async (
 	activeDirectories: string[],
+	fileExtensionSet: Set<string>,
+	workingDirectory: string,
 ): Promise<TSMorphProjectManagement> => {
 	const tsConfigFiles = await getTsConfigFiles(
 		activeDirectories,
@@ -986,8 +1070,29 @@ export const getProject = async (
 			filteredTsConfigFiles.push(tsConfigFile);
 		}
 	}
-	// Now we will filter out paths which are not in the file system
+
 	const tsProjectManagement = new TSMorphProjectManagement();
+
+	if (filteredTsConfigFiles.length === 0 && checkIfTypescriptLikeFiles(fileExtensionSet)) {
+		// Here we will create a blank project and manually add all the files which
+		// are jsx or ts or js types to the project in the directory
+		const interestingFiles = getTypescriptLikeFilesInDirectory(workingDirectory);
+		const tsMorphProject = new Project();
+		interestingFiles.forEach((filePath) => {
+			console.log('[ts-morph][add file]: ' + filePath);
+			try {
+				tsMorphProject.addSourceFileAtPath(filePath);
+			} catch (error) {
+				console.log('[ts-morph][add file][error]: ' + error);
+			}
+		});
+		tsProjectManagement.addProjectWithDirectoryToMapping(
+			tsMorphProject,
+			workingDirectory,
+		);
+		return tsProjectManagement;
+	}
+	// Now we will filter out paths which are not in the file system
 	for (const filteredTsConfig of filteredTsConfigFiles) {
 		tsProjectManagement.addTsConfigPath(
 			filteredTsConfig,

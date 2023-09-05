@@ -13,7 +13,7 @@ import {
 	window,
 	env,
 } from 'vscode';
-import { CodeStoryViewProvider } from '../views/codeStoryView';
+import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { MessageHandlerData } from '@estruyf/vscode';
 import postHogClient from '../posthog/client';
@@ -67,7 +67,7 @@ export const search = (
 			const { prompt } = payload;
 			postHogClient.capture({
 				distinctId: env.machineId,
-				event: 'search',
+				event: 'webview_search',
 				properties: {
 					prompt,
 					repoName,

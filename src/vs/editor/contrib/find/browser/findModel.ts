@@ -31,6 +31,10 @@ export const CONTEXT_FIND_WIDGET_NOT_VISIBLE = CONTEXT_FIND_WIDGET_VISIBLE.toNeg
 export const CONTEXT_FIND_INPUT_FOCUSED = new RawContextKey<boolean>('findInputFocussed', false);
 export const CONTEXT_REPLACE_INPUT_FOCUSED = new RawContextKey<boolean>('replaceInputFocussed', false);
 
+export const ToggleSearchTypeKeybinding: IKeybindings = {
+	primary: KeyMod.Alt | KeyCode.KeyS,
+	mac: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyS }
+};
 export const ToggleCaseSensitiveKeybinding: IKeybindings = {
 	primary: KeyMod.Alt | KeyCode.KeyC,
 	mac: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyC }

@@ -6,13 +6,13 @@
 // We want to keep track of the code symbols which have changed so we can provide
 // an overview of what changes have been done up until now
 // This will be useful in creating a better what was I doing feature
-import { OutputChannel, Uri } from 'vscode';
+import { OutputChannel, Uri, workspace } from 'vscode';
 import * as path from 'path';
 import { v4 as uuidV4 } from 'uuid';
 import * as fs from 'fs';
 import { Graph, GraphDFS, WCCFinder, topoSort } from './graphTopologicalSort';
 import { createPatch } from 'diff';
-import { ChatCompletionRequestMessage, Configuration } from 'openai';
+import { OpenAI } from 'openai';
 import { CodeSymbolInformation, FileCodeSymbolInformation } from '../utilities/types';
 import {
 	TSMorphProjectManagement,
@@ -22,10 +22,7 @@ import {
 import { Logger } from 'winston';
 import { PythonServer } from '../utilities/pythonServerClient';
 import EventEmitter from 'events';
-
-const configuration = new Configuration({
-	apiKey: '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',
-});
+import { GoLangParser } from '../languages/goCodeSymbols';
 
 export const getFileExtension = (filePath: string): string => {
 	const fileExtension = path.extname(filePath);
@@ -70,6 +67,7 @@ const checkIfFileSaveCodeSymbolInformationIsStale = (
 export class TrackCodeSymbolChanges {
 	private tsProject: TSMorphProjectManagement;
 	private pythonServer: PythonServer;
+	private goLangParser: GoLangParser;
 	private codeSymbolsWhichChanged: Map<Uri, CodeSymbolChange[]>;
 	// This is used to track when the file has been opened
 	private fileOpenedCodeSymbolTracked: Map<string, FileCodeSymbolInformation>;
@@ -84,11 +82,13 @@ export class TrackCodeSymbolChanges {
 	constructor(
 		tsProject: TSMorphProjectManagement,
 		pythonServer: PythonServer,
+		goLangParser: GoLangParser,
 		workingDirectory: string,
 		logger: Logger,
 	) {
 		this.tsProject = tsProject;
 		this.pythonServer = pythonServer;
+		this.goLangParser = goLangParser;
 		this.codeSymbolsWhichChanged = new Map<Uri, CodeSymbolChange[]>();
 		this.workingDirectory = workingDirectory;
 		this.fileOpenedCodeSymbolTracked = new Map<string, FileCodeSymbolInformation>();
@@ -103,7 +103,7 @@ export class TrackCodeSymbolChanges {
 		codeSymbolInformationList: CodeSymbolInformation[],
 	) {
 		console.log(codeSymbolInformationList);
-		console.log('How many symbols have changed' + codeSymbolInformationList.length);
+		this.logger.info('How many symbols have changed: ' + codeSymbolInformationList.length + ' ' + filePath);
 		this.fileOpenedCodeSymbolTracked.set(filePath, {
 			codeSymbols: codeSymbolInformationList,
 			workingDirectory: this.workingDirectory,
@@ -111,6 +111,39 @@ export class TrackCodeSymbolChanges {
 		});
 		// Now pretend to save the file so we load all the changes
 		await this.fileSaved(Uri.file(filePath), this.logger);
+	}
+
+	private async fileCodeSymbolFromCodeGo(
+		filePath: string,
+		fileContentSinceHead: string,
+	): Promise<CodeSymbolInformation[]> {
+		const dirName = path.dirname(filePath); // Get the directory name
+		const extName = path.extname(filePath); // Get the extension name
+		const newFileName = uuidV4(); // Your new file name without extension
+		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
+		// write the content to this file for now
+		await workspace.fs.writeFile(Uri.file(newFilePath), Buffer.from(fileContentSinceHead));
+		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(newFilePath);
+		// delete the file at this point
+		await workspace.fs.delete(Uri.file(newFilePath), {
+			recursive: false,
+			useTrash: true,
+		});
+		this.logger.info(
+			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
+		);
+		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+			codeSymbol.symbolName = codeSymbol.symbolName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			codeSymbol.displayName = codeSymbol.displayName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			return codeSymbol;
+		});
+		return codeSymbolInformation;
 	}
 
 	private async fileCodeSymbolFromCodePython(
@@ -211,6 +244,12 @@ export class TrackCodeSymbolChanges {
 		) {
 			codeSymbols = await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
 		}
+		if (
+			fileExtension === '.go'
+		) {
+			this.logger.info(`[filesChangedSinceLastCommit][fileCodeSymbolFromCodeGo]: ${filePath}`);
+			codeSymbols = await this.fileCodeSymbolFromCodeGo(filePath, fileContentSinceHead);
+		}
 		emitter.emit('fileChanged', {
 			filePath: filePath,
 			codeSymbols: codeSymbols,
@@ -230,6 +269,10 @@ export class TrackCodeSymbolChanges {
 		// This config is important if we want to force the fetch to happen
 		shouldAnywaysFetch: boolean = false
 	): Promise<CodeSymbolInformation[]> {
+		if (filePath.endsWith('.git')) {
+			filePath = filePath.slice(0, -'.git'.length);
+		}
+		console.log('[codeSymbolInformationFromFilePath] tracking :' + filePath);
 		const fileExtension = getFileExtension(filePath);
 		if (!shouldAnywaysFetch && !this.checkIfFileSaveCodeSymbolInformationIsStale(filePath)) {
 			const alreadyTrackedCodeSymbols = this.fileSavedCodeSymbolTracked.get(filePath)?.codeSymbols;
@@ -251,7 +294,7 @@ export class TrackCodeSymbolChanges {
 			const tsProject = this.tsProject.getTsMorphProjectForFile(filePath);
 			if (tsProject) {
 				this.logger.info(`[track-code-symbols] we have a ts project`);
-				const data = parseFileUsingTsMorph(filePath, tsProject, this.workingDirectory, filePath);
+				const data = await parseFileUsingTsMorph(filePath, tsProject, this.workingDirectory, filePath);
 				this.logger.info(`[track-code-symbols] we have some symbols here ${data.length}`);
 				this.fileSavedCodeSymbolTracked.set(filePath, {
 					codeSymbols: data,
@@ -268,6 +311,17 @@ export class TrackCodeSymbolChanges {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
 			});
+			return codeSymbolInformationHackedTogether;
+		}
+		if (
+			fileExtension === '.go'
+		) {
+			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
+			this.fileSavedCodeSymbolTracked.set(filePath, {
+				codeSymbols: codeSymbolInformationHackedTogether,
+				timestamp: Date.now(),
+			});
+			return codeSymbolInformationHackedTogether;
 		}
 		return [];
 	}
@@ -279,7 +333,6 @@ export class TrackCodeSymbolChanges {
 		if (fileCodeSymbolInformation !== undefined) {
 			return;
 		}
-		logger.info(`[changes] File ${uri.fsPath} was opened`);
 		const codeSymbolInformation = await this.getCodeSymbolInformationFromFilePath(uri.fsPath, true);
 		fileCodeSymbolInformation = {
 			workingDirectory: this.workingDirectory,
@@ -287,9 +340,6 @@ export class TrackCodeSymbolChanges {
 			codeSymbols: codeSymbolInformation,
 		};
 		this.fileOpenedCodeSymbolTracked.set(uri.fsPath, fileCodeSymbolInformation);
-		logger.info(
-			`[changes][file_opened] File ${uri.fsPath} was opened and we found ${codeSymbolInformation.length} code symbols`
-		);
 	}
 
 	private async parseFileCodeSymbolDiff(
@@ -368,6 +418,7 @@ export class TrackCodeSymbolChanges {
 
 	public async fileSaved(uri: Uri, logger: Logger) {
 		if (!this.statusUpdated) {
+			console.log('[fileSaved] status not updated yet');
 			return;
 		}
 		const lastParsedFileTimestamp = this.fileOnSaveLastParsedTimestamp.get(uri.fsPath);
@@ -400,7 +451,7 @@ export class TrackCodeSymbolChanges {
 		// Update the last saved timestamp of the file
 		this.fileOnSaveLastParsedTimestamp.set(uri.fsPath, Date.now());
 		logger.info(
-			`[changes] File ${uri.fsPath} was saved and we found ${codeSymbolsWhichChanged.length} code symbols which changed`
+			`[fileSaved][changes] File ${uri.fsPath} was saved and we found ${codeSymbolsWhichChanged.length} code symbols which changed`
 		);
 	}
 
@@ -703,7 +754,7 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
 		lastEditTime: number;
 		languageId: string;
 	}[]
-): ChatCompletionRequestMessage[] => [
+): OpenAI.Chat.CreateChatCompletionRequestMessage[] => [
 		{
 			role: 'system',
 			content: `
@@ -721,13 +772,13 @@ export const getCodeSymbolsChangedInSameBlockDescription = (
 				I want you to output the final answer in a JSON properly formatted as:
 				\`\`\`
 				{
-					'changes': [
-						'First change',
-						'Second change',
-						'Third change',
-								....
+					"changes": [
+						"First change",
+						"Second change",
+						"Third change",
+						....
 					],
-					'summary': 'This is a summary of the changes',
+					"summary": "This is a summary of the changes"
 				}
 				\`\`\`
 				when talking about the change only mention the what of the change in the codeblocks combined together. Be concise in your answer and dont try to fill in the list of changes if you can describe it in a concise way.

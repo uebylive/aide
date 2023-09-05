@@ -21,3 +21,19 @@ export const readActiveDirectoriesConfiguration = (workingDirectory: string): st
 	}
 	return [workingDirectory];
 };
+
+
+export const readTestSuiteRunCommand = (): string => {
+	const aideConfiguration = vscode.workspace.getConfiguration('aide');
+	const testSuiteRunCommand = aideConfiguration.get('testSuiteRunCommand');
+	if (testSuiteRunCommand === undefined) {
+		return 'NotPresent';
+	}
+	if (testSuiteRunCommand === '') {
+		return 'NotPresent';
+	}
+	if (typeof testSuiteRunCommand === 'string') {
+		return testSuiteRunCommand;
+	}
+	return 'NotPresent';
+};
