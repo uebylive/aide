@@ -10,7 +10,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUserProvidedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
@@ -79,6 +79,7 @@ export class ChatRequestModel implements IChatRequestModel {
 	constructor(
 		public readonly session: ChatModel,
 		public readonly message: string | IChatReplyFollowup,
+		public readonly userProvidedContext: IChatUserProvidedContext | undefined,
 		private _providerRequestId?: string) {
 		this._id = 'request_' + ChatRequestModel.nextId++;
 	}
@@ -482,7 +483,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		return requests.map((raw: ISerializableChatRequestData) => {
-			const request = new ChatRequestModel(this, raw.message, raw.providerRequestId);
+			// TODO(skcd): This is also broken, because we want to preserve the chat context no matter what
+			const request = new ChatRequestModel(this, raw.message, undefined, raw.providerRequestId);
 			if (raw.response || raw.responseErrorDetails) {
 				request.response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, true, raw.isCanceled, raw.vote, raw.providerRequestId, raw.responseErrorDetails, raw.followups);
 			}
@@ -531,12 +533,12 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._requests;
 	}
 
-	addRequest(message: string | IChatReplyFollowup): ChatRequestModel {
+	addRequest(message: string | IChatReplyFollowup, chatUserProvidedContext: IChatUserProvidedContext | undefined): ChatRequestModel {
 		if (!this._session) {
 			throw new Error('addRequest: No session');
 		}
 
-		const request = new ChatRequestModel(this, message);
+		const request = new ChatRequestModel(this, message, chatUserProvidedContext);
 		request.response = new ChatResponseModel(new MarkdownString(''), this);
 
 		this._requests.push(request);

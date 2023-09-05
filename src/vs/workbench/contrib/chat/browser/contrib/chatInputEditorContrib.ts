@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Iterable } from 'vs/base/common/iterator';
+// import { Iterable } from 'vs/base/common/iterator';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
@@ -21,6 +21,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
+// import { AtSymbolContentWidget } from 'vs/workbench/contrib/chat/browser/chatAtSymbolContentWidget';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { SlashCommandContentWidget } from 'vs/workbench/contrib/chat/browser/chatSlashCommandContentWidget';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
@@ -45,7 +46,7 @@ class InputEditorDecorations extends Disposable {
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IChatService private readonly chatService: IChatService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
+		// @IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
 	) {
 		super();
 
@@ -177,22 +178,31 @@ class InputEditorDecorations extends Disposable {
 			this.widget.inputEditor.setDecorationsByType(decorationDescription, slashCommandTextDecorationType, []);
 		}
 
-		const variables = this.chatVariablesService.getVariables();
-		const variableReg = /(^|\s)@(\w+)(:\d+)?(?=(\s|$))/ig;
+		// const variables = this.chatVariablesService.getVariables();
+		const variableReg = /(^|\s)@(\w+(\.\w+)?)(:\d+)?(?=(\s|$))/ig;
 		let match: RegExpMatchArray | null;
 		const varDecorations: IDecorationOptions[] = [];
 		while (match = variableReg.exec(inputValue)) {
-			const varName = match[2];
-			if (Iterable.find(variables, v => v.name === varName)) {
-				varDecorations.push({
-					range: {
-						startLineNumber: 1,
-						endLineNumber: 1,
-						startColumn: match.index! + match[1].length + 1,
-						endColumn: match.index! + match[0].length + 1
-					}
-				});
-			}
+			// const varName = match[2];
+			// We try to push a DOM here and see if that works
+			// const atSymbol = new AtSymbolContentWidget(
+			// 	this.widget.inputEditor,
+			// 	`@${varName}`,
+			// 	new Position(1, match.index! + 1)
+			// );
+			// this._store.add(atSymbol);
+			// this.widget.inputEditor.addContentWidget(atSymbol);
+			// this.widget.inputEditor.removeContentWidget(atSymbol);
+			// if (Iterable.find(variables, v => v.name === varName)) {
+			varDecorations.push({
+				range: {
+					startLineNumber: 1,
+					endLineNumber: 1,
+					startColumn: match.index! + match[1].length + 1,
+					endColumn: match.index! + match[0].length + 1
+				}
+			});
+			// }
 		}
 
 		this.widget.inputEditor.setDecorationsByType(decorationDescription, variableTextDecorationType, varDecorations);
@@ -349,7 +359,7 @@ function sortSlashCommandsByYieldTo<T extends {
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(SlashCommandCompletions, LifecyclePhase.Eventually);
 
-class VariableCompletions extends Disposable {
+export class VariableCompletions extends Disposable {
 
 	private static readonly VariableNameDef = /@\w*/g; // MUST be using `g`-flag
 
@@ -416,4 +426,5 @@ class VariableCompletions extends Disposable {
 	}
 }
 
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
+// TODO(codestory): Commenting this out so we use our custom provider for LSP
+// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
