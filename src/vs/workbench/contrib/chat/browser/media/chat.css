@@ -473,10 +473,9 @@
 /* #region Quick Chat */
 
 .monaco-workbench > .hover-chat-container {
-	position: absolute;
-	z-index: 1000;
-	right: 10px;
-	bottom: 29px;
+	position: fixed;
+	right: 6px;
+	bottom: 27px;
 	display: block;
 }
 

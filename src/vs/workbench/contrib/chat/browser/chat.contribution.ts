@@ -250,7 +250,7 @@ registerSingleton(IChatService, ChatService, InstantiationType.Delayed);
 registerSingleton(IChatContributionService, ChatContributionService, InstantiationType.Delayed);
 registerSingleton(IChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
 registerSingleton(IQuickChatService, QuickChatService, InstantiationType.Delayed);
-registerSingleton(IHoverChatService, HoverChatService, InstantiationType.Delayed);
+registerSingleton(IHoverChatService, HoverChatService, InstantiationType.Eager);
 registerSingleton(IChatAccessibilityService, ChatAccessibilityService, InstantiationType.Delayed);
 registerSingleton(IChatWidgetHistoryService, ChatWidgetHistoryService, InstantiationType.Delayed);
 registerSingleton(IChatProviderService, ChatProviderService, InstantiationType.Delayed);

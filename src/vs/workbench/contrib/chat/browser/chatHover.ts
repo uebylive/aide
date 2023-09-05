@@ -4,15 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 import 'vs/css!./media/chat';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { Emitter } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { inputBackground, quickInputBackground, quickInputForeground } from 'vs/platform/theme/common/colorRegistry';
-import { IHoverChatService } from 'vs/workbench/contrib/chat/browser/chat';
+import { IChatWidgetService, IHoverChatService } from 'vs/workbench/contrib/chat/browser/chat';
 import { IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { ChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
+import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 
 export class HoverChatService extends Disposable implements IHoverChatService {
 	readonly _serviceBrand: undefined;
@@ -20,16 +21,23 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 	private _currentChat: HoverChat | undefined;
 	private _container: HTMLElement | undefined;
 
+	private _isHidden: boolean = false;
+
 	constructor(
-		@ILayoutService layoutService: ILayoutService,
+		@IWorkbenchLayoutService private readonly workbenchLayoutService: IWorkbenchLayoutService,
 		@IChatService private readonly chatService: IChatService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
-		this._container = document.createElement('div');
-		this._container.classList.add('hover-chat-container');
-		layoutService.container.appendChild(this._container);
+		this._register(this.workbenchLayoutService.onDidChangePartVisibility(() => {
+			const isAuxiliaryBarVisible = this.workbenchLayoutService.isVisible(Parts.AUXILIARYBAR_PART);
+			if (isAuxiliaryBarVisible) {
+				this.close();
+			} else if (!this._isHidden) {
+				this.open();
+			}
+		}));
 	}
 
 	get enabled(): boolean {
@@ -37,9 +45,7 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 	}
 
 	open(providerId?: string): void {
-		if (!this._container) {
-			return;
-		}
+		this._isHidden = false;
 
 		// Check if any providers are available. If not, show nothing
 		// This shouldn't be needed because of the precondition, but just in case
@@ -50,21 +56,47 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 			return;
 		}
 
+		const isAuxiliaryBarVisible = this.workbenchLayoutService.isVisible(Parts.AUXILIARYBAR_PART);
+		if (isAuxiliaryBarVisible) {
+			return;
+		}
+
+		if (!this._container) {
+			this._container = document.createElement('div');
+			this._container.classList.add('hover-chat-container');
+			this.workbenchLayoutService.container.appendChild(this._container);
+		}
+
 		if (!this._currentChat) {
 			this._currentChat = this.instantiationService.createInstance(HoverChat, {
 				providerId: providerInfo.id,
 			});
-
+			this._register(this._currentChat.onDidAcceptInput(() => this.close()));
 			this._currentChat.render(this._container);
 		}
+
+		this.focus();
 	}
 
-	focus(): void {
+	private focus(): void {
 		this._currentChat?.focus();
 	}
 
-	openInChatView(): void {
-		throw new Error('Method not implemented.');
+	private close(): void {
+		this._currentChat?.dispose();
+		this._currentChat = undefined;
+		this._container?.remove();
+		this._container = undefined;
+	}
+
+	toggle(providerId?: string): void {
+		if (this._currentChat) {
+			this.close();
+			this._isHidden = true;
+		} else {
+			this.open(providerId);
+			this._isHidden = false;
+		}
 	}
 }
 
@@ -75,10 +107,14 @@ class HoverChat extends Disposable {
 	private model: ChatModel | undefined;
 	private _currentQuery: string | undefined;
 
+	private readonly _onDidAcceptInput = this._register(new Emitter<void>());
+	readonly onDidAcceptInput = this._onDidAcceptInput.event;
+
 	constructor(
 		private readonly _options: IChatViewOptions,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IChatService private readonly chatService: IChatService,
+		@IChatWidgetService private readonly _chatWidgetService: IChatWidgetService,
 	) {
 		super();
 	}
@@ -90,7 +126,7 @@ class HoverChat extends Disposable {
 
 		this.widget = this.instantiationService.createInstance(
 			ChatWidget,
-			{ resource: true },
+			{ resource: true, renderOnlyInput: true },
 			{
 				listForeground: quickInputForeground,
 				listBackground: quickInputBackground,
@@ -98,6 +134,7 @@ class HoverChat extends Disposable {
 				resultEditorBackground: quickInputBackground
 			}
 		);
+		this._register(this.widget.onDidAcceptInput((input) => this.openChatView(input)));
 		this.widget.render(parent);
 		this.widget.setVisible(true);
 		this.updateModel();
@@ -125,5 +162,20 @@ class HoverChat extends Disposable {
 		}
 
 		this.widget.setModel(this.model, { inputValue: this._currentQuery });
+	}
+
+	async openChatView(input: void | string): Promise<void> {
+		if (!input) {
+			return;
+		}
+
+		const widget = await this._chatWidgetService.revealViewForProvider(this._options.providerId);
+		if (!widget?.viewModel || !this.model) {
+			return;
+		}
+
+		widget.focusInput();
+		widget.acceptInput(input);
+		this._onDidAcceptInput.fire();
 	}
 }

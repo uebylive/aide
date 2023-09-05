@@ -48,9 +48,8 @@ export interface IQuickChatService {
 export interface IHoverChatService {
 	readonly _serviceBrand: undefined;
 	readonly enabled: boolean;
-	open(): void;
-	focus(): void;
-	openInChatView(): void;
+	toggle(providerId?: string): void;
+	open(providerId?: string): void;
 }
 
 export interface IChatAccessibilityService {
@@ -74,6 +73,7 @@ export interface IChatFileTreeInfo {
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IBaseChatWidgetViewContext {
+	renderOnlyInput?: boolean;
 	renderInputOnTop?: boolean;
 	renderStyle?: 'default' | 'compact';
 }
@@ -90,7 +90,7 @@ export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewCon
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
-	readonly onDidAcceptInput: Event<void>;
+	readonly onDidAcceptInput: Event<void | string>;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;

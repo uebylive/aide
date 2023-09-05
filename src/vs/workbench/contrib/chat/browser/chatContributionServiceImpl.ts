@@ -112,6 +112,7 @@ export class ChatContributionService implements IChatContributionService {
 
 		// Register View Container
 		const viewContainerId = CHAT_SIDEBAR_PANEL_ID + '.' + providerDescriptor.id;
+		const viewContainerLocation = providerDescriptor.id === 'cs-chat' ? ViewContainerLocation.AuxiliaryBar : ViewContainerLocation.Sidebar;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 			id: viewContainerId,
 			title: { value: title, original: 'Chat' },
@@ -120,7 +121,7 @@ export class ChatContributionService implements IChatContributionService {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.AuxiliaryBar);
+		}, viewContainerLocation);
 
 		// Register View
 		const viewId = this.getViewIdForProvider(providerDescriptor.id);
