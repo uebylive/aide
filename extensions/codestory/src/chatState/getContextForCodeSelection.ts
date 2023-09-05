@@ -11,6 +11,7 @@
 import * as vscode from 'vscode';
 import { CodeGraph } from '../codeGraph/graph';
 import { CodeSymbolInformation } from '../utilities/types';
+import * as math from 'mathjs';
 
 
 export interface SelectionReferenceData {
@@ -51,6 +52,65 @@ export const getRelevantContextForCodeSelection = (
 		currentCodeSymbol: possibleSymbol,
 		symbolUsedInReferences: references,
 	};
+};
+
+
+export const getContextForPromptFromUserContext = (
+	selectionContext: vscode.InteractiveUserProvidedContext,
+): string => {
+	const fileList = selectionContext.fileContext;
+	const codeSnippetInformation = selectionContext.codeSymbolsContext;
+	const alreadySeenFilePaths: Set<string> = new Set();
+	const filePathToContent: Map<string, string> = new Map();
+	vscode.workspace.textDocuments.forEach((document) => {
+		const documentPath = document.uri.fsPath;
+		if (fileList.includes(documentPath)) {
+			alreadySeenFilePaths.add(documentPath);
+			filePathToContent.set(documentPath, document.getText());
+		}
+	});
+
+	const codeSnippetInformationMap: Map<number, string> = new Map();
+
+	// Now we need to get the symbols in the range
+	vscode.workspace.textDocuments.forEach((document) => {
+		for (let index = 0; index < codeSnippetInformation.length; index++) {
+			if (codeSnippetInformationMap.has(index)) {
+				continue;
+			}
+			const filePathForCodeSnippet = codeSnippetInformation[index].filePath;
+			if (document.uri.fsPath === filePathForCodeSnippet) {
+				const startLine = Math.max(0, codeSnippetInformation[index].startLineNumber - 5);
+				const endLine = Math.min(document.lineCount - 1, codeSnippetInformation[index].endLineNumber + 5);
+				const content = document.getText(new vscode.Range(
+					new vscode.Position(
+						startLine,
+						0,
+					),
+					new vscode.Position(
+						endLine,
+						0,
+					)
+				));
+				codeSnippetInformationMap.set(index, content);
+			}
+		}
+	});
+	return `
+You are given the context for the code snippet the user has asked you to look at:
+<code_snippet_context>
+${Array.from(codeSnippetInformationMap.values()).map((codeSnippet) => {
+		return `<code_snippet>\n${codeSnippet}</code_snippet>\n`;
+	})}
+</code_snippet_context>
+
+You are also given the full file context for certain files which the user has asked you to look at:
+<file_context>
+${Array.from(filePathToContent.entries()).map(([filePath, content]) => {
+		return `<file_path>${filePath}</file_path>\n<file_content>\n${content}</file_content>\n`;
+	})}
+</file_context>
+	`;
 };
 
 
