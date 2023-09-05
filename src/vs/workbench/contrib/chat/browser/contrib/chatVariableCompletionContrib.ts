@@ -24,6 +24,7 @@ import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVari
 import { isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+import { URI } from 'vs/base/common/uri';
 
 
 class VariableCompletionsCustom extends Disposable {
@@ -88,7 +89,7 @@ class VariableCompletionsCustom extends Disposable {
 									command: {
 										id: 'codestory.chat.widget.context.file',
 										title: 'Sends to the widget context',
-										arguments: [editor.editor.resource.path, model.uri],
+										arguments: [model.uri, editor.editor.resource.path],
 									}
 								});
 							}
@@ -106,8 +107,9 @@ class VariableCompletionsCustom extends Disposable {
 					const completionItems: CompletionItem[] = [];
 					for (let activeEditorIndex = 0; activeEditorIndex < activeEditors.length; activeEditorIndex++) {
 						let alreadyAdded = false;
+						const fileUri = activeEditors[activeEditorIndex].editor.resource;
 						const document = this.modelService.getModel(activeEditors[activeEditorIndex].editor.resource!);
-						if (!document) {
+						if (!document || !fileUri) {
 							continue;
 						}
 						const providers = languageFeaturesService.documentSymbolProvider.getForAllLanguages();
@@ -120,7 +122,7 @@ class VariableCompletionsCustom extends Disposable {
 								alreadyAdded = true;
 								symbols.forEach((symbol) => {
 									// now we want to convert these symbols to the completion items
-									completionItems.push(...convertDocumentSymbolToCodeSymbolInformation(symbol, 'global', true, insert, replace));
+									completionItems.push(...convertDocumentSymbolToCodeSymbolInformation(symbol, 'global', true, insert, replace, model.uri, fileUri.fsPath));
 								});
 							}
 						}
@@ -213,9 +215,18 @@ CommandsRegistry.registerCommand('codestory.chat.input.completion.documentSymbol
 
 CommandsRegistry.registerCommand('codestory.chat.widget.context.file', async (accessor, ...args) => {
 	const chatWidgetService = accessor.get(IChatWidgetService);
-	const chatWidget = chatWidgetService.getWidgetByInputUri(args[1]);
+	const chatWidget = chatWidgetService.getWidgetByInputUri(args[0]);
 	if (chatWidget !== null) {
-		chatWidget?.addFileContextForUserMessage(args[0]);
+		chatWidget?.addFileContextForUserMessage(args[1]);
+	}
+});
+
+
+CommandsRegistry.registerCommand('codestory.chat.widget.context.documentSymbol', async (accessor, ...args) => {
+	const chatWidgetService = accessor.get(IChatWidgetService);
+	const chatWidget = chatWidgetService.getWidgetByInputUri(args[0]);
+	if (chatWidget !== null) {
+		chatWidget?.addCodeSymbolContextForUserMessage(args[1], args[2], args[3]);
 	}
 });
 
@@ -228,6 +239,8 @@ function convertDocumentSymbolToCodeSymbolInformation(
 	extractChildren: boolean = true,
 	insert: Range,
 	replace: Range,
+	modelUri: URI,
+	filePath: string,
 ): CompletionItem[] {
 	// For now I will look at the child of the class and see what I can get
 	const codeSymbols: CompletionItem[] = [];
@@ -243,6 +256,8 @@ function convertDocumentSymbolToCodeSymbolInformation(
 							false,
 							insert,
 							replace,
+							modelUri,
+							filePath,
 						)
 					);
 				}
@@ -257,10 +272,11 @@ function convertDocumentSymbolToCodeSymbolInformation(
 		kind: CompletionItemKind.Text,
 		range: { insert, replace },
 		sortText: '003',
+		// TODO(skcd): Fill this in properly later on
 		command: {
-			id: 'codestory.chat.input.completion.documentSymbol',
+			id: 'codestory.chat.widget.context.documentSymbol',
 			title: 'Trigger documentSymbol completions',
-			arguments: ['documentSymbol'],
+			arguments: [modelUri, filePath, documentSymbol.range.startLineNumber, documentSymbol.range.endLineNumber],
 		}
 	};
 	return [codeSymbolCompletionItem, ...codeSymbols];
