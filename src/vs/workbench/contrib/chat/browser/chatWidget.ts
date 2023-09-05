@@ -61,7 +61,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidClear = this._register(new Emitter<void>());
 	readonly onDidClear = this._onDidClear.event;
 
-	private _onDidAcceptInput = this._register(new Emitter<void>());
+	private _onDidAcceptInput = this._register(new Emitter<void | string>());
 	readonly onDidAcceptInput = this._onDidAcceptInput.event;
 
 	private _onDidChangeHeight = this._register(new Emitter<number>());
@@ -172,6 +172,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		this.createList(this.listContainer, { renderStyle });
+
+		if (this.viewContext.renderOnlyInput) {
+			this.renderer.setVisible(false);
+		}
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
@@ -459,9 +463,13 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const chatUserProvidedContext = this.chatUserProvidedContext;
 		this.chatUserProvidedContext = undefined;
 		if (this.viewModel) {
-			this._onDidAcceptInput.fire();
-
 			const editorValue = this.inputPart.inputEditor.getValue();
+			this._onDidAcceptInput.fire(editorValue);
+
+			if (this.viewContext.renderOnlyInput) {
+				return;
+			}
+
 			this._chatAccessibilityService.acceptRequest();
 			const input = query ?? editorValue;
 			const usedSlashCommand = this.lookupSlashCommand(typeof input === 'string' ? input : input.message);
