@@ -62,13 +62,16 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 		}
 
 		if (!this._container) {
+			const hoverChatContainer = document.createElement('div');
+			hoverChatContainer.classList.add('hover-chat-container');
 			this._container = document.createElement('div');
-			this._container.classList.add('hover-chat-container');
+			this._container.classList.add('hover-chat-input-container');
+			hoverChatContainer.appendChild(this._container);
 			const hint = document.createElement('p');
 			hint.classList.add('hover-chat-hint');
 			hint.innerText = 'Press shift twice to focus';
 			this._container.appendChild(hint);
-			this.workbenchLayoutService.container.appendChild(this._container);
+			this.workbenchLayoutService.container.appendChild(hoverChatContainer);
 		}
 
 		if (!this._currentChat) {

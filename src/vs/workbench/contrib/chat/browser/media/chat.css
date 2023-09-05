@@ -477,9 +477,23 @@
 	right: 13px;
 	bottom: 34px;
 	display: block;
-	/* backdrop-filter: blur(10px); */
 	border: 1px solid var(--vscode-chat-requestBorder);
 	padding: 2px;
+}
+
+.hover-chat-input-container::before {
+	backdrop-filter: blur(10px);
+	content: "";
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	z-index: -1;
+}
+
+.hover-chat-input-container {
+	position: relative;
 }
 
 .hover-chat-container .hover-chat-hint {
