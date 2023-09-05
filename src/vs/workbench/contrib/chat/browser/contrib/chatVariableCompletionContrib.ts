@@ -16,11 +16,12 @@ import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeat
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { EditorsOrder } from 'vs/workbench/common/editor';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
-// import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 
@@ -33,7 +34,7 @@ class VariableCompletionsCustom extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
 		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
-		// @IEditorService private readonly editorService: IEditorService,
+		@IEditorService private readonly editorService: IEditorService,
 	) {
 		console.log('are we registered here');
 		super();
@@ -66,60 +67,32 @@ class VariableCompletionsCustom extends Disposable {
 				}
 
 				if (previousDropDown === 'file') {
-					// TODO(skcd): Get the right files here after implementing
-					// it from the editor
+					const activeEditors = this.editorService.getEditors(EditorsOrder.MOST_RECENTLY_ACTIVE);
+					const completionItems: CompletionItem[] = [];
+					activeEditors.forEach((editor) => {
+						if (editor.editor.resource) {
+							const pathBaseName = editor.editor.resource.path.split('/').pop();
+							if (pathBaseName) {
+								completionItems.push({
+									label: '@' + pathBaseName,
+									filterText: '@' + pathBaseName,
+									detail: editor.editor.resource.path,
+									insertText: '@' + pathBaseName + ' ',
+									kind: CompletionItemKind.Text,
+									range: { insert, replace },
+									insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
+									command: {
+										id: 'codestory.chat.widget.context.file',
+										title: 'Sends to the widget context',
+										arguments: [editor.editor.resource.path, model.uri],
+									}
+								});
+							}
+						}
+					});
 					return {
-						suggestions: [],
+						suggestions: completionItems,
 					};
-					// const fileLabelCompletions = [
-					// 	{
-					// 		label: '@someFile.txt',
-					// 		filterText: '@someFile.txt',
-					// 		detail: '/Users/skcd/testing/someFile.txt',
-					// 		insertText: '@someFile.txt' + ' ',
-					// 		kind: CompletionItemKind.Text,
-					// 		range: { insert, replace },
-					// 		insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
-					// 		command: { // Here's the new part
-					// 			id: 'codestory.chat.widget.context.file', // The command we registered
-					// 			title: 'Sends to the widget context',
-					// 			arguments: ['/Users/skcd/testing/someFile.txt', model.uri],
-					// 		},
-					// 	},
-					// 	{
-					// 		label: '@someFileElse.txt',
-					// 		filterText: '@someFileElse.txt',
-					// 		detail: '/Users/skcd/testing/someFileElse.txt',
-					// 		insertText: '@someFileElse.txt' + ' ',
-					// 		kind: CompletionItemKind.Text,
-					// 		range: { insert, replace },
-					// 		insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
-					// 		command: { // Here's the new part
-					// 			id: 'codestory.chat.widget.context.file', // The command we registered
-					// 			title: 'Sends to the widget context',
-					// 			arguments: ['/Users/skcd/testing/someFile.txt', model.uri],
-					// 		},
-					// 	},
-					// 	{
-					// 		label: '@something.txt',
-					// 		filterText: '@something.txt',
-					// 		range: { insert, replace },
-					// 		insertText: '@something.txt' + ' ',
-					// 		detail: 'something.txt',
-					// 		kind: CompletionItemKind.Text,
-					// 	},
-					// 	{
-					// 		label: '@somethingElse.txt',
-					// 		filterText: '@somethingElse.txt',
-					// 		range: { insert, replace },
-					// 		insertText: '@somethingElse.txt' + ' ',
-					// 		detail: 'somethingElse.txt',
-					// 		kind: CompletionItemKind.Text,
-					// 	},
-					// ];
-					// return <CompletionList>{
-					// 	suggestions: [...fileLabelCompletions],
-					// };
 				}
 
 				const history = widget.viewModel!.getItems()
@@ -147,10 +120,10 @@ class VariableCompletionsCustom extends Disposable {
 
 				const completionOptions = [
 					{
-						label: '@file',
-						detail: 'Insert the contents of a file',
+						label: `@file`,
+						detail: 'File ->',
 						insertText: '@',
-						kind: CompletionItemKind.Text,
+						kind: CompletionItemKind.File,
 						range: { insert, replace },
 						sortText: '001',
 						command: { // Here's the new part
@@ -167,29 +140,6 @@ class VariableCompletionsCustom extends Disposable {
 			}
 		}));
 	}
-
-	generateFileCompletions(insert: Range, replace: Range): CompletionItem[] {
-		// const activeEditors = this.editorService.;
-		const fileCompletionItemList = [
-			{
-				label: 'something.txt',
-				range: { insert, replace },
-				insertText: '${1:@{something.txt}} ',
-				detail: 'something.txt',
-				kind: CompletionItemKind.Text,
-				insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
-			},
-			{
-				label: 'somethingElse.txt',
-				range: { insert, replace },
-				insertText: 'somethingElse.txt' + ' ',
-				detail: 'somethingElse.txt',
-				kind: CompletionItemKind.Text,
-				insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
-			},
-		];
-		return fileCompletionItemList;
-	}
 }
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletionsCustom, LifecyclePhase.Eventually);
@@ -203,13 +153,9 @@ CommandsRegistry.registerCommand('codestory.chat.input.completion.file', async (
 
 
 CommandsRegistry.registerCommand('codestory.chat.widget.context.file', async (accessor, ...args) => {
-	console.log('[widget][context][file] what are the args');
 	const chatWidgetService = accessor.get(IChatWidgetService);
 	const chatWidget = chatWidgetService.getWidgetByInputUri(args[1]);
 	if (chatWidget !== null) {
-		console.log('[widget][context][file][present] we have a widget');
 		chatWidget?.addFileContextForUserMessage(args[0]);
-	} else {
-		console.log('[widget][context][file][not-present] we do not have a widget');
 	}
 });

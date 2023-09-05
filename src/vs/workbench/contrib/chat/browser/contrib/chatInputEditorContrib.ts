@@ -179,7 +179,7 @@ class InputEditorDecorations extends Disposable {
 		}
 
 		// const variables = this.chatVariablesService.getVariables();
-		const variableReg = /(^|\s)@(\w+(\.\w+)?)(:\d+)?(?=(\s|$))/ig;
+		const variableReg = /(^|\s)@(\w+(?:\.\w+)*)(:\d+)?(?=(\s|$))/ig;
 		let match: RegExpMatchArray | null;
 		const varDecorations: IDecorationOptions[] = [];
 		while (match = variableReg.exec(inputValue)) {
