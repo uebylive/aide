@@ -38,7 +38,7 @@ registerAction2(class extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.openWalkthrough',
-			title: { value: localize('miWelcome', "Welcome"), original: 'Welcome' },
+			title: { value: localize('miWelcome', "Get started"), original: 'Get started' },
 			category: Categories.Help,
 			f1: true,
 			menu: {
@@ -202,7 +202,7 @@ registerAction2(class extends Action2 {
 	constructor() {
 		super({
 			id: 'welcome.showAllWalkthroughs',
-			title: { value: localize('welcome.showAllWalkthroughs', "Open Walkthrough..."), original: 'Open Walkthrough...' },
+			title: { value: localize('welcome.showAllWalkthroughs', "Open walkthrough..."), original: 'Open walkthrough...' },
 			category,
 			f1: true,
 		});
