@@ -108,6 +108,7 @@ declare module 'vscode' {
 	export interface InteractiveChatCodeSymbolContext {
 		filePath: string;
 		startLineNumber: number;
+		endLineNumber: number;
 	}
 
 
