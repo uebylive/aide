@@ -56,16 +56,6 @@ type GettingStartedStartEntryContent = BuiltinGettingStartedStartEntry[];
 
 export const startEntries: GettingStartedStartEntryContent = [
 	{
-		id: 'welcome.showNewFileEntries',
-		title: localize('gettingStarted.newFile.title', "New file"),
-		description: localize('gettingStarted.newFile.description', "Open a new untitled text file, notebook, or custom editor."),
-		icon: Codicon.newFile,
-		content: {
-			type: 'startEntry',
-			command: 'command:welcome.showNewFileEntries',
-		}
-	},
-	{
 		id: 'topLevelOpenMac',
 		title: localize('gettingStarted.openMac.title', "Open folder"),
 		description: localize('gettingStarted.openMac.description', "Open a file or folder to start working"),
@@ -365,7 +355,7 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 			steps: [
 				{
 					id: 'pickColorThemeWeb',
-					title: localize('gettingStarted.pickColor.title', "Choose the look you want"),
+					title: localize('gettingStarted.pickColor.title', "Pick a theme"),
 					description: localize('gettingStarted.pickColor.description.interpolated', "The right color palette helps you focus on your code, is easy on your eyes, and is simply more fun to use.\n{0}", Button(localize('titleID', "Browse Color Themes"), 'command:workbench.action.selectTheme')),
 					completionEvents: [
 						'onSettingChanged:workbench.colorTheme',

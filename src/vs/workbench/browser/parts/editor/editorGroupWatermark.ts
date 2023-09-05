@@ -24,8 +24,9 @@ interface WatermarkEntry {
 	when?: ContextKeyExpression;
 }
 
+const focusAgent: WatermarkEntry = { text: nls.localize('watermark.focusAgent', "Invoke AI agent"), id: 'workbench.action.toggleAuxiliaryBar' };
 const showCommands: WatermarkEntry = { text: nls.localize('watermark.showCommands', "Show All Commands"), id: 'workbench.action.showCommands' };
-const quickAccess: WatermarkEntry = { text: nls.localize('watermark.quickAccess', "Go to File"), id: 'workbench.action.quickOpen' };
+// const quickAccess: WatermarkEntry = { text: nls.localize('watermark.quickAccess', "Go to File"), id: 'workbench.action.quickOpen' };
 const openFileNonMacOnly: WatermarkEntry = { text: nls.localize('watermark.openFile', "Open File"), id: 'workbench.action.files.openFile', mac: false };
 const openFolderNonMacOnly: WatermarkEntry = { text: nls.localize('watermark.openFolder', "Open Folder"), id: 'workbench.action.files.openFolder', mac: false };
 const openFileOrFolderMacOnly: WatermarkEntry = { text: nls.localize('watermark.openFileFolder', "Open File or Folder"), id: 'workbench.action.files.openFileFolder', mac: true };
@@ -35,7 +36,7 @@ const newUntitledFileMacOnly: WatermarkEntry = Object.assign({ mac: true }, newU
 const findInFiles: WatermarkEntry = { text: nls.localize('watermark.findInFiles', "Find in Files"), id: 'workbench.action.findInFiles' };
 const toggleTerminal: WatermarkEntry = { text: nls.localize({ key: 'watermark.toggleTerminal', comment: ['toggle is a verb here'] }, "Toggle Terminal"), id: 'workbench.action.terminal.toggleTerminal', when: ContextKeyExpr.equals('terminalProcessSupported', true) };
 const startDebugging: WatermarkEntry = { text: nls.localize('watermark.startDebugging', "Start Debugging"), id: 'workbench.action.debug.start', when: ContextKeyExpr.equals('terminalProcessSupported', true) };
-const toggleFullscreen: WatermarkEntry = { text: nls.localize({ key: 'watermark.toggleFullscreen', comment: ['toggle is a verb here'] }, "Toggle Full Screen"), id: 'workbench.action.toggleFullScreen', when: ContextKeyExpr.equals('terminalProcessSupported', true).negate() };
+// const toggleFullscreen: WatermarkEntry = { text: nls.localize({ key: 'watermark.toggleFullscreen', comment: ['toggle is a verb here'] }, "Toggle Full Screen"), id: 'workbench.action.toggleFullScreen', when: ContextKeyExpr.equals('terminalProcessSupported', true).negate() };
 const showSettings: WatermarkEntry = { text: nls.localize('watermark.showSettings', "Show Settings"), id: 'workbench.action.openSettings', when: ContextKeyExpr.equals('terminalProcessSupported', true).negate() };
 
 const noFolderEntries = [
@@ -48,12 +49,13 @@ const noFolderEntries = [
 ];
 
 const folderEntries = [
+	focusAgent,
 	showCommands,
-	quickAccess,
+	// quickAccess,
 	findInFiles,
 	startDebugging,
 	toggleTerminal,
-	toggleFullscreen,
+	// toggleFullscreen,
 	showSettings
 ];
 

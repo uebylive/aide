@@ -49,8 +49,6 @@
 	justify-content: center;
 	width: 24px;
 	height: 24px;
-	border-radius: 50%;
-	background: var(--vscode-badge-background);
 	pointer-events: none;
 	user-select: none;
 }
@@ -58,11 +56,10 @@
 .interactive-item-container .header .avatar .icon {
 	width: 24px;
 	height: 24px;
-	border-radius: 50%;
 }
 
 .interactive-item-container .header .avatar .codicon {
-	color: var(--vscode-badge-foreground) !important;
+	color: var(--vscode-interactive-session-foreground) !important;
 }
 
 .monaco-list-row:not(.focused) .interactive-item-container:not(:hover) .header .monaco-toolbar,
