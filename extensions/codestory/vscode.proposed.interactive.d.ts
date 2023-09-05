@@ -109,6 +109,7 @@ declare module 'vscode' {
 		filePath: string;
 		startLineNumber: number;
 		endLineNumber: number;
+		documentSymbolName: string;
 	}
 
 

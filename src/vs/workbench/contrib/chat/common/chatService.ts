@@ -246,6 +246,7 @@ export interface IChatCodeSymbolContext {
 	filePath: string;
 	startLineNumber: number;
 	endLineNumber: number;
+	documentSymbolName: string;
 }
 
 

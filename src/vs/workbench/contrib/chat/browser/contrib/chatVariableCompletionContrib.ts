@@ -226,7 +226,7 @@ CommandsRegistry.registerCommand('codestory.chat.widget.context.documentSymbol',
 	const chatWidgetService = accessor.get(IChatWidgetService);
 	const chatWidget = chatWidgetService.getWidgetByInputUri(args[0]);
 	if (chatWidget !== null) {
-		chatWidget?.addCodeSymbolContextForUserMessage(args[1], args[2], args[3]);
+		chatWidget?.addCodeSymbolContextForUserMessage(args[1], args[2], args[3], args[4]);
 	}
 });
 
@@ -276,7 +276,7 @@ function convertDocumentSymbolToCodeSymbolInformation(
 		command: {
 			id: 'codestory.chat.widget.context.documentSymbol',
 			title: 'Trigger documentSymbol completions',
-			arguments: [modelUri, filePath, documentSymbol.range.startLineNumber, documentSymbol.range.endLineNumber],
+			arguments: [modelUri, filePath, documentSymbol.range.startLineNumber, documentSymbol.range.endLineNumber, documentSymbol.detail],
 		}
 	};
 	return [codeSymbolCompletionItem, ...codeSymbols];

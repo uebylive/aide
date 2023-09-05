@@ -94,25 +94,6 @@ export const debuggingFlow = async (
 		uniqueId,
 	);
 	const planAndQueries = generatePlanAndQueriesResponseParser(response?.message?.content ?? '');
-	// Adding tooling event for plan
-	await toolingEventCollection.addPlanForHelp(
-		prompt,
-		planAndQueries?.additionalInstructions?.join('\n') ?? ''
-	);
-	// Adding tooling event for search
-	await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
-	// Now we will try and do the search over the symbols
-	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
-		planAndQueries?.queries ?? [],
-		embeddingsSearch,
-		activeFilesTracker,
-	);
-	// Add the search results here
-	await toolingEventCollection.addRelevantSearchResults(
-		planAndQueries?.queries ?? [],
-		relevantCodeSymbols,
-		workingDirectory
-	);
 
 	// Now we swap the memory of the agent
 	initialMessages = [
@@ -129,6 +110,34 @@ export const debuggingFlow = async (
 			role: 'user',
 		},
 	];
+
+	// Adding tooling event for plan
+	await toolingEventCollection.addPlanForHelp(
+		prompt,
+		planAndQueries?.additionalInstructions?.join('\n') ?? ''
+	);
+
+	if (userProvidedContext) {
+		// Add tooling event for user provided context
+		await toolingEventCollection.userProvidedContext(userProvidedContext);
+	} else {
+		// Adding tooling event for search
+		await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
+	}
+	// Now we will try and do the search over the symbols
+	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
+		planAndQueries?.queries ?? [],
+		embeddingsSearch,
+		activeFilesTracker,
+		userProvidedContext,
+	);
+	// Add the search results here
+	await toolingEventCollection.addRelevantSearchResults(
+		planAndQueries?.queries ?? [],
+		relevantCodeSymbols,
+		workingDirectory,
+	);
+
 	// Now we get all the file information for the symbols
 	const fileCodeSymbolInformationList = await generateFileInformationSummary(
 		relevantCodeSymbols,
