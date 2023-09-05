@@ -83,7 +83,7 @@ class VariableCompletionsCustom extends Disposable {
 									filterText: '@' + pathBaseName,
 									detail: editor.editor.resource.path,
 									insertText: '@' + pathBaseName + ' ',
-									kind: CompletionItemKind.Text,
+									kind: CompletionItemKind.File,
 									range: { insert, replace },
 									insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
 									command: {
