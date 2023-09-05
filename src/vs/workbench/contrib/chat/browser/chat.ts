@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatUserProvidedContext, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
@@ -62,6 +62,7 @@ export interface IChatFileTreeInfo {
 	focus(): void;
 }
 
+
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IBaseChatWidgetViewContext {
@@ -101,6 +102,10 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
+	addFileContextForUserMessage(filePath: string): void;
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number): void;
+	// TODO(skcd): Figure out the right api for this
+	getCodeContextProvidedByUser(): IChatUserProvidedContext | undefined;
 	clear(): void;
 }
 

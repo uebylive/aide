@@ -102,6 +102,7 @@ class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
 export class CSChatRequest implements vscode.InteractiveRequest {
 	session: CSChatSession;
 	message: string | CSChatReplyFollowup;
+	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined;
 
 	constructor(session: CSChatSession, message: string | CSChatReplyFollowup) {
 		this.session = session;
@@ -326,6 +327,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
 		logger.info('provideResponseWithProgress', request, progress, token);
+		console.log('[cs-chat][provideResponseWithProgress]', request);
 		return (async () => {
 			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
 			const deterministicRequestType = deterministicClassifier(request.message.toString());

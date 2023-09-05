@@ -28,7 +28,7 @@ import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
-import { IChatReplyFollowup, IChatService, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatReplyFollowup, IChatService, IChatUserProvidedContext, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 
 const $ = dom.$;
@@ -118,6 +118,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private lastSlashCommands: ISlashCommand[] | undefined;
 	private slashCommandsPromise: Promise<ISlashCommand[] | undefined> | undefined;
+	private chatUserProvidedContext: IChatUserProvidedContext | undefined;
 
 	constructor(
 		readonly viewContext: IChatWidgetViewContext,
@@ -453,6 +454,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	async acceptInput(query?: string | IChatReplyFollowup): Promise<void> {
+		// TODO(skcd): This is how we want to use the context which the user has
+		// provided
+		const chatUserProvidedContext = this.chatUserProvidedContext;
+		this.chatUserProvidedContext = undefined;
 		if (this.viewModel) {
 			this._onDidAcceptInput.fire();
 
@@ -460,7 +465,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this._chatAccessibilityService.acceptRequest();
 			const input = query ?? editorValue;
 			const usedSlashCommand = this.lookupSlashCommand(typeof input === 'string' ? input : input.message);
-			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, usedSlashCommand);
+			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, chatUserProvidedContext, usedSlashCommand);
 
 			if (result) {
 				this.inputPart.acceptInput(query);
@@ -636,6 +641,34 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	getViewState(): IViewState {
 		this.inputPart.saveState();
 		return { inputValue: this.inputPart.inputEditor.getValue() };
+	}
+
+
+	// Add new file context to the user message
+	addFileContextForUserMessage(filePath: string): void {
+		if (this.chatUserProvidedContext === undefined) {
+			this.chatUserProvidedContext = {
+				fileContext: [filePath],
+				codeSymbolsContext: [],
+			};
+		} else {
+			this.chatUserProvidedContext?.fileContext.push(filePath);
+		}
+	}
+
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number): void {
+		if (this.chatUserProvidedContext === undefined) {
+			this.chatUserProvidedContext = {
+				fileContext: [],
+				codeSymbolsContext: [{ filePath, startLineNumber }],
+			};
+		} else {
+			this.chatUserProvidedContext?.codeSymbolsContext.push({ filePath, startLineNumber });
+		}
+	}
+
+	getCodeContextProvidedByUser(): IChatUserProvidedContext | undefined {
+		return this.chatUserProvidedContext;
 	}
 }
 
