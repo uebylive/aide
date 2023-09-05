@@ -95,11 +95,11 @@ suite('Chat', () => {
 
 		const session1 = testService.startSession('provider1', CancellationToken.None);
 		await session1.waitForInitialization();
-		session1!.addRequest('request 1');
+		session1!.addRequest('request 1', undefined);
 
 		const session2 = testService.startSession('provider2', CancellationToken.None);
 		await session2.waitForInitialization();
-		session2!.addRequest('request 2');
+		session2!.addRequest('request 2', undefined);
 
 		assert.strictEqual(provider1.lastInitialState, undefined);
 		assert.strictEqual(provider2.lastInitialState, undefined);
