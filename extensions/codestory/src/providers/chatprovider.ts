@@ -301,18 +301,40 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.InteractiveWelcomeMessageContent[]> {
 		logger.info('provideWelcomeMessage', token);
 		return [
-			'Hi! How can I help you?',
-			'Ask CodeStory a question or type \'/\' for topics? I am powered by AI so I might make mistakes, please provide feedback to my developers at founders@codestory.ai or on [discord](https://discord.gg/Cwg3vqgb)',
+			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',
+			'Here are some things you can ask me to get started:',
+			[
+				new CSChatReplyFollowup(
+					'/agent add comments to the entrypoint',
+					'Add comments to the entrypoint',
+					'Add comments to the entrypoint'
+				),
+				new CSChatReplyFollowup(
+					'/explain the active file in the editor',
+					'Explain the active file in the editor',
+					'Explain the active file in the editor'
+				),
+				new CSChatReplyFollowup(
+					'What is a race condition?',
+				),
+			],
+			'You can start your request with \'**`/`**\' to give me specific instructions and type \'**`@`**\' to find files and code symbols that I can use to narrow down the context of your request.',
+			'I might make mistakes, though! Like we all do once in a while. If you find me doing so, please share your feedback via **[Discord](https://discord.gg/Cwg3vqgb)** or **founders@codestory.ai** so I can get better.',
 		];
 	}
 
 	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', initialState, token);
+		const iconUri = vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'assets',
+			'aide-white.svg'
+		);
 		return new CSChatSession(
 			new CSChatParticipant('You'),
-			new CSChatParticipant('CodeStory'),
+			new CSChatParticipant('Aide', iconUri),
 			initialState,
-			'Ask CodeStory a question or type \'/\' for topics?'
+			'Ask me a question or type \'/\' for help.'
 		);
 	}
 

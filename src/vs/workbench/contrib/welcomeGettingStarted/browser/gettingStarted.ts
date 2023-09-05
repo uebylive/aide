@@ -778,9 +778,11 @@ export class GettingStartedPage extends EditorPane {
 			onShowOnStartupChanged();
 		}));
 
+		const imageUri = URI.parse(require.toUrl('./media/aide-white.svg'));
 		const header = $('.header', {},
+			$('img.product-icon', { src: imageUri.toString(true), width: '100px', height: '100px' }),
 			$('h1.product-name.caption', {}, this.productService.nameLong),
-			$('p.subtitle.description', {}, localize({ key: 'gettingStarted.editingEvolved', comment: ['Shown as subtitle on the Welcome page.'] }, "Coding, re-imagined for the future"))
+			$('p.subtitle.description', {}, localize({ key: 'gettingStarted.editingEvolved', comment: ['Shown as subtitle on the Welcome page.'] }, "An AI-powered mod of VSCode"))
 		);
 
 		const leftColumn = $('.categories-column.categories-column-left', {},);
