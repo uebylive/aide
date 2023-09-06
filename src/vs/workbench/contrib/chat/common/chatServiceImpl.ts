@@ -504,7 +504,6 @@ export class ChatService extends Disposable implements IChatService {
 				rawResponse = { session: model.session! };
 
 			} else {
-				console.log('[_sendRequestAsync] resolvedCommand: ', resolvedCommand);
 				const request: IChatRequest = {
 					session: model.session!,
 					message: resolvedCommand,

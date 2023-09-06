@@ -267,6 +267,7 @@ function convertDocumentSymbolToCodeSymbolInformation(
 			}
 		}
 	}
+
 	const codeSymbolCompletionItem: CompletionItem = {
 		label: documentSymbol.name,
 		filterText: '@' + documentSymbol.name + ' ',
@@ -279,7 +280,7 @@ function convertDocumentSymbolToCodeSymbolInformation(
 		command: {
 			id: 'codestory.chat.widget.context.documentSymbol',
 			title: 'Trigger documentSymbol completions',
-			arguments: [modelUri, filePath, documentSymbol.range.startLineNumber, documentSymbol.range.endLineNumber, documentSymbol.detail],
+			arguments: [modelUri, filePath, documentSymbol.range.startLineNumber, documentSymbol.range.endLineNumber, documentSymbol.name],
 		}
 	};
 	return [codeSymbolCompletionItem, ...codeSymbols];

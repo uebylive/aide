@@ -144,6 +144,7 @@ export const debuggingFlow = async (
 		tsMorphProjectManagement,
 		pythonServer,
 		goLangParser,
+		userProvidedContext,
 		workingDirectory,
 	);
 	initialMessages.push(
