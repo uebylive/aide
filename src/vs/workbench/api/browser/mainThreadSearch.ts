@@ -137,7 +137,7 @@ class RemoteSearchProvider implements ISearchResultProvider, IDisposable {
 							startLineNumber: 0,
 							startColumn: 0,
 							endLineNumber: 0,
-							endColumn: previewText.length - 1,
+							endColumn: 0,
 						}],
 						text: previewText
 					},

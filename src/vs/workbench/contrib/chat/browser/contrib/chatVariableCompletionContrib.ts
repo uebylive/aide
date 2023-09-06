@@ -4,8 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 
+import { timeout } from 'vs/base/common/async';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
@@ -24,7 +26,6 @@ import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVari
 import { isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
 
 
 class VariableCompletionsCustom extends Disposable {
@@ -120,7 +121,10 @@ class VariableCompletionsCustom extends Disposable {
 							if (alreadyAdded) {
 								continue;
 							}
-							const symbols = await providers[providerIndex].provideDocumentSymbols(document, CancellationToken.None);
+							const symbols = await Promise.race([
+								providers[providerIndex].provideDocumentSymbols(document, CancellationToken.None),
+								timeout(3000)
+							]);
 							if (symbols) {
 								alreadyAdded = true;
 								symbols.forEach((symbol) => {
