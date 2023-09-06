@@ -68,7 +68,8 @@ export const generateCodeSymbolsForQueries = async (
 				activeFilesTracker,
 				[
 					userProvidedContext.codeSymbolsContext[index].filePath,
-				]
+				],
+				true,
 			);
 			if (codeSymbolsFromFile.length > 0) {
 				const codeSymbolInterested = codeSymbolsFromFile[0];
@@ -87,6 +88,7 @@ export const generateFileInformationSummary = async (
 	tsMorphProjects: TSMorphProjectManagement,
 	pythonServer: PythonServer,
 	goLangParser: GoLangParser,
+	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
 	// We want to get all the files being referenced here and then take all
@@ -95,6 +97,11 @@ export const generateFileInformationSummary = async (
 	const fileSet: Set<string> = new Set();
 	for (let index = 0; index < codeSymbolInformationList.length; index++) {
 		fileSet.add(codeSymbolInformationList[index].fsFilePath);
+	}
+	if (userProvidedContext !== undefined) {
+		for (let index = 0; index < userProvidedContext.fileContext.length ?? 0; index++) {
+			fileSet.add(userProvidedContext.fileContext[index]);
+		}
 	}
 
 	const fileList: string[] = Array.from(fileSet);

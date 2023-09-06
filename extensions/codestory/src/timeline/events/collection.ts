@@ -592,6 +592,8 @@ export class ToolingEventCollection {
 		if (userContext === undefined) {
 			return;
 		}
+		console.log('[userProvidedContext]');
+		console.log(userContext);
 		const event = usingUserProvidedContext(userContext);
 		this.events.push(event);
 		this.chatProgress?.progress.report(
