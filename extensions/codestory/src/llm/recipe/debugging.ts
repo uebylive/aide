@@ -21,6 +21,7 @@ import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
 import { GoLangParser } from '../../languages/goCodeSymbols';
 import { Progress } from 'vscode';
 import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
+import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
@@ -64,9 +65,7 @@ export const debuggingFlow = async (
 	toolingEventCollection: ToolingEventCollection,
 	codeGraph: CodeGraph,
 	embeddingsSearch: EmbeddingsSearch,
-	tsMorphProjectManagement: TSMorphProjectManagement,
-	pythonServer: PythonServer,
-	goLangParser: GoLangParser,
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
@@ -141,9 +140,7 @@ export const debuggingFlow = async (
 	// Now we get all the file information for the symbols
 	const fileCodeSymbolInformationList = await generateFileInformationSummary(
 		relevantCodeSymbols,
-		tsMorphProjectManagement,
-		pythonServer,
-		goLangParser,
+		codeSymbolsLanguageCollection,
 		userProvidedContext,
 		workingDirectory,
 	);
@@ -334,8 +331,7 @@ export const debuggingFlow = async (
 			executionEventId.toString(),
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 			codeGraph,
-			tsMorphProjectManagement,
-			pythonServer,
+			codeSymbolsLanguageCollection,
 			workingDirectory,
 			uniqueId,
 		);
