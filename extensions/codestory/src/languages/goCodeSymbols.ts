@@ -14,6 +14,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import logger from '../logger';
 import { column } from 'mathjs';
+import { CodeSymbolsIndexer } from './codeSymbolsIndexerTypes';
 
 // This is the tree sitter parser we are using for parsing
 // the file system
@@ -165,11 +166,12 @@ export const parseGoCodeTreeSitter = async (code: string): Promise<GoParserNodeI
 
 
 
-export class GoLangParser {
+export class GoLangParser extends CodeSymbolsIndexer {
 	private _workingDirectory: string;
 	private _fileToCodeSymbols: Map<string, CodeSymbolInformation[]> = new Map();
 
 	constructor(workingDirectory: string) {
+		super('go', ['go']);
 		this._workingDirectory = workingDirectory;
 	}
 
