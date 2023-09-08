@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { generateEmbedding } from '../llm/embeddings/openai';
-import { generateContextForEmbedding } from './embeddingsHelpers';
-import { CodeSymbolInformation, CodeSymbolInformationEmbeddings, FileCodeSymbolInformation } from './types';
+import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
+import { CodeSymbolInformation } from './types';
 import axios from 'axios';
 
 const PORT = 42424;
 
 
-export class PythonServer {
+export class PythonServer extends CodeSymbolsIndexer {
 	private _serverUrl: string;
 	constructor(serverUrl: string) {
+		super('python', ['py']);
 		this._serverUrl = serverUrl;
 	}
 
@@ -32,7 +32,14 @@ export class PythonServer {
 			console.log(e);
 			return [];
 		}
-		return [];
+	}
+
+	async parseFileWithDependencies(filePath: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+		return await this.parseFile(filePath);
+	}
+
+	async parseFileWithoutDependency(filePath: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
+		return await this.parseFile(filePath);
 	}
 }
 
