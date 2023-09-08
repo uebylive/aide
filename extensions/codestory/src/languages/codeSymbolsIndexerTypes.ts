@@ -7,8 +7,8 @@ import { CodeSymbolInformation } from '../utilities/types';
 
 
 export abstract class CodeSymbolsIndexer {
-	private supportedFileFormats: string[];
-	private indexerType: string;
+	public supportedFileFormats: string[];
+	public indexerType: string;
 
 	constructor(indexerType: string, supportedFileFormats: string[]) {
 		this.supportedFileFormats = supportedFileFormats;
@@ -17,5 +17,5 @@ export abstract class CodeSymbolsIndexer {
 
 	abstract parseFileWithoutDependency(filePath: string, storeInCache: boolean): Promise<CodeSymbolInformation[]>;
 
-	abstract parseFileWithDependency(filePath: string, storeInCache: boolean): Promise<CodeSymbolInformation[]>;
+	abstract parseFileWithDependencies(filePath: string, storeInCache: boolean): Promise<CodeSymbolInformation[]>;
 }
