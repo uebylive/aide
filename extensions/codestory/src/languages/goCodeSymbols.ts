@@ -176,7 +176,7 @@ export class GoLangParser extends CodeSymbolsIndexer {
 	}
 
 	// This parses the file without resolving the dependencies
-	async parseFileWithoutDependency(filePath: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
+	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
 		const codeSymbols = await getSymbolsFromDocumentUsingLSP(
 			filePath,
 			'go',
@@ -277,9 +277,9 @@ export class GoLangParser extends CodeSymbolsIndexer {
 	// This parses the file and also resolves the dependencies
 	// Ideally we will be passing the file -> Vec<CodeSymbolInformation> here
 	// but right now we use the instance from the class internally
-	async parseFileWithDependencies(filePath: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, workingDirectory: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
 		// We don't want to store the results from parsing in the cache at all
-		const codeSymbols = await this.parseFileWithoutDependency(filePath, false);
+		const codeSymbols = await this.parseFileWithoutDependency(filePath, workingDirectory, false);
 		this._fileToCodeSymbols.set(filePath, codeSymbols);
 		await this.fixDependenciesForCodeSymbols(filePath);
 		return this._fileToCodeSymbols.get(filePath) ?? [];

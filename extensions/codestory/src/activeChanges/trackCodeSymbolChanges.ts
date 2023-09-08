@@ -123,7 +123,10 @@ export class TrackCodeSymbolChanges {
 		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
 		// write the content to this file for now
 		await workspace.fs.writeFile(Uri.file(newFilePath), Buffer.from(fileContentSinceHead));
-		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(newFilePath);
+		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(
+			newFilePath,
+			this.workingDirectory,
+		);
 		// delete the file at this point
 		await workspace.fs.delete(Uri.file(newFilePath), {
 			recursive: false,
@@ -316,7 +319,10 @@ export class TrackCodeSymbolChanges {
 		if (
 			fileExtension === '.go'
 		) {
-			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(filePath);
+			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(
+				filePath,
+				this.workingDirectory,
+			);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
 				codeSymbols: codeSymbolInformationHackedTogether,
 				timestamp: Date.now(),
