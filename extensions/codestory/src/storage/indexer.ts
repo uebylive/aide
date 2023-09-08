@@ -21,6 +21,7 @@ import EventEmitter = require('events');
 import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
 import { PythonServer } from '../utilities/pythonServerClient';
 import { GoLangParser } from '../languages/goCodeSymbols';
+import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 // import logger from '../logger';
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -162,55 +163,8 @@ const generateAndStoreEmbeddings = async (
 };
 
 
-const generateAndStoreEmbeddingsForGolangFiles = async (
-	goLangParser: GoLangParser,
-	workingDirectory: string,
-	filesToTrack: string[],
-	emitter: EventEmitter,
-	globalStorageUri: string,
-): Promise<CodeSymbolInformationEmbeddings[]> => {
-	console.log('[golang] Generating symbols');
-	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
-	for (let index = 0; index < filesToTrack.length; index++) {
-		const filePath = filesToTrack[index];
-		if (!filePath.endsWith('.go')) {
-			continue;
-		}
-		logger.info('[golang][generateSymbols][without-dependency][indexer] ' + filePath);
-		const _ = await goLangParser.parseFileWithoutDependency(
-			filePath,
-			workingDirectory,
-		);
-		console.log('[golang][generateSymbols] ' + filePath);
-	}
-
-	for (let index = 0; index < filesToTrack.length; index++) {
-		const filePath = filesToTrack[index];
-		if (!filePath.endsWith('.go')) {
-			continue;
-		}
-		logger.info('[golang][generateSymbols][with-dependency][indexer] ' + filePath);
-		const codeSymbolsWithDependencies = await goLangParser.parseFileWithDependencies(
-			filePath,
-			workingDirectory,
-		);
-		logger.info('[golang][generateSymbols][dependencies] ' + filePath);
-		const codeSymbolsWithEmbeddings = await generateAndStoreEmbeddings(
-			codeSymbolsWithDependencies,
-			workingDirectory,
-			globalStorageUri
-		);
-		codeSymbolsWithEmbeddings.forEach((codeSymbolsWithEmbeddings) => {
-			emitter.emit('partialData', codeSymbolsWithEmbeddings);
-		});
-		finalCodeSymbolWithEmbeddings.push(...codeSymbolsWithEmbeddings);
-	}
-	return finalCodeSymbolWithEmbeddings;
-};
-
-
-const generateAndStoreEmbeddingsForTypescriptLikeFiles = async (
-	tsProjectManagement: TSMorphProjectManagement,
+const generateAndStoreEmbeddingsForFiles = async (
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	filesToTrack: string[],
 	emitter: EventEmitter,
@@ -219,43 +173,14 @@ const generateAndStoreEmbeddingsForTypescriptLikeFiles = async (
 	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
 	for (let index = 0; index < filesToTrack.length; index++) {
 		const filePath = filesToTrack[index];
-		if (!(filePath.endsWith('.tsx') || filePath.endsWith('.ts') || filePath.endsWith('.js') || filePath.endsWith('.jsx'))) {
+		const indexer = codeSymbolsLanguageCollection.getIndexerForFile(filePath);
+		if (!indexer) {
 			continue;
 		}
-		const codeSymbols = await tsProjectManagement.parseFileWithDependencies(
+		const codeSymbols = await indexer.parseFileWithoutDependency(
 			filePath,
 			workingDirectory,
 			false,
-		);
-		const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
-			codeSymbols,
-			workingDirectory,
-			globalStorageUri
-		);
-		codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
-			emitter.emit('partialData', codeSymbolWithEmbeddings);
-		});
-		finalCodeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-	}
-	return finalCodeSymbolWithEmbeddings;
-};
-
-
-const generateAndStoreEmbeddingsForPythonFiles = async (
-	pythonClient: PythonServer,
-	workingDirectory: string,
-	filesToTrack: string[],
-	emitter: EventEmitter,
-	globalStorageUri: string,
-): Promise<CodeSymbolInformationEmbeddings[]> => {
-	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
-	for (let index = 0; index < filesToTrack.length; index++) {
-		const filePath = filesToTrack[index];
-		if (!filePath.endsWith('.py')) {
-			continue;
-		}
-		const codeSymbols = await pythonClient.parseFile(
-			filePath,
 		);
 		const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
 			codeSymbols,
@@ -290,9 +215,7 @@ const checkIfProjectWasIndexed = (
 
 export const indexRepository = async (
 	storage: CodeStoryStorage,
-	projectManagement: TSMorphProjectManagement,
-	pythonClient: PythonServer,
-	goLangParser: GoLangParser,
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	globalStorageUri: string,
 	workingDirectory: string,
 	emitter: EventEmitter,
@@ -316,32 +239,14 @@ export const indexRepository = async (
 		repoName,
 	);
 	if (!storage.isIndexed || !wasProjectIndexed) {
-		// parse typescript like files
-		const typeScriptLikeSymbols = await generateAndStoreEmbeddingsForTypescriptLikeFiles(
-			projectManagement,
+		const codeSymbolsForFiles = await generateAndStoreEmbeddingsForFiles(
+			codeSymbolsLanguageCollection,
 			workingDirectory,
 			filesToTrack,
 			emitter,
 			globalStorageUri,
 		);
-		// parse the python files
-		const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
-			pythonClient,
-			workingDirectory,
-			filesToTrack,
-			emitter,
-			globalStorageUri,
-		);
-		const goLangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
-			goLangParser,
-			workingDirectory,
-			filesToTrack,
-			emitter,
-			globalStorageUri,
-		);
-		codeSymbolWithEmbeddings.push(...typeScriptLikeSymbols);
-		codeSymbolWithEmbeddings.push(...goLangSymbols);
-		codeSymbolWithEmbeddings.push(...pythonSymbols);
+		codeSymbolWithEmbeddings.push(...codeSymbolsForFiles);
 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 		storage.isIndexed = true;
 		await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
@@ -353,32 +258,14 @@ export const indexRepository = async (
 		logger.info(storage.lastIndexedRepoHash);
 		if (currentHash !== storage.lastIndexedRepoHash) {
 			// We need to re-index the repo
-			// parse typescript like files
-			const typeScriptLikeSymbols = await generateAndStoreEmbeddingsForTypescriptLikeFiles(
-				projectManagement,
+			const codeSymbolsForFiles = await generateAndStoreEmbeddingsForFiles(
+				codeSymbolsLanguageCollection,
 				workingDirectory,
 				filesToTrack,
 				emitter,
 				globalStorageUri,
 			);
-			// parse the python files
-			const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
-				pythonClient,
-				workingDirectory,
-				filesToTrack,
-				emitter,
-				globalStorageUri,
-			);
-			const golangSymbols = await generateAndStoreEmbeddingsForGolangFiles(
-				goLangParser,
-				workingDirectory,
-				filesToTrack,
-				emitter,
-				globalStorageUri,
-			);
-			codeSymbolWithEmbeddings.push(...typeScriptLikeSymbols);
-			codeSymbolWithEmbeddings.push(...golangSymbols);
-			codeSymbolWithEmbeddings.push(...pythonSymbols);
+			codeSymbolWithEmbeddings.push(...codeSymbolsForFiles);
 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
 			storage.isIndexed = true;
 			await saveCodeStoryStorageObjectToStorage(globalStorageUri, storage, workingDirectory);
