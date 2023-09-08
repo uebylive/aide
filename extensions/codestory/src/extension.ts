@@ -33,6 +33,7 @@ import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
+import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 
 
 class ProgressiveTrackSymbols {
@@ -104,9 +105,7 @@ class ProgressiveIndexer {
 
 	async indexRepository(
 		storage: CodeStoryStorage,
-		projectManagement: TSMorphProjectManagement,
-		pythonServer: PythonServer,
-		goLangParser: GoLangParser,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		globalStorageUri: string,
 		workingDirectory: string
 	) {
@@ -119,9 +118,7 @@ class ProgressiveIndexer {
 			async () => {
 				await indexRepository(
 					storage,
-					projectManagement,
-					pythonServer,
-					goLangParser,
+					codeSymbolsLanguageCollection,
 					globalStorageUri,
 					workingDirectory,
 					this.emitter
@@ -164,20 +161,27 @@ export async function activate(context: ExtensionContext) {
 		rootPath,
 	);
 	const pythonServer = new PythonServer(serverUrl);
+	// Setup golang parser here
 	const goLangParser = new GoLangParser(rootPath ?? '');
+	// Ts-morph project management
+	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
+	const extensionSet = getExtensionsInDirectory(rootPath);
+	const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
+
+	// Now setup the indexer collection
+	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
+	codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
+	codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonServer);
+	codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
 
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
 	logger.info(codeStoryStorage);
 	logger.info(rootPath);
-	// Ts-morph project management
-	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
-	const testSuiteRunCommand = readTestSuiteRunCommand();
-	logger.info(activeDirectories);
-	const extensionSet = getExtensionsInDirectory(rootPath);
-	const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
 	// Active files tracker
 	const activeFilesTracker = new ActiveFilesTracker();
+	// Get the test-suite command
+	const testSuiteRunCommand = readTestSuiteRunCommand();
 
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
@@ -187,9 +191,7 @@ export async function activate(context: ExtensionContext) {
 	});
 	await indexer.indexRepository(
 		codeStoryStorage,
-		projectManagement,
-		pythonServer,
-		goLangParser,
+		codeSymbolsLanguageCollection,
 		context.globalStorageUri.fsPath,
 		rootPath,
 	);
