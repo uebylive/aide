@@ -21,6 +21,7 @@ import { ToolingEventCollection } from '../timeline/events/collection';
 import { GoLangParser } from '../languages/goCodeSymbols';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
+import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -229,9 +230,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 	private _codeGraph: CodeGraph;
 	private _embeddingsIndex: EmbeddingsSearch;
-	private _projectManagement: TSMorphProjectManagement;
-	private _pythonServer: PythonServer;
-	private _golangParser: GoLangParser;
+	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _workingDirectory: string;
 	private _testSuiteRunCommand: string;
 	private _activeFilesTracker: ActiveFilesTracker;
@@ -244,9 +243,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		repoName: string,
 		repoHash: string,
 		embeddingsIndex: EmbeddingsSearch,
-		projectManagement: TSMorphProjectManagement,
-		pythonServer: PythonServer,
-		golangParser: GoLangParser,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		testSuiteRunCommand: string,
 		activeFilesTracker: ActiveFilesTracker,
 	) {
@@ -256,9 +253,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._repoHash = repoHash;
 		this._repoName = repoName;
 		this._embeddingsIndex = embeddingsIndex;
-		this._projectManagement = projectManagement;
-		this._pythonServer = pythonServer;
-		this._golangParser = golangParser;
+		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
 		this._testSuiteRunCommand = testSuiteRunCommand;
 		this._activeFilesTracker = activeFilesTracker;
 	}
@@ -387,9 +382,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					toolingEventCollection,
 					this._codeGraph,
 					this._embeddingsIndex,
-					this._projectManagement,
-					this._pythonServer,
-					this._golangParser,
+					this._codeSymbolsLanguageCollection,
 					this._workingDirectory,
 					this._testSuiteRunCommand,
 					this._activeFilesTracker,

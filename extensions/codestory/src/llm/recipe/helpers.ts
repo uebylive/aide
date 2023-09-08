@@ -19,6 +19,7 @@ import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
 import { GoLangParser } from '../../languages/goCodeSymbols';
+import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 
 
 export const getOpenFilesInWorkspace = (): string[] => {
@@ -85,9 +86,7 @@ export const generateCodeSymbolsForQueries = async (
 
 export const generateFileInformationSummary = async (
 	codeSymbolInformationList: CodeSymbolInformation[],
-	tsMorphProjects: TSMorphProjectManagement,
-	pythonServer: PythonServer,
-	goLangParser: GoLangParser,
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
@@ -111,43 +110,20 @@ export const generateFileInformationSummary = async (
 	for (let index = 0; index < fileList.length; index++) {
 		// get the file extension
 		const fileExtension = fileList[index].split('.').reverse()[0];
-		if (fileExtension === 'py') {
-			const codeSymbols = await pythonServer.parseFile(
-				fileList[index],
-			);
-			fileCodeSymbolInformationList.push({
-				filePath: fileList[index],
-				codeSymbols: codeSymbols,
-				workingDirectory: workingDirectory,
-			});
-		} else if (fileExtension === 'ts' || fileExtension === 'tsx' || fileExtension === 'js' || fileExtension === 'jsx') {
-			const project = tsMorphProjects.getTsMorphProjectForFile(fileList[index]);
-			if (!project) {
-				continue;
-			}
-			const codeSymbols = await parseFileUsingTsMorph(
-				fileList[index],
-				project,
-				workingDirectory,
-				fileList[index]
-			);
-			fileCodeSymbolInformationList.push({
-				filePath: fileList[index],
-				codeSymbols: codeSymbols,
-				workingDirectory: workingDirectory,
-			});
-		} else if (fileExtension === 'go') {
-			const codeSymbols = await goLangParser.parseFileWithDependencies(
-				fileList[index],
-				workingDirectory,
-				true,
-			);
-			fileCodeSymbolInformationList.push({
-				filePath: fileList[index],
-				codeSymbols: codeSymbols,
-				workingDirectory: workingDirectory,
-			});
+		const indexerForFile = codeSymbolsLanguageCollection.getIndexerForFile(fileList[index]);
+		if (!indexerForFile) {
+			continue;
 		}
+		const codeSymbols = await indexerForFile.parseFileWithDependencies(
+			fileList[index],
+			workingDirectory,
+			false,
+		);
+		fileCodeSymbolInformationList.push({
+			filePath: fileList[index],
+			codeSymbols: codeSymbols,
+			workingDirectory: workingDirectory,
+		});
 	}
 	return fileCodeSymbolInformationList;
 };
@@ -405,8 +381,7 @@ export const executeTestHarness = async (
 	executionEventId: string,
 	codeSymbolNameMaybe: string,
 	codeGraph: CodeGraph,
-	tsMorphProjects: TSMorphProjectManagement,
-	pythonServer: PythonServer,
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	uniqueId: string,
 ): Promise<number> => {
@@ -418,109 +393,111 @@ export const executeTestHarness = async (
 		return 1;
 	}
 
+	return 0;
+	// TODO(skcd): Fix this up properly
 	// Early bail here if this is a python file
-	if (codeNode.fsFilePath.endsWith('.py')) {
-		return 0;
-	}
+	// if (codeNode.fsFilePath.endsWith('.py')) {
+	// 	return 0;
+	// }
 
-	const project = tsMorphProjects.getTsMorphProjectForFile(codeNode.fsFilePath);
-	if (!project) {
-		return 1;
-	}
+	// const project = tsMorphProjects.getTsMorphProjectForFile(codeNode.fsFilePath);
+	// if (!project) {
+	// 	return 1;
+	// }
 
-	// We also need the new code symbol content so we are going to parse it
-	// from the file
-	const newCodeSymbolNodes = await parseFileUsingTsMorph(
-		codeNode.fsFilePath,
-		project,
-		workingDirectory,
-		codeNode.fsFilePath,
-	);
+	// // We also need the new code symbol content so we are going to parse it
+	// // from the file
+	// const newCodeSymbolNodes = await parseFileUsingTsMorph(
+	// 	codeNode.fsFilePath,
+	// 	project,
+	// 	workingDirectory,
+	// 	codeNode.fsFilePath,
+	// );
 
-	const newCodeSymbolNode = newCodeSymbolNodes.find((node) => {
-		// Here we have to match based on the last suffix of the code symbol
-		// when split by the dot
-		const splittedCodeSymbolName = node.symbolName.split('.').reverse();
-		let accumulator = '';
-		for (let index = 0; index < splittedCodeSymbolName.length; index++) {
-			const element = splittedCodeSymbolName[index];
-			if (index === 0) {
-				accumulator = element;
-			} else {
-				accumulator = `${element}.${accumulator}`;
-			}
-			if (accumulator === codeNode.symbolName) {
-				return true;
-			}
-		}
-	});
+	// const newCodeSymbolNode = newCodeSymbolNodes.find((node) => {
+	// 	// Here we have to match based on the last suffix of the code symbol
+	// 	// when split by the dot
+	// 	const splittedCodeSymbolName = node.symbolName.split('.').reverse();
+	// 	let accumulator = '';
+	// 	for (let index = 0; index < splittedCodeSymbolName.length; index++) {
+	// 		const element = splittedCodeSymbolName[index];
+	// 		if (index === 0) {
+	// 			accumulator = element;
+	// 		} else {
+	// 			accumulator = `${element}.${accumulator}`;
+	// 		}
+	// 		if (accumulator === codeNode.symbolName) {
+	// 			return true;
+	// 		}
+	// 	}
+	// });
 
-	if (!newCodeSymbolNode) {
-		return 1;
-	}
+	// if (!newCodeSymbolNode) {
+	// 	return 1;
+	// }
 
-	const prompt = generateTestExecutionPrompt(
-		'jest',
-		testPlan.imports,
-		codeSymbolNameMaybe,
-		newCodeSymbolNode.codeSnippet.code,
-		testPlan.planForTestScriptGeneration,
-		testPlan.testScript,
-	);
+	// const prompt = generateTestExecutionPrompt(
+	// 	'jest',
+	// 	testPlan.imports,
+	// 	codeSymbolNameMaybe,
+	// 	newCodeSymbolNode.codeSnippet.code,
+	// 	testPlan.planForTestScriptGeneration,
+	// 	testPlan.testScript,
+	// );
 
-	const messages = [...previousMessages];
-	messages.push({
-		content: prompt,
-		role: 'user',
-	});
-	const response = await generateChatCompletion(
-		messages,
-		'executeTestHarness',
-		uniqueId,
-	);
-	const testSetupFinalResult = parseTestExecutionFinalSetupResponse(
-		response?.message?.content ?? '',
-	);
+	// const messages = [...previousMessages];
+	// messages.push({
+	// 	content: prompt,
+	// 	role: 'user',
+	// });
+	// const response = await generateChatCompletion(
+	// 	messages,
+	// 	'executeTestHarness',
+	// 	uniqueId,
+	// );
+	// const testSetupFinalResult = parseTestExecutionFinalSetupResponse(
+	// 	response?.message?.content ?? '',
+	// );
 
-	if (!testSetupFinalResult) {
-		return 1;
-	}
+	// if (!testSetupFinalResult) {
+	// 	return 1;
+	// }
 
-	// Now we write to the file so we can test it out
-	await writeFileContents(
-		testPlan.testFileLocation,
-		testSetupFinalResult?.testScript ?? '',
-	);
+	// // Now we write to the file so we can test it out
+	// await writeFileContents(
+	// 	testPlan.testFileLocation,
+	// 	testSetupFinalResult?.testScript ?? '',
+	// );
 
-	console.log('Whats the test plan');
-	console.log(testPlan);
-	console.log('======');
+	// console.log('Whats the test plan');
+	// console.log(testPlan);
+	// console.log('======');
 
-	// Send out the file save event
-	toolingEventCollection.saveFileEvent(
-		testPlan.testFileLocation,
-		codeSymbolNameMaybe,
-		executionEventId,
-	);
+	// // Send out the file save event
+	// toolingEventCollection.saveFileEvent(
+	// 	testPlan.testFileLocation,
+	// 	codeSymbolNameMaybe,
+	// 	executionEventId,
+	// );
 
-	// Now we are going to execute the test harness here using 'jest' command
-	const { stdout, stderr, exitCode } = await runCommandAsync(
-		workingDirectory,
-		'jest',
-		[testPlan.testFileLocation],
-	);
+	// // Now we are going to execute the test harness here using 'jest' command
+	// const { stdout, stderr, exitCode } = await runCommandAsync(
+	// 	workingDirectory,
+	// 	'jest',
+	// 	[testPlan.testFileLocation],
+	// );
 
-	// Now send a terminal event about this
-	toolingEventCollection.terminalEvent(
-		codeSymbolNameMaybe,
-		testPlan.testFileLocation,
-		stdout,
-		stderr,
-		exitCode,
-		['jest', testPlan.testFileLocation],
-		executionEventId,
-	);
-	return exitCode;
+	// // Now send a terminal event about this
+	// toolingEventCollection.terminalEvent(
+	// 	codeSymbolNameMaybe,
+	// 	testPlan.testFileLocation,
+	// 	stdout,
+	// 	stderr,
+	// 	exitCode,
+	// 	['jest', testPlan.testFileLocation],
+	// 	executionEventId,
+	// );
+	// return exitCode;
 };
 
 

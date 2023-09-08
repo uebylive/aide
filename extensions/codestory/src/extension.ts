@@ -8,7 +8,7 @@ import winston from 'winston';
 
 import { CodeStoryStorage, loadOrSaveToStorage } from './storage/types';
 import { indexRepository } from './storage/indexer';
-import { getProject, TSMorphProjectManagement } from './utilities/parseTypescript';
+import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
 import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
 import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
@@ -77,15 +77,11 @@ class ProgressiveGraphBuilder {
 	}
 
 	async loadGraph(
-		projectManagement: TSMorphProjectManagement,
-		pythonServer: PythonServer,
-		goLangParser: GoLangParser,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		workingDirectory: string,
 	) {
 		await generateCodeGraph(
-			projectManagement,
-			pythonServer,
-			goLangParser,
+			codeSymbolsLanguageCollection,
 			workingDirectory,
 			this.emitter,
 		);
@@ -219,16 +215,14 @@ export async function activate(context: ExtensionContext) {
 		codeGraph.addNodes(partialData);
 	});
 	await progressiveGraphBuilder.loadGraph(
-		projectManagement,
-		pythonServer,
-		goLangParser,
+		codeSymbolsLanguageCollection,
 		rootPath,
 	);
 
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
 		rootPath, codeGraph, repoName, repoHash,
-		embeddingsIndex, projectManagement, pythonServer, goLangParser,
+		embeddingsIndex, codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
@@ -243,9 +237,7 @@ export async function activate(context: ExtensionContext) {
 			// TODO(codestory): Fix this properly later on
 			chatProvider,
 			embeddingsIndex,
-			projectManagement,
-			pythonServer,
-			goLangParser,
+			codeSymbolsLanguageCollection,
 			codeGraph,
 			repoName,
 			repoHash,

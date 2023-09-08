@@ -6,24 +6,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { commands, env } from 'vscode';
 import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
 import { CodeGraph } from '../codeGraph/graph';
-import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { MessageHandlerData } from '@estruyf/vscode';
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
-import { PythonServer } from '../utilities/pythonServerClient';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { GoLangParser } from '../languages/goCodeSymbols';
 import { CSChatProvider } from '../providers/chatprovider';
+import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 
 export const debug = (
 	csChatProvider: CSChatProvider,
 	embeddingIndex: EmbeddingsSearch,
-	tsMorphProjectManagement: TSMorphProjectManagement,
-	pythonServer: PythonServer,
-	goLangParser: GoLangParser,
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	codeGraph: CodeGraph,
 	repoName: string,
 	repoHash: string,
@@ -58,9 +54,7 @@ export const debug = (
 					toolingEventCollection,
 					codeGraph,
 					embeddingIndex,
-					tsMorphProjectManagement,
-					pythonServer,
-					goLangParser,
+					codeSymbolsLanguageCollection,
 					workingDirectory,
 					testSuiteRunCommand,
 					activeFilesTracker,
