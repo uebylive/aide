@@ -34,11 +34,11 @@ export class PythonServer extends CodeSymbolsIndexer {
 		}
 	}
 
-	async parseFileWithDependencies(filePath: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, workingDirectory: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
 		return await this.parseFile(filePath);
 	}
 
-	async parseFileWithoutDependency(filePath: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
+	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
 		return await this.parseFile(filePath);
 	}
 }

@@ -139,6 +139,7 @@ export const generateFileInformationSummary = async (
 		} else if (fileExtension === 'go') {
 			const codeSymbols = await goLangParser.parseFileWithDependencies(
 				fileList[index],
+				workingDirectory,
 				true,
 			);
 			fileCodeSymbolInformationList.push({

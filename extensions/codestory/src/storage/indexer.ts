@@ -179,6 +179,7 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 		logger.info('[golang][generateSymbols][without-dependency][indexer] ' + filePath);
 		const _ = await goLangParser.parseFileWithoutDependency(
 			filePath,
+			workingDirectory,
 		);
 		console.log('[golang][generateSymbols] ' + filePath);
 	}
@@ -191,6 +192,7 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 		logger.info('[golang][generateSymbols][with-dependency][indexer] ' + filePath);
 		const codeSymbolsWithDependencies = await goLangParser.parseFileWithDependencies(
 			filePath,
+			workingDirectory,
 		);
 		logger.info('[golang][generateSymbols][dependencies] ' + filePath);
 		const codeSymbolsWithEmbeddings = await generateAndStoreEmbeddings(
@@ -202,6 +204,38 @@ const generateAndStoreEmbeddingsForGolangFiles = async (
 			emitter.emit('partialData', codeSymbolsWithEmbeddings);
 		});
 		finalCodeSymbolWithEmbeddings.push(...codeSymbolsWithEmbeddings);
+	}
+	return finalCodeSymbolWithEmbeddings;
+};
+
+
+const generateAndStoreEmbeddingsForTypescriptLikeFiles = async (
+	tsProjectManagement: TSMorphProjectManagement,
+	workingDirectory: string,
+	filesToTrack: string[],
+	emitter: EventEmitter,
+	globalStorageUri: string,
+): Promise<CodeSymbolInformationEmbeddings[]> => {
+	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		if (!(filePath.endsWith('.tsx') || filePath.endsWith('.ts') || filePath.endsWith('.js') || filePath.endsWith('.jsx'))) {
+			continue;
+		}
+		const codeSymbols = await tsProjectManagement.parseFileWithDependencies(
+			filePath,
+			workingDirectory,
+			false,
+		);
+		const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
+			codeSymbols,
+			workingDirectory,
+			globalStorageUri
+		);
+		codeSymbolWithEmbeddingsForProject.forEach((codeSymbolWithEmbeddings) => {
+			emitter.emit('partialData', codeSymbolWithEmbeddings);
+		});
+		finalCodeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
 	}
 	return finalCodeSymbolWithEmbeddings;
 };
@@ -282,22 +316,14 @@ export const indexRepository = async (
 		repoName,
 	);
 	if (!storage.isIndexed || !wasProjectIndexed) {
-		// logger.info('[indexing_start] Starting indexing');
-		// Start re-indexing right now.
-		for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
-			const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
-			const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
-				codeSymbolInformationList,
-				workingDirectory,
-				globalStorageUri
-			);
-			for (const codeSymbolWithEmbeddings of codeSymbolWithEmbeddingsForProject) {
-				logger.info('[indexing_start] Starting indexing for project');
-				logger.info(codeSymbolWithEmbeddings.codeSymbolInformation.symbolName);
-				emitter.emit('partialData', codeSymbolWithEmbeddings);
-			}
-			codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-		}
+		// parse typescript like files
+		const typeScriptLikeSymbols = await generateAndStoreEmbeddingsForTypescriptLikeFiles(
+			projectManagement,
+			workingDirectory,
+			filesToTrack,
+			emitter,
+			globalStorageUri,
+		);
 		// parse the python files
 		const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 			pythonClient,
@@ -313,6 +339,7 @@ export const indexRepository = async (
 			emitter,
 			globalStorageUri,
 		);
+		codeSymbolWithEmbeddings.push(...typeScriptLikeSymbols);
 		codeSymbolWithEmbeddings.push(...goLangSymbols);
 		codeSymbolWithEmbeddings.push(...pythonSymbols);
 		storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);
@@ -326,18 +353,14 @@ export const indexRepository = async (
 		logger.info(storage.lastIndexedRepoHash);
 		if (currentHash !== storage.lastIndexedRepoHash) {
 			// We need to re-index the repo
-			// TODO(codestory): Repeated code here, we need to clean it up
-			for (const [workingDirectory, project] of projectManagement.directoryToProjectMapping) {
-				const codeSymbolInformationList = await getCodeSymbolList(project, workingDirectory);
-				logger.info('[indexing_start] Starting indexing for project');
-				const codeSymbolWithEmbeddingsForProject = await generateAndStoreEmbeddings(
-					codeSymbolInformationList,
-					workingDirectory,
-					globalStorageUri
-				);
-				emitter.emit('partialData', codeSymbolWithEmbeddingsForProject);
-				codeSymbolWithEmbeddings.push(...codeSymbolWithEmbeddingsForProject);
-			}
+			// parse typescript like files
+			const typeScriptLikeSymbols = await generateAndStoreEmbeddingsForTypescriptLikeFiles(
+				projectManagement,
+				workingDirectory,
+				filesToTrack,
+				emitter,
+				globalStorageUri,
+			);
 			// parse the python files
 			const pythonSymbols = await generateAndStoreEmbeddingsForPythonFiles(
 				pythonClient,
@@ -353,6 +376,7 @@ export const indexRepository = async (
 				emitter,
 				globalStorageUri,
 			);
+			codeSymbolWithEmbeddings.push(...typeScriptLikeSymbols);
 			codeSymbolWithEmbeddings.push(...golangSymbols);
 			codeSymbolWithEmbeddings.push(...pythonSymbols);
 			storage.lastIndexedRepoHash = await getGitCurrentHash(workingDirectory);

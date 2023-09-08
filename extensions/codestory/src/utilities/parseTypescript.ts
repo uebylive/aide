@@ -25,6 +25,7 @@ import { exec } from 'child_process';
 import { runCommandAsync } from './commandRunner';
 import { Uri, languages, workspace } from 'vscode';
 import { getSymbolsFromDocumentUsingLSP } from './lspApi';
+import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
 
 export const getCodeLocationPath = (directoryPath: string, filePath: string): string => {
 	// Parse the filePath to get an object that includes properties like root, dir, base, ext and name
@@ -862,11 +863,12 @@ export async function parseFileUsingTsMorph(
 // Note: This does mean we have to keep all the projects in memory, but vscode
 // is doing something on those lines too, so we are not too far away
 
-export class TSMorphProjectManagement {
+export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 	public directoryToProjectMapping: Map<string, Project>;
 	private fileToTSConfigDirectoryMapping: Map<string, string>;
 
 	constructor() {
+		super('typescript', ['ts', 'tsx', 'js', 'jsx']);
 		this.fileToTSConfigDirectoryMapping = new Map();
 		this.directoryToProjectMapping = new Map();
 	}
@@ -955,6 +957,25 @@ export class TSMorphProjectManagement {
 			filePartsLen = filePartsLen - 1;
 		}
 		return null;
+	}
+
+	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean): Promise<CodeSymbolInformation[]> {
+		return await this.parseFileWithDependencies(filePath, workingDirectory, storeInCache);
+	}
+
+	async parseFileWithDependencies(filePath: string, workingDirectory: string, storeInCache: boolean): Promise<CodeSymbolInformation[]> {
+		const project = this.getTsMorphProjectForFile(filePath);
+		if (project === null) {
+			return [];
+		}
+		const sourceFile = project.getSourceFile(filePath);
+		const codeSymbols = await parseFileUsingTsMorph(
+			filePath,
+			project,
+			workingDirectory,
+			filePath,
+		);
+		return codeSymbols;
 	}
 }
 
