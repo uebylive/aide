@@ -75,21 +75,16 @@ export class CodeGraph {
 	public getReferenceLocationsForCodeSymbol(
 		node: CodeSymbolInformation,
 	): CodeSymbolInformation[] {
-		console.log(`code symbol we are searching for ${node.symbolName}`);
 		const references: CodeSymbolInformation[] = [];
 		const nodeSymbolsForReference: Set<string> = new Set();
 		for (const currentNode of this._nodes) {
-			if (currentNode.symbolName === 'src.codeGraph.embeddingsSearch.EmbeddingsSearch.generateNodesRelevantForUser') {
-				console.log('what are the dependencies');
-				console.log(currentNode.dependencies);
-				for (const edges of currentNode.dependencies) {
-					console.log(edges.edges.map((edge) => edge.codeSymbolName));
-					console.log(edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName));
-					if (edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName)) {
-						if (nodeSymbolsForReference.has(currentNode.symbolName) === false) {
-							references.push(currentNode);
-							nodeSymbolsForReference.add(currentNode.symbolName);
-						}
+			for (const edges of currentNode.dependencies) {
+				console.log(edges.edges.map((edge) => edge.codeSymbolName));
+				console.log(edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName));
+				if (edges.edges.map((edge) => edge.codeSymbolName).includes(node.symbolName)) {
+					if (nodeSymbolsForReference.has(currentNode.symbolName) === false) {
+						references.push(currentNode);
+						nodeSymbolsForReference.add(currentNode.symbolName);
 					}
 				}
 			}
