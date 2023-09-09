@@ -36,7 +36,7 @@ const getLanguageId = (filePath: string): string | null => {
 
 export const generateChatCompletionWithGPT4 = async (messages: OpenAI.Chat.CreateChatCompletionRequestMessage[]) => {
 	const completion = await openai.chat.completions.create({
-		model: 'gpt-4-32k',
+		model: 'gpt-4',
 		messages,
 		max_tokens: 756,
 	});
