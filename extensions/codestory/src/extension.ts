@@ -34,6 +34,7 @@ import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
+import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
 
 
 class ProgressiveTrackSymbols {
