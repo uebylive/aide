@@ -31,14 +31,17 @@ export class SearchIndexCollection {
 			if (isReady) {
 				continue;
 			}
-			const loadFromStorage = await indexer.loadFromStorage(filesToIndex);
-			if (shouldRunIndexing(loadFromStorage.status)) {
-				await indexer.indexWorkspace(filesToIndex);
-			}
-			const missingFiles = loadFromStorage.filesMissing;
-			if (missingFiles.length > 0) {
-				await indexer.indexWorkspace(missingFiles);
-			}
+			// We are not marking this as async because we want this to run in
+			// the background while the other indexers are also starting up
+			indexer.loadFromStorage(filesToIndex).then((loadedFromStorage) => {
+				if (shouldRunIndexing(loadedFromStorage.status)) {
+					indexer.indexWorkspace(filesToIndex);
+				}
+				const missingFiles = loadedFromStorage.filesMissing;
+				for (const missingFile of missingFiles) {
+					indexer.indexFile(missingFile);
+				}
+			});
 		}
 	}
 

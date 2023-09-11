@@ -144,6 +144,7 @@ export async function activate(context: ExtensionContext) {
 		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
 	}
+	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
 	const repoName = await getGitRepoName(
 		rootPath,
