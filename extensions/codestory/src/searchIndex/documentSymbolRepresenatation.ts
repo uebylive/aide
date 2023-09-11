@@ -13,6 +13,25 @@
 // sure we are not blocking the extension in any way.
 
 import { DocumentSymbol, SymbolInformation, SymbolKind, TextDocument, languages, workspace } from 'vscode';
+import { CodeSearchFileInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
+
+import * as path from 'path';
+import * as fs from 'fs';
+import { generateEmbedding } from '../llm/embeddings/openai';
+import math from 'mathjs';
+
+
+const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
+	if (vecA.length !== vecB.length) {
+		return -1;
+	}
+
+	const dotProduct = math.dot(vecA, vecB);
+	const magnitudeA = math.norm(vecA);
+	const magnitudeB = math.norm(vecB);
+
+	return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
+}
 
 
 // TODO(codestory): Why 5? Its a good number I guess but also gives a good representation of the
@@ -109,10 +128,21 @@ const getFileRepresentation = (symbols: DocumentSymbol[], filePath: string): str
 };
 
 
+export interface DocumentSymbolIndex {
+	filePath: string;
+	fileRepresentationString: string;
+	embeddings: number[];
+	timestamp: number;
+}
 
-export class DocumentSymbolBasedIndex {
-	private fileToIndexMap: Map<string, string> = new Map();
-	constructor() {
+
+export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
+	private fileToIndexMap: Map<string, DocumentSymbolIndex> = new Map();
+	private _readyToUse: boolean = false;
+	private _storageLocation: string;
+	constructor(globalStorageLocation: string) {
+		super();
+		this._storageLocation = globalStorageLocation;
 		this.fileToIndexMap = new Map();
 	}
 
@@ -160,13 +190,116 @@ export class DocumentSymbolBasedIndex {
 					continue;
 				}
 				const representationString = getFileRepresentation(castedSymbols, filePath);
-				this.fileToIndexMap.set(filePath, representationString);
+				const embeddings = await generateEmbedding(representationString);
+				const documentSymbolIndexForFile: DocumentSymbolIndex = {
+					filePath,
+					fileRepresentationString: representationString,
+					embeddings: embeddings,
+					timestamp: Date.now(),
+				}
+				this.fileToIndexMap.set(filePath, documentSymbolIndexForFile);
 				// Now we have to take this array and convert it to a representation
 				// of the symbol which will work
+				this._saveSingleFile(documentSymbolIndexForFile);
 			} catch (e) {
 				console.log('[DocumentSymbolBasedIndex] Error while indexing file');
 				console.error(e);
 			}
 		}
+	}
+
+	async loadFromStorage(): Promise<CodeSearchIndexLoadStatus> {
+		const storagePath = path.join(this._storageLocation, 'documentSymbolBasedIndex');
+		// Now we can walk on the directory only if it exists and then read all the content,
+		// if the directory does not exist yet then we skip this step and try to
+		// create the index
+		try {
+			const directoryExists = await fs.promises.access(storagePath, fs.constants.F_OK);
+		} catch (e) {
+			return CodeSearchIndexLoadStatus.NotPresent;
+		}
+
+
+		// Now we will walk all the files in the directory and read them and get
+		// the map going
+		const files = await fs.promises.readdir(storagePath);
+		for (let index = 0; index < files.length; index++) {
+			const filePath = files[index];
+			// now read the content of the file
+			const fileContent = await fs.promises.readFile(
+				path.join(storagePath, filePath),
+				'utf8',
+			);
+			const documentSymbolIndex = JSON.parse(fileContent) as DocumentSymbolIndex;
+			this.fileToIndexMap.set(documentSymbolIndex.filePath, documentSymbolIndex);
+		}
+		return CodeSearchIndexLoadStatus.Loaded;
+	}
+
+
+	async _saveSingleFile(documentSymbolIndex: DocumentSymbolIndex): Promise<void> {
+		const storagePath = path.join(this._storageLocation, 'documentSymbolBasedIndex');
+		const filePath = path.join(storagePath, documentSymbolIndex.filePath);
+		// Create the path if it does not exist
+		try {
+			await fs.promises.mkdir(storagePath, { recursive: true });
+		} catch (e) {
+			// We will ignore this error for now
+			return;
+		}
+		// Now we can write the file
+		await fs.promises.writeFile(filePath, JSON.stringify(documentSymbolIndex));
+	}
+
+	async saveToStorage(): Promise<void> {
+		// We will iterate through the map and write it to the disk
+		for (const [_, documentSymbolIndex] of this.fileToIndexMap.entries()) {
+			await this._saveSingleFile(documentSymbolIndex);
+		}
+		return;
+	}
+
+	async refreshIndex(): Promise<void> {
+		// Implement this later on, once we figure out how to refresh the index
+		// once we are done with keeping track of the state of the file which
+		// we have already indexed
+		return;
+	}
+
+	async search(query: string, limit: number): Promise<CodeSearchFileInformation[]> {
+		// Now we have to search for the files which are relevant to the query
+		const userQueryEmbeddings = await generateEmbedding(query);
+		const finalValues: CodeSearchFileInformation[] = [];
+		for (const [filePath, documentSymbolIndex] of this.fileToIndexMap.entries()) {
+			const embeddings = documentSymbolIndex.embeddings;
+			const cosineSimilarityBetween = cosineSimilarity(
+				userQueryEmbeddings,
+				embeddings,
+			);
+			finalValues.push({
+				filePath,
+				score: cosineSimilarityBetween,
+			});
+		}
+		return finalValues.sort((a, b) => {
+			return b.score - a.score;
+		}).splice(0, limit);
+	}
+
+	async isReadyForUse(): Promise<boolean> {
+		// return something here
+		return this._readyToUse;
+	}
+
+	async indexWorkspace(filesToIndex: string[]): Promise<void> {
+		for (let index = 0; index < filesToIndex.length; index++) {
+			const file = filesToIndex[index];
+			await this.indexFile(file);
+			if (this.fileToIndexMap.get(file)) {
+				continue;
+			}
+			await this._saveSingleFile(this.fileToIndexMap.get(file)!);
+		}
+		this._readyToUse = true;
 	}
 }
