@@ -15,12 +15,13 @@ export const healthCheck = (
 	provider: CodeStoryViewProvider,
 	repoName: string,
 	repoHash: string,
+	uniqueUserId: string,
 ) => {
 	return commands.registerCommand(
 		'codestory.healthCheck',
 		async (message: MessageHandlerData<HealthState>) => {
 			postHogClient.capture({
-				distinctId: env.machineId,
+				distinctId: uniqueUserId,
 				event: 'health_check',
 				properties: {
 					repoName,

@@ -133,7 +133,11 @@ export const writeConfigFileForAnton = async (
 	fs.writeFileSync(configPath, JSON.stringify(config));
 };
 
-export async function startAidePythonBackend(extensionBasePath: string, workingDirectory: string): Promise<string> {
+export async function startAidePythonBackend(
+	extensionBasePath: string,
+	workingDirectory: string,
+	uniqueUserId: string,
+): Promise<string> {
 	// Check vscode settings
 	const serverUrl = getAideServerUrl();
 	if (serverUrl !== 'http://localhost:42424') {
@@ -245,7 +249,7 @@ export async function startAidePythonBackend(extensionBasePath: string, workingD
 			// We need to write to /tmp/codestory/.codestory.json with the settings
 			// blob so the server can start up
 			try {
-				await writeConfigFileForAnton(workingDirectory, env.machineId, []);
+				await writeConfigFileForAnton(workingDirectory, uniqueUserId, []);
 				console.log('Wrote config file for Anton');
 			} catch (e) {
 				console.error('Failed to write config file for Anton:', e);
