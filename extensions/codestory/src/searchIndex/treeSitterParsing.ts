@@ -10,7 +10,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 const Parser = require('web-tree-sitter');
 
-
 const extensionToLanguageMap: Map<string, string> = new Map([
 	['go', 'golang'],
 	['py', 'python'],
@@ -52,11 +51,10 @@ export class TreeSitterParserCollection {
 	}
 
 	async getParserForExtension(fileExtension: string): Promise<any | null> {
-		if (this._triedToInitialize.has(fileExtension)) {
+		if (!this._triedToInitialize.has(fileExtension)) {
 			await this.addParserForExtension(fileExtension);
 		}
 		return this._treeSitterParsers.get(fileExtension);
-
 	}
 }
 
@@ -130,36 +128,47 @@ function getLineNumber(index: number, sourceCode: string): number {
 // code using tree-sitter to power the search
 function chunkTree(tree: any, sourceCode: string, MAX_CHARS = 512 * 3, coalesce = 50): Span[] {
 	// 1. Recursively form chunks based on the last post(https://docs.sweep.dev/blogs/chunking-2m-files)
-	function chunkNode(node: any): Span[] {
+	function chunkNode(node: any): {
+		chunks: Span[];
+		currentChunk: Span;
+	} {
 		const chunks: Span[] = [];
-		let currentChunk: Span = new Span(node.startByte, node.startByte);
+		let currentChunk: Span = new Span(node.startIndex, node.startIndex);
 		const nodeChildren = node.children;
 		for (const child of nodeChildren) {
-			if (child.endByte - child.startByte > MAX_CHARS) {
+			if (child.endIndex - child.startIndex > MAX_CHARS) {
 				chunks.push(currentChunk);
-				currentChunk = new Span(child.endByte, child.endByte);
-				chunks.push(...chunkNode(child));
-			} else if (child.endByte - child.startByte + (currentChunk.end - currentChunk.start) > MAX_CHARS) {
+				currentChunk = new Span(child.endIndex, child.endIndex);
+				chunks.push(...chunkNode(child).chunks);
+			} else if (child.endIndex - child.startIndex + (currentChunk.end - currentChunk.start) > MAX_CHARS) {
 				chunks.push(currentChunk);
-				currentChunk = new Span(child.startByte, child.endByte);
+				currentChunk = new Span(child.startIndex, child.endIndex);
 			} else {
-				currentChunk = new Span(currentChunk.start, child.endByte);
+				currentChunk = new Span(currentChunk.start, child.endIndex);
 			}
 		}
+		console.log(currentChunk.start, currentChunk.end);
 		chunks.push(currentChunk);
-		return chunks;
+		return {
+			chunks,
+			currentChunk
+		};
 	}
 
-	const chunks = chunkNode(tree.rootNode);
+	const chunkNodeOutput = chunkNode(tree.rootNode);
+	const chunks = chunkNodeOutput.chunks;
+	// const currentChunk = chunkNodeOutput.currentChunk;
 
 	// 2. Filling in the gaps
+	if (chunks.length === 0) {
+		return [];
+	}
 	if (chunks.length < 2) {
-		return [new Span(0, chunks[0].end)];
+		return [new Span(0, chunks[0].end - chunks[0].start)];
 	}
 	for (let i = 0; i < chunks.length - 1; i++) {
 		chunks[i].end = chunks[i + 1].start;
 	}
-	chunks[chunks.length - 1].start = tree.rootNode.endByte;
 
 	// 3. Combining small chunks with bigger ones
 	const newChunks = [];
@@ -257,8 +266,7 @@ export const chunkCodeFile = async (
 		return snippets;
 	} else {
 		const parsedNode = parser.parse(code);
-		const rootNode = parsedNode.rootNode;
-		const chunks = chunkTree(rootNode, code, maxCharacters, coalesce);
+		const chunks = chunkTree(parsedNode, code, maxCharacters, coalesce);
 		// convert this span to snippets now
 		const snippets = chunks.map((chunk) => {
 			return new Snippet(
@@ -271,3 +279,15 @@ export const chunkCodeFile = async (
 		return snippets;
 	}
 };
+
+
+// void (async () => {
+// 	const treeSitterParserCollection = new TreeSitterParserCollection();
+// 	const snippets = await chunkCodeFile(
+// 		'/Users/skcd/scratch/ide/extensions/codestory/src/searchIndex/treeSitterParsing.ts',
+// 		1500,
+// 		100,
+// 		treeSitterParserCollection,
+// 	);
+// 	console.log(snippets);
+// })();
