@@ -31,9 +31,13 @@ export class SearchIndexCollection {
 			if (isReady) {
 				continue;
 			}
-			const loadFromStorage = await indexer.loadFromStorage();
-			if (shouldRunIndexing(loadFromStorage)) {
+			const loadFromStorage = await indexer.loadFromStorage(filesToIndex);
+			if (shouldRunIndexing(loadFromStorage.status)) {
 				await indexer.indexWorkspace(filesToIndex);
+			}
+			const missingFiles = loadFromStorage.filesMissing;
+			if (missingFiles.length > 0) {
+				await indexer.indexWorkspace(missingFiles);
 			}
 		}
 	}

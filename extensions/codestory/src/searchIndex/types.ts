@@ -17,9 +17,15 @@ export enum CodeSearchIndexLoadStatus {
 }
 
 
+export interface CodeSearchIndexLoadResult {
+	status: CodeSearchIndexLoadStatus;
+	filesMissing: string[];
+}
+
+
 // The base class we will be using for doing code search
 export abstract class CodeSearchIndexer {
-	abstract loadFromStorage(): Promise<CodeSearchIndexLoadStatus>;
+	abstract loadFromStorage(filesToTrack: string[]): Promise<CodeSearchIndexLoadResult>;
 
 	abstract saveToStorage(): Promise<void>;
 

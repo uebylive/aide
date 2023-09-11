@@ -13,7 +13,7 @@
 // sure we are not blocking the extension in any way.
 
 import { DocumentSymbol, SymbolInformation, SymbolKind, TextDocument, languages, workspace } from 'vscode';
-import { CodeSearchFileInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
+import { CodeSearchFileInformation, CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -208,7 +208,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		}
 	}
 
-	async loadFromStorage(): Promise<CodeSearchIndexLoadStatus> {
+	async loadFromStorage(filesToTrack: string[]): Promise<CodeSearchIndexLoadResult> {
 		const storagePath = path.join(this._storageLocation, 'documentSymbolBasedIndex');
 		// Now we can walk on the directory only if it exists and then read all the content,
 		// if the directory does not exist yet then we skip this step and try to
@@ -216,13 +216,17 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		try {
 			const directoryExists = await fs.promises.access(storagePath, fs.constants.F_OK);
 		} catch (e) {
-			return CodeSearchIndexLoadStatus.NotPresent;
+			return {
+				status: CodeSearchIndexLoadStatus.NotPresent,
+				filesMissing: filesToTrack,
+			};
 		}
 
 
 		// Now we will walk all the files in the directory and read them and get
 		// the map going
 		const files = await fs.promises.readdir(storagePath);
+		const filesRead: Set<string> = new Set();
 		for (let index = 0; index < files.length; index++) {
 			const filePath = files[index];
 			// now read the content of the file
@@ -230,10 +234,21 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 				path.join(storagePath, filePath),
 				'utf8',
 			);
+			filesRead.add(path.join(storagePath, filePath));
 			const documentSymbolIndex = JSON.parse(fileContent) as DocumentSymbolIndex;
 			this.fileToIndexMap.set(documentSymbolIndex.filePath, documentSymbolIndex);
 		}
-		return CodeSearchIndexLoadStatus.Loaded;
+		// Now return the files which are not present anymore, the edited
+		// files will be taken care of later on
+		return {
+			status: CodeSearchIndexLoadStatus.Loaded,
+			filesMissing: Array.from(filesToTrack.filter((file) => {
+				if (filesRead.has(file)) {
+					return false;
+				}
+				return true;
+			}))
+		};
 	}
 
 
