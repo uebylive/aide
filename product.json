@@ -82,32 +82,12 @@
 				},
 				"publisherDisplayName": "Microsoft"
 			}
-		},
-		{
-			"name": "ms-vscode-remote.remote-wsl-recommender",
-			"version": "0.0.19",
-			"sha256": "926095d290dc7cdb9daf40ef5ae7591db12171ba1af1f61afcb5a368d0fc66aa",
-			"repo": "https://github.com/microsoft/vscode-remote-wsl-recommender",
-			"metadata": {
-				"id": "cb296d3c-017a-4dee-83af-ebb5a5a16e9a",
-				"publisherId": {
-					"publisherId": "ac9410a2-0d75-40ec-90de-b59bb705801d",
-					"publisherName": "ms-vscode-remote",
-					"displayName": "Microsoft",
-					"flags": "verified"
-				},
-				"publisherDisplayName": "Microsoft"
-			},
-			"platforms": [
-				"win32"
-			],
-			"clientOnly": true
 		}
 	],
 	"quality": "insider",
 	"darwinExecutable": "VSCode",
 	"downloadUrl": "https://codestory.ai",
-	"updateUrl": "",
+	"updateUrl": "https://aide-updates.codestory.ai",
 	"webUrl": "https://vscode.dev",
 	"webEndpointUrl": "https://main.vscode-cdn.net",
 	"webEndpointUrlTemplate": "https://{{uuid}}.vscode-cdn.net/{{quality}}/{{commit}}",
