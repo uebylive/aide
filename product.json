@@ -87,7 +87,7 @@
 	"quality": "insider",
 	"darwinExecutable": "VSCode",
 	"downloadUrl": "https://codestory.ai",
-	"updateUrl": "",
+	"updateUrl": "https://aide-updates.codestory.ai",
 	"webUrl": "https://vscode.dev",
 	"webEndpointUrl": "https://main.vscode-cdn.net",
 	"webEndpointUrlTemplate": "https://{{uuid}}.vscode-cdn.net/{{quality}}/{{commit}}",
