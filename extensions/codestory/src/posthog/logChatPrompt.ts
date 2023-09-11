@@ -11,9 +11,10 @@ export const logChatPrompt = (
 	prompt: string,
 	githubRepoName: string,
 	githubRepoHash: string,
+	uniqueId: string,
 ) => {
 	postHogClient.capture({
-		distinctId: env.machineId,
+		distinctId: uniqueId,
 		event: 'chat_message',
 		properties: {
 			prompt,

@@ -52,7 +52,8 @@ export const search = (
 	provider: CodeStoryViewProvider,
 	embeddingIndex: EmbeddingsSearch,
 	repoName: string,
-	repoHash: string
+	repoHash: string,
+	uniqueUserId: string,
 ) => {
 	return commands.registerCommand(
 		'codestory.search',
@@ -66,7 +67,7 @@ export const search = (
 			}[] = [];
 			const { prompt } = payload;
 			postHogClient.capture({
-				distinctId: env.machineId,
+				distinctId: uniqueUserId,
 				event: 'webview_search',
 				properties: {
 					prompt,

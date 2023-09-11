@@ -35,6 +35,7 @@ import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
+import { getUniqueId } from './utilities/uniqueId';
 
 
 class ProgressiveTrackSymbols {
@@ -131,9 +132,10 @@ class ProgressiveIndexer {
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
-	logger.info(`[CodeStory] Activating extension with storage: ${context.globalStorageUri}`);
+	const uniqueUserId = await getUniqueId();
+	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
 	postHogClient.capture({
-		distinctId: env.machineId,
+		distinctId: await getUniqueId(),
 		event: 'extension_activated',
 	});
 	let rootPath = workspace.rootPath;
@@ -157,6 +159,7 @@ export async function activate(context: ExtensionContext) {
 	const serverUrl = await startAidePythonBackend(
 		context.globalStorageUri.fsPath,
 		rootPath,
+		uniqueUserId,
 	);
 	const pythonServer = new PythonServer(serverUrl);
 	// Setup golang parser here
@@ -199,7 +202,7 @@ export async function activate(context: ExtensionContext) {
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
 		postHogClient.capture({
-			distinctId: env.machineId,
+			distinctId: await getUniqueId(),
 			event: 'search',
 			properties: {
 				prompt,
@@ -225,7 +228,7 @@ export async function activate(context: ExtensionContext) {
 	const chatProvider = new CSChatProvider(
 		rootPath, codeGraph, repoName, repoHash,
 		embeddingsIndex, codeSymbolsLanguageCollection,
-		testSuiteRunCommand, activeFilesTracker,
+		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatProvider
@@ -246,6 +249,7 @@ export async function activate(context: ExtensionContext) {
 			rootPath ?? '',
 			testSuiteRunCommand,
 			activeFilesTracker,
+			uniqueUserId,
 		)
 	);
 
@@ -267,13 +271,21 @@ export async function activate(context: ExtensionContext) {
 	);
 
 	// Now we want to register the HC
-	context.subscriptions.push(healthCheck(context, provider, repoName, repoHash));
+	context.subscriptions.push(
+		healthCheck(
+			context,
+			provider,
+			repoName,
+			repoHash,
+			uniqueUserId,
+		)
+	);
 	commands.executeCommand('codestory.healthCheck');
 
 	// We register the search command
 	// Semantic search
 	context.subscriptions.push(
-		search(provider, embeddingsIndex, repoName, repoHash),
+		search(provider, embeddingsIndex, repoName, repoHash, uniqueUserId),
 		openFile(logger)
 	);
 
@@ -330,7 +342,7 @@ export async function activate(context: ExtensionContext) {
 
 	// Add git commit to the subscriptions here
 	// Git commit
-	context.subscriptions.push(gitCommit(logger, repoName, repoHash));
+	context.subscriptions.push(gitCommit(logger, repoName, repoHash, uniqueUserId));
 	context.subscriptions.push(registerCopySettingsCommand);
 
 	// Listen for document opened events

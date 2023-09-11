@@ -26,6 +26,7 @@ export const debug = (
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
+	uniqueUserId: string,
 ) => {
 	const uniqueId = uuidv4();
 	return commands.registerCommand(
@@ -41,7 +42,7 @@ export const debug = (
 			);
 			try {
 				postHogClient.capture({
-					distinctId: env.machineId,
+					distinctId: uniqueUserId,
 					event: 'debug_prompt_received',
 					properties: {
 						prompt: payload.prompt,

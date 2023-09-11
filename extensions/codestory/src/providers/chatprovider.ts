@@ -236,6 +236,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _activeFilesTracker: ActiveFilesTracker;
 	private _repoName: string;
 	private _repoHash: string;
+	private _uniqueUserId: string;
 
 	constructor(
 		workingDirectory: string,
@@ -246,6 +247,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		testSuiteRunCommand: string,
 		activeFilesTracker: ActiveFilesTracker,
+		uniqueUserId: string,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
@@ -256,6 +258,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
 		this._testSuiteRunCommand = testSuiteRunCommand;
 		this._activeFilesTracker = activeFilesTracker;
+		this._uniqueUserId = uniqueUserId;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -432,6 +435,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					request.message.toString(),
 					this._repoName,
 					this._repoHash,
+					this._uniqueUserId,
 				);
 				if (selectionContext) {
 					this._chatSessionState.chatContext.addCodeContext(
