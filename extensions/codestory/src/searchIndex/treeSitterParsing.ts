@@ -7,6 +7,7 @@
 // Create a tree-sitter parser collection which loads the relevant wasm files
 // as required or says that they don't exist
 import * as path from 'path';
+import * as fs from 'fs';
 const Parser = require('web-tree-sitter');
 
 
@@ -21,7 +22,7 @@ const extensionToLanguageMap: Map<string, string> = new Map([
 	['cpp', 'cpp'],
 ]);
 
-class TreeSitterParserCollection {
+export class TreeSitterParserCollection {
 	private _treeSitterParsers: Map<string, any>;
 	private _triedToInitialize: Map<string, boolean>;
 	constructor() {
@@ -59,8 +60,26 @@ class TreeSitterParserCollection {
 	}
 }
 
+
+// Snippet here refers to a chunk of the code which is present in a file
+// it has the start and end line numbers and the content from the file in
+// between
+export class Snippet {
+	content: string;
+	start: number;
+	end: number;
+	filePath: string;
+
+	constructor(content: string, start: number, end: number, filePath: string) {
+		this.content = content;
+		this.start = start;
+		this.end = end;
+		this.filePath = filePath;
+	}
+}
+
 // A span defines the range of code we are going to coalesce into a single chunk
-class Span {
+export class Span {
 	start: number;
 	end: number;
 
@@ -209,12 +228,46 @@ export const chunkCodeFile = async (
 	filePath: string,
 	maxCharacters: number,
 	coalesce: number,
-): Promise<Span[]> => {
+	treeSitterParserCollection: TreeSitterParserCollection,
+): Promise<Snippet[]> => {
 	// Now we are going to pick the relevant tree-sitter library here and ship
 	// that instead.
-	// TODO(skcd): Pick up from here
 	// We want to get the tree-sitter wasm libraries for as many languages as we
 	// can and keep them at the same place so we can do span based chunking
 	// and power our search
-	return [];
-}
+	const fileExtension = path.extname(filePath).slice(1);
+	const code = await fs.promises.readFile(filePath, 'utf-8');
+	const parser = await treeSitterParserCollection.getParserForExtension(fileExtension);
+	if (parser === null) {
+		// we fallback to the naive model
+		const chunks = lineBasedChunking(
+			code,
+			maxCharacters,
+			coalesce,
+		);
+		const snippets: Snippet[] = [];
+		for (let index = 0; index < chunks.length; index++) {
+			snippets.push(new Snippet(
+				chunks[index],
+				index * 30,
+				(index + 1) * 30,
+				filePath,
+			));
+		}
+		return snippets;
+	} else {
+		const parsedNode = parser.parse(code);
+		const rootNode = parsedNode.rootNode;
+		const chunks = chunkTree(rootNode, code, maxCharacters, coalesce);
+		// convert this span to snippets now
+		const snippets = chunks.map((chunk) => {
+			return new Snippet(
+				chunk.extractLines(code),
+				chunk.start,
+				chunk.end,
+				filePath,
+			);
+		});
+		return snippets;
+	}
+};
