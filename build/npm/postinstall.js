@@ -60,9 +60,8 @@ function yarnInstall(dir, opts) {
 		run('sudo', ['chown', '-R', `${userinfo.uid}:${userinfo.gid}`, `${dir}/node_modules`], opts);
 	} else if (/^extensions\/codestory$/.test(dir)) {
 		console.log(`Installing dependencies in ${dir}...`);
-		// run(yarn, ['run', 'install:all', ...args], opts);
-		// run(yarn, ['run', 'build:webview', ...args], opts);
-		// run(yarn, ['run', 'build:webview_sideview', ...args], opts);
+		run(yarn, ['run', 'install:all', ...args], opts);
+		run(yarn, ['run', 'build:webview_sideview', ...args], opts);
 	} else {
 		console.log(`Installing dependencies in ${dir}...`);
 		run(yarn, args, opts);
