@@ -3,6 +3,62 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+
+// Create a tree-sitter parser collection which loads the relevant wasm files
+// as required or says that they don't exist
+import * as path from 'path';
+const Parser = require('web-tree-sitter');
+
+
+const extensionToLanguageMap: Map<string, string> = new Map([
+	['go', 'golang'],
+	['py', 'python'],
+	['js', 'typescript'],
+	['ts', 'typescript'],
+	['tsx', 'typescript'],
+	['jsx', 'typescript'],
+	['rb', 'ruby'],
+	['cpp', 'cpp'],
+]);
+
+class TreeSitterParserCollection {
+	private _treeSitterParsers: Map<string, any>;
+	private _triedToInitialize: Map<string, boolean>;
+	constructor() {
+		this._treeSitterParsers = new Map();
+		this._triedToInitialize = new Map();
+	}
+
+	async addParserForExtension(fileExtension: string): Promise<void> {
+		this._triedToInitialize.set(fileExtension, true);
+		if (this._treeSitterParsers.has(fileExtension)) {
+			return;
+		}
+		const language = extensionToLanguageMap.get(fileExtension);
+		if (!language) {
+			return;
+		}
+		try {
+			await Parser.init();
+			const parser = new Parser();
+			const filePath = path.join(__dirname, 'treeSitterWasm', (`tree-sitter-${language}.wasm`));
+			const languageParser = await Parser.Language.load(filePath);
+			parser.setLanguage(languageParser);
+			this._treeSitterParsers.set(fileExtension, parser);
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	async getParserForExtension(fileExtension: string): Promise<any | null> {
+		if (this._triedToInitialize.has(fileExtension)) {
+			await this.addParserForExtension(fileExtension);
+		}
+		return this._treeSitterParsers.get(fileExtension);
+
+	}
+}
+
 // A span defines the range of code we are going to coalesce into a single chunk
 class Span {
 	start: number;
