@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as es from 'event-stream';
-import * as fs from 'graceful-fs';
+import * as fs from 'fs';
 import * as cp from 'child_process';
 import * as glob from 'glob';
 import * as gulp from 'gulp';
@@ -25,8 +25,6 @@ import { getProductionDependencies } from './dependencies';
 import { IExtensionDefinition, getExtensionStream } from './builtInExtensions';
 import { getVersion } from './getVersion';
 import { fetchUrls, fetchGithub } from './fetch';
-
-
 
 const root = path.dirname(path.dirname(__dirname));
 const commit = getVersion(root);
