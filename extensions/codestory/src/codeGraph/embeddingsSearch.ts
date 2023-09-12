@@ -21,9 +21,11 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 
 export class EmbeddingsSearch {
 	private _nodes: CodeSymbolInformationEmbeddings[];
+	private _activeFilesTracker: ActiveFilesTracker;
 
-	constructor(nodes: CodeSymbolInformationEmbeddings[]) {
+	constructor(nodes: CodeSymbolInformationEmbeddings[], activeFileTracker: ActiveFilesTracker) {
 		this._nodes = nodes;
+		this._activeFilesTracker = activeFileTracker;
 	}
 
 	public updateNodes(nodes: CodeSymbolInformationEmbeddings) {
@@ -69,7 +71,6 @@ export class EmbeddingsSearch {
 
 	public async generateNodesRelevantForUserFromFiles(
 		userQuery: string,
-		activeFilesTracker: ActiveFilesTracker,
 		filePathsToSearch?: string[],
 		trackAll: boolean = false,
 	): Promise<CodeSymbolInformationEmbeddings[]> {
@@ -84,7 +85,7 @@ export class EmbeddingsSearch {
 					return true;
 				}
 			}
-			const activeFiles = activeFilesTracker.getActiveFiles();
+			const activeFiles = this._activeFilesTracker.getActiveFiles();
 			const activeFile = activeFiles.find((file) => {
 				return file === node.codeSymbolInformation.fsFilePath;
 			});
@@ -119,7 +120,6 @@ export class EmbeddingsSearch {
 
 	public async generateNodesForUserQuery(
 		userQuery: string,
-		activeFilesTracker: ActiveFilesTracker,
 		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const nodesFromAllOverTheCodeBase = await this.generateNodesRelevantForUser(
@@ -128,7 +128,6 @@ export class EmbeddingsSearch {
 		);
 		const nodesFromActiveFiles = await this.generateNodesRelevantForUserFromFiles(
 			userQuery,
-			activeFilesTracker,
 			filePathsToSearch,
 		);
 		// Now we sort and merge these together
