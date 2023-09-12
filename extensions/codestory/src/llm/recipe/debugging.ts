@@ -128,7 +128,6 @@ export const debuggingFlow = async (
 	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
 		embeddingsSearch,
-		activeFilesTracker,
 		userProvidedContext,
 	);
 	// Add the search results here

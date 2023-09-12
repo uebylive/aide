@@ -15,7 +15,6 @@ import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLangua
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
 	embeddingsSearch: EmbeddingsSearch,
-	activeFilesTracker: ActiveFilesTracker,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 ): Promise<CodeSymbolInformation[]> => {
 	const alreadySeenSymbols: Set<string> = new Set();
@@ -23,7 +22,7 @@ export const generateCodeSymbolsForQueries = async (
 	if (userProvidedContext === undefined) {
 		for (let index = 0; index < queries.length; index++) {
 			const query = queries[index];
-			const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query, activeFilesTracker);
+			const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query);
 			console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
 			console.log(codeSymbols.map(
 				(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
@@ -43,7 +42,6 @@ export const generateCodeSymbolsForQueries = async (
 			const userQuery = userProvidedContext.codeSymbolsContext[index].documentSymbolName;
 			const codeSymbolsFromFile = await embeddingsSearch.generateNodesRelevantForUserFromFiles(
 				userQuery,
-				activeFilesTracker,
 				[
 					userProvidedContext.codeSymbolsContext[index].filePath,
 				],

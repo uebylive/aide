@@ -186,7 +186,7 @@ export async function activate(context: ExtensionContext) {
 
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
-	const embeddingsIndex = new EmbeddingsSearch([]);
+	const embeddingsIndex = new EmbeddingsSearch([], activeFilesTracker);
 	indexer.on('partialData', (partialData) => {
 		embeddingsIndex.updateNodes(partialData);
 	});
@@ -210,7 +210,7 @@ export async function activate(context: ExtensionContext) {
 				repoHash,
 			},
 		});
-		const results = await embeddingsIndex.generateNodesForUserQuery(prompt, activeFilesTracker);
+		const results = await embeddingsIndex.generateNodesForUserQuery(prompt);
 		return results;
 	});
 
