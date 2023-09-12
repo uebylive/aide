@@ -8,7 +8,7 @@
 // as required or says that they don't exist
 import * as path from 'path';
 import * as fs from 'fs';
-import { Snippet, Span } from '../utilities/types';
+import { CodeSnippetInformation, Span } from '../utilities/types';
 const Parser = require('web-tree-sitter');
 
 const extensionToLanguageMap: Map<string, string> = new Map([
@@ -189,7 +189,7 @@ export const chunkCodeFile = async (
 	maxCharacters: number,
 	coalesce: number,
 	treeSitterParserCollection: TreeSitterParserCollection,
-): Promise<Snippet[]> => {
+): Promise<CodeSnippetInformation[]> => {
 	// Now we are going to pick the relevant tree-sitter library here and ship
 	// that instead.
 	// We want to get the tree-sitter wasm libraries for as many languages as we
@@ -205,13 +205,15 @@ export const chunkCodeFile = async (
 			maxCharacters,
 			coalesce,
 		);
-		const snippets: Snippet[] = [];
+		const snippets: CodeSnippetInformation[] = [];
 		for (let index = 0; index < chunks.length; index++) {
-			snippets.push(new Snippet(
+			snippets.push(new CodeSnippetInformation(
 				chunks[index],
 				index * 30,
 				(index + 1) * 30,
 				filePath,
+				null,
+				null,
 				null,
 				null,
 			));
@@ -222,11 +224,13 @@ export const chunkCodeFile = async (
 		const chunks = chunkTree(parsedNode, code, maxCharacters, coalesce);
 		// convert this span to snippets now
 		const snippets = chunks.map((chunk) => {
-			return new Snippet(
+			return new CodeSnippetInformation(
 				chunk.extractLines(code),
 				chunk.start,
 				chunk.end,
 				filePath,
+				null,
+				null,
 				null,
 				null,
 			);

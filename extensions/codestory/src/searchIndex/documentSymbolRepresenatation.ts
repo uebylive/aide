@@ -12,7 +12,7 @@
 // We need to make sure that this is really fast and run some benchmarks to make
 // sure we are not blocking the extension in any way.
 
-import { DocumentSymbol, SymbolInformation, SymbolKind, TextDocument, languages, workspace } from 'vscode';
+import { DocumentSymbol, SymbolKind, TextDocument, languages, workspace } from 'vscode';
 import { CodeSearchFileInformation, CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
 
 import * as path from 'path';
@@ -31,7 +31,7 @@ const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
 	const magnitudeB = math.norm(vecB);
 
 	return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
-}
+};
 
 
 // TODO(codestory): Why 5? Its a good number I guess but also gives a good representation of the
@@ -196,7 +196,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 					fileRepresentationString: representationString,
 					embeddings: embeddings,
 					timestamp: Date.now(),
-				}
+				};
 				this.fileToIndexMap.set(filePath, documentSymbolIndexForFile);
 				// Now we have to take this array and convert it to a representation
 				// of the symbol which will work
