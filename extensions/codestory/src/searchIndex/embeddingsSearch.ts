@@ -5,7 +5,7 @@
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
-import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from '../searchIndex/types';
+import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
 import { CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as math from 'mathjs';
 
