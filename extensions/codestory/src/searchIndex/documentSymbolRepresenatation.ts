@@ -17,8 +17,8 @@ import { CodeSearchFileInformation, CodeSearchIndexLoadResult, CodeSearchIndexLo
 
 import * as path from 'path';
 import * as fs from 'fs';
-import { generateEmbedding } from '../llm/embeddings/openai';
 import math from 'mathjs';
+import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
@@ -190,7 +190,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 					continue;
 				}
 				const representationString = getFileRepresentation(castedSymbols, filePath);
-				const embeddings = await generateEmbedding(representationString);
+				const embeddings = await generateEmbeddingFromSentenceTransformers(representationString);
 				const documentSymbolIndexForFile: DocumentSymbolIndex = {
 					filePath,
 					fileRepresentationString: representationString,
@@ -283,7 +283,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 
 	async search(query: string, limit: number): Promise<CodeSearchFileInformation[]> {
 		// Now we have to search for the files which are relevant to the query
-		const userQueryEmbeddings = await generateEmbedding(query);
+		const userQueryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
 		const finalValues: CodeSearchFileInformation[] = [];
 		for (const [filePath, documentSymbolIndex] of this.fileToIndexMap.entries()) {
 			const embeddings = documentSymbolIndex.embeddings;

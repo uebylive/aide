@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { generateEmbedding } from '../llm/embeddings/openai';
+import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import { CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as math from 'mathjs';
 
@@ -35,7 +35,7 @@ export class EmbeddingsSearch {
 		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const currentNodes = this._nodes;
-		const userQueryEmbedding = await generateEmbedding(userQuery);
+		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(userQuery);
 
 		const nodesWithSimilarity = currentNodes.filter((node) => {
 			if (!filePathsToSearch) {
@@ -94,7 +94,7 @@ export class EmbeddingsSearch {
 			return false;
 		});
 
-		const userQueryEmbedding = await generateEmbedding(userQuery);
+		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(userQuery);
 
 		const nodesWithSimilarity = interestingNodes.map((node) => {
 			const similarity = cosineSimilarity(
