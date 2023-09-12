@@ -89,9 +89,15 @@ export class CodeSnippetInformation {
 	start: number;
 	end: number;
 	filePath: string;
+	// This shows the code symbols which are inside the snippet
 	codeSymbolsInside: CodeSymbolInformation[] | null;
+	// This contains information about the outer code symbol this snippet is
+	// part of
 	outerCodeSymbol: CodeSymbolInformation | null;
+	// If there is an overlap with a previous code symbol with this snippet
 	codeSymbolOverlapPrefix: CodeSymbolInformation | null;
+	// If there is an overlap with a code symbol in the suffix but its not
+	// contained completely within this snippet
 	codeSymbolOverlapSuffix: CodeSymbolInformation | null;
 
 	constructor(
