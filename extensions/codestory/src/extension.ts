@@ -34,7 +34,6 @@ import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
-import { getSymbolsFromDocumentUsingLSP } from './utilities/lspApi';
 import { getUniqueId } from './utilities/uniqueId';
 
 
@@ -186,7 +185,12 @@ export async function activate(context: ExtensionContext) {
 
 	// Create an instance of the progressive indexer
 	const indexer = new ProgressiveIndexer();
-	const embeddingsIndex = new EmbeddingsSearch([], activeFilesTracker);
+	const embeddingsIndex = new EmbeddingsSearch(
+		[],
+		activeFilesTracker,
+		codeSymbolsLanguageCollection,
+		context.globalStorageUri.fsPath,
+	);
 	indexer.on('partialData', (partialData) => {
 		embeddingsIndex.updateNodes(partialData);
 	});

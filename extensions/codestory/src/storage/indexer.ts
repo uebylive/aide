@@ -49,7 +49,6 @@ export async function storeCodeSymbolDescriptionToLocalStorage(
 		codeSymbolName
 	);
 	await ensureDirectoryExists(filePath);
-	console.log('Writing to file: ' + filePath);
 	// Now we have ensured the directory exists we can safely write to it
 	await fs.promises
 		.writeFile(filePath, JSON.stringify(data))
