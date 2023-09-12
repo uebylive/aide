@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CodeSearchFileInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
+import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
 
 
 const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => {
@@ -45,7 +45,7 @@ export class SearchIndexCollection {
 		}
 	}
 
-	public async searchQuery(query: string, limit: number): Promise<CodeSearchFileInformation[]> {
+	public async searchQuery(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
 		for (const indexer of this._indexers) {
 			const isReady = await indexer.isReadyForUse();
 			if (!isReady) {
