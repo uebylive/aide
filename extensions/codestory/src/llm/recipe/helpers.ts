@@ -306,6 +306,7 @@ export const getFilePathForCodeNode = (
 	codeSymbolNameMaybe: string,
 	codeGraph: CodeGraph,
 ): string | null => {
+	console.log(`[getFilePathForCodeNode]: ${codeSymbolNameMaybe}`);
 	const codeNodes = codeGraph.getNodeByLastName(codeSymbolNameMaybe);
 	if (!codeNodes) {
 		return null;

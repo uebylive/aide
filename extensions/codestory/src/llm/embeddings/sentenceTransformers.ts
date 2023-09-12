@@ -35,7 +35,7 @@ export const generateEmbeddingFromSentenceTransformers = async (prompt: string):
 		pooling: 'mean',
 		normalize: true,
 	});
-	return output.data; // of shape [1, 384]
+	return Array.from(output.data); // of shape [1, 384]
 };
 
 
