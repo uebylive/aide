@@ -9,19 +9,15 @@ import * as path from 'path';
 import {
 	CodeStoryStorage,
 	saveCodeStoryStorageObjectToStorage,
-	saveCodeStoryStorageToStorage,
 } from './types';
 import { CodeSymbolInformation, CodeSymbolInformationEmbeddings } from '../utilities/types';
-import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../utilities/parseTypescript';
-import { generateEmbedding } from '../llm/embeddings/openai';
-import { ExtensionContext, Uri, languages, workspace } from 'vscode';
+import { parseFileUsingTsMorph } from '../utilities/parseTypescript';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from '../git/helper';
 import logger from '../logger';
 import EventEmitter = require('events');
 import { generateContextForEmbedding } from '../utilities/embeddingsHelpers';
-import { PythonServer } from '../utilities/pythonServerClient';
-import { GoLangParser } from '../languages/goCodeSymbols';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
+import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 // import logger from '../logger';
 
 async function ensureDirectoryExists(filePath: string): Promise<void> {
@@ -143,7 +139,7 @@ const generateAndStoreEmbeddings = async (
 		const relativePath = filePath.replace(workingDirectory, '');
 		const contextForEmbedding = generateContextForEmbedding(codeContent, relativePath, scopePart);
 		// We generate the embeddings here
-		const embeddings = await generateEmbedding(contextForEmbedding);
+		const embeddings = await generateEmbeddingFromSentenceTransformers(contextForEmbedding);
 		codeSymbolWithEmbeddings.push({
 			codeSymbolInformation: codeSymbol,
 			codeSymbolEmbedding: embeddings,
