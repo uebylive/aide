@@ -3,7 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
+import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
+import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from '../searchIndex/types';
 import { CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as math from 'mathjs';
 
@@ -19,13 +21,56 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 	return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
 }
 
-export class EmbeddingsSearch {
+export class EmbeddingsSearch extends CodeSearchIndexer {
 	private _nodes: CodeSymbolInformationEmbeddings[];
 	private _activeFilesTracker: ActiveFilesTracker;
+	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
+	private _storageLocation: string;
 
-	constructor(nodes: CodeSymbolInformationEmbeddings[], activeFileTracker: ActiveFilesTracker) {
+	constructor(
+		nodes: CodeSymbolInformationEmbeddings[],
+		activeFileTracker: ActiveFilesTracker,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
+		storageLocation: string,
+	) {
+		super();
 		this._nodes = nodes;
 		this._activeFilesTracker = activeFileTracker;
+		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
+		this._storageLocation = storageLocation;
+	}
+
+	async loadFromStorage(filesToTrack: string[]): Promise<CodeSearchIndexLoadResult> {
+		// do something here
+		return {
+			status: CodeSearchIndexLoadStatus.Loaded,
+			filesMissing: [],
+		};
+	}
+
+	async saveToStorage(): Promise<void> {
+		// do something here
+	}
+
+	async indexFile(filePath: string): Promise<void> {
+		// do something here
+	}
+
+	async indexWorkspace(filesToIndex: string[]): Promise<void> {
+		// do something here
+	}
+
+	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
+		// do something here
+		return [];
+	}
+
+	async isReadyForUse(): Promise<boolean> {
+		return true;
+	}
+
+	async refreshIndex(): Promise<void> {
+		// do something here
 	}
 
 	public updateNodes(nodes: CodeSymbolInformationEmbeddings) {
