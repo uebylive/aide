@@ -13,7 +13,7 @@ import { logChatPrompt } from '../posthog/logChatPrompt';
 import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
-import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { EmbeddingsSearch } from '../searchIndex/embeddingsSearch';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { PythonServer } from '../utilities/pythonServerClient';
 import { debuggingFlow } from '../llm/recipe/debugging';

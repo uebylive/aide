@@ -12,7 +12,7 @@ import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
-import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
+import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
 import { executeTestHarness, formatFileInformationListForPrompt, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
 import { PythonServer } from '../../utilities/pythonServerClient';
