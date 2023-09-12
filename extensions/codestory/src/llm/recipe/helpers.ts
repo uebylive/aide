@@ -4,9 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
-import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
-import { getCodeSymbolList } from '../../storage/indexer';
-import { TSMorphProjectManagement, parseFileUsingTsMorph } from '../../utilities/parseTypescript';
 import { CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
 import { CodeModificationContextAndDiff, CodeSymbolModificationInstruction, NewFileContentAndDiffResponse, TextExecutionHarness, generateModifyCodeHallucinationPrompt, generateNewFileContentAndDiffResponseParser, generateTestExecutionPrompt, generateTestScriptGenerationPrompt, modifyCodeSnippetPrompt, newFileContentAndDiffPrompt, parseCodeModificationResponse, parseTestExecutionFinalSetupResponse, parseTestPlanResponseForHarness } from './prompts';
 import { CodeGraph } from '../../codeGraph/graph';
@@ -14,11 +11,7 @@ import { CodeGraph } from '../../codeGraph/graph';
 import * as fs from 'fs';
 import { generateChatCompletion } from './debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
-import { runCommandAsync } from '../../utilities/commandRunner';
-import { PythonServer } from '../../utilities/pythonServerClient';
-import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
-import { GoLangParser } from '../../languages/goCodeSymbols';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 
 
