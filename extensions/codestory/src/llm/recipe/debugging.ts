@@ -13,7 +13,7 @@ import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, genera
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
 import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
-import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateFileInformationSummary, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
+import { executeTestHarness, formatFileInformationListForPrompt, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
 import { PythonServer } from '../../utilities/pythonServerClient';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
@@ -22,6 +22,7 @@ import { GoLangParser } from '../../languages/goCodeSymbols';
 import { Progress } from 'vscode';
 import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
+import { generateCodeSymbolsForQueries, generateFileInformationSummary } from './search';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
