@@ -72,3 +72,68 @@ export interface CodeSymbolInformationEmbeddings {
 	codeSymbolInformation: CodeSymbolInformation;
 	codeSymbolEmbedding: number[];
 }
+
+
+// Snippet here refers to a chunk of the code which is present in a file
+// it has the start and end line numbers and the content from the file in
+// between, it also contains the code symbol information which is present
+// inside the snippet and the code symbol it belongs to (if this part of
+// a code symbol)
+export class Snippet {
+	content: string;
+	start: number;
+	end: number;
+	filePath: string;
+	codeSymbolInformationList: CodeSymbolInformation[] | null;
+	outerCodeSymbol: CodeSymbolInformation | null;
+
+	constructor(
+		content: string,
+		start: number,
+		end: number,
+		filePath: string,
+		codeSymbolInformationList: CodeSymbolInformation[] | null,
+		outerCodeSymbol: CodeSymbolInformation | null,
+	) {
+		this.content = content;
+		this.start = start;
+		this.end = end;
+		this.filePath = filePath;
+		this.codeSymbolInformationList = codeSymbolInformationList;
+		this.outerCodeSymbol = outerCodeSymbol;
+	}
+}
+
+
+// A span defines the range of code we are going to coalesce into a single chunk
+export class Span {
+	start: number;
+	end: number;
+
+	constructor(start: number, end?: number) {
+		this.start = start;
+		this.end = end !== undefined ? end : start;
+	}
+
+	extract(s: string): string {
+		return s.slice(this.start, this.end);
+	}
+
+	extractLines(s: string): string {
+		return s.split('\n').slice(this.start, this.end).join('\n');
+	}
+
+	add(other: Span | number): Span {
+		if (typeof other === 'number') {
+			return new Span(this.start + other, this.end + other);
+		} else if (other instanceof Span) {
+			return new Span(this.start, other.end);
+		} else {
+			throw new Error('Not implemented for the given type');
+		}
+	}
+
+	length(): number {
+		return this.end - this.start;
+	}
+}
