@@ -13,7 +13,7 @@
 // sure we are not blocking the extension in any way.
 
 import { DocumentSymbol, SymbolKind, TextDocument, languages, workspace } from 'vscode';
-import { CodeSearchFileInformation, CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
+import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -133,6 +133,8 @@ export interface DocumentSymbolIndex {
 	fileRepresentationString: string;
 	embeddings: number[];
 	timestamp: number;
+	lineCount: number;
+	fileContent: string,
 }
 
 
@@ -158,6 +160,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		if (!textDocument) {
 			return;
 		}
+		const textDocumentLength = textDocument?.lineCount;
 		const documentSymbolProviders = languages.getDocumentSymbolProvider(
 			// Placeholder text here, we don't really filter for anything
 			// here
@@ -196,6 +199,8 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 					fileRepresentationString: representationString,
 					embeddings: embeddings,
 					timestamp: Date.now(),
+					lineCount: textDocumentLength,
+					fileContent: textDocument.getText(),
 				};
 				this.fileToIndexMap.set(filePath, documentSymbolIndexForFile);
 				// Now we have to take this array and convert it to a representation
@@ -281,10 +286,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		return;
 	}
 
-	async search(query: string, limit: number): Promise<CodeSearchFileInformation[]> {
+	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
 		// Now we have to search for the files which are relevant to the query
 		const userQueryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
-		const finalValues: CodeSearchFileInformation[] = [];
+		const finalValues: CodeSnippetSearchInformation[] = [];
 		for (const [filePath, documentSymbolIndex] of this.fileToIndexMap.entries()) {
 			const embeddings = documentSymbolIndex.embeddings;
 			const cosineSimilarityBetween = cosineSimilarity(
@@ -292,7 +297,16 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 				embeddings,
 			);
 			finalValues.push({
-				filePath,
+				codeSnippetInformation: {
+					content: documentSymbolIndex.fileContent,
+					start: 0,
+					end: documentSymbolIndex.lineCount,
+					filePath,
+					codeSymbolsInside: null,
+					outerCodeSymbol: null,
+					codeSymbolOverlapPrefix: null,
+					codeSymbolOverlapSuffix: null,
+				},
 				score: cosineSimilarityBetween,
 			});
 		}

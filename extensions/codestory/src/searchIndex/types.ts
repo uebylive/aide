@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CodeSnippetInformation } from '../utilities/types';
 
-export interface CodeSearchFileInformation {
-	filePath: string;
-	// The number has to be between 0 and 1 always
+export interface CodeSnippetSearchInformation {
+	codeSnippetInformation: CodeSnippetInformation;
 	score: number;
 }
 
@@ -37,7 +37,7 @@ export abstract class CodeSearchIndexer {
 
 	// We limit how many files we are going to get returned here by using
 	// limit
-	abstract search(query: string, limit: number): Promise<CodeSearchFileInformation[]>;
+	abstract search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]>;
 
 	abstract isReadyForUse(): Promise<boolean>;
 }
