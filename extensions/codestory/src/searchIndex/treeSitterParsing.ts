@@ -8,6 +8,7 @@
 // as required or says that they don't exist
 import * as path from 'path';
 import * as fs from 'fs';
+import { Snippet, Span } from '../utilities/types';
 const Parser = require('web-tree-sitter');
 
 const extensionToLanguageMap: Map<string, string> = new Map([
@@ -58,56 +59,6 @@ export class TreeSitterParserCollection {
 	}
 }
 
-
-// Snippet here refers to a chunk of the code which is present in a file
-// it has the start and end line numbers and the content from the file in
-// between
-export class Snippet {
-	content: string;
-	start: number;
-	end: number;
-	filePath: string;
-
-	constructor(content: string, start: number, end: number, filePath: string) {
-		this.content = content;
-		this.start = start;
-		this.end = end;
-		this.filePath = filePath;
-	}
-}
-
-// A span defines the range of code we are going to coalesce into a single chunk
-export class Span {
-	start: number;
-	end: number;
-
-	constructor(start: number, end?: number) {
-		this.start = start;
-		this.end = end !== undefined ? end : start;
-	}
-
-	extract(s: string): string {
-		return s.slice(this.start, this.end);
-	}
-
-	extractLines(s: string): string {
-		return s.split('\n').slice(this.start, this.end).join('\n');
-	}
-
-	add(other: Span | number): Span {
-		if (typeof other === 'number') {
-			return new Span(this.start + other, this.end + other);
-		} else if (other instanceof Span) {
-			return new Span(this.start, other.end);
-		} else {
-			throw new Error('Not implemented for the given type');
-		}
-	}
-
-	length(): number {
-		return this.end - this.start;
-	}
-}
 function nonWhitespaceLen(s: string): number {
 	return s.replace(/\s/g, '').length;
 }
@@ -261,6 +212,8 @@ export const chunkCodeFile = async (
 				index * 30,
 				(index + 1) * 30,
 				filePath,
+				null,
+				null,
 			));
 		}
 		return snippets;
@@ -274,6 +227,8 @@ export const chunkCodeFile = async (
 				chunk.start,
 				chunk.end,
 				filePath,
+				null,
+				null,
 			);
 		});
 		return snippets;
