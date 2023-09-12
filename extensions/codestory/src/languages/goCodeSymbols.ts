@@ -4,16 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Definition, LocationLink, Position, TextDocument, languages, workspace, Location } from 'vscode';
-import { v4 as uuidv4 } from 'uuid';
 const Parser = require('web-tree-sitter');
 import * as path from 'path';
-import * as fs from 'fs';
 import { getSymbolsFromDocumentUsingLSP } from '../utilities/lspApi';
 import { CodeSymbolInformation } from '../utilities/types';
-import { promisify } from 'util';
-import { exec } from 'child_process';
 import logger from '../logger';
-import { column } from 'mathjs';
 import { CodeSymbolsIndexer } from './codeSymbolsIndexerTypes';
 
 // This is the tree sitter parser we are using for parsing
