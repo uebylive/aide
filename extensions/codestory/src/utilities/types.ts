@@ -119,6 +119,21 @@ export class CodeSnippetInformation {
 		this.codeSymbolOverlapPrefix = codeSymbolOverlapPrefix;
 		this.codeSymbolOverlapSuffix = codeSymbolOverlapSuffix;
 	}
+
+	static fromCodeSymbolInformation(
+		codeSymbolInformation: CodeSymbolInformation,
+	): CodeSnippetInformation {
+		return new CodeSnippetInformation(
+			codeSymbolInformation.codeSnippet.code,
+			codeSymbolInformation.symbolStartLine,
+			codeSymbolInformation.symbolEndLine,
+			codeSymbolInformation.fsFilePath,
+			null,
+			codeSymbolInformation,
+			null,
+			null,
+		);
+	}
 }
 
 
