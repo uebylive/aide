@@ -13,12 +13,8 @@ import { logChatPrompt } from '../posthog/logChatPrompt';
 import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
-import { EmbeddingsSearch } from '../searchIndex/embeddingsSearch';
-import { TSMorphProjectManagement } from '../utilities/parseTypescript';
-import { PythonServer } from '../utilities/pythonServerClient';
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
-import { GoLangParser } from '../languages/goCodeSymbols';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
@@ -375,7 +371,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 
 				const toolingEventCollection = new ToolingEventCollection(
 					`/tmp/${uuidv4()}`,
-					this._codeGraph,
 					{ progress, cancellationToken: token },
 					prompt,
 				);
@@ -384,7 +379,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				await debuggingFlow(
 					prompt,
 					toolingEventCollection,
-					this._codeGraph,
 					this._searchIndexCollection,
 					this._codeSymbolsLanguageCollection,
 					this._workingDirectory,

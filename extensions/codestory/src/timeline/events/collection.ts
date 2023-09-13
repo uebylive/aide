@@ -554,18 +554,15 @@ type ChatProgress = {
 export class ToolingEventCollection {
 	events: ToolingEvent[];
 	saveDestination: string;
-	codeGraph: CodeGraph;
 	chatProgress?: ChatProgress;
 	panelCommand: string;
 
 	constructor(
 		saveDestination: string,
-		codeGraph: CodeGraph,
 		chatProgress: ChatProgress | undefined,
 		panelCommand: string
 	) {
 		this.events = [];
-		this.codeGraph = codeGraph;
 		this.saveDestination = saveDestination;
 		this.chatProgress = chatProgress;
 		this.panelCommand = panelCommand;

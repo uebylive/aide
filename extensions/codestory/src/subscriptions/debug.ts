@@ -21,7 +21,6 @@ export const debug = (
 	csChatProvider: CSChatProvider,
 	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-	codeGraph: CodeGraph,
 	repoName: string,
 	repoHash: string,
 	workingDirectory: string,
@@ -37,7 +36,6 @@ export const debug = (
 			logger.info(payload);
 			const toolingEventCollection = new ToolingEventCollection(
 				`/tmp/${uniqueId}`,
-				codeGraph,
 				undefined,
 				message.command,
 			);
@@ -54,7 +52,6 @@ export const debug = (
 				await debuggingFlow(
 					payload.prompt,
 					toolingEventCollection,
-					codeGraph,
 					searchIndexCollection,
 					codeSymbolsLanguageCollection,
 					workingDirectory,
