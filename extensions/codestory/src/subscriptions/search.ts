@@ -17,7 +17,7 @@ import { CodeStoryViewProvider } from '../providers/codeStoryView';
 import { TSMorphProjectManagement } from '../utilities/parseTypescript';
 import { MessageHandlerData } from '@estruyf/vscode';
 import postHogClient from '../posthog/client';
-import { EmbeddingsSearch } from '../codeGraph/embeddingsSearch';
+import { EmbeddingsSearch } from '../searchIndex/embeddingsSearch';
 import { getHighlighter, BUNDLED_THEMES, Theme } from 'shiki';
 import { Logger } from 'winston';
 import { SearchState, OpenFileState } from '../types';

@@ -7,7 +7,10 @@ import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageC
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
 import { CodeSymbolInformationEmbeddings } from '../utilities/types';
+import * as fs from 'fs';
 import * as math from 'mathjs';
+import * as path from 'path';
+import { ensureDirectoryExists } from './helpers';
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
 	if (vecA.length !== vecB.length) {
@@ -21,43 +24,233 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 	return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
 }
 
+async function loadCodeSymbolDescriptionFromLocalStorage(
+	globalStorageUri: string,
+	remoteSession: string,
+): Promise<CodeSymbolInformationEmbeddings[]> {
+	const directoryPath = path.join(
+		globalStorageUri,
+		remoteSession,
+		'code_symbol_sentence_transformer',
+		'descriptions',
+	);
+	let files: string[] = [];
+	try {
+		files = await fs.promises.readdir(directoryPath);
+	} catch (err) {
+		// We failed to read from the directory path, so lets bail hard here
+		return [];
+	}
+	const codeSymbolInformationEmbeddingsList: CodeSymbolInformationEmbeddings[] = [];
+	for (let index = 0; index < files.length; index++) {
+		const file = files[index];
+		const filePath = path.join(directoryPath, file);
+		try {
+			const fileContent = await fs.promises.readFile(filePath);
+			const codeSymbolInformationEmbeddings = JSON.parse(fileContent.toString()) as CodeSymbolInformationEmbeddings;
+			codeSymbolInformationEmbeddingsList.push(codeSymbolInformationEmbeddings);
+		} catch (error) {
+			// We missed loading a code symbol, that's fine for now, lets keep going
+			// we should be logging this to posthog
+			// TODO(codestory): log to posthog here
+		}
+	}
+	return codeSymbolInformationEmbeddingsList;
+}
+
+export async function storeCodeSymbolDescriptionToLocalStorage(
+	codeSymbolName: string,
+	remoteSession: string,
+	globalStorageUri: string,
+	data: CodeSymbolInformationEmbeddings
+) {
+	const filePath = path.join(
+		globalStorageUri,
+		remoteSession,
+		'code_symbol_sentence_transformer',
+		'descriptions',
+		codeSymbolName
+	);
+	await ensureDirectoryExists(filePath);
+	// Now we have ensured the directory exists we can safely write to it
+	try {
+		await fs.promises.writeFile(filePath, JSON.stringify(data));
+		console.log('Successfully wrote file: ' + filePath);
+	} catch (err) {
+		console.error('Error writing file: ' + (err as Error).toString());
+	}
+}
+
+
+const generateCodeSymbolEmbeddingsForFiles = async (
+	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
+	workingDirectory: string,
+	filesToTrack: string[],
+): Promise<CodeSymbolInformationEmbeddings[]> => {
+	const crypto = await import('crypto');
+	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+	for (let index = 0; index < filesToTrack.length; index++) {
+		const filePath = filesToTrack[index];
+		try {
+			const fileContent = await fs.promises.readFile(filePath, 'utf8');
+			const fileContentHash = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex');
+			const indexer = codeSymbolsLanguageCollection.getIndexerForFile(filePath);
+			if (!indexer) {
+				continue;
+			}
+			const codeSymbols = await indexer.parseFileWithoutDependency(
+				filePath,
+				workingDirectory,
+				false,
+			);
+			for (let index = 0; index < codeSymbols.length; index++) {
+				const embeddings = await generateEmbeddingFromSentenceTransformers(
+					codeSymbols[index].codeSnippet.code,
+				);
+				finalCodeSymbolWithEmbeddings.push({
+					codeSymbolEmbedding: embeddings,
+					codeSymbolInformation: codeSymbols[index],
+					fileHash: fileContentHash,
+				});
+			}
+		} catch (err) {
+
+		}
+	}
+	return finalCodeSymbolWithEmbeddings;
+};
+
+
 export class EmbeddingsSearch extends CodeSearchIndexer {
 	private _nodes: CodeSymbolInformationEmbeddings[];
 	private _activeFilesTracker: ActiveFilesTracker;
 	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _storageLocation: string;
+	private _repoName: string;
+	private _readyToUse: boolean;
 
 	constructor(
-		nodes: CodeSymbolInformationEmbeddings[],
 		activeFileTracker: ActiveFilesTracker,
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		storageLocation: string,
+		repoName: string,
 	) {
 		super();
-		this._nodes = nodes;
+		this._nodes = [];
 		this._activeFilesTracker = activeFileTracker;
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
 		this._storageLocation = storageLocation;
+		this._repoName = repoName;
+		this._readyToUse = false;
 	}
 
 	async loadFromStorage(filesToTrack: string[]): Promise<CodeSearchIndexLoadResult> {
-		// do something here
-		return {
-			status: CodeSearchIndexLoadStatus.Loaded,
-			filesMissing: [],
-		};
+		// Here we will look at the storage location and see if there are any
+		// code symbols, if there is that's good, and then also check it against
+		// the current hash to find the files which should be re-indexed.
+		// short hack but it will make things more consistent
+		const crypto = await import('crypto');
+		try {
+			const codeSymbolEmbeddings = await loadCodeSymbolDescriptionFromLocalStorage(
+				this._storageLocation,
+				this._repoName,
+			);
+			// First see what files we were able to get information for and also
+			// the hash of the files this symbol belongs to and if its different
+			// from the one which is on the disk right now
+			const fileToHashMap: Map<string, string> = new Map();
+			const filesWhichNeedIndexing: Set<string> = new Set();
+			for (let index = 0; index < filesToTrack.length; index++) {
+				// get the file hash
+				const fileContent = await fs.promises.readFile(filesToTrack[index], 'utf8');
+				const fileContentHash = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex');
+				fileToHashMap.set(filesToTrack[index], fileContentHash);
+				filesWhichNeedIndexing.add(filesToTrack[index]);
+			}
+
+			// which nodes we have to evict, can be many reasons, like the file was
+			// modified or deleted or moved etc
+			const nodesToEvict: Set<string> = new Set();
+			const filesToReIndex: Set<string> = new Set();
+			for (let index = 0; index < codeSymbolEmbeddings.length; index++) {
+				const codeSymbolEmbedding = codeSymbolEmbeddings[index];
+				const currentFilePath = codeSymbolEmbedding.codeSymbolInformation.fsFilePath;
+				const currentFileHash = codeSymbolEmbedding.fileHash;
+				if (fileToHashMap.has(currentFilePath)) {
+					const fileHash = fileToHashMap.get(currentFilePath);
+					if (fileHash === currentFileHash) {
+						// All good, we keep this as is
+						filesWhichNeedIndexing.delete(currentFilePath);
+					} else {
+						// The file hash has changed, we need to re-index this file
+						filesToReIndex.add(currentFilePath);
+						nodesToEvict.add(codeSymbolEmbedding.codeSymbolInformation.symbolName);
+					}
+				} else {
+					// We have a deleted file which we are tracking, time to evict this node
+					nodesToEvict.add(codeSymbolEmbedding.codeSymbolInformation.symbolName);
+				}
+			}
+			const finalNodes = codeSymbolEmbeddings.filter((node) => {
+				if (nodesToEvict.has(node.codeSymbolInformation.symbolName)) {
+					return false;
+				}
+				return true;
+			});
+			this._nodes = finalNodes;
+			filesToReIndex.forEach((file) => {
+				filesWhichNeedIndexing.add(file);
+			});
+			console.log(Array.from(filesWhichNeedIndexing));
+			return {
+				status: CodeSearchIndexLoadStatus.Loaded,
+				filesMissing: Array.from(filesWhichNeedIndexing),
+			};
+		} catch (err) {
+			console.log(err);
+			// In case of any uncaught error, we want to re-index, its the sad
+			// state of the world we live in....
+			return {
+				status: CodeSearchIndexLoadStatus.Failed,
+				filesMissing: filesToTrack,
+			};
+		}
+	}
+
+	async saveCodeSymbolEmbeddingNodes(): Promise<void> {
+		for (let index = 0; index < this._nodes.length; index++) {
+			await storeCodeSymbolDescriptionToLocalStorage(
+				this._nodes[index].codeSymbolInformation.symbolName,
+				this._repoName,
+				this._storageLocation,
+				this._nodes[index],
+			);
+		}
 	}
 
 	async saveToStorage(): Promise<void> {
-		// do something here
+		// for saving to storage, we are going to save the nodes as they are in
+		// the directory
+		await this.saveCodeSymbolEmbeddingNodes();
 	}
 
-	async indexFile(filePath: string): Promise<void> {
-		// do something here
+	async indexFile(filePath: string, workingDirectory: string): Promise<void> {
+		console.log('[indexFile] Indexing file: ' + filePath);
+		const codeSymbolWithEmbeddings = await generateCodeSymbolEmbeddingsForFiles(
+			this._codeSymbolsLanguageCollection,
+			workingDirectory,
+			[filePath],
+		);
+		this._nodes.push(...codeSymbolWithEmbeddings);
 	}
 
-	async indexWorkspace(filesToIndex: string[]): Promise<void> {
-		// do something here
+	async indexWorkspace(filesToIndex: string[], workingDirectory: string): Promise<void> {
+		const codeSymbolWithEmbeddings = await generateCodeSymbolEmbeddingsForFiles(
+			this._codeSymbolsLanguageCollection,
+			workingDirectory,
+			filesToIndex,
+		);
+		this._nodes.push(...codeSymbolWithEmbeddings);
 	}
 
 	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
@@ -66,7 +259,7 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 	}
 
 	async isReadyForUse(): Promise<boolean> {
-		return true;
+		return this._readyToUse;
 	}
 
 	async refreshIndex(): Promise<void> {
@@ -192,5 +385,9 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			...filteredNodesFromTheCodebase,
 		];
 		return mergedNodes;
+	}
+
+	async markReadyToUse(): Promise<void> {
+		this._readyToUse = true;
 	}
 }

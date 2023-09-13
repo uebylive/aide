@@ -71,6 +71,7 @@ export interface CodeSymbolDependencyWithFileInformation {
 export interface CodeSymbolInformationEmbeddings {
 	codeSymbolInformation: CodeSymbolInformation;
 	codeSymbolEmbedding: number[];
+	fileHash: string;
 }
 
 export interface CodeSnippetInformationEmbeddings {

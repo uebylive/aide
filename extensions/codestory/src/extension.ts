@@ -6,12 +6,11 @@ import { commands, env, ExtensionContext, interactive, ProgressLocation, TextDoc
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
-import { CodeStoryStorage, loadOrSaveToStorage } from './storage/types';
-import { indexRepository } from './storage/indexer';
+import { loadOrSaveToStorage } from './storage/types';
 import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
 import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
-import { EmbeddingsSearch } from './codeGraph/embeddingsSearch';
+import { EmbeddingsSearch } from './searchIndex/embeddingsSearch';
 import postHogClient from './posthog/client';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
@@ -22,7 +21,7 @@ import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPrevio
 import { CodeBlockChangeDescriptionGenerator } from './activeChanges/codeBlockChangeDescriptionGenerator';
 import { triggerCodeSymbolChange } from './activeChanges/timeline';
 import { gitCommit } from './subscriptions/gitCommit';
-import { getGitCurrentHash, getGitRepoName } from './git/helper';
+import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
 import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
@@ -35,6 +34,7 @@ import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId } from './utilities/uniqueId';
+import { SearchIndexCollection } from './searchIndex/collection';
 
 
 class ProgressiveTrackSymbols {
@@ -93,41 +93,41 @@ class ProgressiveGraphBuilder {
 	}
 }
 
-class ProgressiveIndexer {
-	private emitter: EventEmitter;
+// class ProgressiveIndexer {
+// 	private emitter: EventEmitter;
 
-	constructor() {
-		this.emitter = new EventEmitter();
-	}
+// 	constructor() {
+// 		this.emitter = new EventEmitter();
+// 	}
 
-	async indexRepository(
-		storage: CodeStoryStorage,
-		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-		globalStorageUri: string,
-		workingDirectory: string
-	) {
-		await window.withProgress(
-			{
-				location: ProgressLocation.Window,
-				title: '[CodeStory] Indexing repository',
-				cancellable: false,
-			},
-			async () => {
-				await indexRepository(
-					storage,
-					codeSymbolsLanguageCollection,
-					globalStorageUri,
-					workingDirectory,
-					this.emitter
-				);
-			}
-		);
-	}
+// 	async indexRepository(
+// 		storage: CodeStoryStorage,
+// 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
+// 		globalStorageUri: string,
+// 		workingDirectory: string
+// 	) {
+// 		await window.withProgress(
+// 			{
+// 				location: ProgressLocation.Window,
+// 				title: '[CodeStory] Indexing repository',
+// 				cancellable: false,
+// 			},
+// 			async () => {
+// 				await indexRepository(
+// 					storage,
+// 					codeSymbolsLanguageCollection,
+// 					globalStorageUri,
+// 					workingDirectory,
+// 					this.emitter
+// 				);
+// 			}
+// 		);
+// 	}
 
-	on(event: string, listener: (...args: any[]) => void) {
-		this.emitter.on(event, listener);
-	}
-}
+// 	on(event: string, listener: (...args: any[]) => void) {
+// 		this.emitter.on(event, listener);
+// 	}
+// }
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
@@ -153,6 +153,15 @@ export async function activate(context: ExtensionContext) {
 	const repoHash = await getGitCurrentHash(
 		rootPath,
 	);
+
+	postHogClient.capture({
+		distinctId: await getUniqueId(),
+		event: 'activated_lsp',
+		properties: {
+			repoName,
+			repoHash,
+		}
+	});
 
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(
@@ -183,23 +192,19 @@ export async function activate(context: ExtensionContext) {
 	// Get the test-suite command
 	const testSuiteRunCommand = readTestSuiteRunCommand();
 
-	// Create an instance of the progressive indexer
-	const indexer = new ProgressiveIndexer();
+	// Setup the search index collection
+	const searchIndexCollection = new SearchIndexCollection(
+		rootPath ?? '',
+	);
 	const embeddingsIndex = new EmbeddingsSearch(
-		[],
 		activeFilesTracker,
 		codeSymbolsLanguageCollection,
 		context.globalStorageUri.fsPath,
+		repoName,
 	);
-	indexer.on('partialData', (partialData) => {
-		embeddingsIndex.updateNodes(partialData);
-	});
-	await indexer.indexRepository(
-		codeStoryStorage,
-		codeSymbolsLanguageCollection,
-		context.globalStorageUri.fsPath,
-		rootPath,
-	);
+	searchIndexCollection.addIndexer(embeddingsIndex);
+	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
+	await searchIndexCollection.startupIndexers(filesToTrack);
 
 
 	// Register the semantic search command here

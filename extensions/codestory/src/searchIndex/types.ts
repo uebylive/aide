@@ -31,13 +31,15 @@ export abstract class CodeSearchIndexer {
 
 	abstract refreshIndex(): Promise<void>;
 
-	abstract indexFile(filePath: string): Promise<void>;
+	abstract indexFile(filePath: string, workingDirectory: string): Promise<void>;
 
-	abstract indexWorkspace(filesToIndex: string[]): Promise<void>;
+	abstract indexWorkspace(filesToIndex: string[], workingDirectory: string): Promise<void>;
 
 	// We limit how many files we are going to get returned here by using
 	// limit
 	abstract search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]>;
 
 	abstract isReadyForUse(): Promise<boolean>;
+
+	abstract markReadyToUse(): Promise<void>;
 }
