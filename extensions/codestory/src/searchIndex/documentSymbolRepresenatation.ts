@@ -142,8 +142,11 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 	private fileToIndexMap: Map<string, DocumentSymbolIndex> = new Map();
 	private _readyToUse: boolean = false;
 	private _storageLocation: string;
-	constructor(globalStorageLocation: string) {
+	private _repoName: string;
+
+	constructor(repoName: string, globalStorageLocation: string) {
 		super();
+		this._repoName = repoName;
 		this._storageLocation = globalStorageLocation;
 		this.fileToIndexMap = new Map();
 	}
@@ -218,7 +221,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 	}
 
 	async loadFromStorage(filesToTrack: string[]): Promise<CodeSearchIndexLoadResult> {
-		const storagePath = path.join(this._storageLocation, 'documentSymbolBasedIndex');
+		const storagePath = path.join(this._storageLocation, this._repoName, 'documentSymbolBasedIndex');
 		// Now we can walk on the directory only if it exists and then read all the content,
 		// if the directory does not exist yet then we skip this step and try to
 		// create the index
@@ -262,7 +265,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 
 
 	async _saveSingleFile(documentSymbolIndex: DocumentSymbolIndex): Promise<void> {
-		const storagePath = path.join(this._storageLocation, 'documentSymbolBasedIndex');
+		const storagePath = path.join(this._storageLocation, this._repoName, 'documentSymbolBasedIndex');
 		const filePath = path.join(storagePath, documentSymbolIndex.filePath);
 		// Create the path if it does not exist
 		try {
