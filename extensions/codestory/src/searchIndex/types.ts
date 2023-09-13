@@ -51,7 +51,7 @@ export abstract class CodeSearchIndexer {
 
 	// We limit how many files we are going to get returned here by using
 	// limit
-	abstract search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]>;
+	abstract search(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]>;
 
 	abstract isReadyForUse(): Promise<boolean>;
 

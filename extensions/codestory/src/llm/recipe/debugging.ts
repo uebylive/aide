@@ -66,7 +66,6 @@ export const debuggingFlow = async (
 	prompt: string,
 	toolingEventCollection: ToolingEventCollection,
 	codeGraph: CodeGraph,
-	embeddingsSearch: EmbeddingsSearch,
 	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
@@ -129,7 +128,6 @@ export const debuggingFlow = async (
 	// Now we will try and do the search over the symbols
 	const relevantCodeSnippetList = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
-		embeddingsSearch,
 		searchIndexCollection,
 		userProvidedContext,
 	);

@@ -19,7 +19,6 @@ import { SearchIndexCollection } from '../searchIndex/collection';
 
 export const debug = (
 	csChatProvider: CSChatProvider,
-	embeddingIndex: EmbeddingsSearch,
 	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	codeGraph: CodeGraph,
@@ -56,7 +55,6 @@ export const debug = (
 					payload.prompt,
 					toolingEventCollection,
 					codeGraph,
-					embeddingIndex,
 					searchIndexCollection,
 					codeSymbolsLanguageCollection,
 					workingDirectory,

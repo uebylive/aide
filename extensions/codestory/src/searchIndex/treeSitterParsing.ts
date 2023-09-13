@@ -12,7 +12,20 @@ import { CodeSnippetInformation, Span } from '../utilities/types';
 import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType, CodeSnippetSearchInformation } from './types';
 import { Progress } from 'vscode';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
+import math from 'mathjs';
 const Parser = require('web-tree-sitter');
+
+function cosineSimilarity(vecA: number[], vecB: number[]): number {
+	if (vecA.length !== vecB.length) {
+		return -1;
+	}
+
+	const dotProduct = math.dot(vecA, vecB);
+	const magnitudeA = math.norm(vecA);
+	const magnitudeB = math.norm(vecB);
+
+	return dotProduct / ((magnitudeA as number) * (magnitudeB as number));
+}
 
 const extensionToLanguageMap: Map<string, string> = new Map([
 	['go', 'go'],
@@ -458,9 +471,29 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 		}
 	}
 
-	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
-		// TODO(codestory): Implement this
-		return [];
+	async search(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]> {
+		let filteredNodes = [];
+		if (fileList) {
+			filteredNodes = this._nodes.filter((node) => {
+				return fileList.includes(node.filePath);
+			});
+		} else {
+			filteredNodes = this._nodes;
+		}
+		const results: CodeSnippetSearchInformation[] = [];
+		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
+		const nodesWithSimilarity = filteredNodes.map((node) => {
+			const nodeEmbeddings = node.embeddings;
+			const cosineResult = cosineSimilarity(queryEmbeddings, nodeEmbeddings);
+			return {
+				codeSnippetInformation: node.codeSnippetInformation,
+				score: cosineResult,
+			};
+		});
+		nodesWithSimilarity.sort((a, b) => {
+			return b.score - a.score;
+		});
+		return nodesWithSimilarity.slice(0, limit);
 	}
 
 	async isReadyForUse(): Promise<boolean> {

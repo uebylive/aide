@@ -4,9 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
-import { CodeSymbolInformation, FileCodeSymbolInformation, CodeSnippetInformation } from '../../utilities/types';
+import { FileCodeSymbolInformation, CodeSnippetInformation } from '../../utilities/types';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 import { SearchIndexCollection } from '../../searchIndex/collection';
 
@@ -15,7 +14,6 @@ import { SearchIndexCollection } from '../../searchIndex/collection';
 
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
-	embeddingsSearch: EmbeddingsSearch,
 	searchIndexCollection: SearchIndexCollection,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 ): Promise<CodeSnippetInformation[]> => {
@@ -23,19 +21,13 @@ export const generateCodeSymbolsForQueries = async (
 	const finalCodeSnippetList: CodeSnippetInformation[] = [];
 	if (userProvidedContext === undefined) {
 		for (let index = 0; index < queries.length; index++) {
-			const query = queries[index];
-			const codeSymbols = await embeddingsSearch.generateNodesForUserQuery(query);
-			console.log(`We found ${codeSymbols.length} code symbols for query ${query}`);
-			console.log(codeSymbols.map(
-				(codeSymbol) => codeSymbol.codeSymbolInformation.symbolName
-			));
-			for (let index = 0; index < codeSymbols.length; index++) {
-				const codeSymbol = codeSymbols[index];
-				if (!alreadySeenSymbols.has(codeSymbol.codeSymbolInformation.symbolName)) {
-					alreadySeenSymbols.add(codeSymbol.codeSymbolInformation.symbolName);
-					finalCodeSnippetList.push(CodeSnippetInformation.fromCodeSymbolInformation(
-						codeSymbol.codeSymbolInformation
-					));
+			const searchResults = await searchIndexCollection.searchQuery(queries[index], 20, null);
+			for (let index = 0; index < searchResults.length; index++) {
+				const searchResult = searchResults[index];
+				const codeSnippetName = searchResult.codeSnippetInformation.getNameForSnippet();
+				if (!alreadySeenSymbols.has(codeSnippetName)) {
+					alreadySeenSymbols.add(codeSnippetName);
+					finalCodeSnippetList.push(searchResult.codeSnippetInformation);
 				}
 			}
 		}
@@ -44,20 +36,16 @@ export const generateCodeSymbolsForQueries = async (
 	if (userProvidedContext) {
 		for (let index = 0; index < userProvidedContext.codeSymbolsContext.length; index++) {
 			const userQuery = userProvidedContext.codeSymbolsContext[index].documentSymbolName;
-			const codeSymbolsFromFile = await embeddingsSearch.generateNodesRelevantForUserFromFiles(
+			const searchResults = await searchIndexCollection.searchQuery(
 				userQuery,
-				[
-					userProvidedContext.codeSymbolsContext[index].filePath,
-				],
-				true,
+				20,
+				[userProvidedContext.codeSymbolsContext[index].filePath],
 			);
-			if (codeSymbolsFromFile.length > 0) {
-				const codeSymbolInterested = codeSymbolsFromFile[0];
-				if (!alreadySeenSymbols.has(codeSymbolInterested.codeSymbolInformation.symbolName)) {
-					alreadySeenSymbols.add(codeSymbolInterested.codeSymbolInformation.symbolName);
-					finalCodeSnippetList.push(CodeSnippetInformation.fromCodeSymbolInformation(
-						codeSymbolInterested.codeSymbolInformation
-					));
+			if (searchResults.length > 0) {
+				const codeSnippetInformation = searchResults[0];
+				if (!alreadySeenSymbols.has(codeSnippetInformation.codeSnippetInformation.getNameForSnippet())) {
+					alreadySeenSymbols.add(codeSnippetInformation.codeSnippetInformation.getNameForSnippet());
+					finalCodeSnippetList.push(codeSnippetInformation.codeSnippetInformation);
 				}
 			}
 		}

@@ -74,7 +74,7 @@ export class SearchIndexCollection {
 		}
 	}
 
-	public async searchQuery(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
+	public async searchQuery(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]> {
 		// I know this is dumb, because we can have multiple indexers of the same type
 		// but this is fine for now, we will figure out how to model this properly later
 		// on.
@@ -86,7 +86,7 @@ export class SearchIndexCollection {
 			}
 			// This is wrong here, we should be combining the results from
 			// all the indexers, but for now its fine
-			const results = await indexer.search(query, limit);
+			const results = await indexer.search(query, limit, fileList);
 			const indexerType = indexer.getCodeSearchIndexerType();
 			results.forEach((result) => {
 				result.score = result.score * indexer.getIndexerAccuracy();
