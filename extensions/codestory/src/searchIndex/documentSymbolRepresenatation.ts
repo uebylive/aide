@@ -13,7 +13,7 @@
 // sure we are not blocking the extension in any way.
 
 import { DocumentSymbol, Progress, SymbolKind, TextDocument, languages, workspace } from 'vscode';
-import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
+import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType, CodeSnippetSearchInformation } from './types';
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -353,5 +353,15 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 
 	getIndexUserFriendlyName(): string {
 		return 'document-symbols';
+	}
+
+	getCodeSearchIndexerType(): CodeSearchIndexerType {
+		return CodeSearchIndexerType.FileBased;
+	}
+
+	getIndexerAccuracy(): number {
+		// Hand-waving the number here, but technically the weight from using
+		// a complete index on a file is not that great
+		return 0.3;
 	}
 }

@@ -5,7 +5,7 @@
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
-import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
+import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType, CodeSnippetSearchInformation } from './types';
 import { CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as fs from 'fs';
 import * as math from 'mathjs';
@@ -411,5 +411,14 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 
 	getIndexUserFriendlyName(): string {
 		return 'embeddings';
+	}
+
+	getCodeSearchIndexerType(): CodeSearchIndexerType {
+		return CodeSearchIndexerType.CodeSymbolBased;
+	}
+
+	getIndexerAccuracy(): number {
+		// How are we choosing this number? by hand-waving
+		return 0.8;
 	}
 }
