@@ -3,11 +3,32 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// We have to generate the graph of the codebase here, so we can query for nodes
 import { getFilesTrackedInWorkingDirectory } from '../git/helper';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { CodeSymbolInformation } from '../utilities/types';
 import { EventEmitter } from 'events';
+
+// What do we need from the code graph:
+// A way to visualize what the code symbol connections look like (we are talking
+// in terms of code symbols and not code snippets here)
+// 1. Lazy loading so if we want to get information about a file, we should be
+// able to get the following quickly: references and the code symbols and the
+// go to definitions (going 1 level and parsing the asked file is also fine)
+// 2. force input: if the user has asked for a specific file, we should be able
+// to get the information by force (run it again)
+// 3. we need the complete graph for the change tracker: This is pretty expensive
+// to create at runtime, but we can figure something out for this too, the reason
+// is: code symbols are not just directly related A -> B, there might be A -> B -> C
+// kind of relations and we would still want to group them together
+//
+// TODO(codestory):
+// - figure out how to do fast loading, we will bias towards looking at git log for the git user
+// and looking at the recent changes in the last 2 weeks, and one for all the commits in the last
+// 2 weeks
+// - we need to build the force load file option in the code graph so its primed up and ready
+// - make it load completely for the whole code base (this can keep happening in the background)
+// need to take care of the changes which come in at the same time we are building (making this a bit
+// non-trivial)
 
 
 export class CodeGraph {
