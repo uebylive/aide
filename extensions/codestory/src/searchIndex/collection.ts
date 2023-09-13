@@ -133,4 +133,14 @@ export class SearchIndexCollection {
 		}
 		return codeSnippetSearchInformationFinalResults;
 	}
+
+	public async indexFile(filePath: string) {
+		for (const indexer of this._indexers) {
+			const isIndexerReady = await indexer.isReadyForUse();
+			if (!isIndexerReady) {
+				continue;
+			}
+			await indexer.indexFile(filePath, this._workingDirectory);
+		}
+	}
 }
