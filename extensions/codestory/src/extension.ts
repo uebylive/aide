@@ -94,42 +94,6 @@ class ProgressiveGraphBuilder {
 	}
 }
 
-// class ProgressiveIndexer {
-// 	private emitter: EventEmitter;
-
-// 	constructor() {
-// 		this.emitter = new EventEmitter();
-// 	}
-
-// 	async indexRepository(
-// 		storage: CodeStoryStorage,
-// 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-// 		globalStorageUri: string,
-// 		workingDirectory: string
-// 	) {
-// 		await window.withProgress(
-// 			{
-// 				location: ProgressLocation.Window,
-// 				title: '[CodeStory] Indexing repository',
-// 				cancellable: false,
-// 			},
-// 			async () => {
-// 				await indexRepository(
-// 					storage,
-// 					codeSymbolsLanguageCollection,
-// 					globalStorageUri,
-// 					workingDirectory,
-// 					this.emitter
-// 				);
-// 			}
-// 		);
-// 	}
-
-// 	on(event: string, listener: (...args: any[]) => void) {
-// 		this.emitter.on(event, listener);
-// 	}
-// }
-
 export async function activate(context: ExtensionContext) {
 	// Project root here
 	const uniqueUserId = await getUniqueId();
