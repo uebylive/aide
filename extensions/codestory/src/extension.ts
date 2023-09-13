@@ -35,6 +35,7 @@ import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId } from './utilities/uniqueId';
 import { SearchIndexCollection } from './searchIndex/collection';
+import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
 
 
 class ProgressiveTrackSymbols {
@@ -202,7 +203,12 @@ export async function activate(context: ExtensionContext) {
 		context.globalStorageUri.fsPath,
 		repoName,
 	);
+	const documentSymbolIndex = new DocumentSymbolBasedIndex(
+		repoName,
+		context.globalStorageUri.fsPath,
+	);
 	searchIndexCollection.addIndexer(embeddingsIndex);
+	searchIndexCollection.addIndexer(documentSymbolIndex);
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
 	// This is a super fast step which just starts the indexing step
 	await searchIndexCollection.startupIndexers(filesToTrack);
