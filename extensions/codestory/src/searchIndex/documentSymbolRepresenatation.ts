@@ -148,6 +148,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		this.fileToIndexMap = new Map();
 	}
 
+	async markReadyToUse(): Promise<void> {
+		this._readyToUse = true;
+	}
+
 	async indexFile(filePath: string) {
 		// create an index for this file
 		let textDocument: TextDocument | undefined;

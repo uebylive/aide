@@ -16,8 +16,11 @@ const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => 
 
 export class SearchIndexCollection {
 	private _indexers: CodeSearchIndexer[];
-	constructor() {
+	private _workingDirectory: string;
+
+	constructor(workingDirectory: string) {
 		this._indexers = [];
+		this._workingDirectory = workingDirectory;
 	}
 
 	public addIndexer(indexer: CodeSearchIndexer) {
@@ -33,14 +36,17 @@ export class SearchIndexCollection {
 			}
 			// We are not marking this as async because we want this to run in
 			// the background while the other indexers are also starting up
-			indexer.loadFromStorage(filesToIndex).then((loadedFromStorage) => {
+			// async here is important to kick start this in the background
+			indexer.loadFromStorage(filesToIndex).then(async (loadedFromStorage) => {
 				if (shouldRunIndexing(loadedFromStorage.status)) {
-					indexer.indexWorkspace(filesToIndex);
+					await indexer.indexWorkspace(filesToIndex, this._workingDirectory);
 				}
 				const missingFiles = loadedFromStorage.filesMissing;
 				for (const missingFile of missingFiles) {
-					indexer.indexFile(missingFile);
+					await indexer.indexFile(missingFile, this._workingDirectory);
 				}
+				await indexer.saveToStorage();
+				indexer.markReadyToUse();
 			});
 		}
 	}

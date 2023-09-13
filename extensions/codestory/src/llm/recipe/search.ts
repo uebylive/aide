@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
-import { EmbeddingsSearch } from '../../codeGraph/embeddingsSearch';
+import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
 import { CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 
