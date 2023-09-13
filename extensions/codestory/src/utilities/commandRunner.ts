@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { spawn } from 'child_process';
+import { exec, spawn } from 'child_process';
 
 export async function runCommandAsync(
 	workingDirectory: string,
@@ -35,6 +35,23 @@ export async function runCommandAsync(
 
 		child.on('error', (error) => {
 			reject(error);
+		});
+	});
+}
+
+
+export async function execCommand(command: string, workingDirectory: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		exec(command, { cwd: workingDirectory }, (error, stdout, stderr) => {
+			if (error) {
+				reject(`exec error: ${error}`);
+				return;
+			}
+			if (stderr) {
+				reject(`shell error: ${stderr}`);
+				return;
+			}
+			resolve(stdout.trim());
 		});
 	});
 }
