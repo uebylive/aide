@@ -18,10 +18,14 @@ const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => 
 export class SearchIndexCollection {
 	private _indexers: CodeSearchIndexer[];
 	private _workingDirectory: string;
+	// Map of map here, we are mapping indexer name to the file path timestamp
+	// of last index
+	private _lastIndexedTimestampForIndexer: Map<string, Map<string, number>>;
 
 	constructor(workingDirectory: string) {
 		this._indexers = [];
 		this._workingDirectory = workingDirectory;
+		this._lastIndexedTimestampForIndexer = new Map();
 	}
 
 	public addIndexer(indexer: CodeSearchIndexer) {
@@ -140,7 +144,25 @@ export class SearchIndexCollection {
 			if (!isIndexerReady) {
 				continue;
 			}
-			await indexer.indexFile(filePath, this._workingDirectory);
+			const indexerName = indexer.getIndexUserFriendlyName();
+			if (!this._lastIndexedTimestampForIndexer.has(indexerName)) {
+				this._lastIndexedTimestampForIndexer.set(indexerName, new Map());
+			}
+			const lastIndexedTimestampForIndexer = this._lastIndexedTimestampForIndexer.get(indexerName)!;
+			const lastIndexedTimestamp = lastIndexedTimestampForIndexer.get(filePath);
+			if (lastIndexedTimestamp) {
+				const currentTime = Date.now();
+				// We wait  3 seconds before triggering a re-indexing
+				// as it can very heavy
+				if (currentTime - lastIndexedTimestamp < 3 * 1000) {
+					continue;
+				}
+				lastIndexedTimestampForIndexer.set(filePath, Date.now());
+				await indexer.indexFile(filePath, this._workingDirectory);
+			} else {
+				lastIndexedTimestampForIndexer.set(filePath, Date.now());
+				await indexer.indexFile(filePath, this._workingDirectory);
+			}
 		}
 	}
 }
