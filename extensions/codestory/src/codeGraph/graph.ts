@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { getFilesTrackedInWorkingDirectory } from '../git/helper';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { CodeSymbolInformation } from '../utilities/types';
@@ -31,7 +32,7 @@ import { EventEmitter } from 'events';
 // non-trivial)
 
 
-export enum CodeGraphState {
+export enum CodeGraphFileState {
 	// Deep indexed is when we have the dependency and the references indexed
 	// for the current file
 	DeepIndexed,
@@ -47,17 +48,19 @@ export enum CodeGraphState {
 export interface FileState {
 	filePath: string;
 	fileHash: string;
-	codeGraphState: CodeGraphState;
+	codeGraphState: CodeGraphFileState;
 }
 
 
 export class CodeGraph {
 	private _fileToCodeSymbolMapped: Map<string, FileState>;
+	private _activeFilesTracker: ActiveFilesTracker;
 	private _nodes: CodeSymbolInformation[];
 
-	constructor(nodes: CodeSymbolInformation[]) {
-		this._nodes = nodes;
+	constructor(activeFilesTracker: ActiveFilesTracker) {
+		this._nodes = [];
 		this._fileToCodeSymbolMapped = new Map();
+		this._activeFilesTracker = activeFilesTracker;
 	}
 
 	public addNodes(nodes: CodeSymbolInformation[]) {
@@ -166,6 +169,7 @@ export const generateCodeGraph = async (
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	emitter: EventEmitter,
+	activeFileTracker: ActiveFilesTracker,
 ): Promise<CodeGraph> => {
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(
 		workingDirectory,
@@ -178,5 +182,7 @@ export const generateCodeGraph = async (
 		emitter,
 	);
 	finalNodeList.push(...codeSymbols);
-	return new CodeGraph(finalNodeList);
+	const codeGraph = new CodeGraph(activeFileTracker);
+	codeGraph.addNodes(finalNodeList);
+	return codeGraph;
 };

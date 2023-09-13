@@ -82,11 +82,13 @@ class ProgressiveGraphBuilder {
 	async loadGraph(
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		workingDirectory: string,
+		activeFileTracker: ActiveFilesTracker,
 	) {
 		await generateCodeGraph(
 			codeSymbolsLanguageCollection,
 			workingDirectory,
 			this.emitter,
+			activeFileTracker,
 		);
 	}
 
@@ -201,7 +203,7 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
-	const codeGraph = new CodeGraph([]);
+	const codeGraph = new CodeGraph(activeFilesTracker);
 	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
@@ -214,6 +216,7 @@ export async function activate(context: ExtensionContext) {
 	progressiveGraphBuilder.loadGraph(
 		codeSymbolsLanguageCollection,
 		rootPath,
+		activeFilesTracker,
 	);
 
 	// Register chat provider
