@@ -6,7 +6,7 @@ import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType, CodeSnippetSearchInformation } from './types';
-import { CodeSymbolInformationEmbeddings } from '../utilities/types';
+import { CodeSnippetInformation, CodeSymbolInformationEmbeddings } from '../utilities/types';
 import * as fs from 'fs';
 import * as math from 'mathjs';
 import * as path from 'path';
@@ -272,9 +272,32 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 		this._nodes.push(...codeSymbolWithEmbeddings);
 	}
 
-	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
-		// do something here
-		return [];
+	async search(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]> {
+		// do the same thing here as document symbol search and return back
+		// code snippet information based on the symbols which are included
+		// as part of the file list
+		let filteredNodes = [];
+		if (fileList) {
+			filteredNodes = this._nodes.filter((node) => {
+				return fileList.includes(node.codeSymbolInformation.fsFilePath);
+			});
+		} else {
+			filteredNodes = this._nodes;
+		}
+		const results: CodeSnippetSearchInformation[] = [];
+		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
+		const nodesWithSimilarity = filteredNodes.map((node) => {
+			const nodeEmbeddings = node.codeSymbolEmbedding;
+			const cosineResult = cosineSimilarity(queryEmbeddings, nodeEmbeddings);
+			return {
+				codeSnippetInformation: CodeSnippetInformation.fromCodeSymbolInformation(node.codeSymbolInformation),
+				score: cosineResult,
+			};
+		});
+		nodesWithSimilarity.sort((a, b) => {
+			return b.score - a.score;
+		});
+		return nodesWithSimilarity.slice(0, limit);
 	}
 
 	async isReadyForUse(): Promise<boolean> {

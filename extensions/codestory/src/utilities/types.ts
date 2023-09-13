@@ -135,6 +135,10 @@ export class CodeSnippetInformation {
 			null,
 		);
 	}
+
+	getNameForSnippet(): string {
+		return `${this.filePath}:${this.start}:${this.end}`;
+	}
 }
 
 

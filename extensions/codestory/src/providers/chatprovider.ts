@@ -230,7 +230,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _chatSessionState: CSChatSessionState;
 
 	private _codeGraph: CodeGraph;
-	private _embeddingsIndex: EmbeddingsSearch;
 	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _workingDirectory: string;
 	private _testSuiteRunCommand: string;
@@ -245,7 +244,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		codeGraph: CodeGraph,
 		repoName: string,
 		repoHash: string,
-		embeddingsIndex: EmbeddingsSearch,
 		searchIndexCollection: SearchIndexCollection,
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		testSuiteRunCommand: string,
@@ -257,7 +255,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._chatSessionState = new CSChatSessionState();
 		this._repoHash = repoHash;
 		this._repoName = repoName;
-		this._embeddingsIndex = embeddingsIndex;
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
 		this._testSuiteRunCommand = testSuiteRunCommand;
 		this._activeFilesTracker = activeFilesTracker;
@@ -388,7 +385,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					prompt,
 					toolingEventCollection,
 					this._codeGraph,
-					this._embeddingsIndex,
 					this._searchIndexCollection,
 					this._codeSymbolsLanguageCollection,
 					this._workingDirectory,

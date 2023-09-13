@@ -19,6 +19,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import math from 'mathjs';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
+import { CodeSnippetInformation } from '../utilities/types';
 
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
@@ -293,27 +294,33 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		return;
 	}
 
-	async search(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
+	async search(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]> {
 		// Now we have to search for the files which are relevant to the query
 		const userQueryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
 		const finalValues: CodeSnippetSearchInformation[] = [];
 		for (const [filePath, documentSymbolIndex] of this.fileToIndexMap.entries()) {
 			const embeddings = documentSymbolIndex.embeddings;
-			const cosineSimilarityBetween = cosineSimilarity(
+			let cosineSimilarityBetween = cosineSimilarity(
 				userQueryEmbeddings,
 				embeddings,
 			);
+			const extraSim = 0.1;
+			if (fileList) {
+				if (fileList?.includes(filePath) === false) {
+					cosineSimilarityBetween = cosineSimilarityBetween + extraSim;
+				}
+			}
 			finalValues.push({
-				codeSnippetInformation: {
-					content: documentSymbolIndex.fileContent,
-					start: 0,
-					end: documentSymbolIndex.lineCount,
+				codeSnippetInformation: new CodeSnippetInformation(
+					documentSymbolIndex.fileContent,
+					0,
+					documentSymbolIndex.lineCount,
 					filePath,
-					codeSymbolsInside: null,
-					outerCodeSymbol: null,
-					codeSymbolOverlapPrefix: null,
-					codeSymbolOverlapSuffix: null,
-				},
+					null,
+					null,
+					null,
+					null,
+				),
 				score: cosineSimilarityBetween,
 			});
 		}

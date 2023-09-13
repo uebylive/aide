@@ -213,7 +213,7 @@ export async function activate(context: ExtensionContext) {
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
 		rootPath, codeGraph, repoName, repoHash,
-		embeddingsIndex, searchIndexCollection, codeSymbolsLanguageCollection,
+		searchIndexCollection, codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
@@ -227,7 +227,6 @@ export async function activate(context: ExtensionContext) {
 		debug(
 			// TODO(codestory): Fix this properly later on
 			chatProvider,
-			embeddingsIndex,
 			searchIndexCollection,
 			codeSymbolsLanguageCollection,
 			codeGraph,
