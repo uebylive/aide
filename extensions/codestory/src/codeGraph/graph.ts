@@ -31,11 +31,33 @@ import { EventEmitter } from 'events';
 // non-trivial)
 
 
+export enum CodeGraphState {
+	// Deep indexed is when we have the dependency and the references indexed
+	// for the current file
+	DeepIndexed,
+	// Shallow indexed is when we have just the code symbols but not the dependencies
+	// indexed (so dependencies are missing from the code symbols and we should
+	// not rely on them)
+	ShallowIndexed,
+	// as the name says...
+	NotIndexed,
+}
+
+
+export interface FileState {
+	filePath: string;
+	fileHash: string;
+	codeGraphState: CodeGraphState;
+}
+
+
 export class CodeGraph {
+	private _fileToCodeSymbolMapped: Map<string, FileState>;
 	private _nodes: CodeSymbolInformation[];
 
 	constructor(nodes: CodeSymbolInformation[]) {
 		this._nodes = nodes;
+		this._fileToCodeSymbolMapped = new Map();
 	}
 
 	public addNodes(nodes: CodeSymbolInformation[]) {
