@@ -6,8 +6,9 @@
 import * as vscode from 'vscode';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
-import { CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
+import { CodeSymbolInformation, FileCodeSymbolInformation, CodeSnippetInformation } from '../../utilities/types';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
+import { SearchIndexCollection } from '../../searchIndex/collection';
 
 // Helper functions for the agent to do search over the codebase and pick the
 // most relevant parts of the code
@@ -15,10 +16,11 @@ import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLangua
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
 	embeddingsSearch: EmbeddingsSearch,
+	searchIndexCollection: SearchIndexCollection,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
-): Promise<CodeSymbolInformation[]> => {
+): Promise<CodeSnippetInformation[]> => {
 	const alreadySeenSymbols: Set<string> = new Set();
-	const finalCodeSymbolList: CodeSymbolInformation[] = [];
+	const finalCodeSnippetList: CodeSnippetInformation[] = [];
 	if (userProvidedContext === undefined) {
 		for (let index = 0; index < queries.length; index++) {
 			const query = queries[index];
@@ -31,7 +33,9 @@ export const generateCodeSymbolsForQueries = async (
 				const codeSymbol = codeSymbols[index];
 				if (!alreadySeenSymbols.has(codeSymbol.codeSymbolInformation.symbolName)) {
 					alreadySeenSymbols.add(codeSymbol.codeSymbolInformation.symbolName);
-					finalCodeSymbolList.push(codeSymbol.codeSymbolInformation);
+					finalCodeSnippetList.push(CodeSnippetInformation.fromCodeSymbolInformation(
+						codeSymbol.codeSymbolInformation
+					));
 				}
 			}
 		}
@@ -51,16 +55,18 @@ export const generateCodeSymbolsForQueries = async (
 				const codeSymbolInterested = codeSymbolsFromFile[0];
 				if (!alreadySeenSymbols.has(codeSymbolInterested.codeSymbolInformation.symbolName)) {
 					alreadySeenSymbols.add(codeSymbolInterested.codeSymbolInformation.symbolName);
-					finalCodeSymbolList.push(codeSymbolInterested.codeSymbolInformation);
+					finalCodeSnippetList.push(CodeSnippetInformation.fromCodeSymbolInformation(
+						codeSymbolInterested.codeSymbolInformation
+					));
 				}
 			}
 		}
 	}
-	return finalCodeSymbolList;
+	return finalCodeSnippetList;
 };
 
 export const generateFileInformationSummary = async (
-	codeSymbolInformationList: CodeSymbolInformation[],
+	codeSnippetInformationList: CodeSnippetInformation[],
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	workingDirectory: string
@@ -69,8 +75,8 @@ export const generateFileInformationSummary = async (
 	// the code symbols from there and pass it to the prompt for searching
 	const fileCodeSymbolInformationList: FileCodeSymbolInformation[] = [];
 	const fileSet: Set<string> = new Set();
-	for (let index = 0; index < codeSymbolInformationList.length; index++) {
-		fileSet.add(codeSymbolInformationList[index].fsFilePath);
+	for (let index = 0; index < codeSnippetInformationList.length; index++) {
+		fileSet.add(codeSnippetInformationList[index].filePath);
 	}
 	if (userProvidedContext !== undefined) {
 		for (let index = 0; index < userProvidedContext.fileContext.length ?? 0; index++) {

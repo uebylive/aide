@@ -15,10 +15,12 @@ import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CSChatProvider } from '../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
+import { SearchIndexCollection } from '../searchIndex/collection';
 
 export const debug = (
 	csChatProvider: CSChatProvider,
 	embeddingIndex: EmbeddingsSearch,
+	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	codeGraph: CodeGraph,
 	repoName: string,
@@ -55,6 +57,7 @@ export const debug = (
 					toolingEventCollection,
 					codeGraph,
 					embeddingIndex,
+					searchIndexCollection,
 					codeSymbolsLanguageCollection,
 					workingDirectory,
 					testSuiteRunCommand,
