@@ -204,6 +204,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	searchIndexCollection.addIndexer(embeddingsIndex);
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
+	// This is a super fast step which just starts the indexing step
 	await searchIndexCollection.startupIndexers(filesToTrack);
 
 

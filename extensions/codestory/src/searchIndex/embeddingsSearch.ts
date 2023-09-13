@@ -11,6 +11,7 @@ import * as fs from 'fs';
 import * as math from 'mathjs';
 import * as path from 'path';
 import { ensureDirectoryExists } from './helpers';
+import { Progress } from 'vscode';
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
 	if (vecA.length !== vecB.length) {
@@ -86,11 +87,18 @@ const generateCodeSymbolEmbeddingsForFiles = async (
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	filesToTrack: string[],
+	progress: Progress<{
+		message?: string | undefined;
+		increment?: number | undefined;
+	}> | null,
+	context?: string,
 ): Promise<CodeSymbolInformationEmbeddings[]> => {
 	const crypto = await import('crypto');
 	const finalCodeSymbolWithEmbeddings: CodeSymbolInformationEmbeddings[] = [];
+	let previousPercentage = 0;
 	for (let index = 0; index < filesToTrack.length; index++) {
 		const filePath = filesToTrack[index];
+		const currentPercentage = Math.floor((index / filesToTrack.length) * 100);
 		try {
 			const fileContent = await fs.promises.readFile(filePath, 'utf8');
 			const fileContentHash = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex');
@@ -103,15 +111,22 @@ const generateCodeSymbolEmbeddingsForFiles = async (
 				workingDirectory,
 				false,
 			);
-			for (let index = 0; index < codeSymbols.length; index++) {
+			for (let index2 = 0; index2 < codeSymbols.length; index2++) {
 				const embeddings = await generateEmbeddingFromSentenceTransformers(
-					codeSymbols[index].codeSnippet.code,
+					codeSymbols[index2].codeSnippet.code,
 				);
 				finalCodeSymbolWithEmbeddings.push({
 					codeSymbolEmbedding: embeddings,
-					codeSymbolInformation: codeSymbols[index],
+					codeSymbolInformation: codeSymbols[index2],
 					fileHash: fileContentHash,
 				});
+			}
+			if (currentPercentage > previousPercentage && progress !== null) {
+				progress.report({
+					message: `${currentPercentage}% files indexed`,
+					increment: currentPercentage,
+				});
+				previousPercentage = currentPercentage;
 			}
 		} catch (err) {
 
@@ -201,7 +216,6 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			filesToReIndex.forEach((file) => {
 				filesWhichNeedIndexing.add(file);
 			});
-			console.log(Array.from(filesWhichNeedIndexing));
 			return {
 				status: CodeSearchIndexLoadStatus.Loaded,
 				filesMissing: Array.from(filesWhichNeedIndexing),
@@ -235,20 +249,25 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 	}
 
 	async indexFile(filePath: string, workingDirectory: string): Promise<void> {
-		console.log('[indexFile] Indexing file: ' + filePath);
 		const codeSymbolWithEmbeddings = await generateCodeSymbolEmbeddingsForFiles(
 			this._codeSymbolsLanguageCollection,
 			workingDirectory,
 			[filePath],
+			null,
 		);
 		this._nodes.push(...codeSymbolWithEmbeddings);
 	}
 
-	async indexWorkspace(filesToIndex: string[], workingDirectory: string): Promise<void> {
+	async indexWorkspace(filesToIndex: string[], workingDirectory: string, progress: Progress<{
+		message?: string | undefined;
+		increment?: number | undefined;
+	}>): Promise<void> {
 		const codeSymbolWithEmbeddings = await generateCodeSymbolEmbeddingsForFiles(
 			this._codeSymbolsLanguageCollection,
 			workingDirectory,
 			filesToIndex,
+			progress,
+			'indexWorkspace',
 		);
 		this._nodes.push(...codeSymbolWithEmbeddings);
 	}
@@ -287,7 +306,6 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			}
 			return false;
 		}).map((node) => {
-			console.log('Whats the current node we are going to search', node);
 			const similarity = cosineSimilarity(
 				userQueryEmbedding,
 				node.codeSymbolEmbedding,
@@ -389,5 +407,9 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 
 	async markReadyToUse(): Promise<void> {
 		this._readyToUse = true;
+	}
+
+	getIndexUserFriendlyName(): string {
+		return 'embeddings';
 	}
 }

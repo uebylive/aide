@@ -12,7 +12,7 @@
 // We need to make sure that this is really fast and run some benchmarks to make
 // sure we are not blocking the extension in any way.
 
-import { DocumentSymbol, SymbolKind, TextDocument, languages, workspace } from 'vscode';
+import { DocumentSymbol, Progress, SymbolKind, TextDocument, languages, workspace } from 'vscode';
 import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSnippetSearchInformation } from './types';
 
 import * as path from 'path';
@@ -324,15 +324,31 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		return this._readyToUse;
 	}
 
-	async indexWorkspace(filesToIndex: string[]): Promise<void> {
+	async indexWorkspace(filesToIndex: string[], workingDirectory: string, progress: Progress<{
+		message?: string | undefined;
+		increment?: number | undefined;
+	}>): Promise<void> {
+		let previousPercentage = 0;
 		for (let index = 0; index < filesToIndex.length; index++) {
 			const file = filesToIndex[index];
 			await this.indexFile(file);
 			if (this.fileToIndexMap.get(file)) {
 				continue;
 			}
+			const currentPercentage = Math.floor((index / filesToIndex.length) * 100);
+			if (currentPercentage > previousPercentage) {
+				progress.report({
+					message: `Indexing ${file}`,
+					increment: currentPercentage,
+				});
+				previousPercentage = currentPercentage;
+			}
 			await this._saveSingleFile(this.fileToIndexMap.get(file)!);
 		}
 		this._readyToUse = true;
+	}
+
+	getIndexUserFriendlyName(): string {
+		return 'document-symbols';
 	}
 }

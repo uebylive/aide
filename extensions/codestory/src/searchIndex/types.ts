@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Progress } from 'vscode';
 import { CodeSnippetInformation } from '../utilities/types';
 
 export interface CodeSnippetSearchInformation {
@@ -33,7 +34,10 @@ export abstract class CodeSearchIndexer {
 
 	abstract indexFile(filePath: string, workingDirectory: string): Promise<void>;
 
-	abstract indexWorkspace(filesToIndex: string[], workingDirectory: string): Promise<void>;
+	abstract indexWorkspace(filesToIndex: string[], workingDirectory: string, progress: Progress<{
+		message?: string | undefined;
+		increment?: number | undefined;
+	}>): Promise<void>;
 
 	// We limit how many files we are going to get returned here by using
 	// limit
@@ -42,4 +46,6 @@ export abstract class CodeSearchIndexer {
 	abstract isReadyForUse(): Promise<boolean>;
 
 	abstract markReadyToUse(): Promise<void>;
+
+	abstract getIndexUserFriendlyName(): string;
 }

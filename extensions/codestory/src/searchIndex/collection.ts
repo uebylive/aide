@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { ProgressLocation, window } from 'vscode';
 import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
 
 
@@ -38,15 +39,33 @@ export class SearchIndexCollection {
 			// the background while the other indexers are also starting up
 			// async here is important to kick start this in the background
 			indexer.loadFromStorage(filesToIndex).then(async (loadedFromStorage) => {
-				if (shouldRunIndexing(loadedFromStorage.status)) {
-					await indexer.indexWorkspace(filesToIndex, this._workingDirectory);
-				}
-				const missingFiles = loadedFromStorage.filesMissing;
-				for (const missingFile of missingFiles) {
-					await indexer.indexFile(missingFile, this._workingDirectory);
-				}
-				await indexer.saveToStorage();
-				indexer.markReadyToUse();
+				await window.withProgress(
+					{
+						location: ProgressLocation.Window,
+						title: `[CodeStory] ${indexer.getIndexUserFriendlyName()} Indexing`,
+						cancellable: false,
+					},
+					async (progress, token) => {
+						console.log('[loadedFromStorage]');
+						console.log(loadedFromStorage);
+						if (shouldRunIndexing(loadedFromStorage.status)) {
+							await indexer.indexWorkspace(filesToIndex, this._workingDirectory, progress);
+						}
+						const missingFiles = loadedFromStorage.filesMissing;
+						let incrementIndex = 0;
+						const totalLength = missingFiles.length;
+						for (const missingFile of missingFiles) {
+							incrementIndex = incrementIndex + 1;
+							progress.report({
+								message: `${incrementIndex}/${totalLength}`,
+								increment: incrementIndex / totalLength,
+							});
+							await indexer.indexFile(missingFile, this._workingDirectory);
+						}
+						await indexer.saveToStorage();
+						indexer.markReadyToUse();
+					}
+				);
 			});
 		}
 	}
