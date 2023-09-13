@@ -205,7 +205,13 @@ export async function activate(context: ExtensionContext) {
 	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
-	await progressiveGraphBuilder.loadGraph(
+	// TODO(skcd): Pick up from here, we are going to lazy load the graph
+	// but all the things below this like the change log tracker and the agent
+	// need to start using the code graph after it has been loaded
+	// that can take a while.. so figure out a way to do that
+	// for now, since the agent is free of this dependency we can just rely
+	// on the lazy load
+	progressiveGraphBuilder.loadGraph(
 		codeSymbolsLanguageCollection,
 		rootPath,
 	);
