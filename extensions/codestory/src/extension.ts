@@ -315,6 +315,7 @@ export async function activate(context: ExtensionContext) {
 			const uri = doc.uri;
 			const fsPath = doc.uri.fsPath;
 			await trackCodeSymbolChanges.fileSaved(uri, logger);
+			await searchIndexCollection.indexFile(fsPath);
 			await triggerCodeSymbolChange(
 				provider,
 				trackCodeSymbolChanges,
