@@ -97,17 +97,18 @@ export const writeFileContents = async (
 export const generateModificationInputForCodeSymbol = async (
 	codeSymbolModificationInstruction: CodeSymbolModificationInstruction,
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
-	codeGraph: CodeGraph,
+	fileCodeSymbolList: FileCodeSymbolInformation[],
 	uniqueId: string,
 ): Promise<CodeModificationContextAndDiff | null> => {
-	const possibleCodeNodes = codeGraph.getNodeByLastName(
-		codeSymbolModificationInstruction.codeSymbolName
+	const possibleCodeNodes = getCodeNodeForName(
+		codeSymbolModificationInstruction.codeSymbolName,
+		fileCodeSymbolList,
 	);
 	if (!possibleCodeNodes) {
 		console.log('We were unable to find possible code nodes');
 		return null;
 	}
-	const codeSymbol = possibleCodeNodes[0];
+	const codeSymbol = possibleCodeNodes;
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 
 	// Now supporting big files for now, so we just return null here
@@ -144,17 +145,18 @@ export const generateModificationInputForCodeSymbol = async (
 export const generateModifiedFileContentAfterDiff = async (
 	codeModificationInput: CodeSymbolModificationInstruction,
 	modificationContext: CodeModificationContextAndDiff,
-	codeGraph: CodeGraph,
+	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	uniqueId: string,
 ): Promise<NewFileContentAndDiffResponse | null> => {
-	const possibleCodeNodes = codeGraph.getNodeByLastName(
-		codeModificationInput.codeSymbolName
+	const possibleCodeNode = getCodeNodeForName(
+		codeModificationInput.codeSymbolName,
+		fileCodeSymbolInformationList,
 	);
-	if (!possibleCodeNodes) {
+	if (!possibleCodeNode) {
 		return null;
 	}
-	const codeSymbol = possibleCodeNodes[0];
+	const codeSymbol = possibleCodeNode;
 	const fileCode = await readFileContents(codeSymbol.fsFilePath);
 	// Now supporting big files for now, so we just return null here
 	if (fileCode.split('\n').length > 2000) {
@@ -202,32 +204,48 @@ export const generateModifiedFileContentAfterDiff = async (
 };
 
 
-export const getFilePathForCodeNode = (
+export const getCodeNodeForName = (
 	codeSymbolNameMaybe: string,
-	codeGraph: CodeGraph,
-): string | null => {
-	console.log(`[getFilePathForCodeNode]: ${codeSymbolNameMaybe}`);
-	const codeNodes = codeGraph.getNodeByLastName(codeSymbolNameMaybe);
-	if (!codeNodes) {
-		return null;
-	}
-	return codeNodes[0].fsFilePath;
-};
-
-const getCodeNodeForName = (
-	codeSymbolNameMaybe: string,
-	codeGraph: CodeGraph,
+	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
 ): CodeSymbolInformation | null => {
-	const codeNodes = codeGraph.getNodeByLastName(codeSymbolNameMaybe);
-	if (!codeNodes) {
+	console.log(`[getFilePathForCodeNode]: ${codeSymbolNameMaybe}`);
+	const possibleNodesMaybe: CodeSymbolInformation[] = [];
+	fileCodeSymbolInformationList.forEach((fileCodeSymbolInformation) => {
+		const nodes = fileCodeSymbolInformation.codeSymbols;
+		const possibleNodes = nodes.filter(
+			(node) => {
+				const symbolName = node.symbolName;
+				const splittedSymbolName = symbolName.split('.').reverse();
+				let accumulator = '';
+				for (let index = 0; index < splittedSymbolName.length; index++) {
+					const element = splittedSymbolName[index];
+					if (index === 0) {
+						accumulator = element;
+						if (accumulator === codeSymbolNameMaybe) {
+							return true;
+						}
+					} else {
+						accumulator = `${element}.${accumulator}`;
+						if (accumulator === codeSymbolNameMaybe) {
+							return true;
+						}
+					}
+				}
+				return false;
+			},
+		);
+		possibleNodesMaybe.push(...possibleNodes);
+		return possibleNodes;
+	});
+	if (possibleNodesMaybe.length === 0) {
 		return null;
 	}
-	return codeNodes[0];
+	return possibleNodesMaybe[0];
 };
 
 export const generateTestScriptForChange = async (
 	codeSymbolNameMaybe: string,
-	codeGraph: CodeGraph,
+	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
 	codeModificationContext: CodeModificationContextAndDiff,
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	moduleName: string,
@@ -236,7 +254,7 @@ export const generateTestScriptForChange = async (
 ): Promise<TextExecutionHarness | null> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
-		codeGraph,
+		fileCodeSymbolInformationList,
 	);
 	if (!codeNode) {
 		return null;
@@ -281,14 +299,14 @@ export const executeTestHarness = async (
 	toolingEventCollection: ToolingEventCollection,
 	executionEventId: string,
 	codeSymbolNameMaybe: string,
-	codeGraph: CodeGraph,
+	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	uniqueId: string,
 ): Promise<number> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,
-		codeGraph,
+		fileCodeSymbolInformationList,
 	);
 	if (!codeNode) {
 		return 1;

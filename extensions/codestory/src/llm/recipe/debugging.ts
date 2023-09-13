@@ -11,16 +11,10 @@ import * as vscode from 'vscode';
 import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
-import { CodeGraph, generateCodeGraph } from '../../codeGraph/graph';
-import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
-import { executeTestHarness, formatFileInformationListForPrompt, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getFilePathForCodeNode, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
-import { TSMorphProjectManagement, getProject, getTsConfigFiles } from '../../utilities/parseTypescript';
-import { PythonServer } from '../../utilities/pythonServerClient';
+import { CodeGraph } from '../../codeGraph/graph';
+import { executeTestHarness, formatFileInformationListForPrompt, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getCodeNodeForName, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
-import { GoLangParser } from '../../languages/goCodeSymbols';
-import { Progress } from 'vscode';
-import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 import { generateCodeSymbolsForQueries, generateFileInformationSummary } from './search';
 import { SearchIndexCollection } from '../../searchIndex/collection';
@@ -65,7 +59,6 @@ export const generateChatCompletion = async (
 export const debuggingFlow = async (
 	prompt: string,
 	toolingEventCollection: ToolingEventCollection,
-	codeGraph: CodeGraph,
 	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
@@ -183,13 +176,13 @@ export const debuggingFlow = async (
 	for (let index = 0; index < codeSymbolModificationInstructions.codeSymbolModificationInstructionList.length; index++) {
 		const executionEventId = index;
 
-		const filePathForCodeNode = getFilePathForCodeNode(
+		const codeNodeFromNameMaybe = getCodeNodeForName(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
-			codeGraph,
+			fileCodeSymbolInformationList,
 		);
 
 
-		if (!filePathForCodeNode) {
+		if (!codeNodeFromNameMaybe) {
 			await toolingEventCollection.executionBranchFinished(
 				executionEventId.toString(),
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
@@ -209,7 +202,7 @@ export const debuggingFlow = async (
 		}
 
 		// We also need the previous file content in case of test failures
-		const previousFileContent = await readFileContents(filePathForCodeNode);
+		const previousFileContent = await readFileContents(codeNodeFromNameMaybe.fsFilePath);
 
 		// Add tooling event for modification here
 		await toolingEventCollection.addInstructionsForModification(
@@ -221,7 +214,7 @@ export const debuggingFlow = async (
 		const codeModificationInput = await generateModificationInputForCodeSymbol(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
 			[...initialMessages],
-			codeGraph,
+			fileCodeSymbolInformationList,
 			uniqueId,
 		);
 		if (!codeModificationInput) {
@@ -255,7 +248,7 @@ export const debuggingFlow = async (
 		const newFileContent = await generateModifiedFileContentAfterDiff(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index],
 			codeModificationInput,
-			codeGraph,
+			fileCodeSymbolInformationList,
 			[...initialMessages],
 			uniqueId,
 		);
@@ -272,13 +265,13 @@ export const debuggingFlow = async (
 		// Now we will update the content of the file at this point,
 		// this is bad.. but whatever for now as we keep pushing
 		writeFileContents(
-			filePathForCodeNode,
+			codeNodeFromNameMaybe.fsFilePath,
 			newFileContent.newFileContent,
 		);
 
 		// Now we send the save to file event
 		await toolingEventCollection.saveFileEvent(
-			filePathForCodeNode,
+			codeNodeFromNameMaybe.fsFilePath,
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 			executionEventId.toString(),
 		);
@@ -295,11 +288,11 @@ export const debuggingFlow = async (
 		// Now we are at the test plan generation phase
 		const testPlan = await generateTestScriptForChange(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
-			codeGraph,
+			fileCodeSymbolInformationList,
 			codeModificationInput,
 			[...initialMessages],
 			stripPrefix(
-				filePathForCodeNode,
+				codeNodeFromNameMaybe.fsFilePath,
 				workingDirectory,
 			),
 			previousFileContent,
@@ -319,7 +312,7 @@ export const debuggingFlow = async (
 		// Now we send the test execution event
 		await toolingEventCollection.testExecutionEvent(
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
-			filePathForCodeNode,
+			codeNodeFromNameMaybe.fsFilePath,
 			testPlan,
 			executionEventId.toString(),
 		);
@@ -331,7 +324,7 @@ export const debuggingFlow = async (
 			toolingEventCollection,
 			executionEventId.toString(),
 			codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
-			codeGraph,
+			fileCodeSymbolInformationList,
 			codeSymbolsLanguageCollection,
 			workingDirectory,
 			uniqueId,
@@ -343,12 +336,12 @@ export const debuggingFlow = async (
 		if (testExitCode !== 0) {
 			// TODO(codestory): Add context here why we are reverting the file
 			await toolingEventCollection.saveFileEvent(
-				filePathForCodeNode,
+				codeNodeFromNameMaybe.fsFilePath,
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				executionEventId.toString(),
 			);
 			await writeFileContents(
-				filePathForCodeNode,
+				codeNodeFromNameMaybe.fsFilePath,
 				previousFileContent,
 			);
 			branchFinishReason = 'Test failure';

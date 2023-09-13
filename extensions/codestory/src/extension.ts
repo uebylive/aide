@@ -229,7 +229,6 @@ export async function activate(context: ExtensionContext) {
 			chatProvider,
 			searchIndexCollection,
 			codeSymbolsLanguageCollection,
-			codeGraph,
 			repoName,
 			repoHash,
 			rootPath ?? '',
