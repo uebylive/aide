@@ -97,19 +97,24 @@ export class SearchIndexCollection {
 		// Now we have to multiply the score of the code snippets with the file weight
 		// which we are getting. There can be various combinations of this, but for now
 		// this is fine
+		const fileLevelFinalResults: CodeSnippetSearchInformation[] = [];
 		const filePathScore: Map<string, number> = new Map();
 		for (const [indexerType, results] of indexerResult) {
 			if (indexerType === CodeSearchIndexerType.FileBased) {
 				for (const result of results) {
+					fileLevelFinalResults.push(result);
 					const filePath = result.codeSnippetInformation.filePath;
 					filePathScore.set(filePath, result.score);
 				}
 			}
 		}
+
+		let codeSymbolBasedIndexerPresent = false;
 		// Now we look at the code symbol based embeddings and add that part of the
 		// score to the code symbol based ones
 		for (const [indexerType, results] of indexerResult) {
 			if (indexerType === CodeSearchIndexerType.CodeSymbolBased) {
+				codeSymbolBasedIndexerPresent = true;
 				for (const result of results) {
 					const filePath = result.codeSnippetInformation.filePath;
 					const fileCurrentScore = filePathScore.get(filePath);
@@ -121,6 +126,10 @@ export class SearchIndexCollection {
 					}
 				}
 			}
+		}
+
+		if (!codeSymbolBasedIndexerPresent) {
+			return fileLevelFinalResults;
 		}
 		return codeSnippetSearchInformationFinalResults;
 	}
