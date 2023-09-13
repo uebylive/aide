@@ -36,6 +36,7 @@ import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCo
 import { getUniqueId } from './utilities/uniqueId';
 import { SearchIndexCollection } from './searchIndex/collection';
 import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
+import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 
 
 class ProgressiveTrackSymbols {
@@ -171,6 +172,11 @@ export async function activate(context: ExtensionContext) {
 		repoName,
 		context.globalStorageUri.fsPath,
 	);
+	const treeSitterParsing = new TreeSitterChunkingBasedIndex(
+		repoName,
+		context.globalStorageUri.fsPath,
+	);
+	searchIndexCollection.addIndexer(treeSitterParsing);
 	searchIndexCollection.addIndexer(embeddingsIndex);
 	searchIndexCollection.addIndexer(documentSymbolIndex);
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
