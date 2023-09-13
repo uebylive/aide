@@ -134,7 +134,7 @@ export interface DocumentSymbolIndex {
 	embeddings: number[];
 	timestamp: number;
 	lineCount: number;
-	fileContent: string,
+	fileContent: string;
 }
 
 
