@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import { Progress, Uri } from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 
-import { CodeSymbolInformation } from '../../utilities/types';
+import { CodeSnippetInformation, CodeSymbolInformation } from '../../utilities/types';
 import { CodeGraph } from '../../codeGraph/graph';
 import {
 	CodeModificationContextAndDiff,
@@ -63,6 +63,7 @@ interface ToolingEvent {
 	// planChangesForNode: PlanChangesForChildNode | null;
 	// lookupCodeSnippetForSymbols: LookupCodeSnippetForSymbols | null;
 	// changesToCurrentNodeOnDfs: ChangesToCurrentNode | null;
+	codeSnippetInformationList: CodeSnippetInformation[] | null;
 }
 
 export const thinkingEvent = (
@@ -97,6 +98,7 @@ export const thinkingEvent = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -128,12 +130,13 @@ export const addPlanForHelp = (userQuery: string, planForHelp: string): ToolingE
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
 export const relevantSearchResults = (
 	queries: string[],
-	codeSymbolInformationList: CodeSymbolInformation[]
+	codeSnippetInformationList: CodeSnippetInformation[],
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
@@ -142,7 +145,7 @@ export const relevantSearchResults = (
 		eventInput: queries.join('\n'),
 		eventContext: null,
 		eventTimestamp: Date.now(),
-		codeSymbolReference: codeSymbolInformationList,
+		codeSymbolReference: [],
 		stdout: null,
 		stderr: null,
 		codeSymbolName: null,
@@ -162,6 +165,7 @@ export const relevantSearchResults = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList,
 	};
 };
 
@@ -193,6 +197,7 @@ export const searchForQuery = (userQuery: string): ToolingEvent => {
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -221,6 +226,7 @@ export const usingUserProvidedContext = (userProvidedContext: vscode.Interactive
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
 		userProvidedContext,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -256,6 +262,7 @@ export const branchElementsEvents = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -290,6 +297,7 @@ export const addInstructionsForModification = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -324,6 +332,7 @@ export const saveFileToolingEvent = (
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
 		userProvidedContext: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -359,6 +368,7 @@ export const addModificationDiffAndThoughts = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -393,6 +403,7 @@ export const saveFileEvent = (filePath: string, codeSymbolName: string): Tooling
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -432,6 +443,7 @@ export const testExecutionEvent = (
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
 		// changesToCurrentNodeOnDfs: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -470,6 +482,7 @@ export const terminalEvent = (
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
 		userProvidedContext: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -501,6 +514,7 @@ export const executionBranchFinishEvent = (
 		executionBranchFinishReason,
 		codeModificationInstructionList: null,
 		userProvidedContext: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -528,6 +542,7 @@ export const taskComplete = (): ToolingEvent => {
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
 		userProvidedContext: null,
+		codeSnippetInformationList: null,
 	};
 };
 
@@ -614,13 +629,16 @@ ${userContext.codeSymbolsContext.map((codeSymbol) => {
 		);
 	}
 
-	createFileTreeFromCodeSymbols(codeSymbols: CodeSymbolInformation[], workingDirectory: string): CSChatProgressFileTree {
+	createFileTreeFromCodeSymbols(
+		codeSnippets: CodeSnippetInformation[],
+		workingDirectory: string,
+	): CSChatProgressFileTree {
 		// Create a root CSChatFileTreeData object with an empty label and URI
 		const rootTreeData = new CSChatFileTreeData('', Uri.file(''));
 
-		// Iterate through codeSymbols and build the file tree
-		for (const codeSymbol of codeSymbols) {
-			const filePathSegments = codeSymbol.fsFilePath.split('/');
+		// Iterate through codeSnippets and build the file tree
+		for (const codeSnippet of codeSnippets) {
+			const filePathSegments = codeSnippet.filePath.split('/');
 			let currentNode = rootTreeData;
 
 			// Traverse the tree, creating any missing nodes
@@ -634,7 +652,7 @@ ${userContext.codeSymbolsContext.map((codeSymbol) => {
 
 				if (!childNode) {
 					// Create a new node for the segment
-					const uri = Uri.file(codeSymbol.fsFilePath);
+					const uri = Uri.file(codeSnippet.filePath);
 					childNode = new CSChatFileTreeData(segment, uri);
 					currentNode.children.push(childNode);
 				}
@@ -653,7 +671,7 @@ ${userContext.codeSymbolsContext.map((codeSymbol) => {
 
 	public async addRelevantSearchResults(
 		queries: string[],
-		codeSymbolInformationList: CodeSymbolInformation[],
+		codeSymbolInformationList: CodeSnippetInformation[],
 		workingDirectory: string
 	) {
 		const event = relevantSearchResults(queries, codeSymbolInformationList);
@@ -663,7 +681,7 @@ ${userContext.codeSymbolsContext.map((codeSymbol) => {
 				'Generating search results',
 				Promise.resolve(
 					this.createFileTreeFromCodeSymbols(
-						(event.codeSymbolReference ?? []).slice(0, 5),
+						(event.codeSnippetInformationList ?? []).slice(0, 5),
 						workingDirectory
 					),
 				)

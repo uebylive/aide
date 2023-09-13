@@ -23,6 +23,7 @@ import { Progress } from 'vscode';
 import { CSChatCancellationToken, CSChatProgress, CSChatProgressContent, CSChatProgressTask } from '../../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 import { generateCodeSymbolsForQueries, generateFileInformationSummary } from './search';
+import { SearchIndexCollection } from '../../searchIndex/collection';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
@@ -66,6 +67,7 @@ export const debuggingFlow = async (
 	toolingEventCollection: ToolingEventCollection,
 	codeGraph: CodeGraph,
 	embeddingsSearch: EmbeddingsSearch,
+	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
@@ -125,21 +127,22 @@ export const debuggingFlow = async (
 		await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
 	}
 	// Now we will try and do the search over the symbols
-	const relevantCodeSymbols = await generateCodeSymbolsForQueries(
+	const relevantCodeSnippetList = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
 		embeddingsSearch,
+		searchIndexCollection,
 		userProvidedContext,
 	);
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
 		planAndQueries?.queries ?? [],
-		relevantCodeSymbols,
+		relevantCodeSnippetList,
 		workingDirectory,
 	);
 
 	// Now we get all the file information for the symbols
 	const fileCodeSymbolInformationList = await generateFileInformationSummary(
-		relevantCodeSymbols,
+		relevantCodeSnippetList,
 		codeSymbolsLanguageCollection,
 		userProvidedContext,
 		workingDirectory,

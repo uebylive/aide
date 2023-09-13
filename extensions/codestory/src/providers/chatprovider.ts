@@ -22,6 +22,7 @@ import { GoLangParser } from '../languages/goCodeSymbols';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
+import { SearchIndexCollection } from '../searchIndex/collection';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -237,6 +238,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _repoName: string;
 	private _repoHash: string;
 	private _uniqueUserId: string;
+	private _searchIndexCollection: SearchIndexCollection;
 
 	constructor(
 		workingDirectory: string,
@@ -244,6 +246,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		repoName: string,
 		repoHash: string,
 		embeddingsIndex: EmbeddingsSearch,
+		searchIndexCollection: SearchIndexCollection,
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		testSuiteRunCommand: string,
 		activeFilesTracker: ActiveFilesTracker,
@@ -259,6 +262,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._testSuiteRunCommand = testSuiteRunCommand;
 		this._activeFilesTracker = activeFilesTracker;
 		this._uniqueUserId = uniqueUserId;
+		this._searchIndexCollection = searchIndexCollection;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -385,6 +389,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					toolingEventCollection,
 					this._codeGraph,
 					this._embeddingsIndex,
+					this._searchIndexCollection,
 					this._codeSymbolsLanguageCollection,
 					this._workingDirectory,
 					this._testSuiteRunCommand,
