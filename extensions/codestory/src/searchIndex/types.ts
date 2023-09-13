@@ -18,6 +18,16 @@ export enum CodeSearchIndexLoadStatus {
 }
 
 
+// Some indexers might be file based, while others might be code symbol or snippet
+// based, its important that we gather this information together so we can perform
+// better code search
+export enum CodeSearchIndexerType {
+	FileBased,
+	CodeSymbolBased,
+	CodeSnippetBased,
+}
+
+
 export interface CodeSearchIndexLoadResult {
 	status: CodeSearchIndexLoadStatus;
 	filesMissing: string[];
@@ -48,4 +58,8 @@ export abstract class CodeSearchIndexer {
 	abstract markReadyToUse(): Promise<void>;
 
 	abstract getIndexUserFriendlyName(): string;
+
+	abstract getCodeSearchIndexerType(): CodeSearchIndexerType;
+
+	abstract getIndexerAccuracy(): number;
 }

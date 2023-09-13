@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ProgressLocation, window } from 'vscode';
-import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer } from './types';
+import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType } from './types';
 
 
 const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => {
@@ -71,6 +71,10 @@ export class SearchIndexCollection {
 	}
 
 	public async searchQuery(query: string, limit: number): Promise<CodeSnippetSearchInformation[]> {
+		// I know this is dumb, because we can have multiple indexers of the same type
+		// but this is fine for now, we will figure out how to model this properly later
+		// on.
+		const indexerResult: Map<CodeSearchIndexerType, CodeSnippetSearchInformation[]> = new Map();
 		for (const indexer of this._indexers) {
 			const isReady = await indexer.isReadyForUse();
 			if (!isReady) {
@@ -79,10 +83,45 @@ export class SearchIndexCollection {
 			// This is wrong here, we should be combining the results from
 			// all the indexers, but for now its fine
 			const results = await indexer.search(query, limit);
+			const indexerType = indexer.getCodeSearchIndexerType();
+			results.forEach((result) => {
+				result.score = result.score * indexer.getIndexerAccuracy();
+			});
+			indexerResult.set(indexerType, results);
 			if (results.length > 0) {
 				return results;
 			}
 		}
-		return [];
+
+		const codeSnippetSearchInformationFinalResults: CodeSnippetSearchInformation[] = [];
+		// Now we have to multiply the score of the code snippets with the file weight
+		// which we are getting. There can be various combinations of this, but for now
+		// this is fine
+		const filePathScore: Map<string, number> = new Map();
+		for (const [indexerType, results] of indexerResult) {
+			if (indexerType === CodeSearchIndexerType.FileBased) {
+				for (const result of results) {
+					const filePath = result.codeSnippetInformation.filePath;
+					filePathScore.set(filePath, result.score);
+				}
+			}
+		}
+		// Now we look at the code symbol based embeddings and add that part of the
+		// score to the code symbol based ones
+		for (const [indexerType, results] of indexerResult) {
+			if (indexerType === CodeSearchIndexerType.CodeSymbolBased) {
+				for (const result of results) {
+					const filePath = result.codeSnippetInformation.filePath;
+					const fileCurrentScore = filePathScore.get(filePath);
+					if (fileCurrentScore) {
+						result.score = result.score * fileCurrentScore;
+						codeSnippetSearchInformationFinalResults.push(result);
+					} else {
+						codeSnippetSearchInformationFinalResults.push(result);
+					}
+				}
+			}
+		}
+		return codeSnippetSearchInformationFinalResults;
 	}
 }
