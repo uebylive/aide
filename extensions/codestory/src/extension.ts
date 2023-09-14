@@ -37,6 +37,7 @@ import { getUniqueId } from './utilities/uniqueId';
 import { SearchIndexCollection } from './searchIndex/collection';
 import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
 import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
+import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 
 
 class ProgressiveTrackSymbols {
@@ -90,6 +91,8 @@ export async function activate(context: ExtensionContext) {
 	}
 	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+
+	// Now we get all the required information and log it
 	const repoName = await getGitRepoName(
 		rootPath,
 	);
@@ -105,6 +108,12 @@ export async function activate(context: ExtensionContext) {
 			repoHash,
 		}
 	});
+
+	// We also load up the sentence transformer here before doing heavy operations
+	// with it
+	const embeddings = await generateEmbeddingFromSentenceTransformers('something');
+	console.log('[embeddings]', embeddings);
+
 
 	// Setup python server here
 	const serverUrl = await startAidePythonBackend(

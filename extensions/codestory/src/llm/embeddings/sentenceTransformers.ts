@@ -7,7 +7,8 @@ import * as path from 'path';
 
 let embeddingModel: Promise<any> | undefined;
 
-async function getEmbeddingModel(): Promise<any> {
+
+export async function getEmbeddingModel(): Promise<any> {
 	if (!embeddingModel) {
 		embeddingModel = (async () => {
 			const TransformersApi = Function('return import("@xenova/transformers")')();
