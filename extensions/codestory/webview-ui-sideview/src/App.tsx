@@ -6,8 +6,6 @@ import { EventData } from '@estruyf/vscode';
 import { Messenger } from '@estruyf/vscode/dist/client';
 import { useEffect } from 'react';
 
-import { Explain } from './pages/Explain';
-import { Setup } from './pages/Setup';
 import { Commit } from './pages/Commit';
 import { TimeLine } from './pages';
 import {
@@ -18,7 +16,6 @@ import {
 	useChangedCodeBlockChangeDescriptionStore,
 } from './store';
 import {
-	ExplanationData,
 	HealthState,
 	CodeSymbolChange,
 	CodeBlockChangeDescription,
@@ -42,13 +39,10 @@ function App() {
 		const listener = (message: MessageEvent<EventData<unknown>>) => {
 			console.log('[debugging] What is the message', message);
 			const { command, payload } = message.data;
-			if (command === 'showExplanation') {
-				setExplanationData(payload as ExplanationData);
-				setPage('explain');
-			} else if (command === 'healthCheck') {
+			if (command === 'healthCheck') {
 				const newStatus = (payload as HealthState).status;
 				setStatus(newStatus);
-				setPage(newStatus === 'OK' ? 'home' : 'setup');
+				setPage('home');
 			} else if (command === 'getChangeLog') {
 				console.log('[debugging] What is the changelog payload', payload);
 				const payloadData = (payload as { changes: CodeSymbolChange[] })
@@ -85,10 +79,6 @@ function App() {
 			<div className='h-full relative w-full overflow-x-hidden'>
 				{(() => {
 					switch (page) {
-						case 'setup':
-							return <Setup />;
-						case 'explain':
-							return <Explain />;
 						case 'commit':
 							return <Commit />;
 						default:
@@ -96,7 +86,7 @@ function App() {
 					}
 				})()}
 			</div>
-			{page === 'home' || page === 'setup' ? (
+			{page === 'home' ? (
 				<div className='fixed bottom-0 h-12 w-full flex items-center justify-center bg-vscode-sideBar-background'>
 					<a
 						href='https://join.slack.com/t/codestoryai/shared_invite/zt-1x4zy3mk1-9fL5k~7XGSNNku7~iYr51w'

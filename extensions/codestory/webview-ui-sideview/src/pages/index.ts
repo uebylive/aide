@@ -3,6 +3,4 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 export { Commit } from './Commit';
-export { Explain } from './Explain';
-export { Setup } from './Setup';
 export { TimeLine } from './Timeline';

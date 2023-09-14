@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-export type PageType = 'setup' | 'home' | 'search' | 'explain' | 'commit';
+export type PageType = 'home' | 'search' | 'commit';
 
 export type CodeSymbolChange = {
 	name: string;
