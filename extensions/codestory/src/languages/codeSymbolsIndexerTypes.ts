@@ -18,4 +18,6 @@ export abstract class CodeSymbolsIndexer {
 	abstract parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean): Promise<CodeSymbolInformation[]>;
 
 	abstract parseFileWithDependencies(filePath: string, workingDirectory: string, storeInCache: boolean): Promise<CodeSymbolInformation[]>;
+
+	abstract parseFileWithContent(filePath: string, fileContents: string): Promise<CodeSymbolInformation[]>;
 }

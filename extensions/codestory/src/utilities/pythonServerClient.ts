@@ -6,6 +6,9 @@
 import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
 import { CodeSymbolInformation } from './types';
 import axios from 'axios';
+import * as path from 'path';
+import * as fs from 'fs';
+import { v4 as uuidV4 } from 'uuid';
 
 const PORT = 42424;
 
@@ -40,6 +43,30 @@ export class PythonServer extends CodeSymbolsIndexer {
 
 	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
 		return await this.parseFile(filePath);
+	}
+
+	async parseFileWithContent(filePath: string, fileContents: string): Promise<CodeSymbolInformation[]> {
+		const dirName = path.dirname(filePath); // Get the directory name
+		const extName = path.extname(filePath); // Get the extension name
+		const newFileName = uuidV4(); // Your new file name without extension
+		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
+		// write the content to this file for now
+		fs.writeFileSync(newFilePath, fileContents);
+		const codeSymbolInformationHackedTogether = await this.parseFile(newFilePath);
+		// delete the file at this point
+		fs.unlinkSync(newFilePath);
+		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+			codeSymbol.symbolName = codeSymbol.symbolName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			codeSymbol.displayName = codeSymbol.displayName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			return codeSymbol;
+		});
+		return codeSymbolInformation;
 	}
 }
 

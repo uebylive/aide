@@ -23,10 +23,10 @@ import { Logger } from 'winston';
 import { PythonServer } from '../utilities/pythonServerClient';
 import EventEmitter from 'events';
 import { GoLangParser } from '../languages/goCodeSymbols';
+import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 
-export const getFileExtension = (filePath: string): string => {
-	const fileExtension = path.extname(filePath);
-	return fileExtension;
+export const getFileExtension = (filePath: string): string | undefined => {
+	return filePath.split('.').pop();
 };
 
 export type CodeSymbolChangeType = 'added' | 'removed' | 'modified';
@@ -65,9 +65,7 @@ const checkIfFileSaveCodeSymbolInformationIsStale = (
 };
 
 export class TrackCodeSymbolChanges {
-	private tsProject: TSMorphProjectManagement;
-	private pythonServer: PythonServer;
-	private goLangParser: GoLangParser;
+	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private codeSymbolsWhichChanged: Map<Uri, CodeSymbolChange[]>;
 	// This is used to track when the file has been opened
 	private fileOpenedCodeSymbolTracked: Map<string, FileCodeSymbolInformation>;
@@ -80,15 +78,11 @@ export class TrackCodeSymbolChanges {
 	public statusUpdated: boolean;
 
 	constructor(
-		tsProject: TSMorphProjectManagement,
-		pythonServer: PythonServer,
-		goLangParser: GoLangParser,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		workingDirectory: string,
 		logger: Logger,
 	) {
-		this.tsProject = tsProject;
-		this.pythonServer = pythonServer;
-		this.goLangParser = goLangParser;
+		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
 		this.codeSymbolsWhichChanged = new Map<Uri, CodeSymbolChange[]>();
 		this.workingDirectory = workingDirectory;
 		this.fileOpenedCodeSymbolTracked = new Map<string, FileCodeSymbolInformation>();
@@ -113,118 +107,6 @@ export class TrackCodeSymbolChanges {
 		await this.fileSaved(Uri.file(filePath), this.logger);
 	}
 
-	private async fileCodeSymbolFromCodeGo(
-		filePath: string,
-		fileContentSinceHead: string,
-	): Promise<CodeSymbolInformation[]> {
-		const dirName = path.dirname(filePath); // Get the directory name
-		const extName = path.extname(filePath); // Get the extension name
-		const newFileName = uuidV4(); // Your new file name without extension
-		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
-		// write the content to this file for now
-		await workspace.fs.writeFile(Uri.file(newFilePath), Buffer.from(fileContentSinceHead));
-		const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(
-			newFilePath,
-			this.workingDirectory,
-		);
-		// delete the file at this point
-		await workspace.fs.delete(Uri.file(newFilePath), {
-			recursive: false,
-			useTrash: true,
-		});
-		this.logger.info(
-			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
-		);
-		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
-			codeSymbol.symbolName = codeSymbol.symbolName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			codeSymbol.displayName = codeSymbol.displayName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			return codeSymbol;
-		});
-		return codeSymbolInformation;
-	}
-
-	private async fileCodeSymbolFromCodePython(
-		filePath: string,
-		fileContentSinceHead: string,
-	): Promise<CodeSymbolInformation[]> {
-		const dirName = path.dirname(filePath); // Get the directory name
-		const extName = path.extname(filePath); // Get the extension name
-		const newFileName = uuidV4(); // Your new file name without extension
-		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
-		// write the content to this file for now
-		fs.writeFileSync(newFilePath, fileContentSinceHead);
-		const codeSymbolInformationHackedTogether = await this.pythonServer.parseFile(newFilePath);
-		// delete the file at this point
-		fs.unlinkSync(newFilePath);
-		this.logger.info(
-			`[changes][hacked_together] We have ${codeSymbolInformationHackedTogether.length} code symbols in file ${filePath}`
-		);
-		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
-			codeSymbol.symbolName = codeSymbol.symbolName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			codeSymbol.displayName = codeSymbol.displayName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			return codeSymbol;
-		});
-		return codeSymbolInformation;
-	}
-
-	private async fileCodeSymbolFromCodeTS(
-		filePath: string,
-		fileContentSinceHead: string,
-	): Promise<CodeSymbolInformation[]> {
-		const tsProject = this.tsProject.getTsMorphProjectForFile(filePath);
-		if (tsProject === null) {
-			return [];
-		}
-		this.logger.info(`[changes][ts] We are going to track and create a source file ${filePath}`);
-		const dirName = path.dirname(filePath); // Get the directory name
-		const extName = path.extname(filePath); // Get the extension name
-		const newFileName = 'CODESTORY_RANDOM'; // Your new file name without extension
-		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
-		const sourceFile = tsProject.createSourceFile(newFilePath, fileContentSinceHead);
-		const codeSymbolInformationHackedTogether = parseSourceFile(
-			sourceFile,
-			tsProject,
-			this.workingDirectory,
-			newFilePath,
-			filePath
-		);
-		tsProject.removeSourceFile(sourceFile);
-		this.logger.info(
-			'[changes] whats the file path without extension: ' +
-			path.basename(filePath).replace(extName, '')
-		);
-		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
-			codeSymbol.symbolName = codeSymbol.symbolName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			codeSymbol.displayName = codeSymbol.displayName.replace(
-				newFileName,
-				path.basename(filePath).replace(extName, '')
-			);
-			return codeSymbol;
-		});
-		this.logger.info(
-			`[changes] We have ${codeSymbolInformation.length
-			} code symbols in file ${filePath} ${JSON.stringify(
-				codeSymbolInformation.map((codeSymbol) => codeSymbol.symbolName)
-			)})))}`
-		);
-		return codeSymbolInformation;
-	}
-
 	public async filesChangedSinceLastCommit(
 		filePath: string,
 		fileContentSinceHead: string,
@@ -232,31 +114,19 @@ export class TrackCodeSymbolChanges {
 	) {
 		// Now we try to get the extension of the file and see where it belongs
 		// to
-		let codeSymbols: CodeSymbolInformation[] = [];
-		const fileExtension = getFileExtension(filePath);
-		if (
-			fileExtension === '.ts' ||
-			fileExtension === '.jsx' ||
-			fileExtension === '.tsx' ||
-			fileExtension === '.js'
-		) {
-			codeSymbols = await this.fileCodeSymbolFromCodeTS(filePath, fileContentSinceHead);
+		const indexer = this._codeSymbolsLanguageCollection.getIndexerForFile(filePath);
+		if (indexer === undefined) {
+			return [];
+		} else {
+			const codeSymbols = await indexer.parseFileWithContent(
+				filePath,
+				fileContentSinceHead,
+			);
+			emitter.emit('fileChanged', {
+				filePath: filePath,
+				codeSymbols: codeSymbols,
+			});
 		}
-		if (
-			fileExtension === '.py'
-		) {
-			codeSymbols = await this.fileCodeSymbolFromCodePython(filePath, fileContentSinceHead);
-		}
-		if (
-			fileExtension === '.go'
-		) {
-			this.logger.info(`[filesChangedSinceLastCommit][fileCodeSymbolFromCodeGo]: ${filePath}`);
-			codeSymbols = await this.fileCodeSymbolFromCodeGo(filePath, fileContentSinceHead);
-		}
-		emitter.emit('fileChanged', {
-			filePath: filePath,
-			codeSymbols: codeSymbols,
-		});
 	}
 
 	private checkIfFileSaveCodeSymbolInformationIsStale(filePath: string): boolean {
@@ -277,6 +147,9 @@ export class TrackCodeSymbolChanges {
 		}
 		console.log('[codeSymbolInformationFromFilePath] tracking :' + filePath);
 		const fileExtension = getFileExtension(filePath);
+		if (fileExtension === undefined) {
+			return [];
+		}
 		if (!shouldAnywaysFetch && !this.checkIfFileSaveCodeSymbolInformationIsStale(filePath)) {
 			const alreadyTrackedCodeSymbols = this.fileSavedCodeSymbolTracked.get(filePath)?.codeSymbols;
 			this.logger.info(
@@ -285,51 +158,22 @@ export class TrackCodeSymbolChanges {
 			return alreadyTrackedCodeSymbols ?? [];
 		}
 		this.logger.info(`[track-code-symbols][global] We are going to track ${filePath}`);
-		if (
-			fileExtension === '.ts' ||
-			fileExtension === '.js' ||
-			fileExtension === '.tsx' ||
-			fileExtension === '.jsx'
-		) {
-			// TODO(skcd): Will this still work because we are going to do a file sync
-			// whenever we try to parse from the disk?
-			// it might be getting passed by value here
-			const tsProject = this.tsProject.getTsMorphProjectForFile(filePath);
-			if (tsProject) {
-				this.logger.info(`[track-code-symbols] we have a ts project`);
-				const data = await parseFileUsingTsMorph(filePath, tsProject, this.workingDirectory, filePath);
-				this.logger.info(`[track-code-symbols] we have some symbols here ${data.length}`);
-				this.fileSavedCodeSymbolTracked.set(filePath, {
-					codeSymbols: data,
-					timestamp: Date.now(),
-				});
-				return data;
-			}
-		}
-		if (
-			fileExtension === '.py'
-		) {
-			const codeSymbolInformationHackedTogether = await this.pythonServer.parseFile(filePath);
-			this.fileSavedCodeSymbolTracked.set(filePath, {
-				codeSymbols: codeSymbolInformationHackedTogether,
-				timestamp: Date.now(),
-			});
-			return codeSymbolInformationHackedTogether;
-		}
-		if (
-			fileExtension === '.go'
-		) {
-			const codeSymbolInformationHackedTogether = await this.goLangParser.parseFileWithDependencies(
+		const indexer = this._codeSymbolsLanguageCollection.getCodeIndexerForType(fileExtension);
+		if (indexer === undefined) {
+			return [];
+		} else {
+			const codeSymbols = await indexer.parseFileWithDependencies(
 				filePath,
 				this.workingDirectory,
+				false,
 			);
+			this.logger.info(`[track-code-symbols] we have some symbols here ${codeSymbols.length}`);
 			this.fileSavedCodeSymbolTracked.set(filePath, {
-				codeSymbols: codeSymbolInformationHackedTogether,
+				codeSymbols: codeSymbols,
 				timestamp: Date.now(),
 			});
-			return codeSymbolInformationHackedTogether;
+			return codeSymbols;
 		}
-		return [];
 	}
 
 	public async fileOpened(uri: Uri, logger: Logger) {

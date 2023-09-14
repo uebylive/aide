@@ -3,8 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Definition, LocationLink, Position, TextDocument, languages, workspace, Location } from 'vscode';
+import { Definition, LocationLink, Position, TextDocument, languages, workspace, Location, Uri } from 'vscode';
 const Parser = require('web-tree-sitter');
+import { v4 as uuidV4 } from 'uuid';
 import * as path from 'path';
 import { getSymbolsFromDocumentUsingLSP } from '../utilities/lspApi';
 import { CodeSymbolInformation } from '../utilities/types';
@@ -278,5 +279,35 @@ export class GoLangParser extends CodeSymbolsIndexer {
 		this._fileToCodeSymbols.set(filePath, codeSymbols);
 		await this.fixDependenciesForCodeSymbols(filePath);
 		return this._fileToCodeSymbols.get(filePath) ?? [];
+	}
+
+	async parseFileWithContent(filePath: string, fileContents: string): Promise<CodeSymbolInformation[]> {
+		const dirName = path.dirname(filePath); // Get the directory name
+		const extName = path.extname(filePath); // Get the extension name
+		const newFileName = uuidV4(); // Your new file name without extension
+		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
+		// write the content to this file for now
+		await workspace.fs.writeFile(Uri.file(newFilePath), Buffer.from(fileContents));
+		const codeSymbolInformationHackedTogether = await this.parseFileWithDependencies(
+			newFilePath,
+			this._workingDirectory,
+		);
+		// delete the file at this point
+		await workspace.fs.delete(Uri.file(newFilePath), {
+			recursive: false,
+			useTrash: true,
+		});
+		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+			codeSymbol.symbolName = codeSymbol.symbolName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			codeSymbol.displayName = codeSymbol.displayName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			return codeSymbol;
+		});
+		return codeSymbolInformation;
 	}
 }
