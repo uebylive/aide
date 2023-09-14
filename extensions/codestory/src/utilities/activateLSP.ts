@@ -38,6 +38,11 @@ export const getExtensionsInDirectory = (directory: string): Set<string> => {
 
 	function traverse(dir: string) {
 		console.log(dir);
+		// If the path ends with node_modules, lets skip looking at what the
+		// extensions will be here
+		if (dir.endsWith('node_modules')) {
+			return;
+		}
 		if (isExcludedExtension(path.extname(dir))) {
 			return;
 		}
