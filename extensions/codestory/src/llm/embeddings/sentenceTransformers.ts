@@ -7,7 +7,7 @@ import * as path from 'path';
 
 let embeddingModel: Promise<any> | undefined;
 
-import("@xenova/transformers")
+// import("@xenova/transformers")
 
 
 export async function getEmbeddingModel(): Promise<any> {
@@ -24,7 +24,7 @@ export async function getEmbeddingModel(): Promise<any> {
 			env.localModelPath = modelPath;
 			env.allowRemoteModels = false;
 			const pipe = await pipeline('embeddings', 'sentence-transformers/all-MiniLM-L6-v2', {
-				quantized: false,
+				quantized: true,
 			});
 			return {
 				pipe,
@@ -35,10 +35,28 @@ export async function getEmbeddingModel(): Promise<any> {
 	return embeddingModel;
 }
 
+function sleepWithJitter(baseDelay: number, jitterAmount: number) {
+	const delay = baseDelay + Math.floor(Math.random() * jitterAmount);
+	return new Promise(resolve => setTimeout(resolve, delay));
+}
+
+const cleanupString = (prompt: string): string => {
+	// We are going to remove the last line if it contains `sourceMappingURL=data:application/json;base64`
+	if (prompt.includes('sourceMappingURL=data:application/json;base64')) {
+		return prompt.split('\n').slice(0, -1).join('\n');
+	} else {
+		return prompt;
+	}
+}
+
 export const generateEmbeddingFromSentenceTransformers = async (prompt: string, context: string): Promise<number[]> => {
-	console.log(`[generateEmbeddingsFromSentenceTransformers][${context}] ${prompt}`);
+	prompt = cleanupString(prompt);
 	const { pipe } = await getEmbeddingModel();
 	try {
+		// Put 40ms + rand * 20ms sleep to give the model a bit of breathing space
+		// we need better backoff strategies here, not sure why its getting stuck
+		// tbh
+		await sleepWithJitter(50, 20);
 		const output = await pipe(prompt, {
 			pooling: 'mean',
 			normalize: true,
@@ -54,6 +72,35 @@ export const generateEmbeddingFromSentenceTransformers = async (prompt: string, 
 
 
 // void (async () => {
-// 	const features = await generateEmbeddingFromSentenceTransformers('this is text');
+// 	const textToEmbed = `
+// 	const configPath = await generateVSCodeConfigurationTask();
+//     if (!configPath) {
+//         return;
+//     }
+//     const settingsSearchBuildId = getSettingsSearchBuildId(packageJson);
+//     if (!settingsSearchBuildId) {
+//         throw new Error('Failed to compute build number');
+//     }
+//     const credential = new identity_1.ClientSecretCredential(process.env['AZURE_TENANT_ID'], process.env['AZURE_CLIENT_ID'], process.env['AZURE_CLIENT_SECRET']);
+//     return new Promise((c, e) => {
+//         vfs.src(configPath)
+//             .pipe(azure.upload({
+//             account: process.env.AZURE_STORAGE_ACCOUNT,
+//             credential,
+//             container: 'configuration',
+//             prefix: \`\${settingsSearchBuildId}/\${commit}/\`
+//         }))
+//             .on('end', () => c())
+//             .on('error', (err) => e(err));
+//     });
+// }
+// if (require.main === module) {
+//     main().catch(err => {
+//         console.error(err);
+//         process.exit(1);
+//     });
+// }
+// `;
+// 	const features = await generateEmbeddingFromSentenceTransformers(textToEmbed, 'something');
 // 	console.log(features);
 // })();
