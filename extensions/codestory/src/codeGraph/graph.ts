@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { getFilesTrackedInWorkingDirectory } from '../git/helper';
+import { getFilesInLastCommit, getFilesTrackedInWorkingDirectory } from '../git/helper';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { CodeSymbolInformation } from '../utilities/types';
 import { EventEmitter } from 'events';
@@ -94,21 +94,27 @@ async function loadCodeSymbolDescriptionFromLocalStorage(
 
 export class CodeGraph {
 	private _fileToCodeSymbolMapped: Map<string, FileState>;
+	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _activeFilesTracker: ActiveFilesTracker;
 	private _nodes: CodeGraphCodeSymbolInformation[];
 	private _storageLocation: string;
 	private _repoName: string;
+	private _workingDirectory: string;
 
 	constructor(
 		activeFilesTracker: ActiveFilesTracker,
+		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		storageLocation: string,
 		repoName: string,
+		workingDirectory: string,
 	) {
 		this._nodes = [];
 		this._fileToCodeSymbolMapped = new Map();
 		this._activeFilesTracker = activeFilesTracker;
 		this._storageLocation = storageLocation;
 		this._repoName = repoName;
+		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
+		this._workingDirectory = workingDirectory;
 	}
 
 	public addNodes(nodes: CodeGraphCodeSymbolInformation[]) {
@@ -172,6 +178,124 @@ export class CodeGraph {
 			filesWhichNeedIndexing.add(file);
 		});
 		return Array.from(filesWhichNeedIndexing);
+	}
+
+	async updateCodeSymbolsForFile(
+		filePath: string,
+	): Promise<CodeGraphCodeSymbolInformation[]> {
+		try {
+			const codeSymbols = await parseFilesForCodeSymbols(
+				this._codeSymbolsLanguageCollection,
+				this._workingDirectory,
+				[filePath],
+			);
+			return codeSymbols;
+		} catch (err) {
+			console.log('[updateCodeSymbolsForFile] error while updating code symbols for file');
+			console.log(err);
+		}
+		return [];
+	}
+
+	async replaceCurrentNodesWithNewNodes(
+		nodesWhichShouldBeAdded: CodeGraphCodeSymbolInformation[],
+		currentNodes: CodeGraphCodeSymbolInformation[],
+	): Promise<CodeGraphCodeSymbolInformation[]> {
+		const fileToHashMap: Map<string, string> = new Map();
+		for (let index = 0; index < nodesWhichShouldBeAdded.length; index++) {
+			const node = nodesWhichShouldBeAdded[index];
+			const filePath = node.filePath;
+			const fileHash = node.fileHash;
+			fileToHashMap.set(filePath, fileHash);
+		}
+		// Now we want to remove the nodes who's file hash does not match
+		// the one we have in the fileToHashMap
+		const nodesToEvict: Set<string> = new Set();
+		const fileNodesToAdd: Set<string> = new Set();
+		for (let index = 0; index < currentNodes.length; index++) {
+			const node = currentNodes[index];
+			const filePath = node.filePath;
+			const fileHash = node.fileHash;
+			if (fileToHashMap.has(filePath)) {
+				const fileHashInMap = fileToHashMap.get(filePath);
+				if (fileHashInMap !== fileHash) {
+					fileNodesToAdd.add(filePath);
+					nodesToEvict.add(node.codeSymbol.symbolName);
+				}
+			} else {
+				// We want to add files which are missing
+				fileNodesToAdd.add(filePath);
+			}
+		}
+
+		// Now we have the nodes to evict, we can remove them from the list
+		const finalNodes = currentNodes.filter((node) => {
+			if (nodesToEvict.has(node.codeSymbol.symbolName)) {
+				return false;
+			}
+			return true;
+		});
+
+		// Now we will add the nodes whose files have changed
+		for (let index = 0; index < currentNodes.length; index++) {
+			const node = currentNodes[index];
+			if (fileNodesToAdd.has(node.filePath)) {
+				finalNodes.push(node);
+			}
+		}
+		return finalNodes;
+	}
+
+	public async loadGraph(filesToTrack: string[]): Promise<void> {
+		// We are going to load the graph here, but there are certain things we
+		// want to emphasize on more than the others, so lets do that.
+		// 1. First load everything from storage
+		// 2. Load the symbols for files which are open
+		// 3. Load the symbols for files which were most used in the last 2 weeks
+		// 4. Keep loading the rest of the symbols after this
+
+		// Load the nodes from storage
+		const filesToStillIndex = await this.loadFromStorage(filesToTrack);
+
+		// Load from the active file tracker
+		const activeFiles = this._activeFilesTracker.getActiveFiles();
+		const activeFilesCodeSymbols: CodeGraphCodeSymbolInformation[] = [];
+		for (let index = 0; index < activeFiles.length; index++) {
+			const file = activeFiles[index];
+			const codeSymbols = await this.updateCodeSymbolsForFile(file);
+			activeFilesCodeSymbols.push(...codeSymbols);
+		}
+		this._nodes = await this.replaceCurrentNodesWithNewNodes(
+			activeFilesCodeSymbols,
+			this._nodes,
+		);
+
+		// Now we load all the files which were open the last 2 weeks
+		const filesToIndex = await getFilesInLastCommit(this._workingDirectory);
+		const filesToIndexCodeSymbols: CodeGraphCodeSymbolInformation[] = [];
+		for (let index = 0; index < filesToIndex.length; index++) {
+			const file = filesToIndex[index];
+			const codeSymbols = await this.updateCodeSymbolsForFile(file);
+			filesToIndexCodeSymbols.push(...codeSymbols);
+		}
+		this._nodes = await this.replaceCurrentNodesWithNewNodes(
+			filesToIndexCodeSymbols,
+			this._nodes,
+		);
+
+		// Now we need to load all the files which are present in the workspace
+		// this is a slower step and can keep running the background cause we
+		// don't care about it too much, but its good to have either way
+		const nodesFromFilesWhichNeedIndexing = await parseFilesForCodeSymbols(
+			this._codeSymbolsLanguageCollection,
+			this._workingDirectory,
+			filesToStillIndex,
+		);
+		this._nodes = await this.replaceCurrentNodesWithNewNodes(
+			nodesFromFilesWhichNeedIndexing,
+			this._nodes,
+		);
+		return;
 	}
 
 	public async setupCodeGraph(): Promise<void> {
@@ -259,7 +383,6 @@ const parseFilesForCodeSymbols = async (
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	filesToCheck: string[],
-	emitter: EventEmitter,
 ): Promise<CodeGraphCodeSymbolInformation[]> => {
 	const codeSymbolInformationList: CodeGraphCodeSymbolInformation[] = [];
 	const crypto = await import('crypto');
@@ -277,7 +400,6 @@ const parseFilesForCodeSymbols = async (
 				workingDirectory,
 				true,
 			);
-			emitter.emit('partialData', codeSymbols);
 			codeSymbolInformationList.push(...codeSymbols.map((codeSymbol) => {
 				return {
 					codeSymbol: codeSymbol,
@@ -291,33 +413,4 @@ const parseFilesForCodeSymbols = async (
 		}
 	}
 	return codeSymbolInformationList;
-};
-
-
-export const generateCodeGraph = async (
-	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-	workingDirectory: string,
-	emitter: EventEmitter,
-	activeFileTracker: ActiveFilesTracker,
-	storageLocation: string,
-	repoName: string,
-): Promise<CodeGraph> => {
-	const filesToTrack = await getFilesTrackedInWorkingDirectory(
-		workingDirectory,
-	);
-	const finalNodeList: CodeGraphCodeSymbolInformation[] = [];
-	const codeSymbols = await parseFilesForCodeSymbols(
-		codeSymbolsLanguageCollection,
-		workingDirectory,
-		filesToTrack,
-		emitter,
-	);
-	finalNodeList.push(...codeSymbols);
-	const codeGraph = new CodeGraph(
-		activeFileTracker,
-		storageLocation,
-		repoName,
-	);
-	codeGraph.addNodes(finalNodeList);
-	return codeGraph;
 };
