@@ -12,25 +12,57 @@ import { ExtensionContext, commands, extensions } from 'vscode';
 import logger from '../logger';
 
 
+const EXCLUDED_EXTENSIONS = [
+	'.asar',
+	'.tar',
+	'.zip',
+	'.gz',
+	'.tgz',
+	'.7z',
+	'.dmg',
+	'.png',
+	'.jpg',
+];
+
+
+const isExcludedExtension = (extension: string): boolean => {
+	if (EXCLUDED_EXTENSIONS.includes(extension)) {
+		return true;
+	}
+	return false;
+};
+
+
 export const getExtensionsInDirectory = (directory: string): Set<string> => {
 	const extensions = new Set<string>();
 
 	function traverse(dir: string) {
-		const files = fs.readdirSync(dir);
+		console.log(dir);
+		if (isExcludedExtension(path.extname(dir))) {
+			return;
+		}
+		try {
+			const files = fs.readdirSync(dir);
 
-		for (const file of files) {
-			const filePath = path.join(dir, file);
-			const stat = fs.statSync(filePath);
+			for (const file of files) {
+				const filePath = path.join(dir, file);
+				const stat = fs.statSync(filePath);
 
-			// If directory, recurse. If file, extract extension.
-			if (stat.isDirectory()) {
-				traverse(filePath);
-			} else {
-				const ext = path.extname(filePath);
-				if (ext) {
-					extensions.add(ext);
+				if (!isExcludedExtension(path.extname(filePath))) {
+					// If directory, recurse. If file, extract extension.
+					if (stat.isDirectory()) {
+						traverse(filePath);
+					} else {
+						const ext = path.extname(filePath);
+						if (ext) {
+							extensions.add(ext);
+						}
+					}
 				}
 			}
+		} catch (e) {
+			console.log('[getExtensionsInDirectory] failing for directory', dir);
+			console.error(e);
 		}
 	}
 
