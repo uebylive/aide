@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as path from 'path';
+import * as fs from 'fs';
 import { ProgressLocation, window } from 'vscode';
 import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType } from './types';
 
@@ -12,6 +14,31 @@ const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => 
 		return false;
 	}
 	return true;
+};
+
+
+export const shouldParseFile = async (filePath: string): Promise<boolean> => {
+	try {
+		const extension = filePath.split('.').pop();
+		if (extension === 'js') {
+			// check if there exists the same file with .ts extension, if it does
+			// then this is a generated file and we should not be indexing this
+			const fileExtension = path.extname(filePath);
+			const fileName = path.basename(filePath, fileExtension);
+			const directoryName = path.dirname(filePath);
+			const tsFilePath = path.join(directoryName, `${fileName}.ts`);
+			// check if file exists using fs async
+			try {
+				await fs.promises.access(tsFilePath);
+				return false;
+			} catch (err) {
+				return true;
+			}
+		}
+		return true;
+	} catch (err) {
+		return true;
+	}
 };
 
 
@@ -39,10 +66,17 @@ export class SearchIndexCollection {
 			if (isReady) {
 				continue;
 			}
+			const finalFilesToIndex: string[] = [];
+			for (let index = 0; index < filesToIndex.length; index++) {
+				const shouldParse = await shouldParseFile(filesToIndex[index]);
+				if (shouldParse) {
+					finalFilesToIndex.push(filesToIndex[index]);
+				}
+			}
 			// We are not marking this as async because we want this to run in
 			// the background while the other indexers are also starting up
 			// async here is important to kick start this in the background
-			indexer.loadFromStorage(filesToIndex).then(async (loadedFromStorage) => {
+			indexer.loadFromStorage(finalFilesToIndex).then(async (loadedFromStorage) => {
 				await window.withProgress(
 					{
 						location: ProgressLocation.Window,
@@ -53,7 +87,7 @@ export class SearchIndexCollection {
 						console.log('[loadedFromStorage]');
 						console.log(loadedFromStorage);
 						if (shouldRunIndexing(loadedFromStorage.status)) {
-							await indexer.indexWorkspace(filesToIndex, this._workingDirectory, progress);
+							await indexer.indexWorkspace(finalFilesToIndex, this._workingDirectory, progress);
 						}
 						const missingFiles = loadedFromStorage.filesMissing;
 						let incrementIndex = 0;
@@ -139,6 +173,10 @@ export class SearchIndexCollection {
 	}
 
 	public async indexFile(filePath: string) {
+		const shouldIndexFile = await shouldParseFile(filePath);
+		if (!shouldIndexFile) {
+			return;
+		}
 		for (const indexer of this._indexers) {
 			const isIndexerReady = await indexer.isReadyForUse();
 			if (!isIndexerReady) {

@@ -40,7 +40,6 @@ class VariableCompletionsCustom extends Disposable {
 		@IEditorService private readonly editorService: IEditorService,
 		@IModelService private readonly modelService: IModelService,
 	) {
-		console.log('are we registered here');
 		super();
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {

@@ -114,6 +114,7 @@ const generateCodeSymbolEmbeddingsForFiles = async (
 			for (let index2 = 0; index2 < codeSymbols.length; index2++) {
 				const embeddings = await generateEmbeddingFromSentenceTransformers(
 					codeSymbols[index2].codeSnippet.code,
+					context ?? 'generateCodeSymbolEmbeddingsForFiles',
 				);
 				finalCodeSymbolWithEmbeddings.push({
 					codeSymbolEmbedding: embeddings,
@@ -285,7 +286,10 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			filteredNodes = this._nodes;
 		}
 		const results: CodeSnippetSearchInformation[] = [];
-		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
+		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(
+			query,
+			this.getIndexUserFriendlyName(),
+		);
 		const nodesWithSimilarity = filteredNodes.map((node) => {
 			const nodeEmbeddings = node.codeSymbolEmbedding;
 			const cosineResult = cosineSimilarity(queryEmbeddings, nodeEmbeddings);
@@ -317,7 +321,10 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 		filePathsToSearch?: string[],
 	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const currentNodes = this._nodes;
-		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(userQuery);
+		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(
+			userQuery,
+			this.getIndexUserFriendlyName(),
+		);
 
 		const nodesWithSimilarity = currentNodes.filter((node) => {
 			if (!filePathsToSearch) {
@@ -374,7 +381,10 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			return false;
 		});
 
-		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(userQuery);
+		const userQueryEmbedding = await generateEmbeddingFromSentenceTransformers(
+			userQuery,
+			this.getIndexUserFriendlyName(),
+		);
 
 		const nodesWithSimilarity = interestingNodes.map((node) => {
 			const similarity = cosineSimilarity(

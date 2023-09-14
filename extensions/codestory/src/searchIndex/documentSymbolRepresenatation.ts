@@ -201,7 +201,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 					continue;
 				}
 				const representationString = getFileRepresentation(castedSymbols, filePath);
-				const embeddings = await generateEmbeddingFromSentenceTransformers(representationString);
+				const embeddings = await generateEmbeddingFromSentenceTransformers(
+					representationString,
+					this.getIndexUserFriendlyName(),
+				);
 				const documentSymbolIndexForFile: DocumentSymbolIndex = {
 					filePath,
 					fileRepresentationString: representationString,
@@ -296,7 +299,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 
 	async search(query: string, limit: number, fileList: string[] | null): Promise<CodeSnippetSearchInformation[]> {
 		// Now we have to search for the files which are relevant to the query
-		const userQueryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
+		const userQueryEmbeddings = await generateEmbeddingFromSentenceTransformers(
+			query,
+			this.getIndexUserFriendlyName(),
+		);
 		const finalValues: CodeSnippetSearchInformation[] = [];
 		for (const [filePath, documentSymbolIndex] of this.fileToIndexMap.entries()) {
 			const embeddings = documentSymbolIndex.embeddings;

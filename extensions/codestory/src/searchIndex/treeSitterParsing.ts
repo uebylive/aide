@@ -114,7 +114,6 @@ function chunkTree(tree: any, sourceCode: string, MAX_CHARS = 512 * 3, coalesce 
 				currentChunk = new Span(currentChunk.start, child.endIndex);
 			}
 		}
-		console.log(currentChunk.start, currentChunk.end);
 		chunks.push(currentChunk);
 		return {
 			chunks,
@@ -441,6 +440,7 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 		for (let index = 0; index < treeSitterNodes.length; index++) {
 			const embeddings = await generateEmbeddingFromSentenceTransformers(
 				treeSitterNodes[index].content,
+				this.getIndexUserFriendlyName() + filePath,
 			);
 			finalNodes.push({
 				codeSnippetInformation: treeSitterNodes[index],
@@ -481,7 +481,10 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 			filteredNodes = this._nodes;
 		}
 		const results: CodeSnippetSearchInformation[] = [];
-		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(query);
+		const queryEmbeddings = await generateEmbeddingFromSentenceTransformers(
+			query,
+			this.getIndexUserFriendlyName(),
+		);
 		const nodesWithSimilarity = filteredNodes.map((node) => {
 			const nodeEmbeddings = node.embeddings;
 			const cosineResult = cosineSimilarity(queryEmbeddings, nodeEmbeddings);
