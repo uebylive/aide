@@ -83,12 +83,16 @@ class ProgressiveGraphBuilder {
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		workingDirectory: string,
 		activeFileTracker: ActiveFilesTracker,
+		storageLocation: string,
+		repoName: string,
 	) {
 		await generateCodeGraph(
 			codeSymbolsLanguageCollection,
 			workingDirectory,
 			this.emitter,
 			activeFileTracker,
+			storageLocation,
+			repoName,
 		);
 	}
 
@@ -203,7 +207,11 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
-	const codeGraph = new CodeGraph(activeFilesTracker);
+	const codeGraph = new CodeGraph(
+		activeFilesTracker,
+		context.globalStorageUri.fsPath,
+		repoName,
+	);
 	progressiveGraphBuilder.on('partialData', (partialData) => {
 		codeGraph.addNodes(partialData);
 	});
@@ -217,6 +225,8 @@ export async function activate(context: ExtensionContext) {
 		codeSymbolsLanguageCollection,
 		rootPath,
 		activeFilesTracker,
+		context.globalStorageUri.fsPath,
+		repoName,
 	);
 
 	// Register chat provider
