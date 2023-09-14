@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, env, ExtensionContext, interactive, ProgressLocation, TextDocument, window, workspace } from 'vscode';
+import { commands, env, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -257,8 +257,10 @@ export async function activate(context: ExtensionContext) {
 	);
 	logger.info('[check 6]We are over here');
 	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
-	const codeBlockDescriptionGenerator = new CodeBlockChangeDescriptionGenerator(logger);
 	logger.info('[check 7]We are over here');
+
+	// Keeps track of the symbols which are changing and creates a graph of
+	// those changes
 	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
 	progressiveTrackSymbolsOnLoad.on('fileChanged', (fileChangedEvent) => {
 		trackCodeSymbolChanges.setFileOpenedCodeSymbolTracked(
@@ -266,7 +268,7 @@ export async function activate(context: ExtensionContext) {
 			fileChangedEvent.codeSymbols
 		);
 	});
-	await progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
+	progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
 		trackCodeSymbolChanges,
 		rootPath ?? '',
 		logger,
@@ -294,7 +296,7 @@ export async function activate(context: ExtensionContext) {
 				trackCodeSymbolChanges,
 				timeKeeperFileSaved,
 				fsPath,
-				codeBlockDescriptionGenerator,
+				new CodeBlockChangeDescriptionGenerator(logger),
 				logger
 			);
 		})
