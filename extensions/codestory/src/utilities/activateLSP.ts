@@ -12,7 +12,7 @@ import { ExtensionContext, commands, extensions } from 'vscode';
 import logger from '../logger';
 
 
-const EXCLUDED_EXTENSIONS = [
+export const EXCLUDED_EXTENSIONS = [
 	'.asar',
 	'.tar',
 	'.zip',
@@ -25,7 +25,7 @@ const EXCLUDED_EXTENSIONS = [
 ];
 
 
-const isExcludedExtension = (extension: string): boolean => {
+export const isExcludedExtension = (extension: string): boolean => {
 	if (EXCLUDED_EXTENSIONS.includes(extension)) {
 		return true;
 	}

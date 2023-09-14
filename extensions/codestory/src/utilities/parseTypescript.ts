@@ -26,6 +26,7 @@ import { runCommandAsync } from './commandRunner';
 import { Uri, languages, workspace } from 'vscode';
 import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
+import { isExcludedExtension } from './activateLSP';
 
 export const getCodeLocationPath = (directoryPath: string, filePath: string): string => {
 	// Parse the filePath to get an object that includes properties like root, dir, base, ext and name
@@ -885,6 +886,7 @@ export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 	public addTsConfigPath(
 		tsConfigPath: string,
 	) {
+		console.log(`[addTsConfigPath]: ${tsConfigPath}`);
 		const dirName = path.dirname(tsConfigPath);
 		try {
 			const tsConfigProject = new Project({
@@ -1084,6 +1086,9 @@ export const getTypescriptLikeFilesInDirectory = (directory: string): string[] =
 	const interestedFiles: string[] = [];
 
 	function traverse(dir: string) {
+		if (isExcludedExtension(path.extname(dir))) {
+			return;
+		}
 		const files = fs.readdirSync(dir);
 
 		for (const file of files) {

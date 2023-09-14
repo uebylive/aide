@@ -111,7 +111,7 @@ export async function activate(context: ExtensionContext) {
 
 	// We also load up the sentence transformer here before doing heavy operations
 	// with it
-	const embeddings = await generateEmbeddingFromSentenceTransformers('something');
+	const embeddings = await generateEmbeddingFromSentenceTransformers('something', 'test');
 	console.log('[embeddings]', embeddings);
 
 
