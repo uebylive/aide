@@ -14,7 +14,6 @@ import { EmbeddingsSearch } from './searchIndex/embeddingsSearch';
 import postHogClient from './posthog/client';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
-import { openFile, search } from './subscriptions/search';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
 import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
@@ -251,13 +250,6 @@ export async function activate(context: ExtensionContext) {
 		)
 	);
 	commands.executeCommand('codestory.healthCheck');
-
-	// We register the search command
-	// Semantic search
-	context.subscriptions.push(
-		search(provider, embeddingsIndex, repoName, repoHash, uniqueUserId),
-		openFile(logger)
-	);
 
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		codeSymbolsLanguageCollection,
