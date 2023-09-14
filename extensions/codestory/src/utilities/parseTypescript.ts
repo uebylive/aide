@@ -866,9 +866,11 @@ export async function parseFileUsingTsMorph(
 export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 	public directoryToProjectMapping: Map<string, Project>;
 	private fileToTSConfigDirectoryMapping: Map<string, string>;
+	private _workingDirectory: string;
 
-	constructor() {
+	constructor(workingDirectory: string) {
 		super('typescript', ['ts', 'tsx', 'js', 'jsx']);
+		this._workingDirectory = workingDirectory;
 		this.fileToTSConfigDirectoryMapping = new Map();
 		this.directoryToProjectMapping = new Map();
 	}
@@ -976,6 +978,38 @@ export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 			filePath,
 		);
 		return codeSymbols;
+	}
+
+	async parseFileWithContent(filePath: string, fileContents: string): Promise<CodeSymbolInformation[]> {
+		const tsProject = this.getTsMorphProjectForFile(filePath);
+		if (tsProject === null) {
+			return [];
+		}
+		const dirName = path.dirname(filePath); // Get the directory name
+		const extName = path.extname(filePath); // Get the extension name
+		const newFileName = 'CODESTORY_RANDOM'; // Your new file name without extension
+		const newFilePath = path.join(dirName, `${newFileName}${extName}`);
+		const sourceFile = tsProject.createSourceFile(newFilePath, fileContents);
+		const codeSymbolInformationHackedTogether = parseSourceFile(
+			sourceFile,
+			tsProject,
+			this._workingDirectory,
+			newFilePath,
+			filePath
+		);
+		tsProject.removeSourceFile(sourceFile);
+		const codeSymbolInformation = codeSymbolInformationHackedTogether.map((codeSymbol) => {
+			codeSymbol.symbolName = codeSymbol.symbolName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			codeSymbol.displayName = codeSymbol.displayName.replace(
+				newFileName,
+				path.basename(filePath).replace(extName, '')
+			);
+			return codeSymbol;
+		});
+		return codeSymbolInformation;
 	}
 }
 
@@ -1092,7 +1126,7 @@ export const getProject = async (
 		}
 	}
 
-	const tsProjectManagement = new TSMorphProjectManagement();
+	const tsProjectManagement = new TSMorphProjectManagement(workingDirectory);
 
 	if (filteredTsConfigFiles.length === 0 && checkIfTypescriptLikeFiles(fileExtensionSet)) {
 		// Here we will create a blank project and manually add all the files which

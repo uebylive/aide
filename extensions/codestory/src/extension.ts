@@ -251,9 +251,7 @@ export async function activate(context: ExtensionContext) {
 	);
 
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
-		projectManagement,
-		pythonServer,
-		goLangParser,
+		codeSymbolsLanguageCollection,
 		rootPath ?? '',
 		logger
 	);
