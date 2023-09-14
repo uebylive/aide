@@ -75,27 +75,31 @@ export const getFilesTrackedInWorkingDirectory = async (workingDirectory: string
 // Returns the files which were touched in the last 2 weeks
 export const getFilesInLastCommit = async (workingDirectory: string): Promise<string[]> => {
 	// command we have to run is the following:
+	// https://chat.openai.com/share/d516b75e-1567-4ce2-b96f-80ba6272adf0
 	const stdout = await execCommand(
-		'git log --pretty="%H" --since="2 weeks ago" | while read commit_hash; do git diff-tree --no-commit-id --name-only -r $commit_hash; done | sort | uniq -c | sort -rn',
+		'git log --pretty="%H" --since="2 weeks ago" | while read commit_hash; do git diff-tree --no-commit-id --name-only -r $commit_hash; done | sort | uniq -c | awk -v prefix="$(git rev-parse --show-toplevel)/" \'{ print prefix $2, $1 }\' | sort -k2 -rn',
 		workingDirectory,
 	);
-	console.log(stdout);
 	// Now we want to parse this output out, its always in the form of
-	// {num_times} {file_path} and the file path here is relative to the working
+	// {file_path} {num_tries} and the file path here is relative to the working
 	// directory
 	const splitLines = stdout.split('\n');
+	const finalFileList: string[] = [];
 	for (let index = 0; index < splitLines.length; index++) {
 		const lineInfo = splitLines[index].trim();
 		if (lineInfo.length === 0) {
 			continue;
 		}
-		// split it on the space in between
+		// split it by the space
 		const splitLineInfo = lineInfo.split(' ');
-		const numTimes = splitLineInfo[0];
-		const filePath = splitLineInfo.slice(1).join(' ');
-		console.log(`${filePath} occurs ${numTimes} times`);
+		if (splitLineInfo.length !== 2) {
+			continue;
+		}
+		const filePath = splitLineInfo[0];
+		const numTries = parseInt(splitLineInfo[1]);
+		finalFileList.push(filePath);
 	}
-	return [];
+	return finalFileList;
 };
 
 // Example usage:

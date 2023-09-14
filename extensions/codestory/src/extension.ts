@@ -9,7 +9,7 @@ import winston from 'winston';
 import { loadOrSaveToStorage } from './storage/types';
 import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
-import { CodeGraph, generateCodeGraph } from './codeGraph/graph';
+import { CodeGraph } from './codeGraph/graph';
 import { EmbeddingsSearch } from './searchIndex/embeddingsSearch';
 import postHogClient from './posthog/client';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
@@ -71,35 +71,6 @@ class ProgressiveTrackSymbols {
 	}
 }
 
-
-class ProgressiveGraphBuilder {
-	private emitter: EventEmitter;
-
-	constructor() {
-		this.emitter = new EventEmitter();
-	}
-
-	async loadGraph(
-		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-		workingDirectory: string,
-		activeFileTracker: ActiveFilesTracker,
-		storageLocation: string,
-		repoName: string,
-	) {
-		await generateCodeGraph(
-			codeSymbolsLanguageCollection,
-			workingDirectory,
-			this.emitter,
-			activeFileTracker,
-			storageLocation,
-			repoName,
-		);
-	}
-
-	on(event: string, listener: (...args: any[]) => void) {
-		this.emitter.on(event, listener);
-	}
-}
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
@@ -206,28 +177,14 @@ export async function activate(context: ExtensionContext) {
 		return results;
 	});
 
-	const progressiveGraphBuilder = new ProgressiveGraphBuilder();
 	const codeGraph = new CodeGraph(
 		activeFilesTracker,
-		context.globalStorageUri.fsPath,
-		repoName,
-	);
-	progressiveGraphBuilder.on('partialData', (partialData) => {
-		codeGraph.addNodes(partialData);
-	});
-	// TODO(skcd): Pick up from here, we are going to lazy load the graph
-	// but all the things below this like the change log tracker and the agent
-	// need to start using the code graph after it has been loaded
-	// that can take a while.. so figure out a way to do that
-	// for now, since the agent is free of this dependency we can just rely
-	// on the lazy load
-	progressiveGraphBuilder.loadGraph(
 		codeSymbolsLanguageCollection,
-		rootPath,
-		activeFilesTracker,
 		context.globalStorageUri.fsPath,
 		repoName,
+		rootPath ?? '',
 	);
+	codeGraph.loadGraph(filesToTrack);
 
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
