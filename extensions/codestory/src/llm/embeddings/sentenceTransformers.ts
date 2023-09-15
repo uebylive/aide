@@ -47,7 +47,7 @@ const cleanupString = (prompt: string): string => {
 	} else {
 		return prompt;
 	}
-}
+};
 
 export const generateEmbeddingFromSentenceTransformers = async (prompt: string, context: string): Promise<number[]> => {
 	prompt = cleanupString(prompt);
