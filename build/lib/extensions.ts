@@ -21,6 +21,8 @@ import * as ansiColors from 'ansi-colors';
 const buffer = require('gulp-buffer');
 import * as jsoncParser from 'jsonc-parser';
 import webpack = require('webpack');
+const pLimit = require('p-limit');
+const os = require('os');
 import { getProductionDependencies } from './dependencies';
 import { IExtensionDefinition, getExtensionStream } from './builtInExtensions';
 import { getVersion } from './getVersion';
@@ -29,6 +31,15 @@ import { fetchUrls, fetchGithub } from './fetch';
 const root = path.dirname(path.dirname(__dirname));
 const commit = getVersion(root);
 const sourceMappingURLBase = `https://ticino.blob.core.windows.net/sourcemaps/${commit}`;
+
+// Determine the maximum number of file descriptors the system allows
+const maxFileDescriptors = os.platform() === 'win32' ? 2048 : os.sysconf('SC_OPEN_MAX');
+
+// Calculate the limit based on available file descriptors
+const limitValue = Math.min(maxFileDescriptors, 100); // You can adjust this as needed
+
+// Create the dynamic limit function
+const limit = pLimit(limitValue);
 
 function minifyExtensionResources(input: Stream): Stream {
 	const jsonFilter = filter(['**/*.json', '**/*.code-snippets'], { restore: true });
@@ -344,8 +355,8 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 	const localExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...localExtensionsDescriptions.map(extension => {
-				return fromLocal(extension.path, forWeb, disableMangle)
-					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
+				return limit(() => fromLocal(extension.path, forWeb, disableMangle)
+					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`)));
 			})
 		)
 	);
