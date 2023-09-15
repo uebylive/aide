@@ -340,15 +340,18 @@ function isWebExtension(manifest: IExtensionManifest): boolean {
 
 export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boolean): Stream {
 	const localExtensionsDescriptions = (
-		(<string[]>glob.sync('extensions/*/package.json'))
+		(<string[]>glob.sync('extensions/*/package.json', { ignore: 'extensions/codestory/*/package.json' }))
 			.map(manifestPath => {
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
 				const extensionName = path.basename(extensionPath);
-				console.log('Found local extension:', extensionName);
+				fancyLog(`Manifest Path: ${ansiColors.yellow(absoluteManifestPath)}...`);
 				return { name: extensionName, path: extensionPath, manifestPath: absoluteManifestPath };
 			})
-			.filter(({ name }) => excludedExtensions.indexOf(name) === -1)
+			.filter(({ name }) => {
+				fancyLog(`Extension name which will be packaged: ${name}...`);
+				return excludedExtensions.indexOf(name) === -1;
+			})
 			.filter(({ name }) => builtInExtensions.every(b => b.name !== name))
 			.filter(({ manifestPath }) => (forWeb ? isWebExtension(require(manifestPath)) : true))
 	);
