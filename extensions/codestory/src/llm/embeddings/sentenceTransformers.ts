@@ -4,17 +4,15 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
+// import { env, pipeline } from '@xenova/transformers';
 
 let embeddingModel: Promise<any> | undefined;
-
-// import("@xenova/transformers")
-
 
 export async function getEmbeddingModel(): Promise<any> {
 	if (!embeddingModel) {
 		embeddingModel = (async () => {
-			const TransformersApi = Function('return import("@xenova/transformers")')();
-			const { pipeline, env } = await TransformersApi;
+			const TransformersApi = await import('@xenova/transformers');
+			const { pipeline, env } = TransformersApi;
 			// Lets increase the number of threads for onnx runtime and check if
 			// that works
 			console.log('[getEmbeddingModel] env');
@@ -22,7 +20,7 @@ export async function getEmbeddingModel(): Promise<any> {
 			env.backends.onnx.wasm.numThreads = 3;
 			const modelPath = path.join(__dirname, 'models');
 			env.localModelPath = modelPath;
-			env.allowRemoteModels = false;
+			// env.allowRemoteModels = false;
 			const pipe = await pipeline('embeddings', 'sentence-transformers/all-MiniLM-L6-v2', {
 				quantized: true,
 			});
@@ -51,8 +49,8 @@ const cleanupString = (prompt: string): string => {
 
 export const generateEmbeddingFromSentenceTransformers = async (prompt: string, context: string): Promise<number[]> => {
 	prompt = cleanupString(prompt);
-	const { pipe } = await getEmbeddingModel();
 	try {
+		const { pipe } = await getEmbeddingModel();
 		// Put 40ms + rand * 20ms sleep to give the model a bit of breathing space
 		// we need better backoff strategies here, not sure why its getting stuck
 		// tbh

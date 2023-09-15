@@ -360,6 +360,7 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 	const localExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...localExtensionsDescriptions.map(extension => {
+				fancyLog(`Extension name to package: ${extension.name}...`);
 				return fromLocal(extension.path, forWeb, disableMangle)
 					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
 			})
