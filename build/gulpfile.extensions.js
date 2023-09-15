@@ -241,7 +241,6 @@ const compileExtensionsBuildTask = task.define('compile-extensions-build', task.
 	cleanExtensionsBuildTask,
 	task.define('bundle-marketplace-extensions-build', () => ext.packageMarketplaceExtensionsStream(false).pipe(gulp.dest('.build'))),
 	task.define('bundle-extensions-build', () => ext.packageLocalExtensionsStream(false, false).pipe(gulp.dest('.build'))),
-	task.define('bundle-extensions-codestory-build', () => ext.packageLocalExtensionCodeStoryStream(false, false).pipe(gulp.dest('.build'))),
 ));
 
 gulp.task(compileExtensionsBuildTask);
@@ -251,7 +250,6 @@ const compileExtensionsBuildPullRequestTask = task.define('compile-extensions-bu
 	cleanExtensionsBuildTask,
 	task.define('bundle-marketplace-extensions-build', () => ext.packageMarketplaceExtensionsStream(false).pipe(gulp.dest('.build'))),
 	task.define('bundle-extensions-build-pr', () => ext.packageLocalExtensionsStream(false, true).pipe(gulp.dest('.build'))),
-	task.define('bundle-extensions-codestory-build', () => ext.packageLocalExtensionCodeStoryStream(false, false).pipe(gulp.dest('.build'))),
 ));
 
 gulp.task(compileExtensionsBuildPullRequestTask);

@@ -340,51 +340,7 @@ function isWebExtension(manifest: IExtensionManifest): boolean {
 
 export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boolean): Stream {
 	const localExtensionsDescriptions = (
-		(<string[]>glob.sync('extensions/*/package.json', { ignore: 'extensions/codestory/**/package.json' }))
-			.map(manifestPath => {
-				const absoluteManifestPath = path.join(root, manifestPath);
-				const extensionPath = path.dirname(path.join(root, manifestPath));
-				const extensionName = path.basename(extensionPath);
-				console.log('Found local extension:', extensionName);
-				return { name: extensionName, path: extensionPath, manifestPath: absoluteManifestPath };
-			})
-			.filter(({ name }) => excludedExtensions.indexOf(name) === -1)
-			.filter(({ name }) => builtInExtensions.every(b => b.name !== name))
-			.filter(({ manifestPath }) => (forWeb ? isWebExtension(require(manifestPath)) : true))
-	);
-	const localExtensionsStream = minifyExtensionResources(
-		es.merge(
-			...localExtensionsDescriptions.map(extension => {
-				return limit(() => fromLocal(extension.path, forWeb, disableMangle)
-					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`)));
-			})
-		)
-	);
-
-	let result: Stream;
-	if (forWeb) {
-		result = localExtensionsStream;
-	} else {
-		// also include shared production node modules
-		const productionDependencies = getProductionDependencies('extensions/');
-		const dependenciesSrc = productionDependencies.map(d => path.relative(root, d.path)).map(d => [`${d}/**`, `!${d}/**/{test,tests}/**`]).flat();
-
-		result = es.merge(
-			localExtensionsStream,
-			gulp.src(dependenciesSrc, { base: '.' })
-				.pipe(util2.cleanNodeModules(path.join(root, 'build', '.moduleignore')))
-				.pipe(util2.cleanNodeModules(path.join(root, 'build', `.moduleignore.${process.platform}`))));
-	}
-
-	return (
-		result
-			.pipe(util2.setExecutableBit(['**/*.sh']))
-	);
-}
-
-export function packageLocalExtensionCodeStoryStream(forWeb: boolean, disableMangle: boolean): Stream {
-	const localExtensionsDescriptions = (
-		(<string[]>glob.sync('extensions/codestory/**/package.json'))
+		(<string[]>glob.sync('extensions/*/package.json'))
 			.map(manifestPath => {
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
