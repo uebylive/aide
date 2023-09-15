@@ -22,7 +22,7 @@ class ErrorLog {
 		}
 
 		this.startTime = new Date().getTime();
-		fancyLog(`Starting ${ansiColors.green('compilation')}${this.id ? ansiColors.blue(` ${this.id}`) : ''}...`);
+		fancyLog(`AAA Starting ${ansiColors.green('compilation')}${this.id ? ansiColors.blue(` ${this.id}`) : ''}...`);
 	}
 
 	onEnd(): void {
@@ -44,7 +44,7 @@ class ErrorLog {
 			}
 		});
 
-		fancyLog(`Finished ${ansiColors.green('compilation')}${this.id ? ansiColors.blue(` ${this.id}`) : ''} with ${errors.length} errors after ${ansiColors.magenta((new Date().getTime() - this.startTime!) + ' ms')}`);
+		fancyLog(`AAA Finished ${ansiColors.green('compilation')}${this.id ? ansiColors.blue(` ${this.id}`) : ''} with ${errors.length} errors after ${ansiColors.magenta((new Date().getTime() - this.startTime!) + ' ms')}`);
 
 		const regex = /^([^(]+)\((\d+),(\d+)\): (.*)$/s;
 		const messages = errors
