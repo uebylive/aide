@@ -11,8 +11,7 @@ const dirs = [
 	'build',
 	'extensions',
 	'extensions/configuration-editing',
-	// TODO(skcd): Testing out if windows build still fails
-	// 'extensions/codestory',
+	'extensions/codestory',
 	'extensions/css-language-features',
 	'extensions/css-language-features/server',
 	'extensions/debug-auto-launch',
