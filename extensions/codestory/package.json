@@ -118,6 +118,7 @@
     "balanced-match": "^2.0.0",
     "concat-map": "^0.0.2",
     "core-util-is": "^1.0.3",
+    "diff": "^5.1.0",
     "fkill": "^8.1.1",
     "gpt-tokenizer": "^2.1.1",
     "isarray": "^2.0.5",
