@@ -46,14 +46,14 @@ function minifyExtensionResources(input: Stream): Stream {
 	return input
 		.pipe(jsonFilter)
 		.pipe(buffer())
-		.pipe(es.mapSync((f: File) => {
+		.pipe(es.map((f: File, callback) => {
 			const errors: jsoncParser.ParseError[] = [];
 			const value = jsoncParser.parse(f.contents.toString('utf8'), errors, { allowTrailingComma: true });
 			if (errors.length === 0) {
 				// file parsed OK => just stringify to drop whitespace and comments
 				f.contents = Buffer.from(JSON.stringify(value));
 			}
-			return f;
+			callback(undefined, f);
 		}))
 		.pipe(jsonFilter.restore);
 }
