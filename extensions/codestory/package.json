@@ -96,7 +96,8 @@
     "compile:tsc": "tsc -p ./",
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "vsce:package": "yarn run vsce package"
   },
   "devDependencies": {
     "@types/diff": "^5.0.3",
@@ -129,6 +130,7 @@
     "posthog-node": "^3.1.1",
     "process-nextick-args": "^2.0.1",
     "ts-morph": "^19.0.0",
+    "vsce": "^2.15.0",
     "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",
     "winston-vscode": "^1.0.0"
