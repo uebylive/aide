@@ -341,9 +341,9 @@ function isWebExtension(manifest: IExtensionManifest): boolean {
 
 export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boolean): Stream {
 	const localExtensionsDescriptions = (
-		(<string[]>glob.sync('extensions/*/package.json'))
-			// Doing this to ignore building the codestory folder
-			// (<string[]>glob.sync('extensions/*/package.json', { ignore: 'extensions/codestory/**/package.json' }))
+		// (<string[]>glob.sync('extensions/*/package.json'))
+		// Doing this to ignore building the codestory folder
+		(<string[]>glob.sync('extensions/*/package.json', { ignore: 'extensions/codestory/**/package.json' }))
 			.map(manifestPath => {
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
