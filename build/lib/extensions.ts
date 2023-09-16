@@ -209,6 +209,8 @@ function fromLocalNormal(extensionPath: string): Stream {
 
 	vsce.listFiles({ cwd: extensionPath, packageManager: vsce.PackageManager.Yarn })
 		.then(fileNames => {
+			fancyLog(`Listing out files for extension: ${ansiColors.yellow(path.basename(extensionPath))}`);
+			fancyLog(`Files present: ${fileNames}`);
 			const files = fileNames
 				.map(fileName => path.join(extensionPath, fileName))
 				.map(filePath => new File({
@@ -287,7 +289,6 @@ const excludedExtensions = [
 	'vscode-test-resolver',
 	'ms-vscode.node-debug',
 	'ms-vscode.node-debug2',
-	'codestoryai'
 ];
 
 const marketplaceWebExtensionsExclude = new Set([
@@ -347,7 +348,7 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
 				const extensionName = path.basename(extensionPath);
-				fancyLog(`Manifest Path: ${ansiColors.yellow(absoluteManifestPath)}...`);
+				fancyLog(`Manifest Path: ${ansiColors.yellow(absoluteManifestPath)} ${absoluteManifestPath} ${root}...`);
 				return { name: extensionName, path: extensionPath, manifestPath: absoluteManifestPath };
 			})
 			.filter(({ name }) => {
@@ -362,10 +363,16 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 			...localExtensionsDescriptions.map(extension => {
 				fancyLog(`Extension name to package: ${extension.name}...`);
 				return fromLocal(extension.path, forWeb, disableMangle)
-					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
+					.pipe(rename(p => {
+						const currentDirName = p.dirname;
+						const newDirName = `extensions/${extension.name}/${p.dirname}`;
+						p.dirname = `extensions/${extension.name}/${p.dirname}`;
+						fancyLog(`Extension directory name changed from ${currentDirName} to ${newDirName}`);
+					}));
 			})
 		)
 	);
+
 
 	let result: Stream;
 	if (forWeb) {
