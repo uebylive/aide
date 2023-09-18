@@ -18,6 +18,7 @@
   "files": [
     "src/llm/embeddings/models/**",
     "src/languages/tree-sitter-go.wasm",
+    "src/languages/tree-sitter-python.wasm",
     "src/searchIndex/treeSitterWasm/**"
   ],
   "license": "UNLICENSED",
