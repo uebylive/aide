@@ -15,6 +15,11 @@
   "enabledApiProposals": [
     "interactive"
   ],
+  "files": [
+    "src/llm/embeddings/models/**",
+    "src/languages/tree-sitter-go.wasm",
+    "src/searchIndex/treeSitterWasm/**"
+  ],
   "license": "UNLICENSED",
   "repository": {
     "url": "https://github.com/codestoryai"
