@@ -37,6 +37,7 @@ import { SearchIndexCollection } from './searchIndex/collection';
 import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
 import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
+import { LanguageParser } from './languages/languageCodeSymbols';
 
 
 class ProgressiveTrackSymbols {
@@ -114,13 +115,12 @@ export async function activate(context: ExtensionContext) {
 	console.log('[embeddings]', embeddings);
 
 
-	// Setup python server here
-	const serverUrl = await startAidePythonBackend(
-		context.globalStorageUri.fsPath,
-		rootPath,
-		uniqueUserId,
+	// Setup python language parser
+	const pythonLanguageParser = new LanguageParser(
+		rootPath ?? '',
+		'python',
+		['py'],
 	);
-	const pythonServer = new PythonServer(serverUrl);
 	// Setup golang parser here
 	const goLangParser = new GoLangParser(rootPath ?? '');
 	// Ts-morph project management
@@ -131,7 +131,7 @@ export async function activate(context: ExtensionContext) {
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
 	codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
-	codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonServer);
+	codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonLanguageParser);
 	codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
 
 	// Get the storage object here
