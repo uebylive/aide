@@ -11,8 +11,8 @@ let embeddingModel: Promise<any> | undefined;
 export async function getEmbeddingModel(): Promise<any> {
 	if (!embeddingModel) {
 		embeddingModel = (async () => {
-			const TransformersApi = await import('@xenova/transformers');
-			const { pipeline, env } = TransformersApi;
+			const TransformersApi = Function('return import("@xenova/transformers")')();
+			const { pipeline, env } = await TransformersApi;
 			// Lets increase the number of threads for onnx runtime and check if
 			// that works
 			console.log('[getEmbeddingModel] env');
