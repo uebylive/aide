@@ -103,7 +103,7 @@
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "postinstall": "node out/scripts/postinstall.js",
+    "postinstall": "ts-node src/scripts/postinstall.ts",
     "vsce:package": "yarn run vsce package"
   },
   "devDependencies": {
@@ -140,6 +140,7 @@
     "process-nextick-args": "^2.0.1",
     "sharp": "^0.32.6",
     "ts-morph": "^19.0.0",
+    "ts-node": "^10.9.1",
     "vsce": "^2.15.0",
     "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",
