@@ -19,8 +19,8 @@ const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => 
 
 export const shouldParseFile = async (filePath: string): Promise<boolean> => {
 	try {
-		const extension = filePath.split('.').pop();
-		if (extension === 'js') {
+		const extension = path.extname(filePath);
+		if (extension === '.js') {
 			// check if there exists the same file with .ts extension, if it does
 			// then this is a generated file and we should not be indexing this
 			const fileExtension = path.extname(filePath);

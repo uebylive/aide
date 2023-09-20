@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, env, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
+import { commands, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -24,8 +24,6 @@ import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } 
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
 import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
-import { startAidePythonBackend } from './utilities/setupAntonBackend';
-import { PythonServer } from './utilities/pythonServerClient';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
