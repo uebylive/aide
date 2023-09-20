@@ -18,6 +18,7 @@ export async function getEmbeddingModel(): Promise<any> {
 			const modelPath = path.join(__dirname, 'models');
 			env.localModelPath = modelPath;
 			env.allowRemoteModels = false;
+			// @ts-ignore
 			const pipe = await pipeline('embeddings', 'sentence-transformers/all-MiniLM-L6-v2', {
 				quantized: true,
 			});

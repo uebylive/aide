@@ -1,10 +1,15 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+// First we need to make sure that the output directory exists deeply
 // What we want to do here is move the following files to the location in the
 // generated file at codestory/out/ folder
 // To do this, we want to move src/llm/embeddings/models and
 // move src/languages/tree-sitter-go.wasm and src/languages/tree-sitter-python.wasm
 // move searchIndex/treeSitterWasm/* to the output directory
 
-// First we need to make sure that the output directory exists deeply
 import * as fs from 'fs';
 import * as path from 'path';
 
