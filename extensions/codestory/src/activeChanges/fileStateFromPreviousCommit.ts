@@ -5,7 +5,8 @@
 
 import { promisify } from 'util';
 import { exec } from 'child_process';
-import path = require('path'); // Add this line to import the 'path' module
+import * as path from 'path';
+// import path = require('path'); // Add this line to import the 'path' module
 import { OutputChannel } from 'vscode';
 import { Logger } from 'winston';
 

@@ -1,26 +1,26 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"module": "CommonJS",
 		"skipLibCheck": true,
 		"target": "es6",
 		"outDir": "out",
-		"lib": [
-			"es6",
-			"dom"
-		],
+		"lib": ["es6", "dom", "ESNext"],
 		"sourceMap": true,
 		"rootDir": "src",
 		"strict": true,
 		"esModuleInterop": true,
 		"allowSyntheticDefaultImports": true,
-		"typeRoots": [
-			"node_modules/@types"
-		]
+		"allowJs": true,
+		"checkJs": false,
+		"typeRoots": ["node_modules/@types"]
 	},
 	"exclude": [
 		"node_modules",
 		".vscode-test",
 		"webview-ui-sideview",
+		"jest.config.js",
 		"../../node_modules/@types/mocha",
+		"out",
+		"vsce_output"
 	]
 }
