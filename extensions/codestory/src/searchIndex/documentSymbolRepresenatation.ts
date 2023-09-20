@@ -20,6 +20,7 @@ import * as fs from 'fs';
 import math from 'mathjs';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import { CodeSnippetInformation } from '../utilities/types';
+import { ensureDirectoryExists } from './helpers';
 
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
@@ -273,8 +274,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		const filePath = path.join(storagePath, documentSymbolIndex.filePath);
 		// Create the path if it does not exist
 		try {
-			await fs.promises.mkdir(storagePath, { recursive: true });
+			await ensureDirectoryExists(filePath);
 		} catch (e) {
+			console.log('[documentSymbolRepresentation] error while creating directory');
+			console.log(e);
 			// We will ignore this error for now
 			return;
 		}

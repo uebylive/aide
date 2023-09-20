@@ -4,23 +4,20 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as path from 'path';
-// import { env, pipeline } from '@xenova/transformers';
+import { pipeline, env } from './src2/transformers';
 
 let embeddingModel: Promise<any> | undefined;
+
 
 export async function getEmbeddingModel(): Promise<any> {
 	if (!embeddingModel) {
 		embeddingModel = (async () => {
-			const TransformersApi = Function('return import("@xenova/transformers")')();
-			const { pipeline, env } = await TransformersApi;
-			// Lets increase the number of threads for onnx runtime and check if
-			// that works
 			console.log('[getEmbeddingModel] env');
 			console.log(env);
 			env.backends.onnx.wasm.numThreads = 3;
 			const modelPath = path.join(__dirname, 'models');
 			env.localModelPath = modelPath;
-			// env.allowRemoteModels = false;
+			env.allowRemoteModels = false;
 			const pipe = await pipeline('embeddings', 'sentence-transformers/all-MiniLM-L6-v2', {
 				quantized: true,
 			});
