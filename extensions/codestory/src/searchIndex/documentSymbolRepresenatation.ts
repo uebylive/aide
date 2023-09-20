@@ -21,6 +21,7 @@ import math from 'mathjs';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import { CodeSnippetInformation } from '../utilities/types';
 import { ensureDirectoryExists } from './helpers';
+import { isExcludedExtension } from '../utilities/extensionBlockList';
 
 
 const cosineSimilarity = (vecA: number[], vecB: number[]): number => {
@@ -158,15 +159,22 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 	}
 
 	async indexFile(filePath: string) {
+		if (isExcludedExtension(path.extname(filePath))) {
+			return;
+		}
 		// create an index for this file
 		let textDocument: TextDocument | undefined;
 		const timeout = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms, TIMED_OUT));
-		workspace.textDocuments.forEach((document) => {
-			if (document.uri.fsPath === filePath) {
-				textDocument = document;
-			}
-		});
-		if (!textDocument) {
+		try {
+			textDocument = await workspace.openTextDocument(filePath);
+		} catch (err) {
+			console.log('[documentSymbolRepresentation][indexFile] error while opening text document');
+			console.log(err);
+			return;
+		}
+		if (textDocument === undefined) {
+			console.log('[documentSymbolRepresentation][indexFile] could not find the text document');
+			console.log(filePath);
 			return;
 		}
 		const textDocumentLength = textDocument?.lineCount;
@@ -231,8 +239,10 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		// if the directory does not exist yet then we skip this step and try to
 		// create the index
 		try {
-			const directoryExists = await fs.promises.access(storagePath, fs.constants.F_OK);
+			await fs.promises.readdir(storagePath);
 		} catch (e) {
+			console.log('[documentSymbolRepresentation][loadFromStorage] error while accessing directory');
+			console.log(e);
 			return {
 				status: CodeSearchIndexLoadStatus.NotPresent,
 				filesMissing: filesToTrack,
@@ -351,7 +361,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		for (let index = 0; index < filesToIndex.length; index++) {
 			const file = filesToIndex[index];
 			await this.indexFile(file);
-			if (this.fileToIndexMap.get(file)) {
+			if (this.fileToIndexMap.get(file) === undefined) {
 				continue;
 			}
 			const currentPercentage = Math.floor((index / filesToIndex.length) * 100);

@@ -12,6 +12,7 @@ export const EXCLUDED_EXTENSIONS = [
 	'.dmg',
 	'.png',
 	'.jpg',
+	'.svg',
 ];
 
 
