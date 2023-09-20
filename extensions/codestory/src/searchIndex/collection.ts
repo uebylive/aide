@@ -7,6 +7,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { ProgressLocation, window } from 'vscode';
 import { CodeSnippetSearchInformation, CodeSearchIndexLoadStatus, CodeSearchIndexer, CodeSearchIndexerType } from './types';
+import { isExcludedExtension } from '../utilities/extensionBlockList';
 
 
 const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => {
@@ -20,6 +21,9 @@ const shouldRunIndexing = (indexerState: CodeSearchIndexLoadStatus): boolean => 
 export const shouldParseFile = async (filePath: string): Promise<boolean> => {
 	try {
 		const extension = path.extname(filePath);
+		if (isExcludedExtension(extension)) {
+			return false;
+		}
 		if (extension === '.js') {
 			// check if there exists the same file with .ts extension, if it does
 			// then this is a generated file and we should not be indexing this
