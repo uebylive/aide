@@ -49,21 +49,21 @@ void (async () => {
 	// All of the format source, target
 	const filePaths = [
 		[
-			path.join(__dirname, '..', 'languages', 'tree-sitter-go.wasm'),
+			path.join(__dirname, '..', '..', 'src', 'languages', 'tree-sitter-go.wasm'),
 			path.join(__dirname, '..', '..', 'out', 'languages', 'tree-sitter-go.wasm'),
 		],
 		[
-			path.join(__dirname, '..', 'languages', 'tree-sitter-python.wasm'),
+			path.join(__dirname, '..', '..', 'src', 'languages', 'tree-sitter-python.wasm'),
 			path.join(__dirname, '..', '..', 'out', 'languages', 'tree-sitter-python.wasm'),
 		],
 	];
 	const directoryPaths = [
 		[
-			path.join(__dirname, '..', 'searchIndex', 'treeSitterWasm'),
+			path.join(__dirname, '..', '..', 'src', 'searchIndex', 'treeSitterWasm'),
 			path.join(__dirname, '..', '..', 'out', 'searchIndex', 'treeSitterWasm'),
 		],
 		[
-			path.join(__dirname, '..', 'llm', 'embeddings', 'models'),
+			path.join(__dirname, '..', '..', 'src', 'llm', 'embeddings', 'models'),
 			path.join(__dirname, '..', '..', 'out', 'llm', 'embeddings', 'models'),
 		],
 	];
