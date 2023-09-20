@@ -39,6 +39,8 @@ async function loadCodeSymbolDescriptionFromLocalStorage(
 	try {
 		files = await fs.promises.readdir(directoryPath);
 	} catch (err) {
+		console.log('[loadCodeSymbolDescriptionFromLocalStorage] error');
+		console.log(err);
 		// We failed to read from the directory path, so lets bail hard here
 		return [];
 	}

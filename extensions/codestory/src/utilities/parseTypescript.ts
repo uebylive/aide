@@ -26,7 +26,8 @@ import { runCommandAsync } from './commandRunner';
 import { Uri, languages, workspace } from 'vscode';
 import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
-import { isExcludedExtension } from './activateLSP';
+import { isExcludedExtension } from './extensionBlockList';
+
 
 export const getCodeLocationPath = (directoryPath: string, filePath: string): string => {
 	// Parse the filePath to get an object that includes properties like root, dir, base, ext and name
