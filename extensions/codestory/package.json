@@ -103,7 +103,7 @@
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "postinstall": "ts-node src/scripts/postinstall.ts",
+    "postinstall": "node out/scripts/postinstall.js",
     "vsce:package": "yarn run vsce package"
   },
   "devDependencies": {
