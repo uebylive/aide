@@ -219,6 +219,8 @@ export class EmbeddingsSearch extends CodeSearchIndexer {
 			filesToReIndex.forEach((file) => {
 				filesWhichNeedIndexing.add(file);
 			});
+			console.log('[embeddingSearch] filesWhichNeedIndexing');
+			console.log(filesWhichNeedIndexing);
 			return {
 				status: CodeSearchIndexLoadStatus.Loaded,
 				filesMissing: Array.from(filesWhichNeedIndexing),

@@ -82,6 +82,23 @@ const getPriorityForSymbolKind = (kind: SymbolKind): number => {
 };
 
 
+const loadAllFilesInDirectory = async (directoryPath: string): Promise<string[]> => {
+	const files: string[] = [];
+	const filesInDirectory = await fs.promises.readdir(directoryPath);
+	for (const file of filesInDirectory) {
+		const fullPath = path.join(directoryPath, file);
+		const stat = await fs.promises.stat(fullPath);
+		if (stat.isDirectory()) {
+			const filesInSubDirectory = await loadAllFilesInDirectory(fullPath);
+			files.push(...filesInSubDirectory);
+		} else {
+			files.push(fullPath);
+		}
+	}
+	return files;
+};
+
+
 const sortDocumentSymbolsByKind = (symbols: DocumentSymbol[]): DocumentSymbol[] => {
 	// Sort the tags by priority, fallback to their original order for equal priorities
 	const sortedSymbols = symbols.sort((a, b) => {
@@ -238,6 +255,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		// Now we can walk on the directory only if it exists and then read all the content,
 		// if the directory does not exist yet then we skip this step and try to
 		// create the index
+		const crypto = await import('crypto');
 		try {
 			await fs.promises.readdir(storagePath);
 		} catch (e) {
@@ -252,18 +270,27 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 
 		// Now we will walk all the files in the directory and read them and get
 		// the map going
-		const files = await fs.promises.readdir(storagePath);
+		const cacheFiles = await loadAllFilesInDirectory(storagePath);
 		const filesRead: Set<string> = new Set();
-		for (let index = 0; index < files.length; index++) {
-			const filePath = files[index];
+		for (let index = 0; index < cacheFiles.length; index++) {
+			const filePath = cacheFiles[index];
 			// now read the content of the file
-			const fileContent = await fs.promises.readFile(
-				path.join(storagePath, filePath),
-				'utf8',
-			);
-			filesRead.add(path.join(storagePath, filePath));
+			let fileContent: string = '';
+			try {
+				fileContent = await fs.promises.readFile(
+					filePath,
+					'utf8',
+				);
+			} catch (err) {
+				console.log('[documentSymbolRepresentation][loadFromStorage] error while reading file');
+				console.log(err);
+				continue;
+			}
 			const documentSymbolIndex = JSON.parse(fileContent) as DocumentSymbolIndex;
-			this.fileToIndexMap.set(documentSymbolIndex.filePath, documentSymbolIndex);
+			if (documentSymbolIndex.fileContent === fileContent) {
+				filesRead.add(documentSymbolIndex.filePath);
+				this.fileToIndexMap.set(documentSymbolIndex.filePath, documentSymbolIndex);
+			}
 		}
 		// Now return the files which are not present anymore, the edited
 		// files will be taken care of later on
