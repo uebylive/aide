@@ -155,6 +155,7 @@ export interface DocumentSymbolIndex {
 	timestamp: number;
 	lineCount: number;
 	fileContent: string;
+	fileContentHash: string;
 }
 
 
@@ -181,6 +182,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 		}
 		// create an index for this file
 		let textDocument: TextDocument | undefined;
+		const crypto = await import('crypto');
 		const timeout = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms, TIMED_OUT));
 		try {
 			textDocument = await workspace.openTextDocument(filePath);
@@ -238,6 +240,7 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 					timestamp: Date.now(),
 					lineCount: textDocumentLength,
 					fileContent: textDocument.getText(),
+					fileContentHash: crypto.createHash('sha256').update(textDocument.getText(), 'utf8').digest('hex'),
 				};
 				this.fileToIndexMap.set(filePath, documentSymbolIndexForFile);
 				// Now we have to take this array and convert it to a representation
@@ -267,10 +270,22 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 			};
 		}
 
+		const fileContentToHash: Map<string, string> = new Map();
+		for (let index = 0; index < filesToTrack.length; index++) {
+			if (isExcludedExtension(path.extname(filesToTrack[index]))) {
+				continue;
+			}
+			const fileContent = await fs.promises.readFile(filesToTrack[index], 'utf8');
+			const fileContentHash = crypto.createHash('sha256').update(fileContent, 'utf8').digest('hex');
+			fileContentToHash.set(filesToTrack[index], fileContentHash);
+		}
+
 
 		// Now we will walk all the files in the directory and read them and get
 		// the map going
 		const cacheFiles = await loadAllFilesInDirectory(storagePath);
+		console.log('[documentSymbolRepresentation][loadFromStorage] cacheFiles');
+		console.log(cacheFiles);
 		const filesRead: Set<string> = new Set();
 		for (let index = 0; index < cacheFiles.length; index++) {
 			const filePath = cacheFiles[index];
@@ -287,9 +302,9 @@ export class DocumentSymbolBasedIndex extends CodeSearchIndexer {
 				continue;
 			}
 			const documentSymbolIndex = JSON.parse(fileContent) as DocumentSymbolIndex;
-			if (documentSymbolIndex.fileContent === fileContent) {
+			const fileHashCurrent = fileContentToHash.get(documentSymbolIndex.filePath);
+			if (fileHashCurrent === documentSymbolIndex.fileContentHash) {
 				filesRead.add(documentSymbolIndex.filePath);
-				this.fileToIndexMap.set(documentSymbolIndex.filePath, documentSymbolIndex);
 			}
 		}
 		// Now return the files which are not present anymore, the edited
