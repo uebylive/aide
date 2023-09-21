@@ -35,7 +35,10 @@ export class HoverChatService extends Disposable implements IHoverChatService {
 			if (isAuxiliaryBarVisible) {
 				this.close();
 			} else if (!this._isHidden) {
-				this.open();
+				// We are hardcoding the cs-chat over here, might want to change
+				// it later on
+				// TODO(codestory): Make this more configurable later on
+				this.open('cs-chat');
 			}
 		}));
 	}
