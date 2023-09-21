@@ -13,6 +13,7 @@ import { CodeSearchIndexLoadResult, CodeSearchIndexLoadStatus, CodeSearchIndexer
 import { Progress } from 'vscode';
 import { generateEmbeddingFromSentenceTransformers } from '../llm/embeddings/sentenceTransformers';
 import math from 'mathjs';
+import { ensureDirectoryExists } from './helpers';
 const Parser = require('web-tree-sitter');
 
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -67,7 +68,7 @@ export class TreeSitterParserCollection {
 		}
 	}
 
-	async getParserForExtension(fileExtension: string): Promise<any | null> {
+	async getParserForExtension(fileExtension: string): Promise<any | null | undefined> {
 		if (!this._triedToInitialize.has(fileExtension)) {
 			await this.addParserForExtension(fileExtension);
 		}
@@ -225,7 +226,7 @@ export const chunkCodeFile = async (
 	const crypto = await import('crypto');
 	const hash = crypto.createHash('sha256').update(code, 'utf8').digest('hex');
 	const parser = await treeSitterParserCollection.getParserForExtension(fileExtension);
-	if (parser === null) {
+	if (parser === null || parser === undefined) {
 		// we fallback to the naive model
 		const chunks = lineBasedChunking(
 			code,
@@ -285,7 +286,7 @@ export interface TreeSitterChunkInformation {
 export const getNameForTreeSitterChunkInformation = (
 	treeSitterChunkInformation: TreeSitterChunkInformation,
 ): string => {
-	return `${treeSitterChunkInformation.codeSnippetInformation.filePath}-${treeSitterChunkInformation.codeSnippetInformation.start}-${treeSitterChunkInformation.codeSnippetInformation.end}`;
+	return `${treeSitterChunkInformation.codeSnippetInformation.filePath.split(path.sep).join('=')}-${treeSitterChunkInformation.codeSnippetInformation.start}-${treeSitterChunkInformation.codeSnippetInformation.end}`;
 };
 
 
@@ -390,6 +391,7 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 						nodesToEvict.add(getNameForTreeSitterChunkInformation(treeSitterChunkInformation));
 					}
 				} else {
+					filesToReIndex.add(currentFilePath);
 					// We have a deleted file which we are tracking, time to evict this node
 					nodesToEvict.add(getNameForTreeSitterChunkInformation(treeSitterChunkInformation));
 				}
@@ -419,10 +421,30 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 	}
 
 	async saveTreeSitterChunksToLocalStorage(): Promise<void> {
+		console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
+		console.log(this._nodes.length);
 		for (let index = 0; index < this._nodes.length; index++) {
-			// implement this
-			// TODO(codestory): implement this following what we are doing
-			// in documentSymbolBasedIndex
+			console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
+			const nodeName = getNameForTreeSitterChunkInformation(this._nodes[index]);
+			const finalStoragePath = path.join(
+				this._storageLocation,
+				this._repoName,
+				'treeSitterBasedChunking',
+				nodeName,
+			);
+			await ensureDirectoryExists(finalStoragePath);
+			try {
+				await fs.promises.writeFile(
+					finalStoragePath,
+					JSON.stringify(this._nodes[index]),
+				);
+				console.log('[saveTreeSitterChunksToLocalStorage] saved to local storage');
+				console.log(finalStoragePath);
+			} catch (err) {
+				console.error('[saveTreeSitterChunksToLocalStorage] error while saving to local storage');
+				console.error(this._nodes[index]);
+				console.error(err);
+			}
 		}
 	}
 
