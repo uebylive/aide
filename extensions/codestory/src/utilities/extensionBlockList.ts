@@ -17,6 +17,8 @@ export const EXCLUDED_EXTENSIONS = [
 	'.gif',
 	'.woff2',
 	'.otf',
+	'.mp4',
+	'.mp3',
 ];
 
 
