@@ -708,7 +708,7 @@ export default class TypeScriptServiceClient extends Disposable implements IType
 	public toOpenTsFilePath(document: vscode.TextDocument, options: { suppressAlertOnFailure?: boolean } = {}): string | undefined {
 		if (!this.bufferSyncSupport.ensureHasBuffer(document.uri)) {
 			if (!options.suppressAlertOnFailure && !fileSchemes.disabledSchemes.has(document.uri.scheme)) {
-				console.error(`Unexpected resource ${document.uri}`);
+				console.error(`Typescript LSP: Unexpected resource ${document.uri}`);
 			}
 			return undefined;
 		}

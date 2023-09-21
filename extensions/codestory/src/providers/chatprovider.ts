@@ -23,8 +23,10 @@ import { SearchIndexCollection } from '../searchIndex/collection';
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
 
-	constructor() {
-		this.chatContext = new CSChatState();
+	constructor(agentCustomInstruction: string | null) {
+		this.chatContext = new CSChatState(
+			agentCustomInstruction,
+		);
 	}
 }
 
@@ -46,6 +48,7 @@ class CSChatSession implements vscode.InteractiveSession {
 	requester: CSChatParticipant;
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
+	agentCustomInstruction: string | null;
 	public chatSessionState: CSChatSessionState;
 
 	saveState(): CSChatSessionState {
@@ -53,11 +56,20 @@ class CSChatSession implements vscode.InteractiveSession {
 		return this.chatSessionState;
 	}
 
-	constructor(requester: CSChatParticipant, responder: CSChatParticipant, initialState: CSChatSessionState | undefined, inputPlaceholder?: string | undefined) {
+	constructor(
+		requester: CSChatParticipant,
+		responder: CSChatParticipant,
+		initialState: CSChatSessionState | undefined,
+		agentCustomInstruction: string | null,
+		inputPlaceholder?: string | undefined,
+	) {
 		this.requester = requester;
 		this.responder = responder;
 		this.inputPlaceholder = inputPlaceholder;
-		this.chatSessionState = initialState ?? new CSChatSessionState();
+		this.agentCustomInstruction = agentCustomInstruction;
+		this.chatSessionState = initialState ?? new CSChatSessionState(
+			this.agentCustomInstruction,
+		);
 	}
 
 	toString(): string {
@@ -234,6 +246,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _repoHash: string;
 	private _uniqueUserId: string;
 	private _searchIndexCollection: SearchIndexCollection;
+	private _agentCustomInformation: string | null;
 
 	constructor(
 		workingDirectory: string,
@@ -245,10 +258,13 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		testSuiteRunCommand: string,
 		activeFilesTracker: ActiveFilesTracker,
 		uniqueUserId: string,
+		agentCustomInstruction: string | null,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
-		this._chatSessionState = new CSChatSessionState();
+		this._chatSessionState = new CSChatSessionState(
+			agentCustomInstruction,
+		);
 		this._repoHash = repoHash;
 		this._repoName = repoName;
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
@@ -256,6 +272,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._activeFilesTracker = activeFilesTracker;
 		this._uniqueUserId = uniqueUserId;
 		this._searchIndexCollection = searchIndexCollection;
+		this._agentCustomInformation = agentCustomInstruction;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -336,7 +353,8 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			new CSChatParticipant('You'),
 			new CSChatParticipant('Aide', iconUri),
 			initialState,
-			'Ask away and use @ to give code, files to the AI'
+			this._agentCustomInformation,
+			'Ask away and use @ to give code, files to the AI',
 		);
 	}
 
@@ -385,7 +403,8 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					this._testSuiteRunCommand,
 					this._activeFilesTracker,
 					request.userProvidedContext,
-					uniqueId
+					uniqueId,
+					this._agentCustomInformation,
 				);
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {

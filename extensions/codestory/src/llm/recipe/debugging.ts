@@ -27,8 +27,16 @@ const openai = new OpenAI({
 // });
 // openai.baseURL = 'http://20.245.250.159:8080/v1'
 
-const systemPrompt = (): string => {
-	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
+const systemPrompt = (agentCustomInstruction: string | null): string => {
+	if (agentCustomInstruction === null) {
+		return `
+Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.
+The user has also provided you with context about the codebase and some instructions for you to remember below:
+${agentCustomInstruction}
+`;
+	} else {
+		return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to write code for the following Github issue. When you write code, the code works on the first try and is formatted perfectly. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies.';
+	}
 };
 
 export const generateChatCompletion = async (
@@ -66,11 +74,12 @@ export const debuggingFlow = async (
 	activeFilesTracker: ActiveFilesTracker,
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	uniqueId: string,
+	agentCustomInstruction: string | null,
 ): Promise<null> => {
 	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');
 	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
-			content: systemPrompt(),
+			content: systemPrompt(agentCustomInstruction),
 			role: 'system',
 		},
 		{
@@ -92,7 +101,7 @@ export const debuggingFlow = async (
 	// Now we swap the memory of the agent
 	initialMessages = [
 		{
-			content: systemPrompt(),
+			content: systemPrompt(agentCustomInstruction),
 			role: 'system',
 		},
 		{
