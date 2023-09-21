@@ -838,7 +838,6 @@ export async function parseFileUsingTsMorph(
 	// important for onboarding but super important when we are doing things live
 	// and on every save
 	const syncData = await sourceFile?.refreshFromFileSystem();
-	console.log('[ts-morph] Refreshed data: ' + syncData);
 	if (sourceFile) {
 		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
 		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
