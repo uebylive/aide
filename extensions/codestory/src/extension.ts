@@ -36,6 +36,7 @@ import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenat
 import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
+import { readCustomSystemInstruction } from './utilities/systemInstruction';
 
 
 class ProgressiveTrackSymbols {
@@ -86,6 +87,12 @@ export async function activate(context: ExtensionContext) {
 	if (rootPath === '') {
 		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
 		return;
+	}
+	const agentSystemInstruction = readCustomSystemInstruction();
+	if (agentSystemInstruction === null) {
+		window.showInformationMessage(
+			'Aide can help you better if you give it custom instructions by going to your settings and setting it in aide.systemInstruction (search for this string in User Settings) and reload vscode for this to take effect by doing Cmd+Shift+P: Developer: Reload Window'
+		);
 	}
 	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
@@ -145,23 +152,24 @@ export async function activate(context: ExtensionContext) {
 	const searchIndexCollection = new SearchIndexCollection(
 		rootPath ?? '',
 	);
+	// TODO(codestory): disable embedding search for now
 	const embeddingsIndex = new EmbeddingsSearch(
 		activeFilesTracker,
 		codeSymbolsLanguageCollection,
 		context.globalStorageUri.fsPath,
 		repoName,
 	);
+	searchIndexCollection.addIndexer(embeddingsIndex);
 	const documentSymbolIndex = new DocumentSymbolBasedIndex(
 		repoName,
 		context.globalStorageUri.fsPath,
 	);
+	searchIndexCollection.addIndexer(documentSymbolIndex);
 	const treeSitterParsing = new TreeSitterChunkingBasedIndex(
 		repoName,
 		context.globalStorageUri.fsPath,
 	);
 	searchIndexCollection.addIndexer(treeSitterParsing);
-	searchIndexCollection.addIndexer(embeddingsIndex);
-	searchIndexCollection.addIndexer(documentSymbolIndex);
 	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
 	// This is a super fast step which just starts the indexing step
 	await searchIndexCollection.startupIndexers(filesToTrack);
@@ -179,6 +187,8 @@ export async function activate(context: ExtensionContext) {
 				repoHash,
 			},
 		});
+		// We should be using the searchIndexCollection instead here, but for now
+		// embedding search is fine
 		const results = await embeddingsIndex.generateNodesForUserQuery(prompt);
 		return results;
 	});
@@ -197,6 +207,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath, codeGraph, repoName, repoHash,
 		searchIndexCollection, codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
+		agentSystemInstruction,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatProvider
@@ -217,6 +228,7 @@ export async function activate(context: ExtensionContext) {
 			testSuiteRunCommand,
 			activeFilesTracker,
 			uniqueUserId,
+			agentSystemInstruction,
 		)
 	);
 

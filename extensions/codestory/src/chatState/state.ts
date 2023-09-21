@@ -7,8 +7,16 @@ import { OpenAI } from 'openai';
 import { encode } from 'gpt-tokenizer';
 
 
-const chatSystemPrompt = (): string => {
-	return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to help the user with any query they have. When you write code, the code works on the first try and is formatted perfectly. You can be asked to explain the code, in which case you should use the context you know to help the user out. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies. You must always use markdown when referring to code symbols.';
+const chatSystemPrompt = (agentCustomInstruction: string | null): string => {
+	if (agentCustomInstruction) {
+		return `
+Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to help the user with any query they have. When you write code, the code works on the first try and is formatted perfectly. You can be asked to explain the code, in which case you should use the context you know to help the user out. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies. You must always use markdown when referring to code symbols.
+You are given some additional context about the codebase and instructions by the user below, follow them to better help the user
+${agentCustomInstruction}
+		`;
+	} else {
+		return 'Your name is CodeStory bot. You are a brilliant and meticulous engineer assigned to help the user with any query they have. When you write code, the code works on the first try and is formatted perfectly. You can be asked to explain the code, in which case you should use the context you know to help the user out. You have the utmost care for the code that you write, so you do not make mistakes. Take into account the current repository\'s language, frameworks, and dependencies. You must always use markdown when referring to code symbols.';
+	}
 };
 
 
@@ -33,11 +41,15 @@ const convertRoleToString = (role: RoleStringForOpenai): RoleString => {
 export class CSChatState {
 	private _messages: OpenAI.Chat.CreateChatCompletionRequestMessage[];
 	private _tokenLimit: number;
+	private _agentCustomInstruction: string | null;
 
-	constructor() {
+	constructor(agentCustomInstruction: string | null) {
 		this._messages = [];
 		this._tokenLimit = 1000;
-		this.addSystemPrompt();
+		this._agentCustomInstruction = agentCustomInstruction;
+		this.addSystemPrompt(
+			agentCustomInstruction,
+		);
 	}
 
 	cleanupChatHistory(): void {
@@ -55,7 +67,7 @@ export class CSChatState {
 		const finalMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [];
 		const maxTokenLimit = 6000;
 		// Now we walk backwards
-		let totalTokenCount = encode(chatSystemPrompt()).length;
+		let totalTokenCount = encode(chatSystemPrompt(this._agentCustomInstruction)).length;
 		for (let index = messages.length - 1; index > 0; index--) {
 			const message = messages[index];
 			const messageTokenCount = encode(message.content).length;
@@ -68,7 +80,7 @@ export class CSChatState {
 		finalMessages.push(
 			{
 				role: 'system',
-				content: chatSystemPrompt(),
+				content: chatSystemPrompt(this._agentCustomInstruction),
 			}
 		);
 		finalMessages.reverse();
@@ -83,10 +95,10 @@ export class CSChatState {
 		return this._messages.length;
 	}
 
-	addSystemPrompt(): void {
+	addSystemPrompt(agentCustomInstruction: string | null): void {
 		this._messages.push({
 			role: 'system',
-			content: chatSystemPrompt(),
+			content: chatSystemPrompt(agentCustomInstruction),
 		});
 	}
 

@@ -27,6 +27,7 @@ export const debug = (
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
 	uniqueUserId: string,
+	agentCustomInstruction: string | null,
 ) => {
 	const uniqueId = uuidv4();
 	return commands.registerCommand(
@@ -59,6 +60,7 @@ export const debug = (
 					activeFilesTracker,
 					undefined,
 					uniqueId,
+					agentCustomInstruction,
 				);
 			} catch (e) {
 				logger.info('[CodeStory] Debugging failed');

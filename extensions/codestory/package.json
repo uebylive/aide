@@ -88,6 +88,11 @@
           "type": "boolean",
           "default": false,
           "description": "Disable telemetry and logging on the backend"
+        },
+        "aide.systemInstruction": {
+          "type": "string",
+          "default": "",
+          "description": "Set custom instructions for the AI, this can be information about the repository you are working or nuances you want the AI to handle"
         }
       }
     }
