@@ -2158,29 +2158,5 @@
 				]
 			}
 		}
-	},
-	"walkthroughMetadata": [
-		{
-			"id": "Setup",
-			"steps": [
-				{
-					"id": "copilotInstall",
-					"title": "Supercharge your coding with AI-based suggestions",
-					"description": "Throw that rubber duck away! Code more efficiently with AI at your fingertips. Try [GitHub Copilot](command:extension.open?\"github.copilot\") free for 60 days.\n[Install Copilot](command:workbench.extensions.installExtension?%22github.copilot%22)",
-					"media": {
-						"type": "image",
-						"altText": "Copilot Statistics",
-						"path": "copilotStep.png"
-					}
-				}
-			]
-		}
-	],
-	"featuredExtensions": [
-		{
-			"id": "github.copilot",
-			"title": "GitHub Copilot",
-			"description": "Supercharge your coding experience for as little as $10/month with cutting edge AI code generation."
-		}
-	]
+	}
 }
