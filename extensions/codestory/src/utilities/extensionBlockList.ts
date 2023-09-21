@@ -13,6 +13,10 @@ export const EXCLUDED_EXTENSIONS = [
 	'.png',
 	'.jpg',
 	'.svg',
+	'.ort',
+	'.gif',
+	'.woff2',
+	'.otf',
 ];
 
 

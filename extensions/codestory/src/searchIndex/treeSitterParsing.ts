@@ -214,7 +214,14 @@ export const chunkCodeFile = async (
 	// can and keep them at the same place so we can do span based chunking
 	// and power our search
 	const fileExtension = path.extname(filePath).slice(1);
-	const code = await fs.promises.readFile(filePath, 'utf-8');
+	let code: string = '';
+	try {
+		code = await fs.promises.readFile(filePath, 'utf-8');
+	} catch (err) {
+		console.log('[chunkCodeFile] error while reading file');
+		console.log(filePath);
+		console.log(err);
+	}
 	const crypto = await import('crypto');
 	const hash = crypto.createHash('sha256').update(code, 'utf8').digest('hex');
 	const parser = await treeSitterParserCollection.getParserForExtension(fileExtension);
