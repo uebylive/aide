@@ -51,7 +51,7 @@ function escapeRegExp(string) {
  *
  * @type {new () => {(...args: any[]): any, _call(...args: any[]): any}}
  */
-export const Callable = /** @type {any} */ (class {
+const Callable = /** @type {any} */ (class {
     /**
     * Creates a new instance of the Callable class.
     */
@@ -191,4 +191,5 @@ module.exports = {
     pop,
     mergeArrays,
     product,
-}
+    Callable,
+};
