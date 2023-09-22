@@ -714,7 +714,7 @@ export class DirtyDiffController extends Disposable implements DirtyDiffContribu
 	private session: IDisposable = Disposable.None;
 	private mouseDownInfo: { lineNumber: number } | null = null;
 	private enabled = false;
-	private gutterActionDisposables = new DisposableStore();
+	private readonly gutterActionDisposables = new DisposableStore();
 	private stylesheet: HTMLStyleElement;
 
 	constructor(
@@ -741,8 +741,7 @@ export class DirtyDiffController extends Disposable implements DirtyDiffContribu
 	private onDidChangeGutterAction(): void {
 		const gutterAction = this.configurationService.getValue<'diff' | 'none'>('scm.diffDecorationsGutterAction');
 
-		this.gutterActionDisposables.dispose();
-		this.gutterActionDisposables = new DisposableStore();
+		this.gutterActionDisposables.clear();
 
 		if (gutterAction === 'diff') {
 			this.gutterActionDisposables.add(this.editor.onMouseDown(e => this.onEditorMouseDown(e)));
@@ -862,10 +861,12 @@ export class DirtyDiffController extends Disposable implements DirtyDiffContribu
 
 		const disposables = new DisposableStore();
 		disposables.add(Event.once(this.widget.onDidClose)(this.close, this));
-		Event.chain(model.onDidChange)
-			.filter(e => e.diff.length > 0)
-			.map(e => e.diff)
-			.event(this.onDidModelChange, this, disposables);
+		const onDidModelChange = Event.chain(model.onDidChange, $ =>
+			$.filter(e => e.diff.length > 0)
+				.map(e => e.diff)
+		);
+
+		onDidModelChange(this.onDidModelChange, this, disposables);
 
 		disposables.add(this.widget);
 		disposables.add(toDisposable(() => {

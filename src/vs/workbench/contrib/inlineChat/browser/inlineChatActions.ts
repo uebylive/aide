@@ -7,10 +7,10 @@ import { Codicon } from 'vs/base/common/codicons';
 import { KeyChord, KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
-import { EmbeddedCodeEditorWidget, EmbeddedDiffEditorWidget2 } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
+import { EmbeddedCodeEditorWidget, EmbeddedDiffEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import { InlineChatController, InlineChatRunOptions } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
-import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_HAS_PROVIDER, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_DISCARD, MENU_INLINE_CHAT_WIDGET_STATUS, CTX_INLINE_CHAT_LAST_FEEDBACK, CTX_INLINE_CHAT_EDIT_MODE, EditMode, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, CTX_INLINE_CHAT_DOCUMENT_CHANGED, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_ACCEPT_CHANGES, ACTION_REGENERATE_RESPONSE, InlineChatResponseType, CTX_INLINE_CHAT_RESPONSE_TYPES, InlineChateResponseTypes, ACTION_VIEW_IN_CHAT, CTX_INLINE_CHAT_USER_DID_EDIT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_HAS_PROVIDER, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_DISCARD, MENU_INLINE_CHAT_WIDGET_STATUS, CTX_INLINE_CHAT_LAST_FEEDBACK, CTX_INLINE_CHAT_EDIT_MODE, EditMode, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, CTX_INLINE_CHAT_DOCUMENT_CHANGED, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_ACCEPT_CHANGES, ACTION_REGENERATE_RESPONSE, InlineChatResponseType, CTX_INLINE_CHAT_RESPONSE_TYPES, InlineChateResponseTypes, ACTION_VIEW_IN_CHAT, CTX_INLINE_CHAT_USER_DID_EDIT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END, CTX_INLINE_CHAT_RESPONSE_FOCUSED } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { localize } from 'vs/nls';
 import { IAction2Options, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
@@ -123,7 +123,7 @@ abstract class AbstractInlineChatAction extends EditorAction2 {
 		if (!ctrl) {
 			for (const diffEditor of accessor.get(ICodeEditorService).listDiffEditors()) {
 				if (diffEditor.getOriginalEditor() === editor || diffEditor.getModifiedEditor() === editor) {
-					if (diffEditor instanceof EmbeddedDiffEditorWidget2) {
+					if (diffEditor instanceof EmbeddedDiffEditorWidget) {
 						this.runEditorCommand(accessor, diffEditor.getParentEditor(), ..._args);
 					}
 				}
@@ -483,9 +483,10 @@ export class ApplyPreviewEdits extends AbstractInlineChatAction {
 	constructor() {
 		super({
 			id: ACTION_ACCEPT_CHANGES,
-			title: localize('apply1', 'Accept Changes'),
+			title: { value: localize('apply1', 'Accept Changes'), original: 'Accept Changes' },
 			shortTitle: localize('apply2', 'Accept'),
 			icon: Codicon.check,
+			f1: true,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, ContextKeyExpr.or(CTX_INLINE_CHAT_DOCUMENT_CHANGED.toNegated(), CTX_INLINE_CHAT_EDIT_MODE.notEqualsTo(EditMode.Preview))),
 			keybinding: [{
 				weight: KeybindingWeight.EditorContrib + 10,
@@ -493,7 +494,7 @@ export class ApplyPreviewEdits extends AbstractInlineChatAction {
 			}, {
 				primary: KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib,
-				when: CTX_INLINE_CHAT_USER_DID_EDIT,
+				when: CTX_INLINE_CHAT_USER_DID_EDIT
 			}],
 			menu: {
 				when: CTX_INLINE_CHAT_RESPONSE_TYPES.notEqualsTo(InlineChateResponseTypes.OnlyMessages),
@@ -643,6 +644,6 @@ export class InlineAccessibilityHelpContribution extends Disposable {
 				return;
 			}
 			runAccessibilityHelpAction(accessor, codeEditor, 'inlineChat');
-		}, CTX_INLINE_CHAT_FOCUSED));
+		}, ContextKeyExpr.or(CTX_INLINE_CHAT_RESPONSE_FOCUSED, CTX_INLINE_CHAT_FOCUSED)));
 	}
 }

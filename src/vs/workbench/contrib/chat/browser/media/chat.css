@@ -473,6 +473,14 @@
 	width: auto;
 }
 
+.interactive-item-container .chat-resource-widget {
+	background-color: var(--vscode-chat-slashCommandBackground);
+	color: var(--vscode-chat-slashCommandForeground);
+	border-radius: 3px;
+	white-space: nowrap;
+	padding: 1px;
+}
+
 /* #region Quick Chat */
 
 .monaco-workbench > .hover-chat-container {
