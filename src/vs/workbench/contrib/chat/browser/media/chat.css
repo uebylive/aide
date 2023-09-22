@@ -489,6 +489,7 @@
 	bottom: 34px;
 	display: block;
 	border: 1px solid var(--vscode-chat-requestBorder);
+	z-index: 5;
 }
 
 .hover-chat-input-container::before {
