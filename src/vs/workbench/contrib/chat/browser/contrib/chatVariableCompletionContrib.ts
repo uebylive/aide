@@ -167,7 +167,7 @@ class VariableCompletionsCustom extends Disposable {
 						filterText: `@file`,
 						detail: 'File ->',
 						insertText: '@',
-						kind: CompletionItemKind.Snippet,
+						kind: CompletionItemKind.Text,
 						range: { insert, replace },
 						sortText: '001',
 						command: { // Here's the new part

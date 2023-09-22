@@ -77,8 +77,6 @@ export class SearchIndexCollection {
 					finalFilesToIndex.push(filesToIndex[index]);
 				}
 			}
-			console.log('[startupIndexers] finalFilesToIndex');
-			console.log(finalFilesToIndex);
 			// We are not marking this as async because we want this to run in
 			// the background while the other indexers are also starting up
 			// async here is important to kick start this in the background
