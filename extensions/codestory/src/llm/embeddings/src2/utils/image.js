@@ -54,7 +54,8 @@ if (BROWSER_ENV) {
     }
 
 } else {
-    throw new Error('Unable to load image processing library.');
+	// TODO(codestory): Disabling sharp as we are not using image processing
+	// throw new Error('Unable to load image processing library.');
 }
 
 
