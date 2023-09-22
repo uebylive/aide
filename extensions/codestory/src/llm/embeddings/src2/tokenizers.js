@@ -24,26 +24,26 @@
  * @module tokenizers
  */
 
-import {
+const {
     Callable,
     reverseDictionary,
     escapeRegExp,
     isIntegralNumber,
     mergeArrays,
-} from './utils/core.js';
+} = require('./utils/core.js');
 
-import {
+const {
     getModelJSON,
-} from './utils/hub.js';
+} = require('./utils/hub.js');
 
-import { max, min, round } from './utils/maths.js';
-import { Tensor } from './utils/tensor.js';
+const { max, min, round } = require('./utils/maths.js');
+const { Tensor } = require('./utils/tensor.js');
 
-import {
+const {
     PriorityQueue,
     TokenLattice,
     CharTrie,
-} from './utils/data-structures.js';
+} = require('./utils/data-structures.js');
 
 /**
  * @typedef {import('./utils/hub.js').PretrainedOptions} PretrainedOptions
@@ -171,7 +171,7 @@ const PUNCTUATION_REGEX = '\\p{P}\\u0021-\\u002F\\u003A-\\u0040\\u005B-\\u0060\\
  *
  * @extends Callable
  */
-export class TokenizerModel extends Callable {
+class TokenizerModel extends Callable {
     /**
      * Creates a new instance of TokenizerModel.
      * @param {Object} config The configuration object for the TokenizerModel.
@@ -2125,7 +2125,7 @@ class ReplacePreTokenizer extends PreTokenizer {
 }
 
 
-export class PreTrainedTokenizer extends Callable {
+class PreTrainedTokenizer extends Callable {
     /**
      * Create a new PreTrainedTokenizer instance.
      * @param {Object} tokenizerJSON The JSON of the tokenizer.
@@ -2602,7 +2602,7 @@ function add_token_types(inputs) {
  * BertTokenizer is a class used to tokenize text for BERT models.
  * @extends PreTrainedTokenizer
  */
-export class BertTokenizer extends PreTrainedTokenizer {
+class BertTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
@@ -2612,45 +2612,45 @@ export class BertTokenizer extends PreTrainedTokenizer {
  * Albert tokenizer
  * @extends PreTrainedTokenizer
  */
-export class AlbertTokenizer extends PreTrainedTokenizer {
+class AlbertTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class MobileBertTokenizer extends PreTrainedTokenizer {
+class MobileBertTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class SqueezeBertTokenizer extends PreTrainedTokenizer {
+class SqueezeBertTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class DebertaTokenizer extends PreTrainedTokenizer {
+class DebertaTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class DebertaV2Tokenizer extends PreTrainedTokenizer {
+class DebertaV2Tokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class HerbertTokenizer extends PreTrainedTokenizer {
+class HerbertTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
-export class DistilBertTokenizer extends PreTrainedTokenizer { }
-export class CamembertTokenizer extends PreTrainedTokenizer { }
-export class XLMTokenizer extends PreTrainedTokenizer {
+class DistilBertTokenizer extends PreTrainedTokenizer { }
+class CamembertTokenizer extends PreTrainedTokenizer { }
+class XLMTokenizer extends PreTrainedTokenizer {
     constructor(tokenizerJSON, tokenizerConfig) {
         super(tokenizerJSON, tokenizerConfig);
         console.warn('WARNING: `XLMTokenizer` is not yet supported by Hugging Face\'s "fast" tokenizers library. Therefore, you may experience slightly inaccurate results.')
@@ -2662,10 +2662,10 @@ export class XLMTokenizer extends PreTrainedTokenizer {
     }
 }
 
-export class T5Tokenizer extends PreTrainedTokenizer { }
-export class GPT2Tokenizer extends PreTrainedTokenizer { }
-export class BartTokenizer extends PreTrainedTokenizer { }
-export class MBartTokenizer extends PreTrainedTokenizer {
+class T5Tokenizer extends PreTrainedTokenizer { }
+class GPT2Tokenizer extends PreTrainedTokenizer { }
+class BartTokenizer extends PreTrainedTokenizer { }
+class MBartTokenizer extends PreTrainedTokenizer {
     constructor(tokenizerJSON, tokenizerConfig) {
         super(tokenizerJSON, tokenizerConfig);
 
@@ -2685,11 +2685,11 @@ export class MBartTokenizer extends PreTrainedTokenizer {
         return _build_translation_inputs(this, raw_inputs, tokenizer_options, generate_kwargs);
     }
 }
-export class MBart50Tokenizer extends MBartTokenizer { } // NOTE: extends MBartTokenizer
+class MBart50Tokenizer extends MBartTokenizer { } // NOTE: extends MBartTokenizer
 
-export class RobertaTokenizer extends PreTrainedTokenizer { }
+class RobertaTokenizer extends PreTrainedTokenizer { }
 
-export class BloomTokenizer extends PreTrainedTokenizer {
+class BloomTokenizer extends PreTrainedTokenizer {
     constructor(tokenizerJSON, tokenizerConfig) {
         // Override the default (invalid) regex of the pretokenizer.
         // For more information, see https://github.com/xenova/transformers.js/issues/94
@@ -2701,20 +2701,20 @@ export class BloomTokenizer extends PreTrainedTokenizer {
         super(tokenizerJSON, tokenizerConfig);
     }
 }
-export class LlamaTokenizer extends PreTrainedTokenizer { }
-export class CodeLlamaTokenizer extends PreTrainedTokenizer { }
+class LlamaTokenizer extends PreTrainedTokenizer { }
+class CodeLlamaTokenizer extends PreTrainedTokenizer { }
 
-export class XLMRobertaTokenizer extends PreTrainedTokenizer { }
-export class MPNetTokenizer extends PreTrainedTokenizer { }
+class XLMRobertaTokenizer extends PreTrainedTokenizer { }
+class MPNetTokenizer extends PreTrainedTokenizer { }
 
-export class FalconTokenizer extends PreTrainedTokenizer {
+class FalconTokenizer extends PreTrainedTokenizer {
     /** @type {add_token_types} */
     prepare_model_inputs(inputs) {
         return add_token_types(inputs);
     }
 }
 
-export class GPTNeoXTokenizer extends PreTrainedTokenizer { }
+class GPTNeoXTokenizer extends PreTrainedTokenizer { }
 
 
 /**
@@ -2781,7 +2781,7 @@ function _build_translation_inputs(self, raw_inputs, tokenizer_options, generate
  * For a list of supported languages (along with their language codes),
  * @see {@link https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200}
  */
-export class NllbTokenizer extends PreTrainedTokenizer {
+class NllbTokenizer extends PreTrainedTokenizer {
 
     constructor(tokenizerJSON, tokenizerConfig) {
         super(tokenizerJSON, tokenizerConfig);
@@ -2813,7 +2813,7 @@ export class NllbTokenizer extends PreTrainedTokenizer {
  * For a list of supported languages (along with their language codes),
  * @see {@link https://huggingface.co/facebook/m2m100_418M#languages-covered}
  */
-export class M2M100Tokenizer extends PreTrainedTokenizer {
+class M2M100Tokenizer extends PreTrainedTokenizer {
     constructor(tokenizerJSON, tokenizerConfig) {
         super(tokenizerJSON, tokenizerConfig);
 
@@ -2963,7 +2963,7 @@ const WHISPER_TO_LANGUAGE_CODE_MAPPING = new Map([
  * WhisperTokenizer tokenizer
  * @extends PreTrainedTokenizer
  */
-export class WhisperTokenizer extends PreTrainedTokenizer {
+class WhisperTokenizer extends PreTrainedTokenizer {
 
     /**
      * Decodes automatic speech recognition (ASR) sequences.
@@ -3692,15 +3692,15 @@ export class WhisperTokenizer extends PreTrainedTokenizer {
 
     }
 }
-export class CodeGenTokenizer extends PreTrainedTokenizer { }
-export class CLIPTokenizer extends PreTrainedTokenizer { }
+class CodeGenTokenizer extends PreTrainedTokenizer { }
+class CLIPTokenizer extends PreTrainedTokenizer { }
 
 
 /**
  * @todo This model is not yet supported by Hugging Face's "fast" tokenizers library (https://github.com/huggingface/tokenizers).
  * Therefore, this implementation (which is based on fast tokenizers) may produce slightly inaccurate results.
  */
-export class MarianTokenizer extends PreTrainedTokenizer {
+class MarianTokenizer extends PreTrainedTokenizer {
     /**
      * Create a new MarianTokenizer instance.
      * @param {Object} tokenizerJSON The JSON of the tokenizer.
@@ -3749,10 +3749,10 @@ export class MarianTokenizer extends PreTrainedTokenizer {
 
 }
 
-export class Wav2Vec2CTCTokenizer extends PreTrainedTokenizer { }
+class Wav2Vec2CTCTokenizer extends PreTrainedTokenizer { }
 
-export class BlenderbotTokenizer extends PreTrainedTokenizer { }
-export class BlenderbotSmallTokenizer extends PreTrainedTokenizer { }
+class BlenderbotTokenizer extends PreTrainedTokenizer { }
+class BlenderbotSmallTokenizer extends PreTrainedTokenizer { }
 
 /**
  * Helper class which is used to instantiate pretrained tokenizers with the `from_pretrained` function.
@@ -3761,7 +3761,7 @@ export class BlenderbotSmallTokenizer extends PreTrainedTokenizer { }
  * @example
  * let tokenizer = await AutoTokenizer.from_pretrained('Xenova/bert-base-uncased');
  */
-export class AutoTokenizer {
+class AutoTokenizer {
     static TOKENIZER_CLASS_MAPPING = {
         T5Tokenizer,
         DistilBertTokenizer,
@@ -3844,4 +3844,43 @@ export class AutoTokenizer {
         }
         return new cls(tokenizerJSON, tokenizerConfig);
     }
+}
+
+
+module.exports = {
+    TokenizerModel,
+    PreTrainedTokenizer,
+    BertTokenizer,
+    AlbertTokenizer,
+    MobileBertTokenizer,
+    SqueezeBertTokenizer,
+    DebertaTokenizer,
+    DebertaV2Tokenizer,
+    HerbertTokenizer,
+    DistilBertTokenizer,
+    CamembertTokenizer,
+    XLMTokenizer,
+    T5Tokenizer,
+    GPT2Tokenizer,
+    BartTokenizer,
+    MBartTokenizer,
+    MBart50Tokenizer,
+    RobertaTokenizer,
+    BloomTokenizer,
+    LlamaTokenizer,
+    CodeLlamaTokenizer,
+    XLMRobertaTokenizer,
+    MPNetTokenizer,
+    FalconTokenizer,
+    GPTNeoXTokenizer,
+    NllbTokenizer,
+    M2M100Tokenizer,
+    WhisperTokenizer,
+    CodeGenTokenizer,
+    CLIPTokenizer,
+    MarianTokenizer,
+    Wav2Vec2CTCTokenizer,
+    BlenderbotTokenizer,
+    BlenderbotSmallTokenizer,
+    AutoTokenizer,
 }
