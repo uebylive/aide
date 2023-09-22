@@ -1,10 +1,14 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 /**
  * @file Helper module for using model configs. For more information, see the corresponding
  * [Python documentation](https://huggingface.co/docs/transformers/main/en/model_doc/auto#transformers.AutoConfig).
- * 
+ *
  * **Example:** Load an `AutoConfig`.
- * 
+ *
  * ```javascript
  * import { AutoConfig } from '@xenova/transformers';
  * let config = await AutoConfig.from_pretrained('bert-base-uncased');
@@ -23,13 +27,13 @@
  * //   ...
  * // }
  * ```
- * 
+ *
  * @module configs
  */
 
-import {
+const {
     getModelJSON,
-} from './utils/hub.js';
+} = require('./utils/hub.js');
 
 /**
  * @typedef {import('./utils/hub.js').PretrainedOptions} PretrainedOptions
@@ -51,7 +55,7 @@ async function loadConfig(pretrained_model_name_or_path, options) {
  * Base class for all configuration classes. For more information, see the corresponding
  * [Python documentation](https://huggingface.co/docs/transformers/main/en/main_classes/configuration#transformers.PretrainedConfig).
  */
-export class PretrainedConfig {
+class PretrainedConfig {
     // NOTE: Typo in original
 
     /**
@@ -66,12 +70,12 @@ export class PretrainedConfig {
     }
 
     /**
-     * Loads a pre-trained config from the given `pretrained_model_name_or_path`. 
-     * 
+     * Loads a pre-trained config from the given `pretrained_model_name_or_path`.
+     *
      * @param {string} pretrained_model_name_or_path The path to the pre-trained config.
      * @param {PretrainedOptions} options Additional options for loading the config.
      * @throws {Error} Throws an error if the config.json is not found in the `pretrained_model_name_or_path`.
-     * 
+     *
      * @returns {Promise<PretrainedConfig>} A new instance of the `PretrainedConfig` class.
      */
     static async from_pretrained(pretrained_model_name_or_path, {
@@ -95,13 +99,18 @@ export class PretrainedConfig {
 
 /**
  * Helper class which is used to instantiate pretrained configs with the `from_pretrained` function.
- * 
+ *
  * @example
- * let config = await AutoConfig.from_pretrained('bert-base-uncased'); 
+ * let config = await AutoConfig.from_pretrained('bert-base-uncased');
  */
-export class AutoConfig {
+class AutoConfig {
     /** @type {PretrainedConfig.from_pretrained} */
     static async from_pretrained(...args) {
         return PretrainedConfig.from_pretrained(...args);
     }
 }
+
+module.exports = {
+    PretrainedConfig,
+    AutoConfig,
+};

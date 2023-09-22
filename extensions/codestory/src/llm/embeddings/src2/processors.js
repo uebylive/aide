@@ -1,7 +1,12 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 
 /**
  * @file Processors are used to prepare non-textual inputs (e.g., image or audio) for a model.
- * 
+ *
  * **Example:** Using a `WhisperProcessor` to prepare an audio input for a model.
  * ```javascript
  * import { AutoProcessor, read_audio } from '@xenova/transformers';
@@ -16,36 +21,35 @@
  * //   size: 240000,
  * // }
  * ```
- * 
+ *
  * @module processors
  */
-import {
+const {
     Callable,
     calculateDimensions,
-} from './utils/core.js';
+} = require('./utils/core.js');
 
-import {
+const {
     getModelJSON,
-} from './utils/hub.js';
+} = require('./utils/hub.js');
 
-import {
+const {
     max,
     softmax,
     FFT
-} from './utils/maths.js';
+} = require('./utils/maths.js');
 
 
-import { Tensor, transpose, cat, interpolate } from './utils/tensor.js';
+const { Tensor, transpose, cat, interpolate } = require('./utils/tensor.js');
 
-import { RawImage } from './utils/image.js';
-import { getMelFilters } from './utils/audio.js';
-
+const { RawImage } = require('./utils/image.js');
+const { getMelFilters } = require('./utils/audio.js');
 
 // Helper functions
 
 /**
  * Converts bounding boxes from center format to corners format.
- * 
+ *
  * @param {number[]} arr The coordinate for the center of the box and its width, height dimensions (center_x, center_y, width, height)
  * @returns {number[]} The coodinates for the top-left and bottom-right corners of the box (top_left_x, top_left_y, bottom_right_x, bottom_right_y)
  */
@@ -125,7 +129,7 @@ function post_process_object_detection(outputs, threshold = 0.5, target_sizes = 
  *
  * @extends Callable
  */
-export class FeatureExtractor extends Callable {
+class FeatureExtractor extends Callable {
     /**
      * Constructs a new FeatureExtractor instance.
      *
@@ -142,7 +146,7 @@ export class FeatureExtractor extends Callable {
  *
  * @extends FeatureExtractor
  */
-export class ImageFeatureExtractor extends FeatureExtractor {
+class ImageFeatureExtractor extends FeatureExtractor {
 
     /**
      * Constructs a new ImageFeatureExtractor instance.
@@ -201,7 +205,7 @@ export class ImageFeatureExtractor extends FeatureExtractor {
             // For efficiency reasons, it might be best to merge the resize and center crop operations into one.
 
             // `this.size` comes in many forms, so we need to handle them all here:
-            // 1. `this.size` is an integer, in which case we resize the image to be a square 
+            // 1. `this.size` is an integer, in which case we resize the image to be a square
 
             let shortest_edge;
             let longest_edge;
@@ -230,7 +234,7 @@ export class ImageFeatureExtractor extends FeatureExtractor {
                 const newHeight = srcHeight * shortResizeFactor;
 
                 // The new width and height might be greater than `this.longest_edge`, so
-                // we downscale again to ensure the largest dimension is `this.longest_edge` 
+                // we downscale again to ensure the largest dimension is `this.longest_edge`
                 const longResizeFactor = longest_edge === undefined
                     ? 1 // If `longest_edge` is not set, don't downscale
                     : Math.min(longest_edge / newWidth, longest_edge / newHeight);
@@ -357,18 +361,18 @@ export class ImageFeatureExtractor extends FeatureExtractor {
 
 }
 
-export class ConvNextFeatureExtractor extends ImageFeatureExtractor { }
-export class ViTFeatureExtractor extends ImageFeatureExtractor { }
-export class MobileViTFeatureExtractor extends ImageFeatureExtractor { }
-export class DeiTFeatureExtractor extends ImageFeatureExtractor { }
-export class BeitFeatureExtractor extends ImageFeatureExtractor { }
+class ConvNextFeatureExtractor extends ImageFeatureExtractor { }
+class ViTFeatureExtractor extends ImageFeatureExtractor { }
+class MobileViTFeatureExtractor extends ImageFeatureExtractor { }
+class DeiTFeatureExtractor extends ImageFeatureExtractor { }
+class BeitFeatureExtractor extends ImageFeatureExtractor { }
 
 /**
  * Detr Feature Extractor.
  *
  * @extends ImageFeatureExtractor
  */
-export class DetrFeatureExtractor extends ImageFeatureExtractor {
+class DetrFeatureExtractor extends ImageFeatureExtractor {
     /**
      * Calls the feature extraction process on an array of image URLs, preprocesses
      * each image, and concatenates the resulting features into a single Tensor.
@@ -525,7 +529,7 @@ export class DetrFeatureExtractor extends ImageFeatureExtractor {
 
         // 2. Weigh each mask by its prediction score
         // NOTE: `mask_probs` is updated in-place
-        // 
+        //
         // Temporary storage for the best label/scores for each pixel ([height, width]):
         let mask_labels = new Int32Array(mask_probs[0].data.length);
         let bestScores = new Float32Array(mask_probs[0].data.length);
@@ -682,14 +686,14 @@ export class DetrFeatureExtractor extends ImageFeatureExtractor {
     }
 }
 
-export class YolosFeatureExtractor extends ImageFeatureExtractor {
+class YolosFeatureExtractor extends ImageFeatureExtractor {
     /** @type {post_process_object_detection} */
     post_process_object_detection(...args) {
         return post_process_object_detection(...args);
     }
 }
 
-export class SamImageProcessor extends ImageFeatureExtractor {
+class SamImageProcessor extends ImageFeatureExtractor {
     async _call(images, input_points) {
         let {
             pixel_values,
@@ -818,7 +822,7 @@ export class SamImageProcessor extends ImageFeatureExtractor {
 }
 
 
-export class WhisperFeatureExtractor extends FeatureExtractor {
+class WhisperFeatureExtractor extends FeatureExtractor {
 
     constructor(config) {
         super(config);
@@ -864,7 +868,7 @@ export class WhisperFeatureExtractor extends FeatureExtractor {
 
     /**
      * Calculates the complex Short-Time Fourier Transform (STFT) of the given framed signal.
-     * 
+     *
      * @param {number[][]} frames A 2D array representing the signal frames.
      * @param {number[]} window A 1D array representing the window to be applied to the frames.
      * @returns {Object} An object with the following properties:
@@ -873,8 +877,8 @@ export class WhisperFeatureExtractor extends FeatureExtractor {
      */
     stft(frames, window) {
         // Calculates the complex Short-Time Fourier Transform (STFT) of the given framed signal.
-        // 
-        // NOTE: Since the window width is not a power of 2, we must 
+        //
+        // NOTE: Since the window width is not a power of 2, we must
         // perform Fast Fourier Transform with chirp-z transform:
         // https://math.stackexchange.com/questions/77118/non-power-of-2-ffts/77156#77156
 
@@ -1170,11 +1174,11 @@ export class WhisperFeatureExtractor extends FeatureExtractor {
     }
 }
 
-export class Wav2Vec2FeatureExtractor extends FeatureExtractor {
+class Wav2Vec2FeatureExtractor extends FeatureExtractor {
 
     /**
-     * @param {Float32Array} input_values 
-     * @returns {Float32Array} 
+     * @param {Float32Array} input_values
+     * @returns {Float32Array}
      */
     _zero_mean_unit_var_norm(input_values) {
         // TODO support batch?
@@ -1222,7 +1226,7 @@ export class Wav2Vec2FeatureExtractor extends FeatureExtractor {
  * Represents a Processor that extracts features from an input.
  * @extends Callable
  */
-export class Processor extends Callable {
+class Processor extends Callable {
     /**
      * Creates a new Processor with the given feature extractor.
      * @param {FeatureExtractor} feature_extractor The function used to extract features from the input.
@@ -1243,7 +1247,7 @@ export class Processor extends Callable {
     }
 }
 
-export class SamProcessor extends Processor {
+class SamProcessor extends Processor {
 
     async _call(images, input_points) {
         return await this.feature_extractor(images, input_points);
@@ -1262,7 +1266,7 @@ export class SamProcessor extends Processor {
  * Represents a WhisperProcessor that extracts features from an audio input.
  * @extends Processor
  */
-export class WhisperProcessor extends Processor {
+class WhisperProcessor extends Processor {
     /**
      * Calls the feature_extractor function with the given audio input.
      * @param {any} audio The audio input to extract features from.
@@ -1274,7 +1278,7 @@ export class WhisperProcessor extends Processor {
 }
 
 
-export class Wav2Vec2ProcessorWithLM extends Processor {
+class Wav2Vec2ProcessorWithLM extends Processor {
     /**
      * Calls the feature_extractor function with the given audio input.
      * @param {any} audio The audio input to extract features from.
@@ -1292,12 +1296,12 @@ export class Wav2Vec2ProcessorWithLM extends Processor {
 /**
  * Helper class which is used to instantiate pretrained processors with the `from_pretrained` function.
  * The chosen processor class is determined by the type specified in the processor config.
- * 
+ *
  * **Example:** Load a processor using `from_pretrained`.
  * ```javascript
  * let processor = await AutoProcessor.from_pretrained('openai/whisper-tiny.en');
  * ```
- * 
+ *
  * **Example:** Run an image through a processor.
  * ```javascript
  * let processor = await AutoProcessor.from_pretrained('Xenova/clip-vit-base-patch16');
@@ -1319,7 +1323,7 @@ export class Wav2Vec2ProcessorWithLM extends Processor {
  * // }
  * ```
  */
-export class AutoProcessor {
+class AutoProcessor {
     static FEATURE_EXTRACTOR_CLASS_MAPPING = {
         WhisperFeatureExtractor,
         ViTFeatureExtractor,
@@ -1342,17 +1346,17 @@ export class AutoProcessor {
 
     /**
      * Instantiate one of the processor classes of the library from a pretrained model.
-     * 
+     *
      * The processor class to instantiate is selected based on the `feature_extractor_type` property of the config object
      * (either passed as an argument or loaded from `pretrained_model_name_or_path` if possible)
-     * 
+     *
      * @param {string} pretrained_model_name_or_path The name or path of the pretrained model. Can be either:
      * - A string, the *model id* of a pretrained processor hosted inside a model repo on huggingface.co.
      *   Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
      *   user or organization name, like `dbmdz/bert-base-german-cased`.
      * - A path to a *directory* containing processor files, e.g., `./my_model_directory/`.
      * @param {PretrainedOptions} options Additional options for loading the processor.
-     * 
+     *
      * @returns {Promise<Processor>} A new instance of the Processor class.
      */
     static async from_pretrained(pretrained_model_name_or_path, {
@@ -1396,3 +1400,22 @@ export class AutoProcessor {
 }
 //////////////////////////////////////////////////
 
+module.exports = {
+    FeatureExtractor,
+    ImageFeatureExtractor,
+    ConvNextFeatureExtractor,
+    ViTFeatureExtractor,
+    MobileViTFeatureExtractor,
+    DeiTFeatureExtractor,
+    BeitFeatureExtractor,
+    DetrFeatureExtractor,
+    YolosFeatureExtractor,
+    SamImageProcessor,
+    WhisperFeatureExtractor,
+    Wav2Vec2FeatureExtractor,
+    Processor,
+    SamProcessor,
+    WhisperProcessor,
+    Wav2Vec2ProcessorWithLM,
+    AutoProcessor,
+};

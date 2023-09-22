@@ -1,10 +1,14 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 /**
  * @file Core utility functions/classes for Transformers.js.
- * 
+ *
  * These are only used internally, meaning an end-user shouldn't
  * need to access anything here.
- * 
+ *
  * @module utils/core
  */
 
@@ -16,8 +20,8 @@
  * @returns {void}
  * @private
  */
-export function dispatchCallback(progress_callback, data) {
-    if (progress_callback !== null) progress_callback(data);
+function dispatchCallback(progress_callback, data) {
+    if (progress_callback !== null) { progress_callback(data); }
 }
 
 /**
@@ -27,7 +31,7 @@ export function dispatchCallback(progress_callback, data) {
  * @returns {Object} The reversed object.
  * @see https://ultimatecourses.com/blog/reverse-object-keys-and-values-in-javascript
  */
-export function reverseDictionary(data) {
+function reverseDictionary(data) {
     // https://ultimatecourses.com/blog/reverse-object-keys-and-values-in-javascript
     return Object.fromEntries(Object.entries(data).map(([key, value]) => [value, key]));
 }
@@ -38,13 +42,13 @@ export function reverseDictionary(data) {
  * @param {string} string The string to escape.
  * @returns {string} The escaped string.
  */
-export function escapeRegExp(string) {
+function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 /**
  * A base class for creating callable objects.
- * 
+ *
  * @type {new () => {(...args: any[]): any, _call(...args: any[]): any}}
  */
 export const Callable = /** @type {any} */ (class {
@@ -58,10 +62,10 @@ export const Callable = /** @type {any} */ (class {
          * @param {...any} args Zero or more arguments to pass to the '_call' method.
          * @returns {*} The result of calling the '_call' method.
          */
-        let closure = function (...args) {
-            return closure._call(...args)
-        }
-        return Object.setPrototypeOf(closure, new.target.prototype)
+        const closure = function (...args) {
+            return closure._call(...args);
+        };
+        return Object.setPrototypeOf(closure, new.target.prototype);
     }
 
     /**
@@ -72,7 +76,7 @@ export const Callable = /** @type {any} */ (class {
      * @throws {Error} If the subclass does not implement the `_call` method.
      */
     _call(...args) {
-        throw Error('Must implement _call method in subclass')
+        throw Error('Must implement _call method in subclass');
     }
 });
 
@@ -82,8 +86,8 @@ export const Callable = /** @type {any} */ (class {
  * @param {*} text The value to check.
  * @returns {boolean} True if the value is a string, false otherwise.
  */
-export function isString(text) {
-    return typeof text === 'string' || text instanceof String
+function isString(text) {
+    return typeof text === 'string' || text instanceof String;
 }
 
 
@@ -91,10 +95,10 @@ export function isString(text) {
  * Check if a value is a typed array.
  * @param {*} val The value to check.
  * @returns {boolean} True if the value is a `TypedArray`, false otherwise.
- * 
+ *
  * Adapted from https://stackoverflow.com/a/71091338/13989043
  */
-export function isTypedArray(val) {
+function isTypedArray(val) {
     return val?.prototype?.__proto__?.constructor?.name === 'TypedArray';
 }
 
@@ -104,8 +108,8 @@ export function isTypedArray(val) {
  * @param {*} x The value to check.
  * @returns {boolean} True if the value is a string, false otherwise.
  */
-export function isIntegralNumber(x) {
-    return Number.isInteger(x) || typeof x === 'bigint'
+function isIntegralNumber(x) {
+    return Number.isInteger(x) || typeof x === 'bigint';
 }
 
 /**
@@ -113,7 +117,7 @@ export function isIntegralNumber(x) {
  * @param {*} x The value to check.
  * @returns {boolean} True if the value exists, false otherwise.
  */
-export function exists(x) {
+function exists(x) {
     return x !== undefined && x !== null;
 }
 
@@ -123,7 +127,7 @@ export function exists(x) {
  * @param {Array} arr The nested array to calculate dimensions for.
  * @returns {Array} An array containing the dimensions of the input array.
  */
-export function calculateDimensions(arr) {
+function calculateDimensions(arr) {
     const dimensions = [];
     let current = arr;
     while (Array.isArray(current)) {
@@ -141,14 +145,14 @@ export function calculateDimensions(arr) {
  * @returns {*} The value of the popped key.
  * @throws {Error} If the key does not exist and no default value is provided.
  */
-export function pop(obj, key, defaultValue = undefined) {
+function pop(obj, key, defaultValue = undefined) {
     const value = obj[key];
     if (value !== undefined) {
         delete obj[key];
         return value;
     }
     if (defaultValue === undefined) {
-        throw Error(`Key ${key} does not exist in object.`)
+        throw Error(`Key ${key} does not exist in object.`);
     }
     return defaultValue;
 }
@@ -159,7 +163,7 @@ export function pop(obj, key, defaultValue = undefined) {
  * @param  {Array[]} arrs Arrays to merge.
  * @returns {Array} The merged array.
  */
-export function mergeArrays(...arrs) {
+function mergeArrays(...arrs) {
     return Array.prototype.concat.apply([], arrs);
 }
 
@@ -169,8 +173,22 @@ export function mergeArrays(...arrs) {
  * @returns {Array} Returns the computed Cartesian product as an array
  * @private
  */
-export function product(...a) {
+function product(...a) {
     // Cartesian product of items
     // Adapted from https://stackoverflow.com/a/43053803
     return a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e])));
+}
+
+module.exports = {
+    dispatchCallback,
+    reverseDictionary,
+    escapeRegExp,
+    isString,
+    isTypedArray,
+    isIntegralNumber,
+    exists,
+    calculateDimensions,
+    pop,
+    mergeArrays,
+    product,
 }

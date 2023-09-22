@@ -1,16 +1,20 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 /**
  * @file Utility functions to interact with the Hugging Face Hub (https://huggingface.co/models)
- * 
+ *
  * @module utils/hub
  */
 
-import fs from 'fs';
-import path from 'path';
-import stream from 'stream/web';
+const fs = require('fs');
+const path = require('path');
+const stream = require('stream/web');
 
-import { env } from '../env.js';
-import { dispatchCallback } from './core.js';
+const { env } = require('../env.js');
+const { dispatchCallback } = require('./core.js');
 
 if (!globalThis.ReadableStream) {
     // @ts-ignore
@@ -18,7 +22,7 @@ if (!globalThis.ReadableStream) {
 }
 
 /**
- * @typedef {Object} PretrainedOptions Options for loading a pretrained model.     
+ * @typedef {Object} PretrainedOptions Options for loading a pretrained model.
  * @property {boolean?} [options.quantized=true] Whether to load the 8-bit quantized version of the model (only applicable when loading model files).
  * @property {function} [options.progress_callback=null] If specified, this function will be called during model construction, to provide the user with progress updates.
  * @property {Object} [options.config=null] Configuration for the model to use instead of an automatically loaded configuration. Configuration can be automatically loaded when:
@@ -141,7 +145,7 @@ class FileResponse {
     /**
      * Reads the contents of the file specified by the filePath property and returns a Promise that
      * resolves with a parsed JavaScript object containing the file's contents.
-     * 
+     *
      * @returns {Promise<Object>} A Promise that resolves with a parsed JavaScript object containing the file's contents.
      * @throws {Error} If the file cannot be read.
      */
@@ -176,7 +180,7 @@ function isValidHttpUrl(string, validHosts = null) {
  * @param {URL|string} urlOrPath The URL/path of the file to get.
  * @returns {Promise<FileResponse|Response>} A promise that resolves to a FileResponse object (if the file is retrieved using the FileSystem API), or a Response object (if the file is retrieved using the Fetch API).
  */
-export async function getFile(urlOrPath) {
+async function getFile(urlOrPath) {
 
     if (env.useFS && !isValidHttpUrl(urlOrPath)) {
         return new FileResponse(urlOrPath);
@@ -243,7 +247,7 @@ function handleError(status, remoteURL, fatal) {
 class FileCache {
     /**
      * Instantiate a `FileCache` object.
-     * @param {string} path 
+     * @param {string} path
      */
     constructor(path) {
         this.path = path;
@@ -251,7 +255,7 @@ class FileCache {
 
     /**
      * Checks whether the given request is in the cache.
-     * @param {string} request 
+     * @param {string} request
      * @returns {Promise<FileResponse | undefined>}
      */
     async match(request) {
@@ -268,8 +272,8 @@ class FileCache {
 
     /**
      * Adds the given response to the cache.
-     * @param {string} request 
-     * @param {Response|FileResponse} response 
+     * @param {string} request
+     * @param {Response|FileResponse} response
      * @returns {Promise<void>}
      */
     async put(request, response) {
@@ -295,7 +299,7 @@ class FileCache {
 }
 
 /**
- * 
+ *
  * @param {FileCache|Cache} cache The cache to search
  * @param {string[]} names The names of the item to search for
  * @returns {Promise<FileResponse|Response|undefined>} The item from the cache, or undefined if not found.
@@ -313,21 +317,21 @@ async function tryCache(cache, ...names) {
 }
 
 /**
- * 
+ *
  * Retrieves a file from either a remote URL using the Fetch API or from the local file system using the FileSystem API.
  * If the filesystem is available and `env.useCache = true`, the file will be downloaded and cached.
- * 
+ *
  * @param {string} path_or_repo_id This can be either:
  * - a string, the *model id* of a model repo on huggingface.co.
  * - a path to a *directory* potentially containing the file.
  * @param {string} filename The name of the file to locate in `path_or_repo`.
  * @param {boolean} [fatal=true] Whether to throw an error if the file is not found.
  * @param {PretrainedOptions} [options] An object containing optional parameters.
- * 
+ *
  * @throws Will throw an error if the file is not found and `fatal` is true.
  * @returns {Promise} A Promise that resolves with the file content as a buffer.
  */
-export async function getModelFile(path_or_repo_id, filename, fatal = true, options = {}) {
+async function getModelFile(path_or_repo_id, filename, fatal = true, options = {}) {
 
     if (!env.allowLocalModels) {
         // User has disabled local models, so we just make sure other settings are correct.
@@ -538,7 +542,7 @@ export async function getModelFile(path_or_repo_id, filename, fatal = true, opti
  * @returns {Promise<Object>} The JSON data parsed into a JavaScript object.
  * @throws Will throw an error if the file is not found and `fatal` is true.
  */
-export async function getModelJSON(modelPath, fileName, fatal = true, options = {}) {
+async function getModelJSON(modelPath, fileName, fatal = true, options = {}) {
     let buffer = await getModelFile(modelPath, fileName, fatal, options);
     if (buffer === null) {
         // Return empty object
@@ -627,3 +631,9 @@ function pathJoin(...parts) {
     })
     return parts.join('/');
 }
+
+module.exports = {
+    getFile,
+    getModelFile,
+    getModelJSON,
+};
