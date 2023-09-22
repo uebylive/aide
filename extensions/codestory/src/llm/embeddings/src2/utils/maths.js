@@ -302,7 +302,7 @@ function rfftfreq(n, d = 1.0) {
  * FFT class provides functionality for performing Fast Fourier Transform on arrays
  * Code adapted from https://www.npmjs.com/package/fft.js
  */
-export class FFT {
+class FFT {
     /**
      * @param {number} size The size of the input array. Must be a power of two and bigger than 1.
      * @throws {Error} FFT size must be a power of two and bigger than 1.
@@ -860,4 +860,5 @@ module.exports = {
     rfftfreq,
     medianFilter,
     round,
+    FFT,
 };
