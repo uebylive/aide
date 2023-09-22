@@ -160,7 +160,7 @@ function chunkTree(tree: any, sourceCode: string, MAX_CHARS = 512 * 3, coalesce 
 	}).filter(chunk => chunk.end - chunk.start > 0);
 
 	// 5. Coalescing last chunk if it's too small
-	if (lineChunks.length > 0 && lineChunks[lineChunks.length - 1].end - lineChunks[lineChunks.length - 1].start < coalesce) {
+	if (lineChunks.length > 1 && lineChunks[lineChunks.length - 1].end - lineChunks[lineChunks.length - 1].start < coalesce) {
 		lineChunks[lineChunks.length - 2].end = lineChunks[lineChunks.length - 1].end;
 		lineChunks.pop();
 	}
@@ -252,6 +252,7 @@ export const chunkCodeFile = async (
 		};
 	} else {
 		const parsedNode = parser.parse(code);
+		console.log(`[chunkCodeFile] parsed node: ${filePath}`);
 		const chunks = chunkTree(parsedNode, code, maxCharacters, coalesce);
 		// convert this span to snippets now
 		const snippets = chunks.map((chunk) => {
