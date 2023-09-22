@@ -1,3 +1,8 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 /**
  * @file Module used to configure Transformers.js.
  *
@@ -22,11 +27,11 @@
  * @module env
  */
 
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
+const fs = require('fs');
+const path = require('path');
+const url = require('url');
 
-import { ONNX } from './backends/onnx.js';
+const ONNX = require('./backends/onnx.js').ONNX;
 const { env: onnx_env } = ONNX;
 
 const VERSION = '2.6.1';
@@ -83,7 +88,7 @@ onnx_env.wasm.wasmPaths = RUNNING_LOCALLY
  * @property {Object} customCache The custom cache to use. Defaults to `null`. Note: this must be an object which
  * implements the `match` and `put` functions of the Web Cache API. For more information, see https://developer.mozilla.org/en-US/docs/Web/API/Cache
  */
-export const env = {
+const env = {
     /////////////////// Backends settings ///////////////////
     backends: {
         // onnxruntime-web/onnxruntime-node
@@ -125,3 +130,6 @@ function isEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
 
+module.exports = {
+    env,
+};

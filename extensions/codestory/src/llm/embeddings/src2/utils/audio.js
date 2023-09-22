@@ -1,16 +1,21 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 /**
- * @file Helper module for audio processing. 
- * 
- * These functions and classes are only used internally, 
+ * @file Helper module for audio processing.
+ *
+ * These functions and classes are only used internally,
  * meaning an end-user shouldn't need to access anything here.
- * 
+ *
  * @module utils/audio
  */
 
-import {
+const {
     getFile,
-} from './hub.js';
-import { rfftfreq } from './maths.js';
+} = require('./hub.js');
+const { rfftfreq } = require('./maths.js');
 
 /**
  * Helper function to read audio from a path/URL.
@@ -18,20 +23,20 @@ import { rfftfreq } from './maths.js';
  * @param {number} sampling_rate The sampling rate to use when decoding the audio.
  * @returns {Promise<Float32Array>} The decoded audio as a `Float32Array`.
  */
-export async function read_audio(url, sampling_rate) {
+async function read_audio(url, sampling_rate) {
     if (typeof AudioContext === 'undefined') {
         // Running in node or an environment without AudioContext
         throw Error(
             "Unable to load audio from path/URL since `AudioContext` is not available in your environment. " +
             "Instead, audio data should be passed directly to the pipeline/processor. " +
             "For more information and some example code, see https://huggingface.co/docs/transformers.js/guides/node-audio-processing."
-        )
+        );
     }
 
     const response = await (await getFile(url)).arrayBuffer();
     const audioCTX = new AudioContext({ sampleRate: sampling_rate });
     if (typeof sampling_rate === 'undefined') {
-        console.warn(`No sampling rate provided, using default of ${audioCTX.sampleRate}Hz.`)
+        console.warn(`No sampling rate provided, using default of ${audioCTX.sampleRate}Hz.`);
     }
     const decoded = await audioCTX.decodeAudioData(response);
 
@@ -57,8 +62,8 @@ export async function read_audio(url, sampling_rate) {
         // audio at all, this scaling factor may not be needed.
         const SCALING_FACTOR = Math.sqrt(2);
 
-        let left = decoded.getChannelData(0);
-        let right = decoded.getChannelData(1);
+        const left = decoded.getChannelData(0);
+        const right = decoded.getChannelData(1);
 
         audio = new Float32Array(left.length);
         for (let i = 0; i < decoded.length; ++i) {
@@ -80,7 +85,7 @@ export async function read_audio(url, sampling_rate) {
  * @param {number} n_mels Number of mel filters to generate.
  * @returns {number[][]} Projection matrix to go from a spectrogram to a mel spectrogram.
  */
-export function getMelFilters(sr, n_fft, n_mels = 128) {
+function getMelFilters(sr, n_fft, n_mels = 128) {
     n_mels = Math.floor(n_mels);
 
     // Initialize the weights
@@ -139,4 +144,10 @@ export function getMelFilters(sr, n_fft, n_mels = 128) {
     }
 
     return weights;
+}
+
+
+module.exports = {
+    read_audio,
+    getMelFilters,
 }
