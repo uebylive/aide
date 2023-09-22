@@ -1,18 +1,23 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 /**
  * @file Helper module for `Tensor` processing.
- * 
- * These functions and classes are only used internally, 
+ *
+ * These functions and classes are only used internally,
  * meaning an end-user shouldn't need to access anything here.
- * 
+ *
  * @module utils/tensor
  */
 
-import { ONNX } from '../backends/onnx.js';
+const { ONNX } = require('../backends/onnx.js');
 
-import {
+const {
     interpolate_data,
     transpose_data
-} from './maths.js';
+} = require('./maths.js');
 
 
 /**
@@ -22,7 +27,7 @@ import {
 /** @type {Object} */
 const ONNXTensor = ONNX.Tensor;
 
-export class Tensor extends ONNXTensor {
+class Tensor extends ONNXTensor {
     /**
      * Create a new Tensor or copy an existing Tensor.
      * @param {[string, Array|AnyTypedArray, number[]]|[ONNXTensor]} args
@@ -110,9 +115,9 @@ export class Tensor extends ONNXTensor {
     }
 
     /**
-     * @param {number} index 
-     * @param {number} iterSize 
-     * @param {any} iterDims 
+     * @param {number} index
+     * @param {number} iterSize
+     * @param {any} iterDims
      * @returns {Tensor}
      */
     _subarray(index, iterSize, iterDims) {
@@ -243,7 +248,7 @@ export class Tensor extends ONNXTensor {
 
     /**
      * Returns the sum of each row of the input tensor in the given dimension dim.
-     * 
+     *
      * @param {number} [dim=null] The dimension or dimensions to reduce. If `null`, all dimensions are reduced.
      * @param {boolean} keepdim Whether the output tensor has `dim` retained or not.
      * @returns The summed tensor
@@ -371,10 +376,10 @@ export class Tensor extends ONNXTensor {
 
     /**
      * Returns a tensor with all specified dimensions of input of size 1 removed.
-     * 
+     *
      * NOTE: The returned tensor shares the storage with the input tensor, so changing the contents of one will change the contents of the other.
      * If you would like a copy, use `tensor.clone()` before squeezing.
-     * 
+     *
      * @param {number} [dim=null] If given, the input will be squeezed only in the specified dimensions.
      * @returns The squeezed tensor
      */
@@ -396,9 +401,9 @@ export class Tensor extends ONNXTensor {
 
     /**
      * Returns a new tensor with a dimension of size one inserted at the specified position.
-     * 
+     *
      * NOTE: The returned tensor shares the same underlying data with this tensor.
-     * 
+     *
      * @param {number} dim The index at which to insert the singleton dimension
      * @returns The unsqueezed tensor
      */
@@ -486,7 +491,7 @@ export class Tensor extends ONNXTensor {
 
 /**
  * This creates a nested array of a given type and depth (see examples).
- * 
+ *
  * @example
  *   NestArray<string, 1>; // string[]
  * @example
@@ -548,7 +553,7 @@ function reshape(data, dimensions) {
  * @param {Array} axes The axes to transpose the tensor along.
  * @returns {Tensor} The transposed tensor.
  */
-export function transpose(tensor, axes) {
+function transpose(tensor, axes) {
     const [transposedData, shape] = transpose_data(tensor.data, tensor.dims, axes);
     return new Tensor(tensor.type, transposedData, shape);
 }
@@ -562,7 +567,7 @@ export function transpose(tensor, axes) {
  * @param {boolean} align_corners Whether to align corners.
  * @returns {Tensor} The interpolated tensor.
  */
-export function interpolate(input, [out_height, out_width], mode = 'bilinear', align_corners = false) {
+function interpolate(input, [out_height, out_width], mode = 'bilinear', align_corners = false) {
 
     // Input image dimensions
     const in_channels = input.dims.at(-3) ?? 1;
@@ -585,7 +590,7 @@ export function interpolate(input, [out_height, out_width], mode = 'bilinear', a
  * @param {Tensor} attention_mask Tensor of shape [batchSize, seqLength]
  * @returns {Tensor} Returns a new Tensor of shape [batchSize, embedDim].
  */
-export function mean_pooling(last_hidden_state, attention_mask) {
+function mean_pooling(last_hidden_state, attention_mask) {
     // last_hidden_state: [batchSize, seqLength, embedDim]
     // attention_mask:    [batchSize, seqLength]
 
@@ -670,7 +675,7 @@ function calc_unsqueeze_dims(dims, dim) {
  * @param {number} size The size of the array.
  * @param {number} [dimension=null] The dimension that the index is for (optional).
  * @returns {number} The index, guaranteed to be non-negative and less than `arrayLength`.
- * 
+ *
  * @throws {Error} If the index is out of range.
  * @private
  */
@@ -692,7 +697,7 @@ function safeIndex(index, size, dimension = null) {
  * @param {number} dim The dimension to concatenate along.
  * @returns {Tensor} The concatenated tensor.
  */
-export function cat(tensors, dim = 0) {
+function cat(tensors, dim = 0) {
     dim = safeIndex(dim, tensors[0].dims.length);
 
     // TODO do validation of shapes
@@ -754,7 +759,7 @@ export function cat(tensors, dim = 0) {
  * @param {number} dim The dimension to stack along.
  * @returns {Tensor} The stacked tensor.
  */
-export function stack(tensors, dim = 0) {
+function stack(tensors, dim = 0) {
     // TODO do validation of shapes
     // NOTE: stack expects each tensor to be equal size
     return cat(tensors.map(t => t.unsqueeze(dim)), dim);
@@ -769,7 +774,7 @@ export function stack(tensors, dim = 0) {
  * @param {boolean} keepdim whether the output tensor has dim retained or not.
  * @returns {Tensor[]} A tuple of (std, mean) tensors.
  */
-export function std_mean(input, dim = null, correction = 1, keepdim = false) {
+function std_mean(input, dim = null, correction = 1, keepdim = false) {
 
     if (dim === null) {
         // None to reduce over all dimensions.
@@ -836,7 +841,7 @@ export function std_mean(input, dim = null, correction = 1, keepdim = false) {
  * @param {boolean} keepdim whether the output tensor has dim retained or not.
  * @returns A new tensor with means taken along the specified dimension.
  */
-export function mean(input, dim = null, keepdim = false) {
+function mean(input, dim = null, keepdim = false) {
 
     if (dim === null) {
         // None to reduce over all dimensions.
@@ -892,10 +897,10 @@ export function mean(input, dim = null, keepdim = false) {
  *
  * Measures similarity between two temporal sequences (e.g., input audio and output tokens
  * to generate token-level timestamps).
- * @param {Tensor} matrix 
+ * @param {Tensor} matrix
  * @returns {number[][]}
  */
-export function dynamicTimeWarping(matrix) {
+function dynamicTimeWarping(matrix) {
     const [output_length, input_length] = matrix.dims;
 
     const outputShape = [output_length + 1, input_length + 1];
@@ -988,3 +993,16 @@ function dimsToStride(dims) {
     }
     return stride;
 }
+
+
+module.exports = {
+    Tensor,
+    transpose,
+    interpolate,
+    mean_pooling,
+    cat,
+    stack,
+    std_mean,
+    mean,
+    dynamicTimeWarping,
+};
