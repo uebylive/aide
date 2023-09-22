@@ -88,7 +88,7 @@ export class SearchIndexCollection {
 						cancellable: false,
 					},
 					async (progress, token) => {
-						console.log(`[loadedFromStorage][${indexer.getIndexUserFriendlyName()}]`);
+						console.log(`[loadedFromStorage][status][${indexer.getIndexUserFriendlyName()}]`);
 						console.log(loadedFromStorage);
 						if (shouldRunIndexing(loadedFromStorage.status)) {
 							await indexer.indexWorkspace(finalFilesToIndex, this._workingDirectory, progress);

@@ -3,22 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 export const EXCLUDED_EXTENSIONS = [
-	'.asar',
-	'.tar',
-	'.zip',
-	'.gz',
-	'.tgz',
-	'.7z',
-	'.dmg',
-	'.png',
-	'.jpg',
-	'.svg',
-	'.ort',
-	'.gif',
-	'.woff2',
-	'.otf',
-	'.mp4',
-	'.mp3',
+	// graphics
+	'.png', '.jpg', '.jpeg', '.ico', '.bmp', '.bpg', '.eps', '.pcx', '.ppm', '.tga', '.tiff', '.wmf', '.xpm',
+	'.svg', '.riv',
+	// fonts
+	'.ttf', '.woff2', '.fnt', '.fon', '.otf',
+	// documents
+	'.pdf', '.ps', '.doc', '.dot', '.docx', '.dotx', '.xls', '.xlsx', '.xlt', '.odt', '.ott', '.ods', '.ots', '.dvi', '.pcl',
+	// media
+	'.mp3', '.ogg', '.ac3', '.aac', '.mod', '.mp4', '.mkv', '.avi', '.m4v', '.mov', '.flv',
+	// compiled
+	'.jar', '.pyc', '.war', '.ear',
+	// compression
+	'.tar', '.gz', '.bz2', '.xz', '.7z', '.bin', '.apk', '.deb', '.rpm',
+	// executable
+	'.com', '.exe', '.out', '.coff', '.obj', '.dll', '.app', '.class',
+	// misc.
+	'.log', '.wad', '.bsp', '.bak', '.sav', '.dat', '.lock',
 ];
 
 
