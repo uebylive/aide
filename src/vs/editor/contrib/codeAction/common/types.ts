@@ -194,6 +194,7 @@ export class CodeActionItem {
 	constructor(
 		public readonly action: languages.CodeAction,
 		public readonly provider: languages.CodeActionProvider | undefined,
+		public highlightRange?: boolean,
 	) { }
 
 	async resolve(token: CancellationToken): Promise<this> {
