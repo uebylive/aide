@@ -127,7 +127,6 @@
     "@axflow/models": "^0.0.1-beta.3",
     "@estruyf/vscode": "^1.1.0",
     "@google-cloud/storage": "^7.0.1",
-    "@xenova/transformers": "^2.6.0",
     "balanced-match": "^2.0.0",
     "concat-map": "^0.0.2",
     "core-util-is": "^1.0.3",
