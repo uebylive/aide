@@ -12,7 +12,7 @@ import { generateUuid } from 'vs/base/common/uuid';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatAgentData } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUserProvidedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUserProvidedContext, IUsedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
@@ -24,10 +24,23 @@ export interface IChatRequestModel {
 	readonly response: IChatResponseModel | undefined;
 }
 
+export type ResponsePart =
+	| string
+	| IMarkdownString
+	| { treeData: IChatResponseProgressFileTreeData }
+	| {
+		placeholder: string;
+		resolvedContent?: Promise<
+			string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }
+		>;
+	}
+	| IUsedContext;
+
 export interface IResponse {
 	readonly value: (IMarkdownString | IPlaceholderMarkdownString | IChatResponseProgressFileTreeData)[];
 	onDidChangeValue: Event<void>;
-	updateContent(responsePart: string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData } | { placeholder: string; resolvedContent?: Promise<string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }> }, quiet?: boolean): void;
+	usedContext: IUsedContext | undefined;
+	updateContent(responsePart: ResponsePart, quiet?: boolean): void;
 	asString(): string;
 }
 
@@ -95,15 +108,23 @@ export interface IPlaceholderMarkdownString extends IMarkdownString {
 	isPlaceholder: boolean;
 }
 
-type ResponsePart = { string: IMarkdownString; isPlaceholder?: boolean } | { treeData: IChatResponseProgressFileTreeData; isPlaceholder?: undefined };
+type InternalResponsePart =
+	| { string: IMarkdownString; isPlaceholder?: boolean }
+	| { treeData: IChatResponseProgressFileTreeData; isPlaceholder?: undefined };
+
 export class Response implements IResponse {
 	private _onDidChangeValue = new Emitter<void>();
 	public get onDidChangeValue() {
 		return this._onDidChangeValue.event;
 	}
 
+	private _usedContext: IUsedContext | undefined;
+	public get usedContext(): IUsedContext | undefined {
+		return this._usedContext;
+	}
+
 	// responseParts internally tracks all the response parts, including strings which are currently resolving, so that they can be updated when they do resolve
-	private _responseParts: ResponsePart[];
+	private _responseParts: InternalResponsePart[];
 	// responseData externally presents the response parts with consolidated contiguous strings (including strings which were previously resolving)
 	private _responseData: (IMarkdownString | IPlaceholderMarkdownString | IChatResponseProgressFileTreeData)[];
 	// responseRepr externally presents the response parts with consolidated contiguous strings (excluding tree data)
@@ -128,7 +149,7 @@ export class Response implements IResponse {
 		return this._responseRepr;
 	}
 
-	updateContent(responsePart: string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData } | { placeholder: string; resolvedContent?: Promise<string | { treeData: IChatResponseProgressFileTreeData }> }, quiet?: boolean): void {
+	updateContent(responsePart: ResponsePart, quiet?: boolean): void {
 		if (typeof responsePart === 'string' || isMarkdownString(responsePart)) {
 			const responsePartLength = this._responseParts.length - 1;
 			const lastResponsePart = this._responseParts[responsePartLength];
@@ -156,6 +177,9 @@ export class Response implements IResponse {
 				if (typeof content === 'string') {
 					this._responseParts[responsePosition] = { string: new MarkdownString(content), isPlaceholder: true };
 					this._updateRepr(quiet);
+				} else if ('value' in content) {
+					this._responseParts[responsePosition] = { string: content, isPlaceholder: true };
+					this._updateRepr(quiet);
 				} else if (content.treeData) {
 					this._responseParts[responsePosition] = { treeData: content.treeData };
 					this._updateRepr(quiet);
@@ -164,6 +188,8 @@ export class Response implements IResponse {
 		} else if (isCompleteInteractiveProgressTreeData(responsePart)) {
 			this._responseParts.push(responsePart);
 			this._updateRepr(quiet);
+		} else if ('documents' in responsePart) {
+			this._usedContext = responsePart;
 		}
 	}
 
@@ -259,7 +285,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._id = 'response_' + ChatResponseModel.nextId++;
 	}
 
-	updateContent(responsePart: string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData } | { placeholder: string; resolvedContent?: Promise<string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }> }, quiet?: boolean) {
+	updateContent(responsePart: ResponsePart, quiet?: boolean) {
 		this._response.updateContent(responsePart, quiet);
 	}
 
@@ -576,6 +602,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			request.response.updateContent(progress.content, quiet);
 		} else if ('placeholder' in progress || isCompleteInteractiveProgressTreeData(progress)) {
 			request.response.updateContent(progress, quiet);
+		} else if ('documents' in progress) {
+			request.response.updateContent(progress);
 		} else {
 			request.setProviderRequestId(progress.requestId);
 			request.response.setProviderResponseId(progress.requestId);
