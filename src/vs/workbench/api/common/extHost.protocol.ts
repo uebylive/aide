@@ -1195,6 +1195,10 @@ export interface MainThreadUrlsShape extends IDisposable {
 	$createAppUri(uri: UriComponents): Promise<UriComponents>;
 }
 
+export interface IArcDto {
+	id: number;
+}
+
 export interface IChatDto {
 	id: number;
 	requesterUsername: string;
@@ -1265,6 +1269,7 @@ export interface MainThreadArcShape extends IDisposable {
 }
 
 export interface ExtHostArcShape {
+	$prepareArc(handle: number, initialState: any, token: CancellationToken): Promise<IArcDto | undefined>;
 }
 
 export interface ExtHostUrlsShape {

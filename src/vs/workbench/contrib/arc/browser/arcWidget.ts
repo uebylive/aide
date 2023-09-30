@@ -4,8 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, IDisposable, combinedDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IArcWidget, IArcWidgetService } from 'vs/workbench/contrib/arc/browser/arc';
+import { IArcService } from 'vs/workbench/contrib/arc/common/arcService';
 import { IArcViewModel } from 'vs/workbench/contrib/arc/common/arcViewModel';
 
 const $ = dom.$;
@@ -29,6 +31,8 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	}
 
 	constructor(
+		private readonly providerId: string,
+		@IArcService private readonly arcService: IArcService,
 		@IArcWidgetService arcWidgetService: IArcWidgetService,
 	) {
 		super();
@@ -39,6 +43,11 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	render(parent: HTMLElement): void {
 		this.container = dom.append(parent, $('.arc-widget'));
 		this.container.innerText = 'Hello Arc!';
+		this.updateModel();
+	}
+
+	private updateModel(): void {
+		this.arcService.startSession(this.providerId, CancellationToken.None);
 	}
 }
 

@@ -12,9 +12,9 @@ export interface IArcProviderContribution {
 
 export const IArcContributionService = createDecorator<IArcContributionService>('IArcContributionService');
 export interface IArcContributionService {
-	readonly _serviceBrand: undefined;
+	_serviceBrand: undefined;
 
-	registerProviders: IArcProviderContribution[];
+	registeredProviders: IArcProviderContribution[];
 	registerArcProvider(provider: IArcProviderContribution): void;
 	deregisterArcProvider(providerId: string): void;
 	getViewIdForProvider(providerId: string): string;
