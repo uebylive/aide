@@ -181,6 +181,9 @@ import 'vs/workbench/contrib/notebook/browser/notebook.contribution';
 import 'vs/workbench/contrib/chat/browser/chat.contribution';
 import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 
+// Arc
+import 'vs/workbench/contrib/arc/browser/arc.contribution';
+
 // Interactive
 import 'vs/workbench/contrib/interactive/browser/interactive.contribution';
 

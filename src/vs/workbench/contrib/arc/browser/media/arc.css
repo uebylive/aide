@@ -1,0 +1,29 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.arc-widget {
+	background-color: var(--vscode-editor-background);
+	color: var(--vscode-editor-foreground);
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 4px;
+	padding: 10px;
+	margin: 10px;
+	font-size: 13px;
+	font-weight: normal;
+	line-height: 1.5;
+	overflow: hidden;
+	box-shadow: 0 0 8px rgba(0, 0, 0, 0.5);
+	position: relative;
+	z-index: 100;
+	width: 400px;
+	max-width: 400px;
+	min-width: 400px;
+	height: 400px;
+	max-height: 400px;
+	min-height: 400px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
