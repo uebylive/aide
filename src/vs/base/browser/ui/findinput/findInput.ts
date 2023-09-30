@@ -15,7 +15,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import 'vs/css!./findInput';
 import * as nls from 'vs/nls';
-import { DisposableStore } from 'vs/base/common/lifecycle';
+import { DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 
 
 export interface IFindInputOptions {
@@ -50,7 +50,7 @@ export class FindInput extends Widget {
 	private showCommonFindToggles: boolean;
 	private fixFocusOnOptionClickEnabled = true;
 	private imeSessionInProgress = false;
-	private additionalTogglesDisposables: DisposableStore = new DisposableStore();
+	private additionalTogglesDisposables: MutableDisposable<DisposableStore> = this._register(new MutableDisposable());
 	private readonly renderOptions: IFindInputOptions;
 
 	protected isSemantic?: boolean;
@@ -292,14 +292,13 @@ export class FindInput extends Widget {
 			currentToggle.domNode.remove();
 		}
 		this.additionalToggles = [];
-		this.additionalTogglesDisposables.dispose();
-		this.additionalTogglesDisposables = new DisposableStore();
+		this.additionalTogglesDisposables.value = new DisposableStore();
 
 		for (const toggle of toggles ?? []) {
-			this.additionalTogglesDisposables.add(toggle);
+			this.additionalTogglesDisposables.value.add(toggle);
 			this.controls.appendChild(toggle.domNode);
 
-			this.additionalTogglesDisposables.add(toggle.onChange(viaKeyboard => {
+			this.additionalTogglesDisposables.value.add(toggle.onChange(viaKeyboard => {
 				this._onDidOptionChange.fire(viaKeyboard);
 				if (!viaKeyboard && this.fixFocusOnOptionClickEnabled) {
 					this.inputBox.focus();

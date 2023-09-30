@@ -47,6 +47,7 @@ import 'vs/workbench/browser/parts/paneCompositePart';
 import 'vs/workbench/browser/parts/banner/bannerPart';
 import 'vs/workbench/browser/parts/statusbar/statusbarPart';
 import 'vs/workbench/browser/parts/views/viewsService';
+import 'vs/workbench/browser/iconSelectBox';
 
 //#endregion
 
@@ -179,6 +180,9 @@ import 'vs/workbench/contrib/notebook/browser/notebook.contribution';
 
 import 'vs/workbench/contrib/chat/browser/chat.contribution';
 import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
+
+// Arc
+import 'vs/workbench/contrib/arc/browser/arc.contribution';
 
 // Interactive
 import 'vs/workbench/contrib/interactive/browser/interactive.contribution';

@@ -103,6 +103,12 @@ export class OffsetRange {
 		return undefined;
 	}
 
+	public intersectsOrTouches(other: OffsetRange): boolean {
+		const start = Math.max(this.start, other.start);
+		const end = Math.min(this.endExclusive, other.endExclusive);
+		return start <= end;
+	}
+
 	public slice<T>(arr: T[]): T[] {
 		return arr.slice(this.start, this.endExclusive);
 	}
@@ -143,6 +149,12 @@ export class OffsetRange {
 			result.push(f(i));
 		}
 		return result;
+	}
+
+	public forEach(f: (offset: number) => void): void {
+		for (let i = this.start; i < this.endExclusive; i++) {
+			f(i);
+		}
 	}
 }
 

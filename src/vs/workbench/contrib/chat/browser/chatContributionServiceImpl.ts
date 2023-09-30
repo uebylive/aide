@@ -9,19 +9,21 @@ import * as resources from 'vs/base/common/resources';
 import { localize } from 'vs/nls';
 import { registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
+import { Extensions as WorkbenchExtensions, IWorkbenchContribution, IWorkbenchContributionsRegistry } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { getClearAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
 import { getHoverActionsForProvider } from 'vs/workbench/contrib/chat/browser/actions/chatHoverActions';
 import { getMoveToEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/chat/browser/actions/chatQuickInputActions';
-import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
+import { CHAT_SIDEBAR_PANEL_ID, CS_CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { IChatContributionService, IChatProviderContribution, IRawChatProviderContribution } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
+import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+
 
 const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatProviderContribution[]>({
 	extensionPoint: 'interactiveSession',
@@ -60,23 +62,30 @@ const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensi
 	},
 });
 
-export class ChatContributionService implements IChatContributionService {
-	declare _serviceBrand: undefined;
+export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
+	private _viewContainer: ViewContainer;
+	private _csViewContainer: ViewContainer;
 	private _registrationDisposables = new Map<string, IDisposable>();
-	private _registeredProviders = new Map<string, IChatProviderContribution>();
 
 	constructor(
+		@IChatContributionService readonly _chatContributionService: IChatContributionService
 	) {
+		this._viewContainer = this.registerViewContainer();
+		this._csViewContainer = this.registerCSViewContainer();
+		this.handleAndRegisterChatExtensions();
+	}
+
+	private handleAndRegisterChatExtensions(): void {
 		chatExtensionPoint.setHandler((extensions, delta) => {
 			for (const extension of delta.added) {
 				const extensionDisposable = new DisposableStore();
 				for (const providerDescriptor of extension.value) {
-					this.registerChatProvider(extension.description, providerDescriptor);
+					this.registerChatProvider(providerDescriptor);
 					const extensionIcon = extension.description.icon ?
 						resources.joinPath(extension.description.extensionLocation, extension.description.icon) :
 						undefined;
-					this._registeredProviders.set(providerDescriptor.id, {
+					this._chatContributionService.registerChatProvider({
 						...providerDescriptor,
 						extensionIcon
 					});
@@ -92,27 +101,17 @@ export class ChatContributionService implements IChatContributionService {
 				}
 
 				for (const providerDescriptor of extension.value) {
-					this._registeredProviders.delete(providerDescriptor.id);
+					this._chatContributionService.deregisterChatProvider(providerDescriptor.id);
 				}
 			}
 		});
 	}
 
-	public get registeredProviders(): IChatProviderContribution[] {
-		return Array.from(this._registeredProviders.values());
-	}
-
-	public getViewIdForProvider(providerId: string): string {
-		return ChatViewPane.ID + '.' + providerId;
-	}
-
-	private registerChatProvider(extension: Readonly<IRelaxedExtensionDescription>, providerDescriptor: IRawChatProviderContribution): IDisposable {
-		const icon = providerDescriptor.icon ? resources.joinPath(extension.extensionLocation, providerDescriptor.icon) : Codicon.commentDiscussion;
-		const title = localize('chat.viewContainer.label', "Chat");
-
+	private registerViewContainer(): ViewContainer {
 		// Register View Container
-		const viewContainerId = CHAT_SIDEBAR_PANEL_ID + '.' + providerDescriptor.id;
-		const viewContainerLocation = providerDescriptor.id === 'cs-chat' ? ViewContainerLocation.AuxiliaryBar : ViewContainerLocation.Sidebar;
+		const title = localize('chat.viewContainer.label', "Chat");
+		const icon = Codicon.commentDiscussion;
+		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 			id: viewContainerId,
 			title: { value: title, original: 'Chat' },
@@ -121,14 +120,38 @@ export class ChatContributionService implements IChatContributionService {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, viewContainerLocation);
+		}, ViewContainerLocation.Sidebar);
+
+		return viewContainer;
+	}
+
+	private registerCSViewContainer(): ViewContainer {
+		// Register View Container
+		const title = localize('chat.csViewContainer.label', "Chat");
+		const icon = Codicon.commentDiscussion;
+		const viewContainerId = CS_CHAT_SIDEBAR_PANEL_ID;
+		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
+			id: viewContainerId,
+			title: { value: title, original: 'Chat' },
+			icon,
+			ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [viewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
+			storageId: viewContainerId,
+			hideIfEmpty: true,
+			order: 100,
+		}, ViewContainerLocation.AuxiliaryBar);
+
+		return viewContainer;
+	}
+
+	private registerChatProvider(providerDescriptor: IRawChatProviderContribution): IDisposable {
+		const viewContainer = providerDescriptor.id === 'cs-chat' ? this._csViewContainer : this._viewContainer;
 
 		// Register View
-		const viewId = this.getViewIdForProvider(providerDescriptor.id);
+		const viewId = this._chatContributionService.getViewIdForProvider(providerDescriptor.id);
 		const viewDescriptor: IViewDescriptor[] = [{
 			id: viewId,
-			containerIcon: icon,
-			containerTitle: title,
+			containerIcon: viewContainer.icon,
+			containerTitle: viewContainer.title.value,
 			name: providerDescriptor.label,
 			canToggleVisibility: false,
 			canMoveView: true,
@@ -157,5 +180,34 @@ export class ChatContributionService implements IChatContributionService {
 				disposables.dispose();
 			}
 		};
+	}
+}
+
+const workbenchRegistry = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
+workbenchRegistry.registerWorkbenchContribution(ChatExtensionPointHandler, LifecyclePhase.Starting);
+
+
+export class ChatContributionService implements IChatContributionService {
+	declare _serviceBrand: undefined;
+
+	private _registeredProviders = new Map<string, IChatProviderContribution>();
+
+	constructor(
+	) { }
+
+	public getViewIdForProvider(providerId: string): string {
+		return ChatViewPane.ID + '.' + providerId;
+	}
+
+	public registerChatProvider(provider: IChatProviderContribution): void {
+		this._registeredProviders.set(provider.id, provider);
+	}
+
+	public deregisterChatProvider(providerId: string): void {
+		this._registeredProviders.delete(providerId);
+	}
+
+	public get registeredProviders(): IChatProviderContribution[] {
+		return Array.from(this._registeredProviders.values());
 	}
 }

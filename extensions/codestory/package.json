@@ -13,6 +13,7 @@
     "onSearch:text"
   ],
   "enabledApiProposals": [
+    "arc",
     "interactive"
   ],
   "files": [
@@ -56,6 +57,12 @@
         "id": "cs-chat",
         "label": "CodeStory Agent",
         "icon": "assets/message-code.svg"
+      }
+    ],
+    "arc": [
+      {
+        "id": "cs-arc",
+        "label": "CodeStory Arc"
       }
     ],
     "keybindings": [
