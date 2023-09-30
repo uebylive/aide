@@ -105,6 +105,9 @@ export async function activate(context: ExtensionContext) {
 		rootPath,
 	);
 
+	// TODO(codestory): Download the rust binary here appropriate for the platform
+	// we are on. Similar to how we were doing for Aide binary
+
 	postHogClient.capture({
 		distinctId: await getUniqueId(),
 		event: 'activated_lsp',
