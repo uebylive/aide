@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { arc, commands, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
+import { arc, chat, commands, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -37,6 +37,7 @@ import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
+import { CSAgentMetadata, CSAgentProvider } from './providers/agentProvider';
 
 
 class ProgressiveTrackSymbols {
@@ -218,6 +219,12 @@ export async function activate(context: ExtensionContext) {
 
 	const arcProvider = arc.registerArcProvider('cs-arc', chatProvider);
 	context.subscriptions.push(arcProvider);
+
+	const csAgentProvider = new CSAgentProvider();
+	const csAgent = chat.registerAgent(
+		'cs-agent', csAgentProvider.provideAgentResponse.bind(csAgentProvider), new CSAgentMetadata('CodeStory Agent', 'CodeStory Agent', undefined, [])
+	);
+	context.subscriptions.push(csAgent);
 
 	context.subscriptions.push(
 		debug(
