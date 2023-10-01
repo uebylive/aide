@@ -13,7 +13,7 @@ import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUserProvidedContext, IUsedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IUsedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
@@ -95,7 +95,6 @@ export class ChatRequestModel implements IChatRequestModel {
 	constructor(
 		public readonly session: ChatModel,
 		public readonly message: IParsedChatRequest | IChatReplyFollowup,
-		public readonly userProvidedContext: IChatUserProvidedContext | undefined,
 		private _providerRequestId?: string) {
 		this._id = 'request_' + ChatRequestModel.nextId++;
 	}
@@ -526,7 +525,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			return requests.map((raw: ISerializableChatRequestData) => {
 				const parsedRequest = typeof raw.message === 'string' ? this.getParsedRequestFromString(raw.message) :
 					reviveParsedChatRequest(raw.message);
-				const request = new ChatRequestModel(this, parsedRequest, undefined, raw.providerRequestId);
+				const request = new ChatRequestModel(this, parsedRequest, raw.providerRequestId);
 				if (raw.response || raw.responseErrorDetails) {
 					const agent = raw.agent && this.chatAgentService.getAgents().find(a => a.id === raw.agent!.id); // TODO do something reasonable if this agent has disappeared since the last session
 					request.response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, true, raw.isCanceled, raw.vote, raw.providerRequestId, raw.responseErrorDetails, raw.followups);
@@ -589,12 +588,12 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._requests;
 	}
 
-	addRequest(message: IParsedChatRequest | IChatReplyFollowup, chatUserProvidedContext: IChatUserProvidedContext | undefined, chatAgent?: IChatAgentData): ChatRequestModel {
+	addRequest(message: IParsedChatRequest | IChatReplyFollowup, chatAgent?: IChatAgentData): ChatRequestModel {
 		if (!this._session) {
 			throw new Error('addRequest: No session');
 		}
 
-		const request = new ChatRequestModel(this, message, chatUserProvidedContext);
+		const request = new ChatRequestModel(this, message);
 		request.response = new ChatResponseModel(new MarkdownString(''), this, chatAgent);
 
 		this._requests.push(request);

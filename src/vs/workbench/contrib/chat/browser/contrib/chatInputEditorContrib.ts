@@ -22,7 +22,6 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
-// import { AtSymbolContentWidget } from 'vs/workbench/contrib/chat/browser/chatAtSymbolContentWidget';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
@@ -106,8 +105,8 @@ class InputEditorDecorations extends Disposable {
 		if (!inputValue) {
 			const extensionPlaceholder = this.widget.viewModel?.inputPlaceholder;
 			const defaultPlaceholder = slashCommands?.length ?
-				localize('interactive.input.placeholderWithCommands', "Ask a question or type '/' for topics") :
-				localize('interactive.input.placeholderNoCommands', "Initializing the chat...");
+				localize('interactive.input.placeholderWithCommands', "Ask a question or type '@' or '/'") :
+				localize('interactive.input.placeholderNoCommands', "Ask a question");
 			const placeholder = extensionPlaceholder ?? defaultPlaceholder;
 			const decoration: IDecorationOptions[] = [
 				{
@@ -496,7 +495,7 @@ function computeCompletionRanges(model: ITextModel, position: Position, reg: Reg
 	return { insert, replace };
 }
 
-export class VariableCompletions extends Disposable {
+class VariableCompletions extends Disposable {
 
 	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
@@ -555,5 +554,4 @@ export class VariableCompletions extends Disposable {
 	}
 }
 
-// TODO(codestory): Commenting this out so we use our custom provider for LSP
-// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);

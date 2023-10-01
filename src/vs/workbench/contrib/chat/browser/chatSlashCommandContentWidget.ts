@@ -48,7 +48,6 @@ export class SlashCommandContentWidget extends Disposable implements IContentWid
 	}
 
 	setCommandText(slashCommand: string) {
-		console.log('we are setting the data here', slashCommand);
 		this._domNode.innerText = `/${slashCommand} `;
 		this._lastSlashCommandText = slashCommand;
 	}

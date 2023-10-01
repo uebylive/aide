@@ -27,7 +27,7 @@ import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISeri
 import { ChatRequestAgentPart, ChatRequestSlashCommandPart, IParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/chat/common/chatProvider';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
-import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatReplyFollowup, IChatRequest, IChatResponse, IChatService, IChatTransferredSessionData, IChatUserActionEvent, IChatUserProvidedContext, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatReplyFollowup, IChatRequest, IChatResponse, IChatService, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
@@ -408,7 +408,7 @@ export class ChatService extends Disposable implements IChatService {
 		return this._startSession(data.providerId, data, CancellationToken.None);
 	}
 
-	async sendRequest(sessionId: string, request: string | IChatReplyFollowup, chatUserProvidedContext: IChatUserProvidedContext | undefined, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
+	async sendRequest(sessionId: string, request: string | IChatReplyFollowup, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
 		const messageText = typeof request === 'string' ? request : request.message;
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${messageText.substring(0, 20)}${messageText.length > 20 ? '[...]' : ''}}`);
 		if (!messageText.trim()) {
@@ -433,10 +433,10 @@ export class ChatService extends Disposable implements IChatService {
 		}
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
-		return { responseCompletePromise: this._sendRequestAsync(model, sessionId, provider, request, chatUserProvidedContext, usedSlashCommand) };
+		return { responseCompletePromise: this._sendRequestAsync(model, sessionId, provider, request, usedSlashCommand) };
 	}
 
-	private async _sendRequestAsync(model: ChatModel, sessionId: string, provider: IChatProvider, message: string | IChatReplyFollowup, chatUserProvidedContext: IChatUserProvidedContext | undefined, usedSlashCommand?: ISlashCommand): Promise<void> {
+	private async _sendRequestAsync(model: ChatModel, sessionId: string, provider: IChatProvider, message: string | IChatReplyFollowup, usedSlashCommand?: ISlashCommand): Promise<void> {
 		const parsedRequest = typeof message === 'string' ?
 			await this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(sessionId, message) :
 			message; // Handle the followup type along with the response
@@ -499,7 +499,7 @@ export class ChatService extends Disposable implements IChatService {
 				let slashCommandFollowups: IChatFollowup[] | void = [];
 
 				if (typeof message === 'string' && agentPart) {
-					request = model.addRequest(parsedRequest, chatUserProvidedContext);
+					request = model.addRequest(parsedRequest);
 					const history: IChatMessage[] = [];
 					for (const request of model.getRequests()) {
 						if (typeof request.message !== 'string' || !request.response) {
@@ -518,7 +518,7 @@ export class ChatService extends Disposable implements IChatService {
 					slashCommandFollowups = agentResult?.followUp;
 					rawResponse = { session: model.session! };
 				} else if (commandPart && typeof message === 'string' && this.chatSlashCommandService.hasCommand(commandPart.slashCommand.command)) {
-					request = model.addRequest(parsedRequest, chatUserProvidedContext);
+					request = model.addRequest(parsedRequest);
 					// contributed slash commands
 					// TODO: spell this out in the UI
 					const history: IChatMessage[] = [];
@@ -540,11 +540,10 @@ export class ChatService extends Disposable implements IChatService {
 					rawResponse = { session: model.session! };
 
 				} else {
-					request = model.addRequest(parsedRequest, chatUserProvidedContext);
+					request = model.addRequest(parsedRequest);
 					const requestProps: IChatRequest = {
 						session: model.session!,
 						message,
-						userProvidedContext: chatUserProvidedContext,
 						variables: {}
 					};
 
@@ -674,7 +673,6 @@ export class ChatService extends Disposable implements IChatService {
 		}
 
 		this.trace('addRequest', `Calling resolveRequest for session ${model.sessionId}`);
-		console.log('[ChatService][addRequest] we are resolving the request');
 		const request = await provider.resolveRequest(model.session!, context, CancellationToken.None);
 		if (!request) {
 			this.trace('addRequest', `Provider returned no request for session ${model.sessionId}`);
@@ -683,14 +681,12 @@ export class ChatService extends Disposable implements IChatService {
 
 		// Maybe this API should queue a request after the current one?
 		this.trace('addRequest', `Sending resolved request for session ${model.sessionId}`);
-		this.sendRequest(model.sessionId, request.message, undefined);
+		this.sendRequest(model.sessionId, request.message);
 	}
 
 	async sendRequestToProvider(sessionId: string, message: IChatDynamicRequest): Promise<void> {
 		this.trace('sendRequestToProvider', `sessionId: ${sessionId}`);
-		console.log('[ChatService][sendRequestToProvider] we are sending the request to the provider');
-		// TODO(skcd): We are sending undefined here
-		await this.sendRequest(sessionId, message.message, undefined);
+		await this.sendRequest(sessionId, message.message);
 	}
 
 	getProviders(): string[] {
@@ -707,7 +703,7 @@ export class ChatService extends Disposable implements IChatService {
 
 		await model.waitForInitialization();
 		const parsedRequest = typeof message === 'string' ? await this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(sessionId, message) : message;
-		const request = model.addRequest(parsedRequest, undefined);
+		const request = model.addRequest(parsedRequest);
 		if (typeof response.message === 'string') {
 			model.acceptResponseProgress(request, { content: response.message });
 		} else {
