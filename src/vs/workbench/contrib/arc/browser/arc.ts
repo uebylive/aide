@@ -10,7 +10,8 @@ export const IArcWidgetService = createDecorator<IArcWidgetService>('arcWidgetSe
 
 export interface IArcWidgetService {
 	readonly _serviceBrand: undefined;
-	readonly lastFocusedWidget: IArcWidget | undefined;
+
+	toggle(): void;
 }
 
 export interface IArcWidget {

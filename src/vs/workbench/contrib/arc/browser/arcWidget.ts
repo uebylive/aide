@@ -3,19 +3,55 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
+import 'vs/css!./media/arc';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, IDisposable, combinedDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Disposable } from 'vs/base/common/lifecycle';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IArcWidget, IArcWidgetService } from 'vs/workbench/contrib/arc/browser/arc';
 import { IArcService } from 'vs/workbench/contrib/arc/common/arcService';
 import { IArcViewModel } from 'vs/workbench/contrib/arc/common/arcViewModel';
+import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
-const $ = dom.$;
+export class ArcWidgetService extends Disposable implements IArcWidgetService {
+	declare readonly _serviceBrand: undefined;
+
+	private _widget: ArcWidget | undefined;
+	private _container: HTMLElement | undefined;
+
+	constructor(
+		@IWorkbenchLayoutService private readonly workbenchLayoutService: IWorkbenchLayoutService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
+		super();
+	}
+
+	private open() {
+		const arcContainer = document.createElement('div');
+		arcContainer.classList.add('arc-widget-container');
+		this._container = arcContainer;
+		this._widget = this.instantiationService.createInstance(ArcWidget, 'cs-arc');
+		this._widget.render(this._container);
+		this.workbenchLayoutService.container.appendChild(this._container);
+	}
+
+	private close(): void {
+		this._widget?.dispose();
+		this._widget = undefined;
+		this._container?.remove();
+		this._container = undefined;
+	}
+
+	toggle(): void {
+		if (this._widget) {
+			this.close();
+		} else {
+			this.open();
+		}
+	}
+}
 
 export class ArcWidget extends Disposable implements IArcWidget {
 	public static readonly CONTRIBS: { new(...args: [IArcWidget, ...any]): any }[] = [];
-
-	private container!: HTMLElement;
 
 	private _viewModel: IArcViewModel | undefined;
 	private set viewModel(viewModel: IArcViewModel | undefined) {
@@ -33,45 +69,16 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	constructor(
 		private readonly providerId: string,
 		@IArcService private readonly arcService: IArcService,
-		@IArcWidgetService arcWidgetService: IArcWidgetService,
 	) {
 		super();
-
-		this._register((arcWidgetService as ArcWidgetService).register(this));
+		this.updateModel();
 	}
 
 	render(parent: HTMLElement): void {
-		this.container = dom.append(parent, $('.arc-widget'));
-		this.container.innerText = 'Hello Arc!';
-		this.updateModel();
+		parent.innerText = 'Arc Widget';
 	}
 
 	private updateModel(): void {
 		this.arcService.startSession(this.providerId, CancellationToken.None);
-	}
-}
-
-export class ArcWidgetService implements IArcWidgetService {
-	declare readonly _serviceBrand: undefined;
-
-	private _widgets: ArcWidget[] = [];
-	private _lastFocusedWidget: ArcWidget | undefined = undefined;
-
-	get lastFocusedWidget(): ArcWidget | undefined {
-		return this._lastFocusedWidget;
-	}
-
-	constructor() { }
-
-	register(newWidget: ArcWidget): IDisposable {
-		if (this._widgets.some(widget => widget === newWidget)) {
-			throw new Error('Cannot register the same widget multiple times');
-		}
-
-		this._widgets.push(newWidget);
-
-		return combinedDisposable(
-			toDisposable(() => this._widgets.splice(this._widgets.indexOf(newWidget), 1))
-		);
 	}
 }
