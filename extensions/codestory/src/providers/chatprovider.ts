@@ -19,6 +19,7 @@ import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { SearchIndexCollection } from '../searchIndex/collection';
+import { SideCarClient } from '../sidecar/client';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -247,6 +248,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _uniqueUserId: string;
 	private _searchIndexCollection: SearchIndexCollection;
 	private _agentCustomInformation: string | null;
+	private _sideCarClient: SideCarClient;
 
 	constructor(
 		workingDirectory: string,
@@ -259,6 +261,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		activeFilesTracker: ActiveFilesTracker,
 		uniqueUserId: string,
 		agentCustomInstruction: string | null,
+		sideCarClient: SideCarClient,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
@@ -273,6 +276,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._uniqueUserId = uniqueUserId;
 		this._searchIndexCollection = searchIndexCollection;
 		this._agentCustomInformation = agentCustomInstruction;
+		this._sideCarClient = sideCarClient;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -307,13 +311,13 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				shouldRepopulate: true,
 				executeImmediately: false,
 			},
-			// {
-			// 	command: 'search',
-			// 	kind: vscode.CompletionItemKind.Text,
-			// 	detail: 'Search for the relevant code symbols from the codebase',
-			// 	shouldRepopulate: true,
-			// 	executeImmediately: false,
-			// },
+			{
+				command: 'search',
+				kind: vscode.CompletionItemKind.Text,
+				detail: 'Search for the relevant code symbols from the codebase',
+				shouldRepopulate: true,
+				executeImmediately: false,
+			},
 		];
 	}
 
