@@ -158,5 +158,10 @@
 		"vscode-notebook-renderer",
 		"src/vs/workbench/workbench.web.main.ts",
 		"src/vs/workbench/api/common/extHostTypes.ts"
+	],
+	"cSpell.words": [
+		"CODESTORY",
+		"deferreds",
+		"reporef"
 	]
 }

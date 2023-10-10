@@ -1,1 +1,1 @@
-declare module 'eventsource';
+// declare module 'eventsource';
