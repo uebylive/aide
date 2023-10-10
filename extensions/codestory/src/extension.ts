@@ -37,7 +37,7 @@ import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
-import { SideCarClient } from './sidecar/client';
+import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { readSideCarURL } from './utilities/sidecarUrl';
 
 
@@ -127,6 +127,13 @@ export async function activate(context: ExtensionContext) {
 	// Setup the sidecar client here
 	const sidecarClient = new SideCarClient(readSideCarURL());
 
+	// Setup the current repo representation here
+	const currentRepo = new RepoRef(
+		// We assume the root-path is the one we are interested in
+		rootPath,
+		RepoRefBackend.local,
+	);
+
 
 	// Setup python language parser
 	const pythonLanguageParser = new LanguageParser(
@@ -215,7 +222,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath, codeGraph, repoName, repoHash,
 		searchIndexCollection, codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
-		agentSystemInstruction, sidecarClient,
+		agentSystemInstruction, sidecarClient, currentRepo,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatProvider

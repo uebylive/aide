@@ -9,8 +9,8 @@ import logger from '../logger';
 import { CSChatState } from '../chatState/state';
 import { getSelectedCodeContext } from '../utilities/getSelectionContext';
 import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
-import { logChatPrompt } from '../posthog/logChatPrompt';
-import { reportFromStreamToProgress } from '../chatState/convertStreamToMessage';
+import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
+import { reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 import { debuggingFlow } from '../llm/recipe/debugging';
@@ -19,7 +19,7 @@ import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { SearchIndexCollection } from '../searchIndex/collection';
-import { SideCarClient } from '../sidecar/client';
+import { RepoRef, SideCarClient } from '../sidecar/client';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -249,6 +249,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _searchIndexCollection: SearchIndexCollection;
 	private _agentCustomInformation: string | null;
 	private _sideCarClient: SideCarClient;
+	private _currentRepoRef: RepoRef;
 
 	constructor(
 		workingDirectory: string,
@@ -262,6 +263,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		uniqueUserId: string,
 		agentCustomInstruction: string | null,
 		sideCarClient: SideCarClient,
+		repoRef: RepoRef,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
@@ -277,6 +279,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._searchIndexCollection = searchIndexCollection;
 		this._agentCustomInformation = agentCustomInstruction;
 		this._sideCarClient = sideCarClient;
+		this._currentRepoRef = repoRef;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
@@ -440,10 +443,17 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					return new CSChatResponseForProgress();
 				})();
 			} else if (requestType === 'search') {
-				progress.report(new CSChatProgressContent(
-					// allow-any-unicode-next-line
-					'Under construction 🏗️, use the semantic search feature in the normal search bar instead. devs@codestory.ai will push updates here'
-				));
+				logSearchPrompt(
+					request.message.toString(),
+					this._repoName,
+					this._repoHash,
+					this._uniqueUserId,
+				);
+				console.log(`[search][userProvidedContext] ${userProvidedContext}`);
+				const searchResponse = await this._sideCarClient.searchQuery(request.message.toString(), this._currentRepoRef);
+				// TODO(skcd): Debug this properly, and check if the responses look good
+				await reportFromStreamToSearchProgress(searchResponse, progress, token);
+				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();
 			} else {
 				const selectionContext = getSelectedCodeContext(this._workingDirectory);
