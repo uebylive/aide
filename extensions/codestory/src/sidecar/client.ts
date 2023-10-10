@@ -60,12 +60,22 @@ export class SideCarClient {
 // 	console.log("we have some response here");
 // 	const response = await sidecarclient.searchQuery(query, repoRef);
 // 	for await (const line of response) {
-// 		if (line === 'data:[CODESTORY_DONE]') {
-// 			continue;
-// 		}
+// 		// Now these responses can be parsed properly, since we are using our
+// 		// own reader over sse, sometimes the reader might send multiple events
+// 		// in a single line so we should split the lines by \n to get the
+// 		// individual lines
 // 		console.log(line);
-// 		// truncate data: from the start of the line
-// 		const conversationMessage = JSON.parse(line.substring('data:'.length)) as ConversationMessageOkay;
-// 		console.log(conversationMessage);
+// 		// Is this a good placeholder? probably not, cause we can have instances
+// 		// of this inside the string too, but for now lets check if this works as
+// 		// want it to
+// 		const lineParts = line.split('data:{');
+// 		for (const lineSinglePart of lineParts) {
+// 			const lineSinglePartTrimmed = lineSinglePart.trim();
+// 			if (lineSinglePartTrimmed === '') {
+// 				continue;
+// 			}
+// 			const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessageOkay;
+// 			console.log(conversationMessage);
+// 		}
 // 	}
 // })();
