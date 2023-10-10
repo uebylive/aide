@@ -22,5 +22,5 @@
 		"../../node_modules/@types/mocha",
 		"out",
 		"vsce_output"
-	]
+	],
 }

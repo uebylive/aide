@@ -37,6 +37,8 @@ import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
+import { SideCarClient } from './sidecar/client';
+import { readSideCarURL } from './utilities/sidecarUrl';
 
 
 class ProgressiveTrackSymbols {
@@ -121,6 +123,9 @@ export async function activate(context: ExtensionContext) {
 	// with it
 	const embeddings = await generateEmbeddingFromSentenceTransformers('something', 'test');
 	console.log('[embeddings]', embeddings);
+
+	// Setup the sidecar client here
+	const sidecarClient = new SideCarClient(readSideCarURL());
 
 
 	// Setup python language parser
@@ -210,7 +215,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath, codeGraph, repoName, repoHash,
 		searchIndexCollection, codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
-		agentSystemInstruction,
+		agentSystemInstruction, sidecarClient,
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatProvider

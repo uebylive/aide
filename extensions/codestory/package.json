@@ -100,6 +100,11 @@
           "type": "string",
           "default": "",
           "description": "Set custom instructions for the AI, this can be information about the repository you are working or nuances you want the AI to handle"
+        },
+        "aide.sidecarURL": {
+          "type": "string",
+          "default": "http://127.0.0.1:42424",
+          "description": "The url of the sidecar which is required for aide to work"
         }
       }
     }
@@ -150,6 +155,7 @@
     "openai": "^4.0.1",
     "posthog-node": "^3.1.1",
     "process-nextick-args": "^2.0.1",
+    "rxjs": "^7.8.1",
     "sharp": "^0.32.6",
     "ts-morph": "^19.0.0",
     "ts-node": "^10.9.1",
