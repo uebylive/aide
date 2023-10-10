@@ -23,3 +23,21 @@ export const logChatPrompt = (
 		},
 	});
 };
+
+
+export const logSearchPrompt = (
+	prompt: string,
+	githubRepoName: string,
+	githubRepoHash: string,
+	uniqueId: string,
+) => {
+	postHogClient.capture({
+		distinctId: uniqueId,
+		event: 'search_prompt',
+		properties: {
+			prompt,
+			githubRepoName,
+			githubRepoHash,
+		},
+	});
+};
