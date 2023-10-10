@@ -14,6 +14,9 @@ import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/la
 import { quickInputForeground, quickInputBackground, inputBackground } from 'vs/platform/theme/common/colorRegistry';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
+import { ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys';
+import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 
 export class ArcWidgetService extends Disposable implements IArcWidgetService {
 	declare readonly _serviceBrand: undefined;
@@ -49,6 +52,10 @@ export class ArcWidgetService extends Disposable implements IArcWidgetService {
 		this._container = undefined;
 	}
 
+	hide(): void {
+		this.close();
+	}
+
 	toggle(): void {
 		if (this._widget) {
 			this.close();
@@ -82,6 +89,7 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	constructor(
 		private readonly providerId: string,
 		@IArcService private readonly arcService: IArcService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IChatService private readonly chatService: IChatService,
 	) {
@@ -89,11 +97,17 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	}
 
 	render(parent: HTMLElement): void {
+		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(parent));
+		ARC_VIEW_VISIBLE.bindTo(inputScopedContextKeyService).set(true);
+		const scopedInstantiationService = this.instantiationService.createChild(
+			new ServiceCollection([IContextKeyService, inputScopedContextKeyService])
+		);
+
 		if (this.chatWidget) {
 			throw new Error('Cannot render chat twice');
 		}
 
-		this.chatWidget = this.instantiationService.createInstance(
+		this.chatWidget = scopedInstantiationService.createInstance(
 			ChatWidget,
 			{ resource: true },
 			{

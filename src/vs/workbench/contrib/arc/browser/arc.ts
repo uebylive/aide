@@ -11,6 +11,7 @@ export const IArcWidgetService = createDecorator<IArcWidgetService>('arcWidgetSe
 export interface IArcWidgetService {
 	readonly _serviceBrand: undefined;
 
+	hide(): void;
 	toggle(): void;
 }
 

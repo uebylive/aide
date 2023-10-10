@@ -70,6 +70,11 @@
         "command": "workbench.action.focusHoverChat.cs-chat",
         "key": "shift shift",
         "mac": "shift shift"
+      },
+      {
+        "command": "workbench.action.toggleArc.cs-arc",
+        "key": "alt alt",
+        "mac": "alt alt"
       }
     ],
     "configuration": {

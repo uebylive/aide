@@ -3,11 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { Codicon } from 'vs/base/common/codicons';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { localize } from 'vs/nls';
 import { Action2, MenuId } from 'vs/platform/actions/common/actions';
+import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { IArcWidgetService } from 'vs/workbench/contrib/arc/browser/arc';
+import { ARC_PROVIDER_EXISTS, ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys';
 
 export const ARC_CATEGORY = { value: localize('arc.category', "Arc"), original: 'Arc' };
 const toggleArcIcon = registerIcon('toggle-arc-icon', Codicon.squirrel, localize('toggleArcIcon', 'Icon represents Arc visibility.'));
@@ -42,6 +45,30 @@ export function getArcActionsForProvider(id: string, label: string) {
 			override run(accessor: ServicesAccessor, query?: string): void {
 				const arcWidgetService = accessor.get(IArcWidgetService);
 				arcWidgetService.toggle();
+			}
+		},
+
+		class HideArcAction extends Action2 {
+			constructor() {
+				super({
+					id: `workbench.action.hideArc.${id}`,
+					category: ARC_CATEGORY,
+					title: { value: localize('arcSession.hide', "Hide Arc ({0})", label), original: `Hide Arc (${label})` },
+					f1: true,
+					precondition: ARC_PROVIDER_EXISTS,
+					keybinding: {
+						weight: KeybindingWeight.EditorContrib,
+						primary: KeyCode.Escape,
+						secondary: [KeyMod.CtrlCmd | KeyCode.KeyW],
+						win: { primary: KeyCode.Escape, secondary: [KeyMod.CtrlCmd | KeyCode.F4, KeyMod.CtrlCmd | KeyCode.KeyW] },
+						when: ARC_VIEW_VISIBLE
+					}
+				});
+			}
+
+			override run(accessor: ServicesAccessor, query?: string): void {
+				const arcWidgetService = accessor.get(IArcWidgetService);
+				arcWidgetService.hide();
 			}
 		}
 	];
