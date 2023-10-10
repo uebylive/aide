@@ -100,6 +100,11 @@
           "type": "string",
           "default": "",
           "description": "Set custom instructions for the AI, this can be information about the repository you are working or nuances you want the AI to handle"
+        },
+        "aide.sidecarURL": {
+          "type": "string",
+          "default": "http://127.0.0.1:42424",
+          "description": "The url of the sidecar which is required for aide to work"
         }
       }
     }
@@ -138,7 +143,6 @@
     "concat-map": "^0.0.2",
     "core-util-is": "^1.0.3",
     "diff": "^5.1.0",
-    "eventsource": "^2.0.2",
     "fkill": "^8.1.1",
     "gpt-tokenizer": "^2.1.1",
     "isarray": "^2.0.5",
