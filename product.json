@@ -1818,13 +1818,19 @@
 			"inlineCompletionsAdditions"
 		],
 		"GitHub.copilot-chat": [
-			"handleIssueUri",
 			"interactive",
 			"interactiveUserActions",
-			"semanticSimilarity",
+			"chatProvider",
+			"codeActionAI",
 			"terminalDataWriteEvent",
 			"terminalSelection",
-			"terminalQuickFixProvider"
+			"terminalQuickFixProvider",
+			"handleIssueUri",
+			"readonlyMessage",
+			"chatVariables",
+			"mappedEditsProvider",
+			"aiRelatedInformation",
+			"chatAgents"
 		],
 		"GitHub.remotehub": [
 			"contribRemoteHelp",
