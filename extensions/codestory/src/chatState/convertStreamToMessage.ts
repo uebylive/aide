@@ -13,6 +13,7 @@ import { OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamToIterable } from '@axflow/models/shared';
 import { ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
+import { createFileTreeFromPaths } from './helpers';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
@@ -74,6 +75,7 @@ export const reportFromStreamToSearchProgress = async (
 	progress: vscode.Progress<CSChatProgress>,
 	cancellationToken: CSChatCancellationToken,
 	currentRepoRef: RepoRef,
+	workingDirectory: string,
 ): Promise<string> => {
 	let finalMessage = '';
 	if (cancellationToken.isCancellationRequested) {
@@ -125,15 +127,22 @@ export const reportFromStreamToSearchProgress = async (
 		} else {
 			const stepsTaken = conversationMessage.steps_taken.length;
 			const lastStep = conversationMessage.steps_taken[stepsTaken - 1];
-			if (lastStep.type === 'Path') {
-				progress.report(new CSChatProgressContent(lastStep.response));
-				finalMessage = lastStep.response;
-			} else if (lastStep.type === 'Code') {
-				progress.report(new CSChatProgressContent(lastStep.response));
-				finalMessage = lastStep.response;
-			} else if (lastStep.type === 'Proc') {
-				progress.report(new CSChatProgressContent(lastStep.response));
-				finalMessage = lastStep.response;
+			console.log(`[search][stream] whats the last step here`);
+			console.log(lastStep);
+			if ('Path' in lastStep) {
+				progress.report(new CSChatProgressContent('Found relevant files...'));
+				progress.report(
+					new CSChatProgressTask(
+						'Reading files for answer...',
+						Promise.resolve(
+							createFileTreeFromPaths(lastStep.Path.paths, workingDirectory),
+						)
+					)
+				);
+			} else if ('Code' in lastStep) {
+				// progress.report(new CSChatProgressContent(lastStep.Code.response));
+			} else if ('Proc' in lastStep) {
+				// progress.report(new CSChatProgressContent(lastStep.Proc.response));
 			}
 		}
 	}

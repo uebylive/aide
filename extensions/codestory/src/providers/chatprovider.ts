@@ -452,7 +452,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				const searchString = request.message.toString().slice('/search'.length).trim();
 				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef);
 				// TODO(skcd): Debug this properly, and check if the responses look good
-				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef);
+				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();
 			} else {

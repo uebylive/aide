@@ -422,10 +422,10 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 	}
 
 	async saveTreeSitterChunksToLocalStorage(): Promise<void> {
-		console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
+		// console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
 		console.log(this._nodes.length);
 		for (let index = 0; index < this._nodes.length; index++) {
-			console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
+			// console.log('[indexing][saveTreeSitterChunksToLocalStorage] saving to local storage');
 			const nodeName = getNameForTreeSitterChunkInformation(this._nodes[index]);
 			const finalStoragePath = path.join(
 				this._storageLocation,
@@ -439,10 +439,10 @@ export class TreeSitterChunkingBasedIndex extends CodeSearchIndexer {
 					finalStoragePath,
 					JSON.stringify(this._nodes[index]),
 				);
-				console.log('[saveTreeSitterChunksToLocalStorage] saved to local storage');
+				// console.log('[saveTreeSitterChunksToLocalStorage] saved to local storage');
 				console.log(finalStoragePath);
 			} catch (err) {
-				console.error('[saveTreeSitterChunksToLocalStorage] error while saving to local storage');
+				// console.error('[saveTreeSitterChunksToLocalStorage] error while saving to local storage');
 				console.error(this._nodes[index]);
 				console.error(err);
 			}
