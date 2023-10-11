@@ -9,7 +9,7 @@ export type OptionString =
 
 export type AgentStep =
 	| { Path: { query: string; response: string; paths: string[] } }
-	| { Code: { query: string; response: string } }
+	| { Code: { query: string; response: string; code_snippets: CodeSpan[] } }
 	| { Proc: { query: string; paths: string[]; response: string } };
 
 export type AgentState =
@@ -26,6 +26,7 @@ export interface CodeSpan {
 	start_line: number;
 	end_line: number;
 	data: string;
+	score: number | null;
 }
 
 export type ConversationState =
