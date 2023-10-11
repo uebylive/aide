@@ -25,8 +25,8 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 const maximizeIcon = registerIcon('panel-maximize', Codicon.chevronUp, localize('maximizeIcon', 'Icon to maximize a panel.'));
 const restoreIcon = registerIcon('panel-restore', Codicon.chevronDown, localize('restoreIcon', 'Icon to restore a panel.'));
 const closeIcon = registerIcon('panel-close', Codicon.close, localize('closeIcon', 'Icon to close a panel.'));
-const panelIcon = registerIcon('panel-layout-icon', Codicon.layoutPanel, localize('togglePanelOffIcon', 'Icon to toggle the panel off when it is on.'));
-const panelOffIcon = registerIcon('panel-layout-icon-off', Codicon.layoutPanelOff, localize('togglePanelOnIcon', 'Icon to toggle the panel on when it is off.'));
+// const panelIcon = registerIcon('panel-layout-icon', Codicon.layoutPanel, localize('togglePanelOffIcon', 'Icon to toggle the panel off when it is on.'));
+// const panelOffIcon = registerIcon('panel-layout-icon-off', Codicon.layoutPanelOff, localize('togglePanelOnIcon', 'Icon to toggle the panel on when it is off.'));
 
 export class TogglePanelAction extends Action2 {
 
@@ -408,20 +408,21 @@ registerAction2(class extends Action2 {
 });
 
 MenuRegistry.appendMenuItems([
+	// {
+	// 	id: MenuId.LayoutControlMenu,
+	// 	item: {
+	// 		group: '0_workbench_toggles',
+	// 		command: {
+	// 			id: TogglePanelAction.ID,
+	// 			title: localize('togglePanel', "Toggle Panel"),
+	// 			icon: panelOffIcon,
+	// 			toggled: { condition: PanelVisibleContext, icon: panelIcon }
+	// 		},
+	// 		when: ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')),
+	// 		order: 1
+	// 	}
+	// },
 	{
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '0_workbench_toggles',
-			command: {
-				id: TogglePanelAction.ID,
-				title: localize('togglePanel', "Toggle Panel"),
-				icon: panelOffIcon,
-				toggled: { condition: PanelVisibleContext, icon: panelIcon }
-			},
-			when: ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')),
-			order: 1
-		}
-	}, {
 		id: MenuId.ViewTitleContext,
 		item: {
 			group: '3_workbench_layout_move',

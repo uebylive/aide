@@ -54,4 +54,9 @@
 .arc-widget-chat-container .interactive-list {
 	border-bottom-right-radius: 6px;
 	border-bottom-left-radius: 6px;
+	height: calc(100vh - 128px) !important;
+}
+
+.arc-widget-chat-container .monaco-list {
+	height: calc(100vh - 128px) !important;
 }
