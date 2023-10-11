@@ -8,9 +8,9 @@ export type OptionString =
 	| { type: 'None' };
 
 export type AgentStep =
-	| { type: 'Path'; query: string; response: string }
-	| { type: 'Code'; query: string; response: string }
-	| { type: 'Proc'; query: string; paths: string[]; response: string };
+	| { Path: { query: string; response: string; paths: string[] } }
+	| { Code: { query: string; response: string } }
+	| { Proc: { query: string; paths: string[]; response: string } };
 
 export type AgentState =
 	| 'Search'
