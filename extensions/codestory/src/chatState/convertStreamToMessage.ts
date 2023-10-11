@@ -10,6 +10,7 @@ import { Stream } from 'openai/streaming';
 import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
 import { OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamToIterable } from '@axflow/models/shared';
+import { ConversationMessageOkay } from '../sidecar/types';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
@@ -60,6 +61,69 @@ export const reportFromStreamToProgress = async (
 			return finalMessage;
 		}
 		progress.report(new CSChatProgressContent(part.choices[0]?.delta?.content ?? ''));
+	}
+
+	return finalMessage;
+};
+
+
+export const reportFromStreamToSearchProgress = async (
+	stream: AsyncIterator<ConversationMessageOkay>,
+	progress: vscode.Progress<CSChatProgress>,
+	cancellationToken: CSChatCancellationToken,
+): Promise<string> => {
+	let finalMessage = '';
+	if (cancellationToken.isCancellationRequested) {
+		return '';
+	}
+	const firstPartOfMessage = async () => {
+		const firstPart = await stream.next();
+		if (firstPart.done) {
+			return new CSChatProgressContent(''); // Handle when iterator is done
+		}
+		// if we don't have the message id here that means this is an ack request so
+		// we should just report that we are processing it on the backend
+		const sessionId = firstPart.value.data.session_id;
+		return new CSChatProgressContent('Your session id is: ' + sessionId);
+	};
+
+	progress.report(new CSChatProgressTask(
+		// allow-any-unicode-next-line
+		'Thinking... 🤔',
+		firstPartOfMessage(),
+	));
+
+	// Now we are in the good state, we can start reporting the progress by looking
+	// at the last step the agent has taken and reporting that to the chat
+	if (cancellationToken.isCancellationRequested) {
+		return finalMessage;
+	}
+
+	const asyncIterable = {
+		[Symbol.asyncIterator]: () => stream
+	};
+
+	for await (const conversationMessage of asyncIterable) {
+		// First we check if we have the answer, if that's the case then we know
+		// we have what we want to repo
+		if (conversationMessage.data.answer !== null) {
+			progress.report(new CSChatProgressContent(conversationMessage.data.answer));
+			finalMessage = conversationMessage.data.answer;
+			return finalMessage;
+		} else {
+			const stepsTaken = conversationMessage.data.steps_taken.length;
+			const lastStep = conversationMessage.data.steps_taken[stepsTaken - 1];
+			if (lastStep.type === 'Path') {
+				progress.report(new CSChatProgressContent(lastStep.response));
+				finalMessage = lastStep.response;
+			} else if (lastStep.type === 'Code') {
+				progress.report(new CSChatProgressContent(lastStep.response));
+				finalMessage = lastStep.response;
+			} else if (lastStep.type === 'Proc') {
+				progress.report(new CSChatProgressContent(lastStep.response));
+				finalMessage = lastStep.response;
+			}
+		}
 	}
 
 	return finalMessage;

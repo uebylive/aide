@@ -7,7 +7,8 @@ export async function* callServerEvent(url: string): AsyncIterableIterator<strin
 	const response = await fetch(url, {
 		method: 'GET',
 		headers: {
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			'accept': 'text/event-stream',
 		},
 	});
 	if (response.body === null) {
