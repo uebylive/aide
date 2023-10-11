@@ -8,9 +8,9 @@ export type OptionString =
 	| { type: 'None' };
 
 export type AgentStep =
-	| { type: 'Path'; query: string; response: string }
-	| { type: 'Code'; query: string; response: string }
-	| { type: 'Proc'; query: string; paths: string[]; response: string };
+	| { Path: { query: string; response: string; paths: string[] } }
+	| { Code: { query: string; response: string; code_snippets: CodeSpan[] } }
+	| { Proc: { query: string; paths: string[]; response: string } };
 
 export type AgentState =
 	| 'Search'
@@ -26,6 +26,7 @@ export interface CodeSpan {
 	start_line: number;
 	end_line: number;
 	data: string;
+	score: number | null;
 }
 
 export type ConversationState =
@@ -64,3 +65,27 @@ export interface ConversationMessage {
 
 export type ConversationMessageOkay =
 	| { type: 'Ok'; data: ConversationMessage };
+
+export interface Repository {
+	disk_path: string;
+	sync_status: SyncStatus;
+	last_commit_unix_secs: number;
+	last_index_unix_secs: number;
+}
+
+export type SyncStatus =
+	| { tag: 'Error'; message: string }
+	| { tag: 'Uninitialized' }
+	| { tag: 'Cancelling' }
+	| { tag: 'Cancelled' }
+	| { tag: 'Queued' }
+	| { tag: 'Syncing' }
+	| { tag: 'Indexing' }
+	| { tag: 'Done' }
+	| { tag: 'Removed' }
+	| { tag: 'RemoteRemoved' };
+
+export interface RepoStatus {
+	// The string here is generated from RepoRef.to_string()
+	repo_map: { [key: string]: Repository };
+}

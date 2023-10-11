@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { callServerEvent } from './ssestream';
-import { ConversationMessage, ConversationMessageOkay } from './types';
+import { ConversationMessage, ConversationMessageOkay, RepoStatus } from './types';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -13,7 +13,7 @@ export enum RepoRefBackend {
 
 
 export class RepoRef {
-	private _path: String;
+	private _path: string;
 	private _backend: RepoRefBackend;
 
 	constructor(
@@ -27,6 +27,10 @@ export class RepoRef {
 	getRepresentation(): string {
 		return `${this._backend}/${this._path}`;
 	}
+
+	getPath(): string {
+		return this._path;
+	}
 }
 
 
@@ -39,7 +43,13 @@ export class SideCarClient {
 		this._url = url;
 	}
 
-	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessageOkay> {
+	getRepoListUrl(): string {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/repo/repo_list';
+		return baseUrl.toString();
+	}
+
+	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessage> {
 		// how do we create the url properly here?
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/search_agent';
@@ -62,20 +72,31 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessageOkay;
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				console.log('[search][stream] whats the message from the stream');
+				console.log(conversationMessage);
 				yield conversationMessage;
 			}
 		}
 	}
-}
 
-
-void (async () => {
-	const sidecarclient = new SideCarClient('http://127.0.0.1:42424');
-	const repoRef = new RepoRef('/Users/skcd/scratch/sidecar', RepoRefBackend.local);
-	const query = "Where does the agent do search?";
-	const response = await sidecarclient.searchQuery(query, repoRef);
-	for await (const message of response) {
-		console.log(message);
+	async indexRepositoryIfNotInvoked(repoRef: RepoRef): Promise<boolean> {
+		// First get the list of indexed repositories
+		const response = await fetch(this.getRepoListUrl());
+		const repoList = (await response.json()) as RepoStatus;
+		console.log(repoList);
+		if (!(repoRef.getRepresentation() in repoList.repo_map)) {
+			// We need to index this repository
+			const baseUrl = new URL(this._url);
+			baseUrl.pathname = '/api/repo/sync';
+			baseUrl.searchParams.set('repo', repoRef.getRepresentation());
+			const url = baseUrl.toString();
+			const response = await fetch(url);
+			const responseJson = await response.json();
+			return responseJson.status === 'ok';
+		} else {
+			// We don't need to index this repository
+			return true;
+		}
 	}
-})();
+}
