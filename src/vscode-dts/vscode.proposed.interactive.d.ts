@@ -113,16 +113,9 @@ declare module 'vscode' {
 		documentSymbolName: string;
 	}
 
-
-	export interface InteractiveUserProvidedContext {
-		fileContext: string[];
-		codeSymbolsContext: InteractiveChatCodeSymbolContext[];
-	}
-
 	export interface InteractiveRequest {
 		session: InteractiveSession;
 		message: string | InteractiveSessionReplyFollowup;
-		userProvidedContext: InteractiveUserProvidedContext | undefined;
 	}
 
 	export interface InteractiveResponseErrorDetails {
