@@ -13,7 +13,7 @@ export enum RepoRefBackend {
 
 
 export class RepoRef {
-	private _path: String;
+	private _path: string;
 	private _backend: RepoRefBackend;
 
 	constructor(
@@ -27,6 +27,10 @@ export class RepoRef {
 	getRepresentation(): string {
 		return `${this._backend}/${this._path}`;
 	}
+
+	getPath(): string {
+		return this._path;
+	}
 }
 
 
@@ -39,7 +43,7 @@ export class SideCarClient {
 		this._url = url;
 	}
 
-	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessageOkay> {
+	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessage> {
 		// how do we create the url properly here?
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/search_agent';
@@ -62,7 +66,9 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessageOkay;
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				console.log('[search][stream] whats the message from the stream');
+				console.log(conversationMessage);
 				yield conversationMessage;
 			}
 		}
@@ -70,12 +76,12 @@ export class SideCarClient {
 }
 
 
-void (async () => {
-	const sidecarclient = new SideCarClient('http://127.0.0.1:42424');
-	const repoRef = new RepoRef('/Users/skcd/scratch/sidecar', RepoRefBackend.local);
-	const query = "Where does the agent do search?";
-	const response = await sidecarclient.searchQuery(query, repoRef);
-	for await (const message of response) {
-		console.log(message);
-	}
-})();
+// void (async () => {
+// 	const sidecarclient = new SideCarClient('http://127.0.0.1:42424');
+// 	const repoRef = new RepoRef('/Users/skcd/scratch/sidecar', RepoRefBackend.local);
+// 	const query = "Where does the agent do search?";
+// 	const response = await sidecarclient.searchQuery(query, repoRef);
+// 	for await (const message of response) {
+// 		console.log(message);
+// 	}
+// })();

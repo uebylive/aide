@@ -10,7 +10,7 @@ import { CSChatState } from '../chatState/state';
 import { getSelectedCodeContext } from '../utilities/getSelectionContext';
 import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
 import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
-import { reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
+import { formatPathsInAnswer, reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
 import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 import { debuggingFlow } from '../llm/recipe/debugging';
@@ -449,10 +449,10 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				console.log(`[search][userProvidedContext] ${userProvidedContext}`);
-				const searchResponse = await this._sideCarClient.searchQuery(request.message.toString(), this._currentRepoRef);
+				const searchString = request.message.toString().slice('/search'.length).trim();
+				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef);
 				// TODO(skcd): Debug this properly, and check if the responses look good
-				await reportFromStreamToSearchProgress(searchResponse, progress, token);
+				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef);
 				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();
 			} else {
