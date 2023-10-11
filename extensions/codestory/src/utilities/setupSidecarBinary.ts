@@ -138,7 +138,7 @@ export async function startSidecarBinary(
 
 	const zipDestination = path.join(
 		extensionBasePath,
-		'sidecar',
+		'sidecar_zip',
 	);
 	const sidecarDestination = path.join(
 		extensionBasePath,
@@ -268,6 +268,38 @@ export async function startSidecarBinary(
 	};
 
 	await spawnChild();
+
+
+	let hcAttempts = 0;
+	const waitForGreenHC = async () => {
+		const retry = () => {
+			hcAttempts++;
+			console.log(`Error HC failed, probably still starting up. Retrying attempt ${hcAttempts}...`);
+			setTimeout(waitForGreenHC, delay);
+		};
+		try {
+			const url = `${serverUrl}/api/health`;
+			const response = await fetch(url);
+			if (response.status === 200) {
+				console.log('HC finished! We are green 🛳️');
+				return;
+			} else {
+				console.log('HC failed, trying again');
+				retry();
+			}
+		} catch (e: any) {
+			if (hcAttempts < maxAttempts) {
+				console.log('HC failed, trying again', e);
+				retry();
+			} else {
+				throw e;
+			}
+		}
+	};
+
+	console.log('we are returning from HC check');
+	await waitForGreenHC();
+	console.log('we are in the HC check');
 
 	return 'http://127.0.0.1:42424';
 }
