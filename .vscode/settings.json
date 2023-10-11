@@ -162,7 +162,13 @@
 	"cSpell.words": [
 		"CODESTORY",
 		"deferreds",
+		"dylib",
+		"libonnxruntime",
+		"onnx",
+		"onnxruntime",
 		"Pathify",
-		"reporef"
+		"qdrant",
+		"reporef",
+		"xattr"
 	]
 }

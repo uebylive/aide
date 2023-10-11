@@ -39,6 +39,7 @@ import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { readSideCarURL } from './utilities/sidecarUrl';
+import { startSidecarBinary } from './utilities/setupSidecarBinary';
 
 
 class ProgressiveTrackSymbols {
@@ -125,7 +126,9 @@ export async function activate(context: ExtensionContext) {
 	console.log('[embeddings]', embeddings);
 
 	// Setup the sidecar client here
-	const sidecarClient = new SideCarClient(readSideCarURL());
+	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
+	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
+	const sidecarClient = new SideCarClient(sidecarUrl);
 
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
