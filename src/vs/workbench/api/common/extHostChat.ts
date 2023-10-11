@@ -191,7 +191,6 @@ export class ExtHostChat implements ExtHostChatShape {
 			session: realSession,
 			message: request.message,
 			variables: {},
-			userProvidedContext: request.userProvidedContext ? typeConvert.ChatUserProvidedContext.to(request.userProvidedContext) : undefined,
 		};
 
 		if (request.variables) {

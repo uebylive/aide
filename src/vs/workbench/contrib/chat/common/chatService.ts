@@ -30,7 +30,6 @@ export interface IChatRequest {
 	session: IChat;
 	message: string;
 	variables: Record<string, IChatRequestVariableValue[]>;
-	userProvidedContext: IChatUserProvidedContext | undefined;
 }
 
 export interface IChatResponseErrorDetails {
@@ -278,7 +277,7 @@ export interface IChatService {
 	/**
 	 * Returns whether the request was accepted.
 	 */
-	sendRequest(sessionId: string, message: string, chatUserProvidedContext?: IChatUserProvidedContext, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
+	sendRequest(sessionId: string, message: string, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
 	removeRequest(sessionid: string, requestId: string): Promise<void>;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	getSlashCommands(sessionId: string, token: CancellationToken): Promise<ISlashCommand[]>;
@@ -293,20 +292,4 @@ export interface IChatService {
 	onDidDisposeSession: Event<{ sessionId: string }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;
-}
-
-
-// CodeStory hacking
-
-export interface IChatCodeSymbolContext {
-	filePath: string;
-	startLineNumber: number;
-	endLineNumber: number;
-	documentSymbolName: string;
-}
-
-
-export interface IChatUserProvidedContext {
-	fileContext: string[];
-	codeSymbolsContext: IChatCodeSymbolContext[];
 }
