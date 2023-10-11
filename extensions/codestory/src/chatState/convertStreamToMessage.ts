@@ -11,9 +11,10 @@ import { Stream } from 'openai/streaming';
 import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
 import { OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamToIterable } from '@axflow/models/shared';
-import { ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
+import { AgentStep, CodeSpan, ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
 import { createFileTreeFromPaths } from './helpers';
+import * as math from 'mathjs';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
@@ -121,7 +122,7 @@ export const reportFromStreamToSearchProgress = async (
 			// the reporef location to the message and that would solve a lot of
 			// problems.
 			const formattingFixAnswer = await formatPathsInAnswer(conversationMessage.answer, currentRepoRef);
-			progress.report(new CSChatProgressContent(formattingFixAnswer));
+			progress.report(new CSChatProgressContent('## Answer\n\n' + formattingFixAnswer));
 			finalMessage = conversationMessage.answer;
 			return finalMessage;
 		} else {
@@ -130,7 +131,7 @@ export const reportFromStreamToSearchProgress = async (
 			console.log(`[search][stream] whats the last step here`);
 			console.log(lastStep);
 			if ('Path' in lastStep) {
-				progress.report(new CSChatProgressContent('Found relevant files...'));
+				progress.report(new CSChatProgressContent('## Found relevant files'));
 				progress.report(
 					new CSChatProgressTask(
 						'Reading files for answer...',
@@ -140,9 +141,21 @@ export const reportFromStreamToSearchProgress = async (
 					)
 				);
 			} else if ('Code' in lastStep) {
-				// progress.report(new CSChatProgressContent(lastStep.Code.response));
+				progress.report(
+					new CSChatProgressContent(
+						reportCodeSpansToChat(
+							lastStep.Code.code_snippets,
+							workingDirectory,
+						)
+					)
+				);
 			} else if ('Proc' in lastStep) {
-				// progress.report(new CSChatProgressContent(lastStep.Proc.response));
+				const procOutput = reportProcUpdateToChat(lastStep, workingDirectory);
+				progress.report(
+					new CSChatProgressContent(
+						procOutput === null ? 'No files found' : procOutput
+					)
+				);
 			}
 		}
 	}
@@ -200,4 +213,60 @@ export const formatPathsInAnswer = async (answer: string, reporef: RepoRef): Pro
 	}
 
 	return fullPathify(answer, reporef.getPath());
+};
+
+
+export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: string): string => {
+	// We limit it to 10 code spans.. and then show ... more or something here
+	let suffixString = '';
+	if (codeSpans.length > 5) {
+		suffixString = '... and more code snippets\n\n';
+	}
+	const sortedCodeSpans = codeSpans.sort((a, b) => {
+		if (a.score !== null && b.score !== null) {
+			return b.score - a.score;
+		}
+		if (a.score !== null && b.score === null) {
+			return -1;
+		}
+		if (a.score === null && b.score !== null) {
+			return 1;
+		}
+		return 0;
+	});
+	let codeSpansString = '';
+	for (let index = 0; index < math.min(5, sortedCodeSpans.length); index++) {
+		const currentCodeSpan = sortedCodeSpans[index];
+		const fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
+		const currentFileLink = `${currentCodeSpan.file_path}#L${currentCodeSpan.start_line}-L${currentCodeSpan.end_line}`;
+		const fileLink = `${fullFilePath}#L${currentCodeSpan.start_line}-L${currentCodeSpan.end_line}`;
+		const markdownCodeSpan = `[${currentFileLink}](${fileLink})`;
+		codeSpansString += markdownCodeSpan + '\n\n';
+	}
+	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
+};
+
+
+export const reportProcUpdateToChat = (
+	proc: AgentStep,
+	workingDirectory: string,
+): string | null => {
+	if ('Proc' in proc) {
+		const paths = proc.Proc.paths;
+		let suffixString = '';
+		if (proc.Proc.paths.length > 5) {
+			suffixString = '... and more files\n\n';
+		}
+		let procString = '';
+		for (let index = 0; index < math.min(5, paths.length); index++) {
+			const currentPath = paths[index];
+			const fullFilePath = path.join(workingDirectory, currentPath);
+			const currentFileLink = `${currentPath}`;
+			const fileLink = `${fullFilePath}`;
+			const markdownCodeSpan = `[${currentFileLink}](${fileLink})`;
+			procString += markdownCodeSpan + '\n\n';
+		}
+		return '## Reading from relevant files\n\n' + procString + suffixString;
+	}
+	return null;
 };
