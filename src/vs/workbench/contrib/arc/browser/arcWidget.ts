@@ -110,6 +110,7 @@ export class ArcWidget extends Disposable implements IArcWidget {
 		this.chatWidget = scopedInstantiationService.createInstance(
 			ChatWidget,
 			{ resource: true },
+			{ supportsFileReferences: true },
 			{
 				listForeground: quickInputForeground,
 				listBackground: quickInputBackground,

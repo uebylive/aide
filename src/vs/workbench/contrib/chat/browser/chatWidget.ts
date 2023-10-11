@@ -20,15 +20,15 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { IViewsService } from 'vs/workbench/common/views';
-import { ChatTreeItem, IChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetService, IChatWidgetViewContext } from 'vs/workbench/contrib/chat/browser/chat';
+import { ChatTreeItem, IChatWidgetViewOptions, IChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetService, IChatWidgetViewContext } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatAccessibilityProvider, ChatListDelegate, ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
-import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
-import { IChatReplyFollowup, IChatService, IChatUserProvidedContext, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
+import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
+import { IChatReplyFollowup, IChatService, ISlashCommand, IChatUserProvidedContext } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 
 const $ = dom.$;
@@ -49,8 +49,12 @@ export interface IChatWidgetStyles {
 	resultEditorBackground: string;
 }
 
+export interface IChatWidgetContrib extends IDisposable {
+	readonly id: string;
+}
+
 export class ChatWidget extends Disposable implements IChatWidget {
-	public static readonly CONTRIBS: { new(...args: [IChatWidget, ...any]): any }[] = [];
+	public static readonly CONTRIBS: { new(...args: [IChatWidget, ...any]): IChatWidgetContrib }[] = [];
 
 	private _onDidFocus = this._register(new Emitter<void>());
 	readonly onDidFocus = this._onDidFocus.event;
@@ -69,6 +73,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private _onDidChangeHeight = this._register(new Emitter<number>());
 	readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	private contribs: IChatWidgetContrib[] = [];
 
 	private tree!: WorkbenchObjectTree<ChatTreeItem>;
 	private renderer!: ChatListItemRenderer;
@@ -125,6 +131,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	constructor(
 		readonly viewContext: IChatWidgetViewContext,
+		private readonly viewOptions: IChatWidgetViewOptions,
 		private readonly styles: IChatWidgetStyles,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -139,6 +146,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
+	}
+
+	get supportsFileReferences(): boolean {
+		return !!this.viewOptions.supportsFileReferences;
 	}
 
 	get providerId(): string {
@@ -162,8 +173,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	render(parent: HTMLElement): void {
 		const viewId = 'viewId' in this.viewContext ? this.viewContext.viewId : undefined;
 		this.editorOptions = this._register(this.instantiationService.createInstance(ChatEditorOptions, viewId, this.styles.listForeground, this.styles.inputEditorBackground, this.styles.resultEditorBackground));
-		const renderInputOnTop = this.viewContext.renderInputOnTop ?? false;
-		const renderStyle = this.viewContext.renderStyle;
+		const renderInputOnTop = this.viewOptions.renderInputOnTop ?? false;
+		const renderStyle = this.viewOptions.renderStyle;
 
 		this.container = dom.append(parent, $('.interactive-session'));
 		if (renderInputOnTop) {
@@ -176,7 +187,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this.createList(this.listContainer, { renderStyle });
 
-		if (this.viewContext.renderOnlyInput) {
+		if (this.viewOptions.renderOnlyInput) {
 			this.renderer.setVisible(false);
 			this.listContainer.style.display = 'none';
 		}
@@ -190,7 +201,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			revealLastElement(this.tree);
 		}
 
-		ChatWidget.CONTRIBS.forEach(contrib => this._register(this.instantiationService.createInstance(contrib, this)));
+		this.contribs = ChatWidget.CONTRIBS.map(contrib => this._register(this.instantiationService.createInstance(contrib, this)));
+	}
+
+	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {
+		return this.contribs.find(c => c.id === id) as T;
 	}
 
 	focusInput(): void {
@@ -241,7 +256,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 					getId: (element) => {
 						return ((isResponseVM(element) || isRequestVM(element)) ? element.dataId : element.id) +
 							// TODO? We can give the welcome message a proper VM or get rid of the rest of the VMs
-							((isWelcomeVM(element) && !this.viewModel?.isInitialized) ? '_initializing' : '') +
+							((isWelcomeVM(element) && this.viewModel) ? `_${ChatModelInitState[this.viewModel.initState]}` : '') +
 							// Ensure re-rendering an element once slash commands are loaded, so the colorization can be applied.
 							`${(isRequestVM(element) || isWelcomeVM(element)) && !!this.lastSlashCommands ? '_scLoaded' : ''}` +
 							// If a response is in the process of progressive rendering, we need to ensure that it will
@@ -474,7 +489,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			const editorValue = this.inputPart.inputEditor.getValue();
 			this._onDidAcceptInput.fire(editorValue);
 
-			if (this.viewContext.renderOnlyInput) {
+			if (this.viewOptions.renderOnlyInput) {
 				return;
 			}
 

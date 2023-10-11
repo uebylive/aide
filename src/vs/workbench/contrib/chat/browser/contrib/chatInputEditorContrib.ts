@@ -25,6 +25,7 @@ import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/brows
 // import { AtSymbolContentWidget } from 'vs/workbench/contrib/chat/browser/chatAtSymbolContentWidget';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
+import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicReferences';
 import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/chat/common/chatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
@@ -42,6 +43,8 @@ const variableTextDecorationType = 'chat-variable-text';
 class InputEditorDecorations extends Disposable {
 
 	private _previouslyUsedSlashCommands = new Set<string>();
+
+	public readonly id = 'inputEditorDecorations';
 
 	constructor(
 		private readonly widget: IChatWidget,
@@ -72,6 +75,7 @@ class InputEditorDecorations extends Disposable {
 
 	private updateRegisteredDecorationTypes() {
 		this.codeEditorService.removeDecorationType(variableTextDecorationType);
+		this.codeEditorService.removeDecorationType(dynamicReferenceDecorationType);
 		this.codeEditorService.removeDecorationType(slashCommandTextDecorationType);
 
 		const theme = this.themeService.getColorTheme();
@@ -81,6 +85,11 @@ class InputEditorDecorations extends Disposable {
 			borderRadius: '3px'
 		});
 		this.codeEditorService.registerDecorationType(decorationDescription, variableTextDecorationType, {
+			color: theme.getColor(chatSlashCommandForeground)?.toString(),
+			backgroundColor: theme.getColor(chatSlashCommandBackground)?.toString(),
+			borderRadius: '3px'
+		});
+		this.codeEditorService.registerDecorationType(decorationDescription, dynamicReferenceDecorationType, {
 			color: theme.getColor(chatSlashCommandForeground)?.toString(),
 			backgroundColor: theme.getColor(chatSlashCommandBackground)?.toString(),
 			borderRadius: '3px'
@@ -207,6 +216,8 @@ class InputEditorDecorations extends Disposable {
 }
 
 class InputEditorSlashCommandMode extends Disposable {
+	public readonly id = 'InputEditorSlashCommandMode';
+
 	constructor(
 		private readonly widget: IChatWidget,
 		@IChatService private readonly chatService: IChatService
@@ -401,6 +412,65 @@ class AgentCompletions extends Disposable {
 		}));
 	}
 }
+
+class BuiltinDynamicCompletions extends Disposable {
+	private static readonly VariableNameDef = /\$\w*/g; // MUST be using `g`-flag
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: 'chatDynamicCompletions',
+			triggerCharacters: ['$'],
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables');
+				if (!fileVariablesEnabled) {
+					return;
+				}
+
+				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+				if (!widget || !widget.supportsFileReferences) {
+					return null;
+				}
+
+				const varWord = getWordAtText(position.column, BuiltinDynamicCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				if (!varWord && model.getWordUntilPosition(position).word) {
+					// inside a "normal" word
+					return null;
+				}
+
+				let insert: Range;
+				let replace: Range;
+				if (!varWord) {
+					insert = replace = Range.fromPositions(position);
+				} else {
+					insert = new Range(position.lineNumber, varWord.startColumn, position.lineNumber, position.column);
+					replace = new Range(position.lineNumber, varWord.startColumn, position.lineNumber, varWord.endColumn);
+				}
+
+				const range = new Range(position.lineNumber, replace.startColumn, position.lineNumber, replace.endColumn + 'file:'.length);
+				return <CompletionList>{
+					suggestions: [
+						<CompletionItem>{
+							label: '$file',
+							insertText: '$file:',
+							detail: localize('pickFileLabel', "Pick a file"),
+							range: { insert, replace },
+							kind: CompletionItemKind.Text,
+							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range }] },
+						}
+					]
+				};
+			}
+		}));
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
 
 interface SlashCommandYieldTo {
 	command: string;
