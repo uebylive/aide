@@ -129,13 +129,17 @@ export async function activate(context: ExtensionContext) {
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl);
-
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
 		// We assume the root-path is the one we are interested in
 		rootPath,
 		RepoRefBackend.local,
 	);
+	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
+
+	// We first check if the repo has been indexed, if not we ask the sidecar binary
+	// to start indexing it.
+
 
 
 	// Setup python language parser
