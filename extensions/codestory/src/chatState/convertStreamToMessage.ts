@@ -4,13 +4,15 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
 import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
 import { OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamToIterable } from '@axflow/models/shared';
-import { ConversationMessageOkay } from '../sidecar/types';
+import { ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
+import { RepoRef } from '../sidecar/client';
 
 // Here we are going to convert the stream of messages to progress messages
 // which we can report back on to the chat
@@ -68,9 +70,10 @@ export const reportFromStreamToProgress = async (
 
 
 export const reportFromStreamToSearchProgress = async (
-	stream: AsyncIterator<ConversationMessageOkay>,
+	stream: AsyncIterator<ConversationMessage>,
 	progress: vscode.Progress<CSChatProgress>,
 	cancellationToken: CSChatCancellationToken,
+	currentRepoRef: RepoRef,
 ): Promise<string> => {
 	let finalMessage = '';
 	if (cancellationToken.isCancellationRequested) {
@@ -78,12 +81,16 @@ export const reportFromStreamToSearchProgress = async (
 	}
 	const firstPartOfMessage = async () => {
 		const firstPart = await stream.next();
+		console.log('[search][stream] whats the first part here');
+		console.log(firstPart);
 		if (firstPart.done) {
 			return new CSChatProgressContent(''); // Handle when iterator is done
 		}
 		// if we don't have the message id here that means this is an ack request so
 		// we should just report that we are processing it on the backend
-		const sessionId = firstPart.value.data.session_id;
+		// I know this ts-ignore is bad, but keeping it here for now
+		// @ts-ignore
+		const sessionId = firstPart.value['session_id'];
 		return new CSChatProgressContent('Your session id is: ' + sessionId);
 	};
 
@@ -106,13 +113,18 @@ export const reportFromStreamToSearchProgress = async (
 	for await (const conversationMessage of asyncIterable) {
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
-		if (conversationMessage.data.answer !== null) {
-			progress.report(new CSChatProgressContent(conversationMessage.data.answer));
-			finalMessage = conversationMessage.data.answer;
+		if (conversationMessage.answer !== null) {
+			// We need to parse the answer a bit here, because we get relative paths
+			// and not absolute paths. The right way to do this will be to attach
+			// the reporef location to the message and that would solve a lot of
+			// problems.
+			const formattingFixAnswer = await formatPathsInAnswer(conversationMessage.answer, currentRepoRef);
+			progress.report(new CSChatProgressContent(formattingFixAnswer));
+			finalMessage = conversationMessage.answer;
 			return finalMessage;
 		} else {
-			const stepsTaken = conversationMessage.data.steps_taken.length;
-			const lastStep = conversationMessage.data.steps_taken[stepsTaken - 1];
+			const stepsTaken = conversationMessage.steps_taken.length;
+			const lastStep = conversationMessage.steps_taken[stepsTaken - 1];
 			if (lastStep.type === 'Path') {
 				progress.report(new CSChatProgressContent(lastStep.response));
 				finalMessage = lastStep.response;
@@ -130,52 +142,53 @@ export const reportFromStreamToSearchProgress = async (
 };
 
 
-// export const reportFromStreamToProgressAx = async (
-// 	streamPromise: Promise<ReadableStream<string> | null>,
-// 	progress: vscode.Progress<CSChatProgress>,
-// 	cancellationToken: CSChatCancellationToken,
-// ): Promise<string> => {
-// 	let finalMessage = '';
-// 	const stream = await streamPromise;
-// 	if (!stream) {
-//      // allow-any-unicode-next-line
-// 		return 'No reply from the LLM 🥲';
-// 	}
+export const formatPathsInAnswer = async (answer: string, reporef: RepoRef): Promise<string> => {
+	async function isPathLike(markdownLink: string): Promise<boolean> {
+		// Here the markdown link at the end of it might have #L{blah}-L{blah2},
+		// we want to remove that part and then check if the path exists.
+		const markdownLinkWithoutLineNumbers = markdownLink.split('#')[0];
+		const finalPath = path.join(reporef.getPath(), markdownLinkWithoutLineNumbers);
+		try {
+			console.log('[formatPathsInAnswer] checking the following path');
+			console.log(finalPath);
+			await vscode.workspace.fs.stat(vscode.Uri.file(finalPath));
+			return true;
+		} catch (error) {
+			return false;
+		}
+	}
 
-// 	if (cancellationToken.isCancellationRequested) {
-// 		return finalMessage;
-// 	}
+	async function fullPathify(content: string, basePath: string): Promise<string> {
+		// Regular expression to match markdown links.
+		// This captures the link text and the link target separately.
+		const markdownLinkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
 
-// 	let hasCalledFirstPartOfMessage = false;
-// 	let firstPartOfMessage: (part: CSChatProgressContent) => void;
-// 	const promise = new Promise<CSChatProgressContent>((resolve) => {
-// 		firstPartOfMessage = resolve;
-// 	});
+		let match;
+		let lastIndex = 0;
+		let resultString = '';
 
-// 	// This polls the firstPartOfMessage() function and when its finished,
-// 	// we move on to the next bits.
-// 	progress.report(new CSChatProgressTask(
-// 		// allow-any-unicode-next-line
-// 		'Thinking... 🤔',
-// 		promise,
-// 	));
+		while ((match = markdownLinkRegex.exec(content)) !== null) {
+			// Add the previous unmatched text to the result
+			resultString += content.slice(lastIndex, match.index);
+			lastIndex = markdownLinkRegex.lastIndex;
 
-// 	if (cancellationToken.isCancellationRequested) {
-// 		return finalMessage;
-// 	}
+			const [fullMatch, linkText, linkTarget] = match;
 
-// 	for await (const part of StreamToIterable(stream)) {
-// 		if (!hasCalledFirstPartOfMessage) {
-// 			firstPartOfMessage(new CSChatProgressContent(part ?? ''));
-// 			hasCalledFirstPartOfMessage = true;
-// 		}
+			if (await isPathLike(linkTarget)) {
+				// If the link target looks like a path, replace it with the full path
+				const fullPath = path.join(basePath, linkTarget);
+				resultString += `[${linkText}](${fullPath})`;
+			} else {
+				// If not, add the original match
+				resultString += fullMatch;
+			}
+		}
 
-// 		finalMessage += part ?? '';
-// 		if (cancellationToken.isCancellationRequested) {
-// 			return finalMessage;
-// 		}
-// 		progress.report(new CSChatProgressContent(part ?? ''));
-// 	}
+		// Add any remaining unmatched text to the result
+		resultString += content.slice(lastIndex);
 
-// 	return finalMessage;
-// };
+		return resultString;
+	}
+
+	return fullPathify(answer, reporef.getPath());
+};
