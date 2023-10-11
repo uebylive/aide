@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { sleep } from '../utilities/sleep';
 import { callServerEvent } from './ssestream';
 import { ConversationMessage, ConversationMessageOkay, RepoStatus } from './types';
 
@@ -82,6 +83,8 @@ export class SideCarClient {
 
 	async indexRepositoryIfNotInvoked(repoRef: RepoRef): Promise<boolean> {
 		// First get the list of indexed repositories
+		await this.waitForGreenHC();
+		console.log('fetching the status of the various repositories');
 		const response = await fetch(this.getRepoListUrl());
 		const repoList = (await response.json()) as RepoStatus;
 		console.log(repoList);
@@ -97,6 +100,30 @@ export class SideCarClient {
 		} else {
 			// We don't need to index this repository
 			return true;
+		}
+	}
+
+	async waitForGreenHC(): Promise<boolean> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/health';
+		let attempts = 0;
+		const totalAttempts = 10;
+		while (true) {
+			try {
+				console.log('trying to HC for repo check');
+				const url = baseUrl.toString();
+				const response = await fetch(url);
+				return response.status === 200;
+			} catch (e) {
+				// sleeping for a attempts * second here
+				await sleep(1000 * (attempts + 1));
+				attempts = attempts + 1;
+				if (attempts < totalAttempts) {
+					continue;
+				} else {
+					throw e;
+				}
+			}
 		}
 	}
 }
