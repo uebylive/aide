@@ -96,6 +96,8 @@ export class MainThreadChat extends Disposable implements MainThreadChatShape {
 					const requestDto: IChatRequestDto = {
 						message: request.message,
 						variables: request.variables,
+						// TODO(codestory): Provide the user provided context
+						userProvidedContext: request.userProvidedContext,
 					};
 					const dto = await this._proxy.$provideReply(handle, request.session.id, requestDto, token);
 					return <IChatResponse>{

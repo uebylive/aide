@@ -34,7 +34,7 @@ import * as extHostProtocol from 'vs/workbench/api/common/extHost.protocol';
 import { getPrivateApiFor } from 'vs/workbench/api/common/extHostTestingPrivateApi';
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from 'vs/workbench/common/editor';
 import { IViewBadge } from 'vs/workbench/common/views';
-import { IChatFollowup, IChatReplyFollowup, IChatResponseCommandFollowup } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatCodeSymbolContext, IChatFollowup, IChatReplyFollowup, IChatResponseCommandFollowup, IChatUserProvidedContext } from 'vs/workbench/contrib/chat/common/chatService';
 import * as notebooks from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { ICellRange } from 'vs/workbench/contrib/notebook/common/notebookRange';
 import * as search from 'vs/workbench/contrib/search/common/search';
@@ -2152,6 +2152,43 @@ export namespace DataTransfer {
 		await Promise.all(promises);
 
 		return newDTO;
+	}
+}
+
+
+export namespace ChatCodeSymbolContext {
+	export function to(codeSymbolContext: IChatCodeSymbolContext): vscode.InteractiveChatCodeSymbolContext {
+		return {
+			filePath: codeSymbolContext.filePath,
+			startLineNumber: codeSymbolContext.startLineNumber,
+			endLineNumber: codeSymbolContext.endLineNumber,
+			documentSymbolName: codeSymbolContext.documentSymbolName,
+		};
+	}
+
+	export function from(codeSymbolContext: vscode.InteractiveChatCodeSymbolContext): IChatCodeSymbolContext {
+		return {
+			filePath: codeSymbolContext.filePath,
+			startLineNumber: codeSymbolContext.startLineNumber,
+			endLineNumber: codeSymbolContext.endLineNumber,
+			documentSymbolName: codeSymbolContext.documentSymbolName,
+		};
+	}
+}
+
+export namespace ChatUserProvidedContext {
+	export function to(userProvidedContext: IChatUserProvidedContext): vscode.InteractiveUserProvidedContext {
+		return {
+			fileContext: userProvidedContext.fileContext,
+			codeSymbolsContext: userProvidedContext.codeSymbolsContext.map(ChatCodeSymbolContext.to),
+		};
+	}
+
+	export function from(userProvidedContext: vscode.InteractiveUserProvidedContext): IChatUserProvidedContext {
+		return {
+			fileContext: userProvidedContext.fileContext,
+			codeSymbolsContext: userProvidedContext.codeSymbolsContext.map(ChatCodeSymbolContext.from),
+		};
 	}
 }
 
