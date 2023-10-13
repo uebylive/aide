@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 import { v4 as uuidv4 } from 'uuid';
 import { commands, env } from 'vscode';
-import { EmbeddingsSearch } from '../searchIndex/embeddingsSearch';
 import { CodeGraph } from '../codeGraph/graph';
 import { MessageHandlerData } from '@estruyf/vscode';
 import { debuggingFlow } from '../llm/recipe/debugging';

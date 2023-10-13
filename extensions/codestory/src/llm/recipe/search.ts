@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { EmbeddingsSearch } from '../../searchIndex/embeddingsSearch';
 import { FileCodeSymbolInformation, CodeSnippetInformation } from '../../utilities/types';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 import { SearchIndexCollection } from '../../searchIndex/collection';

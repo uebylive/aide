@@ -10,7 +10,6 @@ import { loadOrSaveToStorage } from './storage/types';
 import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
 import { CodeGraph } from './codeGraph/graph';
-import { EmbeddingsSearch } from './searchIndex/embeddingsSearch';
 import postHogClient from './posthog/client';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
@@ -34,7 +33,6 @@ import { getUniqueId } from './utilities/uniqueId';
 import { SearchIndexCollection } from './searchIndex/collection';
 import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
 import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
-import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
@@ -119,11 +117,6 @@ export async function activate(context: ExtensionContext) {
 			repoHash,
 		}
 	});
-
-	// We also load up the sentence transformer here before doing heavy operations
-	// with it
-	const embeddings = await generateEmbeddingFromSentenceTransformers('something', 'test');
-	console.log('[embeddings]', embeddings);
 
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
