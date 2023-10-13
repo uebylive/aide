@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { sleep } from '../utilities/sleep';
-import { callServerEvent } from './ssestream';
-import { ConversationMessage, ConversationMessageOkay, RepoStatus } from './types';
+import { callServerEventStreamingBuffered } from './ssestream';
+import { ConversationMessage, RepoStatus } from './types';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -57,7 +57,7 @@ export class SideCarClient {
 		baseUrl.searchParams.set('reporef', repoRef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
 		const url = baseUrl.toString();
-		const asyncIterableResponse = await callServerEvent(url);
+		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
 		for await (const line of asyncIterableResponse) {
 			// Now these responses can be parsed properly, since we are using our
 			// own reader over sse, sometimes the reader might send multiple events
