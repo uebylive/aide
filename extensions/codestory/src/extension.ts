@@ -174,14 +174,6 @@ export async function activate(context: ExtensionContext) {
 	const searchIndexCollection = new SearchIndexCollection(
 		rootPath ?? '',
 	);
-	// TODO(codestory): disable embedding search for now
-	const embeddingsIndex = new EmbeddingsSearch(
-		activeFilesTracker,
-		codeSymbolsLanguageCollection,
-		context.globalStorageUri.fsPath,
-		repoName,
-	);
-	searchIndexCollection.addIndexer(embeddingsIndex);
 	const documentSymbolIndex = new DocumentSymbolBasedIndex(
 		repoName,
 		context.globalStorageUri.fsPath,
@@ -211,7 +203,8 @@ export async function activate(context: ExtensionContext) {
 		});
 		// We should be using the searchIndexCollection instead here, but for now
 		// embedding search is fine
-		const results = await embeddingsIndex.generateNodesForUserQuery(prompt);
+		// Here we will ping the semantic client instead so we can get the results
+		const results = await sidecarClient.getSemanticSearchResult(prompt, currentRepo);
 		return results;
 	});
 

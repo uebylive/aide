@@ -3,9 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as path from 'path';
 import { sleep } from '../utilities/sleep';
+import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBuffered } from './ssestream';
-import { ConversationMessage, RepoStatus } from './types';
+import { ConversationMessage, RepoStatus, SemanticSearchResponse } from './types';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -125,5 +127,56 @@ export class SideCarClient {
 				}
 			}
 		}
+	}
+
+	async getSemanticSearchResult(query: string, reporef: RepoRef): Promise<CodeSymbolInformationEmbeddings[]> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agent/semantic_search';
+		baseUrl.searchParams.set('reporef', reporef.getRepresentation());
+		baseUrl.searchParams.set('query', query);
+		const url = baseUrl.toString();
+		const response = await fetch(url);
+		const responseJson = await response.json();
+		const semanticSearchResult = responseJson as SemanticSearchResponse;
+		const codeSymbols = semanticSearchResult.code_spans;
+		const sortedCodeSymbols = codeSymbols.sort((a, b) => {
+			if (b.score !== null && a.score !== null) {
+				return b.score - a.score;
+			}
+			if (b.score !== null && a.score === null) {
+				return 1;
+			}
+			if (b.score === null && a.score !== null) {
+				return -1;
+			}
+			return 0;
+		});
+		const codeSymbolInformationEmbeddings: CodeSymbolInformationEmbeddings[] = sortedCodeSymbols.map((codeSpan) => {
+			const filePath = path.join(reporef.getPath(), codeSpan.file_path);
+			return {
+				codeSymbolInformation: {
+					symbolName: '',
+					symbolKind: CodeSymbolKind.null,
+					symbolStartLine: codeSpan.start_line,
+					symbolEndLine: codeSpan.end_line,
+					codeSnippet: {
+						languageId: 'typescript',
+						code: codeSpan.data,
+					},
+					extraSymbolHint: null,
+					dependencies: [],
+					fsFilePath: filePath,
+					originalFilePath: filePath,
+					workingDirectory: reporef.getPath(),
+					displayName: '',
+					originalName: '',
+					originalSymbolName: '',
+					globalScope: 'global',
+				},
+				codeSymbolEmbedding: [],
+				fileHash: '',
+			};
+		});
+		return codeSymbolInformationEmbeddings;
 	}
 }

@@ -29,6 +29,12 @@ export interface CodeSpan {
 	score: number | null;
 }
 
+export interface SemanticSearchResponse {
+	session_id: string;
+	query: string;
+	code_spans: CodeSpan[];
+}
+
 export interface Answer {
 	answer_up_until_now: string;
 	delta: string | null;
