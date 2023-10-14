@@ -105,6 +105,11 @@
           "type": "string",
           "default": "http://127.0.0.1:42424",
           "description": "The url of the sidecar which is required for aide to work"
+        },
+        "aide.sidecarUseSelfRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "If the side-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
         }
       }
     }
