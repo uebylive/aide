@@ -10,7 +10,6 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { spawn, exec, execFile } from 'child_process';
 import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
-import { ensureDirectoryExists } from '../searchIndex/helpers';
 import { sidecarUseSelfRun } from './sidecarUrl';
 
 // We are going to use a static port right now and nothing else

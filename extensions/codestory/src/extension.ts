@@ -30,9 +30,6 @@ import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId } from './utilities/uniqueId';
-import { SearchIndexCollection } from './searchIndex/collection';
-import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
-import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
@@ -163,24 +160,8 @@ export async function activate(context: ExtensionContext) {
 	// Get the test-suite command
 	const testSuiteRunCommand = readTestSuiteRunCommand();
 
-	// Setup the search index collection
-	const searchIndexCollection = new SearchIndexCollection(
-		rootPath ?? '',
-	);
-	const documentSymbolIndex = new DocumentSymbolBasedIndex(
-		repoName,
-		context.globalStorageUri.fsPath,
-	);
-	searchIndexCollection.addIndexer(documentSymbolIndex);
-	const treeSitterParsing = new TreeSitterChunkingBasedIndex(
-		repoName,
-		context.globalStorageUri.fsPath,
-	);
-	searchIndexCollection.addIndexer(treeSitterParsing);
-	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
-	// This is a super fast step which just starts the indexing step
-	await searchIndexCollection.startupIndexers(filesToTrack);
 
+	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
 
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
@@ -213,7 +194,7 @@ export async function activate(context: ExtensionContext) {
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
 		rootPath, codeGraph, repoName, repoHash,
-		searchIndexCollection, codeSymbolsLanguageCollection,
+		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo,
 	);
@@ -231,8 +212,8 @@ export async function activate(context: ExtensionContext) {
 		debug(
 			// TODO(codestory): Fix this properly later on
 			chatProvider,
-			searchIndexCollection,
 			codeSymbolsLanguageCollection,
+			sidecarClient,
 			repoName,
 			repoHash,
 			rootPath ?? '',
@@ -240,6 +221,7 @@ export async function activate(context: ExtensionContext) {
 			activeFilesTracker,
 			uniqueUserId,
 			agentSystemInstruction,
+			currentRepo,
 		)
 	);
 
@@ -312,7 +294,6 @@ export async function activate(context: ExtensionContext) {
 			const uri = doc.uri;
 			const fsPath = doc.uri.fsPath;
 			await trackCodeSymbolChanges.fileSaved(uri, logger);
-			await searchIndexCollection.indexFile(fsPath);
 			await triggerCodeSymbolChange(
 				provider,
 				trackCodeSymbolChanges,

@@ -14,12 +14,12 @@ import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CSChatProvider } from '../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
-import { SearchIndexCollection } from '../searchIndex/collection';
+import { RepoRef, SideCarClient } from '../sidecar/client';
 
 export const debug = (
 	csChatProvider: CSChatProvider,
-	searchIndexCollection: SearchIndexCollection,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
+	sidecarClient: SideCarClient,
 	repoName: string,
 	repoHash: string,
 	workingDirectory: string,
@@ -27,6 +27,7 @@ export const debug = (
 	activeFilesTracker: ActiveFilesTracker,
 	uniqueUserId: string,
 	agentCustomInstruction: string | null,
+	reporef: RepoRef,
 ) => {
 	const uniqueId = uuidv4();
 	return commands.registerCommand(
@@ -52,7 +53,7 @@ export const debug = (
 				await debuggingFlow(
 					payload.prompt,
 					toolingEventCollection,
-					searchIndexCollection,
+					sidecarClient,
 					codeSymbolsLanguageCollection,
 					workingDirectory,
 					testSuiteRunCommand,
@@ -60,6 +61,7 @@ export const debug = (
 					undefined,
 					uniqueId,
 					agentCustomInstruction,
+					reporef,
 				);
 			} catch (e) {
 				logger.info('[CodeStory] Debugging failed');

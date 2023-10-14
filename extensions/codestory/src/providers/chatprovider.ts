@@ -18,7 +18,6 @@ import { ToolingEventCollection } from '../timeline/events/collection';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
-import { SearchIndexCollection } from '../searchIndex/collection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
@@ -246,7 +245,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	private _repoName: string;
 	private _repoHash: string;
 	private _uniqueUserId: string;
-	private _searchIndexCollection: SearchIndexCollection;
 	private _agentCustomInformation: string | null;
 	private _sideCarClient: SideCarClient;
 	private _currentRepoRef: RepoRef;
@@ -256,7 +254,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		codeGraph: CodeGraph,
 		repoName: string,
 		repoHash: string,
-		searchIndexCollection: SearchIndexCollection,
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 		testSuiteRunCommand: string,
 		activeFilesTracker: ActiveFilesTracker,
@@ -276,7 +273,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._testSuiteRunCommand = testSuiteRunCommand;
 		this._activeFilesTracker = activeFilesTracker;
 		this._uniqueUserId = uniqueUserId;
-		this._searchIndexCollection = searchIndexCollection;
 		this._agentCustomInformation = agentCustomInstruction;
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
@@ -404,7 +400,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				await debuggingFlow(
 					prompt,
 					toolingEventCollection,
-					this._searchIndexCollection,
+					this._sideCarClient,
 					this._codeSymbolsLanguageCollection,
 					this._workingDirectory,
 					this._testSuiteRunCommand,
@@ -412,6 +408,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					request.userProvidedContext,
 					uniqueId,
 					this._agentCustomInformation,
+					this._currentRepoRef,
 				);
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {

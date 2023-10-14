@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
-import { CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
+import { CodeSnippetInformation, CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
 import { CodeModificationContextAndDiff, CodeSymbolModificationInstruction, NewFileContentAndDiffResponse, TextExecutionHarness, generateModifyCodeHallucinationPrompt, generateNewFileContentAndDiffResponseParser, generateTestExecutionPrompt, generateTestScriptGenerationPrompt, modifyCodeSnippetPrompt, newFileContentAndDiffPrompt, parseCodeModificationResponse, parseTestExecutionFinalSetupResponse, parseTestPlanResponseForHarness } from './prompts';
 import { CodeGraph } from '../../codeGraph/graph';
 
@@ -13,6 +13,30 @@ import { generateChatCompletion } from './debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { generateNewFileFromPatch } from '../../utilities/mergeModificationChangesToFile';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
+
+
+export const generateCodeSymbolsForQueries = async (
+	queries: string[],
+	sidecarClient: SideCarClient,
+	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
+	reporef: RepoRef,
+): Promise<CodeSnippetInformation[]> => {
+	// we will ping the sidecar binary to get the code snippets which are relevant
+	// for the search
+	const codeSnippetInformationList: CodeSnippetInformation[] = [];
+	for (let index = 0; index < queries.length; index++) {
+		const currentQuery = queries[index];
+		if (currentQuery !== '') {
+			// TODO(skcd): enable this for the agent once we have the search working and the rest
+			// of the pipeline has been changed properly
+			// const snippets = await sidecarClient.getSemanticSearchResult(currentQuery, reporef);
+			// codeSnippetInformationList.push(...snippets.map((snippet) => CodeSnippetInformation.fromCodeSymbolInformation(snippet)));
+		}
+	}
+	return codeSnippetInformationList;
+}
+
 
 
 export const getOpenFilesInWorkspace = (): string[] => {
