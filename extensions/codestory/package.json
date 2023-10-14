@@ -118,14 +118,13 @@
     "install:all": "yarn install && cd webview-ui-sideview && yarn install",
     "start:webview_sideview": "cd webview-ui-sideview && npm run start",
     "build:webview_sideview": "cd webview-ui-sideview && npm run build",
-    "vscode:prepublish": "npm run compile:tsc && npm run postinstall",
+    "vscode:prepublish": "npm run compile:tsc",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",
     "compile:tsc": "tsc -p ./",
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "postinstall": "ts-node src/scripts/postinstall.ts",
     "vsce:package": "yarn run vsce package"
   },
   "devDependencies": {
@@ -160,7 +159,6 @@
     "process-nextick-args": "^2.0.1",
     "rxjs": "^7.8.1",
     "ts-morph": "^19.0.0",
-    "ts-node": "^10.9.1",
     "vsce": "^2.15.0",
     "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",

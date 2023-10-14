@@ -12,12 +12,12 @@ import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { CodeGraph } from '../../codeGraph/graph';
-import { executeTestHarness, formatFileInformationListForPrompt, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getCodeNodeForName, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
+import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getCodeNodeForName, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
-import { generateCodeSymbolsForQueries, generateFileInformationSummary } from './search';
-import { SearchIndexCollection } from '../../searchIndex/collection';
+import { generateFileInformationSummary } from './search';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
 
 const openai = new OpenAI({
 	apiKey: getOpenAIApiKey(),
@@ -67,7 +67,7 @@ export const generateChatCompletion = async (
 export const debuggingFlow = async (
 	prompt: string,
 	toolingEventCollection: ToolingEventCollection,
-	searchIndexCollection: SearchIndexCollection,
+	sidecarClient: SideCarClient,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
@@ -75,6 +75,7 @@ export const debuggingFlow = async (
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	uniqueId: string,
 	agentCustomInstruction: string | null,
+	reporef: RepoRef,
 ): Promise<null> => {
 	await toolingEventCollection.addThinkingEvent(prompt, 'I\'m on it!');
 	let initialMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
@@ -130,8 +131,9 @@ export const debuggingFlow = async (
 	// Now we will try and do the search over the symbols
 	const relevantCodeSnippetList = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
-		searchIndexCollection,
+		sidecarClient,
 		userProvidedContext,
+		reporef,
 	);
 	// Add the search results here
 	await toolingEventCollection.addRelevantSearchResults(
