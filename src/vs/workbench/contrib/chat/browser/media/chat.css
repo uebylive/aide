@@ -398,9 +398,10 @@
 
 .interactive-session-followups .monaco-button.interactive-followup-reply {
 	padding: 0px;
-	font-size: 12px;
+	font-size: 14px;
 	font-weight: 600;
 	border: none;
+	color: var(--vscode-textLink-foreground);
 }
 
 .interactive-welcome .value .interactive-session-followups {

@@ -6,17 +6,18 @@
 import 'vs/css!./media/arc';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { inputBackground, quickInputBackground, quickInputForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IArcWidget, IArcWidgetService } from 'vs/workbench/contrib/arc/browser/arc';
+import { ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys';
 import { IArcService } from 'vs/workbench/contrib/arc/common/arcService';
 import { IArcViewModel } from 'vs/workbench/contrib/arc/common/arcViewModel';
-import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
-import { quickInputForeground, quickInputBackground, inputBackground } from 'vs/platform/theme/common/colorRegistry';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
+import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
-import { ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
 export class ArcWidgetService extends Disposable implements IArcWidgetService {
 	declare readonly _serviceBrand: undefined;
@@ -121,20 +122,32 @@ export class ArcWidget extends Disposable implements IArcWidget {
 		this.chatWidget.render(parent);
 		this.chatWidget.setVisible(true);
 		this.chatWidget.layout(1000, 1000);
-		this.updateModel();
+
+		let sessionId: string | undefined;
+		if (this.chatService.transferredSessionData) {
+			sessionId = this.chatService.transferredSessionData.sessionId;
+		} else {
+			sessionId = this._viewModel?.sessionId;
+		}
+
+		const initialModel = sessionId ? this.chatService.getOrRestoreSession(sessionId) : undefined;
+		this.updateModel(initialModel);
 
 		this._register(this.chatWidget.inputEditor.onDidChangeModelContent((e) => {
 			this._currentQuery = this.chatWidget?.inputEditor.getValue();
 		}));
 	}
 
-	private updateModel(): void {
+	private updateModel(model?: IChatModel | undefined): void {
 		this.arcService.startSession(this.providerId, CancellationToken.None);
-		const chatSession = this.chatService.startSession('cs-chat', CancellationToken.None);
-		if (!chatSession) {
+
+		model = model ?? (this.chatService.transferredSessionData?.sessionId
+			? this.chatService.getOrRestoreSession(this.chatService.transferredSessionData.sessionId)
+			: this.chatService.startSession('cs-chat', CancellationToken.None));
+		if (!model) {
 			throw new Error('Could not start chat session');
 		}
 
-		this.chatWidget?.setModel(chatSession, { inputValue: this._currentQuery });
+		this.chatWidget?.setModel(model, { inputValue: this._currentQuery });
 	}
 }

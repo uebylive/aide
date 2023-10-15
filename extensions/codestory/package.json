@@ -72,7 +72,7 @@
         "mac": "shift shift"
       },
       {
-        "command": "workbench.action.toggleArc.cs-arc",
+        "command": "workbench.action.showArc.cs-arc",
         "key": "alt alt",
         "mac": "alt alt"
       }

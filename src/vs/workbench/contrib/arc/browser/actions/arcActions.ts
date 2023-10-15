@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { URI } from 'vs/base/common/uri';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
@@ -9,14 +10,16 @@ import { localize } from 'vs/nls';
 import { Icon } from 'vs/platform/action/common/action';
 import { Action2, MenuId } from 'vs/platform/actions/common/actions';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
+import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { IArcWidgetService } from 'vs/workbench/contrib/arc/browser/arc';
 import { ARC_PROVIDER_EXISTS, ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys';
 
 export const ARC_CATEGORY = { value: localize('arc.category', "Arc"), original: 'Arc' };
-const toggleArcIcon: Icon = {
+const showArcIcon: Icon = {
 	dark: URI.parse(require.toUrl('../media/aide-white.svg')),
 	light: URI.parse(require.toUrl('../media/aide-white.svg'))
 };
+const showCodeIcon = registerIcon('show-code', Codicon.fileCode, localize('showCode', "Activate code mode instead of Aide"));
 
 /**
  * Returns a provider specific action that will toggle the arc for that provider.
@@ -28,18 +31,19 @@ const toggleArcIcon: Icon = {
  */
 export function getArcActionsForProvider(id: string, label: string) {
 	return [
-		class ToggleArcAction extends Action2 {
+		class ShowArcAction extends Action2 {
 			constructor() {
 				super({
-					id: `workbench.action.toggleArc.${id}`,
+					id: `workbench.action.showArc.${id}`,
 					category: ARC_CATEGORY,
-					title: { value: localize('arcSession.toggle', "Invoke Aide"), original: `Invoke Aide` },
+					title: { value: localize('arcSession.show', "Show Aide"), original: `Show Aide` },
 					f1: true,
-					icon: toggleArcIcon,
+					icon: showArcIcon,
 					menu: [
 						{
 							id: MenuId.LayoutControlMenu,
-							group: 'z_end'
+							group: 'z_end',
+							when: ARC_VIEW_VISIBLE.toNegated(),
 						}
 					]
 				});
@@ -51,21 +55,21 @@ export function getArcActionsForProvider(id: string, label: string) {
 			}
 		},
 
-		class HideArcAction extends Action2 {
+		class ShowCodeAction extends Action2 {
 			constructor() {
 				super({
-					id: `workbench.action.hideArc.${id}`,
+					id: `workbench.action.showCode.${id}`,
 					category: ARC_CATEGORY,
-					title: { value: localize('arcSession.hide', "Hide Arc ({0})", label), original: `Hide Arc (${label})` },
+					title: { value: localize('arcSession.hide', "Show code"), original: `Show code` },
 					f1: true,
-					precondition: ARC_PROVIDER_EXISTS,
-					keybinding: {
-						weight: KeybindingWeight.EditorContrib,
-						primary: KeyCode.Escape,
-						secondary: [KeyMod.CtrlCmd | KeyCode.KeyW],
-						win: { primary: KeyCode.Escape, secondary: [KeyMod.CtrlCmd | KeyCode.F4, KeyMod.CtrlCmd | KeyCode.KeyW] },
-						when: ARC_VIEW_VISIBLE
-					}
+					icon: showCodeIcon,
+					menu: [
+						{
+							id: MenuId.LayoutControlMenu,
+							group: 'z_end',
+							when: ARC_VIEW_VISIBLE,
+						}
+					]
 				});
 			}
 
