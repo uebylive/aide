@@ -54,7 +54,13 @@ export class ArcWidgetService extends Disposable implements IArcWidgetService {
 	}
 
 	hide(): void {
-		this.close();
+		if (this._widget) {
+			this.close();
+		}
+	}
+
+	show(): void {
+		this.open();
 	}
 
 	toggle(): void {

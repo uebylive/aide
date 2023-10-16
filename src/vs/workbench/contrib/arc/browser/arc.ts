@@ -12,6 +12,7 @@ export interface IArcWidgetService {
 	readonly _serviceBrand: undefined;
 
 	hide(): void;
+	show(): void;
 	toggle(): void;
 }
 
