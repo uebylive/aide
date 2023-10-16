@@ -15,7 +15,7 @@ import { ARC_VIEW_VISIBLE } from 'vs/workbench/contrib/arc/common/arcContextKeys
 import { IArcService } from 'vs/workbench/contrib/arc/common/arcService';
 import { IArcViewModel } from 'vs/workbench/contrib/arc/common/arcViewModel';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
-import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
+import { ChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
@@ -74,6 +74,7 @@ export class ArcWidget extends Disposable implements IArcWidget {
 	public static readonly CONTRIBS: { new(...args: [IArcWidget, ...any]): any }[] = [];
 
 	private chatWidget: ChatWidget | undefined;
+	private model: ChatModel | undefined;
 	private _currentQuery: string | undefined;
 
 	private _viewModel: IArcViewModel | undefined;
@@ -99,6 +100,13 @@ export class ArcWidget extends Disposable implements IArcWidget {
 		super();
 	}
 
+	private clear(): void {
+		this.model?.dispose();
+		this.model = undefined;
+		this.updateModel();
+		this.chatWidget?.inputEditor.setValue('');
+	}
+
 	render(parent: HTMLElement): void {
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(parent));
 		ARC_VIEW_VISIBLE.bindTo(inputScopedContextKeyService).set(true);
@@ -121,35 +129,24 @@ export class ArcWidget extends Disposable implements IArcWidget {
 				resultEditorBackground: quickInputBackground
 			}
 		);
+		this._register(this.chatWidget.onDidClear(() => this.clear()));
 		this.chatWidget.render(parent);
 		this.chatWidget.setVisible(true);
 		this.chatWidget.layout(1000, 1000);
-
-		let sessionId: string | undefined;
-		if (this.chatService.transferredSessionData) {
-			sessionId = this.chatService.transferredSessionData.sessionId;
-		} else {
-			sessionId = this._viewModel?.sessionId;
-		}
-
-		const initialModel = sessionId ? this.chatService.getOrRestoreSession(sessionId) : undefined;
-		this.updateModel(initialModel);
+		this.updateModel();
 
 		this._register(this.chatWidget.inputEditor.onDidChangeModelContent((e) => {
 			this._currentQuery = this.chatWidget?.inputEditor.getValue();
 		}));
 	}
 
-	private updateModel(model?: IChatModel | undefined): void {
+	private updateModel(): void {
 		this.arcService.startSession(this.providerId, CancellationToken.None);
 
-		model = model ?? (this.chatService.transferredSessionData?.sessionId
-			? this.chatService.getOrRestoreSession(this.chatService.transferredSessionData.sessionId)
-			: this.chatService.startSession('cs-chat', CancellationToken.None));
-		if (!model) {
+		this.model = this.chatService.startSession('cs-chat', CancellationToken.None);
+		if (!this.model) {
 			throw new Error('Could not start chat session');
 		}
-
-		this.chatWidget?.setModel(model, { inputValue: this._currentQuery });
+		this.chatWidget?.setModel(this.model, { inputValue: this._currentQuery });
 	}
 }
