@@ -22,6 +22,7 @@ import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/la
 export class ArcWidgetService extends Disposable implements IArcWidgetService {
 	declare readonly _serviceBrand: undefined;
 
+	private _hidden: boolean = true;
 	private _widget: ArcWidget | undefined;
 	private _container: HTMLElement | undefined;
 	private _chatContainer: HTMLElement | undefined;
@@ -33,41 +34,36 @@ export class ArcWidgetService extends Disposable implements IArcWidgetService {
 		super();
 	}
 
-	private open() {
-		const arcContainer = document.createElement('div');
-		arcContainer.classList.add('arc-widget-container');
-		this._container = arcContainer;
-		const chatContainer = document.createElement('div');
-		chatContainer.classList.add('arc-widget-chat-container');
-		this._container.appendChild(chatContainer);
-		this._chatContainer = chatContainer;
-		this._widget = this.instantiationService.createInstance(ArcWidget, 'cs-arc');
-		this._widget.render(this._chatContainer);
-		this.workbenchLayoutService.container.appendChild(this._container);
-	}
-
-	private close(): void {
-		this._widget?.dispose();
-		this._widget = undefined;
-		this._container?.remove();
-		this._container = undefined;
+	show() {
+		if (!this._widget) {
+			const arcContainer = document.createElement('div');
+			arcContainer.classList.add('arc-widget-container');
+			this._container = arcContainer;
+			const chatContainer = document.createElement('div');
+			chatContainer.classList.add('arc-widget-chat-container');
+			this._container.appendChild(chatContainer);
+			this._chatContainer = chatContainer;
+			this._widget = this.instantiationService.createInstance(ArcWidget, 'cs-arc');
+			this._widget.render(this._chatContainer);
+			this.workbenchLayoutService.container.appendChild(this._container);
+		} else if (this._container) {
+			this._container.style.display = 'block';
+		}
+		this._hidden = false;
 	}
 
 	hide(): void {
-		if (this._widget) {
-			this.close();
+		this._hidden = true;
+		if (this._container) {
+			this._container.style.display = 'none';
 		}
 	}
 
-	show(): void {
-		this.open();
-	}
-
 	toggle(): void {
-		if (this._widget) {
-			this.close();
+		if (!this._hidden) {
+			this.hide();
 		} else {
-			this.open();
+			this.show();
 		}
 	}
 }
