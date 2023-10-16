@@ -18,6 +18,10 @@
 	display: none !important;
 }
 
+.monaco-workbench .part.auxiliarybar > .title > .composite-bar-container {
+	flex: 1;
+}
+
 .monaco-workbench .part.auxiliarybar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label,
 .monaco-workbench .part.auxiliarybar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:focus .action-label {
 	color: var(--vscode-sideBarTitle-foreground) !important;

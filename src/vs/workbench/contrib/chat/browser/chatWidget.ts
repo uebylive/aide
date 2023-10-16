@@ -261,7 +261,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 							`${(isRequestVM(element) || isWelcomeVM(element)) && !!this.lastSlashCommands ? '_scLoaded' : ''}` +
 							// If a response is in the process of progressive rendering, we need to ensure that it will
 							// be re-rendered so progressive rendering is restarted, even if the model wasn't updated.
-							`${isResponseVM(element) && element.renderData ? `_${this.visibleChangeCount}` : ''}`;
+							`${isResponseVM(element) && element.renderData ? `_${this.visibleChangeCount}` : ''}` +
+							// Re-render once content references are loaded
+							(isResponseVM(element) ? `_${element.response.contentReferences.length}` : '');
 					},
 				}
 			});
@@ -273,6 +275,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			const lastItem = treeItems[treeItems.length - 1]?.element;
 			if (lastItem && isResponseVM(lastItem) && lastItem.isComplete) {
 				this.renderFollowups(lastItem.replyFollowups);
+			} else if (lastItem && isWelcomeVM(lastItem)) {
+				this.renderFollowups(lastItem.sampleQuestions);
 			} else {
 				this.renderFollowups(undefined);
 			}
@@ -332,7 +336,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			rendererDelegate
 		));
 		this._register(this.renderer.onDidClickFollowup(item => {
-			this.acceptInput(item);
+			// is this used anymore?
+			this.acceptInput(item.message);
 		}));
 
 		this.tree = <WorkbenchObjectTree<ChatTreeItem>>scopedInstantiationService.createInstance(
@@ -419,7 +424,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this._register(this.inputPart.onDidFocus(() => this._onDidFocus.fire()));
 		this._register(this.inputPart.onDidBlur(() => this._onDidBlur.fire()));
-		this._register(this.inputPart.onDidAcceptFollowup(followup => this.acceptInput(followup)));
+		this._register(this.inputPart.onDidAcceptFollowup(followup => {
+			// this.chatService.notifyUserAction
+			this.acceptInput(followup.message);
+		}));
 		this._register(this.inputPart.onDidChangeHeight(() => this.bodyDimension && this.layout(this.bodyDimension.height, this.bodyDimension.width)));
 	}
 
@@ -476,11 +484,19 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.tree.domFocus();
 	}
 
+	setInputPlaceholder(placeholder: string): void {
+		this.viewModel?.setInputPlaceholder(placeholder);
+	}
+
+	resetInputPlaceholder(): void {
+		this.viewModel?.resetInputPlaceholder();
+	}
+
 	updateInput(value = ''): void {
 		this.inputPart.setValue(value);
 	}
 
-	async acceptInput(query?: string | IChatReplyFollowup): Promise<void> {
+	async acceptInput(query?: string): Promise<void> {
 		// TODO(skcd): This is how we want to use the context which the user has
 		// provided
 		const chatUserProvidedContext = this.chatUserProvidedContext;
@@ -495,7 +511,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			this._chatAccessibilityService.acceptRequest();
 			const input = query ?? editorValue;
-			const usedSlashCommand = this.lookupSlashCommand(typeof input === 'string' ? input : input.message);
+			const usedSlashCommand = this.lookupSlashCommand(input);
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, chatUserProvidedContext, usedSlashCommand);
 
 			if (result) {
