@@ -113,19 +113,30 @@ export const reportFromStreamToSearchProgress = async (
 		[Symbol.asyncIterator]: () => stream
 	};
 
+	let enteredAnswerGenerationLoop = false;
+
 	for await (const conversationMessage of asyncIterable) {
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
-		if (conversationMessage.answer !== null) {
+		if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'StreamingAnswer') {
 			// We need to parse the answer a bit here, because we get relative paths
 			// and not absolute paths. The right way to do this will be to attach
 			// the reporef location to the message and that would solve a lot of
 			// problems.
-			const formattingFixAnswer = await formatPathsInAnswer(conversationMessage.answer, currentRepoRef);
-			progress.report(new CSChatProgressContent('## Answer\n\n' + formattingFixAnswer));
-			finalMessage = conversationMessage.answer;
+			if (!enteredAnswerGenerationLoop) {
+				progress.report(new CSChatProgressContent('## Answer\n\n' + conversationMessage.answer.delta));
+				enteredAnswerGenerationLoop = true;
+			} else {
+				// type-safety here, altho it its better to do it this way
+				if (conversationMessage.answer.delta !== null) {
+					progress.report(new CSChatProgressContent(conversationMessage.answer.delta));
+				}
+			}
+		} else if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'Finished') {
+			finalMessage = conversationMessage.answer.answer_up_until_now;
 			return finalMessage;
-		} else {
+		}
+		else {
 			const stepsTaken = conversationMessage.steps_taken.length;
 			const lastStep = conversationMessage.steps_taken[stepsTaken - 1];
 			console.log(`[search][stream] whats the last step here`);

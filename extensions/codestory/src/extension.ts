@@ -10,7 +10,6 @@ import { loadOrSaveToStorage } from './storage/types';
 import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
 import { CodeGraph } from './codeGraph/graph';
-import { EmbeddingsSearch } from './searchIndex/embeddingsSearch';
 import postHogClient from './posthog/client';
 import { CodeStoryViewProvider } from './providers/codeStoryView';
 import { healthCheck } from './subscriptions/health';
@@ -31,10 +30,6 @@ import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId } from './utilities/uniqueId';
-import { SearchIndexCollection } from './searchIndex/collection';
-import { DocumentSymbolBasedIndex } from './searchIndex/documentSymbolRepresenatation';
-import { TreeSitterChunkingBasedIndex } from './searchIndex/treeSitterParsing';
-import { generateEmbeddingFromSentenceTransformers, getEmbeddingModel } from './llm/embeddings/sentenceTransformers';
 import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
@@ -120,11 +115,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	// We also load up the sentence transformer here before doing heavy operations
-	// with it
-	const embeddings = await generateEmbeddingFromSentenceTransformers('something', 'test');
-	console.log('[embeddings]', embeddings);
-
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
@@ -170,32 +160,8 @@ export async function activate(context: ExtensionContext) {
 	// Get the test-suite command
 	const testSuiteRunCommand = readTestSuiteRunCommand();
 
-	// Setup the search index collection
-	const searchIndexCollection = new SearchIndexCollection(
-		rootPath ?? '',
-	);
-	// TODO(codestory): disable embedding search for now
-	const embeddingsIndex = new EmbeddingsSearch(
-		activeFilesTracker,
-		codeSymbolsLanguageCollection,
-		context.globalStorageUri.fsPath,
-		repoName,
-	);
-	searchIndexCollection.addIndexer(embeddingsIndex);
-	const documentSymbolIndex = new DocumentSymbolBasedIndex(
-		repoName,
-		context.globalStorageUri.fsPath,
-	);
-	searchIndexCollection.addIndexer(documentSymbolIndex);
-	const treeSitterParsing = new TreeSitterChunkingBasedIndex(
-		repoName,
-		context.globalStorageUri.fsPath,
-	);
-	searchIndexCollection.addIndexer(treeSitterParsing);
-	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
-	// This is a super fast step which just starts the indexing step
-	await searchIndexCollection.startupIndexers(filesToTrack);
 
+	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
 
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
@@ -211,7 +177,8 @@ export async function activate(context: ExtensionContext) {
 		});
 		// We should be using the searchIndexCollection instead here, but for now
 		// embedding search is fine
-		const results = await embeddingsIndex.generateNodesForUserQuery(prompt);
+		// Here we will ping the semantic client instead so we can get the results
+		const results = await sidecarClient.getSemanticSearchResult(prompt, currentRepo);
 		return results;
 	});
 
@@ -227,7 +194,7 @@ export async function activate(context: ExtensionContext) {
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
 		rootPath, codeGraph, repoName, repoHash,
-		searchIndexCollection, codeSymbolsLanguageCollection,
+		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo,
 	);
@@ -245,8 +212,8 @@ export async function activate(context: ExtensionContext) {
 		debug(
 			// TODO(codestory): Fix this properly later on
 			chatProvider,
-			searchIndexCollection,
 			codeSymbolsLanguageCollection,
+			sidecarClient,
 			repoName,
 			repoHash,
 			rootPath ?? '',
@@ -254,6 +221,7 @@ export async function activate(context: ExtensionContext) {
 			activeFilesTracker,
 			uniqueUserId,
 			agentSystemInstruction,
+			currentRepo,
 		)
 	);
 
@@ -326,7 +294,6 @@ export async function activate(context: ExtensionContext) {
 			const uri = doc.uri;
 			const fsPath = doc.uri.fsPath;
 			await trackCodeSymbolChanges.fileSaved(uri, logger);
-			await searchIndexCollection.indexFile(fsPath);
 			await triggerCodeSymbolChange(
 				provider,
 				trackCodeSymbolChanges,

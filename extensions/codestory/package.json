@@ -110,6 +110,11 @@
           "type": "string",
           "default": "http://127.0.0.1:42424",
           "description": "The url of the sidecar which is required for aide to work"
+        },
+        "aide.sidecarUseSelfRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "If the side-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
         }
       }
     }
@@ -118,14 +123,13 @@
     "install:all": "yarn install && cd webview-ui-sideview && yarn install",
     "start:webview_sideview": "cd webview-ui-sideview && npm run start",
     "build:webview_sideview": "cd webview-ui-sideview && npm run build",
-    "vscode:prepublish": "npm run compile:tsc && npm run postinstall",
+    "vscode:prepublish": "npm run compile:tsc",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",
     "compile:tsc": "tsc -p ./",
     "watch:tsc": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "postinstall": "ts-node src/scripts/postinstall.ts",
     "vsce:package": "yarn run vsce package"
   },
   "devDependencies": {
@@ -155,15 +159,11 @@
     "lunr": "^2.3.9",
     "mathjs": "^11.9.1",
     "node-fetch": "^3.3.2",
-    "onnxruntime-node": "^1.15.1",
-    "onnxruntime-web": "^1.15.1",
     "openai": "^4.0.1",
     "posthog-node": "^3.1.1",
     "process-nextick-args": "^2.0.1",
     "rxjs": "^7.8.1",
-    "sharp": "^0.32.6",
     "ts-morph": "^19.0.0",
-    "ts-node": "^10.9.1",
     "vsce": "^2.15.0",
     "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",

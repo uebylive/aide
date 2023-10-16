@@ -29,9 +29,21 @@ export interface CodeSpan {
 	score: number | null;
 }
 
+export interface SemanticSearchResponse {
+	session_id: string;
+	query: string;
+	code_spans: CodeSpan[];
+}
+
+export interface Answer {
+	answer_up_until_now: string;
+	delta: string | null;
+}
+
 export type ConversationState =
 	| 'Pending'
 	| 'Started'
+	| 'StreamingAnswer'
 	| 'Finished';
 
 export interface ConversationMessage {
@@ -56,7 +68,7 @@ export interface ConversationMessage {
 	// The status of this conversation
 	conversation_state: ConversationState;
 	// Final answer which is going to get stored here
-	answer: string | null;
+	answer: Answer | null;
 	// Last updated
 	last_updated: number;
 	// Created at

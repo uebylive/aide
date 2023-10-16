@@ -20,4 +20,17 @@ export const readSideCarURL = (): string => {
 		return sideCarURL;
 	}
 	return SIDECAR_URL;
-}
+};
+
+
+export const sidecarUseSelfRun = (): boolean => {
+	const aideConfiguration = vscode.workspace.getConfiguration('aide');
+	const sideCarUseSelfRun = aideConfiguration.get('sidecarUseSelfRun');
+	if (sideCarUseSelfRun === undefined) {
+		return false;
+	}
+	if (typeof sideCarUseSelfRun === 'boolean') {
+		return sideCarUseSelfRun;
+	}
+	return false;
+};

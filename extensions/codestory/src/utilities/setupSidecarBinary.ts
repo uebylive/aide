@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import { spawn, exec, execFile } from 'child_process';
 import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
-import { ensureDirectoryExists } from '../searchIndex/helpers';
+import { sidecarUseSelfRun } from './sidecarUrl';
 
 // We are going to use a static port right now and nothing else
 export function getSidecarBinaryURL() {
@@ -21,7 +21,7 @@ export function getSidecarBinaryURL() {
 // if the version we are looking at is okay, or we need to download a new binary
 // for now, lets keep it as it is and figure out a way to update the hash on
 // important updates
-export const SIDECAR_VERSION = '00d6db7468af0f735002483689e2e34fbfc740fdc07fff3027aca5dc2823ea12';
+export const SIDECAR_VERSION = 'daa3bf44390f6a7523f118a5de373101df38e3306b061fbaf7d37801da73198e';
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
@@ -110,6 +110,10 @@ export async function startSidecarBinary(
 ): Promise<string> {
 	// Check vscode settings
 	const serverUrl = getSidecarBinaryURL();
+	const shouldUseSelfRun = sidecarUseSelfRun();
+	if (shouldUseSelfRun) {
+		return serverUrl;
+	}
 	if (serverUrl !== 'http://127.0.0.1:42424') {
 		console.log('Sidecar server is being run manually, skipping start');
 		return 'http://127.0.0.1:42424';
