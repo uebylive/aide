@@ -131,8 +131,8 @@ export class SideCarClient {
 
 	async getSemanticSearchResult(query: string, reporef: RepoRef): Promise<CodeSymbolInformationEmbeddings[]> {
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agent/semantic_search';
-		baseUrl.searchParams.set('reporef', reporef.getRepresentation());
+		baseUrl.pathname = '/api/agent/hybrid_search';
+		baseUrl.searchParams.set('repo', reporef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
 		const url = baseUrl.toString();
 		const response = await fetch(url);
