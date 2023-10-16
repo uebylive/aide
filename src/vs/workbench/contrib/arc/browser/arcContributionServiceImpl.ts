@@ -5,8 +5,10 @@
 
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { localize } from 'vs/nls';
+import { registerAction2 } from 'vs/platform/actions/common/actions';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { Extensions as WorkbenchExtensions, IWorkbenchContribution, IWorkbenchContributionsRegistry } from 'vs/workbench/common/contributions';
+import { getArcActionsForProvider } from 'vs/workbench/contrib/arc/browser/actions/arcActions';
 import { IArcContributionService, IArcProviderContribution, IRawArcProviderContribution } from 'vs/workbench/contrib/arc/common/arcContributionService';
 import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
@@ -88,6 +90,8 @@ export class ArcExtensionPointHandler implements IWorkbenchContribution {
 
 	private registerArcProvider(providerDescriptor: IRawArcProviderContribution): IDisposable {
 		const disposables = new DisposableStore();
+
+		getArcActionsForProvider(providerDescriptor.id, providerDescriptor.label).map(action => disposables.add(registerAction2(action)));
 
 		return {
 			dispose: () => {

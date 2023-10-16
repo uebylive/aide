@@ -3,11 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
 import { ViewContainerLocation, ViewContainerLocationToString } from 'vs/workbench/common/views';
@@ -18,10 +16,10 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 
 
-const auxiliaryBarRightIcon = registerIcon('auxiliarybar-right-layout-icon', Codicon.layoutSidebarRight, localize('toggleAuxiliaryIconRight', 'Icon to toggle the auxiliary bar off in its right position.'));
-const auxiliaryBarRightOffIcon = registerIcon('auxiliarybar-right-off-layout-icon', Codicon.layoutSidebarRightOff, localize('toggleAuxiliaryIconRightOn', 'Icon to toggle the auxiliary bar on in its right position.'));
-const auxiliaryBarLeftIcon = registerIcon('auxiliarybar-left-layout-icon', Codicon.layoutSidebarLeft, localize('toggleAuxiliaryIconLeft', 'Icon to toggle the auxiliary bar in its left position.'));
-const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon', Codicon.layoutSidebarLeftOff, localize('toggleAuxiliaryIconLeftOn', 'Icon to toggle the auxiliary bar on in its left position.'));
+// const auxiliaryBarRightIcon = registerIcon('auxiliarybar-right-layout-icon', Codicon.layoutSidebarRight, localize('toggleAuxiliaryIconRight', 'Icon to toggle the auxiliary bar off in its right position.'));
+// const auxiliaryBarRightOffIcon = registerIcon('auxiliarybar-right-off-layout-icon', Codicon.layoutSidebarRightOff, localize('toggleAuxiliaryIconRightOn', 'Icon to toggle the auxiliary bar on in its right position.'));
+// const auxiliaryBarLeftIcon = registerIcon('auxiliarybar-left-layout-icon', Codicon.layoutSidebarLeft, localize('toggleAuxiliaryIconLeft', 'Icon to toggle the auxiliary bar in its left position.'));
+// const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon', Codicon.layoutSidebarLeftOff, localize('toggleAuxiliaryIconLeftOn', 'Icon to toggle the auxiliary bar on in its left position.'));
 
 export class ToggleAuxiliaryBarAction extends Action2 {
 
@@ -98,33 +96,34 @@ registerAction2(class FocusAuxiliaryBarAction extends Action2 {
 });
 
 MenuRegistry.appendMenuItems([
+	// {
+	// 	id: MenuId.LayoutControlMenu,
+	// 	item: {
+	// 		group: '0_workbench_toggles',
+	// 		command: {
+	// 			id: ToggleAuxiliaryBarAction.ID,
+	// 			title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
+	// 			toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarLeftIcon },
+	// 			icon: auxiliaryBarLeftOffIcon,
+	// 		},
+	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
+	// 		order: 0
+	// 	}
+	// }, {
+	// 	id: MenuId.LayoutControlMenu,
+	// 	item: {
+	// 		group: '0_workbench_toggles',
+	// 		command: {
+	// 			id: ToggleAuxiliaryBarAction.ID,
+	// 			title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
+	// 			toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarRightIcon },
+	// 			icon: auxiliaryBarRightOffIcon,
+	// 		},
+	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
+	// 		order: 2
+	// 	}
+	// },
 	{
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '0_workbench_toggles',
-			command: {
-				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
-				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarLeftIcon },
-				icon: auxiliaryBarLeftOffIcon,
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
-			order: 0
-		}
-	}, {
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '0_workbench_toggles',
-			command: {
-				id: ToggleAuxiliaryBarAction.ID,
-				title: localize('toggleSecondarySideBar', "Toggle Secondary Side Bar"),
-				toggled: { condition: AuxiliaryBarVisibleContext, icon: auxiliaryBarRightIcon },
-				icon: auxiliaryBarRightOffIcon,
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
-			order: 2
-		}
-	}, {
 		id: MenuId.ViewTitleContext,
 		item: {
 			group: '3_workbench_layout_move',

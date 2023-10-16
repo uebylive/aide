@@ -92,6 +92,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 			this._widget = this._register(scopedInstantiationService.createInstance(
 				ChatWidget,
 				{ viewId: this.id },
+				{ supportsFileReferences: true },
 				{
 					listForeground: SIDE_BAR_FOREGROUND,
 					listBackground: this.getBackgroundColor(),
@@ -169,5 +170,3 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 		super.saveState();
 	}
 }
-
-

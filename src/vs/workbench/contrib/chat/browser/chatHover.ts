@@ -152,7 +152,8 @@ class HoverChat extends Disposable {
 
 		this.widget = this.instantiationService.createInstance(
 			ChatWidget,
-			{ resource: true, renderOnlyInput: true },
+			{ resource: true },
+			{ renderOnlyInput: true, supportsFileReferences: true },
 			{
 				listForeground: quickInputForeground,
 				listBackground: quickInputBackground,

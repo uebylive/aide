@@ -7,7 +7,7 @@ import { localize } from 'vs/nls';
 import { MenuId, MenuRegistry, registerAction2, Action2 } from 'vs/platform/actions/common/actions';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IWorkbenchLayoutService, Parts, Position, positionToString } from 'vs/workbench/services/layout/browser/layoutService';
+import { ActivityBarPosition, IWorkbenchLayoutService, LayoutSettings, Parts, Position, positionToString } from 'vs/workbench/services/layout/browser/layoutService';
 import { ServicesAccessor, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { KeyMod, KeyCode, KeyChord } from 'vs/base/common/keyCodes';
 import { isWindows, isLinux, isWeb, isMacintosh, isNative } from 'vs/base/common/platform';
@@ -33,9 +33,9 @@ const menubarIcon = registerIcon('menuBar', Codicon.layoutMenubar, localize('men
 const activityBarLeftIcon = registerIcon('activity-bar-left', Codicon.layoutActivitybarLeft, localize('activityBarLeft', "Represents the activity bar in the left position"));
 const activityBarRightIcon = registerIcon('activity-bar-right', Codicon.layoutActivitybarRight, localize('activityBarRight', "Represents the activity bar in the right position"));
 const panelLeftIcon = registerIcon('panel-left', Codicon.layoutSidebarLeft, localize('panelLeft', "Represents a side bar in the left position"));
-const panelLeftOffIcon = registerIcon('panel-left-off', Codicon.layoutSidebarLeftOff, localize('panelLeftOff', "Represents a side bar in the left position toggled off"));
+// const panelLeftOffIcon = registerIcon('panel-left-off', Codicon.layoutSidebarLeftOff, localize('panelLeftOff', "Represents a side bar in the left position toggled off"));
 const panelRightIcon = registerIcon('panel-right', Codicon.layoutSidebarRight, localize('panelRight', "Represents side bar in the right position"));
-const panelRightOffIcon = registerIcon('panel-right-off', Codicon.layoutSidebarRightOff, localize('panelRightOff', "Represents side bar in the right position toggled off"));
+// const panelRightOffIcon = registerIcon('panel-right-off', Codicon.layoutSidebarRightOff, localize('panelRightOff', "Represents side bar in the right position toggled off"));
 const panelIcon = registerIcon('panel-bottom', Codicon.layoutPanel, localize('panelBottom', "Represents the bottom panel"));
 const statusBarIcon = registerIcon('statusBar', Codicon.layoutStatusbar, localize('statusBarIcon', "Represents the status bar"));
 
@@ -73,35 +73,20 @@ export class ToggleActivityBarVisibilityAction extends Action2 {
 
 	static readonly ID = 'workbench.action.toggleActivityBarVisibility';
 
-	private static readonly activityBarVisibleKey = 'workbench.activityBar.visible';
-
 	constructor() {
 		super({
 			id: ToggleActivityBarVisibilityAction.ID,
 			title: {
 				value: localize('toggleActivityBar', "Toggle Activity Bar Visibility"),
-				mnemonicTitle: localize({ key: 'miActivityBar', comment: ['&& denotes a mnemonic'] }, "&&Activity Bar"),
 				original: 'Toggle Activity Bar Visibility'
 			},
-			category: Categories.View,
-			f1: true,
-			toggled: ContextKeyExpr.equals('config.workbench.activityBar.visible', true),
-			menu: [{
-				id: MenuId.MenubarAppearanceMenu,
-				group: '2_workbench_layout',
-				order: 4
-			}]
 		});
 	}
 
 	run(accessor: ServicesAccessor): void {
-		const layoutService = accessor.get(IWorkbenchLayoutService);
 		const configurationService = accessor.get(IConfigurationService);
-
-		const visibility = layoutService.isVisible(Parts.ACTIVITYBAR_PART);
-		const newVisibilityValue = !visibility;
-
-		configurationService.updateValue(ToggleActivityBarVisibilityAction.activityBarVisibleKey, newVisibilityValue);
+		const value = configurationService.getValue(LayoutSettings.ACTIVITY_BAR_LOCATION);
+		configurationService.updateValue(LayoutSettings.ACTIVITY_BAR_LOCATION, value === ActivityBarPosition.HIDDEN ? undefined : ActivityBarPosition.HIDDEN);
 	}
 }
 
@@ -416,33 +401,34 @@ MenuRegistry.appendMenuItems([
 			when: ContextKeyExpr.and(SideBarVisibleContext, ContextKeyExpr.equals('viewLocation', ViewContainerLocationToString(ViewContainerLocation.Sidebar))),
 			order: 2
 		}
-	}, {
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '0_workbench_toggles',
-			command: {
-				id: ToggleSidebarVisibilityAction.ID,
-				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
-				icon: panelLeftOffIcon,
-				toggled: { condition: SideBarVisibleContext, icon: panelLeftIcon }
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
-			order: 0
-		}
-	}, {
-		id: MenuId.LayoutControlMenu,
-		item: {
-			group: '0_workbench_toggles',
-			command: {
-				id: ToggleSidebarVisibilityAction.ID,
-				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
-				icon: panelRightOffIcon,
-				toggled: { condition: SideBarVisibleContext, icon: panelRightIcon }
-			},
-			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
-			order: 2
-		}
-	}
+	},
+	// {
+	// 	id: MenuId.LayoutControlMenu,
+	// 	item: {
+	// 		group: '0_workbench_toggles',
+	// 		command: {
+	// 			id: ToggleSidebarVisibilityAction.ID,
+	// 			title: localize('toggleSideBar', "Toggle Primary Side Bar"),
+	// 			icon: panelLeftOffIcon,
+	// 			toggled: { condition: SideBarVisibleContext, icon: panelLeftIcon }
+	// 		},
+	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
+	// 		order: 0
+	// 	}
+	// }, {
+	// 	id: MenuId.LayoutControlMenu,
+	// 	item: {
+	// 		group: '0_workbench_toggles',
+	// 		command: {
+	// 			id: ToggleSidebarVisibilityAction.ID,
+	// 			title: localize('toggleSideBar', "Toggle Primary Side Bar"),
+	// 			icon: panelRightOffIcon,
+	// 			toggled: { condition: SideBarVisibleContext, icon: panelRightIcon }
+	// 		},
+	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
+	// 		order: 2
+	// 	}
+	// }
 ]);
 
 // --- Toggle Statusbar Visibility
@@ -719,7 +705,7 @@ registerAction2(class extends Action2 {
 
 					results.push({
 						id: viewDescriptor.id,
-						label: viewDescriptor.name
+						label: viewDescriptor.name.value
 					});
 				}
 			});
@@ -743,7 +729,7 @@ registerAction2(class extends Action2 {
 
 					results.push({
 						id: viewDescriptor.id,
-						label: viewDescriptor.name
+						label: viewDescriptor.name.value
 					});
 				}
 			});
@@ -768,7 +754,7 @@ registerAction2(class extends Action2 {
 
 					results.push({
 						id: viewDescriptor.id,
-						label: viewDescriptor.name
+						label: viewDescriptor.name.value
 					});
 				}
 			});
@@ -842,7 +828,7 @@ class MoveFocusedViewAction extends Action2 {
 
 		const quickPick = quickInputService.createQuickPick();
 		quickPick.placeholder = localize('moveFocusedView.selectDestination', "Select a Destination for the View");
-		quickPick.title = localize({ key: 'moveFocusedView.title', comment: ['{0} indicates the title of the view the user has selected to move.'] }, "View: Move {0}", viewDescriptor.name);
+		quickPick.title = localize({ key: 'moveFocusedView.title', comment: ['{0} indicates the title of the view the user has selected to move.'] }, "View: Move {0}", viewDescriptor.name.value);
 
 		const items: Array<IQuickPickItem | IQuickPickSeparator> = [];
 		const currentContainer = viewDescriptorService.getViewContainerByViewId(focusedViewId)!;
@@ -939,16 +925,16 @@ class MoveFocusedViewAction extends Action2 {
 			const destination = quickPick.selectedItems[0];
 
 			if (destination.id === '_.panel.newcontainer') {
-				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.Panel);
+				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.Panel, this.desc.id);
 				viewsService.openView(focusedViewId, true);
 			} else if (destination.id === '_.sidebar.newcontainer') {
-				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.Sidebar);
+				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.Sidebar, this.desc.id);
 				viewsService.openView(focusedViewId, true);
 			} else if (destination.id === '_.auxiliarybar.newcontainer') {
-				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.AuxiliaryBar);
+				viewDescriptorService.moveViewToLocation(viewDescriptor!, ViewContainerLocation.AuxiliaryBar, this.desc.id);
 				viewsService.openView(focusedViewId, true);
 			} else if (destination.id) {
-				viewDescriptorService.moveViewsToContainer([viewDescriptor], viewDescriptorService.getViewContainerById(destination.id)!);
+				viewDescriptorService.moveViewsToContainer([viewDescriptor], viewDescriptorService.getViewContainerById(destination.id)!, undefined, this.desc.id);
 				viewsService.openView(focusedViewId, true);
 			}
 
@@ -1001,7 +987,7 @@ registerAction2(class extends Action2 {
 			return;
 		}
 
-		viewDescriptorService.moveViewsToContainer([viewDescriptor], defaultContainer);
+		viewDescriptorService.moveViewsToContainer([viewDescriptor], defaultContainer, undefined, this.desc.id);
 		viewsService.openView(viewDescriptor.id, true);
 	}
 });
@@ -1236,11 +1222,11 @@ registerAction2(class CustomizeLayoutAction extends Action2 {
 					id: MenuId.LayoutControlMenuSubmenu,
 					group: 'z_end',
 				},
-				{
-					id: MenuId.LayoutControlMenu,
-					when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
-					group: 'z_end'
-				}
+				// {
+				// 	id: MenuId.LayoutControlMenu,
+				// 	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
+				// 	group: 'z_end'
+				// }
 			]
 		});
 	}
