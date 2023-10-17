@@ -172,7 +172,11 @@ export async function startSidecarBinary(
 	// for the dylib files and the binary
 	// -o is important here because we want to override the downloaded binary
 	// if it has been already downloaded
-	await runCommand(`unzip -o ${zipDestination} -d ${sidecarDestination}`);
+	console.log(zipDestination);
+	console.log(sidecarDestination);
+	const output = await runCommand(`unzip -o "${zipDestination}" -d "${sidecarDestination}"`);
+	console.log(output[0]);
+	console.log(output[1]);
 	// now delete the zip file
 	fs.unlinkSync(zipDestination);
 	// Get name of the corresponding executable for platform
