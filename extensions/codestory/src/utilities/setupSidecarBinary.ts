@@ -21,7 +21,7 @@ export function getSidecarBinaryURL() {
 // if the version we are looking at is okay, or we need to download a new binary
 // for now, lets keep it as it is and figure out a way to update the hash on
 // important updates
-export const SIDECAR_VERSION = 'daa3bf44390f6a7523f118a5de373101df38e3306b061fbaf7d37801da73198e';
+export const SIDECAR_VERSION = '515297f2572b0d24bd44ef25b8244dc62315e58a4e37e41e49510a7768fb22bf';
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
