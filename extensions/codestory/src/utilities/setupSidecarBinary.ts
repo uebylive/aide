@@ -8,9 +8,34 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as cp from 'child_process';
 import { spawn, exec, execFile } from 'child_process';
 import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
 import { sidecarUseSelfRun } from './sidecarUrl';
+
+
+function unzipSidecarZipFolder(source: string, extractDir: string) {
+	if (source.endsWith('.zip')) {
+		if (process.platform === 'win32') {
+			cp.spawnSync('powershell.exe', [
+				'-NoProfile',
+				'-ExecutionPolicy', 'Bypass',
+				'-NonInteractive',
+				'-NoLogo',
+				'-Command',
+				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${extractDir}"`
+			]);
+		} else {
+			cp.spawnSync('unzip', [source, '-d', `${extractDir}`]);
+		}
+	} else {
+		// tar does not create extractDir by default
+		if (!fs.existsSync(extractDir)) {
+			fs.mkdirSync(extractDir);
+		}
+		cp.spawnSync('tar', ['-xzf', source, '-C', extractDir, '--strip-components', '1']);
+	}
+}
 
 // We are going to use a static port right now and nothing else
 export function getSidecarBinaryURL() {
@@ -142,7 +167,7 @@ export async function startSidecarBinary(
 
 	const zipDestination = path.join(
 		extensionBasePath,
-		'sidecar_zip',
+		'sidecar_zip.zip',
 	);
 	const sidecarDestination = path.join(
 		extensionBasePath,
@@ -174,9 +199,8 @@ export async function startSidecarBinary(
 	// if it has been already downloaded
 	console.log(zipDestination);
 	console.log(sidecarDestination);
-	const output = await runCommand(`unzip -o "${zipDestination}" -d "${sidecarDestination}"`);
-	console.log(output[0]);
-	console.log(output[1]);
+	// hopefully this works as we want it to
+	unzipSidecarZipFolder(zipDestination, sidecarDestination);
 	// now delete the zip file
 	fs.unlinkSync(zipDestination);
 	// Get name of the corresponding executable for platform
