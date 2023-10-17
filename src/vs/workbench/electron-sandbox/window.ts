@@ -716,6 +716,7 @@ export class NativeWindow extends Disposable {
 						id: 'appRootWarning.banner',
 						message: localize('appRootWarning.banner', "Files you store within the installation folder ('{0}') may be OVERWRITTEN or DELETED IRREVERSIBLY without warning at update time.", this.labelService.getUriLabel(installLocationUri)),
 						icon: Codicon.warning,
+						neverShowAgain: { id: 'windowseol', isSecondary: true, scope: NeverShowAgainScope.APPLICATION }
 					});
 
 					break;
