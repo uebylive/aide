@@ -83,7 +83,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath = '';
 	}
 	if (rootPath === '') {
-		window.showErrorMessage('Please open a folder in VS Code to use CodeStory');
+		window.showErrorMessage('Please open a folder in Aide to use CodeStory');
 		return;
 	}
 	const agentSystemInstruction = readCustomSystemInstruction();
