@@ -26,7 +26,7 @@ import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExec
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
-import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicReferences';
+import { SelectAndInsertFileAction, SelectAndInsertSymbolAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicReferences';
 import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/chat/common/chatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
@@ -468,7 +468,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality === 'stable';
 				if (!fileVariablesEnabled) {
-					return;
+					// return;
 				}
 
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
@@ -501,6 +501,14 @@ class BuiltinDynamicCompletions extends Disposable {
 							range: { insert, replace },
 							kind: CompletionItemKind.Text,
 							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range }] },
+						},
+						<CompletionItem>{
+							label: '$symbol',
+							insertText: '$symbol:',
+							detail: localize('pickSymbolLabel', "Pick a symbol"),
+							range: { insert, replace },
+							kind: CompletionItemKind.Text,
+							command: { id: SelectAndInsertSymbolAction.ID, title: SelectAndInsertSymbolAction.ID, arguments: [{ widget, range }] },
 						}
 					]
 				};

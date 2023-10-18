@@ -76,12 +76,12 @@ export class ChatDynamicReferenceModel extends Disposable implements IChatWidget
 ChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
 
 
-interface SelectAndInsertFileActionContext {
+interface SelectAndInsertActionContext {
 	widget: ChatWidget;
 	range: IRange;
 }
 
-function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
+function isSelectAndInsertActionContext(context: any): context is SelectAndInsertActionContext {
 	return 'widget' in context && 'range' in context;
 }
 
@@ -100,7 +100,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		const logService = accessor.get(ILogService);
 
 		const context = args[0];
-		if (!isSelectAndInsertFileActionContext(context)) {
+		if (!isSelectAndInsertActionContext(context)) {
 			return;
 		}
 
@@ -142,3 +142,62 @@ export class SelectAndInsertFileAction extends Action2 {
 	}
 }
 registerAction2(SelectAndInsertFileAction);
+
+
+export class SelectAndInsertSymbolAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.selectAndInsertSymbol';
+
+	constructor() {
+		super({
+			id: SelectAndInsertSymbolAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isSelectAndInsertActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `symbol`
+			context.widget.inputEditor.executeEdits('chatInsertSymbol', [{ range: context.range, text: `` }]);
+		};
+
+		const quickInputService = accessor.get(IQuickInputService);
+		const picks = await quickInputService.quickAccess.pick('#');
+		if (!picks?.length) {
+			logService.trace('SelectAndInsertSymbolAction: no symbol selected');
+			doCleanup();
+			return;
+		}
+
+		const resource = (picks[0] as unknown as { resource: unknown }).resource as URI;
+		if (!textModelService.canHandleResource(resource)) {
+			logService.trace('SelectAndInsertSymbolAction: non-text resource selected');
+			doCleanup();
+			return;
+		}
+
+		const symbolName = basename(resource);
+		const editor = context.widget.inputEditor;
+		const text = `$symbol:${symbolName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertSymbol', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertSymbolAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		context.widget.getContrib<ChatDynamicReferenceModel>(ChatDynamicReferenceModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: resource
+		});
+	}
+}
+registerAction2(SelectAndInsertSymbolAction);
