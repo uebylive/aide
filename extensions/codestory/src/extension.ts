@@ -127,11 +127,6 @@ export async function activate(context: ExtensionContext) {
 	);
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 
-	// We first check if the repo has been indexed, if not we ask the sidecar binary
-	// to start indexing it.
-
-
-
 	// Setup python language parser
 	const pythonLanguageParser = new LanguageParser(
 		rootPath ?? '',
@@ -259,9 +254,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 		logger
 	);
-	logger.info('[check 6]We are over here');
 	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
-	logger.info('[check 7]We are over here');
 
 	// Keeps track of the symbols which are changing and creates a graph of
 	// those changes
@@ -277,7 +270,6 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 		logger,
 	);
-	logger.info('[check 9]We are over here');
 
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
@@ -285,8 +277,6 @@ export async function activate(context: ExtensionContext) {
 		const uri = doc.uri;
 		await trackCodeSymbolChanges.fileOpened(uri, logger);
 	});
-
-	logger.info('[check 10]We are over here');
 
 	// Now we parse the documents on save as well
 	context.subscriptions.push(
