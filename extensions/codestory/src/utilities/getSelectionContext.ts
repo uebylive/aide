@@ -3,7 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as path from 'path';
 import * as vscode from 'vscode';
+import { RepoRef } from '../sidecar/client';
 
 export interface SelectionData {
 	documentFilePath: string;
@@ -14,6 +16,14 @@ export interface SelectionData {
 		label: string;
 		hyperlink: string;
 	};
+}
+
+
+export interface SelectionDataForExplain {
+	lineStart: number;
+	lineEnd: number;
+	relativeFilePath: string;
+	repoRef: string;
 }
 
 
@@ -66,3 +76,25 @@ export const getSelectedCodeContext = (workingDirectory: string): SelectionData 
 	}
 	return null;
 };
+
+export const getSelectedCodeContextForExplain = (workingDirectory: string, reporef: RepoRef): SelectionDataForExplain | null => {
+	const editor = vscode.window.activeTextEditor;
+
+	if (editor) {
+		const document = editor.document;
+		const selection = editor.selection;
+
+		if (selection.start.line === selection.end.line && selection.start.character === selection.end.character) {
+			return null;
+		}
+		const relativePath = path.relative(workingDirectory, document.fileName);
+		return {
+			lineStart: selection.start.line,
+			lineEnd: selection.end.line,
+			relativeFilePath: relativePath,
+			repoRef: reporef.getRepresentation(),
+		};
+	} else {
+		return null;
+	}
+}

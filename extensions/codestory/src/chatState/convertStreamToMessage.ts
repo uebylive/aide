@@ -124,7 +124,7 @@ export const reportFromStreamToSearchProgress = async (
 			// the reporef location to the message and that would solve a lot of
 			// problems.
 			if (!enteredAnswerGenerationLoop) {
-				progress.report(new CSChatProgressContent('## Answer\n\n' + conversationMessage.answer.delta));
+				progress.report(new CSChatProgressContent('\n## Answer\n\n' + conversationMessage.answer.delta));
 				enteredAnswerGenerationLoop = true;
 			} else {
 				// type-safety here, altho it its better to do it this way
