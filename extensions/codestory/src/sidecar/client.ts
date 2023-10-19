@@ -8,6 +8,7 @@ import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBuffered } from './ssestream';
 import { ConversationMessage, RepoStatus, SemanticSearchResponse } from './types';
+import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -50,6 +51,29 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/repo/repo_list';
 		return baseUrl.toString();
+	}
+
+	async *explainQuery(query: string, repoRef: RepoRef, selection: SelectionDataForExplain): AsyncIterableIterator<ConversationMessage> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agent/explain';
+		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
+		baseUrl.searchParams.set('query', query);
+		baseUrl.searchParams.set('start_line', selection.lineStart.toString());
+		baseUrl.searchParams.set('end_line', selection.lineEnd.toString());
+		baseUrl.searchParams.set('relative_path', selection.relativeFilePath);
+		const url = baseUrl.toString();
+		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				yield conversationMessage;
+			}
+		}
 	}
 
 	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessage> {

@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
-import { getSelectedCodeContext } from '../utilities/getSelectionContext';
+import { getSelectedCodeContext, getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
 import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
 import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
 import { formatPathsInAnswer, reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
@@ -413,32 +413,17 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
-				const relevantContext = getRelevantContextForCodeSelection(this._codeGraph);
-
-				return (async () => {
-					if (relevantContext) {
-						const contextForPrompt = createContextPrompt(relevantContext);
-						// We add the code context here for generating the response
-						this._chatSessionState.chatContext.addExplainCodeContext(contextForPrompt);
-					}
-					if (userProvidedContext) {
-						console.log(`[explain][userProvidedContext] ${userProvidedContext}`);
-						this._chatSessionState.chatContext.addExplainCodeContext(userProvidedContext);
-					}
-					this._chatSessionState.chatContext.addUserMessage(
-						'Remember to be concise and explain the code like a professor in computer science, use the references provided to quote how its used in the codebase. Don\'t ask me what the issue is, you need to explain the code context I provided to you.'
-					);
-					console.log(`[explain][messages] ${this._chatSessionState.chatContext.getMessages()}`);
-					console.log(this._chatSessionState.chatContext.getMessages());
-					const streamingResponse = generateChatCompletion(
-						this._chatSessionState.chatContext.getMessages(),
-					);
-					// Remove the message here too
-					this._chatSessionState.chatContext.removeLastMessage();
-					const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
-					this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+				const explainString = request.message.toString().slice('/explain'.length).trim();
+				const currentSelection = getSelectedCodeContextForExplain(this._workingDirectory, this._currentRepoRef);
+				console.log(currentSelection);
+				if (currentSelection === null) {
+					progress.report(new CSChatProgressContent('Selecting code on the editor can help us explain it better'));
 					return new CSChatResponseForProgress();
-				})();
+				} else {
+					const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection);
+					await reportFromStreamToSearchProgress(explainResponse, progress, token, this._currentRepoRef, this._workingDirectory);
+					return new CSChatResponseForProgress();
+				}
 			} else if (requestType === 'search') {
 				logSearchPrompt(
 					request.message.toString(),
