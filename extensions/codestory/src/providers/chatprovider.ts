@@ -376,7 +376,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		return (async () => {
 			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
 			const deterministicRequestType = deterministicClassifier(request.message.toString());
-			const requestType = deterministicRequestType ?? await promptClassifier(request.message.toString());
+			const requestType = deterministicRequestType;
 			const userProvidedContext = request.userProvidedContext ? getContextForPromptFromUserContext(request.userProvidedContext) : null;
 			logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
 			if (requestType === 'help') {
@@ -442,28 +442,15 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				const selectionContext = getSelectedCodeContext(this._workingDirectory);
 				this._chatSessionState.chatContext.cleanupChatHistory();
 				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
+				const query = request.message.toString().trim();
 				logChatPrompt(
 					request.message.toString(),
 					this._repoName,
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				if (selectionContext) {
-					this._chatSessionState.chatContext.addCodeContext(
-						selectionContext.selectedText,
-						selectionContext.extraSurroundingText,
-					);
-				}
-				if (userProvidedContext) {
-					this._chatSessionState.chatContext.addExplainCodeContext(
-						userProvidedContext,
-					);
-				}
-				const streamingResponse = generateChatCompletion(
-					this._chatSessionState.chatContext.getMessages(),
-				);
-				const finalMessage = await reportFromStreamToProgress(streamingResponse, progress, token);
-				this._chatSessionState.chatContext.addCodeStoryMessage(finalMessage);
+				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId);
+				await reportFromStreamToSearchProgress(followupResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
 		})();
