@@ -53,6 +53,30 @@ export class SideCarClient {
 		return baseUrl.toString();
 	}
 
+	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agent/followup_chat';
+		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
+		baseUrl.searchParams.set('query', query);
+		baseUrl.searchParams.set('thread_id', threadId);
+		const url = baseUrl.toString();
+		console.log('[followup][stream] whats the url here');
+		console.log(url);
+		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				console.log(conversationMessage);
+				yield conversationMessage;
+			}
+		}
+	}
+
 	async *explainQuery(query: string, repoRef: RepoRef, selection: SelectionDataForExplain, threadId: string): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/explain';
