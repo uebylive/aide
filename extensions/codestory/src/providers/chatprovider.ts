@@ -49,6 +49,7 @@ class CSChatSession implements vscode.InteractiveSession {
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
 	agentCustomInstruction: string | null;
+	threadId: string;
 	public chatSessionState: CSChatSessionState;
 
 	saveState(): CSChatSessionState {
@@ -63,6 +64,7 @@ class CSChatSession implements vscode.InteractiveSession {
 		agentCustomInstruction: string | null,
 		inputPlaceholder?: string | undefined,
 	) {
+		this.threadId = uuidv4();
 		this.requester = requester;
 		this.responder = responder;
 		this.inputPlaceholder = inputPlaceholder;
@@ -371,8 +373,6 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 	}
 
 	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
-		logger.info('provideResponseWithProgress', request, progress, token);
-		console.log('[cs-chat][provideResponseWithProgress]', request);
 		return (async () => {
 			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
 			const deterministicRequestType = deterministicClassifier(request.message.toString());
@@ -414,13 +414,14 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
 				const explainString = request.message.toString().slice('/explain'.length).trim();
+				console.log('[explain][session_id]', request.session.threadId);
 				const currentSelection = getSelectedCodeContextForExplain(this._workingDirectory, this._currentRepoRef);
 				console.log(currentSelection);
 				if (currentSelection === null) {
 					progress.report(new CSChatProgressContent('Selecting code on the editor can help us explain it better'));
 					return new CSChatResponseForProgress();
 				} else {
-					const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection);
+					const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.session.threadId);
 					await reportFromStreamToSearchProgress(explainResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 					return new CSChatResponseForProgress();
 				}
@@ -431,8 +432,9 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 					this._repoHash,
 					this._uniqueUserId,
 				);
+				console.log('[search][session_id]', request.session.threadId);
 				const searchString = request.message.toString().slice('/search'.length).trim();
-				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef);
+				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.session.threadId);
 				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();

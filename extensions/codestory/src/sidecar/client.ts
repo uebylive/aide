@@ -53,7 +53,7 @@ export class SideCarClient {
 		return baseUrl.toString();
 	}
 
-	async *explainQuery(query: string, repoRef: RepoRef, selection: SelectionDataForExplain): AsyncIterableIterator<ConversationMessage> {
+	async *explainQuery(query: string, repoRef: RepoRef, selection: SelectionDataForExplain, threadId: string): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/explain';
 		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
@@ -61,6 +61,7 @@ export class SideCarClient {
 		baseUrl.searchParams.set('start_line', selection.lineStart.toString());
 		baseUrl.searchParams.set('end_line', selection.lineEnd.toString());
 		baseUrl.searchParams.set('relative_path', selection.relativeFilePath);
+		baseUrl.searchParams.set('thread_id', threadId);
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
 		for await (const line of asyncIterableResponse) {
@@ -76,12 +77,13 @@ export class SideCarClient {
 		}
 	}
 
-	async *searchQuery(query: string, repoRef: RepoRef): AsyncIterableIterator<ConversationMessage> {
+	async *searchQuery(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
 		// how do we create the url properly here?
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/search_agent';
 		baseUrl.searchParams.set('reporef', repoRef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
+		baseUrl.searchParams.set('thread_id', threadId);
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
 		for await (const line of asyncIterableResponse) {
