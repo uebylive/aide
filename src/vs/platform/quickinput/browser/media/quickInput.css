@@ -8,9 +8,45 @@
 	width: 600px;
 	z-index: 2550;
 	left: 50%;
+	top: 25% !important;
 	margin-left: -300px;
 	-webkit-app-region: no-drag;
 	border-radius: 6px;
+	padding: 6px;
+
+	transform-origin: top;
+	animation: openPopup 150ms;
+
+	&[style*="display: none;"] {
+		display: block !important;
+		transform-origin: top;
+		animation: closePopup 150ms;
+		opacity: 0;
+		transform: scaleY(0);
+		pointer-events: none;
+	}
+}
+
+@keyframes openPopup {
+	from {
+		opacity: 0;
+	}
+
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes closePopup {
+	from {
+		opacity: 1;
+		transform: scaleY(1);
+	}
+
+	to {
+		opacity: 0;
+		transform: scaleY(1);
+	}
 }
 
 .quick-input-titlebar {

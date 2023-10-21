@@ -56,6 +56,7 @@ body.web {
 	z-index: 1;
 	overflow: hidden;
 	color: var(--vscode-foreground);
+	background-color: var(--vscode-editor-background) !important;
 }
 
 .monaco-workbench.web {
