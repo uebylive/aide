@@ -13,7 +13,6 @@
 	-webkit-app-region: no-drag;
 	border-radius: 6px;
 	padding: 6px;
-
 	transform-origin: top;
 	animation: openPopup 150ms;
 
@@ -30,22 +29,24 @@
 @keyframes openPopup {
 	from {
 		opacity: 0;
+		transform: scale(0.98);
 	}
 
 	to {
 		opacity: 1;
+		transform: scale(1);
 	}
 }
 
 @keyframes closePopup {
 	from {
 		opacity: 1;
-		transform: scaleY(1);
+		transform: scale(1);
 	}
 
 	to {
 		opacity: 0;
-		transform: scaleY(1);
+		transform: scale(0.98);
 	}
 }
 

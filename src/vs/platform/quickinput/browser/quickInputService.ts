@@ -6,6 +6,7 @@
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { List } from 'vs/base/browser/ui/list/listWidget';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { Color } from 'vs/base/common/color';
 import { Emitter } from 'vs/base/common/event';
 import { IContextKey, IContextKeyService, RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -13,13 +14,13 @@ import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { IWorkbenchListOptions, WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { QuickAccessController } from 'vs/platform/quickinput/browser/quickAccess';
+import { IQuickInputControllerHost, QuickInputController } from 'vs/platform/quickinput/browser/quickInputController';
 import { IQuickAccessController } from 'vs/platform/quickinput/common/quickAccess';
 import { IInputBox, IInputOptions, IKeyMods, IPickOptions, IQuickInputButton, IQuickInputService, IQuickNavigateConfiguration, IQuickPick, IQuickPickItem, IQuickWidget, QuickPickInput } from 'vs/platform/quickinput/common/quickInput';
 import { defaultButtonStyles, defaultCountBadgeStyles, defaultInputBoxStyles, defaultKeybindingLabelStyles, defaultProgressBarStyles, defaultToggleStyles, getListStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { activeContrastBorder, asCssVariable, pickerGroupBorder, pickerGroupForeground, quickInputBackground, quickInputForeground, quickInputListFocusBackground, quickInputListFocusForeground, quickInputListFocusIconForeground, quickInputTitleBackground, widgetBorder, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
+import { activeContrastBorder, asCssVariable, listFocusBackground, pickerGroupBorder, pickerGroupForeground, quickInputBackground, quickInputForeground, quickInputListFocusBackground, quickInputListFocusForeground, quickInputListFocusIconForeground, quickInputTitleBackground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IQuickInputOptions, IQuickInputStyles } from './quickInput';
-import { QuickInputController, IQuickInputControllerHost } from 'vs/platform/quickinput/browser/quickInputController';
 
 export class QuickInputService extends Themable implements IQuickInputService {
 
@@ -195,10 +196,10 @@ export class QuickInputService extends Themable implements IQuickInputService {
 	private computeStyles(): IQuickInputStyles {
 		return {
 			widget: {
-				quickInputBackground: asCssVariable(quickInputBackground),
+				quickInputBackground: asCssVariable(Color.fromHex(quickInputBackground).transparent(0.99).toString()),
 				quickInputForeground: asCssVariable(quickInputForeground),
 				quickInputTitleBackground: asCssVariable(quickInputTitleBackground),
-				widgetBorder: asCssVariable(widgetBorder),
+				widgetBorder: asCssVariable(listFocusBackground),
 				widgetShadow: asCssVariable(widgetShadow),
 			},
 			inputBox: defaultInputBoxStyles,
@@ -208,7 +209,7 @@ export class QuickInputService extends Themable implements IQuickInputService {
 			progressBar: defaultProgressBarStyles,
 			keybindingLabel: defaultKeybindingLabelStyles,
 			list: getListStyles({
-				listBackground: quickInputBackground,
+				listBackground: Color.fromHex(quickInputBackground).transparent(0.99).toString(),
 				listFocusBackground: quickInputListFocusBackground,
 				listFocusForeground: quickInputListFocusForeground,
 				// Look like focused when inactive.
