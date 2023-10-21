@@ -19,6 +19,7 @@ import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
+import { getLSPGraphContextForChat } from '../editor/activeView/ranges';
 
 class CSChatSessionState implements vscode.InteractiveSessionState {
 	public chatContext: CSChatState;
@@ -440,6 +441,8 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				return new CSChatResponseForProgress();
 			} else {
 				const selectionContext = getSelectedCodeContext(this._workingDirectory);
+				// calling this here to see what kind of ranges we are getting
+				getLSPGraphContextForChat(this._workingDirectory);
 				this._chatSessionState.chatContext.cleanupChatHistory();
 				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
 				const query = request.message.toString().trim();

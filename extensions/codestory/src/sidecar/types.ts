@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as vscode from 'vscode';
+
 export type OptionString =
 	| { type: 'Some'; value: string }
 	| { type: 'None' };
@@ -100,4 +102,38 @@ export type SyncStatus =
 export interface RepoStatus {
 	// The string here is generated from RepoRef.to_string()
 	repo_map: { [key: string]: Repository };
+}
+
+
+/**
+ * The positions here start with 0 index
+ */
+export interface Position {
+	line: number;
+	character: number;
+}
+
+
+export interface ContextSelection {
+	relativePath: string;
+	fsFilePath: string;
+	workingDirectory: string;
+	startPosition: Position;
+	endPosition: Position;
+	uri: vscode.Uri;
+}
+
+export interface CurrentViewContext {
+	// The string here is generated from RepoRef.to_string()
+	repo_ref: string;
+	// The relative path of the file
+	relative_path: string;
+	// The line number
+	line_number: number;
+	// The column number
+	column_number: number;
+	// the current text which is present on the active editor
+	current_text: string;
+	// The active selection
+	selection: ContextSelection[] | null;
 }

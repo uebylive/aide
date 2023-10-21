@@ -1,9 +1,15 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+
 /**
  * We use this to get the code selection from the editor, to do that we are
  * going to use the vscode API to get the selection going
  */
 
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
 
 
 // We can use this function to get the code selection from the editor
@@ -14,18 +20,18 @@ export const getCodeSelection = async (currentSelection: vscode.Range, filePath:
 	const documentUri = vscode.Uri.file(filePath);
 
 	// Retrieve the start position of the current selection
-	const activeCursorStartPosition = currentSelection.start
+	const activeCursorStartPosition = currentSelection.start;
 	// If we find a new expanded selection position then we set it as the new start position
 	// and if we don't then we fallback to the original selection made by the user
 	const newSelectionStartingPosition =
-		(await getSmartSelection(documentUri, activeCursorStartPosition.line))?.start || currentSelection.start
+		(await getSmartSelection(documentUri, activeCursorStartPosition.line))?.start || currentSelection.start;
 
 	// Retrieve the ending line of the current selection
-	const activeCursorEndPosition = currentSelection.end
+	const activeCursorEndPosition = currentSelection.end;
 	// If we find a new expanded selection position then we set it as the new ending position
 	// and if we don't then we fallback to the original selection made by the user
 	const newSelectionEndingPosition =
-		(await getSmartSelection(documentUri, activeCursorEndPosition.line))?.end || currentSelection.end
+		(await getSmartSelection(documentUri, activeCursorEndPosition.line))?.end || currentSelection.end;
 
 	// Create a new range that starts from the beginning of the folding range at the start position
 	// and ends at the end of the folding range at the end position.
@@ -34,29 +40,29 @@ export const getCodeSelection = async (currentSelection: vscode.Range, filePath:
 		newSelectionStartingPosition.character,
 		newSelectionEndingPosition.line,
 		newSelectionEndingPosition.character
-	)
+	);
 
-}
+};
 
 export async function getSmartSelection(uri: vscode.Uri, target: number): Promise<vscode.Selection | undefined> {
-	return getSelectionAroundLine(await vscode.workspace.openTextDocument(uri), target)
+	return getSelectionAroundLine(await vscode.workspace.openTextDocument(uri), target);
 }
 
 export async function getSelectionAroundLine(
 	doc: vscode.TextDocument,
 	line: number
 ): Promise<vscode.Selection | undefined> {
-	const smartRanges = await getDocumentSections(doc)
+	const smartRanges = await getDocumentSections(doc);
 
 	// Filter to only keep folding ranges that contained nested folding ranges (aka removes nested ranges)
 	// Get the folding range containing the active cursor
-	const range = findRangeByLine(smartRanges, line)
+	const range = findRangeByLine(smartRanges, line);
 
 	if (!range) {
-		return undefined
+		return undefined;
 	}
 
-	return new vscode.Selection(range.start, range.end)
+	return new vscode.Selection(range.start, range.end);
 }
 
 /**
@@ -69,7 +75,7 @@ export async function getSelectionAroundLine(
  * @returns The folding range containing the target position, or undefined if not found.
  */
 export function findRangeByLine(ranges: vscode.Range[], targetLine: number): vscode.Range | undefined {
-	return ranges.find(range => range.start.line <= targetLine && range.end.line >= targetLine)
+	return ranges.find(range => range.start.line <= targetLine && range.end.line >= targetLine);
 }
 
 export async function getDocumentSections(
@@ -80,25 +86,25 @@ export async function getDocumentSections(
 ): Promise<vscode.Range[]> {
 	// Documents with language ID 'plaintext' do not have symbol support in VS Code
 	// In those cases, try to find class ranges heuristically
-	const isPlainText = doc.languageId === 'plaintext'
+	const isPlainText = doc.languageId === 'plaintext';
 
 	// Remove imports, comments, and regions from the folding ranges
-	const foldingRanges = await getFoldingRanges(doc.uri).then(r => r?.filter(r => !r.kind))
+	const foldingRanges = await getFoldingRanges(doc.uri).then(r => r?.filter(r => !r.kind));
 	if (!foldingRanges?.length) {
-		return []
+		return [];
 	}
 
-	const innerRanges = await removeOutermostFoldingRanges(doc, foldingRanges, getSymbols)
+	const innerRanges = await removeOutermostFoldingRanges(doc, foldingRanges, getSymbols);
 
-	const ranges = removeNestedFoldingRanges(innerRanges, isPlainText)
+	const ranges = removeNestedFoldingRanges(innerRanges, isPlainText);
 
-	return ranges.map(r => foldingRangeToRange(doc, r))
+	return ranges.map(r => foldingRangeToRange(doc, r));
 }
 
 async function defaultGetFoldingRanges(uri: vscode.Uri): Promise<vscode.FoldingRange[]> {
 	return (
 		(await vscode.commands.executeCommand<vscode.FoldingRange[]>('vscode.executeFoldingRangeProvider', uri)) || []
-	)
+	);
 }
 
 async function defaultGetSymbols(uri: vscode.Uri): Promise<vscode.SymbolInformation[]> {
@@ -107,7 +113,7 @@ async function defaultGetSymbols(uri: vscode.Uri): Promise<vscode.SymbolInformat
 			'vscode.executeDocumentSymbolProvider',
 			uri
 		)) || []
-	)
+	);
 }
 
 /**
@@ -118,27 +124,27 @@ async function removeOutermostFoldingRanges(
 	foldingRanges: vscode.FoldingRange[],
 	getSymbols: typeof defaultGetSymbols
 ): Promise<vscode.FoldingRange[]> {
-	const outermostRanges = await getOutermostFoldingRanges(doc, foldingRanges, getSymbols)
+	const outermostRanges = await getOutermostFoldingRanges(doc, foldingRanges, getSymbols);
 
 	if (!outermostRanges.length || !foldingRanges?.length) {
-		return foldingRanges
+		return foldingRanges;
 	}
 
 	for (const oRanges of outermostRanges) {
 		for (let i = 0; i < foldingRanges.length; i++) {
-			const range = foldingRanges[i]
+			const range = foldingRanges[i];
 			if (range.start === oRanges.start.line && Math.abs(range.end - oRanges.end.line) <= 1) {
-				foldingRanges.splice(i, 1)
-				i--
+				foldingRanges.splice(i, 1);
+				i--;
 			}
 		}
 	}
 
-	return foldingRanges
+	return foldingRanges;
 }
 
 
-const TOO_LARGE_SECTION = 100
+const TOO_LARGE_SECTION = 100;
 /**
  * Gets the outermost folding ranges that are too large to be considered a section. This includes
  * classes in most cases (where we want individual methods to be considered sections), but also
@@ -159,20 +165,20 @@ async function getOutermostFoldingRanges(
 					rangeLines(s.location.range) > TOO_LARGE_SECTION
 			)
 		)
-		.then(s => s.map(symbol => symbol.location.range))
+		.then(s => s.map(symbol => symbol.location.range));
 
 	if (symbolBased.length > 0) {
-		return symbolBased
+		return symbolBased;
 	}
 
 	// If the document does not support symbols, we use a heuristics to find the outermost folding
 	// ranges
-	const outermostFoldingRanges = removeNestedFoldingRanges(ranges)
+	const outermostFoldingRanges = removeNestedFoldingRanges(ranges);
 
 	// Check outerRanges array for the string 'class' in each starting line to confirm they are
 	// class ranges Filter the ranges to remove ranges that did not contain classes in their first
 	// line
-	const firstLines = outermostFoldingRanges.map(r => doc.lineAt(r.start).text)
+	const firstLines = outermostFoldingRanges.map(r => doc.lineAt(r.start).text);
 	return outermostFoldingRanges
 		.map(r => foldingRangeToRange(doc, r))
 		.filter(
@@ -180,14 +186,14 @@ async function getOutermostFoldingRanges(
 				firstLines[i].includes('class') ||
 				firstLines[i].startsWith('object') ||
 				rangeLines(r) > TOO_LARGE_SECTION
-		)
+		);
 }
 
 function rangeLines(range: vscode.Range): number {
-	return range.end.line - range.start.line
+	return range.end.line - range.start.line;
 }
 
-const closingSymbols = /^(}|]|\)|>|end|fi|elsif)/
+const closingSymbols = /^(}|]|\)|>|end|fi|elsif)/;
 
 /**
  * Approximates a range that starts at the first character of the first line and ends at the last
@@ -197,18 +203,18 @@ const closingSymbols = /^(}|]|\)|>|end|fi|elsif)/
  * not adding an extra line in cases where the heuristics fails.
  */
 function foldingRangeToRange(doc: vscode.TextDocument, range: vscode.FoldingRange): vscode.Range {
-	const nextLine = doc.getText(new vscode.Range(range.end + 1, 0, range.end + 2, 0))
+	const nextLine = doc.getText(new vscode.Range(range.end + 1, 0, range.end + 2, 0));
 
 	// We include the next line after the folding range starts with a closing symbol
-	const includeNextLine = !!nextLine.trim().match(closingSymbols)
+	const includeNextLine = !!nextLine.trim().match(closingSymbols);
 
-	const start = range.start
-	const end = range.end + (includeNextLine ? 1 : 0)
+	const start = range.start;
+	const end = range.end + (includeNextLine ? 1 : 0);
 
 	// Get the text of the last line so we can count the chars until the end
-	const endLine = doc.getText(new vscode.Range(end, 0, end + 1, 0))
+	const endLine = doc.getText(new vscode.Range(end, 0, end + 1, 0));
 
-	return new vscode.Range(start, 0, end, endLine.length - 1)
+	return new vscode.Range(start, 0, end, endLine.length - 1);
 }
 
 
@@ -227,11 +233,11 @@ function foldingRangeToRange(doc: vscode.TextDocument, range: vscode.FoldingRang
  * @returns Array containing only folding ranges that do not contain any nested child ranges
  */
 function removeNestedFoldingRanges(ranges: vscode.FoldingRange[], isTextBased = false): vscode.FoldingRange[] {
-	const filtered = isTextBased ? combineNeighborFoldingRanges(ranges) : ranges
+	const filtered = isTextBased ? combineNeighborFoldingRanges(ranges) : ranges;
 
 	return filtered.filter(
 		cur => !filtered.some(next => next !== cur && next.start <= cur.start && next.end >= cur.end)
-	)
+	);
 }
 
 /**
@@ -244,32 +250,32 @@ function removeNestedFoldingRanges(ranges: vscode.FoldingRange[], isTextBased = 
  * @returns Array of combined folding ranges
  */
 function combineNeighborFoldingRanges(ranges: vscode.FoldingRange[]): vscode.FoldingRange[] {
-	const combinedRanges: vscode.FoldingRange[] = []
+	const combinedRanges: vscode.FoldingRange[] = [];
 
-	let currentChain: vscode.FoldingRange[] = []
-	let lastChainRange = currentChain.at(-1)
+	let currentChain: vscode.FoldingRange[] = [];
+	let lastChainRange = currentChain.at(-1);
 
 	for (const range of ranges) {
 		// set the lastChainRange to the last range in the current chain
-		lastChainRange = currentChain.at(-1)
+		lastChainRange = currentChain.at(-1);
 		if (currentChain.length > 0 && lastChainRange?.end === range.start - 1) {
 			// If this range connects to the previous one, add it to the current chain
-			currentChain.push(range)
+			currentChain.push(range);
 		} else {
 			// Otherwise, start a new chain
 			if (currentChain.length > 0 && lastChainRange) {
 				// If there was a previous chain, combine it into a single range
-				combinedRanges.push(new vscode.FoldingRange(currentChain[0].start, lastChainRange.end))
+				combinedRanges.push(new vscode.FoldingRange(currentChain[0].start, lastChainRange.end));
 			}
 
-			currentChain = [range]
+			currentChain = [range];
 		}
 	}
 
 	// Add the last chain
 	if (lastChainRange && currentChain.length > 0) {
-		combinedRanges.push(new vscode.FoldingRange(currentChain[0].start, lastChainRange.end))
+		combinedRanges.push(new vscode.FoldingRange(currentChain[0].start, lastChainRange.end));
 	}
 
-	return combinedRanges
+	return combinedRanges;
 }
