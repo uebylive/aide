@@ -445,9 +445,9 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 				const gatherContextFromView = async () => {
 					deepContext = await getLSPGraphContextForChat(this._workingDirectory, this._currentRepoRef);
 					if (deepContext.currentViewPort === null) {
-						return new CSChatProgressContent('\n');
+						return new CSChatProgressContent('\n\n');
 					}
-					return new CSChatProgressContent(`Gathered context from current [view](${deepContext.currentViewPort.fsFilePath}#L${deepContext.currentViewPort.startPosition.line}-L${deepContext.currentViewPort.endPosition.line})\n`);
+					return new CSChatProgressContent(`Gathered context from current [view](${deepContext.currentViewPort.fsFilePath}#L${deepContext.currentViewPort.startPosition.line}-L${deepContext.currentViewPort.endPosition.line})\n\n`);
 				};
 				progress.report(new CSChatProgressContent('Gathering context\n'));
 				progress.report(await gatherContextFromView());
