@@ -4,10 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { ContextSelection } from '../../sidecar/types';
+import { ContextSelection, DeepContextForView, PreciseContext } from '../../sidecar/types';
 import { createLimiter } from '../limiter';
 import { URI } from 'vscode-uri';
 import { languages } from 'vscode';
+import { getCodeSelection } from '../codeSelection';
+import { RepoRef } from '../../sidecar/client';
 
 // We only go 2 levels up or down if required
 const RECURSION_LIMIT = 1;
@@ -21,28 +23,18 @@ const limiter = createLimiter(
 );
 
 
-// We also get the definitions of the symbols which are present
-export interface PreciseContext {
-	symbol: {
-		fuzzyName?: string;
-	};
-	hoverText: string[];
-	definitionSnippet: string;
-	filePath: string;
-	range: {
-		startLine: number;
-		startCharacter: number;
-		endLine: number;
-		endCharacter: number;
-	};
-}
-
-
-export const getLSPGraphContextForChat = async (workingDirectory: string): Promise<PreciseContext[]> => {
+// This is the main function which gives us context about what's present on the
+// current view port of the user, this is important to get right
+export const getLSPGraphContextForChat = async (workingDirectory: string, repoRef: RepoRef): Promise<DeepContextForView> => {
 	const activeEditor = vscode.window.activeTextEditor;
 
 	if (activeEditor === undefined) {
-		return [];
+		return {
+			repoRef: repoRef.getRepresentation(),
+			preciseContext: [],
+			cursorPosition: null,
+			currentViewPort: null,
+		};
 	}
 
 	const label = 'getLSPGraphContextForChat';
@@ -53,11 +45,38 @@ export const getLSPGraphContextForChat = async (workingDirectory: string): Promi
 	// we do 2 things here, if we have the selection we should also note that
 	// if we don't have any selection but just the view port we should take
 	// a note of that
+	const cursorPosition = activeEditor.selection;
 	if (activeEditor.visibleRanges.length === 0) {
-		return [];
+		return {
+			repoRef: repoRef.getRepresentation(),
+			preciseContext: [],
+			cursorPosition: null,
+			currentViewPort: {
+				startPosition: {
+					line: cursorPosition.start.line,
+					character: cursorPosition.start.character,
+				},
+				endPosition: {
+					line: cursorPosition.end.line,
+					character: cursorPosition.end.character,
+				},
+				fsFilePath: uri.fsPath,
+				relativePath: vscode.workspace.asRelativePath(uri.fsPath),
+				// if there is no visible ranges on the screen, that implies
+				// that there is no text on the screen (this might break tho)
+				textOnScreen: '',
+			},
+		};
 	}
 	const viewPort = activeEditor.visibleRanges[0];
+	const newViewPort = await getCodeSelection(viewPort, activeEditor.document.uri.fsPath);
+	console.log('[newContext]', newViewPort);
 	const finalRangeToUse = viewPort;
+	const currentFileText = activeEditor.document.getText().split('\n');
+
+	// Also get the current cursor position
+	// We will also send back this cursor position so we can feed this to the
+	// LLM and ask it to select the relevant bits
 	// If there is no selection we want to get the active view context which is
 	// present on the editor
 	const contexts = await getLSPContextFromSelection(
@@ -69,7 +88,6 @@ export const getLSPGraphContextForChat = async (workingDirectory: string): Promi
 				line: finalRangeToUse.start.line,
 				character: finalRangeToUse.start.character,
 			},
-			uri,
 			endPosition: {
 				line: finalRangeToUse.end.line,
 				character: finalRangeToUse.end.character,
@@ -81,10 +99,35 @@ export const getLSPGraphContextForChat = async (workingDirectory: string): Promi
 		RECURSION_LIMIT,
 	);
 
-	console.log(contexts);
-
 	performance.mark(label);
-	return contexts;
+	// The ranges here might be wrong, so we should fix it properly
+	return {
+		repoRef: repoRef.getRepresentation(),
+		preciseContext: contexts,
+		cursorPosition: {
+			startPosition: {
+				line: cursorPosition.start.line,
+				character: cursorPosition.start.character,
+			},
+			endPosition: {
+				line: cursorPosition.end.line,
+				character: cursorPosition.end.character,
+			},
+		},
+		currentViewPort: {
+			startPosition: {
+				line: finalRangeToUse.start.line,
+				character: finalRangeToUse.start.character,
+			},
+			endPosition: {
+				line: finalRangeToUse.end.line,
+				character: finalRangeToUse.end.character,
+			},
+			fsFilePath: uri.fsPath,
+			relativePath: vscode.workspace.asRelativePath(uri.fsPath),
+			textOnScreen: currentFileText.slice(finalRangeToUse.start.line, finalRangeToUse.end.line + 1).join('\n'),
+		}
+	};
 };
 
 const getLSPContextFromSelection = async (
@@ -102,7 +145,7 @@ const getLSPContextFromSelection = async (
 	// TODO(codestory): Figure out how to properly gate this when we have documentation
 	// search along with other things, it represents a way for us to go deeper
 	// into a function call for a library if required
-	const filteredSelections = selections.filter(selection => selection.uri.fsPath.startsWith(workingDirectory));
+	const filteredSelections = selections.filter(selection => selection.fsFilePath.startsWith(workingDirectory));
 
 	// Get the document symbols in the current file and extract their definition range
 	const definitionSelections = await extractRelevantDocumentSymbolRanges(filteredSelections, workingDirectory);
@@ -151,13 +194,13 @@ const getLSPContextFromSelection = async (
 			...(await getLSPContextFromSelection(
 				contexts.map(c => ({
 					workingDirectory: workingDirectory,
-					relativePath: vscode.workspace.asRelativePath(c.filePath),
-					fsFilePath: c.filePath,
+					relativePath: vscode.workspace.asRelativePath(c.fsFilePath),
+					fsFilePath: c.fsFilePath,
 					startPosition: {
 						line: c.range.startLine,
 						character: c.range.startCharacter,
 					},
-					uri: URI.file(c.filePath),
+					uri: URI.file(c.fsFilePath),
 					endPosition: {
 						line: c.range.endLine,
 						character: c.range.endCharacter,
@@ -213,7 +256,8 @@ export const extractDefinitionContexts = async (
 					symbol: {
 						fuzzyName: symbolName,
 					},
-					filePath: uri.fsPath,
+					fsFilePath: uri.fsPath,
+					relativeFilePath: vscode.workspace.asRelativePath(uri.fsPath),
 					range: {
 						startLine: range.start.line,
 						startCharacter: range.start.character,
@@ -630,8 +674,6 @@ export const gatherDefinitionRequestCandidates = (
 						continue;
 					}
 
-					console.log('[gatherDefinitionRequestCandidates] found identifier match: ' + match[0]);
-
 					requestCandidates.push({
 						symbolName: match[0],
 						uri,
@@ -652,10 +694,10 @@ export const extractRelevantDocumentSymbolRanges = async (
 	const rangeMap = await unwrapThenableMap(
 		new Map(
 			dedupeWith(
-				selections.map(({ uri }) => uri),
-				'fsPath'
-			).map(uri => {
-				return [uri.fsPath, defaultGetDocumentSymbolRanges(uri)];
+				selections.map((selection) => selection),
+				'fsFilePath'
+			).map(selectionContext => {
+				return [selectionContext.fsFilePath, defaultGetDocumentSymbolRanges(URI.file(selectionContext.fsFilePath))];
 			})
 		)
 	);
