@@ -7,7 +7,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBuffered } from './ssestream';
-import { ConversationMessage, RepoStatus, SemanticSearchResponse } from './types';
+import { ConversationMessage, DeepContextForView, RepoStatus, SemanticSearchResponse } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
 export enum RepoRefBackend {
@@ -53,12 +53,13 @@ export class SideCarClient {
 		return baseUrl.toString();
 	}
 
-	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
+	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string, deepContext: DeepContextForView): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
 		baseUrl.searchParams.set('thread_id', threadId);
+		baseUrl.searchParams.set('deep_context', JSON.stringify(deepContext));
 		const url = baseUrl.toString();
 		console.log('[followup][stream] whats the url here');
 		console.log(url);

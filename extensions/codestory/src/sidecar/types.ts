@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
 
 export type OptionString =
 	| { type: 'Some'; value: string }
@@ -120,7 +119,6 @@ export interface ContextSelection {
 	workingDirectory: string;
 	startPosition: Position;
 	endPosition: Position;
-	uri: vscode.Uri;
 }
 
 export interface CurrentViewContext {
@@ -136,4 +134,41 @@ export interface CurrentViewContext {
 	current_text: string;
 	// The active selection
 	selection: ContextSelection[] | null;
+}
+
+// We also get the definitions of the symbols which are present
+export interface PreciseContext {
+	symbol: {
+		fuzzyName?: string;
+	};
+	hoverText: string[];
+	definitionSnippet: string;
+	fsFilePath: string;
+	relativeFilePath: string;
+	range: {
+		startLine: number;
+		startCharacter: number;
+		endLine: number;
+		endCharacter: number;
+	};
+}
+
+export interface DeepContextForView {
+	// The string here is generated from RepoRef.to_string()
+	repoRef: string;
+	preciseContext: PreciseContext[];
+	// Where is the cursor positioned, this will be useful context
+	// for the llm
+	cursorPosition: {
+		startPosition: Position;
+		endPosition: Position;
+	} | null;
+	// What is the data present in the current viewport
+	currentViewPort: {
+		startPosition: Position;
+		endPosition: Position;
+		relativePath: string;
+		fsFilePath: string;
+		textOnScreen: string;
+	} | null;
 }
