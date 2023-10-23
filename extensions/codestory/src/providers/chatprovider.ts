@@ -443,8 +443,12 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 			} else {
 				let deepContext: DeepContextForView | null = null;
 				const gatherContextFromView = async () => {
-					deepContext = await getLSPGraphContextForChat(this._workingDirectory, this._currentRepoRef);
-					if (deepContext.currentViewPort === null) {
+					try {
+						deepContext = await getLSPGraphContextForChat(this._workingDirectory, this._currentRepoRef, request.session.threadId, this._sideCarClient);
+					} catch (err) {
+						console.log(err);
+					}
+					if (deepContext === null || deepContext.currentViewPort === null) {
 						return new CSChatProgressContent('\n\n');
 					}
 					return new CSChatProgressContent(`Gathered context from current [view](${deepContext.currentViewPort.fsFilePath}#L${deepContext.currentViewPort.startPosition.line}-L${deepContext.currentViewPort.endPosition.line})\n\n`);

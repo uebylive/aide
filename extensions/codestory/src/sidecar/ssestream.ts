@@ -103,9 +103,6 @@ export async function* callServerEventStreamingBufferedGET(url: string): AsyncIt
 }
 
 export async function* callServerEventStreamingBufferedPOST(url: string, body: any): AsyncIterableIterator<string> {
-	console.log('body for POST request');
-	console.log(body);
-	console.log(JSON.stringify(body));
 	const response = await fetch(url, {
 		method: 'POST',
 		headers: {
