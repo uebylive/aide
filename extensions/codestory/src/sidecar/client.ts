@@ -53,6 +53,28 @@ export class SideCarClient {
 		return baseUrl.toString();
 	}
 
+	async getSymbolsForGoToDefinition(codeSnippet: string, repoRef: RepoRef, threadId: string, language: string): Promise<string[]> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agent/goto_definition_symbols';
+		const body = {
+			repo_ref: repoRef.getRepresentation(),
+			code_snippet: codeSnippet,
+			thread_id: threadId,
+			language: language,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+		const responseJson = await response.json();
+		const symbols = responseJson.symbols as string[];
+		return symbols;
+	}
+
 	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string, deepContext: DeepContextForView): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';

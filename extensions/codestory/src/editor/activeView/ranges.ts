@@ -3,13 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { ContextSelection, DeepContextForView, PreciseContext } from '../../sidecar/types';
 import { createLimiter } from '../limiter';
 import { URI } from 'vscode-uri';
 import { languages } from 'vscode';
 import { getCodeSelection } from '../codeSelection';
-import { RepoRef } from '../../sidecar/client';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
 
 // We only go 2 levels up or down if required
 const RECURSION_LIMIT = 1;
@@ -19,13 +20,20 @@ const limiter = createLimiter(
 	// server.
 	2,
 	// If any language server API takes more than 2 seconds to answer, we should cancel the request
-	2000
+	5000
+);
+
+const limiterGPTCall = createLimiter(
+	// GPT3.5 has a very high limit so allow more connections
+	50,
+	// even 2 seconds is super slow but its okay for now
+	2000,
 );
 
 
 // This is the main function which gives us context about what's present on the
 // current view port of the user, this is important to get right
-export const getLSPGraphContextForChat = async (workingDirectory: string, repoRef: RepoRef): Promise<DeepContextForView> => {
+export const getLSPGraphContextForChat = async (workingDirectory: string, repoRef: RepoRef, threadId: string, sidecarClient: SideCarClient): Promise<DeepContextForView> => {
 	const activeEditor = vscode.window.activeTextEditor;
 
 	if (activeEditor === undefined) {
@@ -70,8 +78,7 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 	}
 	const viewPort = activeEditor.visibleRanges[0];
 	const newViewPort = await getCodeSelection(viewPort, activeEditor.document.uri.fsPath);
-	console.log('[newContext]', newViewPort);
-	const finalRangeToUse = viewPort;
+	const finalRangeToUse = newViewPort;
 	const currentFileText = activeEditor.document.getText().split('\n');
 
 	// Also get the current cursor position
@@ -96,6 +103,9 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 		// Let's try passing it without any arguments
 		new Map([[uri.fsPath, activeEditor.document.getText().split('\n')]]),
 		workingDirectory,
+		sidecarClient,
+		repoRef,
+		threadId,
 		RECURSION_LIMIT,
 	);
 
@@ -134,6 +144,9 @@ const getLSPContextFromSelection = async (
 	selections: ContextSelection[],
 	contentMap: Map<string, string[]>,
 	workingDirectory: string,
+	sideCarClient: SideCarClient,
+	repoRef: RepoRef,
+	threadId: string,
 	recursionLimit: number = RECURSION_LIMIT,
 ): Promise<PreciseContext[]> => {
 	const label = 'getLSPContextFromSelection';
@@ -159,7 +172,7 @@ const getLSPContextFromSelection = async (
 			)
 		)
 		.filter(isDefined);
-	const requestCandidates = gatherDefinitionRequestCandidates(ranges, contentMap);
+	const requestCandidates = await gatherDefinitionRequestCandidates(ranges, contentMap, repoRef, threadId, sideCarClient);
 
 	// Extract identifiers from the relevant document symbol ranges and request their definitions
 	const definitionMatches = await gatherDefinitions(definitionSelections, requestCandidates);
@@ -208,6 +221,9 @@ const getLSPContextFromSelection = async (
 				})),
 				contentMap,
 				workingDirectory,
+				sideCarClient,
+				repoRef,
+				threadId,
 				recursionLimit - 1,
 			))
 		);
@@ -403,23 +419,49 @@ export const gatherDefinitions = async (
 	for (const { symbolName, uri, position } of dedupeWith(requests, 'symbolName')) {
 		definitionMatches.push({
 			symbolName,
-			hover: getHover(uri, position),
-			definitionLocations: getDefinitions(uri, position),
-			typeDefinitionLocations: getTypeDefinitions(uri, position),
-			implementationLocations: getImplementations(uri, position),
+			hover: limiter(() => getHover(uri, position)),
+			definitionLocations: limiter(() => getDefinitions(uri, position)),
+			typeDefinitionLocations: limiter(() => getTypeDefinitions(uri, position)),
+			implementationLocations: limiter(() => getImplementations(uri, position)),
 		});
 	}
 
 	// Await in parallel, as its faster than doing it one by one
 	const resolvedDefinitionMatches = await Promise.all(
 		definitionMatches.map(
-			async ({ symbolName, hover, definitionLocations, typeDefinitionLocations, implementationLocations }) => ({
-				symbolName,
-				hover: await hover,
-				definitionLocations: await definitionLocations,
-				typeDefinitionLocations: await typeDefinitionLocations,
-				implementationLocations: await implementationLocations,
-			})
+			async ({ symbolName, hover, definitionLocations, typeDefinitionLocations, implementationLocations }) => {
+				let hoverValue: vscode.Hover[] = [];
+				try {
+					hoverValue = await hover;
+				} catch {
+					console.error('hover value generation failed');
+				}
+				let definitionLocationValues: vscode.Location[] = [];
+				try {
+					definitionLocationValues = await definitionLocations;
+				} catch {
+					console.error('definition location values failed');
+				}
+				let typeDefinitionLocationValues: vscode.Location[] = [];
+				try {
+					typeDefinitionLocationValues = await typeDefinitionLocations;
+				} catch {
+					console.error('type definition values failed');
+				}
+				let implementationLocationValues: vscode.Location[] = [];
+				try {
+					implementationLocationValues = await implementationLocations;
+				} catch {
+					console.error('implementation location values failed');
+				}
+				return ({
+					symbolName,
+					hover: hoverValue,
+					definitionLocations: definitionLocationValues,
+					typeDefinitionLocations: typeDefinitionLocationValues,
+					implementationLocations: implementationLocationValues,
+				});
+			}
 		)
 	);
 
@@ -638,7 +680,18 @@ const rustKeywords = new Set([
 	'typeof',
 	'unsized',
 	'virtual',
-	'yield'
+	'yield',
+	'Vec',
+	'HashMap',
+	'HashSet',
+	'format!',
+	'str',
+	'String',
+	'try_into',
+	'expect',
+	'collect',
+	'join',
+	'push',
 ]);
 
 export const commonKeywords = new Set([...goKeywords, ...typescriptKeywords, ...pythonKeywords, ...rustKeywords]);
@@ -649,10 +702,13 @@ interface LSPSymbolsRequest {
 	position: vscode.Position;
 };
 
-export const gatherDefinitionRequestCandidates = (
+export const gatherDefinitionRequestCandidates = async (
 	locations: vscode.Location[],
-	contentMap: Map<string, string[]>
-): LSPSymbolsRequest[] => {
+	contentMap: Map<string, string[]>,
+	repoRef: RepoRef,
+	threadId: string,
+	sideCarClient: SideCarClient,
+): Promise<LSPSymbolsRequest[]> => {
 	const requestCandidates: LSPSymbolsRequest[] = [];
 
 	for (const { uri, range } of locations) {
@@ -660,8 +716,17 @@ export const gatherDefinitionRequestCandidates = (
 		if (!range || !lines) {
 			continue;
 		}
-
 		for (const { start, end } of [range]) {
+			const lineContent = lines.slice(start.line, end.line + 1).join('\n');
+			const language = identifyLanguage(uri.fsPath) ?? 'not_present';
+			// We set this in a limier so we don't create too many requests
+			// and add a tight timeout to the llm call
+			let symbolsToPayAttentionTo: string[] = [];
+			try {
+				symbolsToPayAttentionTo = await limiterGPTCall(() => sideCarClient.getSymbolsForGoToDefinition(lineContent, repoRef, threadId, language));
+			} catch (err) {
+				symbolsToPayAttentionTo = [];
+			}
 			for (const [lineIndex, line] of lines.slice(start.line, end.line + 1).entries()) {
 				// NOTE: pretty hacky - strip out C-style line comments and find everything that
 				// might look like it could be an identifier. If we end up running a VSCode provider
@@ -671,6 +736,11 @@ export const gatherDefinitionRequestCandidates = (
 
 				for (const match of identifierMatches) {
 					if (match.index === undefined || commonKeywords.has(match[0])) {
+						continue;
+					}
+					// If the symbol does not match the one we need to pay attention to, we skip it, this saves
+					// some LSP calls which is what we need anyways
+					if (symbolsToPayAttentionTo.length !== 0 && !symbolsToPayAttentionTo.includes(match[0])) {
 						continue;
 					}
 
@@ -786,3 +856,33 @@ const extractSymbolRange = (d: vscode.SymbolInformation | vscode.DocumentSymbol)
 
 const isDocumentSymbol = (s: vscode.SymbolInformation | vscode.DocumentSymbol): s is vscode.DocumentSymbol =>
 	(s as vscode.DocumentSymbol).range !== undefined;
+
+
+function identifyLanguage(fileName: string): string | null {
+	// Define a mapping from file extensions to languages
+	const extensionToLanguage: { [key: string]: string } = {
+		'.py': 'Python',
+		'.java': 'Java',
+		'.html': 'HTML',
+		'.js': 'JavaScript',
+		'.ts': 'TypeScript',
+		'.cs': 'C#',
+		'.cpp': 'C++',
+		'.c': 'C',
+		'.rb': 'Ruby',
+		'.php': 'PHP',
+		'.tsx': 'typescript',
+		'.jsx': 'javascript',
+		'.rs': 'rust',
+	};
+
+	// Extract the extension from the fileName
+	const extension = path.extname(fileName);
+
+	// Look up the extension in the dictionary and return the result, if found
+	if (extension in extensionToLanguage) {
+		return extensionToLanguage[extension];
+	} else {
+		return null; // or some default value, or throw an error, depending on your needs
+	}
+}
