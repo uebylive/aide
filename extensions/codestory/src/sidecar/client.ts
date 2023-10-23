@@ -6,7 +6,7 @@
 import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
-import { callServerEventStreamingBuffered } from './ssestream';
+import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, DeepContextForView, RepoStatus, SemanticSearchResponse } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
@@ -56,14 +56,14 @@ export class SideCarClient {
 	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string, deepContext: DeepContextForView): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
-		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
-		baseUrl.searchParams.set('query', query);
-		baseUrl.searchParams.set('thread_id', threadId);
-		baseUrl.searchParams.set('deep_context', JSON.stringify(deepContext));
 		const url = baseUrl.toString();
-		console.log('[followup][stream] whats the url here');
-		console.log(url);
-		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
+		const body = {
+			repo_ref: repoRef.getRepresentation(),
+			query: query,
+			thread_id: threadId,
+			deep_context: deepContext,
+		};
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
 			for (const lineSinglePart of lineParts) {
@@ -88,7 +88,7 @@ export class SideCarClient {
 		baseUrl.searchParams.set('relative_path', selection.relativeFilePath);
 		baseUrl.searchParams.set('thread_id', threadId);
 		const url = baseUrl.toString();
-		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
+		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
 			for (const lineSinglePart of lineParts) {
@@ -110,7 +110,7 @@ export class SideCarClient {
 		baseUrl.searchParams.set('query', query);
 		baseUrl.searchParams.set('thread_id', threadId);
 		const url = baseUrl.toString();
-		const asyncIterableResponse = await callServerEventStreamingBuffered(url);
+		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
 			// Now these responses can be parsed properly, since we are using our
 			// own reader over sse, sometimes the reader might send multiple events

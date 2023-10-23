@@ -67,7 +67,7 @@ class BufferedStream {
 	}
 }
 
-export async function* callServerEventStreamingBuffered(url: string): AsyncIterableIterator<string> {
+export async function* callServerEventStreamingBufferedGET(url: string): AsyncIterableIterator<string> {
 	const response = await fetch(url, {
 		method: 'GET',
 		headers: {
@@ -79,6 +79,48 @@ export async function* callServerEventStreamingBuffered(url: string): AsyncItera
 	if (response.body === null) {
 		return;
 	}
+
+	const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+	const bufferedReader = new BufferedStream();
+
+	try {
+		while (true) {
+			const { value, done } = await reader.read();
+			let newValues: string[] = [];
+			if (value !== undefined) {
+				newValues = bufferedReader.transform(value);
+			}
+			if (done) {
+				break;
+			}
+			for (const value of newValues) {
+				yield value;
+			}
+		}
+	} finally {
+		reader.releaseLock();
+	}
+}
+
+export async function* callServerEventStreamingBufferedPOST(url: string, body: any): AsyncIterableIterator<string> {
+	console.log('body for POST request');
+	console.log(body);
+	console.log(JSON.stringify(body));
+	const response = await fetch(url, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+			'accept': 'text/event-stream',
+		},
+		body: JSON.stringify(body),
+	});
+
+	if (response.body === null) {
+		return;
+	}
+
+	console.log(response.statusText);
+	console.log(response.status);
 
 	const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 	const bufferedReader = new BufferedStream();
