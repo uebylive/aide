@@ -18,14 +18,14 @@ const RECURSION_LIMIT = 1;
 const limiter = createLimiter(
 	// The concurrent requests limit is chosen very conservatively to avoid blocking the language
 	// server.
-	2,
+	100,
 	// If any language server API takes more than 2 seconds to answer, we should cancel the request
 	5000
 );
 
 const limiterGPTCall = createLimiter(
 	// GPT3.5 has a very high limit so allow more connections
-	50,
+	1000,
 	// even 2 seconds is super slow but its okay for now
 	2000,
 );
@@ -34,6 +34,7 @@ const limiterGPTCall = createLimiter(
 // This is the main function which gives us context about what's present on the
 // current view port of the user, this is important to get right
 export const getLSPGraphContextForChat = async (workingDirectory: string, repoRef: RepoRef, threadId: string, sidecarClient: SideCarClient): Promise<DeepContextForView> => {
+	const startTime = Date.now();
 	const activeEditor = vscode.window.activeTextEditor;
 
 	if (activeEditor === undefined) {
@@ -111,7 +112,7 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 
 	performance.mark(label);
 	// The ranges here might be wrong, so we should fix it properly
-	return {
+	const result = {
 		repoRef: repoRef.getRepresentation(),
 		preciseContext: contexts,
 		cursorPosition: {
@@ -138,6 +139,9 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 			textOnScreen: currentFileText.slice(finalRangeToUse.start.line, finalRangeToUse.end.line + 1).join('\n'),
 		}
 	};
+	const endTime = Date.now();
+	console.log(`[time-taken][getLSPGraphContextForChat] time taken: ${endTime - startTime} for ${uri.fsPath} at location: ${finalRangeToUse.start.line}:${finalRangeToUse.start.character}`);
+	return result;
 };
 
 const getLSPContextFromSelection = async (
@@ -149,8 +153,10 @@ const getLSPContextFromSelection = async (
 	threadId: string,
 	recursionLimit: number = RECURSION_LIMIT,
 ): Promise<PreciseContext[]> => {
+	const startTimeGetLSPContextFromSelection = Date.now();
 	const label = 'getLSPContextFromSelection';
 	performance.mark(label);
+	console.log('[getLSPContextFromSelection][working-directory]', workingDirectory);
 
 	// Here we are going to do a hack and guard against references which are
 	// not in the current working directory, this is to save the LSP and not
@@ -158,7 +164,10 @@ const getLSPContextFromSelection = async (
 	// TODO(codestory): Figure out how to properly gate this when we have documentation
 	// search along with other things, it represents a way for us to go deeper
 	// into a function call for a library if required
-	const filteredSelections = selections.filter(selection => selection.fsFilePath.startsWith(workingDirectory));
+	const filteredSelections = selections.filter(selection => {
+		const result = selection.fsFilePath.startsWith(workingDirectory);
+		return result;
+	});
 
 	// Get the document symbols in the current file and extract their definition range
 	const definitionSelections = await extractRelevantDocumentSymbolRanges(filteredSelections, workingDirectory);
@@ -172,10 +181,14 @@ const getLSPContextFromSelection = async (
 			)
 		)
 		.filter(isDefined);
+	const startTimeRequestCandidates = Date.now();
 	const requestCandidates = await gatherDefinitionRequestCandidates(ranges, contentMap, repoRef, threadId, sideCarClient);
+	console.log(`[time-taken][getLSPContextFromSelection][request-candidates] time taken: ${Date.now() - startTimeRequestCandidates} for ${ranges.length} ranges`);
 
 	// Extract identifiers from the relevant document symbol ranges and request their definitions
+	const startTimeDefinitionMatches = Date.now();
 	const definitionMatches = await gatherDefinitions(definitionSelections, requestCandidates);
+	console.log(`[time-taken][getLSPContextFromSelection][definition-matches] time taken: ${Date.now() - startTimeDefinitionMatches} for ${definitionSelections.length} ranges`);
 
 	// NOTE: Before asking for data about a document it must be opened in the workspace. This forces
 	// a resolution so that the following queries that require the document context will not fail with
@@ -188,7 +201,7 @@ const getLSPContextFromSelection = async (
 	// Resolve, extract, and deduplicate the symbol and location match pairs from the definition matches
 	const matches = dedupeWith(
 		definitionMatches
-			.map(({ definitionLocations, typeDefinitionLocations, implementationLocations, ...rest }) =>
+			.map(({ definitionLocations, ...rest }) =>
 				definitionLocations.map(location => ({ location, ...rest }))
 			)
 			.flat(),
@@ -198,9 +211,10 @@ const getLSPContextFromSelection = async (
 	// TODO - see if we can remove fields of types we've also captured?
 
 	// Extract definition text from our matches
-	const contexts = await extractDefinitionContexts(matches, contentMap);
-
-	performance.mark(label);
+	const startTimeDefinitionContexts = Date.now();
+	const contexts = await extractDefinitionContexts(matches, contentMap, workingDirectory);
+	console.log(`[time-taken][getLSPContextFromSelection][definition-contexts] time taken: ${Date.now() - startTimeDefinitionContexts} for ${matches.length} matches`);
+	// performance.mark(label);
 
 	if (recursionLimit > 0) {
 		contexts.push(
@@ -228,7 +242,7 @@ const getLSPContextFromSelection = async (
 			))
 		);
 	}
-
+	console.log(`[time-taken][getLSPContextFromSelection][total-time] time taken: ${Date.now() - startTimeGetLSPContextFromSelection} for ${selections.length} selections`);
 	return contexts;
 };
 
@@ -236,6 +250,7 @@ const getLSPContextFromSelection = async (
 export const extractDefinitionContexts = async (
 	matches: { symbolName: string; hover: vscode.Hover[]; location: vscode.Location }[],
 	contentMap: Map<string, string[]>,
+	workingDirectory: string,
 	getDocumentSymbolRanges: typeof defaultGetDocumentSymbolRanges = defaultGetDocumentSymbolRanges
 ): Promise<PreciseContext[]> => {
 	// Retrieve document symbols for each of the open documents, which we will use to extract the relevant
@@ -243,18 +258,29 @@ export const extractDefinitionContexts = async (
 	const documentSymbolsMap = new Map(
 		[...contentMap.keys()]
 			.filter(fsPath => matches.some(({ location }) => location.uri.fsPath === fsPath))
-			.map(fsPath => [fsPath, getDocumentSymbolRanges(URI.file(fsPath))])
+			// Here for getting the definitions we only want to get them for the
+			// files which are part of the working directory and not for each
+			// and every symbol
+			.map(fsPath => [fsPath, getDocumentSymbolRanges(URI.file(fsPath), {
+				workingDirectory,
+				extractOnlyInWorkingDirectory: true,
+			})])
 	);
 
 	// NOTE: In order to make sure the loop below is unblocked we'll also force resolve the entirety
 	// of the folding range requests. That way we don't have a situation where the first iteration of
 	// the loop is waiting on the last promise to be resolved in the set.
+	console.log('[extractDefinitionContexts] resolving all document symbols');
+	console.log([...documentSymbolsMap.keys()]);
+	const startTime = Date.now();
 	await Promise.all([...documentSymbolsMap.values()]);
+	console.log(`[time-taken][extractDefinitionContexts][resolve-all-document-symbols] time taken: ${Date.now() - startTime} for ${documentSymbolsMap.size} files`);
 
 	// Piece everything together. For each matching definition, extract the relevant lines given the
 	// containing document's content and folding range result. Downstream consumers of this function
 	// are expected to filter and re-rank these results as needed for their specific use case.
 
+	const startTimePreciseContext = Date.now();
 	const contexts: PreciseContext[] = [];
 	for (const { symbolName, hover, location } of matches) {
 		const { uri, range } = location;
@@ -286,13 +312,14 @@ export const extractDefinitionContexts = async (
 			}
 		}
 	}
+	console.log(`[time-taken][extractDefinitionContexts][precise-context] time taken: ${Date.now() - startTimePreciseContext} for ${matches.length} matches`);
 
 	return contexts;
 };
 
 const extractSnippets = (lines: string[], symbolRanges: vscode.Range[], targetRanges: vscode.Range[]): string[] => {
-	const intersectingRanges = symbolRanges.filter(fr =>
-		targetRanges.some(r => fr.start.line <= r.start.line && r.end.line <= fr.end.line)
+	const intersectingRanges = symbolRanges.filter(symbolRange =>
+		targetRanges.some(targetRange => symbolRange.start.line <= targetRange.start.line && targetRange.end.line <= symbolRange.end.line)
 	);
 
 	// NOTE: inclusive upper bound
@@ -308,12 +335,15 @@ const updateContentMap = async (contentMap: Map<string, string[]>, locations: vs
 	// Remove ultra-common type definitions that are probably already known by the LLM
 	const filteredUnseenDefinitionUris = unseenDefinitionUris.filter(uri => !isCommonImport(uri));
 
+	const startTime = Date.now();
 	const newContentMap = new Map(
 		filteredUnseenDefinitionUris.map(uri => [
 			uri.fsPath,
 			vscode.workspace.openTextDocument(uri.fsPath).then(document => document.getText().split('\n')),
 		])
 	);
+	const endTime = Date.now();
+	console.log(`[time-taken][updateContentMap] time taken: ${endTime - startTime} for ${unseenDefinitionUris.length} files`);
 
 	for (const [fsPath, lines] of await unwrapThenableMap(newContentMap)) {
 		contentMap.set(fsPath, lines);
@@ -353,13 +383,23 @@ const extractLocation = (l: vscode.Location | vscode.LocationLink): vscode.Locat
 const isLocationLink = (l: vscode.Location | vscode.LocationLink): l is vscode.LocationLink =>
 	(l as vscode.LocationLink).targetUri !== undefined;
 
-const defaultGetHover = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Hover[]> =>
-	vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', uri, position);
+const defaultGetHover = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Hover[]> => {
+	const startTime = Date.now();
+	const results = vscode.commands.executeCommand<vscode.Hover[]>('vscode.executeHoverProvider', uri, position);
+	const endTime = Date.now();
+	console.log(`[time-taken][getHover] time taken: ${endTime - startTime} for ${uri.fsPath} at location: ${position.line}:${position.character}`);
+	return results;
+}
 
-const defaultGetDefinitions = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Location[]> =>
-	vscode.commands
+const defaultGetDefinitions = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Location[]> => {
+	const startTime = Date.now();
+	const results = vscode.commands
 		.executeCommand<(vscode.Location | vscode.LocationLink)[]>('vscode.executeDefinitionProvider', uri, position)
 		.then(locations => locations.flatMap(extractLocation));
+	const endTime = Date.now();
+	console.log(`[time-taken][getDefinitions] time taken: ${endTime - startTime} for ${uri.fsPath} at location: ${position.line}:${position.character}`);
+	return results;
+};
 
 const defaultGetImplementations = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Location[]> =>
 	vscode.commands
@@ -388,16 +428,16 @@ interface LSPSymbolDefinitionMatches {
 	symbolName: string;
 	hover: vscode.Hover[];
 	definitionLocations: vscode.Location[];
-	typeDefinitionLocations: vscode.Location[];
-	implementationLocations: vscode.Location[];
+	// typeDefinitionLocations: vscode.Location[];
+	// implementationLocations: vscode.Location[];
 }
 
 interface AwaitableLSPSymbolDefinitionMatches {
 	symbolName: string;
 	hover: Thenable<vscode.Hover[]>;
 	definitionLocations: Thenable<vscode.Location[]>;
-	typeDefinitionLocations: Thenable<vscode.Location[]>;
-	implementationLocations: Thenable<vscode.Location[]>;
+	// typeDefinitionLocations: Thenable<vscode.Location[]>;
+	// implementationLocations: Thenable<vscode.Location[]>;
 }
 
 export const gatherDefinitions = async (
@@ -421,15 +461,15 @@ export const gatherDefinitions = async (
 			symbolName,
 			hover: limiter(() => getHover(uri, position)),
 			definitionLocations: limiter(() => getDefinitions(uri, position)),
-			typeDefinitionLocations: limiter(() => getTypeDefinitions(uri, position)),
-			implementationLocations: limiter(() => getImplementations(uri, position)),
+			// typeDefinitionLocations: limiter(() => getTypeDefinitions(uri, position)),
+			// implementationLocations: limiter(() => getImplementations(uri, position)),
 		});
 	}
 
 	// Await in parallel, as its faster than doing it one by one
 	const resolvedDefinitionMatches = await Promise.all(
 		definitionMatches.map(
-			async ({ symbolName, hover, definitionLocations, typeDefinitionLocations, implementationLocations }) => {
+			async ({ symbolName, hover, definitionLocations }) => {
 				let hoverValue: vscode.Hover[] = [];
 				try {
 					hoverValue = await hover;
@@ -442,24 +482,10 @@ export const gatherDefinitions = async (
 				} catch {
 					console.error('definition location values failed');
 				}
-				let typeDefinitionLocationValues: vscode.Location[] = [];
-				try {
-					typeDefinitionLocationValues = await typeDefinitionLocations;
-				} catch {
-					console.error('type definition values failed');
-				}
-				let implementationLocationValues: vscode.Location[] = [];
-				try {
-					implementationLocationValues = await implementationLocations;
-				} catch {
-					console.error('implementation location values failed');
-				}
 				return ({
 					symbolName,
 					hover: hoverValue,
 					definitionLocations: definitionLocationValues,
-					typeDefinitionLocations: typeDefinitionLocationValues,
-					implementationLocations: implementationLocationValues,
 				});
 			}
 		)
@@ -484,8 +510,8 @@ export const gatherDefinitions = async (
 			}))
 			// Remove empty locations
 			.filter(
-				({ definitionLocations, typeDefinitionLocations, implementationLocations }) =>
-					definitionLocations.length + typeDefinitionLocations.length + implementationLocations.length !== 0
+				({ definitionLocations }) =>
+					definitionLocations.length !== 0
 			)
 	);
 };
@@ -723,7 +749,8 @@ export const gatherDefinitionRequestCandidates = async (
 			// and add a tight timeout to the llm call
 			let symbolsToPayAttentionTo: string[] = [];
 			try {
-				symbolsToPayAttentionTo = await limiterGPTCall(() => sideCarClient.getSymbolsForGoToDefinition(lineContent, repoRef, threadId, language));
+				symbolsToPayAttentionTo = [];
+				// symbolsToPayAttentionTo = await limiterGPTCall(() => sideCarClient.getSymbolsForGoToDefinition(lineContent, repoRef, threadId, language));
 			} catch (err) {
 				symbolsToPayAttentionTo = [];
 			}
@@ -761,16 +788,22 @@ export const extractRelevantDocumentSymbolRanges = async (
 	selections: ContextSelection[],
 	workingDirectory: string,
 ): Promise<ContextSelection[]> => {
+	const startTime = Date.now();
 	const rangeMap = await unwrapThenableMap(
 		new Map(
 			dedupeWith(
 				selections.map((selection) => selection),
 				'fsFilePath'
 			).map(selectionContext => {
-				return [selectionContext.fsFilePath, defaultGetDocumentSymbolRanges(URI.file(selectionContext.fsFilePath))];
+				return [selectionContext.fsFilePath, defaultGetDocumentSymbolRanges(URI.file(selectionContext.fsFilePath), {
+					workingDirectory,
+					extractOnlyInWorkingDirectory: false,
+				})];
 			})
 		)
 	);
+	const endTime = Date.now();
+	console.log('[time-taken][extractRelevantDocumentSymbolRanges] time taken: ' + (endTime - startTime) + ' for ' + selections.length + ' selections');
 
 	const pathsByUri = new Map<string, (ContextSelection | undefined)[]>();
 	for (const selection of selections) {
@@ -833,7 +866,17 @@ const unwrapThenableMap = async <K, V>(map: Map<K, Thenable<V>>): Promise<Map<K,
 	return resolved;
 };
 
-export const defaultGetDocumentSymbolRanges = async (uri: vscode.Uri): Promise<vscode.Range[]> => {
+interface ExtractOnlyInWorkingDirectory {
+	workingDirectory: string;
+	extractOnlyInWorkingDirectory: boolean;
+};
+
+export const defaultGetDocumentSymbolRanges = async (uri: vscode.Uri, extractionMode: ExtractOnlyInWorkingDirectory): Promise<vscode.Range[]> => {
+	if (extractionMode.extractOnlyInWorkingDirectory && !uri.fsPath.startsWith(extractionMode.workingDirectory)) {
+		console.log(`[defaultGetDocumentSymbolRanges] skipping file: ${uri.fsPath} as it is not in the working directory: ${extractionMode.workingDirectory}`);
+		return [];
+	}
+	const startTime = Date.now();
 	const results = vscode.commands
 		.executeCommand<(vscode.SymbolInformation | vscode.DocumentSymbol)[] | undefined>(
 			'vscode.executeDocumentSymbolProvider',
@@ -848,8 +891,10 @@ export const defaultGetDocumentSymbolRanges = async (uri: vscode.Uri): Promise<v
 		}, reason => {
 			return [];
 		});
+	const endTime = Date.now();
+	console.log(`[time-taken][defaultGetDocumentSymbolRanges] time taken: ${endTime - startTime} for ${uri.fsPath}`);
 	return await results;
-}
+};
 
 const extractSymbolRange = (d: vscode.SymbolInformation | vscode.DocumentSymbol): vscode.Range =>
 	isDocumentSymbol(d) ? d.range : d.location.range;

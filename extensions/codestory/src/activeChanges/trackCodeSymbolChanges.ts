@@ -145,7 +145,6 @@ export class TrackCodeSymbolChanges {
 		if (filePath.endsWith('.git')) {
 			filePath = filePath.slice(0, -'.git'.length);
 		}
-		console.log('[codeSymbolInformationFromFilePath] tracking :' + filePath);
 		const fileExtension = getFileExtension(filePath);
 		if (fileExtension === undefined) {
 			return [];
