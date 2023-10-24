@@ -142,7 +142,11 @@ export interface PreciseContext {
 		fuzzyName?: string;
 	};
 	hoverText: string[];
-	definitionSnippet: string;
+	definitionSnippet: {
+		context: string;
+		startLine: number;
+		endLine: number;
+	};
 	fsFilePath: string;
 	relativeFilePath: string;
 	range: {
