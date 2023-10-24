@@ -8,6 +8,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditorWidget';
+import { ILanguageService } from 'vs/editor/common/languages/language';
 import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ModesHoverController } from 'vs/editor/contrib/hover/browser/hover';
@@ -38,6 +39,7 @@ export class CSAgentRequestBlock extends Disposable {
 
 	constructor(
 		@IModelService private readonly modelService: IModelService,
+		@ILanguageService private readonly _languageService: ILanguageService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService
@@ -67,7 +69,8 @@ export class CSAgentRequestBlock extends Disposable {
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([ModesHoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
-		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', null, this.inputUri, true);
+		const langId = this._languageService.createById('markdown');
+		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', langId, this.inputUri, true);
 		this._inputEditor.setModel(this.inputModel);
 	}
 
