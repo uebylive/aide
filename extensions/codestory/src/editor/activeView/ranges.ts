@@ -12,8 +12,8 @@ import { languages } from 'vscode';
 import { getCodeSelection } from '../codeSelection';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 
-// We only go 2 levels up or down if required
-const RECURSION_LIMIT = 1;
+// We only go 3 levels down right now
+const RECURSION_LIMIT = 2;
 
 const limiter = createLimiter(
 	// The concurrent requests limit is chosen very conservatively to avoid blocking the language
@@ -317,13 +317,23 @@ export const extractDefinitionContexts = async (
 	return contexts;
 };
 
-const extractSnippets = (lines: string[], symbolRanges: vscode.Range[], targetRanges: vscode.Range[]): string[] => {
+const extractSnippets = (lines: string[], symbolRanges: vscode.Range[], targetRanges: vscode.Range[]): {
+	context: string;
+	startLine: number;
+	endLine: number;
+}[] => {
 	const intersectingRanges = symbolRanges.filter(symbolRange =>
 		targetRanges.some(targetRange => symbolRange.start.line <= targetRange.start.line && targetRange.end.line <= symbolRange.end.line)
 	);
 
 	// NOTE: inclusive upper bound
-	return intersectingRanges.map(fr => lines.slice(fr.start.line, fr.end.line + 1).join('\n'));
+	return intersectingRanges.map(fr => {
+		return {
+			context: lines.slice(fr.start.line, fr.end.line + 1).join('\n'),
+			startLine: fr.start.line,
+			endLine: fr.end.line,
+		};
+	});
 };
 
 export const locationKeyFn = (location: vscode.Location): string =>

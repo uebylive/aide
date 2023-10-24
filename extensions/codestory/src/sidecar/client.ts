@@ -85,6 +85,8 @@ export class SideCarClient {
 			thread_id: threadId,
 			deep_context: deepContext,
 		};
+		console.log(body);
+		console.log(JSON.stringify(body));
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
