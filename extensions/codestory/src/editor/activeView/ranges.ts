@@ -43,6 +43,7 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 			preciseContext: [],
 			cursorPosition: null,
 			currentViewPort: null,
+			language: 'not_present',
 		};
 	}
 
@@ -75,6 +76,7 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 				// that there is no text on the screen (this might break tho)
 				textOnScreen: '',
 			},
+			language: '',
 		};
 	}
 	const viewPort = activeEditor.visibleRanges[0];
@@ -137,7 +139,8 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 			fsFilePath: uri.fsPath,
 			relativePath: vscode.workspace.asRelativePath(uri.fsPath),
 			textOnScreen: currentFileText.slice(finalRangeToUse.start.line, finalRangeToUse.end.line + 1).join('\n'),
-		}
+		},
+		language: activeEditor.document.languageId,
 	};
 	const endTime = Date.now();
 	console.log(`[time-taken][getLSPGraphContextForChat] time taken: ${endTime - startTime} for ${uri.fsPath} at location: ${finalRangeToUse.start.line}:${finalRangeToUse.start.character}`);
