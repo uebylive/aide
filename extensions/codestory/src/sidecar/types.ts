@@ -175,4 +175,5 @@ export interface DeepContextForView {
 		fsFilePath: string;
 		textOnScreen: string;
 	} | null;
+	language: string;
 }
