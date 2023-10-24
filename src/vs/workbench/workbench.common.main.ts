@@ -185,6 +185,10 @@ import 'vs/workbench/contrib/speech/common/speech.contribution';
 import 'vs/workbench/contrib/chat/browser/chat.contribution';
 import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 
+// CS Agent
+// Using this comment as a feature-flag while this view is being developed.
+// import 'vs/workbench/contrib/csAgent/browser/csAgent.contribution';
+
 // Arc
 import 'vs/workbench/contrib/arc/browser/arc.contribution';
 
