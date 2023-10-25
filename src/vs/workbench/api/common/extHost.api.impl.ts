@@ -414,6 +414,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'handleIssueUri');
 				return extHostIssueReporter.registerIssueUriRequestHandler(extension, handler);
 			},
+			registerIssueDataProvider(handler: vscode.IssueDataProvider) {
+				checkProposedApiEnabled(extension, 'handleIssueUri');
+				return extHostIssueReporter.registerIssueDataProvider(extension, handler);
+			},
 			get appQuality(): string | undefined {
 				checkProposedApiEnabled(extension, 'resolvers');
 				return initData.quality;
@@ -1392,7 +1396,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'mappedEditsProvider');
 				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
 			},
-			createChatAgent(name: string, handler: vscode.ChatAgentHandler) {
+			createChatAgent(name: string, handler: vscode.ChatAgentExtendedHandler) {
 				checkProposedApiEnabled(extension, 'chatAgents2');
 				return extHostChatAgents2.createChatAgent(extension, name, handler);
 			},
@@ -1596,7 +1600,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			TestResultState: extHostTypes.TestResultState,
 			TestRunRequest: extHostTypes.TestRunRequest,
 			TestMessage: extHostTypes.TestMessage,
-			TestMessage2: extHostTypes.TestMessage,
+			TestMessage2: extHostTypes.TestMessage, // back compat for Oct 2023
 			TestTag: extHostTypes.TestTag,
 			TestRunProfileKind: extHostTypes.TestRunProfileKind,
 			TextSearchCompleteMessageType: TextSearchCompleteMessageType,
