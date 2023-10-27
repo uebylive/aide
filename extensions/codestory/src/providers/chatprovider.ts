@@ -115,10 +115,10 @@ class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
 
 export class CSChatRequest implements vscode.InteractiveRequest {
 	session: CSChatSession;
-	message: string | CSChatReplyFollowup;
+	message: string;
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined;
 
-	constructor(session: CSChatSession, message: string | CSChatReplyFollowup) {
+	constructor(session: CSChatSession, message: string) {
 		this.session = session;
 		this.message = message;
 	}

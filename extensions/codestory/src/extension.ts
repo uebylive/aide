@@ -35,6 +35,7 @@ import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { readSideCarURL } from './utilities/sidecarUrl';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
+import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
 
 
 class ProgressiveTrackSymbols {
@@ -193,9 +194,14 @@ export async function activate(context: ExtensionContext) {
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo,
 	);
+	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(sidecarClient, currentRepo, rootPath ?? '');
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatProvider
 	);
+	const interactiveEditorSession = interactive.registerInteractiveEditorSessionProvider(
+		interactiveEditorSessionProvider,
+	);
+	context.subscriptions.push(interactiveEditorSession);
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
 	await commands.executeCommand('workbench.action.toggleHoverChat.cs-chat');
