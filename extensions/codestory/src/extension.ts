@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { arc, commands, ExtensionContext, interactive, TextDocument, window, workspace } from 'vscode';
+import { arc, commands, ExtensionContext, csChat, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -35,6 +35,7 @@ import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { readSideCarURL } from './utilities/sidecarUrl';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
+import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
 
 
 class ProgressiveTrackSymbols {
@@ -117,6 +118,7 @@ export async function activate(context: ExtensionContext) {
 
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
+	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl);
 	// Setup the current repo representation here
@@ -193,12 +195,17 @@ export async function activate(context: ExtensionContext) {
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo,
 	);
-	const interactiveSession = interactive.registerInteractiveSessionProvider(
+	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(sidecarClient, currentRepo, rootPath ?? '');
+	const interactiveSession = csChat.registerCSChatSessionProvider(
 		'cs-chat', chatProvider
 	);
+	const interactiveEditorSession = csChat.registerCSChatEditorSessionProvider(
+		interactiveEditorSessionProvider,
+	);
+	context.subscriptions.push(interactiveEditorSession);
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
-	await commands.executeCommand('workbench.action.toggleHoverChat.cs-chat');
+	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
 
 	const arcProvider = arc.registerArcProvider('cs-arc', chatProvider);
 	context.subscriptions.push(arcProvider);

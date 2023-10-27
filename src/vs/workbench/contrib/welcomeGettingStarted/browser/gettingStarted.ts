@@ -1610,6 +1610,8 @@ export class GettingStartedPage extends EditorPane {
 	}
 
 	override focus() {
+		super.focus();
+
 		const active = this.container.ownerDocument.activeElement;
 
 		let parent = this.container.parentElement;
@@ -1622,8 +1624,6 @@ export class GettingStartedPage extends EditorPane {
 			// This prevents us from stealing back focus from other focused elements such as quick pick due to delayed load.
 			this.container.focus();
 		}
-
-		super.focus();
 	}
 }
 

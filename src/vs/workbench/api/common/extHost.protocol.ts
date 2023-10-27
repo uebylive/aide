@@ -56,6 +56,7 @@ import { IChatAgentDetection, IChatDynamicRequest, IChatFollowup, IChatReplyFoll
 import { IChatSlashFragment } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
 import { IChatRequestVariableValue, IChatVariableData } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { DebugConfigurationProviderTriggerKind, IAdapterDescriptor, IConfig, IDebugSessionReplMode } from 'vs/workbench/contrib/debug/common/debug';
+import { IInlineCSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse, IInlineCSChatProgressItem, IInlineCSChatRequest, IInlineCSChatSession, InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IInlineChatBulkEditResponse, IInlineChatEditResponse, IInlineChatMessageResponse, IInlineChatProgressItem, IInlineChatRequest, IInlineChatSession, InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import * as notebookCommon from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { CellExecutionUpdateType } from 'vs/workbench/contrib/notebook/common/notebookExecutionService';
@@ -1214,6 +1215,21 @@ export interface ExtHostInlineChatShape {
 	$releaseSession(handle: number, sessionId: number): void;
 }
 
+export interface MainThreadInlineCSChatShape extends IDisposable {
+	$registerCSChatEditorProvider(handle: number, label: string, debugName: string, supportsFeedback: boolean): Promise<void>;
+	$handleProgressChunk(requestId: string, chunk: Dto<IInlineCSChatProgressItem>): Promise<void>;
+	$unregisterCSChatEditorProvider(handle: number): Promise<void>;
+}
+
+export type IInlineCSChatResponseDto = Dto<IInlineCSChatEditResponse | Omit<IInlineCSChatBulkEditResponse, 'edits'> & { edits: IWorkspaceEditDto } | IInlineCSChatMessageResponse>;
+
+export interface ExtHostInlineCSChatShape {
+	$prepareSession(handle: number, uri: UriComponents, range: ISelection, token: CancellationToken): Promise<IInlineCSChatSession | undefined>;
+	$provideResponse(handle: number, session: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<IInlineCSChatResponseDto | undefined>;
+	$handleFeedback(handle: number, sessionId: number, responseId: number, kind: InlineCSChatResponseFeedbackKind): void;
+	$releaseSession(handle: number, sessionId: number): void;
+}
+
 export interface MainThreadUrlsShape extends IDisposable {
 	$registerUriHandler(handle: number, extensionId: ExtensionIdentifier, extensionDisplayName: string): Promise<void>;
 	$unregisterUriHandler(handle: number): Promise<void>;
@@ -1278,7 +1294,28 @@ export interface MainThreadChatShape extends IDisposable {
 	$transferChatSession(sessionId: number, toWorkspace: UriComponents): void;
 }
 
+export interface MainThreadCSChatShape extends IDisposable {
+	$registerChatProvider(handle: number, id: string): Promise<void>;
+	$acceptChatState(sessionId: number, state: any): Promise<void>;
+	$sendRequestToProvider(providerId: string, message: IChatDynamicRequest): void;
+	$unregisterChatProvider(handle: number): Promise<void>;
+	$acceptResponseProgress(handle: number, sessionId: number, progress: IChatResponseProgressDto, responsePartHandle?: number): Promise<number | void>;
+	$transferChatSession(sessionId: number, toWorkspace: UriComponents): void;
+}
+
 export interface ExtHostChatShape {
+	$prepareChat(handle: number, initialState: any, token: CancellationToken): Promise<IChatDto | undefined>;
+	$provideWelcomeMessage(handle: number, token: CancellationToken): Promise<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined>;
+	$provideSampleQuestions(handle: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined>;
+	$provideFollowups(handle: number, sessionId: number, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
+	$provideReply(handle: number, sessionId: number, request: IChatRequestDto, token: CancellationToken): Promise<IChatResponseDto | undefined>;
+	$removeRequest(handle: number, sessionId: number, requestId: string): void;
+	$provideSlashCommands(handle: number, sessionId: number, token: CancellationToken): Promise<ISlashCommand[] | undefined>;
+	$releaseSession(sessionId: number): void;
+	$onDidPerformUserAction(event: IChatUserActionEvent): Promise<void>;
+}
+
+export interface ExtHostCSChatShape {
 	$prepareChat(handle: number, initialState: any, token: CancellationToken): Promise<IChatDto | undefined>;
 	$provideWelcomeMessage(handle: number, token: CancellationToken): Promise<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined>;
 	$provideSampleQuestions(handle: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined>;
@@ -1365,7 +1402,7 @@ export interface MainThreadFileSystemShape extends IDisposable {
 }
 
 export interface MainThreadFileSystemEventServiceShape extends IDisposable {
-	$watch(extensionId: string, session: number, resource: UriComponents, opts: files.IWatchOptions): void;
+	$watch(extensionId: string, session: number, resource: UriComponents, opts: files.IWatchOptions, correlate: boolean): void;
 	$unwatch(session: number): void;
 }
 
@@ -2783,6 +2820,8 @@ export const MainContext = {
 	MainThreadInteractive: createProxyIdentifier<MainThreadInteractiveShape>('MainThreadInteractive'),
 	MainThreadChat: createProxyIdentifier<MainThreadChatShape>('MainThreadChat'),
 	MainThreadInlineChat: createProxyIdentifier<MainThreadInlineChatShape>('MainThreadInlineChatShape'),
+	MainThreadCSChat: createProxyIdentifier<MainThreadCSChatShape>('MainThreadCSChat'),
+	MainThreadInlineCSChat: createProxyIdentifier<MainThreadInlineCSChatShape>('MainThreadInlineCSChatShape'),
 	MainThreadTheming: createProxyIdentifier<MainThreadThemingShape>('MainThreadTheming'),
 	MainThreadTunnelService: createProxyIdentifier<MainThreadTunnelServiceShape>('MainThreadTunnelService'),
 	MainThreadManagedSockets: createProxyIdentifier<MainThreadManagedSocketsShape>('MainThreadManagedSockets'),
@@ -2855,6 +2894,8 @@ export const ExtHostContext = {
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostAiRelatedInformation: createProxyIdentifier<ExtHostAiRelatedInformationShape>('ExtHostAiRelatedInformation'),
 	ExtHostAiEmbeddingVector: createProxyIdentifier<ExtHostAiEmbeddingVectorShape>('ExtHostAiEmbeddingVector'),
+	ExtHostInlineCSChat: createProxyIdentifier<ExtHostInlineCSChatShape>('ExtHostInlineCSChatShape'),
+	ExtHostCSChat: createProxyIdentifier<ExtHostCSChatShape>('ExtHostCSChat'),
 	ExtHostTheming: createProxyIdentifier<ExtHostThemingShape>('ExtHostTheming'),
 	ExtHostTunnelService: createProxyIdentifier<ExtHostTunnelServiceShape>('ExtHostTunnelService'),
 	ExtHostManagedSockets: createProxyIdentifier<ExtHostManagedSocketsShape>('ExtHostManagedSockets'),

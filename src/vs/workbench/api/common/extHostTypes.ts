@@ -4103,6 +4103,13 @@ export enum InteractiveEditorResponseFeedbackKind {
 	Accepted = 3
 }
 
+export enum CSChatEditorResponseFeedbackKind {
+	Unhelpful = 0,
+	Helpful = 1,
+	Undone = 2,
+	Accepted = 3
+}
+
 export enum ChatMessageRole {
 	System = 0,
 	User = 1,

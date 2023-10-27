@@ -177,3 +177,92 @@ export interface DeepContextForView {
 	} | null;
 	language: string;
 }
+
+
+export interface TextDocument {
+	text: String;
+	language: String;
+	fsFilePath: String;
+	relativePath: String;
+}
+
+
+export interface SnippetInformation {
+	startPosition: {
+		line: number;
+		character: number;
+		byteOffset: number;
+	};
+	endPosition: {
+		line: number;
+		character: number;
+		byteOffset: number;
+	};
+}
+
+export interface InEditorRequest {
+	repoRef: string;
+	query: string;
+	threadId: string;
+	language: string;
+	snippetInformation: SnippetInformation;
+	textDocumentWeb: TextDocument;
+}
+
+
+export type InLineAgentAction =
+	| 'Code'
+	| 'Doc'
+	| 'Edit'
+	| 'Tests'
+	| 'Fix'
+	| 'Explain'
+	| 'Unknown'
+	| { type: 'DecideAction'; query: string };
+
+
+export type InLineAgentMessageState =
+	| 'Pending'
+	| 'Started'
+	| 'StreamingAnswer'
+	| 'Finished'
+	| 'Errored';
+
+export interface InLineAgentDocumentSymbol {
+	name: string | null;
+	start_position: Position;
+	end_position: Position;
+	kind: string | null;
+	code: string;
+}
+
+
+export interface InLineAgentAnswer {
+	answer_up_until_now: string;
+	delta: string | null;
+	state: InLineAgentMessageState;
+	document_symbol: InLineAgentDocumentSymbol | null;
+}
+
+
+export interface InLineAgentMessage {
+	session_id: string;
+	message_id: string;
+	query: string;
+	steps_taken: InLineAgentAction[];
+	message_state: InLineAgentMessageState;
+	answer: InLineAgentAnswer | null;
+	last_updated: number;
+	created_at: number;
+	keep_alive: string | undefined;
+}
+
+
+export interface InEditorTreeSitterDocumentationQuery {
+	language: string;
+	source: string;
+}
+
+export interface InEditorTreeSitterDocumentationReply {
+	documentation: string;
+}
