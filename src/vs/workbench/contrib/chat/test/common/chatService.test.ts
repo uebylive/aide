@@ -117,11 +117,11 @@ suite('Chat', () => {
 
 		const session1 = testDisposables.add(testService.startSession('provider1', CancellationToken.None));
 		await session1.waitForInitialization();
-		session1!.addRequest({ parts: [], text: 'request 1' });
+		session1!.addRequest({ parts: [], text: 'request 1' }, undefined);
 
 		const session2 = testDisposables.add(testService.startSession('provider2', CancellationToken.None));
 		await session2.waitForInitialization();
-		session2!.addRequest({ parts: [], text: 'request 2' });
+		session2!.addRequest({ parts: [], text: 'request 2' }, undefined);
 
 		assert.strictEqual(provider1.lastInitialState, undefined);
 		assert.strictEqual(provider2.lastInitialState, undefined);
@@ -260,7 +260,7 @@ suite('Chat', () => {
 
 		await assertSnapshot(model.toExport());
 
-		const response = await testService.sendRequest(model.sessionId, 'test request');
+		const response = await testService.sendRequest(model.sessionId, 'test request', undefined);
 		assert(response);
 
 		await response.responseCompletePromise;
@@ -285,7 +285,7 @@ suite('Chat', () => {
 			const chatModel1 = testDisposables.add(testService.startSession(providerId, CancellationToken.None));
 			assert.strictEqual(chatModel1.getRequests().length, 0);
 
-			const response = await testService.sendRequest(chatModel1.sessionId, 'test request');
+			const response = await testService.sendRequest(chatModel1.sessionId, 'test request', undefined);
 			assert(response);
 
 			await response.responseCompletePromise;

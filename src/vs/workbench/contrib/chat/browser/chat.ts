@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatUserProvidedContext, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
@@ -14,6 +14,7 @@ import { Selection } from 'vs/editor/common/core/selection';
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
 export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');
+export const IHoverChatService = createDecorator<IHoverChatService>('hoverChatService');
 export const IChatAccessibilityService = createDecorator<IChatAccessibilityService>('chatAccessibilityService');
 
 export interface IChatWidgetService {
@@ -44,6 +45,13 @@ export interface IQuickChatService {
 	open(providerId?: string, options?: IQuickChatOpenOptions): void;
 	close(): void;
 	openInChatView(): void;
+}
+
+export interface IHoverChatService {
+	readonly _serviceBrand: undefined;
+	readonly enabled: boolean;
+	toggle(providerId?: string): void;
+	open(providerId?: string): void;
 }
 
 export interface IQuickChatOpenOptions {
@@ -79,9 +87,11 @@ export interface IChatFileTreeInfo {
 	focus(): void;
 }
 
+
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IChatWidgetViewOptions {
+	renderOnlyInput?: boolean;
 	renderInputOnTop?: boolean;
 	renderStyle?: 'default' | 'compact';
 	supportsFileReferences?: boolean;
@@ -99,7 +109,7 @@ export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewCon
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
-	readonly onDidAcceptInput: Event<void>;
+	readonly onDidAcceptInput: Event<void | string>;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;
@@ -125,6 +135,10 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
+	addFileContextForUserMessage(filePath: string): void;
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number, documentSymbolName: string): void;
+	// TODO(skcd): Figure out the right api for this
+	getCodeContextProvidedByUser(): IChatUserProvidedContext | undefined;
 	clear(): void;
 }
 

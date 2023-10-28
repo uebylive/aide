@@ -24,6 +24,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
+// import { AtSymbolContentWidget } from 'vs/workbench/contrib/chat/browser/chatAtSymbolContentWidget';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicReferences';
@@ -138,7 +139,7 @@ class InputEditorDecorations extends Disposable {
 			const viewModelPlaceholder = this.widget.viewModel?.inputPlaceholder;
 			const defaultPlaceholder = slashCommands?.length ?
 				localize('interactive.input.placeholderWithCommands', "Ask a question or type '@' or '/'") :
-				localize('interactive.input.placeholderNoCommands', "Ask a question");
+				localize('interactive.input.placeholderNoCommands', "Initializing the chat...");
 			const placeholder = viewModelPlaceholder ?? defaultPlaceholder;
 			const decoration: IDecorationOptions[] = [
 				{
@@ -519,7 +520,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			_debugDisplayName: 'chatDynamicCompletions',
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality !== 'stable';
+				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality === 'stable';
 				if (!fileVariablesEnabled) {
 					return;
 				}
@@ -658,7 +659,7 @@ function computeCompletionRanges(model: ITextModel, position: Position, reg: Reg
 	return { insert, replace };
 }
 
-class VariableCompletions extends Disposable {
+export class VariableCompletions extends Disposable {
 
 	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
@@ -717,7 +718,8 @@ class VariableCompletions extends Disposable {
 	}
 }
 
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
+// TODO(codestory): Commenting this out so we use our custom provider for LSP
+// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
 
 class ChatTokenDeleter extends Disposable {
 

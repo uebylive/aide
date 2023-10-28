@@ -16,7 +16,7 @@ import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChat, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUserProvidedContext, IUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/chat/common/chatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
@@ -94,6 +94,7 @@ export class ChatRequestModel implements IChatRequestModel {
 	constructor(
 		public readonly session: ChatModel,
 		public readonly message: IParsedChatRequest,
+		public readonly userProvidedContext: IChatUserProvidedContext | undefined,
 		private _providerRequestId?: string) {
 		this._id = 'request_' + ChatRequestModel.nextId++;
 	}
@@ -581,7 +582,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					typeof raw.message === 'string'
 						? this.getParsedRequestFromString(raw.message)
 						: reviveParsedChatRequest(raw.message);
-				const request = new ChatRequestModel(this, parsedRequest, raw.providerRequestId);
+				const request = new ChatRequestModel(this, parsedRequest, undefined, raw.providerRequestId);
 				if (raw.response || raw.responseErrorDetails) {
 					const agent = (raw.agent && 'metadata' in raw.agent) ? // Check for the new format, ignore entries in the old format
 						revive<ISerializableChatAgentData>(raw.agent) : undefined;
@@ -666,12 +667,12 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._requests;
 	}
 
-	addRequest(message: IParsedChatRequest, chatAgent?: IChatAgentData): ChatRequestModel {
+	addRequest(message: IParsedChatRequest, chatUserProvidedContext?: IChatUserProvidedContext, chatAgent?: IChatAgentData): ChatRequestModel {
 		if (!this._session) {
 			throw new Error('addRequest: No session');
 		}
 
-		const request = new ChatRequestModel(this, message);
+		const request = new ChatRequestModel(this, message, chatUserProvidedContext);
 		request.response = new ChatResponseModel([], this, chatAgent, request.id);
 
 		this._requests.push(request);

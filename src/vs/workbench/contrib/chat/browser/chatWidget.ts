@@ -31,7 +31,7 @@ import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
-import { IChatReplyFollowup, IChatService, ISlashCommand } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatReplyFollowup, IChatService, ISlashCommand, IChatUserProvidedContext } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 
 const $ = dom.$;
@@ -62,13 +62,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidFocus = this._register(new Emitter<void>());
 	readonly onDidFocus = this._onDidFocus.event;
 
+	private _onDidBlur = this._register(new Emitter<void>());
+	readonly onDidBlur = this._onDidBlur.event;
+
 	private _onDidChangeViewModel = this._register(new Emitter<void>());
 	readonly onDidChangeViewModel = this._onDidChangeViewModel.event;
 
 	private _onDidClear = this._register(new Emitter<void>());
 	readonly onDidClear = this._onDidClear.event;
 
-	private _onDidAcceptInput = this._register(new Emitter<void>());
+	private _onDidAcceptInput = this._register(new Emitter<void | string>());
 	readonly onDidAcceptInput = this._onDidAcceptInput.event;
 
 	private _onDidChangeHeight = this._register(new Emitter<number>());
@@ -127,6 +130,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private lastSlashCommands: ISlashCommand[] | undefined;
 	private slashCommandsPromise: Promise<ISlashCommand[] | undefined> | undefined;
+	private chatUserProvidedContext: IChatUserProvidedContext | undefined;
 
 	constructor(
 		readonly viewContext: IChatWidgetViewContext,
@@ -186,6 +190,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		this.createList(this.listContainer, { renderStyle });
+
+		if (this.viewOptions.renderOnlyInput) {
+			this.renderer.setVisible(false);
+			this.listContainer.style.display = 'none';
+		}
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
@@ -383,6 +392,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidFocus(() => {
 			this._onDidFocus.fire();
 		}));
+		this._register(this.tree.onDidBlur(() => {
+			this._onDidBlur.fire();
+		}));
 	}
 
 	private onContextMenu(e: ITreeContextMenuEvent<ChatTreeItem | null>): void {
@@ -422,6 +434,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.render(container, '', this);
 
 		this._register(this.inputPart.onDidFocus(() => this._onDidFocus.fire()));
+		this._register(this.inputPart.onDidBlur(() => this._onDidBlur.fire()));
 		this._register(this.inputPart.onDidAcceptFollowup(e => {
 			if (!this.viewModel) {
 				return;
@@ -527,17 +540,26 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<void> {
-		if (this.viewModel) {
-			this._onDidAcceptInput.fire();
+		// TODO(skcd): This is how we want to use the context which the user has
+		// provided
+		const chatUserProvidedContext = this.chatUserProvidedContext;
+		this.chatUserProvidedContext = undefined;
 
+		if (this.viewModel) {
 			const editorValue = this.getInput();
+			this._onDidAcceptInput.fire(editorValue);
+
+			if (this.viewOptions.renderOnlyInput) {
+				return;
+			}
+
 			this._chatAccessibilityService.acceptRequest();
 			const input = !opts ? editorValue :
 				'query' in opts ? opts.query :
 					`${opts.prefix} ${editorValue}`;
 			const isUserQuery = !opts || 'query' in opts;
 			const usedSlashCommand = this.lookupSlashCommand(input);
-			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, usedSlashCommand);
+			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, chatUserProvidedContext, usedSlashCommand);
 
 			if (result) {
 				this.inputPart.acceptInput(isUserQuery ? input : undefined);
@@ -713,6 +735,34 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	getViewState(): IViewState {
 		this.inputPart.saveState();
 		return { inputValue: this.getInput() };
+	}
+
+
+	// Add new file context to the user message
+	addFileContextForUserMessage(filePath: string): void {
+		if (this.chatUserProvidedContext === undefined) {
+			this.chatUserProvidedContext = {
+				fileContext: [filePath],
+				codeSymbolsContext: [],
+			};
+		} else {
+			this.chatUserProvidedContext?.fileContext.push(filePath);
+		}
+	}
+
+	addCodeSymbolContextForUserMessage(filePath: string, startLineNumber: number, endLineNumber: number, documentSymbolName: string): void {
+		if (this.chatUserProvidedContext === undefined) {
+			this.chatUserProvidedContext = {
+				fileContext: [],
+				codeSymbolsContext: [{ filePath, startLineNumber, endLineNumber, documentSymbolName }],
+			};
+		} else {
+			this.chatUserProvidedContext?.codeSymbolsContext.push({ filePath, startLineNumber, endLineNumber, documentSymbolName });
+		}
+	}
+
+	getCodeContextProvidedByUser(): IChatUserProvidedContext | undefined {
+		return this.chatUserProvidedContext;
 	}
 }
 

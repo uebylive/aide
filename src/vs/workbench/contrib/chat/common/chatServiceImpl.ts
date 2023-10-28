@@ -27,7 +27,7 @@ import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageMode
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/chat/common/chatProvider';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
-import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, IChatService, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, IChatService, IChatTransferredSessionData, IChatUserActionEvent, IChatUserProvidedContext, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
@@ -418,7 +418,7 @@ export class ChatService extends Disposable implements IChatService {
 		return this._startSession(data.providerId, data, CancellationToken.None);
 	}
 
-	async sendRequest(sessionId: string, request: string, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
+	async sendRequest(sessionId: string, request: string, chatUserProvidedContext?: IChatUserProvidedContext, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
 		if (!request.trim()) {
 			this.trace('sendRequest', 'Rejected empty message');
@@ -442,10 +442,10 @@ export class ChatService extends Disposable implements IChatService {
 		}
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
-		return { responseCompletePromise: this._sendRequestAsync(model, sessionId, provider, request, usedSlashCommand) };
+		return { responseCompletePromise: this._sendRequestAsync(model, sessionId, provider, request, chatUserProvidedContext, usedSlashCommand) };
 	}
 
-	private async _sendRequestAsync(model: ChatModel, sessionId: string, provider: IChatProvider, message: string, usedSlashCommand?: ISlashCommand): Promise<void> {
+	private async _sendRequestAsync(model: ChatModel, sessionId: string, provider: IChatProvider, message: string, chatUserProvidedContext?: IChatUserProvidedContext, usedSlashCommand?: ISlashCommand): Promise<void> {
 		const parsedRequest = await this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(sessionId, message);
 
 		let request: ChatRequestModel;
@@ -527,7 +527,7 @@ export class ChatService extends Disposable implements IChatService {
 						history.push({ role: ChatMessageRole.Assistant, content: request.response.response.asString() });
 					}
 
-					request = model.addRequest(parsedRequest, agent);
+					request = model.addRequest(parsedRequest, chatUserProvidedContext, agent);
 					const requestProps: IChatAgentRequest = {
 						sessionId,
 						requestId: request.id,
@@ -550,7 +550,7 @@ export class ChatService extends Disposable implements IChatService {
 					agentOrCommandFollowups = agentResult?.followUp ? Promise.resolve(agentResult.followUp) :
 						this.chatAgentService.getFollowups(agent.id, sessionId, CancellationToken.None);
 				} else if (commandPart && this.chatSlashCommandService.hasCommand(commandPart.slashCommand.command)) {
-					request = model.addRequest(parsedRequest);
+					request = model.addRequest(parsedRequest, chatUserProvidedContext);
 					// contributed slash commands
 					// TODO: spell this out in the UI
 					const history: IChatMessage[] = [];
@@ -570,10 +570,11 @@ export class ChatService extends Disposable implements IChatService {
 					rawResponse = { session: model.session! };
 
 				} else {
-					request = model.addRequest(parsedRequest);
+					request = model.addRequest(parsedRequest, chatUserProvidedContext);
 					const requestProps: IChatRequest = {
 						session: model.session!,
 						message,
+						userProvidedContext: chatUserProvidedContext,
 						variables: {}
 					};
 
