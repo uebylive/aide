@@ -352,35 +352,6 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 				session.textDocument,
 			);
 			console.log('got messages from the sidecar client');
-			// Now we have to process the messages here
-			// TODO(skcd): Figure out how to handle this properly, cause we want
-			// to also do the parsing here
-			// use tree sitter to parse the tree and get the range of the symbols
-			// send this to the backend as well, we keep one way channel for now
-
-			// We also want to get the other range for this selection which takes
-			// into account if a function or a higher level construct is selected
-			// Gets the new selection range
-			// #TODO(skcd): We want to get some more data:
-			// more about what kind of symbols are there and what ranges they are in
-			// and the vscode type in rust
-			// this.sidecarClient.getInLineEditorResponse(
-			// 	request.prompt,
-			// 	this.repoRef,
-			// 	session.threadId,
-			// 	session.getTextDocumentLanguage(),
-			// );
-			// Next we will query using the sidecar binary to get back the response
-			// progress.report({
-			// 	message: 'skcd_testing_123',
-			// 	edits: [textEdits],
-			// 	editsShouldBeInstant: true,
-			// });
-			// progress.report({
-			// 	message: 'skcd_testing_123',
-			// 	edits: [textEdits],
-			// 	editsShouldBeInstant: true,
-			// });
 			return new CSInteractiveEditorResponse(
 				[],
 				'skcd waiting for something',
