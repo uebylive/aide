@@ -22,7 +22,7 @@ import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editor
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const getMoveToEditorChatActionDescriptorForViewTitle = (viewId: string, providerId: string): Readonly<IAction2Options> & { viewId: string } => ({
-	id: `workbench.action.chat.${providerId}.openInEditor`,
+	id: `workbench.action.csChat.${providerId}.openInEditor`,
 	title: {
 		value: localize('chat.openInEditor.label', "Open Session In Editor"),
 		original: 'Open Session In Editor'
@@ -81,7 +81,7 @@ export function registerMoveActions() {
 	registerAction2(class GlobalMoveToEditorAction extends Action2 {
 		constructor() {
 			super({
-				id: `workbench.action.chat.openInEditor`,
+				id: `workbench.action.csChat.openInEditor`,
 				title: {
 					value: localize('interactiveSession.openInEditor.label', "Open Session In Editor"),
 					original: 'Open Session In Editor'
@@ -120,7 +120,7 @@ export function registerMoveActions() {
 	registerAction2(class GlobalMoveToSidebarAction extends Action2 {
 		constructor() {
 			super({
-				id: `workbench.action.chat.openInSidebar`,
+				id: `workbench.action.csChat.openInSidebar`,
 				title: {
 					value: localize('interactiveSession.openInSidebar.label', "Open Session In Sidebar"),
 					original: 'Open Session In Sidebar'

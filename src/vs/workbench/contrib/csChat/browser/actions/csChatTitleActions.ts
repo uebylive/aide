@@ -27,7 +27,7 @@ export function registerChatTitleActions() {
 	registerAction2(class MarkHelpfulAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.markHelpful',
+				id: 'workbench.action.csChat.markHelpful',
 				title: {
 					value: localize('interactive.helpful.label', "Helpful"),
 					original: 'Helpful'
@@ -70,7 +70,7 @@ export function registerChatTitleActions() {
 	registerAction2(class MarkUnhelpfulAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.markUnhelpful',
+				id: 'workbench.action.csChat.markUnhelpful',
 				title: {
 					value: localize('interactive.unhelpful.label', "Unhelpful"),
 					original: 'Unhelpful'
@@ -113,7 +113,7 @@ export function registerChatTitleActions() {
 	registerAction2(class InsertToNotebookAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertIntoNotebook',
+				id: 'workbench.action.csChat.insertIntoNotebook',
 				title: {
 					value: localize('interactive.insertIntoNotebook.label', "Insert into Notebook"),
 					original: 'Insert into Notebook'
@@ -189,7 +189,7 @@ export function registerChatTitleActions() {
 	registerAction2(class RemoveAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.remove',
+				id: 'workbench.action.csChat.remove',
 				title: {
 					value: localize('chat.remove.label', "Remove Request and Response"),
 					original: 'Remove Request and Response'

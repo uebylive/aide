@@ -242,7 +242,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				shouldForwardArgs: true
 			},
 			actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
-				if (action instanceof MenuItemAction && (action.item.id === 'workbench.action.chat.voteDown' || action.item.id === 'workbench.action.chat.voteUp')) {
+				if (action instanceof MenuItemAction && (action.item.id === 'workbench.action.csChat.voteDown' || action.item.id === 'workbench.action.csChat.voteUp')) {
 					return scopedInstantiationService.createInstance(ChatVoteButton, action, options as IMenuEntryActionViewItemOptions);
 				}
 

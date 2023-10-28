@@ -26,7 +26,7 @@ export function registerChatExportActions() {
 	registerAction2(class ExportChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.export',
+				id: 'workbench.action.csChat.export',
 				category: CHAT_CATEGORY,
 				title: {
 					value: localize('chat.export.label', "Export Session") + '...',
@@ -70,7 +70,7 @@ export function registerChatExportActions() {
 	registerAction2(class ImportChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.import',
+				id: 'workbench.action.csChat.import',
 				title: {
 					value: localize('chat.import.label', "Import Session") + '...',
 					original: 'Import Session...'

@@ -34,7 +34,7 @@ import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAg
 import { chatAgentLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 
 export const CHAT_CATEGORY = { value: localize('chat.category', "Chat"), original: 'Chat' };
-export const CHAT_OPEN_ACTION_ID = 'workbench.action.chat.open';
+export const CHAT_OPEN_ACTION_ID = 'workbench.action.csChat.open';
 
 class QuickChatGlobalAction extends Action2 {
 	constructor() {
@@ -132,7 +132,7 @@ export function registerChatActions() {
 	registerAction2(class ClearChatHistoryAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chatEditor.clearHistory',
+				id: 'workbench.action.csChatEditor.clearHistory',
 				title: {
 					value: localize('interactiveSession.clearHistory.label', "Clear Input History"),
 					original: 'Clear Input History'
@@ -189,7 +189,7 @@ export function registerChatActions() {
 	registerAction2(class FocusChatInputAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.focusInput',
+				id: 'workbench.action.csChat.focusInput',
 				title: {
 					value: localize('interactiveSession.focusInput.label', "Focus Chat Input"),
 					original: 'Focus Chat Input'
@@ -230,7 +230,7 @@ export function getOpenChatEditorAction(id: string, label: string, when?: string
 
 const getHistoryChatActionDescriptorForViewTitle = (viewId: string, providerId: string): Readonly<IAction2Options> & { viewId: string } => ({
 	viewId,
-	id: `workbench.action.chat.${providerId}.history`,
+	id: `workbench.action.csChat.${providerId}.history`,
 	title: {
 		value: localize('interactiveSession.history.label', "Show History"),
 		original: 'Show History'

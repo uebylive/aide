@@ -22,7 +22,7 @@ export function isExecuteActionContext(thing: unknown): thing is IChatExecuteAct
 }
 
 export class SubmitAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.submit';
+	static readonly ID = 'workbench.action.csChat.submit';
 
 	constructor() {
 		super({
@@ -59,7 +59,7 @@ export function registerChatExecuteActions() {
 	registerAction2(class CancelAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.cancel',
+				id: 'workbench.action.csChat.cancel',
 				title: {
 					value: localize('interactive.cancel.label', "Cancel"),
 					original: 'Cancel'

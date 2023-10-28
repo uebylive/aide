@@ -20,14 +20,14 @@ import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEdito
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 
-export const ACTION_ID_CLEAR_CHAT = `workbench.action.chat.clear`;
+export const ACTION_ID_CLEAR_CHAT = `workbench.action.csChat.clear`;
 
 export function registerClearActions() {
 
 	registerAction2(class ClearEditorAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chatEditor.clear',
+				id: 'workbench.action.csChatEditor.clear',
 				title: {
 					value: localize('interactiveSession.clear.label', "Clear"),
 					original: 'Clear'
@@ -89,7 +89,7 @@ export function registerClearActions() {
 
 const getClearChatActionDescriptorForViewTitle = (viewId: string, providerId: string): Readonly<IAction2Options> & { viewId: string } => ({
 	viewId,
-	id: `workbench.action.chat.${providerId}.clear`,
+	id: `workbench.action.csChat.${providerId}.clear`,
 	title: {
 		value: localize('interactiveSession.clear.label', "Clear"),
 		original: 'Clear'

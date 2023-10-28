@@ -35,7 +35,7 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 		@ICSChatContributionService private readonly chatContribService: ICSChatContributionService,
 	) {
 		super();
-		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChat);
+		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCSChat);
 
 		this._register(this._chatService.onDidPerformUserAction(e => {
 			if (!e.agentId) {

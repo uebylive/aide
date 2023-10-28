@@ -361,13 +361,13 @@ class VoiceChatSessions {
 
 export class VoiceChatInChatViewAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.voiceChatInChatView';
+	static readonly ID = 'workbench.action.csChat.voiceChatInChatView';
 
 	constructor() {
 		super({
 			id: VoiceChatInChatViewAction.ID,
 			title: {
-				value: localize('workbench.action.chat.voiceChatInView.label', "Voice Chat in Chat View"),
+				value: localize('workbench.action.csChat.voiceChatInView.label', "Voice Chat in Chat View"),
 				original: 'Voice Chat in Chat View'
 			},
 			category: CHAT_CATEGORY,
@@ -388,13 +388,13 @@ export class VoiceChatInChatViewAction extends Action2 {
 
 export class InlineVoiceChatAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.inlineVoiceChat';
+	static readonly ID = 'workbench.action.csChat.inlineVoiceChat';
 
 	constructor() {
 		super({
 			id: InlineVoiceChatAction.ID,
 			title: {
-				value: localize('workbench.action.chat.inlineVoiceChat', "Inline Voice Chat"),
+				value: localize('workbench.action.csChat.inlineVoiceChat', "Inline Voice Chat"),
 				original: 'Inline Voice Chat'
 			},
 			category: CHAT_CATEGORY,
@@ -415,13 +415,13 @@ export class InlineVoiceChatAction extends Action2 {
 
 export class QuickVoiceChatAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.quickVoiceChat';
+	static readonly ID = 'workbench.action.csChat.quickVoiceChat';
 
 	constructor() {
 		super({
 			id: QuickVoiceChatAction.ID,
 			title: {
-				value: localize('workbench.action.chat.quickVoiceChat.label', "Quick Voice Chat"),
+				value: localize('workbench.action.csChat.quickVoiceChat.label', "Quick Voice Chat"),
 				original: 'Quick Voice Chat'
 			},
 			category: CHAT_CATEGORY,
@@ -442,13 +442,13 @@ export class QuickVoiceChatAction extends Action2 {
 
 export class StartVoiceChatAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.startVoiceChat';
+	static readonly ID = 'workbench.action.csChat.startVoiceChat';
 
 	constructor() {
 		super({
 			id: StartVoiceChatAction.ID,
 			title: {
-				value: localize('workbench.action.chat.startVoiceChat.label', "Use Microphone"),
+				value: localize('workbench.action.csChat.startVoiceChat.label', "Use Microphone"),
 				original: 'Use Microphone'
 			},
 			category: CHAT_CATEGORY,
@@ -495,13 +495,13 @@ export class StartVoiceChatAction extends Action2 {
 
 export class StopListeningAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListening';
+	static readonly ID = 'workbench.action.csChat.stopListening';
 
 	constructor() {
 		super({
 			id: StopListeningAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListening.label', "Stop Listening"),
+				value: localize('workbench.action.csChat.stopListening.label', "Stop Listening"),
 				original: 'Stop Listening'
 			},
 			category: CHAT_CATEGORY,
@@ -522,13 +522,13 @@ export class StopListeningAction extends Action2 {
 
 export class StopListeningInChatViewAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListeningInChatView';
+	static readonly ID = 'workbench.action.csChat.stopListeningInChatView';
 
 	constructor() {
 		super({
 			id: StopListeningInChatViewAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListeningInChatView.label', "Stop Listening"),
+				value: localize('workbench.action.csChat.stopListeningInChatView.label', "Stop Listening"),
 				original: 'Stop Listening'
 			},
 			category: CHAT_CATEGORY,
@@ -555,13 +555,13 @@ export class StopListeningInChatViewAction extends Action2 {
 
 export class StopListeningInChatEditorAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListeningInChatEditor';
+	static readonly ID = 'workbench.action.csChat.stopListeningInChatEditor';
 
 	constructor() {
 		super({
 			id: StopListeningInChatEditorAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListeningInChatEditor.label', "Stop Listening"),
+				value: localize('workbench.action.csChat.stopListeningInChatEditor.label', "Stop Listening"),
 				original: 'Stop Listening'
 			},
 			category: CHAT_CATEGORY,
@@ -588,13 +588,13 @@ export class StopListeningInChatEditorAction extends Action2 {
 
 export class StopListeningInQuickChatAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListeningInQuickChat';
+	static readonly ID = 'workbench.action.csChat.stopListeningInQuickChat';
 
 	constructor() {
 		super({
 			id: StopListeningInQuickChatAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListeningInQuickChat.label', "Stop Listening"),
+				value: localize('workbench.action.csChat.stopListeningInQuickChat.label', "Stop Listening"),
 				original: 'Stop Listening'
 			},
 			category: CHAT_CATEGORY,
@@ -621,13 +621,13 @@ export class StopListeningInQuickChatAction extends Action2 {
 
 export class StopListeningInInlineChatAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListeningInInlineChat';
+	static readonly ID = 'workbench.action.csChat.stopListeningInInlineChat';
 
 	constructor() {
 		super({
 			id: StopListeningInInlineChatAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListeningInInlineChat.label', "Stop Listening"),
+				value: localize('workbench.action.csChat.stopListeningInInlineChat.label', "Stop Listening"),
 				original: 'Stop Listening'
 			},
 			category: CHAT_CATEGORY,
@@ -654,13 +654,13 @@ export class StopListeningInInlineChatAction extends Action2 {
 
 export class StopListeningAndSubmitAction extends Action2 {
 
-	static readonly ID = 'workbench.action.chat.stopListeningAndSubmit';
+	static readonly ID = 'workbench.action.csChat.stopListeningAndSubmit';
 
 	constructor() {
 		super({
 			id: StopListeningAndSubmitAction.ID,
 			title: {
-				value: localize('workbench.action.chat.stopListeningAndSubmit.label', "Stop Listening and Submit"),
+				value: localize('workbench.action.csChat.stopListeningAndSubmit.label', "Stop Listening and Submit"),
 				original: 'Stop Listening and Submit'
 			},
 			category: CHAT_CATEGORY,

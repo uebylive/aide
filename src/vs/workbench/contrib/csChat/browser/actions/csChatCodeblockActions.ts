@@ -81,7 +81,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class CopyCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.copyCodeBlock',
+				id: 'workbench.action.csChat.copyCodeBlock',
 				title: {
 					value: localize('interactive.copyCodeBlock.label', "Copy"),
 					original: 'Copy'
@@ -181,7 +181,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class InsertCodeBlockAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertCodeBlock',
+				id: 'workbench.action.csChat.insertCodeBlock',
 				title: {
 					value: localize('interactive.insertCodeBlock.label', "Insert at Cursor"),
 					original: 'Insert at Cursor'
@@ -351,7 +351,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class InsertIntoNewFileAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertIntoNewFile',
+				id: 'workbench.action.csChat.insertIntoNewFile',
 				title: {
 					value: localize('interactive.insertIntoNewFile.label', "Insert Into New File"),
 					original: 'Insert Into New File'
@@ -404,7 +404,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class RunInTerminalAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.runInTerminal',
+				id: 'workbench.action.csChat.runInTerminal',
 				title: {
 					value: localize('interactive.runInTerminal.label', "Run in Terminal"),
 					original: 'Run in Terminal'
@@ -531,7 +531,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class NextCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.nextCodeBlock',
+				id: 'workbench.action.csChat.nextCodeBlock',
 				title: {
 					value: localize('interactive.nextCodeBlock.label', "Next Code Block"),
 					original: 'Next Code Block'
@@ -556,7 +556,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class PreviousCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.previousCodeBlock',
+				id: 'workbench.action.csChat.previousCodeBlock',
 				title: {
 					value: localize('interactive.previousCodeBlock.label', "Previous Code Block"),
 					original: 'Previous Code Block'

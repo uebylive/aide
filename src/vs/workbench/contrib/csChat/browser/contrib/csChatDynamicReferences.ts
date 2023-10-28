@@ -86,7 +86,7 @@ function isSelectAndInsertFileActionContext(context: any): context is SelectAndI
 }
 
 export class SelectAndInsertFileAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.selectAndInsertFile';
+	static readonly ID = 'workbench.action.csChat.selectAndInsertFile';
 
 	constructor() {
 		super({

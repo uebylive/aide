@@ -17,7 +17,7 @@ export function registerChatFileTreeActions() {
 	registerAction2(class NextFileTreeAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.nextFileTree',
+				id: 'workbench.action.csChat.nextFileTree',
 				title: {
 					value: localize('interactive.nextFileTree.label', "Next File Tree"),
 					original: 'Next File Tree'
@@ -41,7 +41,7 @@ export function registerChatFileTreeActions() {
 	registerAction2(class PreviousFileTreeAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.previousFileTree',
+				id: 'workbench.action.csChat.previousFileTree',
 				title: {
 					value: localize('interactive.previousFileTree.label', "Previous File Tree"),
 					original: 'Previous File Tree'

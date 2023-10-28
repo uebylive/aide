@@ -15,7 +15,7 @@ export function registerChatCopyActions() {
 	registerAction2(class CopyAllAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.copyAll',
+				id: 'workbench.action.csChat.copyAll',
 				title: {
 					value: localize('interactive.copyAll.label', "Copy All"),
 					original: 'Copy All'
@@ -48,7 +48,7 @@ export function registerChatCopyActions() {
 	registerAction2(class CopyItemAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.copyItem',
+				id: 'workbench.action.csChat.copyItem',
 				title: {
 					value: localize('interactive.copyItem.label', "Copy"),
 					original: 'Copy'
