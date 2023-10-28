@@ -62,13 +62,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidFocus = this._register(new Emitter<void>());
 	readonly onDidFocus = this._onDidFocus.event;
 
+	private _onDidBlur = this._register(new Emitter<void>());
+	readonly onDidBlur = this._onDidBlur.event;
+
 	private _onDidChangeViewModel = this._register(new Emitter<void>());
 	readonly onDidChangeViewModel = this._onDidChangeViewModel.event;
 
 	private _onDidClear = this._register(new Emitter<void>());
 	readonly onDidClear = this._onDidClear.event;
 
-	private _onDidAcceptInput = this._register(new Emitter<void>());
+	private _onDidAcceptInput = this._register(new Emitter<void | string>());
 	readonly onDidAcceptInput = this._onDidAcceptInput.event;
 
 	private _onDidChangeHeight = this._register(new Emitter<number>());
@@ -186,6 +189,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		this.createList(this.listContainer, { renderStyle });
+
+		if (this.viewOptions.renderOnlyInput) {
+			this.renderer.setVisible(false);
+			this.listContainer.style.display = 'none';
+		}
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
@@ -383,6 +391,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidFocus(() => {
 			this._onDidFocus.fire();
 		}));
+		this._register(this.tree.onDidBlur(() => {
+			this._onDidBlur.fire();
+		}));
 	}
 
 	private onContextMenu(e: ITreeContextMenuEvent<ChatTreeItem | null>): void {
@@ -422,6 +433,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.render(container, '', this);
 
 		this._register(this.inputPart.onDidFocus(() => this._onDidFocus.fire()));
+		this._register(this.inputPart.onDidBlur(() => this._onDidBlur.fire()));
 		this._register(this.inputPart.onDidAcceptFollowup(e => {
 			if (!this.viewModel) {
 				return;
@@ -528,9 +540,13 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<void> {
 		if (this.viewModel) {
-			this._onDidAcceptInput.fire();
-
 			const editorValue = this.getInput();
+			this._onDidAcceptInput.fire(editorValue);
+
+			if (this.viewOptions.renderOnlyInput) {
+				return;
+			}
+
 			this._chatAccessibilityService.acceptRequest();
 			const input = !opts ? editorValue :
 				'query' in opts ? opts.query :

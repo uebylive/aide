@@ -15,6 +15,7 @@ import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as 
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { getClearAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatClearActions';
+import { getHoverActionsForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatHoverActions';
 import { getMoveToEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatQuickInputActions';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
@@ -110,7 +111,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.Sidebar);
+		}, ViewContainerLocation.AuxiliaryBar);
 
 		return viewContainer;
 	}
@@ -141,6 +142,9 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		// "Open Chat" Actions
 		disposables.add(registerAction2(getOpenChatEditorAction(providerDescriptor.id, providerDescriptor.label, providerDescriptor.when)));
 		disposables.add(registerAction2(getQuickChatActionForProvider(providerDescriptor.id, providerDescriptor.label)));
+
+		// Hover Chat Actions
+		getHoverActionsForProvider(providerDescriptor.id, providerDescriptor.label).map(action => disposables.add(registerAction2(action)));
 
 		return {
 			dispose: () => {

@@ -138,7 +138,7 @@ class InputEditorDecorations extends Disposable {
 			const viewModelPlaceholder = this.widget.viewModel?.inputPlaceholder;
 			const defaultPlaceholder = slashCommands?.length ?
 				localize('interactive.input.placeholderWithCommands', "Ask a question or type '@' or '/'") :
-				localize('interactive.input.placeholderNoCommands', "Ask a question");
+				localize('interactive.input.placeholderNoCommands', "Initializing the chat...");
 			const placeholder = viewModelPlaceholder ?? defaultPlaceholder;
 			const decoration: IDecorationOptions[] = [
 				{

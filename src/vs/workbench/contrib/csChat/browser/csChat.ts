@@ -14,6 +14,7 @@ import { Selection } from 'vs/editor/common/core/selection';
 
 export const ICSChatWidgetService = createDecorator<ICSChatWidgetService>('csChatWidgetService');
 export const ICSQuickChatService = createDecorator<ICSQuickChatService>('csQuickChatService');
+export const ICSHoverChatService = createDecorator<ICSHoverChatService>('csHoverChatService');
 export const ICSChatAccessibilityService = createDecorator<ICSChatAccessibilityService>('csChatAccessibilityService');
 
 export interface ICSChatWidgetService {
@@ -44,6 +45,13 @@ export interface ICSQuickChatService {
 	open(providerId?: string, options?: IQuickChatOpenOptions): void;
 	close(): void;
 	openInChatView(): void;
+}
+
+export interface ICSHoverChatService {
+	readonly _serviceBrand: undefined;
+	readonly enabled: boolean;
+	toggle(providerId?: string): void;
+	open(providerId?: string): void;
 }
 
 export interface IQuickChatOpenOptions {
@@ -82,6 +90,7 @@ export interface IChatFileTreeInfo {
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IChatWidgetViewOptions {
+	renderOnlyInput?: boolean;
 	renderInputOnTop?: boolean;
 	renderStyle?: 'default' | 'compact';
 	supportsFileReferences?: boolean;
@@ -99,7 +108,7 @@ export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewCon
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
-	readonly onDidAcceptInput: Event<void>;
+	readonly onDidAcceptInput: Event<void | string>;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;

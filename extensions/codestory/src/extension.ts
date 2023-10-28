@@ -199,7 +199,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(csChatSession);
 	await commands.executeCommand('workbench.action.chat.clear');
-	// await commands.executeCommand('workbench.action.toggleHoverChat.cs-chat');
+	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
 
 	const arcProvider = arc.registerArcProvider('cs-arc', chatProvider);
 	context.subscriptions.push(arcProvider);
