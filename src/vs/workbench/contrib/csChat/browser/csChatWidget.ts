@@ -390,7 +390,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		e.browserEvent.stopPropagation();
 
 		this.contextMenuService.showContextMenu({
-			menuId: MenuId.ChatContext,
+			menuId: MenuId.CSChatContext,
 			menuActionOptions: { shouldForwardArgs: true },
 			contextKeyService: this.contextKeyService,
 			getAnchor: () => e.anchor,

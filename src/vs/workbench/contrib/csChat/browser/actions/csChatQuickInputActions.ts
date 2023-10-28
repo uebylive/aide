@@ -30,7 +30,7 @@ export function registerQuickChatActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.commentDiscussion,
 				menu: {
-					id: MenuId.ChatInputSide,
+					id: MenuId.CSChatInputSide,
 					group: 'navigation',
 					order: 10
 				}
@@ -55,7 +55,7 @@ export function registerQuickChatActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.close,
 				menu: {
-					id: MenuId.ChatInputSide,
+					id: MenuId.CSChatInputSide,
 					group: 'navigation',
 					order: 20
 				}

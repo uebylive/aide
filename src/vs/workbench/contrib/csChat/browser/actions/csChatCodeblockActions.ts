@@ -90,7 +90,7 @@ export function registerChatCodeBlockActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.copy,
 				menu: {
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 				}
 			});
@@ -191,7 +191,7 @@ export function registerChatCodeBlockActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.insert,
 				menu: {
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 					when: CONTEXT_IN_CHAT_SESSION,
 				},
@@ -361,7 +361,7 @@ export function registerChatCodeBlockActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.newFile,
 				menu: {
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 					isHiddenByDefault: true,
 				}
@@ -414,7 +414,7 @@ export function registerChatCodeBlockActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.terminal,
 				menu: [{
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 					when: ContextKeyExpr.and(
 						CONTEXT_IN_CHAT_SESSION,
@@ -422,7 +422,7 @@ export function registerChatCodeBlockActions() {
 					),
 				},
 				{
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 					isHiddenByDefault: true,
 					when: ContextKeyExpr.and(
@@ -431,7 +431,7 @@ export function registerChatCodeBlockActions() {
 					)
 				},
 				{
-					id: MenuId.ChatCodeBlock,
+					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
 					when: CTX_INLINE_CHAT_VISIBLE,
 				}],

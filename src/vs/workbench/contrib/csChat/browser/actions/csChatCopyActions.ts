@@ -23,7 +23,7 @@ export function registerChatCopyActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
-					id: MenuId.ChatContext
+					id: MenuId.CSChatContext
 				}
 			});
 		}
@@ -56,7 +56,7 @@ export function registerChatCopyActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
-					id: MenuId.ChatContext
+					id: MenuId.CSChatContext
 				}
 			});
 		}

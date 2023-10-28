@@ -237,7 +237,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		const contextKeyService = templateDisposables.add(this.contextKeyService.createScoped(rowContainer));
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, contextKeyService]));
-		const titleToolbar = templateDisposables.add(scopedInstantiationService.createInstance(MenuWorkbenchToolBar, header, MenuId.ChatMessageTitle, {
+		const titleToolbar = templateDisposables.add(scopedInstantiationService.createInstance(MenuWorkbenchToolBar, header, MenuId.CSChatMessageTitle, {
 			menuOptions: {
 				shouldForwardArgs: true
 			},
@@ -1009,7 +1009,7 @@ class EditorPool extends Disposable {
 	}
 
 	private editorFactory(): ICodeBlockPart {
-		return this.instantiationService.createInstance(CodeBlockPart, this.options, MenuId.ChatCodeBlock);
+		return this.instantiationService.createInstance(CodeBlockPart, this.options, MenuId.CSChatCodeBlock);
 	}
 
 	get(): IDisposableReference<ICodeBlockPart> {

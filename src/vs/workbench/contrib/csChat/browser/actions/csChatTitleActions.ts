@@ -37,7 +37,7 @@ export function registerChatTitleActions() {
 				icon: Codicon.thumbsup,
 				toggled: CONTEXT_RESPONSE_VOTE.isEqualTo('up'),
 				menu: {
-					id: MenuId.ChatMessageTitle,
+					id: MenuId.CSChatMessageTitle,
 					group: 'navigation',
 					order: 1,
 					when: CONTEXT_RESPONSE
@@ -80,7 +80,7 @@ export function registerChatTitleActions() {
 				icon: Codicon.thumbsdown,
 				toggled: CONTEXT_RESPONSE_VOTE.isEqualTo('down'),
 				menu: {
-					id: MenuId.ChatMessageTitle,
+					id: MenuId.CSChatMessageTitle,
 					group: 'navigation',
 					order: 2,
 					when: CONTEXT_RESPONSE
@@ -122,7 +122,7 @@ export function registerChatTitleActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.insert,
 				menu: {
-					id: MenuId.ChatMessageTitle,
+					id: MenuId.CSChatMessageTitle,
 					group: 'navigation',
 					isHiddenByDefault: true,
 					when: ContextKeyExpr.and(NOTEBOOK_IS_ACTIVE_EDITOR, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED.negate())
@@ -206,7 +206,7 @@ export function registerChatTitleActions() {
 					weight: KeybindingWeight.WorkbenchContrib,
 				},
 				menu: {
-					id: MenuId.ChatMessageTitle,
+					id: MenuId.CSChatMessageTitle,
 					group: 'navigation',
 					order: 2,
 					when: CONTEXT_REQUEST

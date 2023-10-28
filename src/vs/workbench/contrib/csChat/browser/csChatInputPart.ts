@@ -249,7 +249,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this._onDidBlur.fire();
 		}));
 
-		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, inputContainer, MenuId.ChatExecute, {
+		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, inputContainer, MenuId.CSChatExecute, {
 			menuOptions: {
 				shouldForwardArgs: true
 			}
@@ -263,7 +263,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}));
 
 		if (this.options.renderStyle === 'compact') {
-			const toolbarSide = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, inputAndSideToolbar, MenuId.ChatInputSide, {
+			const toolbarSide = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, inputAndSideToolbar, MenuId.CSChatInputSide, {
 				menuOptions: {
 					shouldForwardArgs: true
 				}

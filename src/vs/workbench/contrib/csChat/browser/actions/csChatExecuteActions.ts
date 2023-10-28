@@ -36,7 +36,7 @@ export class SubmitAction extends Action2 {
 			icon: Codicon.send,
 			precondition: CONTEXT_CHAT_INPUT_HAS_TEXT,
 			menu: {
-				id: MenuId.ChatExecute,
+				id: MenuId.CSChatExecute,
 				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
 				group: 'navigation',
 			}
@@ -68,7 +68,7 @@ export function registerChatExecuteActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.debugStop,
 				menu: {
-					id: MenuId.ChatExecute,
+					id: MenuId.CSChatExecute,
 					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
 					group: 'navigation',
 				}

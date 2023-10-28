@@ -455,7 +455,7 @@ export class StartVoiceChatAction extends Action2 {
 			icon: Codicon.mic,
 			precondition: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_GETTING_READY.negate(), CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 			menu: [{
-				id: MenuId.ChatExecute,
+				id: MenuId.CSChatExecute,
 				when: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_IN_VIEW_IN_PROGRESS.negate(), CONTEXT_QUICK_VOICE_CHAT_IN_PROGRESS.negate(), CONTEXT_VOICE_CHAT_IN_EDITOR_IN_PROGRESS.negate()),
 				group: 'navigation',
 				order: -1
@@ -540,7 +540,7 @@ export class StopListeningInChatViewAction extends Action2 {
 			precondition: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_IN_VIEW_IN_PROGRESS),
 			icon: spinningLoading,
 			menu: [{
-				id: MenuId.ChatExecute,
+				id: MenuId.CSChatExecute,
 				when: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_IN_VIEW_IN_PROGRESS),
 				group: 'navigation',
 				order: -1
@@ -573,7 +573,7 @@ export class StopListeningInChatEditorAction extends Action2 {
 			precondition: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_IN_EDITOR_IN_PROGRESS),
 			icon: spinningLoading,
 			menu: [{
-				id: MenuId.ChatExecute,
+				id: MenuId.CSChatExecute,
 				when: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_VOICE_CHAT_IN_EDITOR_IN_PROGRESS),
 				group: 'navigation',
 				order: -1
@@ -606,7 +606,7 @@ export class StopListeningInQuickChatAction extends Action2 {
 			precondition: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_QUICK_VOICE_CHAT_IN_PROGRESS),
 			icon: spinningLoading,
 			menu: [{
-				id: MenuId.ChatExecute,
+				id: MenuId.CSChatExecute,
 				when: ContextKeyExpr.and(HasSpeechProvider, CONTEXT_QUICK_VOICE_CHAT_IN_PROGRESS),
 				group: 'navigation',
 				order: -1
