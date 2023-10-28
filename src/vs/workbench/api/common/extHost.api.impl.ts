@@ -1374,6 +1374,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			// this needs to be updated whenever the API proposal changes
 			_version: 1,
 
+			registerCSChatEditorSessionProvider(provider: vscode.InteractiveEditorSessionProvider, metadata?: vscode.InteractiveEditorSessionProviderMetadata) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostInteractiveEditor.registerProvider(extension, provider, metadata = { label: metadata?.label ?? extension.displayName ?? extension.name });
+			},
 			registerCSChatSessionProvider(id: string, provider: vscode.CSChatSessionProvider) {
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostCSChat.registerChatProvider(extension, id, provider);
