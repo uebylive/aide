@@ -111,6 +111,8 @@ export const reportFromStreamToEditorSessionProgress = async (
 			language,
 			source: cleanedUpAnswer,
 		});
+		console.log('parsedComments');
+		console.log(parsedComments);
 		const textEdits: vscode.TextEdit[] = [];
 		if (parsedComments.documentation.length === 1) {
 			// we can just show this snippet on top of the current expanded
@@ -161,6 +163,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				new vscode.Position(generatedAnswer.document_symbol?.start_position.line ?? 0, 0),
 				new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, generatedAnswer.document_symbol?.end_position.character ?? 0),
 			);
+			const startPositionLine = generatedAnswer.document_symbol?.start_position.line ?? 0;
 			const selectionText = textDocument.getText(selectionTextRange);
 			const selectionTextLines = selectionText.split(/\r\n|\r|\n/g);
 			const originalDocIndentationStyle = IndentationHelper.getDocumentIndentStyle(selectionTextLines, undefined);
@@ -182,6 +185,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				codeBlockReplacementIndentLevel = IndentationHelper.guessIndentLevel(firstLine, codeBlockReplacementIndentStyle);
 			}
 			const newContent = IndentationHelper.changeIndentStyle(codeblockReplacementLines, codeBlockReplacementIndentStyle, originalDocIndentationStyle).join('\n');
+			console.log('newContentPosition', selectionTextRange.start.line, selectionTextRange.start.character, selectionTextRange.end.line, selectionTextRange.end.character);
 			textEdits.push(vscode.TextEdit.replace(selectionTextRange, newContent));
 			// now we have the original doc, indent style and the new text indent style
 			// we want to make sure the generated doc has the same indent level as the original doc
@@ -196,6 +200,8 @@ export const reportFromStreamToEditorSessionProgress = async (
 
 
 export const extractCodeFromDocumentation = (input: string): string | null => {
+	console.log('extracCodeFromDocumentation');
+	console.log(input);
 	const codePattern = /\/\/ FILEPATH:.*?\n([\s\S]+?)```/;
 
 	const match = input.match(codePattern);
