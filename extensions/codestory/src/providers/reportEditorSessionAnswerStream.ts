@@ -54,6 +54,12 @@ export const reportFromStreamToEditorSessionProgress = async (
 		// to stream back to the user whatever steps we get, and when we start
 		// streaming the reply back, that's when we start sending TextEdit updates
 		// to the editor
+		// always send the keep alive message here
+		if (inlineAgentMessage.keep_alive !== null && inlineAgentMessage.keep_alive !== undefined) {
+			// for keep alive we just want to show the response
+			progress.report(CSInteractiveEditorProgressItem.normalMessage(inlineAgentMessage.keep_alive));
+			continue;
+		}
 		const messageState = inlineAgentMessage.message_state;
 		if (messageState === 'Pending') {
 			// have a look at the steps here

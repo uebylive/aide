@@ -254,6 +254,7 @@ export interface InLineAgentMessage {
 	answer: InLineAgentAnswer | null;
 	last_updated: number;
 	created_at: number;
+	keep_alive: string | undefined;
 }
 
 
