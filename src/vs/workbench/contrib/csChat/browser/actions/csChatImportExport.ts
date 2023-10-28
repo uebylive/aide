@@ -11,12 +11,12 @@ import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IFileDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { IFileService } from 'vs/platform/files/common/files';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatEditor';
 import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEditorInput';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { isExportableSessionData } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const defaultFileName = 'chat.json';
@@ -37,10 +37,10 @@ export function registerChatExportActions() {
 			});
 		}
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(ICSChatWidgetService);
 			const fileDialogService = accessor.get(IFileDialogService);
 			const fileService = accessor.get(IFileService);
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 
 			const widget = widgetService.lastFocusedWidget;
 			if (!widget || !widget.viewModel) {

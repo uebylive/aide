@@ -24,7 +24,7 @@ import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IViewState, ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export interface IChatViewOptions {
 	readonly providerId: string;
@@ -59,7 +59,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IChatService private readonly chatService: IChatService,
+		@ICSChatService private readonly chatService: ICSChatService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService);

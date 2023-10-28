@@ -38,9 +38,9 @@ export interface IChatResponseProvider {
 	provideChatResponse(messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
 }
 
-export const IChatProviderService = createDecorator<IChatProviderService>('chatProviderService');
+export const ICSChatProviderService = createDecorator<ICSChatProviderService>('csChatProviderService');
 
-export interface IChatProviderService {
+export interface ICSChatProviderService {
 
 	readonly _serviceBrand: undefined;
 
@@ -49,7 +49,7 @@ export interface IChatProviderService {
 	fetchChatResponse(identifier: string, messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
 }
 
-export class ChatProviderService implements IChatProviderService {
+export class ChatProviderService implements ICSChatProviderService {
 	readonly _serviceBrand: undefined;
 
 	private readonly _providers: Map<string, IChatResponseProvider> = new Map();

@@ -23,15 +23,15 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IViewsService } from 'vs/workbench/common/views';
-import { ChatTreeItem, IChatWidgetViewOptions, IChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetService, IChatWidgetViewContext } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ChatTreeItem, IChatWidgetViewOptions, ICSChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, ICSChatWidgetService, IChatWidgetViewContext } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatAccessibilityProvider, ChatListDelegate, ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/csChat/browser/csChatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatOptions';
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
+import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { IChatReplyFollowup, IChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatReplyFollowup, ICSChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 const $ = dom.$;
@@ -134,10 +134,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		private readonly styles: IChatWidgetStyles,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatWidgetService chatWidgetService: IChatWidgetService,
+		@ICSChatService private readonly chatService: ICSChatService,
+		@ICSChatWidgetService chatWidgetService: ICSChatWidgetService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
-		@IChatAccessibilityService private readonly _chatAccessibilityService: IChatAccessibilityService,
+		@ICSChatAccessibilityService private readonly _chatAccessibilityService: ICSChatAccessibilityService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ILogService private readonly _logService: ILogService,
 	) {
@@ -716,7 +716,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 }
 
-export class ChatWidgetService implements IChatWidgetService {
+export class ChatWidgetService implements ICSChatWidgetService {
 
 	declare readonly _serviceBrand: undefined;
 
@@ -729,7 +729,7 @@ export class ChatWidgetService implements IChatWidgetService {
 
 	constructor(
 		@IViewsService private readonly viewsService: IViewsService,
-		@IChatContributionService private readonly chatContributionService: IChatContributionService,
+		@ICSChatContributionService private readonly chatContributionService: ICSChatContributionService,
 	) { }
 
 	getWidgetByInputUri(uri: URI): ChatWidget | undefined {

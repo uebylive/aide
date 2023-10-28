@@ -16,8 +16,8 @@ import { ContextKeyExpr, IContextKeyService, RawContextKey } from 'vs/platform/c
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { spinningLoading } from 'vs/platform/theme/common/iconRegistry';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidget, IChatWidgetService, IQuickChatService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatWidget, ICSChatWidgetService, ICSQuickChatService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { MENU_INLINE_CHAT_WIDGET } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { InlineChatController } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
@@ -26,7 +26,7 @@ import { getCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { IViewsService } from 'vs/workbench/common/views';
-import { IChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
+import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { isExecuteActionContext } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
@@ -72,12 +72,12 @@ class VoiceChatSessionControllerFactory {
 	static create(accessor: ServicesAccessor, context: 'view'): Promise<IVoiceChatSessionController | undefined>;
 	static create(accessor: ServicesAccessor, context: 'focused'): Promise<IVoiceChatSessionController | undefined>;
 	static async create(accessor: ServicesAccessor, context: 'inline' | 'quick' | 'view' | 'focused'): Promise<IVoiceChatSessionController | undefined> {
-		const chatWidgetService = accessor.get(IChatWidgetService);
-		const chatService = accessor.get(IChatService);
+		const chatWidgetService = accessor.get(ICSChatWidgetService);
+		const chatService = accessor.get(ICSChatService);
 		const viewsService = accessor.get(IViewsService);
-		const chatContributionService = accessor.get(IChatContributionService);
+		const chatContributionService = accessor.get(ICSChatContributionService);
 		const editorService = accessor.get(IEditorService);
-		const quickChatService = accessor.get(IQuickChatService);
+		const quickChatService = accessor.get(ICSQuickChatService);
 		const layoutService = accessor.get(IWorkbenchLayoutService);
 
 		// Currently Focused Context
@@ -150,15 +150,15 @@ class VoiceChatSessionControllerFactory {
 		return undefined;
 	}
 
-	private static doCreateForChatView(chatView: IChatWidget, viewsService: IViewsService, chatContributionService: IChatContributionService): IVoiceChatSessionController {
+	private static doCreateForChatView(chatView: IChatWidget, viewsService: IViewsService, chatContributionService: ICSChatContributionService): IVoiceChatSessionController {
 		return VoiceChatSessionControllerFactory.doCreateForChatViewOrEditor('view', chatView, viewsService, chatContributionService);
 	}
 
-	private static doCreateForChatEditor(chatView: IChatWidget, viewsService: IViewsService, chatContributionService: IChatContributionService): IVoiceChatSessionController {
+	private static doCreateForChatEditor(chatView: IChatWidget, viewsService: IViewsService, chatContributionService: ICSChatContributionService): IVoiceChatSessionController {
 		return VoiceChatSessionControllerFactory.doCreateForChatViewOrEditor('editor', chatView, viewsService, chatContributionService);
 	}
 
-	private static doCreateForChatViewOrEditor(context: 'view' | 'editor', chatView: IChatWidget, viewsService: IViewsService, chatContributionService: IChatContributionService): IVoiceChatSessionController {
+	private static doCreateForChatViewOrEditor(context: 'view' | 'editor', chatView: IChatWidget, viewsService: IViewsService, chatContributionService: ICSChatContributionService): IVoiceChatSessionController {
 		return {
 			context,
 			onDidAcceptInput: chatView.onDidAcceptInput,
@@ -173,7 +173,7 @@ class VoiceChatSessionControllerFactory {
 		};
 	}
 
-	private static doCreateForQuickChat(quickChat: IChatWidget, quickChatService: IQuickChatService): IVoiceChatSessionController {
+	private static doCreateForQuickChat(quickChat: IChatWidget, quickChatService: ICSQuickChatService): IVoiceChatSessionController {
 		return {
 			context: 'quick',
 			onDidAcceptInput: quickChat.onDidAcceptInput,

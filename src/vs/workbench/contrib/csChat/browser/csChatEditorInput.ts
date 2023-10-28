@@ -15,13 +15,13 @@ import { EditorInputCapabilities, IEditorSerializer, IUntypedEditorInput } from 
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import type { IChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatEditor';
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export class ChatEditorInput extends EditorInput {
 	static readonly countsInUse = new Set<number>();
 
-	static readonly TypeID: string = 'workbench.input.chatSession';
-	static readonly EditorID: string = 'workbench.editor.chatSession';
+	static readonly TypeID: string = 'workbench.input.csChatSession';
+	static readonly EditorID: string = 'workbench.editor.csChatSession';
 
 	private readonly inputCount: number;
 	public sessionId: string | undefined;
@@ -46,7 +46,7 @@ export class ChatEditorInput extends EditorInput {
 	constructor(
 		readonly resource: URI,
 		readonly options: IChatEditorOptions,
-		@IChatService private readonly chatService: IChatService
+		@ICSChatService private readonly chatService: ICSChatService
 	) {
 		super();
 
@@ -145,7 +145,7 @@ export class ChatEditorModel extends Disposable implements IEditorModel {
 
 export namespace ChatUri {
 
-	export const scheme = Schemas.vscodeChatSesssion;
+	export const scheme = Schemas.vscodeCSChatSession;
 
 
 	export function generate(handle: number): URI {

@@ -16,14 +16,14 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { IQuickInputService, IQuickWidget } from 'vs/platform/quickinput/common/quickInput';
 import { editorBackground, inputBackground, quickInputBackground, quickInputForeground } from 'vs/platform/theme/common/colorRegistry';
-import { IChatWidgetService, IQuickChatService, IQuickChatOpenOptions } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService, ICSQuickChatService, IQuickChatOpenOptions } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatViewOptions } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import { ChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 
-export class QuickChatService extends Disposable implements IQuickChatService {
+export class QuickChatService extends Disposable implements ICSQuickChatService {
 	readonly _serviceBrand: undefined;
 
 	private readonly _onDidClose = this._register(new Emitter<void>());
@@ -36,7 +36,7 @@ export class QuickChatService extends Disposable implements IQuickChatService {
 
 	constructor(
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
-		@IChatService private readonly chatService: IChatService,
+		@ICSChatService private readonly chatService: ICSChatService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -153,8 +153,8 @@ class QuickChat extends Disposable {
 		private readonly _options: IChatViewOptions,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatWidgetService private readonly _chatWidgetService: IChatWidgetService,
+		@ICSChatService private readonly chatService: ICSChatService,
+		@ICSChatWidgetService private readonly _chatWidgetService: ICSChatWidgetService,
 		@ILayoutService private readonly layoutService: ILayoutService
 	) {
 		super();

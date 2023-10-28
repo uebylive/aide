@@ -18,15 +18,15 @@ import { getClearAction } from 'vs/workbench/contrib/csChat/browser/actions/csCh
 import { getMoveToEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatQuickInputActions';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
-import { IChatContributionService, IChatProviderContribution, IRawChatProviderContribution } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
+import { ICSChatContributionService, IChatProviderContribution, IRawChatProviderContribution } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 
 const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatProviderContribution[]>({
-	extensionPoint: 'interactiveSession',
+	extensionPoint: 'csChatSession',
 	jsonSchema: {
-		description: localize('vscode.extension.contributes.interactiveSession', 'Contributes an Interactive Session provider'),
+		description: localize('vscode.extension.contributes.csChatSession', 'Contributes an CS Chat Session provider'),
 		type: 'array',
 		items: {
 			additionalProperties: false,
@@ -35,19 +35,19 @@ const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensi
 			required: ['id', 'label'],
 			properties: {
 				id: {
-					description: localize('vscode.extension.contributes.interactiveSession.id', "Unique identifier for this Interactive Session provider."),
+					description: localize('vscode.extension.contributes.csChatSession.id', "Unique identifier for this CS Chat Session provider."),
 					type: 'string'
 				},
 				label: {
-					description: localize('vscode.extension.contributes.interactiveSession.label', "Display name for this Interactive Session provider."),
+					description: localize('vscode.extension.contributes.csChatSession.label', "Display name for this CS Chat Session provider."),
 					type: 'string'
 				},
 				icon: {
-					description: localize('vscode.extension.contributes.interactiveSession.icon', "An icon for this Interactive Session provider."),
+					description: localize('vscode.extension.contributes.csChatSession.icon', "An icon for this CS Chat Session provider."),
 					type: 'string'
 				},
 				when: {
-					description: localize('vscode.extension.contributes.interactiveSession.when', "A condition which must be true to enable this Interactive Session provider."),
+					description: localize('vscode.extension.contributes.csChatSession.when', "A condition which must be true to enable this CS Chat Session provider."),
 					type: 'string'
 				},
 			}
@@ -55,7 +55,7 @@ const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensi
 	},
 	activationEventsGenerator: (contributions: IRawChatProviderContribution[], result: { push(item: string): void }) => {
 		for (const contrib of contributions) {
-			result.push(`onInteractiveSession:${contrib.id}`);
+			result.push(`onCSChatSession:${contrib.id}`);
 		}
 	},
 });
@@ -66,7 +66,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _registrationDisposables = new Map<string, IDisposable>();
 
 	constructor(
-		@IChatContributionService readonly _chatContributionService: IChatContributionService
+		@ICSChatContributionService readonly _chatContributionService: ICSChatContributionService
 	) {
 		this._viewContainer = this.registerViewContainer();
 		this.handleAndRegisterChatExtensions();
@@ -156,7 +156,7 @@ const workbenchRegistry = Registry.as<IWorkbenchContributionsRegistry>(Workbench
 workbenchRegistry.registerWorkbenchContribution(ChatExtensionPointHandler, LifecyclePhase.Starting);
 
 
-export class ChatContributionService implements IChatContributionService {
+export class ChatContributionService implements ICSChatContributionService {
 	declare _serviceBrand: undefined;
 
 	private _registeredProviders = new Map<string, IChatProviderContribution>();

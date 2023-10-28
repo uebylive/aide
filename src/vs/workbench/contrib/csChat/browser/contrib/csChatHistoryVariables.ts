@@ -6,16 +6,16 @@
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { IChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 class ChatHistoryVariables extends Disposable {
 	constructor(
-		@IChatVariablesService chatVariablesService: IChatVariablesService,
+		@ICSChatVariablesService chatVariablesService: ICSChatVariablesService,
 	) {
 		super();
 
-		this._register(chatVariablesService.registerVariable({ name: 'response', description: '', canTakeArgument: true, hidden: true }, async (message, arg, model, token) => {
+		this._register(chatVariablesService.registerVariable({ name: 'sessionResponse', description: '', canTakeArgument: true, hidden: true }, async (message, arg, model, token) => {
 			if (!arg) {
 				return undefined;
 			}

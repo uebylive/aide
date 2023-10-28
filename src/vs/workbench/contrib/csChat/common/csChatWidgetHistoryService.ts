@@ -8,8 +8,8 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { Memento } from 'vs/workbench/common/memento';
 
-export const IChatWidgetHistoryService = createDecorator<IChatWidgetHistoryService>('IChatWidgetHistoryService');
-export interface IChatWidgetHistoryService {
+export const ICSChatWidgetHistoryService = createDecorator<ICSChatWidgetHistoryService>('ICSChatWidgetHistoryService');
+export interface ICSChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	readonly onDidClearHistory: Event<void>;
@@ -23,7 +23,7 @@ interface IChatHistory {
 	history: { [providerId: string]: string[] };
 }
 
-export class ChatWidgetHistoryService implements IChatWidgetHistoryService {
+export class ChatWidgetHistoryService implements ICSChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	private memento: Memento;

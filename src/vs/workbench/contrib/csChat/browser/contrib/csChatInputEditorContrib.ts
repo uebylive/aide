@@ -23,16 +23,16 @@ import { inputPlaceholderForeground } from 'vs/platform/theme/common/colorRegist
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
-import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { IChatWidget, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
-import { IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
-import { IChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
@@ -58,7 +58,7 @@ class InputEditorDecorations extends Disposable {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
-		@IChatService private readonly chatService: IChatService,
+		@ICSChatService private readonly chatService: ICSChatService,
 	) {
 		super();
 
@@ -265,7 +265,7 @@ class InputEditorSlashCommandMode extends Disposable {
 
 	constructor(
 		private readonly widget: IChatWidget,
-		@IChatService private readonly chatService: IChatService
+		@ICSChatService private readonly chatService: ICSChatService
 	) {
 		super();
 		this._register(this.chatService.onDidSubmitSlashCommand(e => {
@@ -308,7 +308,7 @@ ChatWidget.CONTRIBS.push(InputEditorDecorations, InputEditorSlashCommandMode);
 class SlashCommandCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -362,8 +362,8 @@ Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).regi
 class AgentCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -509,7 +509,7 @@ class BuiltinDynamicCompletions extends Disposable {
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IProductService private readonly productService: IProductService,
 	) {
@@ -664,8 +664,8 @@ class VariableCompletions extends Disposable {
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
+		@ICSChatVariablesService private readonly chatVariablesService: ICSChatVariablesService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 		super();

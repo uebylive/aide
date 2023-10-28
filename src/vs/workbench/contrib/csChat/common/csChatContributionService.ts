@@ -13,8 +13,8 @@ export interface IChatProviderContribution {
 	when?: string;
 }
 
-export const IChatContributionService = createDecorator<IChatContributionService>('IChatContributionService');
-export interface IChatContributionService {
+export const ICSChatContributionService = createDecorator<ICSChatContributionService>('ICSChatContributionService');
+export interface ICSChatContributionService {
 	_serviceBrand: undefined;
 
 	registeredProviders: IChatProviderContribution[];

@@ -22,17 +22,17 @@ import { registerChatExecuteActions } from 'vs/workbench/contrib/csChat/browser/
 import { registerQuickChatActions } from 'vs/workbench/contrib/csChat/browser/actions/csChatQuickInputActions';
 import { registerChatTitleActions } from 'vs/workbench/contrib/csChat/browser/actions/csChatTitleActions';
 import { registerChatExportActions } from 'vs/workbench/contrib/csChat/browser/actions/csChatImportExport';
-import { IChatAccessibilityService, IChatWidget, IChatWidgetService, IQuickChatService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatAccessibilityService, IChatWidget, ICSChatWidgetService, ICSQuickChatService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatContributionService } from 'vs/workbench/contrib/csChat/browser/csChatContributionServiceImpl';
 import { ChatEditor, IChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatEditor';
 import { ChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/csChat/browser/csChatEditorInput';
 import { ChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatInputEditorContrib';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatHistoryVariables';
-import { IChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ChatService } from 'vs/workbench/contrib/csChat/common/csChatServiceImpl';
-import { ChatWidgetHistoryService, IChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
+import { ChatWidgetHistoryService, ICSChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
 import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import '../common/csChatColors';
@@ -46,15 +46,15 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { AccessibilityVerbositySettingId, AccessibleViewProviderId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { ChatWelcomeMessageModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { ChatProviderService, IChatProviderService } from 'vs/workbench/contrib/csChat/common/csChatProvider';
-import { ChatSlashCommandService, IChatSlashCommandService } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
+import { ChatProviderService, ICSChatProviderService } from 'vs/workbench/contrib/csChat/common/csChatProvider';
+import { ChatSlashCommandService, ICSChatSlashCommandService } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
 import { alertFocusChange } from 'vs/workbench/contrib/accessibility/browser/accessibilityContributions';
 import { AccessibleViewAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
-import { IChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { registerChatFileTreeActions } from 'vs/workbench/contrib/csChat/browser/actions/csChatFileTreeActions';
 import { QuickChatService } from 'vs/workbench/contrib/csChat/browser/csChatQuick';
-import { ChatAgentService, IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ChatAgentService, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatVariablesService } from 'vs/workbench/contrib/csChat/browser/csChatVariables';
 
 // Register configuration
@@ -98,7 +98,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		ChatEditor,
 		ChatEditorInput.EditorID,
-		nls.localize('chat', "Chat")
+		nls.localize('aide', "Aide")
 	),
 	[
 		new SyncDescriptor(ChatEditorInput)
@@ -113,15 +113,15 @@ class ChatResolverContribution extends Disposable {
 		super();
 
 		this._register(editorResolverService.registerEditor(
-			`${Schemas.vscodeChatSesssion}:**/**`,
+			`${Schemas.vscodeCSChatSession}:**/**`,
 			{
 				id: ChatEditorInput.EditorID,
-				label: nls.localize('chat', "Chat"),
+				label: nls.localize('aide', "Aide"),
 				priority: RegisteredEditorPriority.builtin
 			},
 			{
 				singlePerResource: true,
-				canSupportResource: resource => resource.scheme === Schemas.vscodeChatSesssion
+				canSupportResource: resource => resource.scheme === Schemas.vscodeCSChatSession
 			},
 			{
 				createEditorInput: ({ resource, options }) => {
@@ -138,10 +138,10 @@ class ChatAccessibleViewContribution extends Disposable {
 		super();
 		this._register(AccessibleViewAction.addImplementation(100, 'panelChat', accessor => {
 			const accessibleViewService = accessor.get(IAccessibleViewService);
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(ICSChatWidgetService);
 			const codeEditorService = accessor.get(ICodeEditorService);
 			return renderAccessibleView(accessibleViewService, widgetService, codeEditorService, true);
-			function renderAccessibleView(accessibleViewService: IAccessibleViewService, widgetService: IChatWidgetService, codeEditorService: ICodeEditorService, initialRender?: boolean): boolean {
+			function renderAccessibleView(accessibleViewService: IAccessibleViewService, widgetService: ICSChatWidgetService, codeEditorService: ICodeEditorService, initialRender?: boolean): boolean {
 				const widget = widgetService.lastFocusedWidget;
 				if (!widget) {
 					return false;
@@ -216,12 +216,12 @@ class ChatAccessibleViewContribution extends Disposable {
 class ChatSlashStaticSlashCommandsContribution extends Disposable {
 
 	constructor(
-		@IChatSlashCommandService slashCommandService: IChatSlashCommandService,
+		@ICSChatSlashCommandService slashCommandService: ICSChatSlashCommandService,
 		@ICommandService commandService: ICommandService,
 	) {
 		super();
 		this._store.add(slashCommandService.registerSlashCommand({
-			command: 'clear',
+			command: 'clearSession',
 			detail: nls.localize('clear', "Clear the session"),
 			sortText: 'z_clear',
 			executeImmediately: true
@@ -248,13 +248,13 @@ registerChatExportActions();
 registerMoveActions();
 registerClearActions();
 
-registerSingleton(IChatService, ChatService, InstantiationType.Delayed);
-registerSingleton(IChatContributionService, ChatContributionService, InstantiationType.Delayed);
-registerSingleton(IChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
-registerSingleton(IQuickChatService, QuickChatService, InstantiationType.Delayed);
-registerSingleton(IChatAccessibilityService, ChatAccessibilityService, InstantiationType.Delayed);
-registerSingleton(IChatWidgetHistoryService, ChatWidgetHistoryService, InstantiationType.Delayed);
-registerSingleton(IChatProviderService, ChatProviderService, InstantiationType.Delayed);
-registerSingleton(IChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
-registerSingleton(IChatAgentService, ChatAgentService, InstantiationType.Delayed);
-registerSingleton(IChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
+registerSingleton(ICSChatService, ChatService, InstantiationType.Delayed);
+registerSingleton(ICSChatContributionService, ChatContributionService, InstantiationType.Delayed);
+registerSingleton(ICSChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
+registerSingleton(ICSQuickChatService, QuickChatService, InstantiationType.Delayed);
+registerSingleton(ICSChatAccessibilityService, ChatAccessibilityService, InstantiationType.Delayed);
+registerSingleton(ICSChatWidgetHistoryService, ChatWidgetHistoryService, InstantiationType.Delayed);
+registerSingleton(ICSChatProviderService, ChatProviderService, InstantiationType.Delayed);
+registerSingleton(ICSChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
+registerSingleton(ICSChatAgentService, ChatAgentService, InstantiationType.Delayed);
+registerSingleton(ICSChatVariablesService, ChatVariablesService, InstantiationType.Delayed);

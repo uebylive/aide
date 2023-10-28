@@ -15,7 +15,7 @@ import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { clearChatEditor } from 'vs/workbench/contrib/csChat/browser/actions/csChatClear';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
@@ -75,7 +75,7 @@ export function registerClearActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			announceChatCleared(accessor);
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(ICSChatWidgetService);
 
 			const widget = widgetService.lastFocusedWidget;
 			if (!widget) {

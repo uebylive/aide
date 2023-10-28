@@ -14,9 +14,9 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ResourceNotebookCellEdit } from 'vs/workbench/contrib/bulkEdit/browser/bulkCellEdits';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatService, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -51,7 +51,7 @@ export function registerChatTitleActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			chatService.notifyUserAction({
 				providerId: item.providerId,
 				agentId: item.agent?.id,
@@ -94,7 +94,7 @@ export function registerChatTitleActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			chatService.notifyUserAction({
 				providerId: item.providerId,
 				agentId: item.agent?.id,
@@ -217,7 +217,7 @@ export function registerChatTitleActions() {
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			let item = args[0];
 			if (!isRequestVM(item)) {
-				const chatWidgetService = accessor.get(IChatWidgetService);
+				const chatWidgetService = accessor.get(ICSChatWidgetService);
 				const widget = chatWidgetService.lastFocusedWidget;
 				item = widget?.getFocus();
 			}
@@ -226,7 +226,7 @@ export function registerChatTitleActions() {
 				isResponseVM(item) ? item.providerResponseId : undefined;
 
 			if (providerRequestId) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(ICSChatService);
 				chatService.removeRequest(item.sessionId, providerRequestId);
 			}
 		}

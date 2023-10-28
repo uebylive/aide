@@ -7,12 +7,12 @@ import { status } from 'vs/base/browser/ui/aria/aria';
 import { RunOnceScheduler } from 'vs/base/common/async';
 import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
 import { AudioCue, IAudioCueService } from 'vs/platform/audioCues/browser/audioCueService';
-import { IChatAccessibilityService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatAccessibilityService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 const CHAT_RESPONSE_PENDING_AUDIO_CUE_LOOP_MS = 5000;
 const CHAT_RESPONSE_PENDING_ALLOWANCE_MS = 4000;
-export class ChatAccessibilityService extends Disposable implements IChatAccessibilityService {
+export class ChatAccessibilityService extends Disposable implements ICSChatAccessibilityService {
 
 	declare readonly _serviceBrand: undefined;
 

@@ -7,24 +7,24 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { onUnexpectedExternalError } from 'vs/base/common/errors';
 import { Iterable } from 'vs/base/common/iterator';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatDynamicReferenceModel } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest, ChatRequestVariablePart, ChatRequestDynamicReferencePart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolveResult, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolveResult, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 interface IChatData {
 	data: IChatVariableData;
 	resolver: IChatVariableResolver;
 }
 
-export class ChatVariablesService implements IChatVariablesService {
+export class ChatVariablesService implements ICSChatVariablesService {
 	declare _serviceBrand: undefined;
 
 	private _resolver = new Map<string, IChatData>();
 
 	constructor(
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService
 	) {
 	}
 

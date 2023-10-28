@@ -11,13 +11,13 @@ import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { IViewsService } from 'vs/workbench/common/views';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatEditor';
 import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -60,7 +60,7 @@ export function getMoveToEditorAction(viewId: string, providerId: string) {
 async function moveToSidebar(accessor: ServicesAccessor): Promise<void> {
 	const viewsService = accessor.get(IViewsService);
 	const editorService = accessor.get(IEditorService);
-	const chatContribService = accessor.get(IChatContributionService);
+	const chatContribService = accessor.get(ICSChatContributionService);
 	const editorGroupService = accessor.get(IEditorGroupsService);
 
 	const chatEditorInput = editorService.activeEditor;
@@ -70,7 +70,7 @@ async function moveToSidebar(accessor: ServicesAccessor): Promise<void> {
 		const view = await viewsService.openView(viewId) as ChatViewPane;
 		view.loadSession(chatEditorInput.sessionId);
 	} else {
-		const chatService = accessor.get(IChatService);
+		const chatService = accessor.get(ICSChatService);
 		const providerId = chatService.getProviderInfos()[0].id;
 		const viewId = chatContribService.getViewIdForProvider(providerId);
 		await viewsService.openView(viewId);
@@ -93,10 +93,10 @@ export function registerMoveActions() {
 		}
 
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(ICSChatWidgetService);
 			const viewService = accessor.get(IViewsService);
 			const editorService = accessor.get(IEditorService);
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 
 			const widget = widgetService.lastFocusedWidget;
 			if (!widget || !('viewId' in widget.viewContext)) {

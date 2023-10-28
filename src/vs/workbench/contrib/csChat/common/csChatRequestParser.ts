@@ -7,10 +7,10 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatVariablesService, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatVariablesService, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 const agentReg = /^@([\w_\-]+)(?=(\s|$|\b))/i; // An @-agent
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
@@ -19,9 +19,9 @@ const variableWithArgReg = /\#([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A varia
 
 export class ChatRequestParser {
 	constructor(
-		@IChatAgentService private readonly agentService: IChatAgentService,
-		@IChatVariablesService private readonly variableService: IChatVariablesService,
-		@IChatService private readonly chatService: IChatService,
+		@ICSChatAgentService private readonly agentService: ICSChatAgentService,
+		@ICSChatVariablesService private readonly variableService: ICSChatVariablesService,
+		@ICSChatService private readonly chatService: ICSChatService,
 	) { }
 
 	async parseChatRequest(sessionId: string, message: string): Promise<IParsedChatRequest> {

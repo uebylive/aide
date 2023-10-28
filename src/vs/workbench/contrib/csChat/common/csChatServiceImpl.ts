@@ -21,15 +21,15 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IChatAgentCommand, IChatAgentData, IChatAgentRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData, isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
-import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, IChatService, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
-import { IChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, ICSChatService, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
+import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'interactive.sessions';
@@ -129,7 +129,7 @@ type ChatTerminalClassification = {
 
 const maxPersistedSessions = 25;
 
-export class ChatService extends Disposable implements IChatService {
+export class ChatService extends Disposable implements ICSChatService {
 	declare _serviceBrand: undefined;
 
 	private readonly _providers = new Map<string, IChatProvider>();
@@ -164,9 +164,9 @@ export class ChatService extends Disposable implements IChatService {
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
-		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService
+		@ICSChatSlashCommandService private readonly chatSlashCommandService: ICSChatSlashCommandService,
+		@ICSChatVariablesService private readonly chatVariablesService: ICSChatVariablesService,
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService
 	) {
 		super();
 

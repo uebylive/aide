@@ -12,11 +12,11 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { IChatWidgetContrib } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import { Selection } from 'vs/editor/common/core/selection';
 
-export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
-export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');
-export const IChatAccessibilityService = createDecorator<IChatAccessibilityService>('chatAccessibilityService');
+export const ICSChatWidgetService = createDecorator<ICSChatWidgetService>('csChatWidgetService');
+export const ICSQuickChatService = createDecorator<ICSQuickChatService>('csQuickChatService');
+export const ICSChatAccessibilityService = createDecorator<ICSChatAccessibilityService>('csChatAccessibilityService');
 
-export interface IChatWidgetService {
+export interface ICSChatWidgetService {
 
 	readonly _serviceBrand: undefined;
 
@@ -35,7 +35,7 @@ export interface IChatWidgetService {
 	getWidgetBySessionId(sessionId: string): IChatWidget | undefined;
 }
 
-export interface IQuickChatService {
+export interface ICSQuickChatService {
 	readonly _serviceBrand: undefined;
 	readonly onDidClose: Event<void>;
 	readonly enabled: boolean;
@@ -61,7 +61,7 @@ export interface IQuickChatOpenOptions {
 	selection?: Selection;
 }
 
-export interface IChatAccessibilityService {
+export interface ICSChatAccessibilityService {
 	readonly _serviceBrand: undefined;
 	acceptRequest(): void;
 	acceptResponse(response?: IChatResponseViewModel | string): void;

@@ -14,7 +14,7 @@ import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IChat, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/csChat/common/csChatService';
 
@@ -549,7 +549,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		public readonly providerId: string,
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		@ILogService private readonly logService: ILogService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService,
 	) {
 		super();
 

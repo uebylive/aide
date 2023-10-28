@@ -26,10 +26,10 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatCopyAction, IChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatCopyAction, ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
@@ -106,7 +106,7 @@ export function registerChatCodeBlockActions() {
 			clipboardService.writeText(context.code);
 
 			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(ICSChatService);
 				chatService.notifyUserAction({
 					providerId: context.element.providerId,
 					agentId: context.element.agent?.id,
@@ -151,7 +151,7 @@ export function registerChatCodeBlockActions() {
 
 		// Report copy to extensions
 		if (context.element.providerResponseId) {
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			chatService.notifyUserAction({
 				providerId: context.element.providerId,
 				agentId: context.element.agent?.id,
@@ -330,7 +330,7 @@ export function registerChatCodeBlockActions() {
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
 			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(ICSChatService);
 				chatService.notifyUserAction({
 					providerId: context.element.providerId,
 					agentId: context.element.agent?.id,
@@ -375,7 +375,7 @@ export function registerChatCodeBlockActions() {
 			}
 
 			const editorService = accessor.get(IEditorService);
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 
 			editorService.openEditor(<IUntitledTextResourceEditorInput>{ contents: context.code, languageId: context.languageId, resource: undefined });
 
@@ -458,7 +458,7 @@ export function registerChatCodeBlockActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			const terminalService = accessor.get(ITerminalService);
 			const editorService = accessor.get(IEditorService);
 			const terminalEditorService = accessor.get(ITerminalEditorService);
@@ -500,7 +500,7 @@ export function registerChatCodeBlockActions() {
 
 	function navigateCodeBlocks(accessor: ServicesAccessor, reverse?: boolean): void {
 		const codeEditorService = accessor.get(ICodeEditorService);
-		const chatWidgetService = accessor.get(IChatWidgetService);
+		const chatWidgetService = accessor.get(ICSChatWidgetService);
 		const widget = chatWidgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
@@ -580,7 +580,7 @@ export function registerChatCodeBlockActions() {
 }
 
 function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): IChatCodeBlockActionContext | undefined {
-	const chatWidgetService = accessor.get(IChatWidgetService);
+	const chatWidgetService = accessor.get(ICSChatWidgetService);
 	const model = editor.getModel();
 	if (!model) {
 		return;

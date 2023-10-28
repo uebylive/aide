@@ -10,7 +10,7 @@ import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/act
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export interface IChatExecuteActionContext {
 	widget: IChatWidget;
@@ -81,7 +81,7 @@ export function registerChatExecuteActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			if (context.widget.viewModel) {
 				chatService.cancelCurrentRequestForSession(context.widget.viewModel.sessionId);
 			}

@@ -8,7 +8,7 @@ import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 export function registerChatCopyActions() {
@@ -30,7 +30,7 @@ export function registerChatCopyActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const clipboardService = accessor.get(IClipboardService);
-			const chatWidgetService = accessor.get(IChatWidgetService);
+			const chatWidgetService = accessor.get(ICSChatWidgetService);
 			const widget = chatWidgetService.lastFocusedWidget;
 			if (widget) {
 				const viewModel = widget.viewModel;

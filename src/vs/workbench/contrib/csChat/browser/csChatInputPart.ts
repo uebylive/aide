@@ -29,7 +29,7 @@ import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
+import { ICSChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 import { isMacintosh } from 'vs/base/common/platform';
@@ -87,7 +87,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	constructor(
 		// private readonly editorOptions: ChatEditorOptions, // TODO this should be used
 		private readonly options: { renderFollowups: boolean; renderStyle?: 'default' | 'compact' },
-		@IChatWidgetHistoryService private readonly historyService: IChatWidgetHistoryService,
+		@ICSChatWidgetHistoryService private readonly historyService: ICSChatWidgetHistoryService,
 		@IModelService private readonly modelService: IModelService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,

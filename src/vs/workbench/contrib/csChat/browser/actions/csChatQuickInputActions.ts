@@ -11,7 +11,7 @@ import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/act
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IQuickChatService, IQuickChatOpenOptions } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSQuickChatService, IQuickChatOpenOptions } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 
 export const ASK_QUICK_QUESTION_ACTION_ID = 'workbench.action.quickchat.toggle';
@@ -38,7 +38,7 @@ export function registerQuickChatActions() {
 		}
 
 		run(accessor: ServicesAccessor) {
-			const quickChatService = accessor.get(IQuickChatService);
+			const quickChatService = accessor.get(ICSQuickChatService);
 			quickChatService.openInChatView();
 		}
 	});
@@ -63,7 +63,7 @@ export function registerQuickChatActions() {
 		}
 
 		run(accessor: ServicesAccessor) {
-			const quickChatService = accessor.get(IQuickChatService);
+			const quickChatService = accessor.get(ICSQuickChatService);
 			quickChatService.close();
 		}
 	});
@@ -117,7 +117,7 @@ class QuickChatGlobalAction extends Action2 {
 	}
 
 	override run(accessor: ServicesAccessor, query?: string | Omit<IQuickChatOpenOptions, 'selection'>): void {
-		const quickChatService = accessor.get(IQuickChatService);
+		const quickChatService = accessor.get(ICSQuickChatService);
 		let options: IQuickChatOpenOptions | undefined;
 		switch (typeof query) {
 			case 'string': options = { query }; break;
@@ -150,7 +150,7 @@ export function getQuickChatActionForProvider(id: string, label: string) {
 		}
 
 		override run(accessor: ServicesAccessor, query?: string): void {
-			const quickChatService = accessor.get(IQuickChatService);
+			const quickChatService = accessor.get(ICSQuickChatService);
 			quickChatService.toggle(id, query ? { query } : undefined);
 		}
 	};

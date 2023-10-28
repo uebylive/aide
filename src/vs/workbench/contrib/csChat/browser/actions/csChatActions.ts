@@ -19,18 +19,18 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { IQuickInputService, IQuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { runAccessibilityHelpAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatAccessibilityHelp';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatEditor';
 import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS, CONTEXT_REQUEST, CONTEXT_RESPONSE } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatDetail, IChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
+import { IChatDetail, ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
-import { IChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatAgentLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 
 export const CHAT_CATEGORY = { value: localize('chat.category', "Chat"), original: 'Chat' };
@@ -56,8 +56,8 @@ class QuickChatGlobalAction extends Action2 {
 	}
 
 	override async run(accessor: ServicesAccessor, query?: string): Promise<void> {
-		const chatService = accessor.get(IChatService);
-		const chatWidgetService = accessor.get(IChatWidgetService);
+		const chatService = accessor.get(ICSChatService);
+		const chatWidgetService = accessor.get(ICSChatWidgetService);
 		const providers = chatService.getProviderInfos();
 		if (!providers.length) {
 			return;
@@ -78,7 +78,7 @@ export function registerChatActions() {
 	registerEditorAction(class ChatAcceptInput extends EditorAction {
 		constructor() {
 			super({
-				id: 'chat.action.acceptInput',
+				id: 'csChat.action.acceptInput',
 				label: localize({ key: 'actions.chat.acceptInput', comment: ['Apply input from the chat input box'] }, "Accept Chat Input"),
 				alias: 'Accept Chat Input',
 				precondition: CONTEXT_IN_CHAT_INPUT,
@@ -93,7 +93,7 @@ export function registerChatActions() {
 		run(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
 			const editorUri = editor.getModel()?.uri;
 			if (editorUri) {
-				const widgetService = accessor.get(IChatWidgetService);
+				const widgetService = accessor.get(ICSChatWidgetService);
 				widgetService.getWidgetByInputUri(editorUri)?.acceptInput();
 			}
 		}
@@ -102,7 +102,7 @@ export function registerChatActions() {
 	registerEditorAction(class ChatSubmitSecondaryAgent extends EditorAction {
 		constructor() {
 			super({
-				id: 'chat.action.submitSecondaryAgent',
+				id: 'csChat.action.submitSecondaryAgent',
 				label: localize({ key: 'actions.chat.submitSecondaryAgent', comment: ['Send input from the chat input box to the secondary agent'] }, "Submit to Secondary Agent"),
 				alias: 'Submit to Secondary Agent',
 				precondition: CONTEXT_IN_CHAT_INPUT,
@@ -117,13 +117,13 @@ export function registerChatActions() {
 		run(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
 			const editorUri = editor.getModel()?.uri;
 			if (editorUri) {
-				const agentService = accessor.get(IChatAgentService);
+				const agentService = accessor.get(ICSChatAgentService);
 				const secondaryAgent = agentService.getSecondaryAgent();
 				if (!secondaryAgent) {
 					return;
 				}
 
-				const widgetService = accessor.get(IChatWidgetService);
+				const widgetService = accessor.get(ICSChatWidgetService);
 				widgetService.getWidgetByInputUri(editorUri)?.acceptInputWithPrefix(`${chatAgentLeader}${secondaryAgent.id}`);
 			}
 		}
@@ -143,7 +143,7 @@ export function registerChatActions() {
 			});
 		}
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			const historyService = accessor.get(IChatWidgetHistoryService);
+			const historyService = accessor.get(ICSChatWidgetHistoryService);
 			historyService.clearHistory();
 		}
 	});
@@ -166,7 +166,7 @@ export function registerChatActions() {
 		runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
 			const editorUri = editor.getModel()?.uri;
 			if (editorUri) {
-				const widgetService = accessor.get(IChatWidgetService);
+				const widgetService = accessor.get(ICSChatWidgetService);
 				widgetService.getWidgetByInputUri(editorUri)?.focusLastMessage();
 			}
 		}
@@ -203,7 +203,7 @@ export function registerChatActions() {
 			});
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(ICSChatWidgetService);
 			widgetService.lastFocusedWidget?.focusInput();
 		}
 	});
@@ -254,7 +254,7 @@ export function getHistoryAction(viewId: string, providerId: string) {
 		}
 
 		async runInView(accessor: ServicesAccessor, view: ChatViewPane) {
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(ICSChatService);
 			const quickInputService = accessor.get(IQuickInputService);
 			const editorService = accessor.get(IEditorService);
 			const items = chatService.getHistory();

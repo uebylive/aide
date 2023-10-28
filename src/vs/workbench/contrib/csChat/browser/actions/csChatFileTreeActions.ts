@@ -9,7 +9,7 @@ import { localize } from 'vs/nls';
 import { registerAction2, Action2 } from 'vs/platform/actions/common/actions';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { isResponseVM, IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
@@ -64,7 +64,7 @@ export function registerChatFileTreeActions() {
 }
 
 function navigateTrees(accessor: ServicesAccessor, reverse: boolean) {
-	const chatWidgetService = accessor.get(IChatWidgetService);
+	const chatWidgetService = accessor.get(ICSChatWidgetService);
 	const widget = chatWidgetService.lastFocusedWidget;
 	if (!widget) {
 		return;

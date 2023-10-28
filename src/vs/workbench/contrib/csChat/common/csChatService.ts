@@ -265,9 +265,9 @@ export interface IChatTransferredSessionData {
 	inputValue: string;
 }
 
-export const IChatService = createDecorator<IChatService>('IChatService');
+export const ICSChatService = createDecorator<ICSChatService>('ICSChatService');
 
-export interface IChatService {
+export interface ICSChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
 
