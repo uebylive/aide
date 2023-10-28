@@ -84,8 +84,6 @@ export const reportFromStreamToSearchProgress = async (
 	}
 	const firstPartOfMessage = async () => {
 		const firstPart = await stream.next();
-		console.log('[search][stream] whats the first part here');
-		console.log(firstPart);
 		if (firstPart.done) {
 			return new CSChatProgressContent(''); // Handle when iterator is done
 		}

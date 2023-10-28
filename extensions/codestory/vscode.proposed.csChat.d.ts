@@ -20,6 +20,7 @@ declare module 'vscode' {
 	// todo@API make classes
 	export interface CSChatEditorSession {
 		placeholder?: string;
+		input?: string;
 		slashCommands?: CSChatEditorSlashCommand[];
 		wholeRange?: Range;
 		message?: string;
@@ -27,9 +28,7 @@ declare module 'vscode' {
 
 	// todo@API make classes
 	export interface CSChatEditorRequest {
-		session: CSChatEditorSession;
 		prompt: string;
-
 		selection: Selection;
 		wholeRange: Range;
 		attempt: number;
@@ -50,6 +49,14 @@ declare module 'vscode' {
 		wholeRange?: Range;
 	}
 
+	export interface CSChatEditorProgressItem {
+		message?: string;
+		edits?: TextEdit[];
+		editsShouldBeInstant?: boolean;
+		slashCommand?: CSChatEditorSlashCommand;
+		content?: string | MarkdownString;
+	}
+
 	export enum CSChatEditorResponseFeedbackKind {
 		Unhelpful = 0,
 		Helpful = 1,
@@ -63,19 +70,17 @@ declare module 'vscode' {
 		action?: string;
 	}
 
-	export interface CSChatEditorSessionProvider<S extends CSChatEditorSession = CSChatEditorSession, R extends CSChatEditorResponse | CSChatEditorMessageResponse = CSChatEditorResponse | CSChatEditorMessageResponse> {
+	export interface CSChatEditorSessionProviderMetadata {
 		label: string;
+	}
+
+	export interface CSChatEditorSessionProvider<S extends CSChatEditorSession = CSChatEditorSession, R extends CSChatEditorResponse | CSChatEditorMessageResponse = CSChatEditorResponse | CSChatEditorMessageResponse> {
 
 		// Create a session. The lifetime of this session is the duration of the editing session with the input mode widget.
 		prepareCSChatEditorSession(context: TextDocumentContext, token: CancellationToken): ProviderResult<S>;
 
-		provideCSChatEditorResponse(request: CSChatEditorRequest, token: CancellationToken): ProviderResult<R>;
-		provideCSChatEditorResponse2?(request: CSChatEditorRequest, progress: Progress<{ message: string; edits: TextEdit[] }>, token: CancellationToken): ProviderResult<R>;
+		provideCSChatEditorResponse(session: S, request: CSChatEditorRequest, progress: Progress<CSChatEditorProgressItem>, token: CancellationToken): ProviderResult<R>;
 
-		// eslint-disable-next-line local/vscode-dts-provider-naming
-		releaseCSChatEditorSession?(session: S): any;
-
-		// todo@API use enum instead of boolean
 		// eslint-disable-next-line local/vscode-dts-provider-naming
 		handleCSChatEditorResponseFeedback?(session: S, response: R, kind: CSChatEditorResponseFeedbackKind): void;
 	}
@@ -120,7 +125,7 @@ declare module 'vscode' {
 
 	export interface CSChatRequest {
 		session: CSChatSession;
-		message: string | CSChatSessionReplyFollowup;
+		message: string;
 		userProvidedContext: InteractiveProvidedContext | undefined;
 	}
 
@@ -132,6 +137,15 @@ declare module 'vscode' {
 
 	export interface CSChatResponseForProgress {
 		errorDetails?: CSChatResponseErrorDetails;
+	}
+
+	export interface CSChatContentReference {
+		reference: Uri | Location;
+	}
+
+	export interface CSChatInlineContentReference {
+		inlineReference: Uri | Location;
+		title?: string; // eg symbol name
 	}
 
 	export interface CSChatProgressContent {
@@ -157,7 +171,24 @@ declare module 'vscode' {
 		treeData: FileTreeData;
 	}
 
-	export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
+	export interface DocumentContext {
+		uri: Uri;
+		version: number;
+		ranges: Range[];
+	}
+
+	export interface CSChatProgressUsedContext {
+		documents: DocumentContext[];
+	}
+
+	export type CSChatProgress =
+		| CSChatProgressContent
+		| CSChatProgressId
+		| CSChatProgressTask
+		| CSChatProgressFileTree
+		| CSChatProgressUsedContext
+		| CSChatContentReference
+		| CSChatInlineContentReference;
 
 	export interface CSChatResponseCommand {
 		commandId: string;
@@ -187,15 +218,15 @@ declare module 'vscode' {
 
 	export type CSChatSessionFollowup = CSChatSessionReplyFollowup | CSChatResponseCommand;
 
-	export type CSChatWelcomeMessageContent = string | CSChatSessionReplyFollowup[];
+	export type CSChatWelcomeMessageContent = string | MarkdownString | CSChatSessionReplyFollowup[];
 
 	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession> {
 		provideWelcomeMessage?(token: CancellationToken): ProviderResult<CSChatWelcomeMessageContent[]>;
+		provideSampleQuestions?(token: CancellationToken): ProviderResult<CSChatSessionReplyFollowup[]>;
 		provideFollowups?(session: S, token: CancellationToken): ProviderResult<(string | CSChatSessionFollowup)[]>;
 		provideSlashCommands?(session: S, token: CancellationToken): ProviderResult<CSChatSessionSlashCommand[]>;
 
 		prepareSession(initialState: CSChatSessionState | undefined, token: CancellationToken): ProviderResult<S>;
-		resolveRequest(session: S, context: CSChatSessionRequestArgs | string, token: CancellationToken): ProviderResult<CSChatRequest>;
 		provideResponseWithProgress(request: CSChatRequest, progress: Progress<CSChatProgress>, token: CancellationToken): ProviderResult<CSChatResponseForProgress>;
 
 		// eslint-disable-next-line local/vscode-dts-provider-naming
@@ -220,11 +251,10 @@ declare module 'vscode' {
 		export const _version: 1 | number;
 
 		export function registerCSChatSessionProvider(id: string, provider: CSChatSessionProvider): Disposable;
-		// export function addCSChatRequest(context: CSChatSessionRequestArgs): void;
 
 		export function sendCSChatRequestToProvider(providerId: string, message: CSChatSessionDynamicRequest): void;
 
-		// export function registerCSChatEditorSessionProvider(provider: CSChatEditorSessionProvider): Disposable;
+		export function registerCSChatEditorSessionProvider(provider: CSChatEditorSessionProvider, metadata?: CSChatEditorSessionProviderMetadata): Disposable;
 
 		export function transferChatSession(session: CSChatSession, toWorkspace: Uri): void;
 	}

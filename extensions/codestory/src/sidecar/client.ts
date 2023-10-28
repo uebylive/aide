@@ -7,13 +7,13 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, RepoStatus, SemanticSearchResponse } from './types';
+import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, RepoStatus, SemanticSearchResponse, SnippetInformation } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
 export enum RepoRefBackend {
 	local = 'local',
 	github = 'github',
-};
+}
 
 
 export class RepoRef {
@@ -75,6 +75,45 @@ export class SideCarClient {
 		return symbols;
 	}
 
+
+	async *getInLineEditorResponse(context: InEditorRequest): AsyncIterableIterator<InLineAgentMessage> {
+		console.log('getInLineEditorResponse');
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/in_editor/answer';
+		console.log('getInLineEditorResponse');
+		console.log(context);
+		const url = baseUrl.toString();
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, context);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const inlineAgentMessage = JSON.parse('{' + lineSinglePartTrimmed) as InLineAgentMessage;
+				console.log(inlineAgentMessage);
+				yield inlineAgentMessage;
+			}
+		}
+	}
+
+	async getParsedComments(context: InEditorTreeSitterDocumentationQuery): Promise<InEditorTreeSitterDocumentationReply> {
+		console.log('getParsedComments');
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/tree_sitter/documentation_parsing';
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(context),
+		});
+		const responseJson = await response.json();
+		return responseJson as InEditorTreeSitterDocumentationReply;
+	}
+
 	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string, deepContext: DeepContextForView): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -85,8 +124,6 @@ export class SideCarClient {
 			thread_id: threadId,
 			deep_context: deepContext,
 		};
-		console.log(body);
-		console.log(JSON.stringify(body));
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');

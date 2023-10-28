@@ -603,7 +603,7 @@ export class InlineChatWidget {
 		}
 
 		this._elements.infoLabel.classList.toggle('hidden', false);
-		const label = localize('slashCommandUsed', "Using {0} to generate response...", `\`\`/${details.command}\`\``);
+		const label = localize('slashCommandUsed', "Using {0} skill ...", `\`\`/${details.command}\`\``);
 
 		const e = renderFormattedText(label, { inline: true, renderCodeSegments: true, className: 'slash-command-pill' });
 		reset(this._elements.infoLabel, e);
