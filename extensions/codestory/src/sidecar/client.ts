@@ -92,7 +92,6 @@ export class SideCarClient {
 					continue;
 				}
 				const inlineAgentMessage = JSON.parse('{' + lineSinglePartTrimmed) as InLineAgentMessage;
-				console.log(inlineAgentMessage);
 				yield inlineAgentMessage;
 			}
 		}
