@@ -105,13 +105,8 @@ export class IndentationHelper {
 	}
 
 	static guessIndentStyleFromLine(line: string) {
-		console.log('indent style debugging');
-		console.log(line);
 		const leadingWhitespace = this.getLeadingWhitespace(line);
-		console.log(leadingWhitespace);
 		const result = this.guessIndentStyleFromLeadingWhitespace(leadingWhitespace);
-		console.log('guessing indent style for whitespace');
-		console.log(result);
 		return result;
 	}
 
@@ -126,13 +121,56 @@ export class IndentationHelper {
 	static getDocumentIndentStyle(lines: string[], defaultStyle: IndentStyleSpaces | undefined) {
 		for (const line of lines) {
 			const style = this.guessIndentStyleFromLine(line);
-			console.log('what is the indent style for sub-line');
-			console.log(style);
 			if (style) {
 				return style;
 			}
 		}
 		return defaultStyle || { kind: IndentStyle.Tabs, indentSize: null };
+	}
+
+	static changeIndentLevel(lines: string[], currentLevel: number, newLevel: number, style: IndentStyleSpaces): string[] {
+		if (currentLevel === newLevel) {
+			return lines;
+		}
+		if (currentLevel > newLevel) {
+			// we have to shift things back by a few levels
+			const changeInLevel = currentLevel - newLevel;
+			const indentationStringToRemoveFromPrefix = style.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(style.indentSize ?? 4);
+			// we have to remove this string from every string
+			const newLines = lines.map((line) => {
+				if (line.startsWith(indentationStringToRemoveFromPrefix)) {
+					return line.slice(indentationStringToRemoveFromPrefix.length);
+				} else {
+					return line;
+				}
+			});
+			return newLines;
+		}
+		if (currentLevel < newLevel) {
+			// we have to shift things forward by a few levels
+			const changeInLevel = newLevel - currentLevel;
+			const indentationStringToAddToPrefix = style.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(style.indentSize ?? 4);
+			// we have to add this string to every string
+			const newLines = lines.map((line) => {
+				return indentationStringToAddToPrefix + line;
+			});
+			return newLines;
+		}
+		return lines;
+	}
+
+	static changeIndentStyle(lines: string[], oldStyle: IndentStyleSpaces, newStyle: IndentStyleSpaces): string[] {
+		const indentationStringToRemoveFromPrefix = oldStyle.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(oldStyle.indentSize ?? 4);
+		const indentationStringToAddToPrefix = newStyle.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(newStyle.indentSize ?? 4);
+		const newLines = lines.map((line) => {
+			// we have to remove the old indentation and add the new one
+			const indentationLevel = IndentationHelper.guessIndentLevel(line, oldStyle);
+			// now we can remove the string
+			const strippedLine = line.slice(indentationStringToRemoveFromPrefix.repeat(indentationLevel[1]).length);
+			// now add back the new indentation string
+			return indentationStringToAddToPrefix.repeat(indentationLevel[1]) + strippedLine;
+		});
+		return newLines;
 	}
 }
 

@@ -99,7 +99,6 @@ export class SideCarClient {
 	}
 
 	async getParsedComments(context: InEditorTreeSitterDocumentationQuery): Promise<InEditorTreeSitterDocumentationReply> {
-		console.log('getParsedComments');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/tree_sitter/documentation_parsing';
 		const url = baseUrl.toString();
