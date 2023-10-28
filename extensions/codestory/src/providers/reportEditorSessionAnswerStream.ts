@@ -95,6 +95,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 	if (skillUsed === 'Doc' && generatedAnswer !== null) {
 		// Here we will send over the updates
 		const cleanedUpAnswer = extractCodeFromDocumentation(generatedAnswer.answer_up_until_now);
+		console.log('cleanedUpAnswer');
 		console.log(cleanedUpAnswer);
 		if (cleanedUpAnswer === null) {
 			progress.report(CSInteractiveEditorProgressItem.normalMessage('Failed to parse the output'));
@@ -104,7 +105,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 			language,
 			source: cleanedUpAnswer,
 		});
-		console.log(parsedComments);
+		const textEdits: vscode.TextEdit[] = [];
 		if (parsedComments.documentation.length === 1) {
 			// we can just show this snippet on top of the current expanded
 			// block which has been selected
@@ -113,13 +114,10 @@ export const reportFromStreamToEditorSessionProgress = async (
 			// 1. get the first line in the selection
 			const selectionText = textDocument.getText(new vscode.Range(
 				new vscode.Position(generatedAnswer.document_symbol?.start_position.line ?? 0, 0),
-				new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, 0)
+				new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, generatedAnswer.document_symbol?.end_position.character ?? 0),
 			));
 			const lines = selectionText.split(/\r\n|\r|\n/g);
-			console.log('we are trying to get the indent style for original document');
-			console.log('+++++\n' + selectionText + '\n++++');
 			const originalDocIndentationStyle = IndentationHelper.getDocumentIndentStyle(lines, undefined);
-			console.log(originalDocIndentationStyle);
 			let originalDocIndentationLevel = ['', 0];
 			if (lines.length > 0) {
 				// get the style from the first line
@@ -146,20 +144,46 @@ export const reportFromStreamToEditorSessionProgress = async (
 			});
 			// Now I have the start position for this answer
 			const startPosition = generatedAnswer.document_symbol?.start_position.line ?? 0;
-			const textEdits: vscode.TextEdit[] = [];
 			let finalDocumentationString = fixedDocumentationLines.join('\n');
 			// It needs one more \n at the end of the input
 			finalDocumentationString = finalDocumentationString + '\n';
 			textEdits.push(vscode.TextEdit.insert(new vscode.Position(startPosition, 0), finalDocumentationString));
-			console.log('how many text edits');
-			console.log(textEdits);
 			// we report back the edits
-			progress.report({
-				edits: textEdits,
-			});
 		} else {
 			// we have to show the whole block as an edit
+			const selectionTextRange = new vscode.Range(
+				new vscode.Position(generatedAnswer.document_symbol?.start_position.line ?? 0, 0),
+				new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, generatedAnswer.document_symbol?.end_position.character ?? 0),
+			);
+			const selectionText = textDocument.getText(selectionTextRange);
+			const selectionTextLines = selectionText.split(/\r\n|\r|\n/g);
+			const originalDocIndentationStyle = IndentationHelper.getDocumentIndentStyle(selectionTextLines, undefined);
+			let originalDocIndentationLevel = ['', 0];
+			if (selectionTextLines.length > 0) {
+				// get the style from the first line
+				const firstLine = selectionTextLines[0];
+				originalDocIndentationLevel = IndentationHelper.guessIndentLevel(firstLine, originalDocIndentationStyle);
+			}
+			// we are going to replace the whole block with the generated text
+			const codeBlockReplacement = cleanedUpAnswer;
+			const codeblockReplacementLines = codeBlockReplacement.split(/\r\n|\r|\n/g);
+			// get the indent style for the code block replacement
+			const codeBlockReplacementIndentStyle = IndentationHelper.getDocumentIndentStyle(codeblockReplacementLines, undefined);
+			let codeBlockReplacementIndentLevel = ['', 0];
+			if (codeBlockReplacement.length > 0) {
+				// get the style from the first line
+				const firstLine = codeBlockReplacement.split(/\r\n|\r|\n/g)[0];
+				codeBlockReplacementIndentLevel = IndentationHelper.guessIndentLevel(firstLine, codeBlockReplacementIndentStyle);
+			}
+			const newContent = IndentationHelper.changeIndentStyle(codeblockReplacementLines, codeBlockReplacementIndentStyle, originalDocIndentationStyle).join('\n');
+			textEdits.push(vscode.TextEdit.replace(selectionTextRange, newContent));
+			// now we have the original doc, indent style and the new text indent style
+			// we want to make sure the generated doc has the same indent level as the original doc
+			// and then we want to fix the indent style on the generated doc
 		}
+		progress.report({
+			edits: textEdits,
+		});
 	}
 	return '';
 };
