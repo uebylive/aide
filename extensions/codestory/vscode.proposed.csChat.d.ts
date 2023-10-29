@@ -67,7 +67,6 @@ declare module 'vscode' {
 	export interface TextDocumentContext {
 		document: TextDocument;
 		selection: Selection;
-		action?: string;
 	}
 
 	export interface CSChatEditorSessionProviderMetadata {

@@ -47,6 +47,7 @@ import * as types from './extHostTypes';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/chatProvider';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { checkProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 
 export namespace Command {
@@ -2335,6 +2336,22 @@ export namespace InteractiveEditorResponseFeedbackKind {
 				return types.InteractiveEditorResponseFeedbackKind.Undone;
 			case InlineChatResponseFeedbackKind.Accepted:
 				return types.InteractiveEditorResponseFeedbackKind.Accepted;
+		}
+	}
+}
+
+export namespace CSChatEditorResponseFeedbackKind {
+
+	export function to(kind: InlineCSChatResponseFeedbackKind): vscode.CSChatEditorResponseFeedbackKind {
+		switch (kind) {
+			case InlineCSChatResponseFeedbackKind.Helpful:
+				return types.CSChatEditorResponseFeedbackKind.Helpful;
+			case InlineCSChatResponseFeedbackKind.Unhelpful:
+				return types.CSChatEditorResponseFeedbackKind.Unhelpful;
+			case InlineCSChatResponseFeedbackKind.Undone:
+				return types.CSChatEditorResponseFeedbackKind.Undone;
+			case InlineCSChatResponseFeedbackKind.Accepted:
+				return types.CSChatEditorResponseFeedbackKind.Accepted;
 		}
 	}
 }

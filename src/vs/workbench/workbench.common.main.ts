@@ -188,6 +188,7 @@ import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 // CS Chat
 // Using this comment as a feature-flag while this view is being developed.
 import 'vs/workbench/contrib/csChat/browser/csChat.contribution';
+import 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat.contribution';
 
 // Arc
 import 'vs/workbench/contrib/arc/browser/arc.contribution';

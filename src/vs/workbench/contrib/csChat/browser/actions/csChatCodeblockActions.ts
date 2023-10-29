@@ -31,7 +31,7 @@ import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/cod
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { IChatCopyAction, ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';

@@ -240,7 +240,7 @@ declare module 'vscode' {
 
 		export function sendCSChatRequestToProvider(providerId: string, message: CSChatSessionDynamicRequest): void;
 
-		export function registerCSChatEditorSessionProvider(provider: InteractiveEditorSessionProvider, metadata?: InteractiveEditorSessionProviderMetadata): Disposable;
+		export function registerCSChatEditorSessionProvider(provider: CSChatEditorSessionProvider, metadata?: CSChatEditorSessionProviderMetadata): Disposable;
 
 		export function transferChatSession(session: CSChatSession, toWorkspace: Uri): void;
 	}

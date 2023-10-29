@@ -9,7 +9,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { InlineChatController } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
+import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 import { AccessibleViewType, IAccessibleViewService } from 'vs/workbench/contrib/accessibility/browser/accessibleView';
 import { AccessibilityVerbositySettingId, AccessibleViewProviderId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibleDiffViewerNext } from 'vs/editor/browser/widget/diffEditor/diffEditor.contribution';
