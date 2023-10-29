@@ -32,7 +32,7 @@ import { ICSChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/con
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
-const serializedChatKey = 'interactive.sessions';
+const serializedChatKey = 'csChat.sessions';
 
 const globalChatKey = 'chat.workspaceTransfer';
 interface IChatTransfer {
@@ -350,7 +350,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		try {
 			this.trace('initializeSession', `Initialize session ${model.sessionId}`);
 			model.startInitialize();
-			await this.extensionService.activateByEvent(`onInteractiveSession:${model.providerId}`);
+			await this.extensionService.activateByEvent(`onCSChatSession:${model.providerId}`);
 
 			const provider = this._providers.get(model.providerId);
 			if (!provider) {

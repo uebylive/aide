@@ -35,7 +35,7 @@ export class ChatWidgetHistoryService implements ICSChatWidgetHistoryService {
 	constructor(
 		@IStorageService storageService: IStorageService
 	) {
-		this.memento = new Memento('interactive-session', storageService);
+		this.memento = new Memento('csChat-session', storageService);
 		this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IChatHistory;
 	}
 

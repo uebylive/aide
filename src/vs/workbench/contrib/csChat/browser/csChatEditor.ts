@@ -98,7 +98,7 @@ export class ChatEditor extends EditorPane {
 	}
 
 	private updateModel(model: IChatModel): void {
-		this._memento = new Memento('interactive-session-editor-' + model.sessionId, this.storageService);
+		this._memento = new Memento('csChat-session-editor-' + model.sessionId, this.storageService);
 		this._viewState = this._memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IViewState;
 		this.widget.setModel(model, { ...this._viewState });
 	}

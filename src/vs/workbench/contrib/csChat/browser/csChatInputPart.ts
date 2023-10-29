@@ -43,7 +43,7 @@ const $ = dom.$;
 const INPUT_EDITOR_MAX_HEIGHT = 250;
 
 export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
-	static readonly INPUT_SCHEME = 'chatSessionInput';
+	static readonly INPUT_SCHEME = 'csChatSessionInput';
 	private static _counter = 0;
 
 	private _onDidChangeHeight = this._register(new Emitter<void>());
