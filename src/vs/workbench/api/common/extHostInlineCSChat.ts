@@ -74,7 +74,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		};
 
 		extHostCommands.registerApiCommand(new ApiCommand(
-			'vscode.editorChat.start', 'inlineChat.start', 'Invoke a new editor chat session',
+			'vscode.editorCSChat.start', 'inlineChat.start', 'Invoke a new editor chat session',
 			[new ApiCommandArgument<EditorChatApiArg | undefined, CSChatEditorRunOptions | undefined>('Run arguments', '', _v => true, v => {
 
 				if (!v) {

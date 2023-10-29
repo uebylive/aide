@@ -121,30 +121,30 @@ export interface IInlineCSChatService {
 	getAllProvider(): Iterable<IInlineCSChatSessionProvider>;
 }
 
-export const INLINE_CHAT_ID = 'interactiveEditor';
-export const INTERACTIVE_EDITOR_ACCESSIBILITY_HELP_ID = 'interactiveEditorAccessiblityHelp';
-export const INLINE_CHAT_DECORATIONS_ID = 'interactiveEditorDecorations';
+export const INLINE_CHAT_ID = 'csChatEditor';
+export const INTERACTIVE_EDITOR_ACCESSIBILITY_HELP_ID = 'csChatEditorAccessiblityHelp';
+export const INLINE_CHAT_DECORATIONS_ID = 'csChatEditorDecorations';
 
-export const CTX_INLINE_CHAT_HAS_PROVIDER = new RawContextKey<boolean>('inlineChatHasProvider', false, localize('inlineChatHasProvider', "Whether a provider for interactive editors exists"));
-export const CTX_INLINE_CHAT_VISIBLE = new RawContextKey<boolean>('inlineChatVisible', false, localize('inlineChatVisible', "Whether the interactive editor input is visible"));
-export const CTX_INLINE_CHAT_FOCUSED = new RawContextKey<boolean>('inlineChatFocused', false, localize('inlineChatFocused', "Whether the interactive editor input is focused"));
-export const CTX_INLINE_CHAT_RESPONSE_FOCUSED = new RawContextKey<boolean>('inlineChatResponseFocused', false, localize('inlineChatResponseFocused', "Whether the interactive widget's response is focused"));
-export const CTX_INLINE_CHAT_EMPTY = new RawContextKey<boolean>('inlineChatEmpty', false, localize('inlineChatEmpty', "Whether the interactive editor input is empty"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_FIRST = new RawContextKey<boolean>('inlineChatInnerCursorFirst', false, localize('inlineChatInnerCursorFirst', "Whether the cursor of the iteractive editor input is on the first line"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_LAST = new RawContextKey<boolean>('inlineChatInnerCursorLast', false, localize('inlineChatInnerCursorLast', "Whether the cursor of the iteractive editor input is on the last line"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_START = new RawContextKey<boolean>('inlineChatInnerCursorStart', false, localize('inlineChatInnerCursorStart', "Whether the cursor of the iteractive editor input is on the start of the input"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_END = new RawContextKey<boolean>('inlineChatInnerCursorEnd', false, localize('inlineChatInnerCursorEnd', "Whether the cursor of the iteractive editor input is on the end of the input"));
-export const CTX_INLINE_CHAT_MESSAGE_CROP_STATE = new RawContextKey<'cropped' | 'not_cropped' | 'expanded'>('inlineChatMarkdownMessageCropState', 'not_cropped', localize('inlineChatMarkdownMessageCropState', "Whether the interactive editor message is cropped, not cropped or expanded"));
-export const CTX_INLINE_CHAT_OUTER_CURSOR_POSITION = new RawContextKey<'above' | 'below' | ''>('inlineChatOuterCursorPosition', '', localize('inlineChatOuterCursorPosition', "Whether the cursor of the outer editor is above or below the interactive editor input"));
-export const CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST = new RawContextKey<boolean>('inlineChatHasActiveRequest', false, localize('inlineChatHasActiveRequest', "Whether interactive editor has an active request"));
-export const CTX_INLINE_CHAT_HAS_STASHED_SESSION = new RawContextKey<boolean>('inlineChatHasStashedSession', false, localize('inlineChatHasStashedSession', "Whether interactive editor has kept a session for quick restore"));
-export const CTX_INLINE_CHAT_LAST_RESPONSE_TYPE = new RawContextKey<InlineChatResponseType | undefined>('inlineChatLastResponseType', undefined, localize('inlineChatResponseType', "What type was the last response of the current interactive editor session"));
-export const CTX_INLINE_CHAT_RESPONSE_TYPES = new RawContextKey<InlineChateResponseTypes | undefined>('inlineChatResponseTypes', undefined, localize('inlineChatResponseTypes', "What type was the responses have been receieved"));
-export const CTX_INLINE_CHAT_DID_EDIT = new RawContextKey<boolean>('inlineChatDidEdit', undefined, localize('inlineChatDidEdit', "Whether interactive editor did change any code"));
-export const CTX_INLINE_CHAT_USER_DID_EDIT = new RawContextKey<boolean>('inlineChatUserDidEdit', undefined, localize('inlineChatUserDidEdit', "Whether the user did changes ontop of the inline chat"));
-export const CTX_INLINE_CHAT_LAST_FEEDBACK = new RawContextKey<'unhelpful' | 'helpful' | ''>('inlineChatLastFeedbackKind', '', localize('inlineChatLastFeedbackKind', "The last kind of feedback that was provided"));
-export const CTX_INLINE_CHAT_DOCUMENT_CHANGED = new RawContextKey<boolean>('inlineChatDocumentChanged', false, localize('inlineChatDocumentChanged', "Whether the document has changed concurrently"));
-export const CTX_INLINE_CHAT_EDIT_MODE = new RawContextKey<EditMode>('config.inlineChat.editMode', EditMode.Live);
+export const CTX_INLINE_CHAT_HAS_PROVIDER = new RawContextKey<boolean>('inlineCSChatHasProvider', false, localize('inlineChatHasProvider', "Whether a provider for interactive editors exists"));
+export const CTX_INLINE_CHAT_VISIBLE = new RawContextKey<boolean>('inlineCSChatVisible', false, localize('inlineChatVisible', "Whether the interactive editor input is visible"));
+export const CTX_INLINE_CHAT_FOCUSED = new RawContextKey<boolean>('inlineCSChatFocused', false, localize('inlineChatFocused', "Whether the interactive editor input is focused"));
+export const CTX_INLINE_CHAT_RESPONSE_FOCUSED = new RawContextKey<boolean>('inlineCSChatResponseFocused', false, localize('inlineChatResponseFocused', "Whether the interactive widget's response is focused"));
+export const CTX_INLINE_CHAT_EMPTY = new RawContextKey<boolean>('inlineCSChatEmpty', false, localize('inlineChatEmpty', "Whether the interactive editor input is empty"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_FIRST = new RawContextKey<boolean>('inlineCSChatInnerCursorFirst', false, localize('inlineChatInnerCursorFirst', "Whether the cursor of the iteractive editor input is on the first line"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_LAST = new RawContextKey<boolean>('inlineCSChatInnerCursorLast', false, localize('inlineChatInnerCursorLast', "Whether the cursor of the iteractive editor input is on the last line"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_START = new RawContextKey<boolean>('inlineCSChatInnerCursorStart', false, localize('inlineChatInnerCursorStart', "Whether the cursor of the iteractive editor input is on the start of the input"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_END = new RawContextKey<boolean>('inlineCSChatInnerCursorEnd', false, localize('inlineChatInnerCursorEnd', "Whether the cursor of the iteractive editor input is on the end of the input"));
+export const CTX_INLINE_CHAT_MESSAGE_CROP_STATE = new RawContextKey<'cropped' | 'not_cropped' | 'expanded'>('inlineCSChatMarkdownMessageCropState', 'not_cropped', localize('inlineChatMarkdownMessageCropState', "Whether the interactive editor message is cropped, not cropped or expanded"));
+export const CTX_INLINE_CHAT_OUTER_CURSOR_POSITION = new RawContextKey<'above' | 'below' | ''>('inlineCSChatOuterCursorPosition', '', localize('inlineChatOuterCursorPosition', "Whether the cursor of the outer editor is above or below the interactive editor input"));
+export const CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST = new RawContextKey<boolean>('inlineCSChatHasActiveRequest', false, localize('inlineChatHasActiveRequest', "Whether interactive editor has an active request"));
+export const CTX_INLINE_CHAT_HAS_STASHED_SESSION = new RawContextKey<boolean>('inlineCSChatHasStashedSession', false, localize('inlineChatHasStashedSession', "Whether interactive editor has kept a session for quick restore"));
+export const CTX_INLINE_CHAT_LAST_RESPONSE_TYPE = new RawContextKey<InlineChatResponseType | undefined>('inlineCSChatLastResponseType', undefined, localize('inlineChatResponseType', "What type was the last response of the current interactive editor session"));
+export const CTX_INLINE_CHAT_RESPONSE_TYPES = new RawContextKey<InlineChateResponseTypes | undefined>('inlineCSChatResponseTypes', undefined, localize('inlineChatResponseTypes', "What type was the responses have been receieved"));
+export const CTX_INLINE_CHAT_DID_EDIT = new RawContextKey<boolean>('inlineCSChatDidEdit', undefined, localize('inlineChatDidEdit', "Whether interactive editor did change any code"));
+export const CTX_INLINE_CHAT_USER_DID_EDIT = new RawContextKey<boolean>('inlineCSChatUserDidEdit', undefined, localize('inlineChatUserDidEdit', "Whether the user did changes ontop of the inline chat"));
+export const CTX_INLINE_CHAT_LAST_FEEDBACK = new RawContextKey<'unhelpful' | 'helpful' | ''>('inlineCSChatLastFeedbackKind', '', localize('inlineChatLastFeedbackKind', "The last kind of feedback that was provided"));
+export const CTX_INLINE_CHAT_DOCUMENT_CHANGED = new RawContextKey<boolean>('inlineCSChatDocumentChanged', false, localize('inlineChatDocumentChanged', "Whether the document has changed concurrently"));
+export const CTX_INLINE_CHAT_EDIT_MODE = new RawContextKey<EditMode>('config.inlineCSChat.editMode', EditMode.Live);
 
 // --- (select) action identifier
 
@@ -154,12 +154,12 @@ export const ACTION_VIEW_IN_CHAT = 'inlineChat.viewInChat';
 
 // --- menus
 
-export const MENU_INLINE_CHAT_WIDGET = MenuId.for('inlineChatWidget');
-export const MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE = MenuId.for('inlineChatWidget.markdownMessage');
-export const MENU_INLINE_CHAT_WIDGET_STATUS = MenuId.for('inlineChatWidget.status');
-export const MENU_INLINE_CHAT_WIDGET_FEEDBACK = MenuId.for('inlineChatWidget.feedback');
-export const MENU_INLINE_CHAT_WIDGET_DISCARD = MenuId.for('inlineChatWidget.undo');
-export const MENU_INLINE_CHAT_WIDGET_TOGGLE = MenuId.for('inlineChatWidget.toggle');
+export const MENU_INLINE_CHAT_WIDGET = MenuId.for('inlineCSChatWidget');
+export const MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE = MenuId.for('inlineCSChatWidget.markdownMessage');
+export const MENU_INLINE_CHAT_WIDGET_STATUS = MenuId.for('inlineCSChatWidget.status');
+export const MENU_INLINE_CHAT_WIDGET_FEEDBACK = MenuId.for('inlineCSChatWidget.feedback');
+export const MENU_INLINE_CHAT_WIDGET_DISCARD = MenuId.for('inlineCSChatWidget.undo');
+export const MENU_INLINE_CHAT_WIDGET_TOGGLE = MenuId.for('inlineCSChatWidget.toggle');
 
 // --- colors
 
