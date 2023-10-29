@@ -1828,7 +1828,9 @@
 			"chatVariables",
 			"mappedEditsProvider",
 			"aiRelatedInformation",
-			"chatAgents"
+			"chatAgents",
+			"chatAgents2",
+			"chatAgents2Additions"
 		],
 		"GitHub.remotehub": [
 			"contribRemoteHelp",

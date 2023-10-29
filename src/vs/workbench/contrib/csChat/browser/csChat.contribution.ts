@@ -222,7 +222,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 	) {
 		super();
 		this._store.add(slashCommandService.registerSlashCommand({
-			command: 'clearSession',
+			command: 'clear',
 			detail: nls.localize('clear', "Clear the session"),
 			sortText: 'z_clear',
 			executeImmediately: true
