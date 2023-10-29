@@ -3,20 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// 	// Create a session. The lifetime of this session is the duration of the editing session with the input mode widget.
-// 	prepareInteractiveEditorSession(context: TextDocumentContext, token: CancellationToken): ProviderResult<S>;
-
-// 	provideInteractiveEditorResponse(request: InteractiveEditorRequest, token: CancellationToken): ProviderResult<R>;
-// 	provideInteractiveEditorResponse2?(request: InteractiveEditorRequest, progress: Progress<{ message: string; edits: TextEdit[] }>, token: CancellationToken): ProviderResult<R>;
-
-// 	// eslint-disable-next-line local/vscode-dts-provider-naming
-// 	releaseInteractiveEditorSession?(session: S): any;
-
-// 	// todo@API use enum instead of boolean
-// 	// eslint-disable-next-line local/vscode-dts-provider-naming
-// 	handleInteractiveEditorResponseFeedback?(session: S, response: R, kind: InteractiveEditorResponseFeedbackKind): void;
-// }
-
 import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -175,9 +161,9 @@ export class IndentationHelper {
 }
 
 
-export class CSInteractiveEditorSession implements vscode.InteractiveEditorSession {
+export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
 	placeholder?: string;
-	slashCommands?: vscode.InteractiveEditorSlashCommand[];
+	slashCommands?: vscode.CSChatEditorSlashCommand[];
 	wholeRange?: vscode.Range;
 	message?: string;
 	textDocument: vscode.TextDocument;
@@ -212,11 +198,11 @@ export class CSInteractiveEditorSession implements vscode.InteractiveEditorSessi
 // 	wholeRange?: Range;
 // }
 
-export class CSInteractiveEditorProgressItem implements vscode.InteractiveEditorProgressItem {
+export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgressItem {
 	message?: string;
 	edits?: vscode.TextEdit[];
 	editsShouldBeInstant?: boolean;
-	slashCommand?: vscode.InteractiveEditorSlashCommand;
+	slashCommand?: vscode.CSChatEditorSlashCommand;
 	content?: string | vscode.MarkdownString;
 
 	static normalMessage(message: string): CSInteractiveEditorProgressItem {
@@ -237,7 +223,7 @@ export class CSInteractiveEditorProgressItem implements vscode.InteractiveEditor
 	}
 }
 
-export class CSInteractiveEditorMessageResponse implements vscode.InteractiveEditorMessageResponse {
+export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMessageResponse {
 	contents: vscode.MarkdownString;
 	placeholder?: string;
 	wholeRange?: vscode.Range;
@@ -250,7 +236,7 @@ export class CSInteractiveEditorMessageResponse implements vscode.InteractiveEdi
 }
 
 
-export class CSInteractiveEditorResponse implements vscode.InteractiveEditorResponse {
+export class CSInteractiveEditorResponse implements vscode.CSChatEditorResponse {
 	edits: vscode.TextEdit[] | vscode.WorkspaceEdit;
 	placeholder?: string;
 	wholeRange?: vscode.Range | undefined;
@@ -264,7 +250,7 @@ export class CSInteractiveEditorResponse implements vscode.InteractiveEditorResp
 
 export type CSInteractiveEditorResponseMessage = CSInteractiveEditorResponse | CSInteractiveEditorMessageResponse;
 
-export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEditorSessionProvider {
+export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSessionProvider {
 	label: 'cs-chat-editor';
 	sidecarClient: SideCarClient;
 	repoRef: RepoRef;
@@ -277,10 +263,10 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 		this.workingDirectory = workingDirectory;
 	}
 
-	prepareInteractiveEditorSession(
+	prepareCSChatEditorSession(
 		context: vscode.TextDocumentContext,
 		token: vscode.CancellationToken,
-	): vscode.ProviderResult<vscode.InteractiveEditorSession> {
+	): vscode.ProviderResult<vscode.CSChatEditorSession> {
 		const start = context.selection.active;
 		const anchor = context.selection.anchor;
 		if (vscode.window.activeTextEditor === undefined) {
@@ -298,10 +284,10 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 		return new CSInteractiveEditorSession(context.document, context.selection);
 	}
 
-	provideInteractiveEditorResponse(
+	provideCSChatEditorResponse(
 		session: CSInteractiveEditorSession,
-		request: vscode.InteractiveEditorRequest,
-		progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
+		request: vscode.CSChatEditorRequest,
+		progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
 		token: vscode.CancellationToken,
 	): vscode.ProviderResult<CSInteractiveEditorResponseMessage> {
 		return (async () => {
@@ -360,7 +346,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 		})();
 	}
 
-	handleInteractiveEditorResponseFeedback?(session: CSInteractiveEditorSession, response: CSInteractiveEditorResponseMessage, kind: vscode.InteractiveEditorResponseFeedbackKind): void {
-		console.log("We are good");
+	handleCSChatEditorResponseFeedback?(session: CSInteractiveEditorSession, response: CSInteractiveEditorResponseMessage, kind: vscode.CSChatEditorResponseFeedbackKind): void {
+		console.log('We are good');
 	}
 }

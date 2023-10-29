@@ -22,7 +22,7 @@ import { RepoRef, SideCarClient } from '../sidecar/client';
 import { getLSPGraphContextForChat } from '../editor/activeView/ranges';
 import { DeepContextForView } from '../sidecar/types';
 
-class CSChatSessionState implements vscode.InteractiveSessionState {
+class CSChatSessionState implements vscode.CSChatSessionState {
 	public chatContext: CSChatState;
 
 	constructor(agentCustomInstruction: string | null) {
@@ -32,7 +32,7 @@ class CSChatSessionState implements vscode.InteractiveSessionState {
 	}
 }
 
-class CSChatParticipant implements vscode.InteractiveSessionParticipantInformation {
+class CSChatParticipant implements vscode.CSChatSessionParticipantInformation {
 	name: string;
 	icon?: vscode.Uri | undefined;
 
@@ -46,7 +46,7 @@ class CSChatParticipant implements vscode.InteractiveSessionParticipantInformati
 	}
 }
 
-class CSChatSession implements vscode.InteractiveSession {
+class CSChatSession implements vscode.CSChatSession {
 	requester: CSChatParticipant;
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
@@ -81,7 +81,7 @@ class CSChatSession implements vscode.InteractiveSession {
 	}
 }
 
-class CSChatRequestArgs implements vscode.InteractiveSessionRequestArgs {
+class CSChatRequestArgs implements vscode.CSChatSessionRequestArgs {
 	command: string;
 	args: any;
 
@@ -95,7 +95,7 @@ class CSChatRequestArgs implements vscode.InteractiveSessionRequestArgs {
 	}
 }
 
-class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
+class CSChatReplyFollowup implements vscode.CSChatSessionReplyFollowup {
 	message: string;
 	tooltip?: string | undefined;
 	title?: string | undefined;
@@ -113,7 +113,7 @@ class CSChatReplyFollowup implements vscode.InteractiveSessionReplyFollowup {
 	}
 }
 
-export class CSChatRequest implements vscode.InteractiveRequest {
+export class CSChatRequest implements vscode.CSChatRequest {
 	session: CSChatSession;
 	message: string;
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined;
@@ -128,7 +128,7 @@ export class CSChatRequest implements vscode.InteractiveRequest {
 	}
 }
 
-class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetails {
+class CSChatResponseErrorDetails implements vscode.CSChatResponseErrorDetails {
 	message: string;
 	responseIsIncomplete?: boolean | undefined;
 	responseIsFiltered?: boolean | undefined;
@@ -144,7 +144,7 @@ class CSChatResponseErrorDetails implements vscode.InteractiveResponseErrorDetai
 	}
 }
 
-export class CSChatProgressContent implements vscode.InteractiveProgressContent {
+export class CSChatProgressContent implements vscode.CSChatProgressContent {
 	content: string | vscode.MarkdownString;
 
 	constructor(content: string | vscode.MarkdownString) {
@@ -156,7 +156,7 @@ export class CSChatProgressContent implements vscode.InteractiveProgressContent 
 	}
 }
 
-class CSChatProgressId implements vscode.InteractiveProgressId {
+class CSChatProgressId implements vscode.CSChatProgressId {
 	responseId: string;
 
 	constructor(responseId: string) {
@@ -184,7 +184,7 @@ export class CSChatFileTreeData implements vscode.FileTreeData {
 	}
 }
 
-export class CSChatProgressFileTree implements vscode.InteractiveProgressFileTree {
+export class CSChatProgressFileTree implements vscode.CSChatProgressFileTree {
 	treeData: CSChatFileTreeData;
 
 	constructor(treeData: CSChatFileTreeData) {
@@ -196,7 +196,7 @@ export class CSChatProgressFileTree implements vscode.InteractiveProgressFileTre
 	}
 }
 
-export class CSChatProgressTask implements vscode.InteractiveProgressTask {
+export class CSChatProgressTask implements vscode.CSChatProgressTask {
 	placeholder: string;
 	resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>;
 
@@ -212,7 +212,7 @@ export class CSChatProgressTask implements vscode.InteractiveProgressTask {
 
 export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
 
-class CSChatResponseForProgress implements vscode.InteractiveResponseForProgress {
+class CSChatResponseForProgress implements vscode.CSChatResponseForProgress {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
 
 	constructor(errorDetails?: CSChatResponseErrorDetails | undefined) {
@@ -238,7 +238,7 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 	}
 }
 
-export class CSChatProvider implements vscode.InteractiveSessionProvider {
+export class CSChatProvider implements vscode.CSChatSessionProvider {
 	private _chatSessionState: CSChatSessionState;
 
 	private _codeGraph: CodeGraph;
@@ -282,7 +282,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		this._currentRepoRef = repoRef;
 	}
 
-	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.InteractiveSessionSlashCommand[]> {
+	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CSChatSessionSlashCommand[]> {
 		logger.info('provideSlashCommands', session);
 		return [
 			{
@@ -324,7 +324,7 @@ export class CSChatProvider implements vscode.InteractiveSessionProvider {
 		];
 	}
 
-	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.InteractiveWelcomeMessageContent[]> {
+	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.CSChatWelcomeMessageContent[]> {
 		logger.info('provideWelcomeMessage', token);
 		return [
 			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',

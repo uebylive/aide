@@ -15,7 +15,7 @@ import { CSInteractiveEditorProgressItem, IndentStyle, IndentationHelper } from 
 
 export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
-	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
+	progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
 	cancellationToken: vscode.CancellationToken,
 	currentRepoRef: RepoRef,
 	workingDirectory: string,

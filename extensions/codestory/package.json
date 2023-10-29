@@ -14,7 +14,7 @@
   ],
   "enabledApiProposals": [
     "arc",
-    "interactive"
+    "csChat"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
@@ -52,7 +52,7 @@
         }
       ]
     },
-    "interactiveSession": [
+    "csChatSession": [
       {
         "id": "cs-chat",
         "label": "CodeStory Agent",

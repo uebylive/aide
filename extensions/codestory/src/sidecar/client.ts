@@ -13,7 +13,7 @@ import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 export enum RepoRefBackend {
 	local = 'local',
 	github = 'github',
-};
+}
 
 
 export class RepoRef {

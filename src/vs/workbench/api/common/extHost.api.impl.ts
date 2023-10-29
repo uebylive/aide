@@ -98,7 +98,9 @@ import { EditSessionIdentityMatch } from 'vs/platform/workspace/common/editSessi
 import { ExtHostProfileContentHandlers } from 'vs/workbench/api/common/extHostProfileContentHandler';
 import { ExtHostQuickDiff } from 'vs/workbench/api/common/extHostQuickDiff';
 import { ExtHostChat } from 'vs/workbench/api/common/extHostChat';
+import { ExtHostCSChat } from 'vs/workbench/api/common/extHostCSChat';
 import { ExtHostInteractiveEditor } from 'vs/workbench/api/common/extHostInlineChat';
+import { ExtHostCSChatEditor } from 'vs/workbench/api/common/extHostInlineCSChat';
 import { ExtHostNotebookDocumentSaveParticipant } from 'vs/workbench/api/common/extHostNotebookDocumentSaveParticipant';
 import { ExtHostIssueReporter } from 'vs/workbench/api/common/extHostIssueReporter';
 import { IExtHostManagedSockets } from 'vs/workbench/api/common/extHostManagedSockets';
@@ -215,6 +217,8 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostChatAgents2, new ExtHostChatAgents2(rpcProtocol, extHostChatProvider, extHostLogService));
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostChat = rpcProtocol.set(ExtHostContext.ExtHostChat, new ExtHostChat(rpcProtocol, extHostLogService));
+	const extHostCSChatEditor = rpcProtocol.set(ExtHostContext.ExtHostInlineCSChat, new ExtHostCSChatEditor(rpcProtocol, extHostCommands, extHostDocuments, extHostLogService));
+	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol, extHostLogService));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostIssueReporter = rpcProtocol.set(ExtHostContext.ExtHostIssueReporter, new ExtHostIssueReporter(rpcProtocol));
@@ -1366,6 +1370,30 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
+		// namespace: csChat
+		const csChat: typeof vscode.csChat = {
+			// IMPORTANT
+			// this needs to be updated whenever the API proposal changes
+			_version: 1,
+
+			registerCSChatEditorSessionProvider(provider: vscode.CSChatEditorSessionProvider, metadata?: vscode.CSChatEditorSessionProviderMetadata) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatEditor.registerProvider(extension, provider, metadata = { label: metadata?.label ?? extension.displayName ?? extension.name });
+			},
+			registerCSChatSessionProvider(id: string, provider: vscode.CSChatSessionProvider) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChat.registerChatProvider(extension, id, provider);
+			},
+			sendCSChatRequestToProvider(providerId: string, message: vscode.CSChatSessionDynamicRequest) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChat.sendCSChatRequestToProvider(providerId, message);
+			},
+			transferChatSession(session: vscode.CSChatSession, toWorkspace: vscode.Uri) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChat.transferChatSession(session, toWorkspace);
+			}
+		};
+
 		// namespace: ai
 		const ai: typeof vscode.ai = {
 			getRelatedInformation(query: string, types: vscode.RelatedInformationType[]): Thenable<vscode.RelatedInformationResult[]> {
@@ -1431,6 +1459,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			extensions,
 			arc,
 			interactive,
+			csChat,
 			l10n,
 			languages,
 			notebooks,
@@ -1634,6 +1663,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			InteractiveSessionVoteDirection: extHostTypes.InteractiveSessionVoteDirection,
 			InteractiveSessionCopyKind: extHostTypes.InteractiveSessionCopyKind,
 			InteractiveEditorResponseFeedbackKind: extHostTypes.InteractiveEditorResponseFeedbackKind,
+			CSChatEditorResponseFeedbackKind: extHostTypes.CSChatEditorResponseFeedbackKind,
 			StackFrameFocus: extHostTypes.StackFrameFocus,
 			ThreadFocus: extHostTypes.ThreadFocus,
 			RelatedInformationType: extHostTypes.RelatedInformationType,

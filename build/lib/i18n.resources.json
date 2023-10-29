@@ -171,7 +171,11 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/csAgent",
+			"name": "vs/workbench/contrib/inlineCSChat",
+			"project": "vscode-workbench"
+		},
+		{
+			"name": "vs/workbench/contrib/csChat",
 			"project": "vscode-workbench"
 		},
 		{

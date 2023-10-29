@@ -80,6 +80,8 @@ import './mainThreadNotebookSaveParticipant';
 import './mainThreadInteractive';
 import './mainThreadInlineChat';
 import './mainThreadChat';
+import './mainThreadInlineCSChat';
+import './mainThreadCSChat';
 import './mainThreadTask';
 import './mainThreadLabelService';
 import './mainThreadTunnelService';
