@@ -179,10 +179,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/arc",
-			"project": "vscode-workbench"
-		},
-		{
 			"name": "vs/workbench/contrib/quickaccess",
 			"project": "vscode-workbench"
 		},

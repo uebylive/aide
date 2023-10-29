@@ -33,9 +33,9 @@ const menubarIcon = registerIcon('menuBar', Codicon.layoutMenubar, localize('men
 const activityBarLeftIcon = registerIcon('activity-bar-left', Codicon.layoutActivitybarLeft, localize('activityBarLeft', "Represents the activity bar in the left position"));
 const activityBarRightIcon = registerIcon('activity-bar-right', Codicon.layoutActivitybarRight, localize('activityBarRight', "Represents the activity bar in the right position"));
 const panelLeftIcon = registerIcon('panel-left', Codicon.layoutSidebarLeft, localize('panelLeft', "Represents a side bar in the left position"));
-// const panelLeftOffIcon = registerIcon('panel-left-off', Codicon.layoutSidebarLeftOff, localize('panelLeftOff', "Represents a side bar in the left position toggled off"));
+const panelLeftOffIcon = registerIcon('panel-left-off', Codicon.layoutSidebarLeftOff, localize('panelLeftOff', "Represents a side bar in the left position toggled off"));
 const panelRightIcon = registerIcon('panel-right', Codicon.layoutSidebarRight, localize('panelRight', "Represents side bar in the right position"));
-// const panelRightOffIcon = registerIcon('panel-right-off', Codicon.layoutSidebarRightOff, localize('panelRightOff', "Represents side bar in the right position toggled off"));
+const panelRightOffIcon = registerIcon('panel-right-off', Codicon.layoutSidebarRightOff, localize('panelRightOff', "Represents side bar in the right position toggled off"));
 const panelIcon = registerIcon('panel-bottom', Codicon.layoutPanel, localize('panelBottom', "Represents the bottom panel"));
 const statusBarIcon = registerIcon('statusBar', Codicon.layoutStatusbar, localize('statusBarIcon', "Represents the status bar"));
 
@@ -402,33 +402,33 @@ MenuRegistry.appendMenuItems([
 			order: 2
 		}
 	},
-	// {
-	// 	id: MenuId.LayoutControlMenu,
-	// 	item: {
-	// 		group: '0_workbench_toggles',
-	// 		command: {
-	// 			id: ToggleSidebarVisibilityAction.ID,
-	// 			title: localize('toggleSideBar', "Toggle Primary Side Bar"),
-	// 			icon: panelLeftOffIcon,
-	// 			toggled: { condition: SideBarVisibleContext, icon: panelLeftIcon }
-	// 		},
-	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
-	// 		order: 0
-	// 	}
-	// }, {
-	// 	id: MenuId.LayoutControlMenu,
-	// 	item: {
-	// 		group: '0_workbench_toggles',
-	// 		command: {
-	// 			id: ToggleSidebarVisibilityAction.ID,
-	// 			title: localize('toggleSideBar', "Toggle Primary Side Bar"),
-	// 			icon: panelRightOffIcon,
-	// 			toggled: { condition: SideBarVisibleContext, icon: panelRightIcon }
-	// 		},
-	// 		when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
-	// 		order: 2
-	// 	}
-	// }
+	{
+		id: MenuId.LayoutControlMenu,
+		item: {
+			group: '0_workbench_toggles',
+			command: {
+				id: ToggleSidebarVisibilityAction.ID,
+				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
+				icon: panelLeftOffIcon,
+				toggled: { condition: SideBarVisibleContext, icon: panelLeftIcon }
+			},
+			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
+			order: 0
+		}
+	}, {
+		id: MenuId.LayoutControlMenu,
+		item: {
+			group: '0_workbench_toggles',
+			command: {
+				id: ToggleSidebarVisibilityAction.ID,
+				title: localize('toggleSideBar', "Toggle Primary Side Bar"),
+				icon: panelRightOffIcon,
+				toggled: { condition: SideBarVisibleContext, icon: panelRightIcon }
+			},
+			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'right')),
+			order: 2
+		}
+	}
 ]);
 
 // --- Toggle Statusbar Visibility
@@ -1271,11 +1271,11 @@ registerAction2(class CustomizeLayoutAction extends Action2 {
 					id: MenuId.LayoutControlMenuSubmenu,
 					group: 'z_end',
 				},
-				// {
-				// 	id: MenuId.LayoutControlMenu,
-				// 	when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
-				// 	group: 'z_end'
-				// }
+				{
+					id: MenuId.LayoutControlMenu,
+					when: ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both'),
+					group: 'z_end'
+				}
 			]
 		});
 	}
