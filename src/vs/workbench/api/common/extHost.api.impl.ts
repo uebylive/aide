@@ -111,7 +111,6 @@ import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariabl
 import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
 import { ExtHostAiEmbeddingVector } from 'vs/workbench/api/common/extHostEmbeddingVector';
 import { ExtHostChatAgents } from 'vs/workbench/api/common/extHostChatAgents';
-import { ExtHostArc } from 'vs/workbench/api/common/extHostArc';
 import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
 
 export interface IExtensionRegistries {
@@ -224,8 +223,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostIssueReporter = rpcProtocol.set(ExtHostContext.ExtHostIssueReporter, new ExtHostIssueReporter(rpcProtocol));
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
 	const extHostSpeech = rpcProtocol.set(ExtHostContext.ExtHostSpeech, new ExtHostSpeech(rpcProtocol));
-	const extHostArc = rpcProtocol.set(ExtHostContext.ExtHostArc, new ExtHostArc(rpcProtocol));
-	console.log(extHostArc);
 
 	// Check that no named customers are missing
 	const expected = Object.values<ProxyIdentifier<any>>(ExtHostContext);
@@ -1332,16 +1329,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
-		// namespace: arc
-		const arc: typeof vscode.arc = {
-			_version: 1,
-
-			registerArcProvider(id: string, provider: vscode.ArcProvider) {
-				checkProposedApiEnabled(extension, 'arc');
-				return extHostArc.registerArcProvider(extension, id, provider);
-			}
-		};
-
 		// namespace: interactive
 		const interactive: typeof vscode.interactive = {
 			// IMPORTANT
@@ -1457,7 +1444,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			debug,
 			env,
 			extensions,
-			arc,
 			interactive,
 			csChat,
 			l10n,

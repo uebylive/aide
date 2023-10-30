@@ -190,9 +190,6 @@ import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/csChat/browser/csChat.contribution';
 import 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat.contribution';
 
-// Arc
-import 'vs/workbench/contrib/arc/browser/arc.contribution';
-
 // Interactive
 import 'vs/workbench/contrib/interactive/browser/interactive.contribution';
 

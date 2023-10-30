@@ -13,7 +13,6 @@
     "onSearch:text"
   ],
   "enabledApiProposals": [
-    "arc",
     "csChat"
   ],
   "files": [
@@ -59,22 +58,11 @@
         "icon": "assets/message-code.svg"
       }
     ],
-    "arc": [
-      {
-        "id": "cs-arc",
-        "label": "CodeStory Arc"
-      }
-    ],
     "keybindings": [
       {
         "command": "workbench.action.focusHoverChat.cs-chat",
         "key": "shift shift",
         "mac": "shift shift"
-      },
-      {
-        "command": "workbench.action.toggleArc.cs-arc",
-        "key": "alt alt",
-        "mac": "alt alt"
       }
     ],
     "configuration": {

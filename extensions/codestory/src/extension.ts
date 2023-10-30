@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { arc, commands, ExtensionContext, csChat, TextDocument, window, workspace } from 'vscode';
+import { commands, ExtensionContext, csChat, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -206,9 +206,6 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(interactiveSession);
 	await commands.executeCommand('workbench.action.chat.clear');
 	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
-
-	const arcProvider = arc.registerArcProvider('cs-arc', chatProvider);
-	context.subscriptions.push(arcProvider);
 
 	context.subscriptions.push(
 		debug(
