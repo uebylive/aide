@@ -1327,15 +1327,6 @@ export interface ExtHostCSChatShape {
 	$onDidPerformUserAction(event: IChatUserActionEvent): Promise<void>;
 }
 
-export interface MainThreadArcShape extends IDisposable {
-	$registerArcProvider(handle: number, id: string): Promise<void>;
-	$unregisterArcProvider(handle: number): Promise<void>;
-}
-
-export interface ExtHostArcShape {
-	$prepareArc(handle: number, initialState: any, token: CancellationToken): Promise<IArcDto | undefined>;
-}
-
 export interface ExtHostUrlsShape {
 	$handleExternalUri(handle: number, uri: UriComponents): Promise<void>;
 }
@@ -2831,7 +2822,6 @@ export const MainContext = {
 	MainThreadAiRelatedInformation: createProxyIdentifier<MainThreadAiRelatedInformationShape>('MainThreadAiRelatedInformation'),
 	MainThreadAiEmbeddingVector: createProxyIdentifier<MainThreadAiEmbeddingVectorShape>('MainThreadAiEmbeddingVector'),
 	MainThreadIssueReporter: createProxyIdentifier<MainThreadIssueReporterShape>('MainThreadIssueReporter'),
-	MainThreadArc: createProxyIdentifier<MainThreadArcShape>('MainThreadArc'),
 };
 
 export const ExtHostContext = {
@@ -2905,5 +2895,4 @@ export const ExtHostContext = {
 	ExtHostTelemetry: createProxyIdentifier<ExtHostTelemetryShape>('ExtHostTelemetry'),
 	ExtHostLocalization: createProxyIdentifier<ExtHostLocalizationShape>('ExtHostLocalization'),
 	ExtHostIssueReporter: createProxyIdentifier<ExtHostIssueReporterShape>('ExtHostIssueReporter'),
-	ExtHostArc: createProxyIdentifier<ExtHostArcShape>('ExtHostArc'),
 };
