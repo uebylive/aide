@@ -54,7 +54,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 	let streamProcessor = null;
 
 	for await (const inlineAgentMessage of asyncIterable) {
-		console.log(inlineAgentMessage);
 		// Here we are going to go in a state machine like flow, where we are going
 		// to stream back to the user whatever steps we get, and when we start
 		// streaming the reply back, that's when we start sending TextEdit updates
@@ -83,7 +82,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 					}
 					if (lastStep === 'Edit') {
 						skillUsed = 'Edit';
-						console.log(generatedAnswer?.context_selection);
 						progress.report(CSInteractiveEditorProgressItem.editGeneration());
 						continue;
 					}
@@ -141,8 +139,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 	if (skillUsed === 'Doc' && generatedAnswer !== null) {
 		// Here we will send over the updates
 		const cleanedUpAnswer = extractCodeFromDocumentation(generatedAnswer.answer_up_until_now);
-		console.log('cleanedUpAnswer');
-		console.log(cleanedUpAnswer);
 		if (cleanedUpAnswer === null) {
 			progress.report(CSInteractiveEditorProgressItem.normalMessage('Failed to parse the output'));
 			return '';
@@ -151,8 +147,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 			language,
 			source: cleanedUpAnswer,
 		});
-		console.log('parsedComments');
-		console.log(parsedComments);
 		const textEdits: vscode.TextEdit[] = [];
 		if (parsedComments.documentation.length === 1) {
 			// we can just show this snippet on top of the current expanded
@@ -290,7 +284,6 @@ class AnswerSplitOnNewLineAccumulator {
 				break;
 			}
 			const completeLine = this.accumulator.substring(0, newLineIndex);
-			console.log('pushing new line: ', completeLine);
 			if (/^```/.test(completeLine)) {
 				if (!this.codeBlockStringFound) {
 					this.codeBlockStringFound = true;
@@ -361,7 +354,6 @@ class StreamProcessor {
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
-		console.log('prcessing line: ', answerStreamLine);
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -376,7 +368,9 @@ class StreamProcessor {
 		}
 		if (this.endDetected) {
 			if (this.previousLine) {
+				console.log('previousLine:', line);
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
+				console.log('adjustedLine:', adjustedLine);
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
@@ -392,7 +386,7 @@ class StreamProcessor {
 				}
 			} else {
 				const initialAnchor = this.findInitialAnchor(line);
-				this.previousLine = new LineIndentManager(this.document.indentStyle, line);
+				this.previousLine = new LineIndentManager(this.document.getLine(initialAnchor).indentLevel, line);
 				const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
 				this.documentLineIndex = this.document.replaceLine(initialAnchor, adjustedInitialLine);
 			}
@@ -447,7 +441,10 @@ class DocumentManager {
 	) {
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
-		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle); // Determines the indentation style
+		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
+		// this.indentStyle = IndentationHelper.getDocumentIndentStyleUsingSelection(contextSelection); // Determines the indentation style
+		console.log('indentStyle:', this.indentStyle);
+		console.log(this.indentStyle);
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = document.getText().split(/\r\n|\r|\n/g);
@@ -478,7 +475,7 @@ class DocumentManager {
 	}
 
 	// Retrieve a specific line
-	getLine(index: number) {
+	getLine(index: number): LineContent {
 		return this.lines[index];
 	}
 
@@ -593,11 +590,10 @@ class LineContent {
 class LineIndentManager {
 	indentDelta: number;
 	_replyIndentStyle: IndentStyleSpaces | undefined | null;
-	constructor(identStyle: IndentStyleSpaces, line: string) {
-		const indentSize = identStyle.indentSize,
-			[, indentLevelForLine] = this.guessIndentLevel(line);
+	constructor(indentLevel: number, line: string) {
+		const [, indentLevelForLine] = this.guessIndentLevel(line);
 		// @ts-ignore
-		this.indentDelta = indentLevelForLine - indentSize;
+		this.indentDelta = indentLevelForLine - indentLevel;
 	}
 
 	reindent(line: string, style: IndentStyleSpaces): AdjustedLineContent {
