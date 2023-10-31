@@ -49,7 +49,7 @@ export class ChatVariablesService implements ICSChatVariablesService {
 					}
 				} else if (part instanceof ChatRequestDynamicReferencePart) {
 					// Maybe the dynamic reference should include a full IChatRequestVariableValue[] at the time it is inserted?
-					resolvedVariables[part.referenceText] = [{ level: 'full', value: part.data.toString() }];
+					resolvedVariables[part.referenceText] = [{ level: 'full', value: JSON.stringify({ uri: part.data.uri.toString(), range: part.data.range }) }];
 					parsedPrompt[i] = part.promptText;
 				} else {
 					parsedPrompt[i] = part.promptText;

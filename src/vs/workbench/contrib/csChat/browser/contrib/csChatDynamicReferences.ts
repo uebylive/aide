@@ -7,6 +7,7 @@ import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
+import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
@@ -68,7 +69,7 @@ export class ChatDynamicReferenceModel extends Disposable implements IChatWidget
 	private updateReferences(): void {
 		this.widget.inputEditor.setDecorationsByType('chat', dynamicReferenceDecorationType, this._references.map(r => (<IDecorationOptions>{
 			range: r.range,
-			hoverMessage: new MarkdownString(this.labelService.getUriLabel(r.data, { relative: true }))
+			hoverMessage: new MarkdownString(this.labelService.getUriLabel(r.data.uri, { relative: true }))
 		})));
 	}
 }
@@ -76,12 +77,12 @@ export class ChatDynamicReferenceModel extends Disposable implements IChatWidget
 ChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
 
 
-interface SelectAndInsertFileActionContext {
+interface SelectAndInsertActionContext {
 	widget: ChatWidget;
 	range: IRange;
 }
 
-function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
+function isSelectAndInsertActionContext(context: any): context is SelectAndInsertActionContext {
 	return 'widget' in context && 'range' in context;
 }
 
@@ -100,7 +101,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		const logService = accessor.get(ILogService);
 
 		const context = args[0];
-		if (!isSelectAndInsertFileActionContext(context)) {
+		if (!isSelectAndInsertActionContext(context)) {
 			return;
 		}
 
@@ -117,12 +118,17 @@ export class SelectAndInsertFileAction extends Action2 {
 			return;
 		}
 
-		const resource = (picks[0] as unknown as { resource: unknown }).resource as URI;
+		const pick = picks[0];
+		const resource = (pick as unknown as { resource: unknown }).resource as URI;
 		if (!textModelService.canHandleResource(resource)) {
 			logService.trace('SelectAndInsertFileAction: non-text resource selected');
 			doCleanup();
 			return;
 		}
+
+		const model = await textModelService.createModelReference(resource);
+		const fileRange = model.object.textEditorModel.getFullModelRange();
+		model.dispose();
 
 		const fileName = basename(resource);
 		const editor = context.widget.inputEditor;
@@ -137,8 +143,111 @@ export class SelectAndInsertFileAction extends Action2 {
 
 		context.widget.getContrib<ChatDynamicReferenceModel>(ChatDynamicReferenceModel.ID)?.addReference({
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: resource
+			data: {
+				uri: resource,
+				range: fileRange
+			}
 		});
 	}
 }
 registerAction2(SelectAndInsertFileAction);
+
+const parseVariableInfo = (input: string): [string, string] | null => {
+	// Define a regular expression pattern to match the variable declaration.
+	const pattern = /\$\(([^)]+)\)\s*(\w+)/;
+
+	// Use the regular expression to match and capture the variable type and name.
+	const match = input.match(pattern);
+
+	if (match) {
+		// The first captured group (match[1]) is the variable type.
+		// The second captured group (match[2]) is the variable name.
+		let variableType = match[1];
+		const variableName = match[2];
+
+		// Remove the "symbol-" part from the variable type.
+		variableType = variableType.replace(/^symbol-/, '');
+
+		return [variableName, variableType];
+	}
+
+	// Return null if no match is found.
+	return null;
+};
+
+export class SelectAndInsertCodeSymbolAction extends Action2 {
+	static readonly ID = 'workbench.action.csChat.selectAndInsertCodeSymbol';
+
+	constructor() {
+		super({
+			id: SelectAndInsertCodeSymbolAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+		const codeEditorService = accessor.get(ICodeEditorService);
+
+		const activeEditor = codeEditorService.getActiveCodeEditor();
+		const model = activeEditor?.getModel();
+		if (!activeEditor || !model) {
+			return;
+		}
+
+		const context = args[0];
+		if (!isSelectAndInsertActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `file`
+			context.widget.inputEditor.executeEdits('chatInsertCode', [{ range: context.range, text: `` }]);
+		};
+
+		const uri = model.uri;
+		if (!textModelService.canHandleResource(uri)) {
+			logService.trace('SelectAndInsertCodeSymbolAction: non-text resource selected');
+			doCleanup();
+			return;
+		}
+
+		const quickInputService = accessor.get(IQuickInputService);
+		const picks = await quickInputService.quickAccess.pick('@');
+		if (!picks?.length) {
+			logService.trace('SelectAndInsertCodeSymbolAction: no code symbol selected');
+			doCleanup();
+			return;
+		}
+
+		const pick = picks[0];
+		const selectionRange = (pick as unknown as { range: Range }).range;
+		const result = parseVariableInfo(pick.label);
+		if (!result) {
+			logService.trace('SelectAndInsertCodeSymbolAction: failed to parse code symbol');
+			doCleanup();
+			return;
+		}
+
+		const [symbolName, symbolType] = result;
+		const editor = context.widget.inputEditor;
+		const text = `#${symbolType}:${symbolName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertSymbolAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		context.widget.getContrib<ChatDynamicReferenceModel>(ChatDynamicReferenceModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: {
+				uri,
+				range: selectionRange
+			}
+		});
+	}
+}
+registerAction2(SelectAndInsertCodeSymbolAction);

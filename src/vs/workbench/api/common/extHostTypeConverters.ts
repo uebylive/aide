@@ -2264,6 +2264,37 @@ export namespace ChatVariable {
 	}
 }
 
+type IChatDynamicRequestVariable = { uri: string; range: editorRange.IRange };
+const isDynamicChatRequestVariable = (v: any): v is IChatDynamicRequestVariable => {
+	const value = JSON.parse(v);
+	return value && typeof value.uri === 'string' && editorRange.Range.isIRange(value.range);
+};
+
+export namespace CSChatVariable {
+	export function to(variable: IChatRequestVariableValue): vscode.CSChatVariableValue {
+		const value = variable.value;
+		if (isDynamicChatRequestVariable(value)) {
+			const parsedValue: IChatDynamicRequestVariable = JSON.parse(value);
+			const dynamicRequestVariable: vscode.CSChatDynamicVariableValue = {
+				uri: URI.parse(parsedValue.uri),
+				range: parsedValue.range
+			};
+
+			return {
+				level: ChatVariableLevel.to(variable.level),
+				value: dynamicRequestVariable,
+				description: variable.description
+			};
+		} else {
+			return {
+				level: ChatVariableLevel.to(variable.level),
+				value: value,
+				description: variable.description
+			};
+		}
+	}
+}
+
 export namespace ChatVariableLevel {
 
 

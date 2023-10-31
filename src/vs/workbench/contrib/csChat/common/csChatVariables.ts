@@ -5,8 +5,8 @@
 
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { IDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
+import { Location } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -52,5 +52,5 @@ export interface IChatVariableResolveResult {
 export interface IDynamicReference {
 	range: IRange;
 	// data: any; // File details for a file, something else for a different type of thing, is it typed?
-	data: URI;
+	data: Location;
 }

@@ -26,7 +26,7 @@ import { SubmitAction } from 'vs/workbench/contrib/csChat/browser/actions/csChat
 import { IChatWidget, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
-import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
+import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -554,7 +554,15 @@ class BuiltinDynamicCompletions extends Disposable {
 							range: { insert, replace },
 							kind: CompletionItemKind.Text,
 							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range }] },
-						}
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}code`,
+							insertText: `${chatVariableLeader}code:`,
+							detail: localize('pickCodeLabel', "Pick a code symbol"),
+							range: { insert, replace },
+							kind: CompletionItemKind.Text,
+							command: { id: SelectAndInsertCodeSymbolAction.ID, title: SelectAndInsertCodeSymbolAction.ID, arguments: [{ widget, range }] },
+						},
 					]
 				};
 			}
