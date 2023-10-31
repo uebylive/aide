@@ -542,10 +542,11 @@ export class InlineChatWidget {
 
 	updateMarkdownMessage(message: IMarkdownString | undefined) {
 		this._codeBlockDisposables.clear();
-		this._elements.markdownMessage.classList.toggle('hidden', !message);
+		const hasMessage = message?.value;
+		this._elements.markdownMessage.classList.toggle('hidden', !hasMessage);
 		let expansionState: ExpansionState;
 		let textContent: string | undefined = undefined;
-		if (!message) {
+		if (!hasMessage) {
 			reset(this._elements.message);
 			this._ctxMessageCropState.reset();
 			expansionState = ExpansionState.NOT_CROPPED;
@@ -603,7 +604,7 @@ export class InlineChatWidget {
 		}
 
 		this._elements.infoLabel.classList.toggle('hidden', false);
-		const label = localize('slashCommandUsed', "Using {0} skill ...", `\`\`/${details.command}\`\``);
+		const label = localize('slashCommandUsed', "Using {0} to generate response...", `\`\`/${details.command}\`\``);
 
 		const e = renderFormattedText(label, { inline: true, renderCodeSegments: true, className: 'slash-command-pill' });
 		reset(this._elements.infoLabel, e);
