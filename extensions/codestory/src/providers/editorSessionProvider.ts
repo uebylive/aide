@@ -62,7 +62,6 @@ export class IndentationHelper {
 		for (let i = 0; i < line.length; i++) {
 			const charCode = line.charCodeAt(i);
 			if (charCode !== 32 && charCode !== 9) {
-				console.log('how many characters we matched' + i);
 				return line.substring(0, i);
 			}
 		}
@@ -84,7 +83,6 @@ export class IndentationHelper {
 				indentSize: spaceCount === 2 ? spaceCount : 4
 			};
 		}
-		console.log('are we returning null here');
 		return null;
 	}
 
@@ -285,7 +283,6 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 	repoRef: RepoRef;
 	workingDirectory: string;
 	constructor(sidecarClient: SideCarClient, repoRef: RepoRef, workingDirectory: string) {
-		console.log('we are registering here');
 		this.label = 'cs-chat-editor';
 		this.sidecarClient = sidecarClient;
 		this.repoRef = repoRef;
@@ -365,7 +362,6 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 				session.getTextDocumentLanguage(),
 				session.textDocument,
 			);
-			console.log('got messages from the sidecar client');
 			return new CSInteractiveEditorResponse(
 				[],
 				'skcd waiting for something',
