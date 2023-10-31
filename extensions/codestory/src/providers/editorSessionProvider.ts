@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { v4 as uuidv4 } from 'uuid';
 import { getCodeSelection } from '../editor/codeSelection';
-import { InEditorRequest } from '../sidecar/types';
+import { InEditorRequest, InLineAgentContextSelection } from '../sidecar/types';
 import { reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
 
 export enum IndentStyle {
@@ -71,11 +71,9 @@ export class IndentationHelper {
 
 	static guessIndentStyleFromLeadingWhitespace(whitespace: string): IndentStyleSpaces | null {
 		if (!whitespace || whitespace === ' ') {
-			console.log('we got a single whitespace here');
 			return null;
 		}
 		if (/\t/.test(whitespace)) {
-			console.log('we are passing here??? for tabs');
 			return { kind: IndentStyle.Tabs, indentSize: null };
 		}
 		const spaceMatch = whitespace.match(/( +)/);
@@ -112,6 +110,26 @@ export class IndentationHelper {
 			}
 		}
 		return defaultStyle || { kind: IndentStyle.Tabs, indentSize: null };
+	}
+
+	static getDocumentIndentStyleUsingSelection(selectionContext: InLineAgentContextSelection): IndentStyleSpaces {
+		const activeTextEditor = vscode.window.activeTextEditor;
+		if (activeTextEditor) {
+			if (activeTextEditor.options.insertSpaces) {
+				// @ts-ignore
+				return { kind: IndentStyle.Spaces, indentSize: activeTextEditor.options.tabSize ?? null };
+			} else {
+				return { kind: IndentStyle.Tabs, indentSize: null };
+			}
+		}
+		const content = [...selectionContext.above.lines, ...selectionContext.range.lines, ...selectionContext.below.lines];
+		for (const line of content) {
+			const style = this.guessIndentStyleFromLine(line);
+			if (style) {
+				return style;
+			}
+		}
+		return { kind: IndentStyle.Tabs, indentSize: null };
 	}
 
 	static changeIndentLevel(lines: string[], currentLevel: number, newLevel: number, style: IndentStyleSpaces): string[] {
