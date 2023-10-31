@@ -221,6 +221,17 @@ export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgr
 			}
 		};
 	}
+
+	static editGeneration(): CSInteractiveEditorProgressItem {
+		return {
+			slashCommand: {
+				command: 'edit',
+				refer: true,
+				detail: 'Edits the code as per the user request',
+				executeImmediately: false,
+			}
+		};
+	}
 }
 
 export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMessageResponse {
@@ -296,6 +307,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 			});
 			// First get the more correct range for this selection
 			const text = session.textDocument.getText();
+			const lineCount = session.textDocument.lineCount;
 			const startOffset = session.textDocument.offsetAt(session.range.start);
 			const endOffset = session.textDocument.offsetAt(session.range.end);
 			// Now we want to prepare the data we have to send over the wire
@@ -321,6 +333,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 					language: session.getTextDocumentLanguage(),
 					fsFilePath: session.textDocument.fileName,
 					relativePath: vscode.workspace.asRelativePath(session.textDocument.fileName),
+					lineCount,
 				},
 			};
 			console.log('[provideInteractiveEditorResponse]context');
