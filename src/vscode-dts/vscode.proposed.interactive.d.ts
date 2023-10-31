@@ -109,23 +109,9 @@ declare module 'vscode' {
 		args: any;
 	}
 
-	export interface InteractiveChatCodeSymbolContext {
-		filePath: string;
-		startLineNumber: number;
-		endLineNumber: number;
-		documentSymbolName: string;
-	}
-
-
-	export interface InteractiveUserProvidedContext {
-		fileContext: string[];
-		codeSymbolsContext: InteractiveChatCodeSymbolContext[];
-	}
-
 	export interface InteractiveRequest {
 		session: InteractiveSession;
 		message: string;
-		userProvidedContext: InteractiveUserProvidedContext | undefined;
 	}
 
 	export interface InteractiveResponseErrorDetails {
