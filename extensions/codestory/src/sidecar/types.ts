@@ -184,6 +184,7 @@ export interface TextDocument {
 	language: String;
 	fsFilePath: String;
 	relativePath: String;
+	lineCount: number;
 }
 
 

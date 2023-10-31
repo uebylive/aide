@@ -76,6 +76,10 @@ export const reportFromStreamToEditorSessionProgress = async (
 						progress.report(CSInteractiveEditorProgressItem.documentationGeneration());
 						continue;
 					}
+					if (lastStep === 'Edit') {
+						skillUsed = 'Edit';
+						progress.report(CSInteractiveEditorProgressItem.editGeneration());
+					}
 				}
 				// @ts-ignore
 				if ('DecideAction' in lastStep) {
