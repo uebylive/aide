@@ -249,15 +249,30 @@ export const extractCodeFromDocumentation = (input: string): string | null => {
 	return match ? match[1].trim() : null;
 };
 
+enum AnswerStreamContext {
+	BeforeCodeBlock,
+	InCodeBlock,
+	AfterCodeBlock,
+}
+
+interface AnswerStreamLine {
+	line: string;
+	context: AnswerStreamContext;
+}
+
 class AnswerSplitOnNewLineAccumulator {
 	accumulator: string;
 	runningAnswer: string;
-	lines: string[];
+	lines: AnswerStreamLine[];
+	codeBlockStringFound: boolean;
+	runningState: AnswerStreamContext;
 
 	constructor() {
 		this.accumulator = '';
 		this.runningAnswer = '';
 		this.lines = [];
+		this.codeBlockStringFound = false;
+		this.runningState = AnswerStreamContext.BeforeCodeBlock;
 	}
 
 	addDelta(delta: string | null | undefined) {
@@ -276,13 +291,24 @@ class AnswerSplitOnNewLineAccumulator {
 			}
 			const completeLine = this.accumulator.substring(0, newLineIndex);
 			console.log('pushing new line: ', completeLine);
-			this.lines.push(completeLine);
+			if (/^```/.test(completeLine)) {
+				if (!this.codeBlockStringFound) {
+					this.codeBlockStringFound = true;
+					this.runningState = AnswerStreamContext.InCodeBlock;
+				} else {
+					this.runningState = AnswerStreamContext.AfterCodeBlock;
+				}
+			}
+			this.lines.push({
+				line: completeLine,
+				context: this.runningState,
+			});
 			// we set the accumulator to the remaining line
 			this.accumulator = this.accumulator.substring(newLineIndex + 1);
 		}
 	}
 
-	getLine(): string | null {
+	getLine(): AnswerStreamLine | null {
 		if (this.lines.length === 0) {
 			return null;
 		}
@@ -327,14 +353,19 @@ class StreamProcessor {
 		this.filePathMarker = '// FILEPATH:';
 		this.beginMarker = '// BEGIN:';
 		this.endMarker = '// END:';
-		this.beginDetected = true;
-		this.endDetected = true;
+		this.beginDetected = false;
+		this.endDetected = false;
 		this.currentState = StateEnum.Initial;
 		this.previousLine = null;
 		this.documentLineIndex = this.document.firstSentLineIndex;
 	}
 
-	async processLine(line: string) {
+	async processLine(answerStreamLine: AnswerStreamLine) {
+		console.log('prcessing line: ', answerStreamLine);
+		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
+			return;
+		}
+		const line = answerStreamLine.line;
 		if (line.startsWith(this.filePathMarker) && this.currentState === StateEnum.Initial) {
 			this.currentState = StateEnum.InitialAfterFilePath;
 			return;
