@@ -18,6 +18,8 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IQuickInputService, IQuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { Registry } from 'vs/platform/registry/common/platform';
+import { buttonBackground } from 'vs/platform/theme/common/colorRegistry';
+import { registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
@@ -361,3 +363,20 @@ export function getHistoryAction(viewId: string, providerId: string) {
 		}
 	};
 }
+
+registerThemingParticipant((theme, collector) => {
+	const buttonBG = theme.getColor(buttonBackground);
+	const translucentButtonBG = buttonBG?.transparent(0.4);
+	const hoverButtonBG = buttonBG?.transparent(0.8);
+
+	collector.addRule(`
+		.keybindingPillWidget .keybinding-pill {
+			background-color: ${translucentButtonBG} !important;
+			backdrop-filter: blur(10px);
+		}
+
+		.keybindingPillWidget .keybinding-pill:hover {
+			background-color: ${hoverButtonBG} !important;
+		}
+	`);
+});

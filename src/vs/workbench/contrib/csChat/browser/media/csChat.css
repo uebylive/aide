@@ -634,6 +634,13 @@
 
 /* #endregion */
 
+.keybindingPillWidget {
+	display: flex !important;
+	border-radius: 2px;
+	overflow: hidden;
+}
+
 .keybindingPillWidget .keybinding-pill {
 	white-space: nowrap;
+	border-radius: 0;
 }

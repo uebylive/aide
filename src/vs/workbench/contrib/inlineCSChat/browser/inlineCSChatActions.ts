@@ -30,7 +30,7 @@ import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
 
-CommandsRegistry.registerCommandAlias('interactiveEditor.start', 'inlineChat.start');
+CommandsRegistry.registerCommandAlias('csChatEditor.start', 'inlineChat.start');
 export const LOCALIZED_START_INLINE_CHAT_STRING = localize('run', 'Start Inline Chat');
 
 export class StartSessionAction extends EditorAction2 {
