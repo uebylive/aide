@@ -57,6 +57,9 @@ import { QuickChatService } from 'vs/workbench/contrib/csChat/browser/csChatQuic
 import { HoverChatService } from 'vs/workbench/contrib/csChat/browser/csChatHover';
 import { ChatAgentService, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatVariablesService } from 'vs/workbench/contrib/csChat/browser/csChatVariables';
+import { KeybindingPillWidget } from 'vs/workbench/contrib/csChat/browser/csKeybindingPill';
+import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
+import { KeybindingPillContribution } from 'vs/workbench/contrib/csChat/browser/contrib/csChatKeybindingPillContrib';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -238,6 +241,9 @@ workbenchContributionsRegistry.registerWorkbenchContribution(ChatAccessibleViewC
 workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlashCommandsContribution, LifecyclePhase.Eventually);
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(ChatEditorInput.TypeID, ChatEditorInputSerializer);
 
+registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
+registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
+
 registerChatActions();
 registerChatCopyActions();
 registerChatCodeBlockActions();
@@ -260,3 +266,4 @@ registerSingleton(ICSChatProviderService, ChatProviderService, InstantiationType
 registerSingleton(ICSChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
 registerSingleton(ICSChatAgentService, ChatAgentService, InstantiationType.Delayed);
 registerSingleton(ICSChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
+

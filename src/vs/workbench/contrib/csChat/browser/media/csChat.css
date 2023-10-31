@@ -633,3 +633,7 @@
 }
 
 /* #endregion */
+
+.keybindingPillWidget .keybinding-pill {
+	white-space: nowrap;
+}
