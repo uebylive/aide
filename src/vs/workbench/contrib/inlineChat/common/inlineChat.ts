@@ -197,7 +197,7 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 	properties: {
 		'inlineChat.mode': {
 			description: localize('mode', "Configure if changes crafted in the interactive editor are applied directly to the document or are previewed first."),
-			default: EditMode.LivePreview,
+			default: EditMode.Live,
 			type: 'string',
 			enum: [EditMode.LivePreview, EditMode.Preview, EditMode.Live],
 			markdownEnumDescriptions: [
