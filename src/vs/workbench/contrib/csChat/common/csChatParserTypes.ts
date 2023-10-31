@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { URI } from 'vs/base/common/uri';
 import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IRange } from 'vs/editor/common/core/range';
+import { Location } from 'vs/editor/common/languages';
 import { IChatAgent, IChatAgentCommand } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 
@@ -114,7 +114,7 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 export class ChatRequestDynamicReferencePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
 	readonly kind = ChatRequestDynamicReferencePart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly name: string, readonly arg: string, readonly data: URI) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly name: string, readonly arg: string, readonly data: Location) { }
 
 	get referenceText(): string {
 		return `${this.name}:${this.arg}`;
@@ -170,7 +170,7 @@ export function reviveParsedChatRequest(serialized: IParsedChatRequest): IParsed
 					part.editorRange,
 					(part as ChatRequestDynamicReferencePart).name,
 					(part as ChatRequestDynamicReferencePart).arg,
-					URI.revive((part as ChatRequestDynamicReferencePart).data)
+					(part as ChatRequestDynamicReferencePart).data
 				);
 			} else {
 				throw new Error(`Unknown chat request part: ${part.kind}`);

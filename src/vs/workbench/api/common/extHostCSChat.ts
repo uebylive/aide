@@ -198,7 +198,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 
 		if (request.variables) {
 			for (const key of Object.keys(request.variables)) {
-				requestObj.variables[key] = request.variables[key].map(typeConvert.ChatVariable.to);
+				requestObj.variables[key] = request.variables[key].map(typeConvert.CSChatVariable.to);
 			}
 		}
 

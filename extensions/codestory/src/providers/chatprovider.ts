@@ -116,15 +116,17 @@ class CSChatReplyFollowup implements vscode.CSChatSessionReplyFollowup {
 export class CSChatRequest implements vscode.CSChatRequest {
 	session: CSChatSession;
 	message: string;
+	variables: Record<string, vscode.CSChatVariableValue[]>;
 	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined;
 
-	constructor(session: CSChatSession, message: string) {
+	constructor(session: CSChatSession, message: string, variables: Record<string, vscode.CSChatVariableValue[]> = {}) {
 		this.session = session;
 		this.message = message;
+		this.variables = variables;
 	}
 
 	toString(): string {
-		return `CSChatRequest { session: ${this.session.toString()}, message: ${this.message.toString()} }`;
+		return `CSChatRequest { session: ${this.session.toString()}, message: ${this.message.toString()}, variables: ${JSON.stringify(this.variables, null, 2)} }`;
 	}
 }
 
@@ -361,7 +363,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 			new CSChatParticipant('Aide', iconUri),
 			initialState,
 			this._agentCustomInformation,
-			'Ask away and use @ to give code, files to the AI',
+			'Ask away and use # to refer code symbols and files',
 		);
 	}
 

@@ -195,11 +195,6 @@ export class ChatRequestParser {
 		const range = new OffsetRange(offset, offset + full.length);
 		const editorRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column + full.length);
 
-		if (name !== 'file') {
-			// I suppose we support other types later
-			return;
-		}
-
 		const refAtThisPosition = references.find(r =>
 			r.range.startLineNumber === position.lineNumber &&
 			r.range.startColumn === position.column);

@@ -112,7 +112,6 @@ declare module 'vscode' {
 	export interface CSChatRequest {
 		session: CSChatSession;
 		message: string;
-		variables: any;
 	}
 
 	export interface CSChatResponseErrorDetails {
