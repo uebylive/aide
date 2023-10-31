@@ -15,12 +15,12 @@ export enum IndentStyle {
 	Spaces = 'spaces'
 }
 
-interface IndentStyleSpaces {
+export interface IndentStyleSpaces {
 	kind: IndentStyle;
 	indentSize: number | null;
 }
 
-class IndentationUtils {
+export class IndentationUtils {
 	private spacePatterns: Map<number, RegExp>;
 	private readonly tabPattern: RegExp;
 
