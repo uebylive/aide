@@ -336,9 +336,6 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 					lineCount,
 				},
 			};
-			console.log('[provideInteractiveEditorResponse]context');
-			console.log(context);
-			console.log('callling the sidecar client endpoint');
 			const messages = await this.sidecarClient.getInLineEditorResponse(context);
 			await reportFromStreamToEditorSessionProgress(
 				messages,

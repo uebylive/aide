@@ -97,6 +97,12 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// one and then apply it to the editor
 				generatedAnswer = inlineAgentMessage.answer;
 			}
+			if (skillUsed === 'Edit') {
+				console.log('we are sending edits');
+				console.log(inlineAgentMessage.answer);
+				// Here we have to parse the answer properly and figure out how to send
+				// the edits for the lines
+			}
 		}
 		// Here we have to parse the data properly and get the answer back, implement
 		// the logic for generating the reply properly here
