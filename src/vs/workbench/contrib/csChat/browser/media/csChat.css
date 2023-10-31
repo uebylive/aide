@@ -13,7 +13,7 @@
 	display: none !important;
 }
 
-.interactive-item-container {
+.csChat-item-container {
 	padding: 16px 20px;
 	display: flex;
 	flex-direction: column;
@@ -25,30 +25,30 @@
 	-webkit-user-select: text;
 }
 
-.interactive-item-container .header {
+.csChat-item-container .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.interactive-item-container .header .user {
+.csChat-item-container .header .user {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
-.interactive-item-container .header .username {
+.csChat-item-container .header .username {
 	margin: 0;
 	font-size: 12px;
 	font-weight: 600;
 }
 
-.interactive-item-container .header .detail-container {
+.csChat-item-container .header .detail-container {
 	font-size: 0.9em;
 	opacity: 0.7;
 }
 
-.interactive-item-container:not(.show-progress) .chat-animated-ellipsis {
+.csChat-item-container:not(.show-progress) .chat-animated-ellipsis {
 	display: none;
 }
 
@@ -78,110 +78,108 @@
 	animation: ellipsis steps(4, end) 1s infinite;
 }
 
-.interactive-item-container .header .avatar-container {
+.csChat-item-container .header .avatar-container {
 	display: flex;
 	pointer-events: none;
 	user-select: none;
 }
 
-.interactive-item-container .header .avatar {
+.csChat-item-container .header .avatar {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	width: 24px;
 	height: 24px;
-	border-radius: 50%;
-	outline: 1px solid var(--vscode-chat-requestBorder)
 }
 
-.interactive-item-container .header .avatar.codicon-avatar {
+.csChat-item-container .header .avatar.codicon-avatar {
 	background: var(--vscode-chat-avatarBackground);
 }
 
-.interactive-item-container .header .avatar+.avatar {
+.csChat-item-container .header .avatar+.avatar {
 	margin-left: -8px;
 }
 
-.interactive-item-container .header .avatar .icon {
+.csChat-item-container .header .avatar .icon {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
 }
 
-.interactive-item-container .header .avatar .codicon {
+.csChat-item-container .header .avatar .codicon {
 	color: var(--vscode-chat-avatarForeground);
 	font-size: 14px;
 }
 
-.interactive-item-container .header .agent-avatar-container {
+.csChat-item-container .header .agent-avatar-container {
 	margin-left: -30px;
 	transition: margin 0.15s ease-out;
 	transition-delay: 0.5s;
 	z-index: -1;
 }
 
-.interactive-item-container .header .agent-avatar-container.loading {
+.csChat-item-container .header .agent-avatar-container.loading {
 	margin-left: 0px;
 	z-index: 1;
 }
 
-.interactive-item-container .header .agent-avatar-container.complete {
+.csChat-item-container .header .agent-avatar-container.complete {
 	margin-left: -12px;
 	z-index: 1;
 }
 
-.monaco-list-row:not(.focused) .interactive-item-container:not(:hover) .header .monaco-toolbar,
-.monaco-list:not(:focus-within) .monaco-list-row .interactive-item-container:not(:hover) .header .monaco-toolbar,
-.monaco-list-row:not(.focused) .interactive-item-container:not(:hover) .header .monaco-toolbar .action-label,
-.monaco-list:not(:focus-within) .monaco-list-row .interactive-item-container:not(:hover) .header .monaco-toolbar .action-label {
+.monaco-list-row:not(.focused) .csChat-item-container:not(:hover) .header .monaco-toolbar,
+.monaco-list:not(:focus-within) .monaco-list-row .csChat-item-container:not(:hover) .header .monaco-toolbar,
+.monaco-list-row:not(.focused) .csChat-item-container:not(:hover) .header .monaco-toolbar .action-label,
+.monaco-list:not(:focus-within) .monaco-list-row .csChat-item-container:not(:hover) .header .monaco-toolbar .action-label {
 	/* Also apply this rule to the .action-label directly to work around a strange issue- when the
 	toolbar is hidden without that second rule, tabbing from the list container into a list item doesn't work
 	and the tab key doesn't do anything. */
 	display: none;
 }
 
-.interactive-item-container .header .monaco-toolbar .monaco-action-bar .actions-container {
+.csChat-item-container .header .monaco-toolbar .monaco-action-bar .actions-container {
 	gap: 4px;
 }
 
-.interactive-item-container .header .monaco-toolbar .action-label {
+.csChat-item-container .header .monaco-toolbar .action-label {
 	border: 1px solid transparent;
 	padding: 2px;
 }
 
-.interactive-item-container .header .monaco-toolbar .checked.action-label,
-.interactive-item-container .header .monaco-toolbar .checked.action-label:hover {
+.csChat-item-container .header .monaco-toolbar .checked.action-label,
+.csChat-item-container .header .monaco-toolbar .checked.action-label:hover {
 	color: var(--vscode-inputOption-activeForeground) !important;
 	border-color: var(--vscode-inputOption-activeBorder);
 	background-color: var(--vscode-inputOption-activeBackground);
 }
 
-.interactive-item-container .value {
+.csChat-item-container .value {
 	width: 100%;
 }
 
-.interactive-item-container .value .rendered-markdown table {
+.csChat-item-container .value .rendered-markdown table {
 	width: 100%;
 	text-align: left;
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .value .rendered-markdown table,
-.interactive-item-container .value .rendered-markdown table td,
-.interactive-item-container .value .rendered-markdown table th {
+.csChat-item-container .value .rendered-markdown table,
+.csChat-item-container .value .rendered-markdown table td,
+.csChat-item-container .value .rendered-markdown table th {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-collapse: collapse;
 	padding: 4px 6px;
 }
 
-.interactive-item-container .value .rendered-markdown a,
-.interactive-item-container .value .interactive-session-followups,
-.interactive-item-container .value .rendered-markdown a code {
+.csChat-item-container .value .rendered-markdown a,
+.csChat-item-container .value .interactive-session-followups,
+.csChat-item-container .value .rendered-markdown a code {
 	color: var(--vscode-textLink-foreground);
 }
 
-.interactive-item-container .value .rendered-markdown a:hover,
-.interactive-item-container .value .rendered-markdown a:active {
+.csChat-item-container .value .rendered-markdown a:hover,
+.csChat-item-container .value .rendered-markdown a:active {
 	color: var(--vscode-textLink-activeForeground);
 }
 
@@ -194,53 +192,53 @@
 	border-top: 1px solid var(--vscode-chat-requestBorder);
 }
 
-.interactive-item-container .value {
+.csChat-item-container .value {
 	white-space: normal;
 	word-wrap: break-word;
 }
 
-.interactive-item-container .value > :last-child.rendered-markdown > :last-child {
+.csChat-item-container .value > :last-child.rendered-markdown > :last-child {
 	margin-bottom: 0px;
 }
 
-.interactive-item-container .value .rendered-markdown h1 {
+.csChat-item-container .value .rendered-markdown h1 {
 	font-size: 20px;
 	font-weight: 600;
 	margin: 16px 0;
 
 }
 
-.interactive-item-container .value .rendered-markdown h2 {
+.csChat-item-container .value .rendered-markdown h2 {
 	font-size: 16px;
 	font-weight: 600;
 	margin: 16px 0;
 }
 
-.interactive-item-container .value .rendered-markdown h3 {
+.csChat-item-container .value .rendered-markdown h3 {
 	font-size: 14px;
 	font-weight: 600;
 	margin: 16px 0;
 }
 
-.interactive-item-container .value .rendered-markdown p {
+.csChat-item-container .value .rendered-markdown p {
 	margin: 0 0 16px 0;
 	line-height: 1.5em;
 }
 
-.interactive-item-container .value .rendered-markdown ul {
+.csChat-item-container .value .rendered-markdown ul {
 	padding-inline-start: 24px;
 }
 
-.interactive-item-container .value .rendered-markdown ol {
+.csChat-item-container .value .rendered-markdown ol {
 	padding-inline-start: 28px;
 }
 
-.interactive-item-container .value .rendered-markdown li {
+.csChat-item-container .value .rendered-markdown li {
 	line-height: 1.3rem;
 }
 
-.interactive-item-container .monaco-tokenized-source,
-.interactive-item-container code {
+.csChat-item-container .monaco-tokenized-source,
+.csChat-item-container code {
 	font-family: var(--monaco-monospace-font);
 	font-size: 12px;
 	color: var(--vscode-textPreformat-foreground);
@@ -249,54 +247,54 @@
 	border-radius: 4px;
 }
 
-.interactive-item-container.interactive-item-compact {
+.csChat-item-container.interactive-item-compact {
 	padding: 8px 20px;
 }
 
-.interactive-item-container.interactive-item-compact .header {
+.csChat-item-container.interactive-item-compact .header {
 	height: 16px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar {
+.csChat-item-container.interactive-item-compact .header .avatar {
 	width: 16px;
 	height: 16px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar .icon {
+.csChat-item-container.interactive-item-compact .header .avatar .icon {
 	width: 16px;
 	height: 16px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar+.avatar .codicon {
+.csChat-item-container.interactive-item-compact .header .avatar+.avatar .codicon {
 	font-size: 12px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar+.avatar {
+.csChat-item-container.interactive-item-compact .header .avatar+.avatar {
 	margin-left: -4px;
 }
 
-.interactive-item-container.interactive-item-compact .value {
+.csChat-item-container.interactive-item-compact .value {
 	min-height: 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown p {
+.csChat-item-container.interactive-item-compact .value .rendered-markdown p {
 	margin: 0 0 8px 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h1 {
+.csChat-item-container.interactive-item-compact .value .rendered-markdown h1 {
 	margin: 8px 0;
 
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h2 {
+.csChat-item-container.interactive-item-compact .value .rendered-markdown h2 {
 	margin: 8px 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h3 {
+.csChat-item-container.interactive-item-compact .value .rendered-markdown h3 {
 	margin: 8px 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown p {
+.csChat-item-container.interactive-item-compact .value .rendered-markdown p {
 	margin: 0 0 8px 0;
 }
 
@@ -358,7 +356,7 @@
 	margin: 16px 0 !important;
 }
 
-.interactive-item-container .interactive-result-code-block .monaco-toolbar .monaco-action-bar .actions-container {
+.csChat-item-container .interactive-result-code-block .monaco-toolbar .monaco-action-bar .actions-container {
 	padding-inline-start: unset;
 }
 
@@ -384,7 +382,7 @@
 	color: var(--vscode-notificationsInfoIcon-foreground) !important; /* Have to override default styles which apply to all lists */
 }
 
-.interactive-item-container .value .interactive-slash-command {
+.csChat-item-container .value .interactive-slash-command {
 	color: var(--vscode-textLink-foreground);
 }
 
@@ -411,7 +409,7 @@
 	margin-top: 1px;
 }
 
-.interactive-item-container .interactive-response-followups .monaco-button {
+.csChat-item-container .interactive-response-followups .monaco-button {
 	padding: 4px 8px;
 }
 
@@ -447,12 +445,12 @@
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .monaco-toolbar .codicon {
+.csChat-item-container .monaco-toolbar .codicon {
 	/* Very aggressive list styles try to apply focus colors to every codicon in a list row. */
 	color: var(--vscode-icon-foreground) !important;
 }
 
-.interactive-item-container.filtered-response .value > .rendered-markdown {
+.csChat-item-container.filtered-response .value > .rendered-markdown {
 	-webkit-mask-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.05));
 	mask-image: linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.05));
 }
@@ -492,11 +490,11 @@
 	border-color: var(--vscode-focusBorder, transparent);
 }
 
-.interactive-item-container .value .interactive-response-placeholder-codicon .codicon {
+.csChat-item-container .value .interactive-response-placeholder-codicon .codicon {
 	color: var(--vscode-editorGhostText-foreground);
 }
 
-.interactive-item-container .value .interactive-response-placeholder-content {
+.csChat-item-container .value .interactive-response-placeholder-content {
 	color: var(--vscode-editorGhostText-foreground);
 	font-size: 12px;
 }
@@ -514,7 +512,7 @@
 	width: auto;
 }
 
-.interactive-item-container .chat-resource-widget {
+.csChat-item-container .chat-resource-widget {
 	background-color: var(--vscode-chat-slashCommandBackground);
 	color: var(--vscode-chat-slashCommandForeground);
 	border-radius: 4px;
@@ -578,7 +576,7 @@
 
 /* #region Quick Chat */
 
-.monaco-workbench>.hover-chat-container {
+.monaco-workbench > .hover-chat-container {
 	position: fixed;
 	right: 13px;
 	bottom: 34px;
@@ -635,3 +633,7 @@
 }
 
 /* #endregion */
+
+.keybindingPillWidget .keybinding-pill {
+	white-space: nowrap;
+}

@@ -455,7 +455,6 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 					}
 					return new CSChatProgressContent(`Gathered context from current [view](${deepContext.currentViewPort.fsFilePath}#L${deepContext.currentViewPort.startPosition.line}-L${deepContext.currentViewPort.endPosition.line})\n\n`);
 				};
-				progress.report(new CSChatProgressContent('Gathering context\n'));
 				progress.report(await gatherContextFromView());
 				// calling this here to see what kind of ranges we are getting
 				this._chatSessionState.chatContext.cleanupChatHistory();
