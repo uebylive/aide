@@ -243,6 +243,7 @@ export interface InLineAgentAnswer {
 	delta: string | null;
 	state: InLineAgentMessageState;
 	document_symbol: InLineAgentDocumentSymbol | null;
+	context_selection: InLineAgentContextSelection | null;
 }
 
 
@@ -256,6 +257,19 @@ export interface InLineAgentMessage {
 	last_updated: number;
 	created_at: number;
 	keep_alive: string | undefined;
+}
+
+export interface InLineAgentContextSelection {
+	above: InLineAgentSelectionData;
+	below: InLineAgentSelectionData;
+	range: InLineAgentSelectionData;
+}
+
+export interface InLineAgentSelectionData {
+	has_content: boolean;
+	first_line_index: number;
+	last_line_index: number;
+	lines: string[];
 }
 
 
