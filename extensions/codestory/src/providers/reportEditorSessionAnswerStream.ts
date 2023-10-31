@@ -219,7 +219,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 				codeBlockReplacementIndentLevel = IndentationHelper.guessIndentLevel(firstLine, codeBlockReplacementIndentStyle);
 			}
 			const newContent = IndentationHelper.changeIndentStyle(codeblockReplacementLines, codeBlockReplacementIndentStyle, originalDocIndentationStyle).join('\n');
-			console.log('newContentPosition', selectionTextRange.start.line, selectionTextRange.start.character, selectionTextRange.end.line, selectionTextRange.end.character);
 			textEdits.push(vscode.TextEdit.replace(selectionTextRange, newContent));
 			// now we have the original doc, indent style and the new text indent style
 			// we want to make sure the generated doc has the same indent level as the original doc
@@ -234,8 +233,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 
 
 export const extractCodeFromDocumentation = (input: string): string | null => {
-	console.log('extracCodeFromDocumentation');
-	console.log(input);
 	const codePattern = /\/\/ FILEPATH:.*?\n([\s\S]+?)```/;
 
 	const match = input.match(codePattern);
@@ -368,9 +365,7 @@ class StreamProcessor {
 		}
 		if (this.endDetected) {
 			if (this.previousLine) {
-				console.log('previousLine:', line);
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
-				console.log('adjustedLine:', adjustedLine);
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
@@ -443,8 +438,6 @@ class DocumentManager {
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
 		// this.indentStyle = IndentationHelper.getDocumentIndentStyleUsingSelection(contextSelection); // Determines the indentation style
-		console.log('indentStyle:', this.indentStyle);
-		console.log(this.indentStyle);
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = document.getText().split(/\r\n|\r|\n/g);
@@ -535,7 +528,7 @@ class DocumentManager {
 		this.progress.report({
 			edits: [
 				{
-					range: new vscode.Range(index + 1, 1000, index + 1, 1000),
+					range: new vscode.Range(index, 1000, index, 1000),
 					newText: '\n' + newLine.adjustedContent,
 				}
 			]
