@@ -48,8 +48,11 @@ export const reportFromStreamToEditorSessionProgress = async (
 	let enteredAnswerGenerationLoop = false;
 	let skillUsed: InLineAgentAction | undefined = undefined;
 	let generatedAnswer: InLineAgentAnswer | null = null;
+	const answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
+	let finalAnswer = '';
 
 	for await (const inlineAgentMessage of asyncIterable) {
+		console.log(inlineAgentMessage);
 		// Here we are going to go in a state machine like flow, where we are going
 		// to stream back to the user whatever steps we get, and when we start
 		// streaming the reply back, that's when we start sending TextEdit updates
@@ -79,6 +82,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 					if (lastStep === 'Edit') {
 						skillUsed = 'Edit';
 						progress.report(CSInteractiveEditorProgressItem.editGeneration());
+						continue;
 					}
 				}
 				// @ts-ignore
@@ -98,8 +102,16 @@ export const reportFromStreamToEditorSessionProgress = async (
 				generatedAnswer = inlineAgentMessage.answer;
 			}
 			if (skillUsed === 'Edit') {
-				console.log('we are sending edits');
-				console.log(inlineAgentMessage.answer);
+				// we first add the delta
+				answerSplitOnNewLineAccumulator.addDelta(inlineAgentMessage.answer?.delta);
+				// check if we can get any lines back here
+				while (true) {
+					const currentLine = answerSplitOnNewLineAccumulator.getLine();
+					if (currentLine === null) {
+						break;
+					}
+					finalAnswer = finalAnswer + currentLine + '\n';
+				}
 				// Here we have to parse the answer properly and figure out how to send
 				// the edits for the lines
 			}
@@ -107,6 +119,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 		// Here we have to parse the data properly and get the answer back, implement
 		// the logic for generating the reply properly here
 	}
+
 
 	if (skillUsed === 'Doc' && generatedAnswer !== null) {
 		// Here we will send over the updates
@@ -218,3 +231,52 @@ export const extractCodeFromDocumentation = (input: string): string | null => {
 
 	return match ? match[1].trim() : null;
 };
+
+class AnswerSplitOnNewLineAccumulator {
+	accumulator: string;
+	runningAnswer: string;
+	lines: string[];
+
+	constructor() {
+		this.accumulator = '';
+		this.runningAnswer = '';
+		this.lines = [];
+	}
+
+	addDelta(delta: string | null | undefined) {
+		if (delta === null || delta === undefined) {
+			return;
+		}
+		// When we are adding delta, we need to check if after adding the delta
+		// we get a new line, and if we do we split it on the new line and add it
+		// to our queue of events to push
+		this.accumulator = this.accumulator + delta;
+		while (true) {
+			const newLineIndex = this.accumulator.indexOf('\n');
+			// If we found no new line, lets just break here
+			if (newLineIndex === -1) {
+				break;
+			}
+			const completeLine = this.accumulator.substring(0, newLineIndex);
+			console.log('pushing new line: ', completeLine);
+			this.lines.push(completeLine);
+			// we set the accumulator to the remaining line
+			this.accumulator = this.accumulator.substring(newLineIndex + 1);
+		}
+	}
+
+	getLine(): string | null {
+		if (this.lines.length === 0) {
+			return null;
+		}
+		// or give back the first element of the string
+		const line = this.lines[0];
+		// remove the first element from the array
+		this.lines = this.lines.slice(1);
+		return line;
+	}
+
+	getLineLength(): number {
+		return this.lines.length;
+	}
+}
