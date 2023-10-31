@@ -35,7 +35,6 @@ interface IViewPaneState extends IViewState {
 }
 
 export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.chatSidebar';
-export const CS_CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.oldCSChatSidebar';
 export class ChatViewPane extends ViewPane implements IChatViewPane {
 	static ID = 'workbench.panel.chat.view';
 

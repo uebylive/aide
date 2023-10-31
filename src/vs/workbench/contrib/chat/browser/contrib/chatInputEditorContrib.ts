@@ -24,7 +24,6 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
-// import { AtSymbolContentWidget } from 'vs/workbench/contrib/chat/browser/chatAtSymbolContentWidget';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicReferences';
@@ -90,7 +89,7 @@ class InputEditorDecorations extends Disposable {
 
 	private registerViewModelListeners(): void {
 		this.viewModelDisposables.value = this.widget.viewModel?.onDidChange(e => {
-			if (e?.kind === 'changePlaceholder') {
+			if (e?.kind === 'changePlaceholder' || e?.kind === 'initialize') {
 				this.updateInputEditorDecorations();
 			}
 		});
@@ -128,7 +127,6 @@ class InputEditorDecorations extends Disposable {
 
 	private async updateInputEditorDecorations() {
 		const inputValue = this.widget.inputEditor.getValue();
-		const slashCommands = await this.widget.getSlashCommands(); // TODO this async call can lead to a flicker of the placeholder text when switching editor tabs
 
 		const viewModel = this.widget.viewModel;
 		if (!viewModel) {
@@ -137,10 +135,7 @@ class InputEditorDecorations extends Disposable {
 
 		if (!inputValue) {
 			const viewModelPlaceholder = this.widget.viewModel?.inputPlaceholder;
-			const defaultPlaceholder = slashCommands?.length ?
-				localize('interactive.input.placeholderWithCommands', "Ask a question or type '@' or '/'") :
-				localize('interactive.input.placeholderNoCommands', "Initializing the chat...");
-			const placeholder = viewModelPlaceholder ?? defaultPlaceholder;
+			const placeholder = viewModelPlaceholder ?? '';
 			const decoration: IDecorationOptions[] = [
 				{
 					range: {
@@ -520,7 +515,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			_debugDisplayName: 'chatDynamicCompletions',
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality === 'stable';
+				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality !== 'stable';
 				if (!fileVariablesEnabled) {
 					return;
 				}
@@ -659,7 +654,7 @@ function computeCompletionRanges(model: ITextModel, position: Position, reg: Reg
 	return { insert, replace };
 }
 
-export class VariableCompletions extends Disposable {
+class VariableCompletions extends Disposable {
 
 	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
@@ -718,8 +713,7 @@ export class VariableCompletions extends Disposable {
 	}
 }
 
-// TODO(codestory): Commenting this out so we use our custom provider for LSP
-// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
 
 class ChatTokenDeleter extends Disposable {
 
