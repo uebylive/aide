@@ -32,6 +32,8 @@ import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatAgentLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { ChatDynamicReferenceModel } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
+import { basename } from 'vs/base/common/resources';
 
 export const CHAT_CATEGORY = { value: localize('chat.category', "Chat"), original: 'Chat' };
 export const CHAT_OPEN_ACTION_ID = 'workbench.action.csChat.open';
@@ -125,6 +127,82 @@ export function registerChatActions() {
 
 				const widgetService = accessor.get(ICSChatWidgetService);
 				widgetService.getWidgetByInputUri(editorUri)?.acceptInputWithPrefix(`${chatAgentLeader}${secondaryAgent.id}`);
+			}
+		}
+	});
+
+	registerEditorAction(class ChatAddContext extends EditorAction {
+		constructor() {
+			super({
+				id: 'csChat.action.addContext',
+				label: localize({ key: 'actions.chat.addContext', comment: ['Add context to the chat input box'] }, "Add Context"),
+				alias: 'Add Context',
+				precondition: CONTEXT_PROVIDER_EXISTS,
+				kbOpts: {
+					kbExpr: EditorContextKeys.textInputFocus,
+					primary: KeyMod.CtrlCmd | KeyCode.KeyL,
+					weight: KeybindingWeight.EditorContrib
+				}
+			});
+		}
+
+		async run(accessor: ServicesAccessor, editor: ICodeEditor): Promise<void> {
+			const chatService = accessor.get(ICSChatService);
+			const chatWidgetService = accessor.get(ICSChatWidgetService);
+			const providers = chatService.getProviderInfos();
+			if (!providers.length) {
+				return;
+			}
+
+			const chatWidget = await chatWidgetService.revealViewForProvider(providers[0].id);
+			const editorModel = editor.getModel();
+			if (!editorModel || !chatWidget) {
+				return;
+			}
+
+			// get the current position from chatWidget and insert the context
+			const position = chatWidget.inputEditor.getPosition();
+			if (!position) {
+				return;
+			}
+			const range = {
+				startLineNumber: position.lineNumber,
+				startColumn: position.column,
+				endLineNumber: position.lineNumber,
+				endColumn: position.column
+			};
+
+			const editorUri = editorModel.uri;
+			const selectedRange = editor.getSelection();
+			if (editorUri && !selectedRange?.isEmpty() && selectedRange) {
+				const fileName = basename(editorUri);
+				let text = `#file:${fileName}`;
+
+				if (selectedRange.startLineNumber === selectedRange.endLineNumber) {
+					text += `:${selectedRange.startLineNumber}`;
+				} else {
+					text += `:${selectedRange.startLineNumber}-${selectedRange.endLineNumber}`;
+				}
+
+				const success = chatWidget.inputEditor.executeEdits('chatAddContext', [{ range, text: text + ' ' }]);
+				if (!success) {
+					return;
+				}
+
+				chatWidget.getContrib<ChatDynamicReferenceModel>(ChatDynamicReferenceModel.ID)?.addReference({
+					range: { ...range, endColumn: range.endColumn + text.length },
+					data: {
+						uri: editorUri,
+						range: {
+							startLineNumber: selectedRange!.startLineNumber,
+							startColumn: selectedRange!.startColumn,
+							endLineNumber: selectedRange!.endLineNumber,
+							endColumn: selectedRange!.endColumn
+						}
+					}
+				});
+
+				chatWidget.focusInput();
 			}
 		}
 	});
