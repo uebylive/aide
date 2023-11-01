@@ -629,3 +629,32 @@ class AdjustedLineContent {
 	}
 }
 
+
+interface DiagnosticInformation {
+	uri: vscode.Uri;
+	diagnostics: vscode.Diagnostic[];
+}
+
+
+// Try to get all the diagnostic information from the editor
+export const getDiagnosticsForDocument = async (
+): Promise<DiagnosticInformation[]> => {
+	let diagnostics: DiagnosticInformation[] = [];
+	const currentDocument = vscode.window.activeTextEditor?.document;
+	if (currentDocument !== undefined) {
+		const diagnosticsForDocument = vscode.languages.getDiagnostics(currentDocument.uri);
+		diagnostics.push({
+			uri: currentDocument.uri,
+			diagnostics: diagnosticsForDocument,
+		});
+	}
+	else {
+		diagnostics = vscode.languages.getDiagnostics().map((diagnosticWithUri) => {
+			return {
+				uri: diagnosticWithUri[0],
+				diagnostics: diagnosticWithUri[1],
+			};
+		});
+	}
+	return diagnostics;
+}
