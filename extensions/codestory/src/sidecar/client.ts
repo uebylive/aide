@@ -7,7 +7,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, RepoStatus, SemanticSearchResponse, SnippetInformation } from './types';
+import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, RepoStatus, SemanticSearchResponse, SnippetInformation, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
 export enum RepoRefBackend {
@@ -51,6 +51,26 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/repo/repo_list';
 		return baseUrl.toString();
+	}
+
+	async getRangeForDiagnostics(textDocumentWeb: TextDocument, snippetInformation: SnippetInformation, thresholdToExpand: number) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/tree_sitter/diagnostic_parsing';
+		const body = {
+			text_document_web: textDocumentWeb,
+			range: snippetInformation,
+			threshold_to_expand: thresholdToExpand,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+		const responseJson = await response.json();
+		console.log(responseJson);
 	}
 
 	async getSymbolsForGoToDefinition(codeSnippet: string, repoRef: RepoRef, threadId: string, language: string): Promise<string[]> {

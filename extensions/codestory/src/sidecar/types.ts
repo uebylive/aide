@@ -208,25 +208,6 @@ export enum DiagnosticSeverity {
 	Hint = 3,
 }
 
-export interface DiagnosticRelatedInformation {
-	location: {
-		uri: string;
-		range: {
-			start: {
-				line: number;
-				character: number;
-				byteOffset: number;
-			};
-			end: {
-				line: number;
-				character: number;
-				byteOffset: number;
-			};
-		};
-	};
-	message: string;
-}
-
 export interface DiagnosticCode {
 	strValue: string | null;
 	numValue: number | null;
@@ -237,7 +218,30 @@ export interface DiagnosticCode {
 	} | null;
 }
 
+
+export interface InEditorRequest {
+	repoRef: string;
+	query: string;
+	threadId: string;
+	language: string;
+	snippetInformation: SnippetInformation;
+	textDocumentWeb: TextDocument;
+	diagnosticInformation: DiagnosticInformationFromEditor | null,
+}
+
+export interface DiagnosticInformationFromEditor {
+	firstMessage: string;
+	diagnosticInformation: DiagnosticInformation[];
+}
+
 export interface DiagnosticInformation {
+	promptParts: string[];
+	relatedInformation: DiagnosticRelatedInformation[];
+}
+
+export interface DiagnosticRelatedInformation {
+	text: string;
+	language: string;
 	range: {
 		startPosition: {
 			line: number;
@@ -249,27 +253,8 @@ export interface DiagnosticInformation {
 			character: number;
 			byteOffset: number;
 		};
-	};
-	message: string;
-	severity: DiagnosticSeverity;
-	source: string | null;
-	code: DiagnosticCode | null;
+	}
 }
-
-export interface InEditorRequest {
-	repoRef: string;
-	query: string;
-	threadId: string;
-	language: string;
-	snippetInformation: SnippetInformation;
-	textDocumentWeb: TextDocument;
-	diagnosticInformation: DiagnosticInformationFromEditor[],
-}
-
-export interface DiagnosticInformationFromEditor {
-	fsFilePath: string;
-	diagnostics: DiagnosticInformation[];
-};
 
 
 export type InLineAgentAction =

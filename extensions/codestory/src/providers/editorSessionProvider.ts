@@ -8,7 +8,7 @@ import { RepoRef, SideCarClient } from '../sidecar/client';
 import { v4 as uuidv4 } from 'uuid';
 import { getCodeSelection } from '../editor/codeSelection';
 import { InEditorRequest, InLineAgentContextSelection } from '../sidecar/types';
-import { getDiagnosticsForDocument, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
+import { parseDiagnosticsInformation, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
 
 export enum IndentStyle {
 	Tabs = 'tabs',
@@ -320,6 +320,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 			progress.report({
 				message: 'Getting the response...',
 			});
+			const textDocument = session.textDocument;
 			// First get the more correct range for this selection
 			const text = session.textDocument.getText();
 			const lineCount = session.textDocument.lineCount;
@@ -350,7 +351,10 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 					relativePath: vscode.workspace.asRelativePath(session.textDocument.fileName),
 					lineCount,
 				},
-				diagnosticInformation: await getDiagnosticsForDocument(),
+				diagnosticInformation: await parseDiagnosticsInformation(
+					vscode.languages.getDiagnostics(textDocument.uri),
+					textDocument,
+				),
 			};
 			const messages = await this.sidecarClient.getInLineEditorResponse(context);
 			await reportFromStreamToEditorSessionProgress(
