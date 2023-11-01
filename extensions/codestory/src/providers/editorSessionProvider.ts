@@ -387,6 +387,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 				session.textDocument,
 			);
 			if (messageReply.message !== null) {
+				console.log(messageReply.message);
 				return new CSInteractiveEditorMessageResponse(
 					new vscode.MarkdownString(messageReply.message, true),
 					undefined,

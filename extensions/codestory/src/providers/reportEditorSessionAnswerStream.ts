@@ -138,13 +138,13 @@ export const reportFromStreamToEditorSessionProgress = async (
 					}
 					// Let's process the line
 					streamProcessor.processLine(currentLine);
-					finalAnswer = finalAnswer + currentLine + '\n';
+					finalAnswer = finalAnswer + currentLine.line + '\n';
 				}
 				// Here we have to parse the answer properly and figure out how to send
 				// the edits for the lines
 			}
 			if (skillUsed === 'Fix') {
-				console.log(inlineAgentMessage.answer?.answer_up_until_now);
+				console.log(inlineAgentMessage.answer);
 				answerSplitOnNewLineAccumulator.addDelta(inlineAgentMessage.answer?.delta);
 				contextSelection = inlineAgentMessage.answer?.context_selection;
 				if (streamProcessor === null) {
@@ -165,7 +165,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 					}
 					// Let's process the line
 					streamProcessor.processLine(currentLine);
-					finalAnswer = finalAnswer + currentLine + '\n';
+					finalAnswer = finalAnswer + currentLine.line + '\n';
 				}
 			}
 		}
@@ -175,9 +175,14 @@ export const reportFromStreamToEditorSessionProgress = async (
 
 	if (skillUsed === 'Fix') {
 		if (streamProcessor && !streamProcessor.sentEdits) {
-			progress.report(CSInteractiveEditorProgressItem.sendReplyMessage(finalAnswer));
+			// Here we will clean up the // BEGIN and // END markers
+			// and then send the edits
+			const lines = finalAnswer.split(/\r\n|\r|\n/g);
+			const newLines = lines.filter((line) => {
+				return !line.startsWith('// BEGIN') && !line.startsWith('// END');
+			}).join('\n');
 			return {
-				message: finalAnswer,
+				message: newLines,
 			};
 		}
 	}
