@@ -226,7 +226,7 @@ export interface InEditorRequest {
 	language: string;
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
-	diagnosticInformation: DiagnosticInformationFromEditor | null,
+	diagnosticsInformation: DiagnosticInformationFromEditor | null;
 }
 
 export interface DiagnosticInformationFromEditor {

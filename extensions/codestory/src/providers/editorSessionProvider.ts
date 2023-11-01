@@ -227,6 +227,13 @@ export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgr
 		};
 	}
 
+	static sendReplyMessage(message: string): CSInteractiveEditorProgressItem {
+		return {
+			content: message,
+			message,
+		};
+	}
+
 	static documentationGeneration(): CSInteractiveEditorProgressItem {
 		return {
 			slashCommand: {
@@ -248,6 +255,17 @@ export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgr
 			}
 		};
 	}
+
+	static fixGeneration(): CSInteractiveEditorProgressItem {
+		return {
+			slashCommand: {
+				command: 'fix',
+				refer: true,
+				detail: 'Fixes the code as per the user request',
+				executeImmediately: false,
+			}
+		};
+	}
 }
 
 export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMessageResponse {
@@ -255,7 +273,7 @@ export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMe
 	placeholder?: string;
 	wholeRange?: vscode.Range;
 
-	constructor(contents: vscode.MarkdownString, placeholder: string | undefined, wholeRange: vscode.Range) {
+	constructor(contents: vscode.MarkdownString, placeholder: string | undefined, wholeRange: vscode.Range | undefined) {
 		this.contents = contents;
 		this.placeholder = placeholder;
 		this.wholeRange = wholeRange;
@@ -351,13 +369,14 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 					relativePath: vscode.workspace.asRelativePath(session.textDocument.fileName),
 					lineCount,
 				},
-				diagnosticInformation: await parseDiagnosticsInformation(
+				diagnosticsInformation: await parseDiagnosticsInformation(
 					vscode.languages.getDiagnostics(textDocument.uri),
 					textDocument,
+					session.range,
 				),
 			};
 			const messages = await this.sidecarClient.getInLineEditorResponse(context);
-			await reportFromStreamToEditorSessionProgress(
+			const messageReply = await reportFromStreamToEditorSessionProgress(
 				messages,
 				progress,
 				token,
@@ -367,11 +386,19 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 				session.getTextDocumentLanguage(),
 				session.textDocument,
 			);
-			return new CSInteractiveEditorResponse(
-				[],
-				'skcd waiting for something',
-				session.range,
-			);
+			if (messageReply.message !== null) {
+				return new CSInteractiveEditorMessageResponse(
+					new vscode.MarkdownString(messageReply.message, true),
+					undefined,
+					undefined,
+				);
+			} else {
+				return new CSInteractiveEditorResponse(
+					[],
+					'skcd waiting for something',
+					session.range,
+				);
+			}
 		})();
 	}
 

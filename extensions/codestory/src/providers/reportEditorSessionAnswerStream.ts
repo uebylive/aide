@@ -13,6 +13,10 @@ import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInfo
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper, IndentationUtils } from './editorSessionProvider';
 
+export interface EditMessage {
+	message: string | null;
+}
+
 export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
 	progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
@@ -22,9 +26,11 @@ export const reportFromStreamToEditorSessionProgress = async (
 	sidecarClient: SideCarClient,
 	language: string,
 	textDocument: vscode.TextDocument,
-): Promise<string> => {
+): Promise<EditMessage> => {
 	if (cancellationToken.isCancellationRequested) {
-		return '';
+		return {
+			message: null,
+		};
 	}
 	const firstPartOfMessage = async () => {
 		const firstPart = await stream.next();
@@ -38,7 +44,9 @@ export const reportFromStreamToEditorSessionProgress = async (
 	progress.report(await firstPartOfMessage());
 
 	if (cancellationToken.isCancellationRequested) {
-		return '';
+		return {
+			message: null,
+		};
 	}
 
 	const asyncIterable = {
@@ -61,7 +69,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 		// always send the keep alive message here
 		if (inlineAgentMessage.keep_alive !== null && inlineAgentMessage.keep_alive !== undefined) {
 			// for keep alive we just want to show the response
-			progress.report(CSInteractiveEditorProgressItem.normalMessage(inlineAgentMessage.keep_alive));
+			// progress.report(CSInteractiveEditorProgressItem.normalMessage(inlineAgentMessage.keep_alive));
 			continue;
 		}
 		const messageState = inlineAgentMessage.message_state;
@@ -83,6 +91,11 @@ export const reportFromStreamToEditorSessionProgress = async (
 					if (lastStep === 'Edit') {
 						skillUsed = 'Edit';
 						progress.report(CSInteractiveEditorProgressItem.editGeneration());
+						continue;
+					}
+					if (lastStep === 'Fix') {
+						skillUsed = 'Fix';
+						progress.report(CSInteractiveEditorProgressItem.fixGeneration());
 						continue;
 					}
 				}
@@ -130,9 +143,43 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// Here we have to parse the answer properly and figure out how to send
 				// the edits for the lines
 			}
+			if (skillUsed === 'Fix') {
+				console.log(inlineAgentMessage.answer?.answer_up_until_now);
+				answerSplitOnNewLineAccumulator.addDelta(inlineAgentMessage.answer?.delta);
+				contextSelection = inlineAgentMessage.answer?.context_selection;
+				if (streamProcessor === null) {
+					streamProcessor = new StreamProcessor(
+						progress,
+						textDocument,
+						textDocument.getText().split(/\r\n|\r|\n/g),
+						// @ts-ignore
+						contextSelection, // We always get this, I can type this up later
+						undefined,
+					);
+				}
+
+				while (true) {
+					const currentLine = answerSplitOnNewLineAccumulator.getLine();
+					if (currentLine === null) {
+						break;
+					}
+					// Let's process the line
+					streamProcessor.processLine(currentLine);
+					finalAnswer = finalAnswer + currentLine + '\n';
+				}
+			}
 		}
 		// Here we have to parse the data properly and get the answer back, implement
 		// the logic for generating the reply properly here
+	}
+
+	if (skillUsed === 'Fix') {
+		if (streamProcessor && !streamProcessor.sentEdits) {
+			progress.report(CSInteractiveEditorProgressItem.sendReplyMessage(finalAnswer));
+			return {
+				message: finalAnswer,
+			};
+		}
 	}
 
 
@@ -141,7 +188,9 @@ export const reportFromStreamToEditorSessionProgress = async (
 		const cleanedUpAnswer = extractCodeFromDocumentation(generatedAnswer.answer_up_until_now);
 		if (cleanedUpAnswer === null) {
 			progress.report(CSInteractiveEditorProgressItem.normalMessage('Failed to parse the output'));
-			return '';
+			return {
+				message: cleanedUpAnswer,
+			};
 		}
 		const parsedComments = await sidecarClient.getParsedComments({
 			language,
@@ -228,7 +277,9 @@ export const reportFromStreamToEditorSessionProgress = async (
 			edits: textEdits,
 		});
 	}
-	return '';
+	return {
+		message: null,
+	};
 };
 
 
@@ -330,6 +381,7 @@ class StreamProcessor {
 	beginDetected: boolean;
 	previousLine: LineIndentManager | null;
 	documentLineIndex: number;
+	sentEdits: boolean;
 	constructor(progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
 		document: vscode.TextDocument,
 		lines: string[],
@@ -348,6 +400,7 @@ class StreamProcessor {
 		this.currentState = StateEnum.Initial;
 		this.previousLine = null;
 		this.documentLineIndex = this.document.firstSentLineIndex;
+		this.sentEdits = false;
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
@@ -363,16 +416,19 @@ class StreamProcessor {
 			this.endDetected = true;
 			return;
 		}
-		if (this.endDetected) {
+		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
 			if (this.previousLine) {
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
+					this.sentEdits = true;
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 				} else if (this.documentLineIndex >= this.document.getLineCount()) {
+					this.sentEdits = true;
 					this.documentLineIndex = this.document.appendLine(adjustedLine);
 				} else {
 					const currentLine = this.document.getLine(this.documentLineIndex);
+					this.sentEdits = true;
 					if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '' && currentLine.indentLevel < adjustedLine.adjustedIndentLevel)) {
 						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					} else {
@@ -474,6 +530,7 @@ class DocumentManager {
 
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
+		console.log('replaceLine', index, newLine);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		this.progress.report({
 			edits: [
@@ -488,6 +545,7 @@ class DocumentManager {
 
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
+		console.log('replaceLines', startIndex, endIndex, newLine);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -510,6 +568,7 @@ class DocumentManager {
 
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
+		console.log('appendLine', newLine);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
@@ -524,6 +583,7 @@ class DocumentManager {
 
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
+		console.log('insertLineAfter', index, newLine);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
@@ -632,11 +692,17 @@ class AdjustedLineContent {
 
 // Try to get all the diagnostic information from the editor
 export const parseDiagnosticsInformation = async (
-	diagnostics: vscode.Diagnostic[],
+	diagnosticsForFile: vscode.Diagnostic[],
 	textDocument: vscode.TextDocument,
+	selection: vscode.Range,
 ): Promise<DiagnosticInformationFromEditor | null> => {
+	// First we have to filter out the diagnostics which are in the selection
+	const diagnostics = diagnosticsForFile.filter((diagnostic) => {
+		return !!diagnostic.range.intersection(selection);
+	});
 	if (diagnostics.length === 0) {
 		// return something here;
+		return null;
 	}
 	const diagnosticValue = [];
 	const firstDiagnostic = diagnostics[0];
@@ -651,6 +717,7 @@ export const parseDiagnosticsInformation = async (
 		if (textInDocument.length > 0 && textInDocument.length < 200) {
 			currentProblemPrompts.push('This code');
 			currentProblemPrompts.push(wrapInCodeBlock('', textInDocument));
+			currentProblemPrompts.push('has the problem reported:');
 			currentProblemPrompts.push(wrapInCodeBlock('', `${diagnostic.message}`));
 		}
 		const relatedInfoToDiagnostic = [];
