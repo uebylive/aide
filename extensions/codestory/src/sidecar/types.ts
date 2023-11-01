@@ -201,6 +201,61 @@ export interface SnippetInformation {
 	};
 }
 
+export enum DiagnosticSeverity {
+	Error = 0,
+	Warning = 1,
+	Information = 2,
+	Hint = 3,
+}
+
+export interface DiagnosticRelatedInformation {
+	location: {
+		uri: string;
+		range: {
+			start: {
+				line: number;
+				character: number;
+				byteOffset: number;
+			};
+			end: {
+				line: number;
+				character: number;
+				byteOffset: number;
+			};
+		};
+	};
+	message: string;
+}
+
+export interface DiagnosticCode {
+	strValue: string | null;
+	numValue: number | null;
+	information: {
+		strValue: string | null;
+		numValue: number | null;
+		fsFilePath: string;
+	} | null;
+}
+
+export interface DiagnosticInformation {
+	range: {
+		startPosition: {
+			line: number;
+			character: number;
+			byteOffset: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+			byteOffset: number;
+		};
+	};
+	message: string;
+	severity: DiagnosticSeverity;
+	source: string | null;
+	code: DiagnosticCode | null;
+}
+
 export interface InEditorRequest {
 	repoRef: string;
 	query: string;
@@ -208,7 +263,13 @@ export interface InEditorRequest {
 	language: string;
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
+	diagnosticInformation: DiagnosticInformationFromEditor[],
 }
+
+export interface DiagnosticInformationFromEditor {
+	fsFilePath: string;
+	diagnostics: DiagnosticInformation[];
+};
 
 
 export type InLineAgentAction =

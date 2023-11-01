@@ -9,7 +9,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ContextSelection, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentMessage } from '../sidecar/types';
+import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentMessage } from '../sidecar/types';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper, IndentationUtils } from './editorSessionProvider';
 
@@ -630,31 +630,132 @@ class AdjustedLineContent {
 }
 
 
-interface DiagnosticInformation {
-	uri: vscode.Uri;
-	diagnostics: vscode.Diagnostic[];
-}
-
-
 // Try to get all the diagnostic information from the editor
 export const getDiagnosticsForDocument = async (
-): Promise<DiagnosticInformation[]> => {
-	let diagnostics: DiagnosticInformation[] = [];
+): Promise<DiagnosticInformationFromEditor[]> => {
 	const currentDocument = vscode.window.activeTextEditor?.document;
 	if (currentDocument !== undefined) {
+		const diagnostics: DiagnosticInformationFromEditor[] = [];
 		const diagnosticsForDocument = vscode.languages.getDiagnostics(currentDocument.uri);
 		diagnostics.push({
-			uri: currentDocument.uri,
-			diagnostics: diagnosticsForDocument,
+			fsFilePath: currentDocument.uri.fsPath,
+			diagnostics: await convertVSCodeDiagnosticsToSidecarDiagnostics(
+				currentDocument.uri.fsPath,
+				diagnosticsForDocument,
+			)
 		});
+		return diagnostics;
 	}
 	else {
-		diagnostics = vscode.languages.getDiagnostics().map((diagnosticWithUri) => {
-			return {
-				uri: diagnosticWithUri[0],
-				diagnostics: diagnosticWithUri[1],
-			};
+		const diagnostics = vscode.languages.getDiagnostics();
+		const convertedDiagnostics = [];
+		for (let index = 0; index < diagnostics.length; index++) {
+			const currentDiagnostic = diagnostics[index];
+			convertedDiagnostics.push({
+				fsFilePath: currentDiagnostic[0].fsPath,
+				diagnostics: await convertVSCodeDiagnosticsToSidecarDiagnostics(
+					currentDiagnostic[0].fsPath,
+					currentDiagnostic[1],
+				)
+			});
+		}
+		return convertedDiagnostics;
+	}
+};
+
+export const convertVSCodeDiagnosticsToSidecarDiagnostics = async (
+	fsFilePath: string,
+	diagnostics: vscode.Diagnostic[],
+): Promise<DiagnosticInformation[]> => {
+	const diagnosticInformationFromEditor: DiagnosticInformation[] = [];
+	const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fsFilePath));
+	for (let index = 0; index < diagnostics.length; index++) {
+		const currentDiagnostic = diagnostics[index];
+		diagnosticInformationFromEditor.push({
+			range: {
+				startPosition: {
+					line: currentDiagnostic.range.start.line,
+					character: currentDiagnostic.range.start.character,
+					byteOffset: textDocument.offsetAt(currentDiagnostic.range.start),
+				},
+				endPosition: {
+					line: currentDiagnostic.range.end.line,
+					character: currentDiagnostic.range.end.character,
+					byteOffset: textDocument.offsetAt(currentDiagnostic.range.end),
+				},
+			},
+			message: currentDiagnostic.message,
+			severity: convertVSCodeDiagnosticSeverity(currentDiagnostic.severity),
+			source: currentDiagnostic.source ? currentDiagnostic.source : null,
+			code: convertVSCodeDiagnostic(currentDiagnostic.code),
 		});
 	}
-	return diagnostics;
-}
+	return diagnosticInformationFromEditor;
+};
+
+export const convertVSCodeDiagnosticSeverity = (
+	diagnostic: vscode.DiagnosticSeverity,
+): DiagnosticSeverity => {
+	switch (diagnostic) {
+		case vscode.DiagnosticSeverity.Error:
+			return DiagnosticSeverity.Error;
+		case vscode.DiagnosticSeverity.Warning:
+			return DiagnosticSeverity.Warning;
+		case vscode.DiagnosticSeverity.Information:
+			return DiagnosticSeverity.Information;
+		case vscode.DiagnosticSeverity.Hint:
+			return DiagnosticSeverity.Hint;
+		default:
+			return DiagnosticSeverity.Error;
+	}
+};
+
+export const convertVSCodeDiagnostic = (
+	diagnosticCode: string | number | {
+		value: string | number;
+		target: vscode.Uri;
+	} | undefined,
+): DiagnosticCode | null => {
+	if (diagnosticCode === undefined) {
+		return null;
+	}
+	if (typeof diagnosticCode === 'string') {
+		return {
+			strValue: diagnosticCode,
+			numValue: null,
+			information: null,
+		};
+	}
+	if (typeof diagnosticCode === 'number') {
+		return {
+			strValue: null,
+			numValue: diagnosticCode,
+			information: null,
+		};
+	}
+	if (typeof diagnosticCode === 'object') {
+		if (typeof diagnosticCode.value === 'string') {
+			return {
+				strValue: null,
+				numValue: null,
+				information: {
+					strValue: diagnosticCode.value,
+					numValue: null,
+					fsFilePath: diagnosticCode.target.fsPath,
+				},
+			};
+		}
+		if (typeof diagnosticCode.value === 'number') {
+			return {
+				strValue: null,
+				numValue: null,
+				information: {
+					strValue: null,
+					numValue: diagnosticCode.value,
+					fsFilePath: diagnosticCode.target.fsPath,
+				},
+			};
+		}
+	}
+	return null;
+};
