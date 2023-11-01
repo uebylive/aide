@@ -631,67 +631,75 @@ class AdjustedLineContent {
 
 
 // Try to get all the diagnostic information from the editor
-export const getDiagnosticsForDocument = async (
-): Promise<DiagnosticInformationFromEditor[]> => {
-	const currentDocument = vscode.window.activeTextEditor?.document;
-	if (currentDocument !== undefined) {
-		const diagnostics: DiagnosticInformationFromEditor[] = [];
-		const diagnosticsForDocument = vscode.languages.getDiagnostics(currentDocument.uri);
-		diagnostics.push({
-			fsFilePath: currentDocument.uri.fsPath,
-			diagnostics: await convertVSCodeDiagnosticsToSidecarDiagnostics(
-				currentDocument.uri.fsPath,
-				diagnosticsForDocument,
-			)
-		});
-		return diagnostics;
+export const parseDiagnosticsInformation = async (
+	diagnostics: vscode.Diagnostic[],
+	textDocument: vscode.TextDocument,
+): Promise<DiagnosticInformationFromEditor | null> => {
+	if (diagnostics.length === 0) {
+		// return something here;
 	}
-	else {
-		const diagnostics = vscode.languages.getDiagnostics();
-		const convertedDiagnostics = [];
-		for (let index = 0; index < diagnostics.length; index++) {
-			const currentDiagnostic = diagnostics[index];
-			convertedDiagnostics.push({
-				fsFilePath: currentDiagnostic[0].fsPath,
-				diagnostics: await convertVSCodeDiagnosticsToSidecarDiagnostics(
-					currentDiagnostic[0].fsPath,
-					currentDiagnostic[1],
-				)
-			});
+	const diagnosticValue = [];
+	const firstDiagnostic = diagnostics[0];
+	const userPromptFirstMessage = `The code has the following ${firstDiagnostic.source + ' '}problems`;
+	for (let index = 0; index < diagnostics.length; index++) {
+		const currentProblemPrompts = [];
+		currentProblemPrompts.push(`Problem ${index + 1}:`);
+		const diagnostic = diagnostics[index];
+		const textInDocument =
+			textDocument.getText(new vscode.Range(diagnostic.range.start.line, 0, diagnostic.range.end.line + 1, 0))
+				.trim();
+		if (textInDocument.length > 0 && textInDocument.length < 200) {
+			currentProblemPrompts.push('This code');
+			currentProblemPrompts.push(wrapInCodeBlock('', textInDocument));
+			currentProblemPrompts.push(wrapInCodeBlock('', `${diagnostic.message}`));
 		}
-		return convertedDiagnostics;
+		const relatedInfoToDiagnostic = [];
+		// What other info do we need here to parse it properly?
+		const relatedInformation = diagnostic.relatedInformation;
+		if (relatedInformation) {
+			for (let relatedInfoIndex = 0; relatedInfoIndex < relatedInformation.length; relatedInfoIndex++) {
+				const relatedInfoVal = relatedInformation[relatedInfoIndex];
+				const textDocumentPath = relatedInfoVal.location.uri;
+				const range = relatedInfoVal.location.range;
+				const textDocument = await vscode.workspace.openTextDocument(textDocumentPath);
+				const textValue = textDocument.getText();
+				const languageId = textDocument.languageId;
+				relatedInfoToDiagnostic.push({
+					text: textValue,
+					language: languageId,
+					range: {
+						startPosition: {
+							line: range.start.line,
+							character: range.start.character,
+							byteOffset: textDocument.offsetAt(range.start),
+						},
+						endPosition: {
+							line: range.end.line,
+							character: range.end.character,
+							byteOffset: textDocument.offsetAt(range.end),
+						},
+					}
+				});
+			}
+		}
+		diagnosticValue.push({
+			promptParts: currentProblemPrompts,
+			relatedInformation: relatedInfoToDiagnostic,
+		});
 	}
+	return {
+		firstMessage: userPromptFirstMessage,
+		diagnosticInformation: diagnosticValue,
+	};
 };
 
-export const convertVSCodeDiagnosticsToSidecarDiagnostics = async (
-	fsFilePath: string,
-	diagnostics: vscode.Diagnostic[],
-): Promise<DiagnosticInformation[]> => {
-	const diagnosticInformationFromEditor: DiagnosticInformation[] = [];
-	const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fsFilePath));
-	for (let index = 0; index < diagnostics.length; index++) {
-		const currentDiagnostic = diagnostics[index];
-		diagnosticInformationFromEditor.push({
-			range: {
-				startPosition: {
-					line: currentDiagnostic.range.start.line,
-					character: currentDiagnostic.range.start.character,
-					byteOffset: textDocument.offsetAt(currentDiagnostic.range.start),
-				},
-				endPosition: {
-					line: currentDiagnostic.range.end.line,
-					character: currentDiagnostic.range.end.character,
-					byteOffset: textDocument.offsetAt(currentDiagnostic.range.end),
-				},
-			},
-			message: currentDiagnostic.message,
-			severity: convertVSCodeDiagnosticSeverity(currentDiagnostic.severity),
-			source: currentDiagnostic.source ? currentDiagnostic.source : null,
-			code: convertVSCodeDiagnostic(currentDiagnostic.code),
-		});
-	}
-	return diagnosticInformationFromEditor;
-};
+function wrapInCodeBlock(t: string, e: string): string {
+	const r = e.matchAll(/^\s*(```+)/gm);
+	const n = Math.max(3, ...Array.from(r, (o) => o[1].length + 1));
+	const i = '`'.repeat(n);
+	return `${i}${t}\n${e.trim()}\n${i}`;
+}
+
 
 export const convertVSCodeDiagnosticSeverity = (
 	diagnostic: vscode.DiagnosticSeverity,
