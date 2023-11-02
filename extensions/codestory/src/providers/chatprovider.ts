@@ -443,20 +443,6 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();
 			} else {
-				let deepContext: DeepContextForView | null = null;
-				const gatherContextFromView = async () => {
-					try {
-						deepContext = await getLSPGraphContextForChat(this._workingDirectory, this._currentRepoRef, request.session.threadId, this._sideCarClient);
-					} catch (err) {
-						console.log(err);
-					}
-					if (deepContext === null || deepContext.currentViewPort === null) {
-						return new CSChatProgressContent('\n\n');
-					}
-					return new CSChatProgressContent(`Gathered context from current [view](${deepContext.currentViewPort.fsFilePath}#L${deepContext.currentViewPort.startPosition.line}-L${deepContext.currentViewPort.endPosition.line})\n\n`);
-				};
-				progress.report(await gatherContextFromView());
-				// calling this here to see what kind of ranges we are getting
 				this._chatSessionState.chatContext.cleanupChatHistory();
 				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
 				const query = request.message.toString().trim();
@@ -466,11 +452,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				if (deepContext === null) {
-					console.log('are we returning here with no context');
-					return new CSChatResponseForProgress();
-				}
-				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId, deepContext);
+				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId);
 				await reportFromStreamToSearchProgress(followupResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}

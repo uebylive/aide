@@ -116,9 +116,6 @@ export async function* callServerEventStreamingBufferedPOST(url: string, body: a
 		return;
 	}
 
-	console.log(response.statusText);
-	console.log(response.status);
-
 	const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
 	const bufferedReader = new BufferedStream();
 
