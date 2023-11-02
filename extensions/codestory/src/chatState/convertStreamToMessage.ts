@@ -87,12 +87,14 @@ export const reportFromStreamToSearchProgress = async (
 		if (firstPart.done) {
 			return new CSChatProgressContent(''); // Handle when iterator is done
 		}
+		// TODO(skcd): Lets not log the session-id here
 		// if we don't have the message id here that means this is an ack request so
 		// we should just report that we are processing it on the backend
 		// I know this ts-ignore is bad, but keeping it here for now
 		// @ts-ignore
-		const sessionId = firstPart.value['session_id'];
-		return new CSChatProgressContent('Your session id is: ' + sessionId);
+		// const sessionId = firstPart.value['session_id'];
+		// return new CSChatProgressContent('Your session id is: ' + sessionId);
+		return new CSChatProgressContent('');
 	};
 
 	progress.report(new CSChatProgressTask(
@@ -122,7 +124,8 @@ export const reportFromStreamToSearchProgress = async (
 			// the reporef location to the message and that would solve a lot of
 			// problems.
 			if (!enteredAnswerGenerationLoop) {
-				progress.report(new CSChatProgressContent('\n## Answer\n\n' + conversationMessage.answer.delta));
+				progress.report(new CSChatProgressContent('\n'));
+				// progress.report(new CSChatProgressContent('\n## Answer\n\n' + conversationMessage.answer.delta));
 				enteredAnswerGenerationLoop = true;
 			} else {
 				// type-safety here, altho it its better to do it this way

@@ -132,7 +132,7 @@ export class SideCarClient {
 		return responseJson as InEditorTreeSitterDocumentationReply;
 	}
 
-	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string, deepContext: DeepContextForView): AsyncIterableIterator<ConversationMessage> {
+	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
@@ -140,7 +140,6 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
-			deep_context: deepContext,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
