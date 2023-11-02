@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken } from '../providers/chatprovider';
+import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatProgressUsedContext } from '../providers/chatprovider';
 import { OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamToIterable } from '@axflow/models/shared';
 import { AgentStep, CodeSpan, ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
@@ -161,6 +161,12 @@ export const reportFromStreamToSearchProgress = async (
 						)
 					)
 				);
+				progress.report(
+					reportCodeReferencesToChat(
+						lastStep.Code.code_snippets,
+						workingDirectory,
+					),
+				);
 			} else if ('Proc' in lastStep) {
 				const procOutput = reportProcUpdateToChat(lastStep, workingDirectory);
 				progress.report(
@@ -256,6 +262,37 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 		codeSpansString += markdownCodeSpan + '\n\n';
 	}
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
+};
+
+export const reportCodeReferencesToChat = (codeSpans: CodeSpan[], workingDirectory: string): CSChatProgressUsedContext => {
+	const sortedCodeSpans = codeSpans.sort((a, b) => {
+		if (a.score !== null && b.score !== null) {
+			return b.score - a.score;
+		}
+		if (a.score !== null && b.score === null) {
+			return -1;
+		}
+		if (a.score === null && b.score !== null) {
+			return 1;
+		}
+		return 0;
+	});
+	const documentContext: vscode.DocumentContext[] = [];
+	for (let index = 0; index < math.min(6, sortedCodeSpans.length); index++) {
+		const currentCodeSpan = sortedCodeSpans[index];
+		const fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
+		documentContext.push({
+			uri: vscode.Uri.file(fullFilePath),
+			version: 1,
+			ranges: [
+				new vscode.Range(
+					new vscode.Position(currentCodeSpan.start_line, 0),
+					new vscode.Position(currentCodeSpan.end_line, 0),
+				),
+			],
+		});
+	}
+	return new CSChatProgressUsedContext(documentContext);
 };
 
 

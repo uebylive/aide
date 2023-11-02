@@ -158,6 +158,18 @@ export class CSChatProgressContent implements vscode.CSChatProgressContent {
 	}
 }
 
+export class CSChatProgressUsedContext implements vscode.CSChatProgressUsedContext {
+	documents: vscode.DocumentContext[];
+
+	constructor(documents: vscode.DocumentContext[]) {
+		this.documents = documents;
+	}
+
+	toString(): string {
+		return `CSChatProgressUsedContext { documents: ${JSON.stringify(this.documents, null, 2)} }`;
+	}
+}
+
 class CSChatProgressId implements vscode.CSChatProgressId {
 	responseId: string;
 
@@ -212,7 +224,7 @@ export class CSChatProgressTask implements vscode.CSChatProgressTask {
 	}
 }
 
-export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree;
+export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree | CSChatProgressUsedContext;
 
 class CSChatResponseForProgress implements vscode.CSChatResponseForProgress {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
