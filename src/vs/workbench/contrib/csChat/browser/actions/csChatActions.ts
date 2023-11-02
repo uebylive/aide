@@ -50,7 +50,7 @@ class QuickChatGlobalAction extends Action2 {
 			f1: false,
 			category: CHAT_CATEGORY,
 			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
+				weight: KeybindingWeight.WorkbenchContrib + 50,
 				primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyI,
 				mac: {
 					primary: KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyI
@@ -89,7 +89,7 @@ export function registerChatActions() {
 				kbOpts: {
 					kbExpr: EditorContextKeys.textInputFocus,
 					primary: KeyCode.Enter,
-					weight: KeybindingWeight.EditorContrib
+					weight: KeybindingWeight.EditorContrib + 50
 				}
 			});
 		}
@@ -113,7 +113,7 @@ export function registerChatActions() {
 				kbOpts: {
 					kbExpr: EditorContextKeys.textInputFocus,
 					primary: KeyMod.CtrlCmd | KeyCode.Enter,
-					weight: KeybindingWeight.EditorContrib
+					weight: KeybindingWeight.EditorContrib + 50
 				}
 			});
 		}
@@ -143,7 +143,7 @@ export function registerChatActions() {
 				kbOpts: {
 					kbExpr: EditorContextKeys.textInputFocus,
 					primary: KeyMod.CtrlCmd | KeyCode.KeyL,
-					weight: KeybindingWeight.EditorContrib
+					weight: KeybindingWeight.EditorContrib + 50
 				}
 			});
 		}
@@ -238,7 +238,7 @@ export function registerChatActions() {
 				keybinding: {
 					when: EditorContextKeys.textInputFocus,
 					primary: KeyMod.CtrlCmd | KeyCode.UpArrow,
-					weight: KeybindingWeight.EditorContrib
+					weight: KeybindingWeight.EditorContrib + 50
 				}
 			});
 		}
@@ -277,7 +277,7 @@ export function registerChatActions() {
 				f1: false,
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyCode.DownArrow,
-					weight: KeybindingWeight.WorkbenchContrib,
+					weight: KeybindingWeight.WorkbenchContrib + 50,
 					when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, ContextKeyExpr.not(EditorContextKeys.focus.key))
 				}
 			});

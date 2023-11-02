@@ -43,7 +43,7 @@ export class StartSessionAction extends EditorAction2 {
 			f1: true,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_HAS_PROVIDER, EditorContextKeys.writable),
 			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
+				weight: KeybindingWeight.WorkbenchContrib + 50,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
 				secondary: [KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyCode.KeyI)],
 			}
@@ -69,7 +69,7 @@ export class UnstashSessionAction extends EditorAction2 {
 			category: AbstractInlineChatAction.category,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_HAS_STASHED_SESSION, EditorContextKeys.writable),
 			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
+				weight: KeybindingWeight.WorkbenchContrib + 50,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyZ,
 			}
 		});
@@ -133,7 +133,7 @@ export class MakeRequestAction extends AbstractInlineChatAction {
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_EMPTY.negate()),
 			keybinding: {
 				when: CTX_INLINE_CHAT_FOCUSED,
-				weight: KeybindingWeight.EditorCore + 7,
+				weight: KeybindingWeight.EditorCore + 57,
 				primary: KeyCode.Enter
 			},
 			menu: {
@@ -188,7 +188,7 @@ export class StopRequestAction extends AbstractInlineChatAction {
 				when: CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST
 			},
 			keybinding: {
-				weight: KeybindingWeight.EditorContrib,
+				weight: KeybindingWeight.EditorContrib + 50,
 				primary: KeyCode.Escape
 			}
 		});
@@ -206,7 +206,7 @@ export class ArrowOutUpAction extends AbstractInlineChatAction {
 			title: localize('arrowUp', 'Cursor Up'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
-				weight: KeybindingWeight.EditorCore,
+				weight: KeybindingWeight.EditorCore + 50,
 				primary: KeyCode.UpArrow
 			}
 		});
@@ -224,7 +224,7 @@ export class ArrowOutDownAction extends AbstractInlineChatAction {
 			title: localize('arrowDown', 'Cursor Down'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_LAST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
-				weight: KeybindingWeight.EditorCore,
+				weight: KeybindingWeight.EditorCore + 50,
 				primary: KeyCode.DownArrow
 			}
 		});
@@ -245,11 +245,11 @@ export class FocusInlineChat extends EditorAction2 {
 			category: AbstractInlineChatAction.category,
 			precondition: ContextKeyExpr.and(EditorContextKeys.editorTextFocus, CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_FOCUSED.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: [{
-				weight: KeybindingWeight.EditorCore + 10, // win against core_command
+				weight: KeybindingWeight.EditorCore + 60, // win against core_command
 				when: ContextKeyExpr.and(CTX_INLINE_CHAT_OUTER_CURSOR_POSITION.isEqualTo('above'), EditorContextKeys.isEmbeddedDiffEditor.negate()),
 				primary: KeyCode.DownArrow,
 			}, {
-				weight: KeybindingWeight.EditorCore + 10, // win against core_command
+				weight: KeybindingWeight.EditorCore + 60, // win against core_command
 				when: ContextKeyExpr.and(CTX_INLINE_CHAT_OUTER_CURSOR_POSITION.isEqualTo('below'), EditorContextKeys.isEmbeddedDiffEditor.negate()),
 				primary: KeyCode.UpArrow,
 			}]
@@ -269,7 +269,7 @@ export class PreviousFromHistory extends AbstractInlineChatAction {
 			title: localize('previousFromHistory', 'Previous From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_START),
 			keybinding: {
-				weight: KeybindingWeight.EditorCore + 10, // win against core_command
+				weight: KeybindingWeight.EditorCore + 60, // win against core_command
 				primary: KeyMod.CtrlCmd | KeyCode.UpArrow,
 			}
 		});
@@ -288,7 +288,7 @@ export class NextFromHistory extends AbstractInlineChatAction {
 			title: localize('nextFromHistory', 'Next From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_END),
 			keybinding: {
-				weight: KeybindingWeight.EditorCore + 10, // win against core_command
+				weight: KeybindingWeight.EditorCore + 60, // win against core_command
 				primary: KeyMod.CtrlCmd | KeyCode.DownArrow,
 			}
 		});
@@ -319,7 +319,7 @@ export class DiscardAction extends AbstractInlineChatAction {
 			icon: Codicon.discard,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
 			keybinding: {
-				weight: KeybindingWeight.EditorContrib,
+				weight: KeybindingWeight.EditorContrib + 50,
 				primary: KeyCode.Escape,
 				when: CTX_INLINE_CHAT_USER_DID_EDIT.negate()
 			},
@@ -344,7 +344,7 @@ export class DiscardToClipboardAction extends AbstractInlineChatAction {
 			title: localize('undo.clipboard', 'Discard to Clipboard'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_DID_EDIT),
 			// keybinding: {
-			// 	weight: KeybindingWeight.EditorContrib + 10,
+			// 	weight: KeybindingWeight.EditorContrib + 60,
 			// 	primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyZ,
 			// 	mac: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyZ },
 			// },
@@ -475,11 +475,11 @@ export class ApplyPreviewEdits extends AbstractInlineChatAction {
 			f1: true,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, ContextKeyExpr.or(CTX_INLINE_CHAT_DOCUMENT_CHANGED.toNegated(), CTX_INLINE_CHAT_EDIT_MODE.notEqualsTo(EditMode.Preview))),
 			keybinding: [{
-				weight: KeybindingWeight.EditorContrib + 10,
+				weight: KeybindingWeight.EditorContrib + 60,
 				primary: KeyMod.CtrlCmd | KeyCode.Enter,
 			}, {
 				primary: KeyCode.Escape,
-				weight: KeybindingWeight.EditorContrib,
+				weight: KeybindingWeight.EditorContrib + 50,
 				when: CTX_INLINE_CHAT_USER_DID_EDIT
 			}],
 			menu: {
