@@ -36,6 +36,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 			debugName,
 			label,
 			prepareInlineChatSession: async (model, range, token) => {
+				console.log('csChat prepareInlineChatSession');
 				const session = await this._proxy.$prepareSession(handle, model.uri, range, token);
 				if (!session) {
 					return undefined;
@@ -48,6 +49,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 				};
 			},
 			provideResponse: async (item, request, progress, token) => {
+				console.log('csChat provideResponse');
 				this._progresses.set(request.requestId, progress);
 				try {
 					const result = await this._proxy.$provideResponse(handle, item, request, token);
@@ -60,6 +62,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 				}
 			},
 			handleInlineChatResponseFeedback: !supportsFeedback ? undefined : async (session, response, kind) => {
+				console.log('csChat handleInlineChatResponseFeedback');
 				this._proxy.$handleFeedback(handle, session.id, response.id, kind);
 			}
 		});

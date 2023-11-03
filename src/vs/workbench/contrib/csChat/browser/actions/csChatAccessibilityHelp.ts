@@ -29,7 +29,7 @@ export function getAccessibilityHelpText(accessor: ServicesAccessor, type: 'pane
 		content.push(descriptionForCommand('workbench.action.csChat.nextFileTree', localize('workbench.action.csChat.nextFileTree', 'To focus the next file tree within a response, invoke the Chat: Next File Tree command ({0}).'), localize('workbench.action.csChat.nextFileTreeNoKb', 'To focus the next file tree within a response, invoke the Chat: Next File Tree command, which is currently not triggerable by a keybinding.'), keybindingService));
 		content.push(descriptionForCommand('workbench.action.csChat.clear', localize('workbench.action.csChat.clear', 'To clear the request/response list, invoke the Chat Clear command ({0}).'), localize('workbench.action.csChat.clearNoKb', 'To clear the request/response list, invoke the Chat Clear command, which is currently not triggerable by a keybinding.'), keybindingService));
 	} else {
-		const startChatKeybinding = keybindingService.lookupKeybinding('inlineChat.start')?.getAriaLabel();
+		const startChatKeybinding = keybindingService.lookupKeybinding('inlineCSChat.start')?.getAriaLabel();
 		content.push(localize('inlineChat.overview', "Inline chat occurs within a code editor and takes into account the current selection. It is useful for making changes to the current editor. For example, fixing diagnostics, documenting or refactoring code. Keep in mind that AI generated code may be incorrect."));
 		content.push(localize('inlineChat.access', "It can be activated via code actions or directly using the command: Inline Chat: Start Inline Chat ({0}).", startChatKeybinding));
 		const upHistoryKeybinding = keybindingService.lookupKeybinding('inlineChat.previousFromHistory')?.getAriaLabel();

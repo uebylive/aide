@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Codicon } from 'vs/base/common/codicons';
-import { KeyChord, KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
 import { EmbeddedCodeEditorWidget, EmbeddedDiffEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
@@ -41,17 +41,13 @@ export class StartSessionAction extends EditorAction2 {
 			title: { value: LOCALIZED_START_INLINE_CHAT_STRING, original: 'Start Inline Chat' },
 			category: AbstractInlineChatAction.category,
 			f1: true,
-			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_HAS_PROVIDER, EditorContextKeys.writable),
-			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
-				secondary: [KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyCode.KeyI)],
-			}
+			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_HAS_PROVIDER, EditorContextKeys.writable)
 		});
 	}
 
 
 	override runEditorCommand(_accessor: ServicesAccessor, editor: ICodeEditor, ..._args: any[]) {
+		console.log('Run inline chat');
 		let options: InlineChatRunOptions | undefined;
 		const arg = _args[0];
 		if (arg && InlineChatRunOptions.isInteractiveEditorOptions(arg)) {

@@ -50,7 +50,9 @@ export const SIDECAR_VERSION = 'e71b42c7c45f2ea094cfe5455e6d89532886f9c18499366e
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
+		console.log('Version check startin');
 		const response = await fetch(`${url}/api/version`);
+		console.log('Version check done' + response);
 		const version = await response.json();
 		console.log('version content');
 		console.log(version);
@@ -80,11 +82,14 @@ export async function runCommand(cmd: string): Promise<[string, string | undefin
 
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	try {
+		console.log('Health check startin');
 		const response = await fetch(`${serverUrl}/api/health`);
 		if (response.status === 200) {
 			console.log('Sidecar server already running');
+			console.log('Health check done');
 			return true;
 		} else {
+			console.log('Health check done');
 			return false;
 		}
 	} catch (e) {
@@ -135,6 +140,7 @@ async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 export async function startSidecarBinary(
 	extensionBasePath: string,
 ): Promise<string> {
+	console.log('starting sidecar binary');
 	// Check vscode settings
 	const serverUrl = getSidecarBinaryURL();
 	const shouldUseSelfRun = sidecarUseSelfRun();
@@ -312,6 +318,8 @@ export async function startSidecarBinary(
 			setTimeout(waitForGreenHC, delay);
 		};
 		try {
+
+			console.log('Health check main loop');
 			const url = `${serverUrl}/api/health`;
 			const response = await fetch(url);
 			if (response.status === 200) {

@@ -74,7 +74,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		};
 
 		extHostCommands.registerApiCommand(new ApiCommand(
-			'vscode.editorCSChat.start', 'inlineChat.start', 'Invoke a new editor chat session',
+			'vscode.editorCSChat.start', 'inlineCSChat.start', 'Invoke a new editor chat session',
 			[new ApiCommandArgument<EditorChatApiArg | undefined, CSChatEditorRunOptions | undefined>('Run arguments', '', _v => true, v => {
 
 				if (!v) {
@@ -97,6 +97,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		const wrapper = new ProviderWrapper(extension, provider);
 		this._inputProvider.set(wrapper.handle, wrapper);
 		this._proxy.$registerCSChatEditorProvider(wrapper.handle, metadata.label, extension.identifier.value, typeof provider.handleCSChatEditorResponseFeedback === 'function');
+		console.log('Registration complete for csChat editor session provider');
 		return toDisposable(() => {
 			this._proxy.$unregisterCSChatEditorProvider(wrapper.handle);
 			this._inputProvider.delete(wrapper.handle);

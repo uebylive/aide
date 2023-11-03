@@ -1820,17 +1820,20 @@
 			"interactiveUserActions",
 			"chatProvider",
 			"codeActionAI",
+			"findTextInFiles",
+			"textSearchProvider",
 			"terminalDataWriteEvent",
+			"terminalExecuteCommandEvent",
 			"terminalSelection",
 			"terminalQuickFixProvider",
-			"handleIssueUri",
 			"readonlyMessage",
 			"chatVariables",
 			"mappedEditsProvider",
 			"aiRelatedInformation",
 			"chatAgents",
 			"chatAgents2",
-			"chatAgents2Additions"
+			"chatAgents2Additions",
+			"defaultChatAgent"
 		],
 		"GitHub.remotehub": [
 			"contribRemoteHelp",

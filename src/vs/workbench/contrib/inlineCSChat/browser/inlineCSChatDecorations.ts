@@ -44,7 +44,7 @@ export class InlineChatDecorationsContribution extends Disposable implements IEd
 		@IKeybindingService readonly _keybindingService: IKeybindingService,
 	) {
 		super();
-		const keybindings = _keybindingService.lookupKeybinding('inlineChat.start')?.getLabel();
+		const keybindings = _keybindingService.lookupKeybinding('inlineCSChat.start')?.getLabel();
 		this._gutterDecoration = ModelDecorationOptions.register({
 			description: 'inline-chat-decoration',
 			glyphMarginClassName: ThemeIcon.asClassName(GUTTER_INLINE_CHAT_ICON),
