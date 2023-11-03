@@ -26,7 +26,7 @@ function unzipSidecarZipFolder(source: string, extractDir: string) {
 				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${extractDir}"`
 			]);
 		} else {
-			cp.spawnSync('unzip', [source, '-d', `${extractDir}`]);
+			cp.spawnSync('unzip', ['-o', source, '-d', `${extractDir}`]);
 		}
 	} else {
 		// tar does not create extractDir by default
