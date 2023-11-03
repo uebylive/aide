@@ -1364,6 +1364,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			_version: 1,
 
 			registerCSChatEditorSessionProvider(provider: vscode.CSChatEditorSessionProvider, metadata?: vscode.CSChatEditorSessionProviderMetadata) {
+				console.log('Registering csChat editor session provider');
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostCSChatEditor.registerProvider(extension, provider, metadata = { label: metadata?.label ?? extension.displayName ?? extension.name });
 			},

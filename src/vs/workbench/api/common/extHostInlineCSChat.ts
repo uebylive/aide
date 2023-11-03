@@ -97,6 +97,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		const wrapper = new ProviderWrapper(extension, provider);
 		this._inputProvider.set(wrapper.handle, wrapper);
 		this._proxy.$registerCSChatEditorProvider(wrapper.handle, metadata.label, extension.identifier.value, typeof provider.handleCSChatEditorResponseFeedback === 'function');
+		console.log('Registration complete for csChat editor session provider');
 		return toDisposable(() => {
 			this._proxy.$unregisterCSChatEditorProvider(wrapper.handle);
 			this._inputProvider.delete(wrapper.handle);

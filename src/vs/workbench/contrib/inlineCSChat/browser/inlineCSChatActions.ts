@@ -52,6 +52,7 @@ export class StartSessionAction extends EditorAction2 {
 
 
 	override runEditorCommand(_accessor: ServicesAccessor, editor: ICodeEditor, ..._args: any[]) {
+		console.log('Run inline csChat');
 		let options: InlineChatRunOptions | undefined;
 		const arg = _args[0];
 		if (arg && InlineChatRunOptions.isInteractiveEditorOptions(arg)) {
