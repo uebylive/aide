@@ -13,7 +13,8 @@
     "onSearch:text"
   ],
   "enabledApiProposals": [
-    "csChat"
+    "csChat",
+    "csChatVariables"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",

@@ -13,7 +13,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 
 export const addContextCommandId = 'csChat.action.addContext';
-export const inlineChatCommandId = 'inlineChat.start';
+export const inlineChatCommandId = 'inlineCSChat.start';
 
 export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	public static readonly ID = 'editor.contrib.keybindingPillWidget';
