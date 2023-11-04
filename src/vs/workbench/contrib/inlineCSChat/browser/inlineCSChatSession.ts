@@ -358,7 +358,7 @@ export interface ISessionKeyComputer {
 	getComparisonKey(editor: ICodeEditor, uri: URI): string;
 }
 
-export const IInlineChatSessionService = createDecorator<IInlineChatSessionService>('IInlineChatSessionService');
+export const IInlineChatSessionService = createDecorator<IInlineChatSessionService>('IInlineCSChatSessionService');
 
 export interface IInlineChatSessionService {
 	_serviceBrand: undefined;
