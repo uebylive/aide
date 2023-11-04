@@ -61,7 +61,7 @@
     ],
     "keybindings": [
       {
-        "command": "workbench.action.focusHoverChat.cs-chat",
+        "command": "workbench.action.csFocusHoverChat.cs-chat",
         "key": "shift shift",
         "mac": "shift shift"
       }
