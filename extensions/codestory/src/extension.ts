@@ -36,6 +36,7 @@ import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { readSideCarURL } from './utilities/sidecarUrl';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
+import { ProjectContext } from './utilities/workspaceContext';
 
 
 class ProgressiveTrackSymbols {
@@ -103,6 +104,13 @@ export async function activate(context: ExtensionContext) {
 	const repoHash = await getGitCurrentHash(
 		rootPath,
 	);
+
+	// We also get some context about the workspace we are in and what we are
+	// upto
+	const projectContext = new ProjectContext();
+	await projectContext.collectContext();
+	console.log('what are my labels');
+	console.log(projectContext.labels);
 
 	// TODO(codestory): Download the rust binary here appropriate for the platform
 	// we are on. Similar to how we were doing for Aide binary
@@ -193,7 +201,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath, codeGraph, repoName, repoHash,
 		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
-		agentSystemInstruction, sidecarClient, currentRepo,
+		agentSystemInstruction, sidecarClient, currentRepo, projectContext,
 	);
 	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(sidecarClient, currentRepo, rootPath ?? '');
 	const interactiveSession = csChat.registerCSChatSessionProvider(

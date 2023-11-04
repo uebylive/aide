@@ -21,6 +21,7 @@ import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageC
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { getLSPGraphContextForChat } from '../editor/activeView/ranges';
 import { DeepContextForView } from '../sidecar/types';
+import { ProjectContext } from '../utilities/workspaceContext';
 
 class CSChatSessionState implements vscode.CSChatSessionState {
 	public chatContext: CSChatState;
@@ -266,6 +267,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 	private _agentCustomInformation: string | null;
 	private _sideCarClient: SideCarClient;
 	private _currentRepoRef: RepoRef;
+	private _projectContext: ProjectContext;
 
 	constructor(
 		workingDirectory: string,
@@ -279,6 +281,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 		agentCustomInstruction: string | null,
 		sideCarClient: SideCarClient,
 		repoRef: RepoRef,
+		projectContext: ProjectContext,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
@@ -294,6 +297,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 		this._agentCustomInformation = agentCustomInstruction;
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
+		this._projectContext = projectContext;
 	}
 
 	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CSChatSessionSlashCommand[]> {
