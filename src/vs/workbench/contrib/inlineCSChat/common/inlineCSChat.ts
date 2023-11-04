@@ -148,9 +148,9 @@ export const CTX_INLINE_CHAT_EDIT_MODE = new RawContextKey<EditMode>('config.inl
 
 // --- (select) action identifier
 
-export const ACTION_ACCEPT_CHANGES = 'interactive.acceptChanges';
-export const ACTION_REGENERATE_RESPONSE = 'inlineChat.regenerate';
-export const ACTION_VIEW_IN_CHAT = 'inlineChat.viewInChat';
+export const ACTION_ACCEPT_CHANGES = 'interactiveCS.acceptChanges';
+export const ACTION_REGENERATE_RESPONSE = 'inlineCSChat.regenerate';
+export const ACTION_VIEW_IN_CHAT = 'inlineCSChat.viewInChat';
 
 // --- menus
 

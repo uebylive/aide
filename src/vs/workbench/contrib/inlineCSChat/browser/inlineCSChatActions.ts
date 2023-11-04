@@ -178,7 +178,7 @@ export class StopRequestAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.stop',
+			id: 'inlineCSChat.stop',
 			title: localize('stop', 'Stop Request'),
 			icon: Codicon.debugStop,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_EMPTY.negate(), CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST),
@@ -203,7 +203,7 @@ export class StopRequestAction extends AbstractInlineChatAction {
 export class ArrowOutUpAction extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineChat.arrowOutUp',
+			id: 'inlineCSChat.arrowOutUp',
 			title: localize('arrowUp', 'Cursor Up'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
@@ -221,7 +221,7 @@ export class ArrowOutUpAction extends AbstractInlineChatAction {
 export class ArrowOutDownAction extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineChat.arrowOutDown',
+			id: 'inlineCSChat.arrowOutDown',
 			title: localize('arrowDown', 'Cursor Down'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_LAST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
@@ -240,7 +240,7 @@ export class FocusInlineChat extends EditorAction2 {
 
 	constructor() {
 		super({
-			id: 'inlineChat.focus',
+			id: 'inlineCSChat.focus',
 			title: { value: localize('focus', 'Focus Input'), original: 'Focus Input' },
 			f1: true,
 			category: AbstractInlineChatAction.category,
@@ -266,7 +266,7 @@ export class PreviousFromHistory extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.previousFromHistory',
+			id: 'inlineCSChat.previousFromHistory',
 			title: localize('previousFromHistory', 'Previous From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_START),
 			keybinding: {
@@ -285,7 +285,7 @@ export class NextFromHistory extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.nextFromHistory',
+			id: 'inlineCSChat.nextFromHistory',
 			title: localize('nextFromHistory', 'Next From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_END),
 			keybinding: {
@@ -315,7 +315,7 @@ export class DiscardAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.discard',
+			id: 'inlineCSChat.discard',
 			title: localize('discard', 'Discard'),
 			icon: Codicon.discard,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -341,7 +341,7 @@ export class DiscardToClipboardAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.discardToClipboard',
+			id: 'inlineCSChat.discardToClipboard',
 			title: localize('undo.clipboard', 'Discard to Clipboard'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_DID_EDIT),
 			// keybinding: {
@@ -370,7 +370,7 @@ export class DiscardUndoToNewFileAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.discardToFile',
+			id: 'inlineCSChat.discardToFile',
 			title: localize('undo.newfile', 'Discard to New File'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_DID_EDIT),
 			menu: {
@@ -394,7 +394,7 @@ export class DiscardUndoToNewFileAction extends AbstractInlineChatAction {
 export class FeebackHelpfulCommand extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineChat.feedbackHelpful',
+			id: 'inlineCSChat.feedbackHelpful',
 			title: localize('feedback.helpful', 'Helpful'),
 			icon: Codicon.thumbsup,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -416,7 +416,7 @@ export class FeebackHelpfulCommand extends AbstractInlineChatAction {
 export class FeebackUnhelpfulCommand extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineChat.feedbackunhelpful',
+			id: 'inlineCSChat.feedbackunhelpful',
 			title: localize('feedback.unhelpful', 'Unhelpful'),
 			icon: Codicon.thumbsdown,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -439,7 +439,7 @@ export class ToggleInlineDiff extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.toggleDiff',
+			id: 'inlineCSChat.toggleDiff',
 			title: {
 				original: 'Show Diff',
 				value: localize('showDiff', 'Show Diff'),
