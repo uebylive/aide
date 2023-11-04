@@ -782,7 +782,7 @@ export class InlineChatWidget {
 						insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
 						kind: CompletionItemKind.Text,
 						range: new Range(1, 1, 1, 1),
-						command: command.executeImmediately ? { id: 'inlineChat.accept', title: withSlash } : undefined
+						command: command.executeImmediately ? { id: 'inlineCSChat.accept', title: withSlash } : undefined
 					};
 				});
 

@@ -128,7 +128,7 @@ export class MakeRequestAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.accept',
+			id: 'inlineCSChat.accept',
 			title: localize('accept', 'Make Request'),
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_EMPTY.negate()),
