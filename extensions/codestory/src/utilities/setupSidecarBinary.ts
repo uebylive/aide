@@ -46,7 +46,7 @@ export function getSidecarBinaryURL() {
 // if the version we are looking at is okay, or we need to download a new binary
 // for now, lets keep it as it is and figure out a way to update the hash on
 // important updates
-export const SIDECAR_VERSION = 'a751e97becfd364a7a727d03f587f57b9dbfc3b6b21855d5e5eca0de56e41331';
+export const SIDECAR_VERSION = 'f9da7f2a7aed0f7cc411bf048b13aca08734b5a379f08af6de45636dab6df281';
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
@@ -82,7 +82,7 @@ export async function runCommand(cmd: string): Promise<[string, string | undefin
 
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	try {
-		console.log('Health check startin');
+		console.log('Health check starting');
 		const response = await fetch(`${serverUrl}/api/health`);
 		if (response.status === 200) {
 			console.log('Sidecar server already running');
