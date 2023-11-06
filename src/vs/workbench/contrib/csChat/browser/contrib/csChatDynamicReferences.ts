@@ -6,7 +6,6 @@
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
@@ -111,18 +110,9 @@ export class SelectAndInsertFileAction extends Action2 {
 			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
 		};
 
-		const quickInputService = accessor.get(IQuickInputService);
-		const picks = await quickInputService.quickAccess.pick('');
-		if (!picks?.length) {
-			logService.trace('SelectAndInsertFileAction: no file selected');
-			doCleanup();
-			return;
-		}
-
-		const pick = picks[0];
-		const resource = (pick as unknown as { resource: unknown }).resource as URI;
-		if (!textModelService.canHandleResource(resource)) {
-			logService.trace('SelectAndInsertFileAction: non-text resource selected');
+		const resource = context.widget.inputEditor.getModel()?.uri;
+		if (!resource) {
+			logService.trace('SelectAndInsertFileAction: no resource selected');
 			doCleanup();
 			return;
 		}

@@ -14,10 +14,8 @@ import { IDecorationOptions } from 'vs/editor/common/editorCommon';
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { localize } from 'vs/nls';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IProductService } from 'vs/platform/product/common/productService';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -26,7 +24,7 @@ import { SubmitAction } from 'vs/workbench/contrib/csChat/browser/actions/csChat
 import { IChatWidget, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
-import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
+import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -35,6 +33,10 @@ import { ICSChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/commo
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
+import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
+import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
+import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
 
 const decorationDescription = 'chat';
 const placeholderDecorationType = 'chat-session-detail';
@@ -503,11 +505,14 @@ class AgentCompletions extends Disposable {
 class BuiltinDynamicCompletions extends Disposable {
 	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
+	private readonly fileQueryBuilder = this.instantiationService.createInstance(QueryBuilder);
+
 	constructor(
+		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IProductService private readonly productService: IProductService,
+		@ISearchService private readonly searchService: ISearchService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
@@ -515,11 +520,6 @@ class BuiltinDynamicCompletions extends Disposable {
 			_debugDisplayName: 'chatDynamicCompletions',
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const fileVariablesEnabled = this.configurationService.getValue('chat.experimental.fileVariables') ?? this.productService.quality !== 'stable';
-				if (!fileVariablesEnabled) {
-					return;
-				}
-
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
 					return null;
@@ -531,38 +531,43 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				let insert: Range;
-				let replace: Range;
-				if (!varWord) {
-					insert = replace = Range.fromPositions(position);
-				} else {
-					insert = new Range(position.lineNumber, varWord.startColumn, position.lineNumber, position.column);
-					replace = new Range(position.lineNumber, varWord.startColumn, position.lineNumber, varWord.endColumn);
-				}
+				const files = await this.doGetFileSearchResults('', CancellationToken.None);
+				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
+				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
 
-				const range = new Range(position.lineNumber, replace.startColumn, position.lineNumber, replace.endColumn + 'file:'.length);
+				// Map the file list to completion items
+				const completionURIs = files.results.map(result => result.resource);
+				const completionItems = completionURIs.map(uri => {
+					const path = uri.path;
+					const label = path.substring(path.lastIndexOf('/') + 1);
+
+					return <CompletionItem>{
+						label,
+						insertText: label,
+						detail: uri.fsPath,
+						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
+						kind: CompletionItemKind.Text,
+						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range, uri }] },
+					};
+				});
+
+
 				return <CompletionList>{
-					suggestions: [
-						<CompletionItem>{
-							label: `${chatVariableLeader}file`,
-							insertText: `${chatVariableLeader}file:`,
-							detail: localize('pickFileLabel', "Pick a file"),
-							range: { insert, replace },
-							kind: CompletionItemKind.Text,
-							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range }] },
-						},
-						<CompletionItem>{
-							label: `${chatVariableLeader}code`,
-							insertText: `${chatVariableLeader}code:`,
-							detail: localize('pickCodeLabel', "Pick a code symbol"),
-							range: { insert, replace },
-							kind: CompletionItemKind.Text,
-							command: { id: SelectAndInsertCodeSymbolAction.ID, title: SelectAndInsertCodeSymbolAction.ID, arguments: [{ widget, range }] },
-						},
-					]
+					suggestions: completionItems
 				};
 			}
 		}));
+	}
+
+	private doGetFileSearchResults(filePattern: string, token: CancellationToken): Promise<ISearchComplete> {
+		return this.searchService.fileSearch(
+			this.fileQueryBuilder.file(
+				this.contextService.getWorkspace().folders,
+				{
+					extraFileResources: this.instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
+					sortByScore: true,
+				}
+			), token);
 	}
 }
 
