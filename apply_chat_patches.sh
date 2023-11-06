@@ -1,50 +1,79 @@
 #!/bin/bash
 
-# The upstream branch you want to sync with
-UPSTREAM_BRANCH='upstream/main'
+# The upstream remote name
+UPSTREAM_REMOTE=upstream
 
-# Directories
-CHAT_DIR='src/vs/workbench/contrib/chat'
-CSCHAT_DIR='src/vs/workbench/contrib/csChat'
+# The main branch name
+MAIN_BRANCH=main
 
-# Fetch the latest changes from the upstream repository
-git fetch upstream
+# The last sync commit hash
+LAST_SYNC_COMMIT_HASH="9e0bd20b88f922b999163e03f56bd4d63f62d770"
 
-# Attempt to find the last common commit for the chat directory
-# Note: This attempts to find the latest commit from the UPSTREAM_BRANCH that changed the CHAT_DIR and is present in the current branch
-LAST_SYNC_COMMIT=$(git log --pretty=format:'%H' -1 --grep=$(git log --pretty=format:'%s' $UPSTREAM_BRANCH -- $CHAT_DIR) -- $CHAT_DIR)
+# The directories for chat and csChat
+CHAT_DIR=src/vs/workbench/contrib/chat
+CSCHAT_DIR=src/vs/workbench/contrib/csChat
 
-if [ -z "$LAST_SYNC_COMMIT" ]; then
-	echo "Could not determine the LAST_SYNC_COMMIT automatically."
-	exit 1
-fi
-
-echo "Last sync commit found: $LAST_SYNC_COMMIT"
-
-# Name of the patch file
+# The name of the patch file
 PATCH_FILE="chat_to_csChat_$(date +%Y%m%d).patch"
 
-# Create the patch for the chat directory
-git diff $LAST_SYNC_COMMIT $UPSTREAM_BRANCH -- $CHAT_DIR > $PATCH_FILE
+# Generate the patch for the chat directory since the last sync
+git diff $LAST_SYNC_COMMIT_HASH $UPSTREAM_REMOTE/$MAIN_BRANCH -- $CHAT_DIR > $PATCH_FILE
 
 # Check if the patch file is created and is not empty
 if [ ! -s $PATCH_FILE ]; then
-	echo "No changes found in the $CHAT_DIR directory since the last sync."
+	echo "No changes found in the $CHAT_DIR directory."
 	exit 0
 fi
 
-echo "Applying patch to $CSCHAT_DIR..."
+# Function to calculate new paths based on specific rules
+get_new_cs_path() {
+	local old_path="$1"
+	local dirname=$(dirname "$old_path")
+	local basename=$(basename "$old_path")
 
-# Apply the patch to the csChat directory
-git apply --directory=$CSCHAT_DIR --reject $PATCH_FILE
+	# Apply generic renaming rule unless the file doesn't contain 'chat'
+	if [[ $basename == *"chat"* && $basename != "codeBlockPart.ts" ]]; then
+		# For files containing 'voiceChat', replace 'voiceChat' with 'csVoiceChat'
+		if [[ $basename == *"voiceChat"* ]]; then
+			basename="${basename//voiceChat/csVoiceChat}"
+		# Otherwise, prefix 'cs' before 'Chat' in the filename
+		else
+			basename="${basename//chat/csChat}"
+		fi
+	fi
 
-# Find any .rej files that indicate conflicts
-REJ_FILES=$(find $CSCHAT_DIR -name '*.rej')
+	# Correct the dirname replacement to handle slashes properly
+	dirname=$(echo $dirname | sed 's|/chat/|/csChat/|g')
 
-if [ ! -z "$REJ_FILES" ]; then
-	echo "There were conflicts during the patch application:"
-	echo "$REJ_FILES"
-	echo "Please resolve these manually, then test and commit the changes."
-else
-	echo "Patch applied successfully. Please test before committing."
-fi
+	# Combine the directory name with the new basename
+	echo "$dirname/$basename"
+}
+
+# Function to apply patch with the necessary adjustments
+apply_patch_with_renames() {
+	# Create a new patch file for adjusted paths
+	local adjusted_patch_file="adjusted_$PATCH_FILE"
+	> "$adjusted_patch_file" # Clear the adjusted patch file content
+
+	# Read through the original patch file line by line
+	while IFS= read -r line
+	do
+		# Check if the line starts with "--- a/" or "+++ b/"
+		if [[ $line == "--- a/"* || $line == "+++ b/"* ]]; then
+			# Extract the file path without the prefix
+			local path_with_prefix=${line:6}
+			# Calculate the new path
+			local new_path=$(get_new_cs_path "$path_with_prefix")
+			# Replace the line with the new path
+			line="${line:0:6}$new_path"
+		fi
+
+		# Write the modified line to the new patch file
+		echo "$line" >> "$adjusted_patch_file"
+	done < "$PATCH_FILE"
+
+	# Apply the new patch file with the adjusted paths
+	git apply --verbose --reject "$adjusted_patch_file"
+}
+
+apply_patch_with_renames

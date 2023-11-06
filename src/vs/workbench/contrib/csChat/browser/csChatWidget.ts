@@ -547,7 +547,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return;
 			}
 
-			this._chatAccessibilityService.acceptRequest();
+			const requestId = this._chatAccessibilityService.acceptRequest();
 			const input = !opts ? editorValue :
 				'query' in opts ? opts.query :
 					`${opts.prefix} ${editorValue}`;
@@ -560,10 +560,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				result.responseCompletePromise.then(async () => {
 					const responses = this.viewModel?.getItems().filter(isResponseVM);
 					const lastResponse = responses?.[responses.length - 1];
-					this._chatAccessibilityService.acceptResponse(lastResponse);
+					this._chatAccessibilityService.acceptResponse(lastResponse, requestId);
 				});
 			} else {
-				this._chatAccessibilityService.acceptResponse();
+				this._chatAccessibilityService.acceptResponse(undefined, requestId);
 			}
 		}
 	}

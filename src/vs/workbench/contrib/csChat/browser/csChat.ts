@@ -72,7 +72,7 @@ export interface IQuickChatOpenOptions {
 export interface ICSChatAccessibilityService {
 	readonly _serviceBrand: undefined;
 	acceptRequest(): void;
-	acceptResponse(response?: IChatResponseViewModel | string): void;
+	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
 }
 
 export interface IChatCodeBlockInfo {
