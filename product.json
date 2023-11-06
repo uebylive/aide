@@ -2167,5 +2167,8 @@
 				]
 			}
 		}
+	},
+	"features": {
+		"chat.experimental.fileVariables": true
 	}
 }

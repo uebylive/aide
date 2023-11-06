@@ -31,7 +31,7 @@ import { ChatEditorInput } from 'vs/workbench/contrib/csChat/browser/csChatEdito
 import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS, CONTEXT_REQUEST, CONTEXT_RESPONSE } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { chatAgentLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { chatAgentLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ICSChatService, IChatDetail } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -178,7 +178,7 @@ export function registerChatActions() {
 			const selectedRange = editor.getSelection();
 			if (editorUri && !selectedRange?.isEmpty() && selectedRange) {
 				const fileName = basename(editorUri);
-				let text = `#file:${fileName}`;
+				let text = `${chatVariableLeader}file:${fileName}`;
 
 				if (selectedRange.startLineNumber === selectedRange.endLineNumber) {
 					text += `:${selectedRange.startLineNumber}`;

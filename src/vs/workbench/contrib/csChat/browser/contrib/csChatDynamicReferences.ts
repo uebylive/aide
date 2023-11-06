@@ -18,6 +18,7 @@ import { ILogService } from 'vs/platform/log/common/log';
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
+import { chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 export const dynamicReferenceDecorationType = 'chat-dynamic-reference';
@@ -132,7 +133,7 @@ export class SelectAndInsertFileAction extends Action2 {
 
 		const fileName = basename(resource);
 		const editor = context.widget.inputEditor;
-		const text = `#file:${fileName}`;
+		const text = `${chatVariableLeader}file:${fileName}`;
 		const range = context.range;
 		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
 		if (!success) {
@@ -232,7 +233,7 @@ export class SelectAndInsertCodeSymbolAction extends Action2 {
 
 		const [symbolName, symbolType] = result;
 		const editor = context.widget.inputEditor;
-		const text = `#${symbolType}:${symbolName}`;
+		const text = `${chatVariableLeader}${symbolType}:${symbolName}`;
 		const range = context.range;
 		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
 		if (!success) {

@@ -366,7 +366,7 @@ class AgentCompletions extends Disposable {
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatAgent',
-			triggerCharacters: ['@'],
+			triggerCharacters: [chatAgentLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.viewModel) {
@@ -394,7 +394,7 @@ class AgentCompletions extends Disposable {
 					.filter(a => !a.metadata.isDefault);
 				return <CompletionList>{
 					suggestions: agents.map((c, i) => {
-						const withAt = `@${c.id}`;
+						const withAt = `${chatAgentLeader}${c.id}`;
 						return <CompletionItem>{
 							label: withAt,
 							insertText: `${withAt} `,
@@ -484,7 +484,7 @@ class AgentCompletions extends Disposable {
 
 				return <CompletionList>{
 					suggestions: agents.flatMap((agent, i) => commands[i].map((c, i) => {
-						const agentLabel = `@${agent.id}`;
+						const agentLabel = `${chatAgentLeader}${agent.id}`;
 						const withSlash = `/${c.name}`;
 						return <CompletionItem>{
 							label: { label: withSlash, description: agentLabel },

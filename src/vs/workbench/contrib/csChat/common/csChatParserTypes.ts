@@ -35,8 +35,8 @@ export class ChatRequestTextPart implements IParsedChatRequestPart {
 }
 
 // warning, these also show up in a regex in the parser
-export const chatVariableLeader = '#';
-export const chatAgentLeader = '@';
+export const chatVariableLeader = '@';
+export const chatAgentLeader = '#';
 export const chatSubcommandLeader = '/';
 
 /**
@@ -109,7 +109,7 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 }
 
 /**
- * An invocation of a dynamic reference like '#file:'
+ * An invocation of a dynamic reference like '@file:'
  */
 export class ChatRequestDynamicReferencePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
