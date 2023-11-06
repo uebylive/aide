@@ -71,7 +71,7 @@ export interface IQuickChatOpenOptions {
 
 export interface ICSChatAccessibilityService {
 	readonly _serviceBrand: undefined;
-	acceptRequest(): void;
+	acceptRequest(): number;
 	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
 }
 
