@@ -6,6 +6,7 @@
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/resources';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
@@ -80,6 +81,7 @@ ChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
 interface SelectAndInsertActionContext {
 	widget: ChatWidget;
 	range: IRange;
+	uri: URI;
 }
 
 function isSelectAndInsertActionContext(context: any): context is SelectAndInsertActionContext {
@@ -110,7 +112,7 @@ export class SelectAndInsertFileAction extends Action2 {
 			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
 		};
 
-		const resource = context.widget.inputEditor.getModel()?.uri;
+		const resource = context.uri;
 		if (!resource) {
 			logService.trace('SelectAndInsertFileAction: no resource selected');
 			doCleanup();
@@ -125,7 +127,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		const editor = context.widget.inputEditor;
 		const text = `${chatVariableLeader}file:${fileName}`;
 		const range = context.range;
-		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
+		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + '' }]);
 		if (!success) {
 			logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
 			doCleanup();

@@ -543,7 +543,7 @@ class BuiltinDynamicCompletions extends Disposable {
 
 					return <CompletionItem>{
 						label,
-						insertText: label,
+						insertText: '',
 						detail: uri.fsPath,
 						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
 						kind: CompletionItemKind.Text,
