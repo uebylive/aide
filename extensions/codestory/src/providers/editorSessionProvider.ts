@@ -344,6 +344,8 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 			const lineCount = session.textDocument.lineCount;
 			const startOffset = session.textDocument.offsetAt(session.range.start);
 			const endOffset = session.textDocument.offsetAt(session.range.end);
+			const textEncoder = new TextEncoder();
+			const utf8Array = [...textEncoder.encode(text)];
 			// Now we want to prepare the data we have to send over the wire
 			const context: InEditorRequest = {
 				repoRef: this.repoRef.getRepresentation(),
@@ -364,6 +366,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 				},
 				textDocumentWeb: {
 					text,
+					utf8Array,
 					language: session.getTextDocumentLanguage(),
 					fsFilePath: session.textDocument.fileName,
 					relativePath: vscode.workspace.asRelativePath(session.textDocument.fileName),

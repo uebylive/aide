@@ -434,9 +434,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
 				const explainString = request.message.toString().slice('/explain'.length).trim();
-				console.log('[explain][session_id]', request.session.threadId);
 				const currentSelection = getSelectedCodeContextForExplain(this._workingDirectory, this._currentRepoRef);
-				console.log(currentSelection);
 				if (currentSelection === null) {
 					progress.report(new CSChatProgressContent('Selecting code on the editor can help us explain it better'));
 					return new CSChatResponseForProgress();
@@ -452,7 +450,6 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				console.log('[search][session_id]', request.session.threadId);
 				const searchString = request.message.toString().slice('/search'.length).trim();
 				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.session.threadId);
 				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef, this._workingDirectory);
@@ -468,7 +465,7 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId);
+				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId, request.variables);
 				await reportFromStreamToSearchProgress(followupResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
