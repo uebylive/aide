@@ -137,24 +137,15 @@ export async function activate(context: ExtensionContext) {
 	);
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 
-	// Setup python language parser
-	const pythonLanguageParser = new LanguageParser(
-		rootPath ?? '',
-		'python',
-		['py'],
-	);
-	// Setup golang parser here
-	const goLangParser = new GoLangParser(rootPath ?? '');
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
 	const extensionSet = getExtensionsInDirectory(rootPath);
-	const projectManagement = await getProject(activeDirectories, extensionSet, rootPath);
 
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
-	codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
-	codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonLanguageParser);
-	codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
+	// codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
+	// codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonLanguageParser);
+	// codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
 
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
