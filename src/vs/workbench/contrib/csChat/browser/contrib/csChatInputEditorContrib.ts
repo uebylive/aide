@@ -19,24 +19,25 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { Registry } from 'vs/platform/registry/common/platform';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
-import { IChatWidget, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
+import { ICSChatWidgetService, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
-import { SelectAndInsertFileAction, dynamicReferenceDecorationType } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
-import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatFileVariableLeader, chatSubcommandLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
 import { ICSChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
+import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
+import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
+import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
 
 const decorationDescription = 'chat';
 const placeholderDecorationType = 'chat-session-detail';
@@ -503,7 +504,7 @@ class AgentCompletions extends Disposable {
 }
 
 class BuiltinDynamicCompletions extends Disposable {
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+	private static readonly VariableNameDef = new RegExp(`${chatFileVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
 	private readonly fileQueryBuilder = this.instantiationService.createInstance(QueryBuilder);
 
@@ -518,7 +519,7 @@ class BuiltinDynamicCompletions extends Disposable {
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatDynamicCompletions',
-			triggerCharacters: [chatVariableLeader],
+			triggerCharacters: [chatFileVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
@@ -531,7 +532,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				const files = await this.doGetFileSearchResults('', CancellationToken.None);
+				const files = await this.doGetFileSearchResults('', _token);
 				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
 				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
 
@@ -572,6 +573,65 @@ class BuiltinDynamicCompletions extends Disposable {
 }
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
+
+class BuiltinSymbolCompletions extends Disposable {
+	private static readonly VariableNameDef = new RegExp(`${chatSymbolVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+
+	private readonly workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: 'chatSymbolCompletions',
+			triggerCharacters: [chatSymbolVariableLeader],
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+				if (!widget || !widget.supportsFileReferences) {
+					return null;
+				}
+
+				const varWord = getWordAtText(position.column, BuiltinSymbolCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				if (!varWord && model.getWordUntilPosition(position).word) {
+					// inside a "normal" word
+					return null;
+				}
+
+				const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks('', {
+					skipLocal: true,
+					skipSorting: true,
+					delay: 200
+				}, _token);
+
+				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
+				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
+
+				// Map the symbol list to completion items
+				const completionItems = editorSymbolPicks.map(pick => {
+					return <CompletionItem>{
+						label: pick.label,
+						insertText: '',
+						detail: pick.ariaLabel,
+						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
+						kind: CompletionItemKind.Text,
+						command: { id: SelectAndInsertCodeSymbolAction.ID, title: SelectAndInsertCodeSymbolAction.ID, arguments: [{ widget, range, pick }] },
+					};
+				});
+
+
+				return <CompletionList>{
+					suggestions: completionItems
+				};
+			}
+		}));
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinSymbolCompletions, LifecyclePhase.Eventually);
 
 interface SlashCommandYieldTo {
 	command: string;
@@ -669,7 +729,7 @@ function computeCompletionRanges(model: ITextModel, position: Position, reg: Reg
 
 class VariableCompletions extends Disposable {
 
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+	private static readonly VariableNameDef = new RegExp(`${chatFileVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
@@ -681,7 +741,7 @@ class VariableCompletions extends Disposable {
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatVariables',
-			triggerCharacters: [chatVariableLeader],
+			triggerCharacters: [chatFileVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
@@ -700,15 +760,15 @@ class VariableCompletions extends Disposable {
 				// TODO@roblourens work out a real API for this- maybe it can be part of the two-step flow that @file will probably use
 				const historyVariablesEnabled = this.configurationService.getValue('chat.experimental.historyVariables');
 				const historyItems = historyVariablesEnabled ? history.map((h, i): CompletionItem => ({
-					label: `${chatVariableLeader}response:${i + 1}`,
+					label: `${chatFileVariableLeader}response:${i + 1}`,
 					detail: h.response.asString(),
-					insertText: `${chatVariableLeader}response:${String(i + 1).padStart(String(history.length).length, '0')} `,
+					insertText: `${chatFileVariableLeader}response:${String(i + 1).padStart(String(history.length).length, '0')} `,
 					kind: CompletionItemKind.Text,
 					range,
 				})) : [];
 
 				const variableItems = Array.from(this.chatVariablesService.getVariables()).map(v => {
-					const withLeader = `${chatVariableLeader}${v.name}`;
+					const withLeader = `${chatFileVariableLeader}${v.name}`;
 					return <CompletionItem>{
 						label: withLeader,
 						range,

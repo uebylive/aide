@@ -8,7 +8,7 @@ import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatFileVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatVariablesService, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
@@ -35,7 +35,7 @@ export class ChatRequestParser {
 			const char = message.charAt(i);
 			let newPart: IParsedChatRequestPart | undefined;
 			if (previousChar.match(/\s/) || i === 0) {
-				if (char === chatVariableLeader) {
+				if (char === chatFileVariableLeader) {
 					newPart = this.tryToParseVariable(message.slice(i), i, new Position(lineNumber, column), parts) ||
 						await this.tryToParseDynamicVariable(message.slice(i), i, new Position(lineNumber, column), references);
 				} else if (char === chatAgentLeader) {
