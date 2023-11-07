@@ -181,6 +181,7 @@ export interface DeepContextForView {
 
 export interface TextDocument {
 	text: String;
+	utf8Array: number[],
 	language: String;
 	fsFilePath: String;
 	relativePath: String;
@@ -326,4 +327,17 @@ export interface InEditorTreeSitterDocumentationQuery {
 
 export interface InEditorTreeSitterDocumentationReply {
 	documentation: string;
+}
+
+export type SidecarVariableType =
+	| 'File'
+	| 'CodeSymbol'
+	| 'Selection';
+
+export interface SidecarVariableTypes {
+	name: string,
+	start_position: Position,
+	end_position: Position,
+	fs_file_path: string,
+	type: SidecarVariableType,
 }

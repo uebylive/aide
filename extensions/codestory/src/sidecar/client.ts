@@ -3,11 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as vscode from 'vscode';
 import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, RepoStatus, SemanticSearchResponse, SnippetInformation, TextDocument } from './types';
+import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 
 export enum RepoRefBackend {
@@ -132,7 +133,12 @@ export class SideCarClient {
 		return responseJson as InEditorTreeSitterDocumentationReply;
 	}
 
-	async *followupQuestion(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
+	async *followupQuestion(
+		query: string,
+		repoRef: RepoRef,
+		threadId: string,
+		variables: Record<string, vscode.CSChatVariableValue[]>,
+	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
@@ -140,7 +146,9 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
+			user_context: await convertVSCodeVariableToSidecar(variables),
 		};
+		console.log(body);
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
@@ -308,4 +316,136 @@ export class SideCarClient {
 		});
 		return codeSymbolInformationEmbeddings;
 	}
+}
+
+interface CodeSelectionUriRange {
+	uri: string;
+	range: {
+		selection: {
+			startLineNumber: number;
+			startColumn: number;
+			endLineNumber: number;
+			endColumn: number;
+		};
+		decoration: {
+			startLineNumber: number;
+			startColumn: number;
+			endLineNumber: number;
+			endColumn: number;
+		};
+	};
+}
+
+async function convertVSCodeVariableToSidecar(
+	variables: Record<string, vscode.CSChatVariableValue[]>,
+): Promise<{ variables: SidecarVariableTypes[], file_content_map: { file_path: string, file_content: string }[] }> {
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+	const resolvedFileCache: Map<string, string> = new Map();
+	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
+	for (let index = 0; index < variablesArr.length; index++) {
+		const keyValue = variablesArr[index];
+		const name = keyValue[0];
+		const value = keyValue[1];
+		if (value.length === 0) {
+			continue;
+		}
+		const variableValue = value[0];
+		if (typeof variableValue.value === 'string') {
+			// TODO write code from here for the selection logic
+			const parsedJson = JSON.parse(variableValue.value) as CodeSelectionUriRange;
+			const filePath = vscode.Uri.parse(parsedJson.uri);
+			let cachedFile = fileCache.get(filePath.fsPath);
+			if (cachedFile === undefined) {
+				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
+				fileCache.set(filePath.fsPath, fileDocument);
+			}
+			const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
+			const startRange = {
+				line: parsedJson.range.selection.startLineNumber,
+				character: parsedJson.range.selection.startColumn,
+			};
+			const endRange = {
+				line: parsedJson.range.selection.endLineNumber,
+				character: parsedJson.range.selection.endColumn,
+			};
+			const variableType = getVariableType(
+				name,
+				startRange,
+				endRange,
+				fileDocument,
+			);
+			resolvedFileCache.set(filePath.fsPath, fileDocument.getText());
+			if (variableType !== null) {
+				sidecarVariables.push({
+					name,
+					start_position: startRange,
+					end_position: endRange,
+					fs_file_path: filePath.fsPath,
+					type: variableType,
+				});
+			}
+		} else {
+			const parsedValue = variableValue.value as vscode.CSChatDynamicVariableValue;
+			const fsFilePath = parsedValue.uri.fsPath;
+			let cachedFile = fileCache.get(fsFilePath);
+			if (cachedFile === undefined) {
+				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fsFilePath));
+				fileCache.set(fsFilePath, fileDocument);
+			}
+			const fileDocument = fileCache.get(fsFilePath) as vscode.TextDocument;
+			const startRange = {
+				line: parsedValue.range.startLineNumber,
+				character: parsedValue.range.startColumn,
+			};
+			const endRange = {
+				line: parsedValue.range.endLineNumber,
+				character: parsedValue.range.endColumn,
+			};
+			const variableType = getVariableType(
+				name,
+				startRange,
+				endRange,
+				fileDocument,
+			);
+			resolvedFileCache.set(fsFilePath, fileDocument.getText());
+			if (variableType !== null) {
+				sidecarVariables.push({
+					name,
+					start_position: startRange,
+					end_position: endRange,
+					fs_file_path: fsFilePath,
+					type: variableType,
+				});
+			}
+		}
+	}
+	return {
+		variables: sidecarVariables,
+		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
+			return {
+				file_path: filePath,
+				file_content: fileContent,
+			}
+		}),
+	};
+}
+
+function getVariableType(
+	name: string,
+	startPosition: Position,
+	endPosition: Position,
+	textDocument: vscode.TextDocument,
+): SidecarVariableType | null {
+	if (name.startsWith('file')) {
+		// here we have to check if the range is the full file or just a partial
+		// range in which case its a selection
+		const textLines = textDocument.lineCount;
+		if (startPosition.line === 1 && endPosition.line === textLines) {
+			return 'File';
+		} else {
+			return 'Selection';
+		}
+	}
+	return 'CodeSymbol';
 }

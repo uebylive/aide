@@ -398,8 +398,8 @@ class StreamProcessor {
 
 		// Set markers for file path, begin, and end
 		this.filePathMarker = '// FILEPATH:';
-		this.beginMarker = '// BEGIN:';
-		this.endMarker = '// END:';
+		this.beginMarker = '// BEGIN';
+		this.endMarker = '// END';
 		this.beginDetected = false;
 		this.endDetected = false;
 		this.currentState = StateEnum.Initial;
