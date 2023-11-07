@@ -28,7 +28,7 @@ import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPa
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import { ICSChatAgentService, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatFileVariableLeader, chatSubcommandLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatFileVariableLeader, chatSubcommandLeader, chatSymbolVariableLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
 import { ICSChatService, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
@@ -741,9 +741,8 @@ class VariableCompletions extends Disposable {
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatVariables',
-			triggerCharacters: [chatFileVariableLeader],
+			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget) {
 					return null;
@@ -760,15 +759,15 @@ class VariableCompletions extends Disposable {
 				// TODO@roblourens work out a real API for this- maybe it can be part of the two-step flow that @file will probably use
 				const historyVariablesEnabled = this.configurationService.getValue('chat.experimental.historyVariables');
 				const historyItems = historyVariablesEnabled ? history.map((h, i): CompletionItem => ({
-					label: `${chatFileVariableLeader}response:${i + 1}`,
+					label: `${chatVariableLeader}response:${i + 1}`,
 					detail: h.response.asString(),
-					insertText: `${chatFileVariableLeader}response:${String(i + 1).padStart(String(history.length).length, '0')} `,
+					insertText: `${chatVariableLeader}response:${String(i + 1).padStart(String(history.length).length, '0')} `,
 					kind: CompletionItemKind.Text,
 					range,
 				})) : [];
 
 				const variableItems = Array.from(this.chatVariablesService.getVariables()).map(v => {
-					const withLeader = `${chatFileVariableLeader}${v.name}`;
+					const withLeader = `${chatVariableLeader}${v.name}`;
 					return <CompletionItem>{
 						label: withLeader,
 						range,
