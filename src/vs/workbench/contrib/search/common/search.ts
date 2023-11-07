@@ -69,8 +69,6 @@ export async function getWorkspaceSymbols(query: string, token: CancellationToke
 
 	const all: WorkspaceSymbolItem[] = [];
 
-	console.log(WorkspaceSymbolProviderRegistry.all());
-
 	const promises = WorkspaceSymbolProviderRegistry.all().map(async provider => {
 		try {
 			const value = await provider.provideWorkspaceSymbols(query, token);
