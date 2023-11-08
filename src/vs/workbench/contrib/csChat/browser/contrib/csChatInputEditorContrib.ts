@@ -601,11 +601,7 @@ class BuiltinSymbolCompletions extends Disposable {
 					return null;
 				}
 
-				const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks('', {
-					skipLocal: true,
-					skipSorting: true,
-					delay: 200
-				}, _token);
+				const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks('', undefined, _token);
 
 				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
 				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
