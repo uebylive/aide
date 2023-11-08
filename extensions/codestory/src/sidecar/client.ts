@@ -148,7 +148,6 @@ export class SideCarClient {
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecar(variables),
 		};
-		console.log(body);
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
@@ -338,10 +337,10 @@ interface CodeSelectionUriRange {
 
 async function convertVSCodeVariableToSidecar(
 	variables: Record<string, vscode.CSChatVariableValue[]>,
-): Promise<{ variables: SidecarVariableTypes[], file_content_map: { file_path: string, file_content: string }[] }> {
+): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
-	const resolvedFileCache: Map<string, string> = new Map();
+	const resolvedFileCache: Map<string, [string, string]> = new Map();
 	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
 	for (let index = 0; index < variablesArr.length; index++) {
 		const keyValue = variablesArr[index];
@@ -355,7 +354,7 @@ async function convertVSCodeVariableToSidecar(
 			// TODO write code from here for the selection logic
 			const parsedJson = JSON.parse(variableValue.value) as CodeSelectionUriRange;
 			const filePath = vscode.Uri.parse(parsedJson.uri);
-			let cachedFile = fileCache.get(filePath.fsPath);
+			const cachedFile = fileCache.get(filePath.fsPath);
 			if (cachedFile === undefined) {
 				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
 				fileCache.set(filePath.fsPath, fileDocument);
@@ -375,7 +374,7 @@ async function convertVSCodeVariableToSidecar(
 				endRange,
 				fileDocument,
 			);
-			resolvedFileCache.set(filePath.fsPath, fileDocument.getText());
+			resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -388,7 +387,7 @@ async function convertVSCodeVariableToSidecar(
 		} else {
 			const parsedValue = variableValue.value as vscode.CSChatDynamicVariableValue;
 			const fsFilePath = parsedValue.uri.fsPath;
-			let cachedFile = fileCache.get(fsFilePath);
+			const cachedFile = fileCache.get(fsFilePath);
 			if (cachedFile === undefined) {
 				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fsFilePath));
 				fileCache.set(fsFilePath, fileDocument);
@@ -408,7 +407,7 @@ async function convertVSCodeVariableToSidecar(
 				endRange,
 				fileDocument,
 			);
-			resolvedFileCache.set(fsFilePath, fileDocument.getText());
+			resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -425,8 +424,9 @@ async function convertVSCodeVariableToSidecar(
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
 			return {
 				file_path: filePath,
-				file_content: fileContent,
-			}
+				file_content: fileContent[0],
+				language: fileContent[1],
+			};
 		}),
 	};
 }
