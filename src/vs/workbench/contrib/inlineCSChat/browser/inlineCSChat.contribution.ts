@@ -17,6 +17,7 @@ import { InlineChatNotebookContribution } from 'vs/workbench/contrib/inlineCSCha
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { InlineChatAccessibleViewContribution } from './inlineCSChatAccessibleView';
 import { InlineChatDecorationsContribution } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatDecorations';
+import 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatInputEditorContrib';
 
 registerSingleton(IInlineCSChatService, InlineCSChatServiceImpl, InstantiationType.Delayed);
 registerSingleton(IInlineChatSessionService, InlineChatSessionService, InstantiationType.Delayed);

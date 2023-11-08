@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./inlineCSChat';
-import { DisposableStore, MutableDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IActiveCodeEditor, ICodeEditor, IDiffEditorConstructionOptions } from 'vs/editor/browser/editorBrowser';
 import { EditorLayoutInfo, EditorOption } from 'vs/editor/common/config/editorOptions';
 import { IRange, Range } from 'vs/editor/common/core/range';
@@ -62,6 +62,7 @@ import { editorForeground, inputBackground, editorBackground } from 'vs/platform
 import { CodeBlockPart } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { Lazy } from 'vs/base/common/lazy';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
+import { IInlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat';
 
 const defaultAriaLabel = localize('aria-label', "Inline Chat Input");
 
@@ -129,8 +130,14 @@ export interface InlineChatWidgetViewState {
 	placeholder: string;
 }
 
-export class InlineChatWidget {
+export interface IInlineChatWidgetContrib extends IDisposable {
+	readonly id: string;
+}
 
+export class InlineChatWidget implements IInlineChatWidget {
+	public static readonly CONTRIBS: { new(...args: [IInlineChatWidget, ...any]): IInlineChatWidgetContrib }[] = [];
+
+	static readonly INPUT_SCHEME = 'inlineCSChatSessionInput';
 	private static _modelPool: number = 1;
 
 	private readonly _elements = h(
@@ -185,6 +192,9 @@ export class InlineChatWidget {
 	private readonly _previewCreateEditor: Lazy<ICodeEditor>;
 	private readonly _previewCreateModel = this._store.add(new MutableDisposable());
 
+	private readonly _onDidFocus = this._store.add(new Emitter<void>());
+	readonly onDidFocus: Event<void> = this._onDidFocus.event;
+
 	private readonly _onDidChangeHeight = this._store.add(new MicrotaskEmitter<void>());
 	readonly onDidChangeHeight: Event<void> = Event.filter(this._onDidChangeHeight.event, _ => !this._isLayouting);
 
@@ -203,6 +213,8 @@ export class InlineChatWidget {
 	private readonly _markdownRenderer: MarkdownRenderer;
 	private readonly _editorOptions: ChatEditorOptions;
 	private _codeBlockDisposables = this._store.add(new DisposableStore());
+
+	private contribs: IInlineChatWidgetContrib[] = [];
 
 	constructor(
 		private readonly parentEditor: ICodeEditor,
@@ -243,7 +255,7 @@ export class InlineChatWidget {
 			}
 		}));
 
-		const uri = URI.from({ scheme: 'vscode', authority: 'inline-chat', path: `/inline-chat/model${InlineChatWidget._modelPool++}.txt` });
+		const uri = URI.from({ scheme: InlineChatWidget.INPUT_SCHEME, authority: 'inline-cschat', path: `/inline-cschat/model${InlineChatWidget._modelPool++}.txt` });
 		this._inputModel = this._store.add(this._modelService.getModel(uri) ?? this._modelService.createModel('', null, uri));
 		this._inputEditor.setModel(this._inputModel);
 
@@ -295,6 +307,7 @@ export class InlineChatWidget {
 			this._ctxInputEditorFocused.set(hasFocus);
 			this._elements.content.classList.toggle('synthetic-focus', hasFocus);
 			this.readPlaceholder();
+			this._onDidFocus.fire();
 		};
 		this._store.add(this._inputEditor.onDidFocusEditorWidget(updateFocused));
 		this._store.add(this._inputEditor.onDidBlurEditorWidget(updateFocused));
@@ -431,6 +444,14 @@ export class InlineChatWidget {
 
 	get domNode(): HTMLElement {
 		return this._elements.root;
+	}
+
+	get inputEditor(): ICodeEditor {
+		return this._inputEditor;
+	}
+
+	getContrib<T extends IInlineChatWidgetContrib>(id: string): T | undefined {
+		return this.contribs.find(c => c.id === id) as T;
 	}
 
 	layout(dim: Dimension) {
@@ -848,6 +869,9 @@ export class InlineChatZoneWidget extends ZoneWidget {
 	private _dimension?: Dimension;
 	private _indentationWidth: number | undefined;
 
+	private readonly _onDidFocus = this._disposables.add(new Emitter<void>());
+	readonly onDidFocus: Event<void> = this._onDidFocus.event;
+
 	constructor(
 		editor: ICodeEditor,
 		@IInstantiationService private readonly _instaService: IInstantiationService,
@@ -865,6 +889,7 @@ export class InlineChatZoneWidget extends ZoneWidget {
 
 		this.widget = this._instaService.createInstance(InlineChatWidget, this.editor);
 		this._disposables.add(this.widget.onDidChangeHeight(() => this._relayout()));
+		this._disposables.add(this.widget.onDidFocus(() => this._onDidFocus.fire()));
 		this._disposables.add(this.widget);
 		this.create();
 
