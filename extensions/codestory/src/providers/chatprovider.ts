@@ -171,6 +171,31 @@ export class CSChatProgressUsedContext implements vscode.CSChatProgressUsedConte
 	}
 }
 
+export class CSChatContentReference implements vscode.CSChatContentReference {
+	reference: vscode.Uri | vscode.Location;
+
+	constructor(reference: vscode.Uri | vscode.Location) {
+		this.reference = reference;
+	}
+
+	toString(): string {
+		return `CSChatContentReference { reference: "${this.reference}" }`;
+	}
+}
+
+export class CSChatInlineContentReference implements vscode.CSChatInlineContentReference {
+	inlineReference: vscode.Uri | vscode.Location;
+	title?: string;
+
+	constructor(inlineReference: vscode.Uri | vscode.Location, title?: string) {
+		this.inlineReference = inlineReference;
+	}
+
+	toString(): string {
+		return `CSChatInlineContentReference { inlineReference: "${this.inlineReference}", title: "${this.title}" }`;
+	}
+}
+
 class CSChatProgressId implements vscode.CSChatProgressId {
 	responseId: string;
 
@@ -225,7 +250,7 @@ export class CSChatProgressTask implements vscode.CSChatProgressTask {
 	}
 }
 
-export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree | CSChatProgressUsedContext;
+export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree | CSChatProgressUsedContext | CSChatContentReference | CSChatInlineContentReference;
 
 class CSChatResponseForProgress implements vscode.CSChatResponseForProgress {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
