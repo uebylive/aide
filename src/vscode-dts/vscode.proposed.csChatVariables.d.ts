@@ -9,6 +9,10 @@ declare module 'vscode' {
 		variables: Record<string, CSChatVariableValue[]>;
 	}
 
+	export interface CSChatEditorRequest {
+		variables: Record<string, CSChatVariableValue[]>;
+	}
+
 	interface CSChatDynamicVariableValue {
 		uri: Uri;
 		range: {

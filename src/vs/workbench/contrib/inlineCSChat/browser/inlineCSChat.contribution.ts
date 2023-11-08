@@ -18,9 +18,12 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { InlineChatAccessibleViewContribution } from './inlineCSChatAccessibleView';
 import { InlineChatDecorationsContribution } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatDecorations';
 import 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatInputEditorContrib';
+import { IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { InlineCSChatVariablesService } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatVariables';
 
 registerSingleton(IInlineCSChatService, InlineCSChatServiceImpl, InstantiationType.Delayed);
 registerSingleton(IInlineChatSessionService, InlineChatSessionService, InstantiationType.Delayed);
+registerSingleton(IInlineCSChatVariablesService, InlineCSChatVariablesService, InstantiationType.Delayed);
 
 registerEditorContribution(INLINE_CHAT_ID, InlineChatController, EditorContributionInstantiation.Eager); // EAGER because of notebook dispose/create of editors
 registerEditorContribution(INTERACTIVE_EDITOR_ACCESSIBILITY_HELP_ID, InlineChatActions.InlineAccessibilityHelpContribution, EditorContributionInstantiation.Eventually);

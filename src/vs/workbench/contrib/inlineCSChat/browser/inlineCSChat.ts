@@ -37,6 +37,7 @@ export interface IInlineChatWidget {
 	updateMarkdownMessage(message: IMarkdownString | undefined): string | undefined;
 	updateMarkdownMessageExpansionState(expansionState: ExpansionState): void;
 	updateProgress(show: boolean): void;
+	getSlashCommands(): IInlineCSChatSlashCommand[];
 	updateSlashCommands(commands: IInlineCSChatSlashCommand[]): void;
 	updateSlashCommandUsed(command: string): void;
 	updateStatus(message: string, ops?: { classes?: string[]; resetAfter?: number; keepMessage?: boolean }): void;

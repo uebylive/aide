@@ -779,6 +779,10 @@ export class InlineChatWidget implements IInlineChatWidget {
 
 	// --- slash commands
 
+	getSlashCommands(): IInlineCSChatSlashCommand[] {
+		return this._slashCommandDetails.map(c => { return { command: c.command, detail: c.detail }; });
+	}
+
 	updateSlashCommands(commands: IInlineCSChatSlashCommand[]) {
 
 		this._slashCommands.clear();

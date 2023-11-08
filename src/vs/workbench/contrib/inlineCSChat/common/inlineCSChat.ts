@@ -20,6 +20,7 @@ import { IProgress } from 'vs/platform/progress/common/progress';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { diffInserted, diffRemoved, editorHoverHighlight, editorWidgetBackground, editorWidgetBorder, focusBorder, inputBackground, inputPlaceholderForeground, registerColor, transparent, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
 import { Extensions as ExtensionsMigration, IConfigurationMigrationRegistry } from 'vs/workbench/common/configuration';
+import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 export interface IInlineCSChatSlashCommand {
 	command: string;
@@ -44,6 +45,7 @@ export interface IInlineCSChatRequest {
 	attempt: number;
 	requestId: string;
 	live: boolean;
+	variables?: Record<string, IChatRequestVariableValue[]>;
 }
 
 export type IInlineCSChatResponse = IInlineCSChatEditResponse | IInlineCSChatBulkEditResponse | IInlineCSChatMessageResponse;

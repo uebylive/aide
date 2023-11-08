@@ -6,7 +6,11 @@
 declare module 'vscode' {
 
 	export interface CSChatRequest {
-		variables: Record<string, ChatVariableValue[]>;
+		variables: Record<string, CSChatVariableValue[]>;
+	}
+
+	export interface CSChatEditorRequest {
+		variables: Record<string, CSChatVariableValue[]>;
 	}
 
 	export enum CSChatVariableLevel {
