@@ -155,7 +155,7 @@ export class SelectAndInsertFileAction extends Action2 {
 }
 registerAction2(SelectAndInsertFileAction);
 
-const parseVariableInfo = (input: string): [string, string] | null => {
+export const parseVariableInfo = (input: string): [string, string] | null => {
 	// Define a regular expression pattern to match the variable declaration.
 	const pattern = /\$\(([^)]+)\)\s*(\w+)/;
 

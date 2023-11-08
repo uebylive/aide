@@ -14,10 +14,12 @@ import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { ILogService } from 'vs/platform/log/common/log';
-import { chatFileVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { parseVariableInfo } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
+import { chatFileVariableLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IInlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat';
 import { IInlineChatWidgetContrib, InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
+import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 
 const dynamicReferenceDecorationType = 'chat-dynamic-reference';
 
@@ -85,6 +87,16 @@ function isInsertFileVariableContext(context: any): context is InsertFileVariabl
 	return 'widget' in context && 'range' in context && 'uri' in context;
 }
 
+interface InsertSymbolVariableContext {
+	widget: InlineChatWidget;
+	range: IRange;
+	pick: ISymbolQuickPickItem;
+}
+
+function isInsertSymbolVariableContext(context: any): context is InsertSymbolVariableContext {
+	return 'widget' in context && 'range' in context && 'pick' in context;
+}
+
 export class SelectAndInsertFileAction extends Action2 {
 	static readonly ID = 'workbench.action.inlineCSChat.selectAndInsertFile';
 
@@ -141,3 +153,63 @@ export class SelectAndInsertFileAction extends Action2 {
 	}
 }
 registerAction2(SelectAndInsertFileAction);
+
+export class SelectAndInsertCodeSymbolAction extends Action2 {
+	static readonly ID = 'workbench.action.inlineCSChat.selectAndInsertCodeSymbol';
+
+	constructor() {
+		super({
+			id: SelectAndInsertCodeSymbolAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isInsertSymbolVariableContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `file`
+			context.widget.inputEditor.executeEdits('chatInsertCode', [{ range: context.range, text: `` }]);
+		};
+
+		const pick = context.pick;
+		if (!pick || !pick.resource) {
+			logService.trace('SelectAndInsertCodeSymbolAction: no resource selected');
+			doCleanup();
+			return;
+		}
+
+		const selectionRange = (pick as unknown as { range: Range }).range;
+		const result = parseVariableInfo(pick.label);
+		if (!result) {
+			logService.trace('SelectAndInsertCodeSymbolAction: failed to parse code symbol');
+			doCleanup();
+			return;
+		}
+
+		const [symbolName, symbolType] = result;
+		const editor = context.widget.inputEditor;
+		const text = `${chatSymbolVariableLeader}${symbolType}:${symbolName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertSymbolAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		context.widget.getContrib<ChatDynamicReferenceModel>(ChatDynamicReferenceModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: {
+				uri: pick.resource,
+				range: selectionRange
+			}
+		});
+	}
+}
+registerAction2(SelectAndInsertCodeSymbolAction);

@@ -16,10 +16,11 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { chatFileVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { SelectAndInsertFileAction } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
+import { chatFileVariableLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
 import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 import { InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
+import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
@@ -49,12 +50,10 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				const inlineChatEditor = this.codeEditorService.getFocusedCodeEditor();
-				if (!inlineChatEditor) {
+				const widget = InlineChatController.get(codeEditor)?.getWidget();
+				if (!widget) {
 					return null;
 				}
-
-				const widget = InlineChatController.get(codeEditor)?.getWidget();
 
 				const varWord = getWordAtText(position.column, BuiltinDynamicCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
 				if (!varWord && model.getWordUntilPosition(position).word) {
@@ -103,3 +102,68 @@ class BuiltinDynamicCompletions extends Disposable {
 }
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
+
+class BuiltinSymbolCompletions extends Disposable {
+	private static readonly VariableNameDef = new RegExp(`${chatSymbolVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+
+	private readonly workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: InlineChatWidget.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: 'chatSymbolCompletions',
+			triggerCharacters: [chatSymbolVariableLeader],
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const codeEditor = this.codeEditorService.getActiveCodeEditor();
+				const codeEditorModel = codeEditor && codeEditor.getModel();
+				if (!codeEditorModel) {
+					return null;
+				}
+
+				const widget = InlineChatController.get(codeEditor)?.getWidget();
+				if (!widget) {
+					return null;
+				}
+
+				const varWord = getWordAtText(position.column, BuiltinSymbolCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				if (!varWord && model.getWordUntilPosition(position).word) {
+					// inside a "normal" word
+					return null;
+				}
+
+				const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks('', {
+					skipLocal: true,
+					skipSorting: true,
+					delay: 200
+				}, _token);
+
+				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
+				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
+
+				// Map the symbol list to completion items
+				const completionItems = editorSymbolPicks.map(pick => {
+					return <CompletionItem>{
+						label: pick.label,
+						insertText: '',
+						detail: pick.ariaLabel,
+						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
+						kind: CompletionItemKind.Text,
+						command: { id: SelectAndInsertCodeSymbolAction.ID, title: SelectAndInsertCodeSymbolAction.ID, arguments: [{ widget, range, pick }] },
+					};
+				});
+
+
+				return <CompletionList>{
+					suggestions: completionItems
+				};
+			}
+		}));
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinSymbolCompletions, LifecyclePhase.Eventually);
