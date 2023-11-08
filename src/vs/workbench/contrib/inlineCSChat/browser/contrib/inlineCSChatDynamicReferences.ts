@@ -44,6 +44,7 @@ export class ChatDynamicReferenceModel extends Disposable implements IInlineChat
 					if (Range.areIntersecting(ref.range, c.range)) {
 						// The reference text was changed, it's broken
 						this._references.splice(i, 1);
+						widget.inputEditor.executeEdits('referenceEditCallback', [{ range: ref.range, text: `` }]);
 					} else if (Range.compareRangesUsingStarts(ref.range, c.range) > 0) {
 						const delta = c.text.length - c.rangeLength;
 						ref.range = {
