@@ -6,6 +6,7 @@
 import { raceCancellation } from 'vs/base/common/async';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, MutableDisposable } from 'vs/base/common/lifecycle';
+import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
@@ -16,6 +17,7 @@ import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { ILabelService } from 'vs/platform/label/common/label';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -514,6 +516,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		@ICSChatWidgetService private readonly chatWidgetService: ICSChatWidgetService,
 		@ISearchService private readonly searchService: ISearchService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ILabelService private readonly labelService: ILabelService,
 	) {
 		super();
 
@@ -539,15 +542,13 @@ class BuiltinDynamicCompletions extends Disposable {
 				// Map the file list to completion items
 				const completionURIs = files.results.map(result => result.resource);
 				const completionItems = completionURIs.map(uri => {
-					const path = uri.path;
-					const label = path.substring(path.lastIndexOf('/') + 1);
-
+					const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
 					return <CompletionItem>{
-						label,
+						label: basenameOrAuthority(uri),
 						insertText: '',
-						detail: uri.fsPath,
+						detail,
 						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
-						kind: CompletionItemKind.Text,
+						kind: CompletionItemKind.File,
 						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range, uri }] },
 					};
 				});
@@ -611,7 +612,7 @@ class BuiltinSymbolCompletions extends Disposable {
 					return <CompletionItem>{
 						label: pick.label,
 						insertText: '',
-						detail: pick.ariaLabel,
+						detail: pick.resource ? basenameOrAuthority(pick.resource) : '',
 						range: { insert: insertAndReplaceRange, replace: insertAndReplaceRange },
 						kind: CompletionItemKind.Text,
 						command: { id: SelectAndInsertCodeSymbolAction.ID, title: SelectAndInsertCodeSymbolAction.ID, arguments: [{ widget, range, pick }] },
