@@ -8,12 +8,9 @@ import * as path from 'path';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatProgressUsedContext } from '../providers/chatprovider';
-import { OpenAIChatTypes } from '@axflow/models/openai/chat';
-import { StreamToIterable } from '@axflow/models/shared';
-import { AgentStep, CodeSpan, ConversationMessage, ConversationMessageOkay } from '../sidecar/types';
+import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatContentReference } from '../providers/chatprovider';
+import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import { createFileTreeFromPaths } from './helpers';
 import * as math from 'mathjs';
 
 // Here we are going to convert the stream of messages to progress messages
@@ -142,38 +139,14 @@ export const reportFromStreamToSearchProgress = async (
 			const lastStep = conversationMessage.steps_taken[stepsTaken - 1];
 			console.log(`[search][stream] whats the last step here`);
 			console.log(lastStep);
-			if ('Path' in lastStep) {
-				progress.report(new CSChatProgressContent('## Found relevant files'));
-				progress.report(
-					new CSChatProgressTask(
-						'Reading files for answer...',
-						Promise.resolve(
-							createFileTreeFromPaths(lastStep.Path.paths, workingDirectory),
-						)
-					)
-				);
-			} else if ('Code' in lastStep) {
-				progress.report(
-					new CSChatProgressContent(
-						reportCodeSpansToChat(
-							lastStep.Code.code_snippets,
-							workingDirectory,
-						)
-					)
-				);
-				progress.report(
-					reportCodeReferencesToChat(
-						lastStep.Code.code_snippets,
-						workingDirectory,
-					),
+			if ('Code' in lastStep) {
+				reportCodeReferencesToChat(
+					progress,
+					lastStep.Code.code_snippets,
+					workingDirectory,
 				);
 			} else if ('Proc' in lastStep) {
-				const procOutput = reportProcUpdateToChat(lastStep, workingDirectory);
-				progress.report(
-					new CSChatProgressContent(
-						procOutput === null ? 'No files found' : procOutput
-					)
-				);
+				reportProcUpdateToChat(progress, lastStep, workingDirectory);
 			}
 		}
 	}
@@ -264,7 +237,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (codeSpans: CodeSpan[], workingDirectory: string): CSChatProgressUsedContext => {
+export const reportCodeReferencesToChat = (progress: vscode.Progress<CSChatProgress>, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -277,45 +250,39 @@ export const reportCodeReferencesToChat = (codeSpans: CodeSpan[], workingDirecto
 		}
 		return 0;
 	});
-	const documentContext: vscode.DocumentContext[] = [];
 	for (let index = 0; index < math.min(6, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
 		const fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
-		documentContext.push({
-			uri: vscode.Uri.file(fullFilePath),
-			version: 1,
-			ranges: [
-				new vscode.Range(
-					new vscode.Position(currentCodeSpan.start_line, 0),
-					new vscode.Position(currentCodeSpan.end_line, 0),
+		progress.report(
+			new CSChatContentReference(
+				new vscode.Location(
+					vscode.Uri.file(fullFilePath),
+					new vscode.Range(
+						new vscode.Position(currentCodeSpan.start_line, 0),
+						new vscode.Position(currentCodeSpan.end_line, 0),
+					),
 				),
-			],
-		});
+			)
+		);
 	}
-	return new CSChatProgressUsedContext(documentContext);
 };
 
 
 export const reportProcUpdateToChat = (
+	progress: vscode.Progress<CSChatProgress>,
 	proc: AgentStep,
 	workingDirectory: string,
-): string | null => {
+) => {
 	if ('Proc' in proc) {
 		const paths = proc.Proc.paths;
-		let suffixString = '';
-		if (proc.Proc.paths.length > 5) {
-			suffixString = '... and more files\n\n';
-		}
-		let procString = '';
 		for (let index = 0; index < math.min(5, paths.length); index++) {
 			const currentPath = paths[index];
 			const fullFilePath = path.join(workingDirectory, currentPath);
-			const currentFileLink = `${currentPath}`;
-			const fileLink = `${fullFilePath}`;
-			const markdownCodeSpan = `[${currentFileLink}](${fileLink})`;
-			procString += markdownCodeSpan + '\n\n';
+			progress.report(
+				new CSChatContentReference(
+					vscode.Uri.file(fullFilePath),
+				)
+			);
 		}
-		return '## Reading from relevant files\n\n' + procString + suffixString;
 	}
-	return null;
 };
