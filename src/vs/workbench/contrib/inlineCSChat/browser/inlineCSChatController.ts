@@ -26,7 +26,7 @@ import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiati
 import { ILogService } from 'vs/platform/log/common/log';
 import { EditResponse, EmptyResponse, ErrorResponse, ExpansionState, IInlineChatSessionService, MarkdownResponse, Session, SessionExchange, SessionPrompt } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
 import { EditModeStrategy, LivePreviewStrategy, LiveStrategy, PreviewStrategy, ProgressingEditsOptions } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
-import { InlineChatZoneWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
+import { InlineChatWidget, InlineChatZoneWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
 import { CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_LAST_FEEDBACK, IInlineCSChatRequest, IInlineCSChatResponse, INLINE_CHAT_ID, EditMode, InlineCSChatResponseFeedbackKind, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, InlineChatResponseType, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, InlineChateResponseTypes, CTX_INLINE_CHAT_RESPONSE_TYPES, CTX_INLINE_CHAT_USER_DID_EDIT, IInlineCSChatProgressItem } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { ICSChatAccessibilityService, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
@@ -44,6 +44,8 @@ import { IModelDeltaDecoration } from 'vs/editor/common/model';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { renderMarkdownAsPlaintext } from 'vs/base/browser/markdownRenderer';
+import { IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { InlineCSChatRequestParser } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChatRequestParser';
 
 export const enum State {
 	CREATE_SESSION = 'CREATE_SESSION',
@@ -140,6 +142,7 @@ export class InlineChatController implements IEditorContribution {
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
 		@ICSChatAccessibilityService private readonly _chatAccessibilityService: ICSChatAccessibilityService,
 		@ICSChatAgentService private readonly _chatAgentService: ICSChatAgentService,
+		@IInlineCSChatVariablesService private readonly chatVariablesService: IInlineCSChatVariablesService,
 	) {
 		this._ctxHasActiveRequest = CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST.bindTo(contextKeyService);
 		this._ctxDidEdit = CTX_INLINE_CHAT_DID_EDIT.bindTo(contextKeyService);
@@ -200,6 +203,10 @@ export class InlineChatController implements IEditorContribution {
 			editModeValue = EditMode.Preview;
 		}
 		return editModeValue!;
+	}
+
+	getWidget(): InlineChatWidget {
+		return this._zone.value.widget;
 	}
 
 	getWidgetPosition(): Position | undefined {
@@ -568,6 +575,9 @@ export class InlineChatController implements IEditorContribution {
 		assertType(this._strategy);
 		assertType(this._activeSession.lastInput);
 
+		const inlineCSChatWidget = this._zone.value.widget;
+		const slashCommands = inlineCSChatWidget.getSlashCommands();
+
 		const requestCts = new CancellationTokenSource();
 
 		let message = Message.NONE;
@@ -586,8 +596,16 @@ export class InlineChatController implements IEditorContribution {
 			attempt: this._activeSession.lastInput.attempt,
 			selection: this._editor.getSelection(),
 			wholeRange: this._activeSession.wholeRange.value,
-			live: this._activeSession.editMode !== EditMode.Preview // TODO@jrieken let extension know what document is used for previewing
+			live: this._activeSession.editMode !== EditMode.Preview, // TODO@jrieken let extension know what document is used for previewing
+			variables: {}
 		};
+
+		const parsedRequest = await this._instaService.createInstance(InlineCSChatRequestParser).parseChatRequest('', this._activeSession.lastInput.value, slashCommands);
+		if ('parts' in parsedRequest) {
+			const varResult = await this.chatVariablesService.resolveVariables(parsedRequest, requestCts.token);
+			request.variables = varResult.variables;
+			request.prompt = varResult.prompt;
+		}
 
 		const modelAltVersionIdNow = this._activeSession.textModelN.getAlternativeVersionId();
 		const progressEdits: TextEdit[][] = [];

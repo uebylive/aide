@@ -7,24 +7,20 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatFileVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { ICSChatVariablesService, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatFileVariableLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { IDynamicReference, IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { IInlineCSChatSlashCommand } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 
-const agentReg = /^@([\w_\-]+)(?=(\s|$|\b))/i; // An @-agent
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
 const slashReg = /\/([\w_\-]+)(?=(\s|$|\b))/i; // A / command
 const variableWithArgReg = /\#([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (#file:foo.ts)
 
-export class ChatRequestParser {
+export class InlineCSChatRequestParser {
 	constructor(
-		@ICSChatAgentService private readonly agentService: ICSChatAgentService,
-		@ICSChatVariablesService private readonly variableService: ICSChatVariablesService,
-		@ICSChatService private readonly chatService: ICSChatService,
+		@IInlineCSChatVariablesService private readonly variableService: IInlineCSChatVariablesService,
 	) { }
 
-	async parseChatRequest(sessionId: string, message: string): Promise<IParsedChatRequest> {
+	async parseChatRequest(sessionId: string, message: string, slashCommands: IInlineCSChatSlashCommand[]): Promise<IParsedChatRequest> {
 		const parts: IParsedChatRequestPart[] = [];
 		const references = this.variableService.getDynamicReferences(sessionId); // must access this list before any async calls
 
@@ -38,11 +34,9 @@ export class ChatRequestParser {
 				if (char === chatFileVariableLeader) {
 					newPart = this.tryToParseVariable(message.slice(i), i, new Position(lineNumber, column), parts) ||
 						await this.tryToParseDynamicVariable(message.slice(i), i, new Position(lineNumber, column), references);
-				} else if (char === chatAgentLeader) {
-					newPart = this.tryToParseAgent(message.slice(i), message, i, new Position(lineNumber, column), parts);
 				} else if (char === chatSubcommandLeader) {
 					// TODO try to make this sync
-					newPart = await this.tryToParseSlashCommand(sessionId, message.slice(i), message, i, new Position(lineNumber, column), parts);
+					newPart = await this.tryToParseSlashCommand(sessionId, message.slice(i), message, i, new Position(lineNumber, column), parts, slashCommands);
 				}
 			}
 
@@ -85,41 +79,6 @@ export class ChatRequestParser {
 		};
 	}
 
-	private tryToParseAgent(message: string, fullMessage: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>): ChatRequestAgentPart | ChatRequestVariablePart | undefined {
-		const nextVariableMatch = message.match(agentReg);
-		if (!nextVariableMatch) {
-			return;
-		}
-
-		const [full, name] = nextVariableMatch;
-		const varRange = new OffsetRange(offset, offset + full.length);
-		const varEditorRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column + full.length);
-
-		const agent = this.agentService.getAgent(name);
-		if (!agent) {
-			return;
-		}
-
-		if (parts.some(p => p instanceof ChatRequestAgentPart)) {
-			// Only one agent allowed
-			return;
-		}
-
-		// The agent must come first
-		if (parts.some(p => (p instanceof ChatRequestTextPart && p.text.trim() !== '') || !(p instanceof ChatRequestAgentPart))) {
-			return;
-		}
-
-		const previousPart = parts.at(-1);
-		const previousPartEnd = previousPart?.range.endExclusive ?? 0;
-		const textSincePreviousPart = fullMessage.slice(previousPartEnd, offset);
-		if (textSincePreviousPart.trim() !== '') {
-			return;
-		}
-
-		return new ChatRequestAgentPart(varRange, varEditorRange, agent);
-	}
-
 	private tryToParseVariable(message: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>): ChatRequestAgentPart | ChatRequestVariablePart | undefined {
 		const nextVariableMatch = message.match(variableReg);
 		if (!nextVariableMatch) {
@@ -138,7 +97,9 @@ export class ChatRequestParser {
 		return;
 	}
 
-	private async tryToParseSlashCommand(sessionId: string, remainingMessage: string, fullMessage: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>): Promise<ChatRequestSlashCommandPart | ChatRequestAgentSubcommandPart | undefined> {
+	private async tryToParseSlashCommand(
+		sessionId: string, remainingMessage: string, fullMessage: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>, slashCommands: IInlineCSChatSlashCommand[]
+	): Promise<ChatRequestSlashCommandPart | ChatRequestAgentSubcommandPart | undefined> {
 		const nextSlashMatch = remainingMessage.match(slashReg);
 		if (!nextSlashMatch) {
 			return;
@@ -174,7 +135,6 @@ export class ChatRequestParser {
 				return new ChatRequestAgentSubcommandPart(slashRange, slashEditorRange, subCommand);
 			}
 		} else {
-			const slashCommands = await this.chatService.getSlashCommands(sessionId, CancellationToken.None);
 			const slashCommand = slashCommands.find(c => c.command === command);
 			if (slashCommand) {
 				// Valid standalone slash command

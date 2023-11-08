@@ -14,16 +14,17 @@ import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
+import { parseVariableInfo } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { chatFileVariableLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { IInlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat';
+import { IInlineChatWidgetContrib, InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 
-export const dynamicReferenceDecorationType = 'chat-dynamic-reference';
+const dynamicReferenceDecorationType = 'chat-dynamic-reference';
 
-export class ChatDynamicReferenceModel extends Disposable implements IChatWidgetContrib {
-	public static readonly ID = 'chatDynamicReferenceModel';
+export class ChatDynamicReferenceModel extends Disposable implements IInlineChatWidgetContrib {
+	public static readonly ID = 'inlineCSChatDynamicReferenceModel';
 
 	private readonly _references: IDynamicReference[] = [];
 	get references(): ReadonlyArray<IDynamicReference> {
@@ -35,7 +36,7 @@ export class ChatDynamicReferenceModel extends Disposable implements IChatWidget
 	}
 
 	constructor(
-		private readonly widget: IChatWidget,
+		private readonly widget: IInlineChatWidget,
 		@ILabelService private readonly labelService: ILabelService
 	) {
 		super();
@@ -74,12 +75,10 @@ export class ChatDynamicReferenceModel extends Disposable implements IChatWidget
 		})));
 	}
 }
-
-ChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
-
+InlineChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
 
 interface InsertFileVariableContext {
-	widget: ChatWidget;
+	widget: InlineChatWidget;
 	range: IRange;
 	uri: URI;
 }
@@ -89,7 +88,7 @@ function isInsertFileVariableContext(context: any): context is InsertFileVariabl
 }
 
 interface InsertSymbolVariableContext {
-	widget: ChatWidget;
+	widget: InlineChatWidget;
 	range: IRange;
 	pick: ISymbolQuickPickItem;
 }
@@ -99,7 +98,7 @@ function isInsertSymbolVariableContext(context: any): context is InsertSymbolVar
 }
 
 export class SelectAndInsertFileAction extends Action2 {
-	static readonly ID = 'workbench.action.csChat.selectAndInsertFile';
+	static readonly ID = 'workbench.action.inlineCSChat.selectAndInsertFile';
 
 	constructor() {
 		super({
@@ -155,31 +154,8 @@ export class SelectAndInsertFileAction extends Action2 {
 }
 registerAction2(SelectAndInsertFileAction);
 
-export const parseVariableInfo = (input: string): [string, string] | null => {
-	// Define a regular expression pattern to match the variable declaration.
-	const pattern = /\$\(([^)]+)\)\s*(\w+)/;
-
-	// Use the regular expression to match and capture the variable type and name.
-	const match = input.match(pattern);
-
-	if (match) {
-		// The first captured group (match[1]) is the variable type.
-		// The second captured group (match[2]) is the variable name.
-		let variableType = match[1];
-		const variableName = match[2];
-
-		// Remove the "symbol-" part from the variable type.
-		variableType = variableType.replace(/^symbol-/, '');
-
-		return [variableName, variableType];
-	}
-
-	// Return null if no match is found.
-	return null;
-};
-
 export class SelectAndInsertCodeSymbolAction extends Action2 {
-	static readonly ID = 'workbench.action.csChat.selectAndInsertCodeSymbol';
+	static readonly ID = 'workbench.action.inlineCSChat.selectAndInsertCodeSymbol';
 
 	constructor() {
 		super({

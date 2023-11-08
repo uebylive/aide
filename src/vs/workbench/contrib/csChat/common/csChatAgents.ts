@@ -99,8 +99,6 @@ export interface ICSChatAgentService {
 
 export class ChatAgentService extends Disposable implements ICSChatAgentService {
 
-	public static readonly AGENT_LEADER = '@';
-
 	declare _serviceBrand: undefined;
 
 	private readonly _agents = new Map<string, { agent: IChatAgent }>();

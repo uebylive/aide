@@ -44,6 +44,26 @@ export interface ICSChatVariablesService {
 	resolveVariables(prompt: IParsedChatRequest, model: IChatModel, token: CancellationToken): Promise<IChatVariableResolveResult>;
 }
 
+export interface IInlineChatVariableResolver {
+	// TODO should we spec "zoom level"
+	(messageText: string, arg: string | undefined, token: CancellationToken): Promise<IChatRequestVariableValue[] | undefined>;
+}
+
+export const IInlineCSChatVariablesService = createDecorator<IInlineCSChatVariablesService>('IInlineCSChatVariablesService');
+
+export interface IInlineCSChatVariablesService {
+	_serviceBrand: undefined;
+	registerVariable(data: IChatVariableData, resolver: IInlineChatVariableResolver): IDisposable;
+	hasVariable(name: string): boolean;
+	getVariables(): Iterable<Readonly<IChatVariableData>>;
+	getDynamicReferences(sessionId: string): ReadonlyArray<IDynamicReference>; // should be its own service?
+
+	/**
+	 * Resolves all variables that occur in `prompt`
+	 */
+	resolveVariables(prompt: IParsedChatRequest, token: CancellationToken): Promise<IChatVariableResolveResult>;
+}
+
 export interface IChatVariableResolveResult {
 	variables: Record<string, IChatRequestVariableValue[]>;
 	prompt: string;

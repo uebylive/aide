@@ -153,8 +153,14 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 			wholeRange: typeConvert.Range.to(request.wholeRange),
 			attempt: request.attempt,
 			live: request.live,
+			variables: {}
 		};
 
+		if (request.variables) {
+			for (const key of Object.keys(request.variables)) {
+				apiRequest.variables[key] = request.variables[key].map(typeConvert.CSChatVariable.to);
+			}
+		}
 
 		let done = false;
 		const progress: vscode.Progress<vscode.CSChatEditorProgressItem> = {
