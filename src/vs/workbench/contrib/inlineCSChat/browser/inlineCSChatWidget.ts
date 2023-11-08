@@ -52,7 +52,7 @@ import { IContextMenuService } from 'vs/platform/contextview/browser/contextView
 import { IAccessibleViewService } from 'vs/workbench/contrib/accessibility/browser/accessibleView';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { assertType } from 'vs/base/common/types';
+import { assertType, isDefined } from 'vs/base/common/types';
 import { renderFormattedText } from 'vs/base/browser/formattedTextRenderer';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { MarkdownRenderer } from 'vs/editor/contrib/markdownRenderer/browser/markdownRenderer';
@@ -262,6 +262,13 @@ export class InlineChatWidget implements IInlineChatWidget {
 		this._markdownRenderer = this._store.add(_instantiationService.createInstance(MarkdownRenderer, {}));
 		this._editorOptions = this._store.add(_instantiationService.createInstance(ChatEditorOptions, undefined, editorForeground, inputBackground, editorBackground));
 
+		this.contribs = InlineChatWidget.CONTRIBS.map(contrib => {
+			try {
+				return this._store.add(this._instantiationService.createInstance(contrib, this));
+			} catch (err) {
+				return undefined;
+			}
+		}).filter(isDefined);
 
 		// --- context keys
 

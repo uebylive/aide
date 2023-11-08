@@ -72,7 +72,6 @@ export class ChatDynamicReferenceModel extends Disposable implements IInlineChat
 		})));
 	}
 }
-
 InlineChatWidget.CONTRIBS.push(ChatDynamicReferenceModel);
 
 interface InsertFileVariableContext {
