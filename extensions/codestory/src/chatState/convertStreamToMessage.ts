@@ -115,6 +115,11 @@ export const reportFromStreamToSearchProgress = async (
 	for await (const conversationMessage of asyncIterable) {
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
+
+		// We have hit our done status, so lets skip it
+		if ('done' in conversationMessage) {
+			continue;
+		}
 		if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'StreamingAnswer') {
 			// We need to parse the answer a bit here, because we get relative paths
 			// and not absolute paths. The right way to do this will be to attach
@@ -252,7 +257,11 @@ export const reportCodeReferencesToChat = (progress: vscode.Progress<CSChatProgr
 	});
 	for (let index = 0; index < math.min(6, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
-		const fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
+		console.log(workingDirectory);
+		let fullFilePath = currentCodeSpan.file_path;
+		if (!currentCodeSpan.file_path.startsWith(workingDirectory)) {
+			fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
+		}
 		progress.report(
 			new CSChatContentReference(
 				new vscode.Location(

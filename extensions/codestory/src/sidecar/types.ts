@@ -335,9 +335,11 @@ export type SidecarVariableType =
 	| 'Selection';
 
 export interface SidecarVariableTypes {
-	name: string,
-	start_position: Position,
-	end_position: Position,
-	fs_file_path: string,
-	type: SidecarVariableType,
+	name: string;
+	start_position: Position;
+	end_position: Position;
+	fs_file_path: string;
+	type: SidecarVariableType;
+	content: string;
+	language: string;
 }

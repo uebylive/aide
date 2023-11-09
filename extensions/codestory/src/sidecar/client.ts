@@ -157,7 +157,6 @@ export class SideCarClient {
 					continue;
 				}
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				console.log(conversationMessage);
 				yield conversationMessage;
 			}
 		}
@@ -213,7 +212,6 @@ export class SideCarClient {
 				}
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
 				console.log('[search][stream] whats the message from the stream');
-				console.log(conversationMessage);
 				yield conversationMessage;
 			}
 		}
@@ -374,6 +372,10 @@ async function convertVSCodeVariableToSidecar(
 				endRange,
 				fileDocument,
 			);
+			const content = fileDocument.getText(new vscode.Range(
+				new vscode.Position(startRange.line, startRange.character),
+				new vscode.Position(endRange.line, endRange.character),
+			));
 			resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
@@ -382,6 +384,8 @@ async function convertVSCodeVariableToSidecar(
 					end_position: endRange,
 					fs_file_path: filePath.fsPath,
 					type: variableType,
+					content,
+					language: fileDocument.languageId,
 				});
 			}
 		} else {
@@ -407,6 +411,10 @@ async function convertVSCodeVariableToSidecar(
 				endRange,
 				fileDocument,
 			);
+			const content = fileDocument.getText(new vscode.Range(
+				new vscode.Position(startRange.line, startRange.character),
+				new vscode.Position(endRange.line, endRange.character),
+			));
 			resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
@@ -415,6 +423,8 @@ async function convertVSCodeVariableToSidecar(
 					end_position: endRange,
 					fs_file_path: fsFilePath,
 					type: variableType,
+					content,
+					language: fileDocument.languageId,
 				});
 			}
 		}
