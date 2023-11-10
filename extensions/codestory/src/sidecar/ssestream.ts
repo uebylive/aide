@@ -19,7 +19,6 @@ export async function* callServerEvent(url: string): AsyncIterableIterator<strin
 	try {
 		while (true) {
 			const { value, done } = await reader.read();
-			console.log('[callServerEvent] stream', value);
 			if (done) {
 				break;
 			}

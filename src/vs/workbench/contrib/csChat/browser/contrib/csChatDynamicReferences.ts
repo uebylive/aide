@@ -135,7 +135,7 @@ export class SelectAndInsertFileAction extends Action2 {
 
 		const fileName = basename(resource);
 		const editor = context.widget.inputEditor;
-		const text = `${chatFileVariableLeader}file:${fileName}`;
+		const text = `${chatFileVariableLeader}file:${fileName} `;
 		const range = context.range;
 		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + '' }]);
 		if (!success) {
@@ -218,7 +218,7 @@ export class SelectAndInsertCodeSymbolAction extends Action2 {
 
 		const [symbolName, symbolType] = result;
 		const editor = context.widget.inputEditor;
-		const text = `${chatSymbolVariableLeader}${symbolType}:${symbolName}`;
+		const text = `${chatSymbolVariableLeader}${symbolType}:${symbolName} `;
 		const range = context.range;
 		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
 		if (!success) {
