@@ -83,7 +83,7 @@ interface InsertFileVariableContext {
 	uri: URI;
 }
 
-function isInsertFileVariableContext(context: any): context is InsertFileVariableContext {
+export function isInsertFileVariableContext(context: any): context is InsertFileVariableContext {
 	return 'widget' in context && 'range' in context && 'uri' in context;
 }
 

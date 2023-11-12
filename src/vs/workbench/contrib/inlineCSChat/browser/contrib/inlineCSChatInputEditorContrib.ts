@@ -10,7 +10,7 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, Location } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { CompletionPreviewController } from 'vs/editor/contrib/completionPreview/browser/completionPreviewWidget';
@@ -20,7 +20,7 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { chatFileVariableLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, isInsertSymbolVariableContext } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
+import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, isInsertFileVariableContext, isInsertSymbolVariableContext } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
 import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 import { InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -87,6 +87,64 @@ class BuiltinDynamicCompletions extends Disposable {
 				return <CompletionList>{
 					suggestions: completionItems
 				};
+			},
+
+			onFocusCompletionItem: async (item) => {
+				const command = item.command;
+				if (!command) {
+					return;
+				}
+
+				const args = command.arguments;
+				const context = args?.[0];
+				if (!isInsertFileVariableContext(context)) {
+					return;
+				}
+
+				const resource = context.uri;
+				if (!resource) {
+					return;
+				}
+
+				const activeEditor = this.codeEditorService.getActiveCodeEditor();
+				if (!activeEditor) {
+					return;
+				}
+
+				const widgetController = InlineChatController.get(activeEditor);
+				if (!widgetController) {
+					return;
+				}
+
+				const widgetPosition = widgetController.getWidgetPosition();
+				if (!widgetPosition) {
+					return;
+				}
+
+				const controller = CompletionPreviewController.get(activeEditor);
+				if (!controller) {
+					return;
+				}
+
+				controller.show(widgetPosition);
+				controller.revealPreview(<Location>{
+					range: new Range(1, 1, 1, 1),
+					uri: resource,
+				});
+			},
+
+			onDidBlur: async () => {
+				const activeEditor = this.codeEditorService.getActiveCodeEditor();
+				if (!activeEditor) {
+					return;
+				}
+
+				const controller = CompletionPreviewController.get(activeEditor);
+				if (!controller) {
+					return;
+				}
+
+				controller.dispose();
 			}
 		}));
 	}
@@ -161,7 +219,7 @@ class BuiltinSymbolCompletions extends Disposable {
 				};
 			},
 
-			onFocusCompletionItem: async (item, token) => {
+			onFocusCompletionItem: async (item) => {
 				const command = item.command;
 				if (!command) {
 					return;
