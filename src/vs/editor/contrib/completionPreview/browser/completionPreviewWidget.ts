@@ -3,12 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/completionPreviewWidget';
 import * as dom from 'vs/base/browser/dom';
 import { Color } from 'vs/base/common/color';
 import { DisposableStore, IReference, dispose } from 'vs/base/common/lifecycle';
+import { Schemas } from 'vs/base/common/network';
+import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
+import 'vs/css!./media/completionPreviewWidget';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { registerEditorContribution, EditorContributionInstantiation } from 'vs/editor/browser/editorExtensions';
+import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
 import { EmbeddedCodeEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { Position } from 'vs/editor/common/core/position';
@@ -17,7 +19,9 @@ import { IEditorContribution, ScrollType } from 'vs/editor/common/editorCommon';
 import { Location } from 'vs/editor/common/languages';
 import { ITextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import * as peekView from 'vs/editor/contrib/peekView/browser/peekView';
+import * as nls from 'vs/nls';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { ILabelService } from 'vs/platform/label/common/label';
 import { IColorTheme, IThemeService } from 'vs/platform/theme/common/themeService';
 
 export class CompletionPreviewController implements IEditorContribution {
@@ -70,6 +74,7 @@ export class CompletionPreviewWidget extends peekView.PeekViewWidget {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IThemeService themeService: IThemeService,
 		@peekView.IPeekViewService private readonly _peekViewService: peekView.IPeekViewService,
+		@ILabelService private readonly _uriLabel: ILabelService,
 		@ITextModelService private readonly _textModelResolverService: ITextModelService,
 	) {
 		super(editor, { showFrame: true, showArrow: false, isResizeable: true, isAccessible: true }, instantiationService);
@@ -144,6 +149,12 @@ export class CompletionPreviewWidget extends peekView.PeekViewWidget {
 			return;
 		}
 		this._revealedLocation = location;
+
+		if (location.uri.scheme !== Schemas.inMemory) {
+			this.setTitle(basenameOrAuthority(location.uri), this._uriLabel.getUriLabel(dirname(location.uri)));
+		} else {
+			this.setTitle(nls.localize('peekView.alternateTitle', "Preview"));
+		}
 
 		const ref = await this._textModelResolverService.createModelReference(location.uri);
 
