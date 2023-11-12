@@ -13,13 +13,14 @@ import { getWordAtText } from 'vs/editor/common/core/wordHelper';
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { CompletionPreviewController } from 'vs/editor/contrib/completionPreview/browser/completionPreviewWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { chatFileVariableLeader, chatSymbolVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
+import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, isInsertSymbolVariableContext } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
 import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 import { InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -158,7 +159,48 @@ class BuiltinSymbolCompletions extends Disposable {
 				return <CompletionList>{
 					suggestions: completionItems
 				};
-			}
+			},
+
+			onFocusCompletionItem: async (item, token) => {
+				const command = item.command;
+				if (!command) {
+					return;
+				}
+
+				const args = command.arguments;
+				const context = args?.[0];
+				if (!isInsertSymbolVariableContext(context)) {
+					return;
+				}
+
+				const previewLocation = context.pick.symbol?.location;
+				if (!previewLocation) {
+					return;
+				}
+
+				const activeEditor = this.codeEditorService.getActiveCodeEditor();
+				if (!activeEditor) {
+					return;
+				}
+
+				const widgetController = InlineChatController.get(activeEditor);
+				if (!widgetController) {
+					return;
+				}
+
+				const widgetPosition = widgetController.getWidgetPosition();
+				if (!widgetPosition) {
+					return;
+				}
+
+				const controller = CompletionPreviewController.get(activeEditor);
+				if (!controller) {
+					return;
+				}
+
+				controller.show(widgetPosition);
+				controller.revealPreview(previewLocation);
+			},
 		}));
 	}
 }

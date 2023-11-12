@@ -6,7 +6,7 @@
 import { alert } from 'vs/base/browser/ui/aria/aria';
 import { isNonEmptyArray } from 'vs/base/common/arrays';
 import { IdleValue } from 'vs/base/common/async';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { onUnexpectedError, onUnexpectedExternalError } from 'vs/base/common/errors';
 import { Emitter, Event } from 'vs/base/common/event';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
@@ -197,6 +197,11 @@ export class SuggestController implements IEditorContribution {
 
 				// (ctx: canResolve)
 				ctxCanResolve.set(Boolean(item.provider.resolveCompletionItem) || Boolean(item.completion.documentation) || item.completion.detail !== item.completion.label);
+
+				// Call focus callback
+				if (item.provider.onFocusCompletionItem) {
+					item.provider.onFocusCompletionItem(item.completion, CancellationToken.None);
+				}
 			}));
 
 			this._toDispose.add(widget.onDetailsKeyDown(e => {
