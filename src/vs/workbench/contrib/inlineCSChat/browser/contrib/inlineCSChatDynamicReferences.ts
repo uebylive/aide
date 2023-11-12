@@ -93,7 +93,7 @@ interface InsertSymbolVariableContext {
 	pick: ISymbolQuickPickItem;
 }
 
-function isInsertSymbolVariableContext(context: any): context is InsertSymbolVariableContext {
+export function isInsertSymbolVariableContext(context: any): context is InsertSymbolVariableContext {
 	return 'widget' in context && 'range' in context && 'pick' in context;
 }
 
