@@ -609,6 +609,11 @@ export interface CompletionItemProvider {
 	 * Callback on focusing a completion item.
 	 */
 	onFocusCompletionItem?(completionItem: CompletionItem, token: CancellationToken): Promise<void>;
+
+	/**
+	 * Callback when the completion list is closed.
+	 */
+	onDidBlur?(): void;
 }
 
 /**

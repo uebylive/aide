@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import 'vs/css!./media/completionPreviewWidget';
 import * as dom from 'vs/base/browser/dom';
 import { Color } from 'vs/base/common/color';
 import { DisposableStore, IReference, dispose } from 'vs/base/common/lifecycle';
@@ -31,9 +32,7 @@ export class CompletionPreviewController implements IEditorContribution {
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-	) {
-		// noop
-	}
+	) { }
 
 	show(position: Position): void {
 		if (!this._widget) {
@@ -73,7 +72,7 @@ export class CompletionPreviewWidget extends peekView.PeekViewWidget {
 		@peekView.IPeekViewService private readonly _peekViewService: peekView.IPeekViewService,
 		@ITextModelService private readonly _textModelResolverService: ITextModelService,
 	) {
-		super(editor, { showFrame: false, showArrow: false }, instantiationService);
+		super(editor, { showFrame: true, showArrow: false, isResizeable: true, isAccessible: true }, instantiationService);
 
 		this._applyTheme(themeService.getColorTheme());
 		this._callOnDispose.add(themeService.onDidColorThemeChange(this._applyTheme.bind(this)));
@@ -100,7 +99,7 @@ export class CompletionPreviewWidget extends peekView.PeekViewWidget {
 	}
 
 	override show(where: Range) {
-		super.show(where, 18);
+		super.show(where, 8);
 	}
 
 	protected override _fillBody(containerElement: HTMLElement): void {

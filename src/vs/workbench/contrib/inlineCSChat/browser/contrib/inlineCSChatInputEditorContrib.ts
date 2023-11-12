@@ -201,6 +201,20 @@ class BuiltinSymbolCompletions extends Disposable {
 				controller.show(widgetPosition);
 				controller.revealPreview(previewLocation);
 			},
+
+			onDidBlur: async () => {
+				const activeEditor = this.codeEditorService.getActiveCodeEditor();
+				if (!activeEditor) {
+					return;
+				}
+
+				const controller = CompletionPreviewController.get(activeEditor);
+				if (!controller) {
+					return;
+				}
+
+				controller.dispose();
+			}
 		}));
 	}
 }
