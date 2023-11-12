@@ -45,6 +45,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { basename, extname } from 'vs/base/common/resources';
 import { hash } from 'vs/base/common/hash';
 import { WindowIdleValue, getWindow } from 'vs/base/browser/dom';
+import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 
 // sticky suggest widget which doesn't disappear on focus out and such
 const _sticky = false
@@ -130,6 +131,7 @@ export class SuggestController implements IEditorContribution {
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ILogService private readonly _logService: ILogService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
+		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
 	) {
 		this.editor = editor;
 		this.model = _instantiationService.createInstance(SuggestModel, this.editor,);
@@ -283,6 +285,13 @@ export class SuggestController implements IEditorContribution {
 				this.model.clear();
 			}
 		}));
+		this.widget.value.onDidHide(() => {
+			for (const provider of this._languageFeaturesService.completionProvider.all(this.editor.getModel()!)) {
+				if (provider.onDidBlur) {
+					provider.onDidBlur();
+				}
+			}
+		});
 
 		// Manage the acceptSuggestionsOnEnter context key
 		const acceptSuggestionsOnEnter = SuggestContext.AcceptSuggestionsOnEnter.bindTo(_contextKeyService);
