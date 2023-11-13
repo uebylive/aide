@@ -14,10 +14,10 @@
   "contributes": {
     "themes": [
       {
-        "id": "Aide Dark",
-        "label": "%aideDarkColorThemeLabel%",
+        "id": "CodeStory Dark",
+        "label": "%codestoryDarkColorThemeLabel%",
         "uiTheme": "vs-dark",
-        "path": "./themes/aide_dark.json"
+        "path": "./themes/codestory_dark.json"
       },
       {
         "id": "Default Dark+",
