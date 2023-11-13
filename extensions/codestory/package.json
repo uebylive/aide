@@ -104,6 +104,11 @@
           "type": "boolean",
           "default": false,
           "description": "If the side-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
+        },
+        "aide.disableIndexing": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable indexing of the repository"
         }
       }
     }
