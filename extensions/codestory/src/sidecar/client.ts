@@ -10,6 +10,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
+import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -223,7 +224,9 @@ export class SideCarClient {
 		console.log('fetching the status of the various repositories');
 		const response = await fetch(this.getRepoListUrl());
 		const repoList = (await response.json()) as RepoStatus;
-		console.log(repoList);
+		if (sidecarNotIndexRepository()) {
+			return true;
+		}
 		if (!(repoRef.getRepresentation() in repoList.repo_map)) {
 			// We need to index this repository
 			const baseUrl = new URL(this._url);

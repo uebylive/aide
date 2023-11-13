@@ -34,3 +34,15 @@ export const sidecarUseSelfRun = (): boolean => {
 	}
 	return false;
 };
+
+export const sidecarNotIndexRepository = (): boolean => {
+	const aideConfiguration = vscode.workspace.getConfiguration('aide');
+	const sideCarIndexRepository = aideConfiguration.get('disableIndexing');
+	if (sideCarIndexRepository === undefined) {
+		return true;
+	}
+	if (typeof sideCarIndexRepository === 'boolean') {
+		return sideCarIndexRepository;
+	}
+	return true;
+};
