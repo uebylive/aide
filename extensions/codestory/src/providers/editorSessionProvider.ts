@@ -188,14 +188,7 @@ export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
 
 	constructor(textDocument: vscode.TextDocument, range: vscode.Range) {
 		this.placeholder = 'Ask Aide or type \'/\' for commands';
-		this.slashCommands = [
-			{
-				command: 'doc',
-				refer: true,
-				detail: 'Generate documentation for the selected code',
-				executeImmediately: false,
-			},
-		];
+		this.slashCommands = [];
 		this.threadId = uuidv4();
 		this.textDocument = textDocument;
 		this.wholeRange = range;
