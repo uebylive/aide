@@ -99,7 +99,7 @@ export class QuickChatService extends Disposable implements ICSQuickChatService 
 		this._input.ignoreFocusOut = true;
 		disposableStore.add(this._input);
 
-		this._container ??= dom.$('.interactive-session');
+		this._container ??= dom.$('.cschat-session');
 		this._input.widget = this._container;
 
 		this._input.show();

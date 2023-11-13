@@ -160,7 +160,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const renderInputOnTop = this.viewOptions.renderInputOnTop ?? false;
 		const renderStyle = this.viewOptions.renderStyle;
 
-		this.container = dom.append(parent, $('.interactive-session'));
+		this.container = dom.append(parent, $('.cschat-session'));
 		if (renderInputOnTop) {
 			this.createInput(this.container, { renderFollowups: false, renderStyle });
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));
