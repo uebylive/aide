@@ -25,7 +25,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { DEFAULT_FONT_FAMILY } from 'vs/workbench/browser/style';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IChatExecuteActionContext } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
-import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { IChatRequester, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
@@ -38,6 +38,9 @@ import { ModesHoverController } from 'vs/editor/contrib/hover/browser/hover';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { ILanguageService } from 'vs/editor/common/languages/language';
+import { FileAccess } from 'vs/base/common/network';
+import { Codicon } from 'vs/base/common/codicons';
+import { ThemeIcon } from 'vs/base/common/themables';
 
 const $ = dom.$;
 
@@ -63,6 +66,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private inputEditorHeight = 0;
 	private container!: HTMLElement;
 
+	private requesterContainer!: HTMLElement;
 	private followupsContainer!: HTMLElement;
 	private followupsDisposables = this._register(new DisposableStore());
 
@@ -119,7 +123,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return localize('chatInput', "Chat Input");
 	}
 
-	setState(providerId: string, inputValue: string | undefined): void {
+	setState(providerId: string, inputValue: string | undefined, requester: IChatRequester): void {
 		this.providerId = providerId;
 		const history = this.historyService.getHistory(providerId);
 		this.history = new HistoryNavigator(history, 50);
@@ -127,6 +131,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		if (typeof inputValue === 'string') {
 			this.setValue(inputValue);
 		}
+		this._renderRequester(requester);
 	}
 
 	get element(): HTMLElement {
@@ -199,6 +204,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.container = dom.append(container, $('.cschat-input-part'));
 
 		this.followupsContainer = dom.append(this.container, $('.interactive-input-followups'));
+		const header = dom.append(this.container, $('.header'));
+		const user = dom.append(header, $('.user'));
+		dom.append(user, $('.avatar-container'));
+		dom.append(user, $('h3.username'));
+		this.requesterContainer = user;
 		const inputAndSideToolbar = dom.append(this.container, $('.cschat-input-and-side-toolbar'));
 		const inputContainer = dom.append(inputAndSideToolbar, $('.cschat-input-and-execute-toolbar'));
 
@@ -290,6 +300,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 	}
 
+	private _renderRequester(requester: IChatRequester): void {
+		const username = requester.username || localize('requester', "You");
+		this.requesterContainer.querySelector('h3.username')!.textContent = username;
+
+		const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
+		if (requester.avatarIconUri) {
+			const avatarImgIcon = dom.$<HTMLImageElement>('img.icon');
+			avatarImgIcon.src = FileAccess.uriToBrowserUri(requester.avatarIconUri).toString(true);
+			avatarContainer.replaceChildren(dom.$('.avatar', undefined, avatarImgIcon));
+		} else {
+			const defaultIcon = Codicon.account;
+			const avatarIcon = dom.$(ThemeIcon.asCSSSelector(defaultIcon));
+			avatarContainer.replaceChildren(dom.$('.avatar.codicon-avatar', undefined, avatarIcon));
+		}
+	}
+
 	async renderFollowups(items: ICSChatReplyFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
 		if (!this.options.renderFollowups) {
 			return;
@@ -310,15 +336,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private _layout(height: number, width: number, allowRecurse = true): number {
 		const followupsHeight = this.followupsContainer.offsetHeight;
+		const requesterHeight = this.requesterContainer.offsetHeight;
 
 		const inputPartBorder = 0;
-		const inputPartHorizontalPadding = 16;
-		const inputPartVerticalPadding = 16;
-		let inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
+		const inputPartHorizontalPadding = 32;
+		const inputPartVerticalPadding = 28;
+		let inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - requesterHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
 		inputEditorHeight = Math.max(inputEditorHeight, INPUT_EDITOR_MIN_HEIGHT);
 
 		const inputEditorBorder = 0;
-		const inputPartHeight = followupsHeight + inputEditorHeight + inputPartVerticalPadding + inputPartBorder + inputEditorBorder;
+		const inputPartHeight = followupsHeight + requesterHeight + inputEditorHeight + inputPartVerticalPadding + inputPartBorder + inputEditorBorder;
 
 		const editorBorder = 0;
 		const editorPadding = 0;

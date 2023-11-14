@@ -25,28 +25,33 @@
 	-webkit-user-select: text;
 }
 
+.cschat-input-part .header,
 .csChat-item-container .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 }
 
+.cschat-input-part .header.hidden,
 .csChat-item-container .header.hidden {
 	display: none;
 }
 
+.cschat-input-part .header .user,
 .csChat-item-container .header .user {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
+.cschat-input-part .header .username,
 .csChat-item-container .header .username {
-	margin: 0;
-	font-size: 12px;
+	margin: 0 2px;
+	font-size: 13px;
 	font-weight: 600;
 }
 
+.cschat-input-part .header .detail-container,
 .csChat-item-container .header .detail-container {
 	font-size: 0.9em;
 	opacity: 0.7;
@@ -87,12 +92,14 @@
 	animation: ellipsis steps(4, end) 1s infinite;
 }
 
+.cschat-input-part .header .avatar-container,
 .csChat-item-container .header .avatar-container {
 	display: flex;
 	pointer-events: none;
 	user-select: none;
 }
 
+.cschat-input-part .header .avatar,
 .csChat-item-container .header .avatar {
 	display: flex;
 	align-items: center;
@@ -101,25 +108,30 @@
 	height: 24px;
 }
 
+.cschat-input-part .header .avatar.codicon-avatar,
 .csChat-item-container .header .avatar.codicon-avatar {
 	background: var(--vscode-chat-avatarBackground);
 }
 
+.cschat-input-part .header .avatar+.avatar,
 .csChat-item-container .header .avatar+.avatar {
 	margin-left: -8px;
 }
 
+.cschat-input-part .header .avatar .icon,
 .csChat-item-container .header .avatar .icon {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
 }
 
+.cschat-input-part .header .avatar .codicon,
 .csChat-item-container .header .avatar .codicon {
 	color: var(--vscode-chat-avatarForeground) !important;
 	font-size: 14px;
 }
 
+.cschat-input-part .header .agent-avatar-container,
 .csChat-item-container .header .agent-avatar-container {
 	margin-left: -30px;
 	transition: margin 0.15s ease-out;
@@ -127,11 +139,13 @@
 	z-index: -1;
 }
 
+.cschat-input-part .header .agent-avatar-container.loading,
 .csChat-item-container .header .agent-avatar-container.loading {
 	margin-left: 0px;
 	z-index: 1;
 }
 
+.cschat-input-part .header .agent-avatar-container.complete,
 .csChat-item-container .header .agent-avatar-container.complete {
 	margin-left: -12px;
 	z-index: 1;
@@ -328,8 +342,8 @@
 	display: flex;
 	flex-direction: column;
 	box-sizing: border-box;
+	margin: 0 2px;
 	cursor: text;
-	margin: 8px;
 	background-color: var(--vscode-sideBar-background);
 	position: relative;
 	align-items: center;
@@ -337,7 +351,6 @@
 }
 
 .cschat-session .cschat-input-and-side-toolbar {
-	border-top: 1px solid var(--vscode-chat-requestBorder, transparent);
 	display: flex;
 	gap: 4px;
 	align-items: center;
@@ -417,6 +430,8 @@
 	padding: 12px 0px;
 	display: flex;
 	flex-direction: column;
+	padding: 16px 16px 8px 16px;
+	border-top: 1px solid var(--vscode-chat-requestBorder, transparent);
 }
 
 .interactive-session-followups {

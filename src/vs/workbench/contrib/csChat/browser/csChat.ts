@@ -106,6 +106,11 @@ export interface IChatResourceViewContext {
 
 export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewContext;
 
+export interface IChatRequester {
+	username: string;
+	avatarIconUri?: URI;
+}
+
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
 	readonly onDidAcceptInput: Event<void | string>;
