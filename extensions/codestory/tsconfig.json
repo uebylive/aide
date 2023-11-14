@@ -17,7 +17,6 @@
 	"exclude": [
 		"node_modules",
 		".vscode-test",
-		"webview-ui-sideview",
 		"jest.config.js",
 		"../../node_modules/@types/mocha",
 		"out",

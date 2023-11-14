@@ -11,16 +11,6 @@ out/test/**
 # Ignore source code
 src/**
 
-# Ignore all webview-ui-sideview files except the build directory
-webview-ui-sideview/src/**
-webview-ui-sideview/public/**
-webview-ui-sideview/scripts/**
-webview-ui-sideview/index.html
-webview-ui-sideview/README.md
-webview-ui-sideview/package.json
-webview-ui-sideview/package-lock.json
-webview-ui-sideview/node_modules/**
-
 # Ignore Misc
 .yarnrc
 vsc-extension-quickstart.md

@@ -45,20 +45,11 @@
         }
       ]
     },
-    "views": {
-      "changeTracker": [
-        {
-          "type": "webview",
-          "id": "codestory.webView",
-          "name": "Change Tracker"
-        }
-      ]
-    },
     "csChatSession": [
       {
         "id": "cs-chat",
         "label": "CodeStory Agent",
-        "icon": "assets/message-code.svg"
+        "icon": "assets/aide-white.svg"
       }
     ],
     "keybindings": [
@@ -116,9 +107,6 @@
     }
   },
   "scripts": {
-    "install:all": "yarn install && cd webview-ui-sideview && yarn install",
-    "start:webview_sideview": "cd webview-ui-sideview && npm run start",
-    "build:webview_sideview": "cd webview-ui-sideview && npm run build",
     "vscode:prepublish": "npm run compile:tsc",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",
