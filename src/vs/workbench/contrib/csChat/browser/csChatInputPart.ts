@@ -37,6 +37,7 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { ModesHoverController } from 'vs/editor/contrib/hover/browser/hover';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
+import { ILanguageService } from 'vs/editor/common/languages/language';
 
 const $ = dom.$;
 
@@ -94,7 +95,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
+		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@ILanguageService private readonly _languageService: ILanguageService,
 	) {
 		super();
 
@@ -277,7 +279,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarSide.context = <IChatExecuteActionContext>{ widget };
 		}
 
-		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', null, this.inputUri, true);
+		const langId = this._languageService.createById('markdown');
+		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', langId, this.inputUri, true);
 		this.inputModel.updateOptions({ bracketColorizationOptions: { enabled: false, independentColorPoolPerBracketType: false } });
 		this._inputEditor.setModel(this.inputModel);
 		if (initialValue) {

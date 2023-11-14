@@ -305,12 +305,17 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent = vscode.csChat.createChatAgent('', this.defaultAgent);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.supportIssueReporting = true;
-		this.chatAgent.description = 'Aide is your personal AI assistant that can write, debug, find, understand and explain code for you.';
+		this.chatAgent.description = 'How can I help you today?';
 		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
-			'aide-white.svg'
+			'aide-user.png'
+		);
+		const agentUri = vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'assets',
+			'aide-agent.png'
 		);
 		this.chatAgent.slashCommandProvider = this.slashCommandProvider;
 	}
