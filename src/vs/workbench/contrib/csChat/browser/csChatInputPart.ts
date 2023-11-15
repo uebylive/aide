@@ -44,7 +44,7 @@ import { ThemeIcon } from 'vs/base/common/themables';
 
 const $ = dom.$;
 
-const INPUT_EDITOR_MIN_HEIGHT = 120;
+const INPUT_EDITOR_MIN_HEIGHT = 80;
 const INPUT_EDITOR_MAX_HEIGHT = 250;
 
 export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
@@ -340,7 +340,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		const inputPartBorder = 0;
 		const inputPartHorizontalPadding = 32;
-		const inputPartVerticalPadding = 28;
+		const inputPartVerticalPadding = 24;
 		let inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - requesterHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
 		inputEditorHeight = Math.max(inputEditorHeight, INPUT_EDITOR_MIN_HEIGHT);
 

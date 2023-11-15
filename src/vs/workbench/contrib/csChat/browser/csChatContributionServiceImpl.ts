@@ -27,7 +27,7 @@ import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle
 const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatProviderContribution[]>({
 	extensionPoint: 'csChatSession',
 	jsonSchema: {
-		description: localize('vscode.extension.contributes.csChatSession', 'Contributes an CS Chat Session provider'),
+		description: localize('vscode.extension.contributes.csChatSession', 'Contributes a CS Chat Session provider'),
 		type: 'array',
 		items: {
 			additionalProperties: false,
