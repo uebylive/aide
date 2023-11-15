@@ -636,6 +636,9 @@ export class ChatService extends Disposable implements ICSChatService {
 		return rawResponsePromise;
 	}
 
+	async sendEditRequest(sessionId: string, requestId: string, message: string): Promise<void> {
+	}
+
 	async removeRequest(sessionId: string, requestId: string): Promise<void> {
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {

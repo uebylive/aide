@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableMap } from 'vs/base/common/lifecycle';
-import { IInlineCSChatBulkEditResponse, IInlineCSChatProgressItem, IInlineCSChatResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { ICSChatBulkEditResponse, ICSChatEditProgressItem, ICSChatEditResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
 import { ExtHostContext, ExtHostInlineCSChatShape, MainContext, MainThreadInlineCSChatShape, } from 'vs/workbench/api/common/extHost.protocol';
@@ -17,7 +17,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 	private readonly _registrations = new DisposableMap<number>();
 	private readonly _proxy: ExtHostInlineCSChatShape;
 
-	private readonly _progresses = new Map<string, IProgress<IInlineCSChatProgressItem>>();
+	private readonly _progresses = new Map<string, IProgress<ICSChatEditProgressItem>>();
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -36,7 +36,6 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 			debugName,
 			label,
 			prepareInlineChatSession: async (model, range, token) => {
-				console.log('csChat prepareInlineChatSession');
 				const session = await this._proxy.$prepareSession(handle, model.uri, range, token);
 				if (!session) {
 					return undefined;
@@ -49,20 +48,18 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 				};
 			},
 			provideResponse: async (item, request, progress, token) => {
-				console.log('csChat provideResponse');
 				this._progresses.set(request.requestId, progress);
 				try {
 					const result = await this._proxy.$provideResponse(handle, item, request, token);
 					if (result?.type === 'bulkEdit') {
-						(<IInlineCSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
+						(<ICSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
 					}
-					return <IInlineCSChatResponse | undefined>result;
+					return <ICSChatEditResponse | undefined>result;
 				} finally {
 					this._progresses.delete(request.requestId);
 				}
 			},
 			handleInlineChatResponseFeedback: !supportsFeedback ? undefined : async (session, response, kind) => {
-				console.log('csChat handleInlineChatResponseFeedback');
 				this._proxy.$handleFeedback(handle, session.id, response.id, kind);
 			}
 		});
@@ -70,7 +67,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 		this._registrations.set(handle, unreg);
 	}
 
-	async $handleProgressChunk(requestId: string, chunk: IInlineCSChatProgressItem): Promise<void> {
+	async $handleProgressChunk(requestId: string, chunk: ICSChatEditProgressItem): Promise<void> {
 		await Promise.resolve(this._progresses.get(requestId)?.report(chunk));
 	}
 

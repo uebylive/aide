@@ -31,7 +31,7 @@ import { ICSChatAccessibilityService } from 'vs/workbench/contrib/csChat/browser
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { InlineChatController, InlineChatRunOptions, State } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 import { IInlineChatSessionService, InlineChatSessionService } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
-import { IInlineCSChatService, InlineChatResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { IInlineCSChatService, ChatEditResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { InlineCSChatServiceImpl } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChatServiceImpl';
 import { workbenchInstantiationService } from 'vs/workbench/test/browser/workbenchTestServices';
 
@@ -143,7 +143,7 @@ suite('InteractiveChatController', function () {
 			},
 			provideResponse(session, request) {
 				return {
-					type: InlineChatResponseType.EditorEdit,
+					type: ChatEditResponseType.EditorEdit,
 					id: Math.random(),
 					edits: [{
 						range: new Range(1, 1, 1, 1),
@@ -272,7 +272,7 @@ suite('InteractiveChatController', function () {
 			},
 			provideResponse(session, request) {
 				return {
-					type: InlineChatResponseType.EditorEdit,
+					type: ChatEditResponseType.EditorEdit,
 					id: Math.random(),
 					edits: [{
 						range: new Range(1, 1, 1, 1), // EDIT happens outside of whole range
@@ -346,7 +346,7 @@ suite('InteractiveChatController', function () {
 
 				return {
 					id: Math.random(),
-					type: InlineChatResponseType.EditorEdit,
+					type: ChatEditResponseType.EditorEdit,
 					edits: [{ range: new Range(1, 1, 1000, 1), text: 'Hello1\nHello2\n' }]
 				};
 			}

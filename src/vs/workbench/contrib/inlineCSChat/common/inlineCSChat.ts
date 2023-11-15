@@ -48,9 +48,9 @@ export interface IInlineCSChatRequest {
 	variables?: Record<string, IChatRequestVariableValue[]>;
 }
 
-export type IInlineCSChatResponse = IInlineCSChatEditResponse | IInlineCSChatBulkEditResponse | IInlineCSChatMessageResponse;
+export type ICSChatEditResponse = IInlineCSChatEditResponse | ICSChatBulkEditResponse | IInlineCSChatMessageResponse;
 
-export const enum InlineChatResponseType {
+export const enum ChatEditResponseType {
 	EditorEdit = 'editorEdit',
 	BulkEdit = 'bulkEdit',
 	Message = 'message'
@@ -64,15 +64,15 @@ export const enum InlineChateResponseTypes {
 
 export interface IInlineCSChatEditResponse {
 	id: number;
-	type: InlineChatResponseType.EditorEdit;
+	type: ChatEditResponseType.EditorEdit;
 	edits: TextEdit[];
 	placeholder?: string;
 	wholeRange?: IRange;
 }
 
-export interface IInlineCSChatBulkEditResponse {
+export interface ICSChatBulkEditResponse {
 	id: number;
-	type: InlineChatResponseType.BulkEdit;
+	type: ChatEditResponseType.BulkEdit;
 	edits: WorkspaceEdit;
 	placeholder?: string;
 	wholeRange?: IRange;
@@ -80,13 +80,13 @@ export interface IInlineCSChatBulkEditResponse {
 
 export interface IInlineCSChatMessageResponse {
 	id: number;
-	type: InlineChatResponseType.Message;
+	type: ChatEditResponseType.Message;
 	message: IMarkdownString;
 	placeholder?: string;
 	wholeRange?: IRange;
 }
 
-export interface IInlineCSChatProgressItem {
+export interface ICSChatEditProgressItem {
 	markdownFragment?: string;
 	edits?: TextEdit[];
 	editsShouldBeInstant?: boolean;
@@ -108,9 +108,9 @@ export interface IInlineCSChatSessionProvider {
 
 	prepareInlineChatSession(model: ITextModel, range: ISelection, token: CancellationToken): ProviderResult<IInlineCSChatSession>;
 
-	provideResponse(item: IInlineCSChatSession, request: IInlineCSChatRequest, progress: IProgress<IInlineCSChatProgressItem>, token: CancellationToken): ProviderResult<IInlineCSChatResponse>;
+	provideResponse(item: IInlineCSChatSession, request: IInlineCSChatRequest, progress: IProgress<ICSChatEditProgressItem>, token: CancellationToken): ProviderResult<ICSChatEditResponse>;
 
-	handleInlineChatResponseFeedback?(session: IInlineCSChatSession, response: IInlineCSChatResponse, kind: InlineCSChatResponseFeedbackKind): void;
+	handleInlineChatResponseFeedback?(session: IInlineCSChatSession, response: ICSChatEditResponse, kind: InlineCSChatResponseFeedbackKind): void;
 }
 
 export const IInlineCSChatService = createDecorator<IInlineCSChatService>('IInlineCSChatService');
@@ -140,7 +140,7 @@ export const CTX_INLINE_CHAT_MESSAGE_CROP_STATE = new RawContextKey<'cropped' | 
 export const CTX_INLINE_CHAT_OUTER_CURSOR_POSITION = new RawContextKey<'above' | 'below' | ''>('inlineCSChatOuterCursorPosition', '', localize('inlineChatOuterCursorPosition', "Whether the cursor of the outer editor is above or below the interactive editor input"));
 export const CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST = new RawContextKey<boolean>('inlineCSChatHasActiveRequest', false, localize('inlineChatHasActiveRequest', "Whether interactive editor has an active request"));
 export const CTX_INLINE_CHAT_HAS_STASHED_SESSION = new RawContextKey<boolean>('inlineCSChatHasStashedSession', false, localize('inlineChatHasStashedSession', "Whether interactive editor has kept a session for quick restore"));
-export const CTX_INLINE_CHAT_LAST_RESPONSE_TYPE = new RawContextKey<InlineChatResponseType | undefined>('inlineCSChatLastResponseType', undefined, localize('inlineChatResponseType', "What type was the last response of the current interactive editor session"));
+export const CTX_INLINE_CHAT_LAST_RESPONSE_TYPE = new RawContextKey<ChatEditResponseType | undefined>('inlineCSChatLastResponseType', undefined, localize('inlineChatResponseType', "What type was the last response of the current interactive editor session"));
 export const CTX_INLINE_CHAT_RESPONSE_TYPES = new RawContextKey<InlineChateResponseTypes | undefined>('inlineCSChatResponseTypes', undefined, localize('inlineChatResponseTypes', "What type was the responses have been receieved"));
 export const CTX_INLINE_CHAT_DID_EDIT = new RawContextKey<boolean>('inlineCSChatDidEdit', undefined, localize('inlineChatDidEdit', "Whether interactive editor did change any code"));
 export const CTX_INLINE_CHAT_USER_DID_EDIT = new RawContextKey<boolean>('inlineCSChatUserDidEdit', undefined, localize('inlineChatUserDidEdit', "Whether the user did changes ontop of the inline chat"));

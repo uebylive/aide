@@ -11,10 +11,12 @@ import { URI } from 'vs/base/common/uri';
 import { Range, IRange } from 'vs/editor/common/core/range';
 import { ProviderResult, Location } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { IProgress } from 'vs/platform/progress/common/progress';
 import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { IChatModel, ChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatEditProgressItem, ICSChatEditResponse } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 
 export interface IChat {
 	id: number; // TODO Maybe remove this and move to a subclass that only the provider knows about
@@ -119,6 +121,7 @@ export interface IChatProvider {
 	provideFollowups?(session: IChat, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
 	provideReply(request: IChatRequest, progress: (progress: IChatProgress) => void, token: CancellationToken): ProviderResult<IChatResponse>;
 	provideSlashCommands?(session: IChat, token: CancellationToken): ProviderResult<ISlashCommand[]>;
+	provideEdits?(session: IChat, requestId: string, progress: IProgress<ICSChatEditProgressItem>, token: CancellationToken): ProviderResult<ICSChatEditResponse>;
 	removeRequest?(session: IChat, requestId: string): void;
 }
 

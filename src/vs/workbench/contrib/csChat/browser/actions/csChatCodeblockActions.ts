@@ -498,6 +498,52 @@ export function registerChatCodeBlockActions() {
 		}
 	});
 
+	registerAction2(class ExportToCodebaseAction extends ChatCodeBlockAction {
+		constructor() {
+			super({
+				id: 'workbench.action.csChat.exportToCodebase',
+				title: {
+					value: localize('interactive.exportToCodebase.label', "Apply changes to codebase"),
+					original: 'Apple changes to codebase'
+				},
+				precondition: CONTEXT_PROVIDER_EXISTS,
+				f1: true,
+				category: CHAT_CATEGORY,
+				icon: Codicon.merge,
+				menu: {
+					id: MenuId.CSChatCodeBlock,
+					group: 'navigation',
+					isHiddenByDefault: true,
+				}
+			});
+		}
+
+		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+			if (isResponseFiltered(context)) {
+				// When run from command palette
+				return;
+			}
+
+			const chatService = accessor.get(ICSChatService);
+
+			if (isResponseVM(context.element)) {
+				chatService.notifyUserAction({
+					providerId: context.element.providerId,
+					agentId: context.element.agent?.id,
+					sessionId: context.element.sessionId,
+					requestId: context.element.requestId,
+					action: {
+						kind: 'insert',
+						responseId: context.element.providerResponseId!,
+						codeBlockIndex: context.codeBlockIndex,
+						totalCharacters: context.code.length,
+						newFile: true
+					}
+				});
+			}
+		}
+	});
+
 	function navigateCodeBlocks(accessor: ServicesAccessor, reverse?: boolean): void {
 		const codeEditorService = accessor.get(ICodeEditorService);
 		const chatWidgetService = accessor.get(ICSChatWidgetService);

@@ -9,11 +9,16 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { URI, UriComponents } from 'vs/base/common/uri';
+import { EndOfLineSequence } from 'vs/editor/common/model';
+import { IProgress } from 'vs/platform/progress/common/progress';
+import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
+import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
 import { ExtHostCSChatShape, ExtHostContext, IChatRequestDto, IChatResponseProgressDto, ILocationDto, MainContext, MainThreadCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IChat, IChatDynamicRequest, IChatProgress, IChatResponse, IChatResponseProgressFileTreeData, ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatBulkEditResponse, ICSChatEditProgressItem, ICSChatEditResponse } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 @extHostNamedCustomer(MainContext.MainThreadCSChat)
@@ -28,11 +33,14 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 	private _responsePartHandlePool = 0;
 	private readonly _activeResponsePartPromises = new Map<string, DeferredPromise<string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }>>();
 
+	private readonly _activeEditProgresses = new Map<string, IProgress<ICSChatEditProgressItem>>();
+
 	constructor(
 		extHostContext: IExtHostContext,
 		@ICSChatService private readonly _chatService: ICSChatService,
 		@ICSChatWidgetService private readonly _chatWidgetService: ICSChatWidgetService,
 		@ICSChatContributionService private readonly chatContribService: ICSChatContributionService,
+		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService,
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCSChat);
@@ -119,6 +127,18 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 			provideFollowups: (session, token) => {
 				return this._proxy.$provideFollowups(handle, session.id, token);
 			},
+			provideEdits: async (session, requestId, progress, token) => {
+				this._activeEditProgresses.set(requestId, progress);
+				try {
+					const result = await this._proxy.$provideEdits(handle, session.id, requestId, token);
+					if (result?.type === 'bulkEdit') {
+						(<ICSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
+					}
+					return <ICSChatEditResponse | undefined>result;
+				} finally {
+					this._activeEditProgresses.delete(requestId);
+				}
+			},
 			removeRequest: (session, requestId) => {
 				return this._proxy.$removeRequest(handle, session.id, requestId);
 			}
@@ -180,6 +200,10 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 		if (widget && widget.viewModel) {
 			this._chatService.sendRequestToProvider(widget.viewModel.sessionId, message);
 		}
+	}
+
+	async $handleProgressChunk(requestId: string, chunk: { markdownFragment?: string | undefined; edits?: { range: { readonly startLineNumber: number; readonly startColumn: number; readonly endLineNumber: number; readonly endColumn: number }; text: string; eol?: EndOfLineSequence | undefined }[] | undefined; editsShouldBeInstant?: boolean | undefined; message?: string | undefined; slashCommand?: string | undefined }): Promise<void> {
+		await Promise.resolve(this._activeEditProgresses.get(requestId)?.report(chunk));
 	}
 
 	async $unregisterChatProvider(handle: number): Promise<void> {

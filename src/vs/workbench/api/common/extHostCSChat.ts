@@ -13,10 +13,12 @@ import { StopWatch } from 'vs/base/common/stopwatch';
 import { localize } from 'vs/nls';
 import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatRequestDto, IChatResponseDto, IChatDto, IMainContext, MainContext, MainThreadCSChatShape, ExtHostCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
+import { IChatRequestDto, IChatResponseDto, IChatDto, IMainContext, MainContext, MainThreadCSChatShape, ExtHostCSChatShape, ICSChatEditResponseDto } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import { IChatFollowup, IChatReplyFollowup, IChatUserActionEvent, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
+import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
 import type * as vscode from 'vscode';
+import { ChatEditResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 
 class ChatProviderWrapper<T> {
 
@@ -30,13 +32,21 @@ class ChatProviderWrapper<T> {
 	) { }
 }
 
+class CSChatSessionWrapper {
+
+	readonly responses: (vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse)[] = [];
+
+	constructor(
+		readonly session: vscode.CSChatSession
+	) { }
+}
+
 export class ExtHostCSChat implements ExtHostCSChatShape {
 	private static _nextId = 0;
 
 	private readonly _chatProvider = new Map<number, ChatProviderWrapper<vscode.CSChatSessionProvider>>();
 
-	private readonly _chatSessions = new Map<number, vscode.CSChatSession>();
-	// private readonly _providerResponsesByRequestId = new Map<number, { response: vscode.ProviderResult<vscode.CSChatResponse | vscode.CSChatResponseForProgress>; sessionId: number }>();
+	private readonly _chatSessions = new Map<number, CSChatSessionWrapper>();
 
 	private readonly _onDidPerformUserAction = new Emitter<vscode.InteractiveSessionUserActionEvent>();
 	public readonly onDidPerformUserAction = this._onDidPerformUserAction.event;
@@ -63,7 +73,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 	}
 
 	transferChatSession(session: vscode.CSChatSession, newWorkspace: vscode.Uri): void {
-		const sessionId = Iterable.find(this._chatSessions.keys(), key => this._chatSessions.get(key) === session) ?? 0;
+		const sessionId = Iterable.find(this._chatSessions.keys(), key => this._chatSessions.get(key)?.session === session) ?? 0;
 		if (typeof sessionId !== 'number') {
 			return;
 		}
@@ -87,7 +97,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		}
 
 		const id = ExtHostCSChat._nextId++;
-		this._chatSessions.set(id, session);
+		this._chatSessions.set(id, new CSChatSessionWrapper(session));
 
 		return {
 			id,
@@ -139,7 +149,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 			return undefined;
 		}
 
-		const rawFollowups = await entry.provider.provideFollowups(realSession, token);
+		const rawFollowups = await entry.provider.provideFollowups(realSession.session, token);
 		return rawFollowups?.map(f => typeConvert.ChatFollowup.from(f));
 	}
 
@@ -176,7 +186,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 			return;
 		}
 
-		entry.provider.removeRequest(realSession, requestId);
+		entry.provider.removeRequest(realSession.session, requestId);
 	}
 
 	async $provideReply(handle: number, sessionId: number, request: IChatRequestDto, token: CancellationToken): Promise<IChatResponseDto | undefined> {
@@ -191,7 +201,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		}
 
 		const requestObj: vscode.CSChatRequest = {
-			session: realSession,
+			session: realSession.session,
 			message: request.message,
 			variables: {}
 		};
@@ -242,8 +252,8 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 
 		try {
 			// Check that the session has not been released since the request started
-			if (realSession.saveState && this._chatSessions.has(sessionId)) {
-				const newState = realSession.saveState();
+			if (realSession.session.saveState && this._chatSessions.has(sessionId)) {
+				const newState = realSession.session.saveState();
 				this._proxy.$acceptChatState(sessionId, newState);
 			}
 		} catch (err) {
@@ -269,7 +279,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 			return undefined;
 		}
 
-		const slashCommands = await entry.provider.provideSlashCommands(realSession, token);
+		const slashCommands = await entry.provider.provideSlashCommands(realSession.session, token);
 		return slashCommands?.map(c => (<ISlashCommand>{
 			...c,
 			kind: typeConvert.CompletionItemKind.from(c.kind)
@@ -282,6 +292,86 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 
 	async $onDidPerformUserAction(event: IChatUserActionEvent): Promise<void> {
 		this._onDidPerformUserAction.fire(event as any);
+	}
+
+	async $provideEdits(handle: number, sessionId: number, requestId: string, token: CancellationToken): Promise<ICSChatEditResponseDto | undefined> {
+		const entry = this._chatProvider.get(handle);
+		if (!entry) {
+			return Promise.resolve(undefined);
+		}
+
+		const sessionData = this._chatSessions.get(sessionId);
+		if (!sessionData) {
+			return Promise.resolve(undefined);
+		}
+
+		let done = false;
+		const progress: vscode.Progress<vscode.CSChatEditProgressItem> = {
+			report: async value => {
+				if (done || token.isCancellationRequested) {
+					return;
+				}
+				await this._proxy.$handleProgressChunk(requestId, {
+					message: value.message,
+					edits: value.edits?.map(typeConvert.TextEdit.from),
+					editsShouldBeInstant: value.editsShouldBeInstant,
+					slashCommand: value.slashCommand?.command,
+					markdownFragment: extHostTypes.MarkdownString.isMarkdownString(value.content) ? value.content.value : value.content
+				});
+			}
+		};
+
+		const task = Promise.resolve(entry.provider.provideEditsWithProgress(sessionData.session, requestId, progress, token));
+
+		let res: vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse | null | undefined;
+		try {
+			res = await raceCancellation(task, token);
+		} finally {
+			done = true;
+		}
+
+		if (!res) {
+			return undefined;
+		}
+
+
+		const id = sessionData.responses.push(res) - 1;
+
+		const stub: Partial<ICSChatEditResponseDto> = {
+			wholeRange: typeConvert.Range.from(res.wholeRange),
+			placeholder: res.placeholder,
+		};
+
+		if (ExtHostCSChat._isMessageResponse(res)) {
+			return {
+				...stub,
+				id,
+				type: ChatEditResponseType.Message,
+				message: typeConvert.MarkdownString.from(res.contents),
+			};
+		}
+
+		const { edits } = res;
+		if (edits instanceof extHostTypes.WorkspaceEdit) {
+			return {
+				...stub,
+				id,
+				type: ChatEditResponseType.BulkEdit,
+				edits: typeConvert.WorkspaceEdit.from(edits),
+			};
+
+		} else {
+			return {
+				...stub,
+				id,
+				type: ChatEditResponseType.EditorEdit,
+				edits: (<vscode.TextEdit[]>edits).map(typeConvert.TextEdit.from),
+			};
+		}
+	}
+
+	private static _isMessageResponse(thing: any): thing is vscode.CSChatEditMessageResponse {
+		return typeof thing === 'object' && typeof (<vscode.CSChatEditMessageResponse>thing).contents === 'object';
 	}
 
 	//#endregion
