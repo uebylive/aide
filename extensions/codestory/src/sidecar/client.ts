@@ -8,7 +8,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, TextDocument } from './types';
+import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 
@@ -132,6 +132,39 @@ export class SideCarClient {
 		});
 		const responseJson = await response.json();
 		return responseJson as InEditorTreeSitterDocumentationReply;
+	}
+
+	async *editFileRequest(
+		filePath: string,
+		fileContent: string,
+		language: string,
+		llmContent: string,
+		userQuery: string,
+		sessionId: string,
+	): AsyncIterableIterator<EditFileResponse> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/file/edit_file';
+		const url = baseUrl.toString();
+		const body = {
+			file_path: filePath,
+			file_content: fileContent,
+			language: language,
+			new_content: llmContent,
+			user_query: userQuery,
+			session_id: sessionId,
+		};
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const editFileResponse = JSON.parse('{' + lineSinglePartTrimmed) as EditFileResponse;
+				yield editFileResponse;
+			}
+		}
 	}
 
 	async *followupQuestion(
