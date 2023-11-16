@@ -336,13 +336,13 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 				followupPlaceholder: 'Ask me a question or type \'/\' for bb?',
 				executeImmediately: false,
 			},
-			{
-				command: 'agent',
-				kind: vscode.CompletionItemKind.Text,
-				detail: 'Invoke the CodeStory agent to do codebase wide changes',
-				shouldRepopulate: true,
-				executeImmediately: false,
-			},
+			// {
+			// 	command: 'agent',
+			// 	kind: vscode.CompletionItemKind.Text,
+			// 	detail: 'Invoke the CodeStory agent to do codebase wide changes',
+			// 	shouldRepopulate: true,
+			// 	executeImmediately: false,
+			// },
 			{
 				command: 'explain',
 				kind: vscode.CompletionItemKind.Text,
