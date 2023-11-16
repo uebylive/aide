@@ -343,3 +343,30 @@ export interface SidecarVariableTypes {
 	content: string;
 	language: string;
 }
+
+
+export type DiffActionResponse =
+	| 'AcceptCurrentChanges'
+	| 'AcceptIncomingChanges'
+	| 'AcceptBothChanges';
+
+export type EditFileResponse =
+	| { type: 'Message'; message: string }
+	| {
+		type: 'Action';
+		action: DiffActionResponse;
+		range: {
+			start_position: {
+				line: number;
+				character: number;
+			};
+			end_position: {
+				line: number;
+				character: number;
+			};
+		};
+		content: string;
+		previous_content: string;
+	}
+	| { type: 'TextEdit'; range: Range; content: string }
+	| { type: 'Status'; session_id: string; status: string };
