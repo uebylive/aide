@@ -373,11 +373,11 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',
 			'Here are some things you can ask me to get started:',
 			[
-				new CSChatReplyFollowup(
-					'/agent add comments to the entrypoint',
-					'Add comments to the entrypoint',
-					'Add comments to the entrypoint'
-				),
+				// new CSChatReplyFollowup(
+				// 	'/agent add comments to the entrypoint',
+				// 	'Add comments to the entrypoint',
+				// 	'Add comments to the entrypoint'
+				// ),
 				new CSChatReplyFollowup(
 					'/explain the active file in the editor',
 					'Explain the active file in the editor',
