@@ -8,7 +8,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, TextDocument } from './types';
+import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 
@@ -95,6 +95,25 @@ export class SideCarClient {
 		const responseJson = await response.json();
 		const symbols = responseJson.symbols as string[];
 		return symbols;
+	}
+
+
+	async *getRepoSyncStatus(): AsyncIterableIterator<SyncUpdate> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/repo/status';
+		const url = baseUrl.toString();
+		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const syncUpdate = JSON.parse('{' + lineSinglePartTrimmed) as SyncUpdate;
+				yield syncUpdate;
+			}
+		}
 	}
 
 
