@@ -370,3 +370,16 @@ export type EditFileResponse =
 	}
 	| { type: 'TextEdit'; range: Range; content: string }
 	| { type: 'Status'; session_id: string; status: string };
+
+export type SyncUpdate =
+	| { kind: 'ProgressEvent'; value: Progress }
+	| { kind: 'KeepAlive' };
+
+export interface Progress {
+	ref: string;
+	ev: ProgressEvent;
+}
+
+export type ProgressEvent =
+	| { kind: 'IndexPercent'; value: number }
+	| { kind: 'StatusChange'; value: SyncStatus };
