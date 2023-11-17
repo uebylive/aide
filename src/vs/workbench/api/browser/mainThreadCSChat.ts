@@ -9,16 +9,14 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { URI, UriComponents } from 'vs/base/common/uri';
-import { EndOfLineSequence } from 'vs/editor/common/model';
 import { IProgress } from 'vs/platform/progress/common/progress';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
-import { ExtHostCSChatShape, ExtHostContext, IChatRequestDto, IChatResponseProgressDto, ILocationDto, MainContext, MainThreadCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostCSChatShape, ExtHostContext, IChatEditProgressItemDto, IChatRequestDto, IChatResponseProgressDto, ILocationDto, MainContext, MainThreadCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
-import { isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { IChat, IChatDynamicRequest, IChatProgress, IChatResponse, IChatResponseProgressFileTreeData, ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { ICSChatBulkEditResponse, ICSChatEditProgressItem, ICSChatEditResponse } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { isChatEditProgressItem, isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { IChat, IChatBulkEditResponse, IChatDynamicRequest, IChatEditProgressItem, IChatEditResponse, IChatProgress, IChatResponse, IChatResponseProgressFileTreeData, ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 @extHostNamedCustomer(MainContext.MainThreadCSChat)
@@ -33,7 +31,7 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 	private _responsePartHandlePool = 0;
 	private readonly _activeResponsePartPromises = new Map<string, DeferredPromise<string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }>>();
 
-	private readonly _activeEditProgresses = new Map<string, IProgress<ICSChatEditProgressItem>>();
+	private readonly _activeEditProgresses = new Map<string, IProgress<IChatEditProgressItem>>();
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -127,14 +125,14 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 			provideFollowups: (session, token) => {
 				return this._proxy.$provideFollowups(handle, session.id, token);
 			},
-			provideEdits: async (session, requestId, progress, token) => {
+			provideEdits: async (session, requestId, responseId, codeblocks, progress, token) => {
 				this._activeEditProgresses.set(requestId, progress);
 				try {
-					const result = await this._proxy.$provideEdits(handle, session.id, requestId, token);
+					const result = await this._proxy.$provideEdits(handle, session.id, requestId, responseId, codeblocks, token);
 					if (result?.type === 'bulkEdit') {
-						(<ICSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
+						(<IChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
 					}
-					return <ICSChatEditResponse | undefined>result;
+					return <IChatEditResponse | undefined>result;
 				} finally {
 					this._activeEditProgresses.delete(requestId);
 				}
@@ -202,8 +200,10 @@ export class MainThreadCSChat extends Disposable implements MainThreadCSChatShap
 		}
 	}
 
-	async $handleProgressChunk(requestId: string, chunk: { markdownFragment?: string | undefined; edits?: { range: { readonly startLineNumber: number; readonly startColumn: number; readonly endLineNumber: number; readonly endColumn: number }; text: string; eol?: EndOfLineSequence | undefined }[] | undefined; editsShouldBeInstant?: boolean | undefined; message?: string | undefined; slashCommand?: string | undefined }): Promise<void> {
-		await Promise.resolve(this._activeEditProgresses.get(requestId)?.report(chunk));
+	async $handleProgressChunk(requestId: string, chunk: IChatEditProgressItemDto): Promise<void> {
+		if (isChatEditProgressItem(chunk)) {
+			this._activeEditProgresses.get(requestId)?.report(chunk);
+		}
 	}
 
 	async $unregisterChatProvider(handle: number): Promise<void> {

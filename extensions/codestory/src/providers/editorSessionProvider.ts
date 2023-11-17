@@ -207,23 +207,42 @@ export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
 // 	wholeRange?: Range;
 // }
 
-export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgressItem {
+class CSEditProgressItem implements vscode.CSChatEditProgressItem {
 	message?: string;
-	edits?: vscode.TextEdit[];
 	editsShouldBeInstant?: boolean;
-	slashCommand?: vscode.CSChatEditorSlashCommand;
 	content?: string | vscode.MarkdownString;
 
-	static normalMessage(message: string): CSInteractiveEditorProgressItem {
+	static normalMessage(message: string): CSEditProgressItem {
 		return {
 			message: message,
 		};
 	}
 
-	static sendReplyMessage(message: string): CSInteractiveEditorProgressItem {
+	static sendReplyMessage(message: string): CSEditProgressItem {
 		return {
 			content: message,
 			message,
+		};
+	}
+}
+
+export class CSChatEditProgressItem extends CSEditProgressItem {
+	edits?: vscode.WorkspaceEdit;
+
+	static sendWorkspaceEdits(edits: vscode.WorkspaceEdit): CSChatEditProgressItem {
+		return {
+			edits,
+		};
+	}
+}
+
+export class CSInteractiveEditorProgressItem extends CSEditProgressItem {
+	edits?: vscode.TextEdit[];
+	slashCommand?: vscode.CSChatEditorSlashCommand;
+
+	static sendTextEdits(edits: vscode.TextEdit[]): CSInteractiveEditorProgressItem {
+		return {
+			edits,
 		};
 	}
 
@@ -261,7 +280,7 @@ export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgr
 	}
 }
 
-export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMessageResponse {
+export class CSChatMessageResponse implements vscode.CSChatEditorMessageResponse {
 	contents: vscode.MarkdownString;
 	placeholder?: string;
 	wholeRange?: vscode.Range;
@@ -286,7 +305,7 @@ export class CSInteractiveEditorResponse implements vscode.CSChatEditorResponse 
 	}
 }
 
-export type CSInteractiveEditorResponseMessage = CSInteractiveEditorResponse | CSInteractiveEditorMessageResponse;
+export type CSInteractiveEditorResponseMessage = CSInteractiveEditorResponse | CSChatMessageResponse;
 
 export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSessionProvider {
 	label: 'cs-chat-editor';
@@ -384,7 +403,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 			);
 			if (messageReply.message !== null) {
 				console.log(messageReply.message);
-				return new CSInteractiveEditorMessageResponse(
+				return new CSChatMessageResponse(
 					new vscode.MarkdownString(messageReply.message, true),
 					undefined,
 					undefined,

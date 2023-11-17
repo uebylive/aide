@@ -55,8 +55,9 @@ import { IChatMessage, IChatResponseFragment, IChatResponseProviderMetadata } fr
 import { IChatAgentDetection, IChatDynamicRequest, IChatFollowup, IChatReplyFollowup, IChatResponseErrorDetails, IChatUserActionEvent, ISlashCommand, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatSlashFragment } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
 import { IChatRequestVariableValue, IChatVariableData } from 'vs/workbench/contrib/chat/common/chatVariables';
+import { CodeBlockInfo, IChatBulkEditResponse, IChatEditProgressItem, IChatMessageResponse } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { DebugConfigurationProviderTriggerKind, IAdapterDescriptor, IConfig, IDebugSessionReplMode } from 'vs/workbench/contrib/debug/common/debug';
-import { ICSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse, ICSChatEditProgressItem, IInlineCSChatRequest, IInlineCSChatSession, InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { IInlineCSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse, IInlineCSChatProgressItem, IInlineCSChatRequest, IInlineCSChatSession, InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IInlineChatBulkEditResponse, IInlineChatEditResponse, IInlineChatMessageResponse, IInlineChatProgressItem, IInlineChatRequest, IInlineChatSession, InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import * as notebookCommon from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { CellExecutionUpdateType } from 'vs/workbench/contrib/notebook/common/notebookExecutionService';
@@ -64,6 +65,7 @@ import { ICellExecutionComplete, ICellExecutionStateUpdate } from 'vs/workbench/
 import { ICellRange } from 'vs/workbench/contrib/notebook/common/notebookRange';
 import { InputValidationType } from 'vs/workbench/contrib/scm/common/scm';
 import { IWorkspaceSymbol, NotebookPriorityInfo } from 'vs/workbench/contrib/search/common/search';
+import { IRawClosedNotebookFileMatch } from 'vs/workbench/contrib/search/common/searchNotebookHelpers';
 import { ISpeechProviderMetadata, ISpeechToTextEvent } from 'vs/workbench/contrib/speech/common/speechService';
 import { CoverageDetails, ExtensionRunTestsRequest, ICallProfileRunHandler, IFileCoverage, ISerializedTestResults, IStartControllerTests, ITestItem, ITestMessage, ITestRunProfile, ITestRunTask, ResolvedTestRunRequest, TestResultState, TestsDiffOp } from 'vs/workbench/contrib/testing/common/testTypes';
 import { Timeline, TimelineChangeEvent, TimelineOptions, TimelineProviderDescriptor } from 'vs/workbench/contrib/timeline/common/timeline';
@@ -81,7 +83,6 @@ import { CandidatePort } from 'vs/workbench/services/remote/common/tunnelModel';
 import { ITextQueryBuilderOptions } from 'vs/workbench/services/search/common/queryBuilder';
 import * as search from 'vs/workbench/services/search/common/search';
 import { ISaveProfileResult } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
-import { IRawClosedNotebookFileMatch } from 'vs/workbench/contrib/search/common/searchNotebookHelpers';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -1224,15 +1225,15 @@ export interface ExtHostInlineChatShape {
 
 export interface MainThreadInlineCSChatShape extends IDisposable {
 	$registerCSChatEditorProvider(handle: number, label: string, debugName: string, supportsFeedback: boolean): Promise<void>;
-	$handleProgressChunk(requestId: string, chunk: Dto<ICSChatEditProgressItem>): Promise<void>;
+	$handleProgressChunk(requestId: string, chunk: Dto<IInlineCSChatProgressItem>): Promise<void>;
 	$unregisterCSChatEditorProvider(handle: number): Promise<void>;
 }
 
-export type ICSChatEditResponseDto = Dto<IInlineCSChatEditResponse | Omit<ICSChatBulkEditResponse, 'edits'> & { edits: IWorkspaceEditDto } | IInlineCSChatMessageResponse>;
+export type IInlineCSChatResponseDto = Dto<IInlineCSChatEditResponse | Omit<IInlineCSChatBulkEditResponse, 'edits'> & { edits: IWorkspaceEditDto } | IInlineCSChatMessageResponse>;
 
 export interface ExtHostInlineCSChatShape {
 	$prepareSession(handle: number, uri: UriComponents, range: ISelection, token: CancellationToken): Promise<IInlineCSChatSession | undefined>;
-	$provideResponse(handle: number, session: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<ICSChatEditResponseDto | undefined>;
+	$provideResponse(handle: number, session: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<IInlineCSChatResponseDto | undefined>;
 	$handleFeedback(handle: number, sessionId: number, responseId: number, kind: InlineCSChatResponseFeedbackKind): void;
 	$releaseSession(handle: number, sessionId: number): void;
 }
@@ -1307,8 +1308,11 @@ export interface MainThreadCSChatShape extends IDisposable {
 	$unregisterChatProvider(handle: number): Promise<void>;
 	$acceptResponseProgress(handle: number, sessionId: number, progress: IChatResponseProgressDto, responsePartHandle?: number): Promise<number | void>;
 	$transferChatSession(sessionId: number, toWorkspace: UriComponents): void;
-	$handleProgressChunk(requestId: string, chunk: Dto<ICSChatEditProgressItem>): Promise<void>;
+	$handleProgressChunk(requestId: string, chunk: IChatEditProgressItemDto): Promise<void>;
 }
+
+export type IChatEditProgressItemDto = Dto<Omit<IChatEditProgressItem, 'edits'> & { edits?: IWorkspaceEditDto }>;
+export type IChatEditResponseDto = Dto<Omit<IChatBulkEditResponse, 'edits'> & { edits: IWorkspaceEditDto } | IChatMessageResponse>;
 
 export interface ExtHostChatShape {
 	$prepareChat(handle: number, initialState: any, token: CancellationToken): Promise<IChatDto | undefined>;
@@ -1332,7 +1336,7 @@ export interface ExtHostCSChatShape {
 	$provideSlashCommands(handle: number, sessionId: number, token: CancellationToken): Promise<ISlashCommand[] | undefined>;
 	$releaseSession(sessionId: number): void;
 	$onDidPerformUserAction(event: IChatUserActionEvent): Promise<void>;
-	$provideEdits(handle: number, sessionId: number, requestId: string, token: CancellationToken): Promise<ICSChatEditResponseDto | undefined>;
+	$provideEdits(handle: number, sessionId: number, requestId: string, responseId: string, codeblocks: CodeBlockInfo[], token: CancellationToken): Promise<IChatEditResponseDto | undefined>;
 }
 
 export interface ExtHostUrlsShape {

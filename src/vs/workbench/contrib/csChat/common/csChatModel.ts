@@ -13,10 +13,11 @@ import { basename } from 'vs/base/common/resources';
 import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChat, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChat, IChatContentInlineReference, IChatContentReference, IChatEditProgressItem, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
@@ -65,8 +66,10 @@ export interface IChatResponseModel {
 	readonly isCanceled: boolean;
 	readonly vote: InteractiveSessionVoteDirection | undefined;
 	readonly followups?: IChatFollowup[] | undefined;
+	readonly edits?: WorkspaceEdit[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
 	setVote(vote: InteractiveSessionVoteDirection): void;
+	addEditProgress(edit: IChatEditProgressItem): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -295,6 +298,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	private _followups?: IChatFollowup[];
 
+	private _edits?: WorkspaceEdit[];
+	public get edits(): WorkspaceEdit[] | undefined {
+		return this._edits;
+	}
+
 	private _agent: IChatAgentData | undefined;
 	public get agent(): IChatAgentData | undefined {
 		return this._agent;
@@ -315,7 +323,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		private _vote?: InteractiveSessionVoteDirection,
 		private _providerResponseId?: string,
 		private _errorDetails?: IChatResponseErrorDetails,
-		followups?: ReadonlyArray<IChatFollowup>
+		followups?: ReadonlyArray<IChatFollowup>,
 	) {
 		super();
 		this._agent = agent;
@@ -362,6 +370,20 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	setVote(vote: InteractiveSessionVoteDirection): void {
 		this._vote = vote;
+		this._onDidChange.fire();
+	}
+
+	async addEditProgress(progress: IChatEditProgressItem): Promise<void> {
+		const edit = progress.edits;
+		if (!edit?.edits) {
+			return;
+		}
+
+		if (!this._edits) {
+			this._edits = [];
+		}
+
+		this._edits.push(edit);
 		this._onDidChange.fire();
 	}
 }
@@ -437,7 +459,7 @@ export function isSerializableSessionData(obj: unknown): obj is ISerializableCha
 		);
 }
 
-export type IChatChangeEvent = IChatAddRequestEvent | IChatAddResponseEvent | IChatInitEvent | IChatRemoveRequestEvent;
+export type IChatChangeEvent = IChatAddRequestEvent | IChatAddResponseEvent | IChatInitEvent | IChatRemoveRequestEvent | IChatAddEditsEvent;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -457,6 +479,11 @@ export interface IChatRemoveRequestEvent {
 
 export interface IChatInitEvent {
 	kind: 'initialize';
+}
+
+export interface IChatAddEditsEvent {
+	kind: 'addEdits';
+	request: ChatRequestModel;
 }
 
 export enum ChatModelInitState {
@@ -709,6 +736,14 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 	}
 
+	acceptEditProgress(response: ChatResponseModel, progress: IChatEditProgressItem): void {
+		if (!this._session) {
+			throw new Error('acceptEditProgress: No session');
+		}
+
+		response.addEditProgress(progress);
+	}
+
 	removeRequest(requestId: string): void {
 		const index = this._requests.findIndex(request => request.providerRequestId === requestId);
 		const request = this._requests[index];
@@ -852,4 +887,8 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 
 export function isCompleteInteractiveProgressTreeData(item: unknown): item is { treeData: IChatResponseProgressFileTreeData } {
 	return typeof item === 'object' && !!item && 'treeData' in item;
+}
+
+export function isChatEditProgressItem(item: unknown): item is IChatEditProgressItem {
+	return typeof item === 'object' && !!item && 'edits' in item;
 }

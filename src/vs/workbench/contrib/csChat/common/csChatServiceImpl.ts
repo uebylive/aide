@@ -3,33 +3,35 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancelablePromise, createCancelablePromise } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
+import { CancelablePromise, Queue, createCancelablePromise } from 'vs/base/common/async';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
 import { Iterable } from 'vs/base/common/iterator';
 import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { StopWatch } from 'vs/base/common/stopwatch';
+import { assertType } from 'vs/base/common/types';
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { localize } from 'vs/nls';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { Progress } from 'vs/platform/progress/common/progress';
+import { AsyncProgress, Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { IChatAgentCommand, IChatAgentData, IChatAgentRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, IChatAgentCommand, IChatAgentData, IChatAgentRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData, isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ChatModel, ChatModelInitState, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData, isCompleteInteractiveProgressTreeData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
-import { IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, ICSChatService, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { CodeBlockInfo, ICSChatService, IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatEditProgressItem, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatRequest, IChatResponse, IChatTransferredSessionData, IChatUserActionEvent, ISlashCommand, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatSlashCommandService, IChatSlashFragment } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'csChat.sessions';
@@ -166,7 +168,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ICSChatSlashCommandService private readonly chatSlashCommandService: ICSChatSlashCommandService,
 		@ICSChatVariablesService private readonly chatVariablesService: ICSChatVariablesService,
-		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService,
 	) {
 		super();
 
@@ -636,7 +638,65 @@ export class ChatService extends Disposable implements ICSChatService {
 		return rawResponsePromise;
 	}
 
-	async sendEditRequest(sessionId: string, requestId: string, message: string): Promise<void> {
+	async sendEditRequest(response: IChatResponseViewModel, codeblocks: CodeBlockInfo[]): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
+		const model = this._sessionModels.get(response.sessionId);
+		if (!model) {
+			throw new Error(`Unknown session: ${response.sessionId}`);
+		}
+
+		const request = model.getRequests().find(request => request.id === response.requestId);
+		if (!request) {
+			throw new Error(`Unknown request: ${response.requestId}`);
+		}
+
+		await model.waitForInitialization();
+		const provider = this._providers.get(model.providerId);
+		if (!provider) {
+			throw new Error(`Unknown provider: ${model.providerId}`);
+		}
+
+		// This method is only returning whether the request was accepted - don't block on the actual request
+		return { responseCompletePromise: this._sendEditRequestAsync(model, provider, request.response, codeblocks) };
+	}
+
+	private async _sendEditRequestAsync(model: ChatModel, provider: IChatProvider, response: ChatResponseModel | undefined, codeblocks: CodeBlockInfo[]): Promise<void> {
+		assertType(model.providerId);
+		assertType(response);
+		assertType(provider.provideEdits);
+		assertType(model.session);
+
+		const requestCts = new CancellationTokenSource();
+		const progressiveEditsCts = new CancellationTokenSource(requestCts.token);
+		const progressiveEditsQueue = new Queue();
+
+		const progress = new AsyncProgress<IChatEditProgressItem>(async data => {
+			if (requestCts.token.isCancellationRequested) {
+				return;
+			}
+
+			model.acceptEditProgress(response, data);
+		});
+
+		const task = provider.provideEdits(model.session, response.requestId, response.id, codeblocks, progress, requestCts.token);
+		console.log(progressiveEditsQueue, task);
+
+		// let reply: IChatEditResponse | null | undefined;
+		// try {
+		// 	reply = await raceCancellationError(Promise.resolve(task), requestCts.token);
+		// 	if (progressiveEditsQueue.size > 0) {
+		// 		await Event.toPromise(progressiveEditsQueue.onDrained);
+		// 	}
+		// 	await progress.drain();
+
+		// 	if (reply) {
+		// 		// response.addEditProgress(reply);
+		// 	}
+		// } catch (e) {
+		// 	// response = new ErrorResponse(e);
+		// }
+
+		progressiveEditsCts.dispose(true);
+		requestCts.dispose();
 	}
 
 	async removeRequest(sessionId: string, requestId: string): Promise<void> {

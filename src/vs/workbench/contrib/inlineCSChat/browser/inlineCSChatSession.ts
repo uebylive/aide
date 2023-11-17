@@ -9,7 +9,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { ResourceEdit, ResourceFileEdit, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { TextEdit } from 'vs/editor/common/languages';
 import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
-import { EditMode, IInlineCSChatSessionProvider, IInlineCSChatSession, ICSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse, ICSChatEditResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { EditMode, IInlineCSChatSessionProvider, IInlineCSChatSession, IInlineCSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse, ICSChatEditResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IActiveCodeEditor, ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -297,7 +297,7 @@ export class EditResponse {
 	constructor(
 		localUri: URI,
 		readonly modelAltVersionId: number,
-		readonly raw: ICSChatBulkEditResponse | IInlineCSChatEditResponse,
+		readonly raw: IInlineCSChatBulkEditResponse | IInlineCSChatEditResponse,
 		progressEdits: TextEdit[][],
 	) {
 

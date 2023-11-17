@@ -15,6 +15,7 @@ import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/csChat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -285,6 +286,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			const lastItem = treeItems[treeItems.length - 1]?.element;
 			if (lastItem && isResponseVM(lastItem) && lastItem.isComplete) {
 				this.renderFollowups(lastItem.replyFollowups, lastItem);
+				if (lastItem.edits) {
+					this.performEdits(lastItem.edits, CancellationToken.None);
+				}
 			} else if (lastItem && isWelcomeVM(lastItem)) {
 				this.renderFollowups(lastItem.sampleQuestions);
 			} else {
@@ -298,6 +302,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		if (this.bodyDimension) {
 			this.layout(this.bodyDimension.height, this.bodyDimension.width);
+		}
+	}
+
+	private async performEdits(edits: WorkspaceEdit[], token: CancellationToken): Promise<void> {
+		for (const _edit of edits) {
+			if (token.isCancellationRequested) {
+				return;
+			}
 		}
 	}
 

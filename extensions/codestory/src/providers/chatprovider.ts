@@ -7,21 +7,19 @@ import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
-import { getSelectedCodeContext, getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
-import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
+import { getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
 import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
-import { formatPathsInAnswer, reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
+import { reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
-import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
+import { getContextForPromptFromUserContext } from '../chatState/getContextForCodeSelection';
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
+import { deterministicClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
-import { getLSPGraphContextForChat } from '../editor/activeView/ranges';
-import { DeepContextForView } from '../sidecar/types';
 import { ProjectContext } from '../utilities/workspaceContext';
+import { CSChatEditProgressItem, CSChatMessageResponse } from './editorSessionProvider';
 
 class CSChatSessionState implements vscode.CSChatSessionState {
 	public chatContext: CSChatState;
@@ -278,6 +276,20 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 	}
 }
 
+export class CSChatEditResponse implements vscode.CSChatEditResponse {
+	edits: vscode.WorkspaceEdit;
+	placeholder?: string;
+	wholeRange?: vscode.Range | undefined;
+
+	constructor(edits: vscode.WorkspaceEdit, placeholder: string | undefined, wholeRange: vscode.Range) {
+		this.edits = edits;
+		this.placeholder = placeholder;
+		this.wholeRange = wholeRange;
+	}
+}
+
+export type CSEditResponseMessage = CSChatEditResponse | CSChatMessageResponse;
+
 export class CSChatProvider implements vscode.CSChatSessionProvider {
 	private _chatSessionState: CSChatSessionState;
 
@@ -495,6 +507,54 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 				return new CSChatResponseForProgress();
 			}
 		})();
+	}
+
+	provideEditsWithProgress(
+		session: vscode.CSChatSession,
+		requestId: string,
+		responseId: string,
+		codeblocks: vscode.CSChatCodeBlockInfo[],
+		progress: vscode.Progress<CSChatEditProgressItem>,
+		token: vscode.CancellationToken
+	): vscode.ProviderResult<CSEditResponseMessage> {
+		logger.info('provideEditsWithProgress', session, requestId, responseId, progress, token);
+		// To @theskcd: Notes to keep in mind
+		// progress.report currently does nothing. Use the return statement instead to return all edits.
+		// Don't use TextEdit(s). Instead, use WorkspaceEdit(s) to apply edits to the entire workspace.
+		// I'll be removing TextEdit(s) from the API since it doesn't make sense for sidebar chat. It works for inline chat because
+		// we have a 1:1 relationship between the chat widget and a unique file (where it is open).
+		//
+		// WIP on editor side:
+		// 1. When this API is called, a new message will show up in the chat widget with links to the edits that were made + an
+		// option to keep/reject them, with keybindings ofc.
+		// 2. Once progress.report is implemented, you will be able to stream WorkspaceEdit(s) to the editor. i.e.
+		// if the user opens the file (or we open it for them), we can show a streaming progress of code in the editor. Better UX?
+		//
+		// The code below uses the open file in the editor only for testing purposes.
+		// You can pass in any file uri(s) and it should apply correctly.
+		const activeEditorUri = vscode.window.activeTextEditor?.document.uri;
+		const workspaceEdits = new vscode.WorkspaceEdit();
+		if (activeEditorUri && codeblocks.length > 0) {
+			codeblocks.forEach((codeblock) => {
+				const newWorkspaceEdit = new vscode.WorkspaceEdit();
+				newWorkspaceEdit.insert(
+					activeEditorUri,
+					new vscode.Position(0, 0),
+					codeblock.code
+				);
+				progress.report(CSChatEditProgressItem.sendWorkspaceEdits(newWorkspaceEdit));
+				workspaceEdits.insert(
+					activeEditorUri!,
+					new vscode.Position(0, 0),
+					codeblock.code
+				);
+			});
+		}
+		return new CSChatEditResponse(
+			workspaceEdits,
+			undefined,
+			new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0))
+		);
 	}
 
 	removeRequest(session: CSChatSession, requestId: string) {

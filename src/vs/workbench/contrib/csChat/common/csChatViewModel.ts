@@ -6,12 +6,13 @@
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatReplyFollowup, IChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatEditProgressItem, IChatReplyFollowup, IChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
@@ -101,12 +102,14 @@ export interface IChatResponseViewModel {
 	readonly vote: InteractiveSessionVoteDirection | undefined;
 	readonly replyFollowups?: IChatReplyFollowup[];
 	readonly commandFollowups?: IChatResponseCommandFollowup[];
+	readonly edits?: WorkspaceEdit[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
 	renderData?: IChatResponseRenderData;
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: InteractiveSessionVoteDirection): void;
+	addEdit(edit: IChatEditProgressItem): void;
 	usedReferencesExpanded?: boolean;
 }
 
@@ -313,6 +316,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.followups?.filter((f): f is IChatResponseCommandFollowup => f.kind === 'command');
 	}
 
+	get edits() {
+		return this._model.edits;
+	}
+
 	get errorDetails() {
 		return this._model.errorDetails;
 	}
@@ -398,6 +405,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	setVote(vote: InteractiveSessionVoteDirection): void {
 		this._modelChangeCount++;
 		this._model.setVote(vote);
+	}
+
+	addEdit(edit: IChatEditProgressItem): void {
+		this._modelChangeCount++;
+		this._model.addEditProgress(edit);
 	}
 }
 

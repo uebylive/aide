@@ -13,12 +13,11 @@ import { StopWatch } from 'vs/base/common/stopwatch';
 import { localize } from 'vs/nls';
 import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatRequestDto, IChatResponseDto, IChatDto, IMainContext, MainContext, MainThreadCSChatShape, ExtHostCSChatShape, ICSChatEditResponseDto } from 'vs/workbench/api/common/extHost.protocol';
+import { IChatRequestDto, IChatResponseDto, IChatDto, IMainContext, MainContext, MainThreadCSChatShape, ExtHostCSChatShape, IChatEditResponseDto } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
-import { IChatFollowup, IChatReplyFollowup, IChatUserActionEvent, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ChatEditResponseType, IChatFollowup, IChatReplyFollowup, IChatUserActionEvent, ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
 import type * as vscode from 'vscode';
-import { ChatEditResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 
 class ChatProviderWrapper<T> {
 
@@ -34,7 +33,7 @@ class ChatProviderWrapper<T> {
 
 class CSChatSessionWrapper {
 
-	readonly responses: (vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse)[] = [];
+	readonly responses: (vscode.CSChatEditorResponse | vscode.CSChatEditorMessageResponse)[] = [];
 
 	constructor(
 		readonly session: vscode.CSChatSession
@@ -294,7 +293,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		this._onDidPerformUserAction.fire(event as any);
 	}
 
-	async $provideEdits(handle: number, sessionId: number, requestId: string, token: CancellationToken): Promise<ICSChatEditResponseDto | undefined> {
+	async $provideEdits(handle: number, sessionId: number, requestId: string, responseId: string, codeblocks: any, token: CancellationToken): Promise<IChatEditResponseDto | undefined> {
 		const entry = this._chatProvider.get(handle);
 		if (!entry) {
 			return Promise.resolve(undefined);
@@ -313,17 +312,16 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 				}
 				await this._proxy.$handleProgressChunk(requestId, {
 					message: value.message,
-					edits: value.edits?.map(typeConvert.TextEdit.from),
+					edits: value.edits && typeConvert.WorkspaceEdit.from(value.edits),
 					editsShouldBeInstant: value.editsShouldBeInstant,
-					slashCommand: value.slashCommand?.command,
 					markdownFragment: extHostTypes.MarkdownString.isMarkdownString(value.content) ? value.content.value : value.content
 				});
 			}
 		};
 
-		const task = Promise.resolve(entry.provider.provideEditsWithProgress(sessionData.session, requestId, progress, token));
+		const task = Promise.resolve(entry.provider.provideEditsWithProgress(sessionData.session, requestId, responseId, codeblocks, progress, token));
 
-		let res: vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse | null | undefined;
+		let res: vscode.CSChatEditResponse | vscode.CSChatMessageResponse | null | undefined;
 		try {
 			res = await raceCancellation(task, token);
 		} finally {
@@ -337,8 +335,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 
 		const id = sessionData.responses.push(res) - 1;
 
-		const stub: Partial<ICSChatEditResponseDto> = {
-			wholeRange: typeConvert.Range.from(res.wholeRange),
+		const stub: Partial<IChatEditResponseDto> = {
 			placeholder: res.placeholder,
 		};
 
@@ -349,29 +346,19 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 				type: ChatEditResponseType.Message,
 				message: typeConvert.MarkdownString.from(res.contents),
 			};
-		}
-
-		const { edits } = res;
-		if (edits instanceof extHostTypes.WorkspaceEdit) {
+		} else {
+			const { edits } = res;
 			return {
 				...stub,
 				id,
 				type: ChatEditResponseType.BulkEdit,
 				edits: typeConvert.WorkspaceEdit.from(edits),
 			};
-
-		} else {
-			return {
-				...stub,
-				id,
-				type: ChatEditResponseType.EditorEdit,
-				edits: (<vscode.TextEdit[]>edits).map(typeConvert.TextEdit.from),
-			};
 		}
 	}
 
-	private static _isMessageResponse(thing: any): thing is vscode.CSChatEditMessageResponse {
-		return typeof thing === 'object' && typeof (<vscode.CSChatEditMessageResponse>thing).contents === 'object';
+	private static _isMessageResponse(thing: any): thing is vscode.CSChatMessageResponse {
+		return typeof thing === 'object' && typeof (<vscode.CSChatMessageResponse>thing).contents === 'object';
 	}
 
 	//#endregion

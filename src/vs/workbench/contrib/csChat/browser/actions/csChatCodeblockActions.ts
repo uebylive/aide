@@ -513,7 +513,6 @@ export function registerChatCodeBlockActions() {
 				menu: {
 					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
-					isHiddenByDefault: true,
 				}
 			});
 		}
@@ -527,19 +526,10 @@ export function registerChatCodeBlockActions() {
 			const chatService = accessor.get(ICSChatService);
 
 			if (isResponseVM(context.element)) {
-				chatService.notifyUserAction({
-					providerId: context.element.providerId,
-					agentId: context.element.agent?.id,
-					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
-					action: {
-						kind: 'insert',
-						responseId: context.element.providerResponseId!,
-						codeBlockIndex: context.codeBlockIndex,
-						totalCharacters: context.code.length,
-						newFile: true
-					}
-				});
+				chatService.sendEditRequest(
+					context.element,
+					[{ index: context.codeBlockIndex, code: context.code }]
+				);
 			}
 		}
 	});

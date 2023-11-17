@@ -36,20 +36,20 @@ declare module 'vscode' {
 	}
 
 	// todo@API make classes
-	export interface CSChatEditResponse {
+	export interface CSChatEditorResponse {
 		edits: TextEdit[] | WorkspaceEdit;
 		placeholder?: string;
 		wholeRange?: Range;
 	}
 
 	// todo@API make classes
-	export interface CSChatEditMessageResponse {
+	export interface CSChatEditorMessageResponse {
 		contents: MarkdownString;
 		placeholder?: string;
 		wholeRange?: Range;
 	}
 
-	export interface CSChatEditProgressItem {
+	export interface CSChatEditorProgressItem {
 		message?: string;
 		edits?: TextEdit[];
 		editsShouldBeInstant?: boolean;
@@ -73,12 +73,12 @@ declare module 'vscode' {
 		label: string;
 	}
 
-	export interface CSChatEditorSessionProvider<S extends CSChatEditorSession = CSChatEditorSession, R extends CSChatEditResponse | CSChatEditMessageResponse = CSChatEditResponse | CSChatEditMessageResponse> {
+	export interface CSChatEditorSessionProvider<S extends CSChatEditorSession = CSChatEditorSession, R extends CSChatEditorResponse | CSChatEditorMessageResponse = CSChatEditorResponse | CSChatEditorMessageResponse> {
 
 		// Create a session. The lifetime of this session is the duration of the editing session with the input mode widget.
 		prepareCSChatEditorSession(context: TextDocumentContext, token: CancellationToken): ProviderResult<S>;
 
-		provideCSChatEditorResponse(session: S, request: CSChatEditorRequest, progress: Progress<CSChatEditProgressItem>, token: CancellationToken): ProviderResult<R>;
+		provideCSChatEditorResponse(session: S, request: CSChatEditorRequest, progress: Progress<CSChatEditorProgressItem>, token: CancellationToken): ProviderResult<R>;
 
 		// eslint-disable-next-line local/vscode-dts-provider-naming
 		handleCSChatEditorResponseFeedback?(session: S, response: R, kind: CSChatEditorResponseFeedbackKind): void;
@@ -201,11 +201,37 @@ declare module 'vscode' {
 		metadata?: any;
 	}
 
+	// todo@API make classes
+	export interface CSChatEditResponse {
+		edits: WorkspaceEdit;
+		placeholder?: string;
+		wholeRange?: Range;
+	}
+
+	// todo@API make classes
+	export interface CSChatMessageResponse {
+		contents: MarkdownString;
+		placeholder?: string;
+		wholeRange?: Range;
+	}
+
+	export interface CSChatEditProgressItem {
+		message?: string;
+		edits?: WorkspaceEdit;
+		editsShouldBeInstant?: boolean;
+		content?: string | MarkdownString;
+	}
+
+	export interface CSChatCodeBlockInfo {
+		index: number;
+		code: string;
+	}
+
 	export type CSChatSessionFollowup = CSChatSessionReplyFollowup | CSChatResponseCommand;
 
 	export type CSChatWelcomeMessageContent = string | MarkdownString | CSChatSessionReplyFollowup[];
 
-	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession, R extends CSChatEditResponse | CSChatEditMessageResponse = CSChatEditResponse | CSChatEditMessageResponse> {
+	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession, R extends CSChatEditResponse | CSChatMessageResponse = CSChatEditResponse | CSChatMessageResponse> {
 		provideWelcomeMessage?(token: CancellationToken): ProviderResult<CSChatWelcomeMessageContent[]>;
 		provideSampleQuestions?(token: CancellationToken): ProviderResult<CSChatSessionReplyFollowup[]>;
 		provideFollowups?(session: S, token: CancellationToken): ProviderResult<(string | CSChatSessionFollowup)[]>;
@@ -213,7 +239,7 @@ declare module 'vscode' {
 
 		prepareSession(initialState: CSChatSessionState | undefined, token: CancellationToken): ProviderResult<S>;
 		provideResponseWithProgress(request: CSChatRequest, progress: Progress<CSChatProgress>, token: CancellationToken): ProviderResult<CSChatResponseForProgress>;
-		provideEditsWithProgress(session: S, requestId: string, progress: Progress<CSChatEditProgressItem>, token: CancellationToken): ProviderResult<R>;
+		provideEditsWithProgress(session: S, requestId: string, responseId: string, codeblocks: CSChatCodeBlockInfo[], progress: Progress<CSChatEditProgressItem>, token: CancellationToken): ProviderResult<R>;
 
 		// eslint-disable-next-line local/vscode-dts-provider-naming
 		removeRequest(session: S, requestId: string): void;

@@ -1,3 +1,4 @@
+
 /*---------------------------------------------------------------------------------------------
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -215,11 +216,37 @@ declare module 'vscode' {
 		metadata?: any;
 	}
 
+	// todo@API make classes
+	export interface CSChatEditResponse {
+		edits: WorkspaceEdit;
+		placeholder?: string;
+		wholeRange?: Range;
+	}
+
+	// todo@API make classes
+	export interface CSChatMessageResponse {
+		contents: MarkdownString;
+		placeholder?: string;
+		wholeRange?: Range;
+	}
+
+	export interface CSChatEditProgressItem {
+		message?: string;
+		edits?: WorkspaceEdit;
+		editsShouldBeInstant?: boolean;
+		content?: string | MarkdownString;
+	}
+
+	export interface CSChatCodeBlockInfo {
+		index: number;
+		code: string;
+	}
+
 	export type CSChatSessionFollowup = CSChatSessionReplyFollowup | CSChatResponseCommand;
 
 	export type CSChatWelcomeMessageContent = string | MarkdownString | CSChatSessionReplyFollowup[];
 
-	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession> {
+	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession, R extends CSChatEditResponse | CSChatMessageResponse = CSChatEditResponse | CSChatMessageResponse> {
 		provideWelcomeMessage?(token: CancellationToken): ProviderResult<CSChatWelcomeMessageContent[]>;
 		provideSampleQuestions?(token: CancellationToken): ProviderResult<CSChatSessionReplyFollowup[]>;
 		provideFollowups?(session: S, token: CancellationToken): ProviderResult<(string | CSChatSessionFollowup)[]>;
@@ -227,6 +254,7 @@ declare module 'vscode' {
 
 		prepareSession(initialState: CSChatSessionState | undefined, token: CancellationToken): ProviderResult<S>;
 		provideResponseWithProgress(request: CSChatRequest, progress: Progress<CSChatProgress>, token: CancellationToken): ProviderResult<CSChatResponseForProgress>;
+		provideEditsWithProgress(session: S, requestId: string, responseId: string, codeblocks: CSChatCodeBlockInfo[], progress: Progress<CSChatEditProgressItem>, token: CancellationToken): ProviderResult<R>;
 
 		// eslint-disable-next-line local/vscode-dts-provider-naming
 		removeRequest(session: S, requestId: string): void;

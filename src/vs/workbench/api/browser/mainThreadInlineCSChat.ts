@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableMap } from 'vs/base/common/lifecycle';
-import { ICSChatBulkEditResponse, ICSChatEditProgressItem, ICSChatEditResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { IInlineCSChatBulkEditResponse, IInlineCSChatProgressItem, ICSChatEditResponse, IInlineCSChatService } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
 import { ExtHostContext, ExtHostInlineCSChatShape, MainContext, MainThreadInlineCSChatShape, } from 'vs/workbench/api/common/extHost.protocol';
@@ -17,7 +17,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 	private readonly _registrations = new DisposableMap<number>();
 	private readonly _proxy: ExtHostInlineCSChatShape;
 
-	private readonly _progresses = new Map<string, IProgress<ICSChatEditProgressItem>>();
+	private readonly _progresses = new Map<string, IProgress<IInlineCSChatProgressItem>>();
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -52,7 +52,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 				try {
 					const result = await this._proxy.$provideResponse(handle, item, request, token);
 					if (result?.type === 'bulkEdit') {
-						(<ICSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
+						(<IInlineCSChatBulkEditResponse>result).edits = reviveWorkspaceEditDto(result.edits, this._uriIdentService);
 					}
 					return <ICSChatEditResponse | undefined>result;
 				} finally {
@@ -67,7 +67,7 @@ export class MainThreadInlineCSChat implements MainThreadInlineCSChatShape {
 		this._registrations.set(handle, unreg);
 	}
 
-	async $handleProgressChunk(requestId: string, chunk: ICSChatEditProgressItem): Promise<void> {
+	async $handleProgressChunk(requestId: string, chunk: IInlineCSChatProgressItem): Promise<void> {
 		await Promise.resolve(this._progresses.get(requestId)?.report(chunk));
 	}
 

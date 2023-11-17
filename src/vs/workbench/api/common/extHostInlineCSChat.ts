@@ -10,7 +10,7 @@ import { ISelection } from 'vs/editor/common/core/selection';
 import { IInlineCSChatSession, IInlineCSChatRequest, InlineCSChatResponseFeedbackKind, ChatEditResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ExtHostInlineCSChatShape, ICSChatEditResponseDto, IMainContext, MainContext, MainThreadInlineCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostInlineCSChatShape, IInlineCSChatResponseDto, IMainContext, MainContext, MainThreadInlineCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
 import { ExtHostDocuments } from 'vs/workbench/api/common/extHostDocuments';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
@@ -34,7 +34,7 @@ class ProviderWrapper {
 
 class SessionWrapper {
 
-	readonly responses: (vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse)[] = [];
+	readonly responses: (vscode.CSChatEditorResponse | vscode.CSChatEditorMessageResponse)[] = [];
 
 	constructor(
 		readonly session: vscode.CSChatEditorSession
@@ -137,7 +137,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		};
 	}
 
-	async $provideResponse(handle: number, item: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<ICSChatEditResponseDto | undefined> {
+	async $provideResponse(handle: number, item: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<IInlineCSChatResponseDto | undefined> {
 		const entry = this._inputProvider.get(handle);
 		if (!entry) {
 			return undefined;
@@ -163,7 +163,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		}
 
 		let done = false;
-		const progress: vscode.Progress<vscode.CSChatEditProgressItem> = {
+		const progress: vscode.Progress<vscode.CSChatEditorProgressItem> = {
 			report: async value => {
 				if (!request.live && value.edits?.length) {
 					throw new Error('Progress reporting is only supported for live sessions');
@@ -183,7 +183,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 
 		const task = Promise.resolve(entry.provider.provideCSChatEditorResponse(sessionData.session, apiRequest, progress, token));
 
-		let res: vscode.CSChatEditResponse | vscode.CSChatEditMessageResponse | null | undefined;
+		let res: vscode.CSChatEditorResponse | vscode.CSChatEditorMessageResponse | null | undefined;
 		try {
 			res = await raceCancellation(task, token);
 		} finally {
@@ -197,7 +197,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 
 		const id = sessionData.responses.push(res) - 1;
 
-		const stub: Partial<ICSChatEditResponseDto> = {
+		const stub: Partial<IInlineCSChatResponseDto> = {
 			wholeRange: typeConvert.Range.from(res.wholeRange),
 			placeholder: res.placeholder,
 		};
@@ -244,7 +244,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		// TODO@jrieken remove this
 	}
 
-	private static _isMessageResponse(thing: any): thing is vscode.CSChatEditMessageResponse {
-		return typeof thing === 'object' && typeof (<vscode.CSChatEditMessageResponse>thing).contents === 'object';
+	private static _isMessageResponse(thing: any): thing is vscode.CSChatEditorMessageResponse {
+		return typeof thing === 'object' && typeof (<vscode.CSChatEditorMessageResponse>thing).contents === 'object';
 	}
 }

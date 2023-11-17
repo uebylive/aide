@@ -9,14 +9,15 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { Range, IRange } from 'vs/editor/common/core/range';
-import { ProviderResult, Location } from 'vs/editor/common/languages';
+import { ProviderResult, Location, WorkspaceEdit } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IProgress } from 'vs/platform/progress/common/progress';
 import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ChatEditSession } from 'vs/workbench/contrib/csChat/common/csChatEdit';
 import { IChatModel, ChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
-import { ICSChatEditProgressItem, ICSChatEditResponse } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 export interface IChat {
 	id: number; // TODO Maybe remove this and move to a subclass that only the provider knows about
@@ -110,7 +111,20 @@ export type IChatProgress =
 	| IChatContentInlineReference
 	| IChatAgentDetection;
 
+export interface IChatEditProgressItem {
+	markdownFragment?: string;
+	edits?: WorkspaceEdit;
+	editsShouldBeInstant?: boolean;
+	message?: string;
+}
+
 export interface IPersistedChatState { }
+
+export interface CodeBlockInfo {
+	index: number;
+	code: string;
+}
+
 export interface IChatProvider {
 	readonly id: string;
 	readonly displayName: string;
@@ -121,7 +135,7 @@ export interface IChatProvider {
 	provideFollowups?(session: IChat, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
 	provideReply(request: IChatRequest, progress: (progress: IChatProgress) => void, token: CancellationToken): ProviderResult<IChatResponse>;
 	provideSlashCommands?(session: IChat, token: CancellationToken): ProviderResult<ISlashCommand[]>;
-	provideEdits?(session: IChat, requestId: string, progress: IProgress<ICSChatEditProgressItem>, token: CancellationToken): ProviderResult<ICSChatEditResponse>;
+	provideEdits?(session: IChat, requestId: string, responseId: string, codeblocks: CodeBlockInfo[], progress: IProgress<IChatEditProgressItem>, token: CancellationToken): ProviderResult<IChatEditResponse>;
 	removeRequest?(session: IChat, requestId: string): void;
 }
 
@@ -268,6 +282,43 @@ export interface IChatTransferredSessionData {
 	inputValue: string;
 }
 
+export const enum EditMode {
+	Live = 'live',
+	LivePreview = 'livePreview',
+	Preview = 'preview'
+}
+
+export const enum ChatEditResponseType {
+	BulkEdit = 'bulkEdit',
+	Message = 'message'
+}
+
+export const enum ChatEditResponseTypes {
+	OnlyMessages = 'onlyMessages',
+	OnlyEdits = 'onlyEdits',
+	Mixed = 'mixed'
+}
+
+export type IChatEditResponse = IChatBulkEditResponse | IChatMessageResponse;
+
+export interface IChatBulkEditResponse {
+	id: number;
+	type: ChatEditResponseType.BulkEdit;
+	edits: WorkspaceEdit;
+	placeholder?: string;
+}
+
+export interface IChatMessageResponse {
+	id: number;
+	type: ChatEditResponseType.Message;
+	message: IMarkdownString;
+	placeholder?: string;
+}
+
+export interface ChatEditSessions {
+	[editSessionId: string]: ChatEditSession;
+}
+
 export const ICSChatService = createDecorator<ICSChatService>('ICSChatService');
 
 export interface ICSChatService {
@@ -298,6 +349,7 @@ export interface ICSChatService {
 	getHistory(): IChatDetail[];
 	removeHistoryEntry(sessionId: string): void;
 
+	sendEditRequest(response: IChatResponseViewModel, codeblocks: CodeBlockInfo[]): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
 	onDidPerformUserAction: Event<IChatUserActionEvent>;
 	notifyUserAction(event: IChatUserActionEvent): void;
 	onDidDisposeSession: Event<{ sessionId: string; providerId: string; reason: 'initializationFailed' | 'cleared' }>;

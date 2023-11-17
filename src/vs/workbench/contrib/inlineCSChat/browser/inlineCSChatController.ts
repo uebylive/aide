@@ -27,7 +27,7 @@ import { ILogService } from 'vs/platform/log/common/log';
 import { EditResponse, EmptyResponse, ErrorResponse, ExpansionState, IInlineChatSessionService, MarkdownResponse, Session, SessionExchange, SessionPrompt } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
 import { EditModeStrategy, LivePreviewStrategy, LiveStrategy, PreviewStrategy, ProgressingEditsOptions } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { InlineChatWidget, InlineChatZoneWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
-import { CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_LAST_FEEDBACK, IInlineCSChatRequest, ICSChatEditResponse, INLINE_CHAT_ID, EditMode, InlineCSChatResponseFeedbackKind, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, ChatEditResponseType, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, InlineChateResponseTypes, CTX_INLINE_CHAT_RESPONSE_TYPES, CTX_INLINE_CHAT_USER_DID_EDIT, ICSChatEditProgressItem } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_LAST_FEEDBACK, IInlineCSChatRequest, ICSChatEditResponse, INLINE_CHAT_ID, EditMode, InlineCSChatResponseFeedbackKind, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, ChatEditResponseType, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, InlineChateResponseTypes, CTX_INLINE_CHAT_RESPONSE_TYPES, CTX_INLINE_CHAT_USER_DID_EDIT, IInlineCSChatProgressItem } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { ICSChatAccessibilityService, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
@@ -616,7 +616,7 @@ export class InlineChatController implements IEditorContribution {
 		const progressiveEditsClock = StopWatch.create();
 		const progressiveEditsQueue = new Queue();
 
-		const progress = new AsyncProgress<ICSChatEditProgressItem>(async data => {
+		const progress = new AsyncProgress<IInlineCSChatProgressItem>(async data => {
 			this._log('received chunk', data, request);
 
 			if (requestCts.token.isCancellationRequested) {

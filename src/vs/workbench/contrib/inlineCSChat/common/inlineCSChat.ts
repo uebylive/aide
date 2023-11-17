@@ -48,7 +48,7 @@ export interface IInlineCSChatRequest {
 	variables?: Record<string, IChatRequestVariableValue[]>;
 }
 
-export type ICSChatEditResponse = IInlineCSChatEditResponse | ICSChatBulkEditResponse | IInlineCSChatMessageResponse;
+export type ICSChatEditResponse = IInlineCSChatEditResponse | IInlineCSChatBulkEditResponse | IInlineCSChatMessageResponse;
 
 export const enum ChatEditResponseType {
 	EditorEdit = 'editorEdit',
@@ -70,7 +70,7 @@ export interface IInlineCSChatEditResponse {
 	wholeRange?: IRange;
 }
 
-export interface ICSChatBulkEditResponse {
+export interface IInlineCSChatBulkEditResponse {
 	id: number;
 	type: ChatEditResponseType.BulkEdit;
 	edits: WorkspaceEdit;
@@ -86,7 +86,7 @@ export interface IInlineCSChatMessageResponse {
 	wholeRange?: IRange;
 }
 
-export interface ICSChatEditProgressItem {
+export interface IInlineCSChatProgressItem {
 	markdownFragment?: string;
 	edits?: TextEdit[];
 	editsShouldBeInstant?: boolean;
@@ -108,7 +108,7 @@ export interface IInlineCSChatSessionProvider {
 
 	prepareInlineChatSession(model: ITextModel, range: ISelection, token: CancellationToken): ProviderResult<IInlineCSChatSession>;
 
-	provideResponse(item: IInlineCSChatSession, request: IInlineCSChatRequest, progress: IProgress<ICSChatEditProgressItem>, token: CancellationToken): ProviderResult<ICSChatEditResponse>;
+	provideResponse(item: IInlineCSChatSession, request: IInlineCSChatRequest, progress: IProgress<IInlineCSChatProgressItem>, token: CancellationToken): ProviderResult<ICSChatEditResponse>;
 
 	handleInlineChatResponseFeedback?(session: IInlineCSChatSession, response: ICSChatEditResponse, kind: InlineCSChatResponseFeedbackKind): void;
 }
