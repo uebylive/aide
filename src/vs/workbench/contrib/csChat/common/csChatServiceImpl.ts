@@ -21,13 +21,13 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ICSChatAgentService, IChatAgentCommand, IChatAgentData, IChatAgentRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData, ICSChatAgentRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
+import { ChatMessageRole, ICSChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
-import { ICSChatService, IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatProvider, IChatProviderInfo, IChatResponse, IChatTransferredSessionData, IChatUserActionEvent, InteractiveSessionCopyKind, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService, IChat, IChatCompleteResponse, IChatDetail, IChatDynamicRequest, ICSChatFollowup, ICSChatProgress, IChatProvider, IChatProviderInfo, IChatResponse, IChatTransferredSessionData, ICSChatUserActionEvent, InteractiveSessionCopyKind, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatSlashCommandService } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
 import { ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
@@ -144,10 +144,10 @@ export class ChatService extends Disposable implements ICSChatService {
 		return this._transferredSessionData;
 	}
 
-	private readonly _onDidPerformUserAction = this._register(new Emitter<IChatUserActionEvent>());
-	public readonly onDidPerformUserAction: Event<IChatUserActionEvent> = this._onDidPerformUserAction.event;
+	private readonly _onDidPerformUserAction = this._register(new Emitter<ICSChatUserActionEvent>());
+	public readonly onDidPerformUserAction: Event<ICSChatUserActionEvent> = this._onDidPerformUserAction.event;
 
-	private readonly _onDidSubmitAgent = this._register(new Emitter<{ agent: IChatAgentData; slashCommand: IChatAgentCommand; sessionId: string }>());
+	private readonly _onDidSubmitAgent = this._register(new Emitter<{ agent: IChatAgentData; slashCommand: ICSChatAgentCommand; sessionId: string }>());
 	public readonly onDidSubmitAgent = this._onDidSubmitAgent.event;
 
 	private readonly _onDidDisposeSession = this._register(new Emitter<{ sessionId: string; providerId: string; reason: 'initializationFailed' | 'cleared' }>());
@@ -216,11 +216,11 @@ export class ChatService extends Disposable implements ICSChatService {
 		this.storageService.store(serializedChatKey, serialized, StorageScope.WORKSPACE, StorageTarget.MACHINE);
 	}
 
-	notifyUserAction(action: IChatUserActionEvent): void {
+	notifyUserAction(action: ICSChatUserActionEvent): void {
 		if (action.action.kind === 'vote') {
 			this.telemetryService.publicLog2<ChatVoteEvent, ChatVoteClassification>('interactiveSessionVote', {
 				providerId: action.providerId,
-				direction: action.action.direction === InteractiveSessionVoteDirection.Up ? 'up' : 'down'
+				direction: action.action.direction === CSChatSessionVoteDirection.Up ? 'up' : 'down'
 			});
 		} else if (action.action.kind === 'copy') {
 			this.telemetryService.publicLog2<ChatCopyEvent, ChatCopyClassification>('interactiveSessionCopy', {
@@ -462,7 +462,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		const requestType = commandPart ? 'slashCommand' : 'string';
 
 		const rawResponsePromise = createCancelablePromise<void>(async token => {
-			const progressCallback = (progress: IChatProgress) => {
+			const progressCallback = (progress: ICSChatProgress) => {
 				if (token.isCancellationRequested) {
 					return;
 				}
@@ -502,12 +502,12 @@ export class ChatService extends Disposable implements ICSChatService {
 				}
 
 				let rawResponse: IChatResponse | null | undefined;
-				let agentOrCommandFollowups: Promise<IChatFollowup[] | undefined> | undefined = undefined;
+				let agentOrCommandFollowups: Promise<ICSChatFollowup[] | undefined> | undefined = undefined;
 
 				const defaultAgent = this.chatAgentService.getDefaultAgent();
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
-					const history: IChatMessage[] = [];
+					const history: ICSChatMessage[] = [];
 					for (const request of model.getRequests()) {
 						if (!request.response) {
 							continue;
@@ -518,7 +518,7 @@ export class ChatService extends Disposable implements ICSChatService {
 					}
 
 					request = model.addRequest(parsedRequest, agent);
-					const requestProps: IChatAgentRequest = {
+					const requestProps: ICSChatAgentRequest = {
 						sessionId,
 						requestId: request.id,
 						message,
@@ -543,7 +543,7 @@ export class ChatService extends Disposable implements ICSChatService {
 					request = model.addRequest(parsedRequest);
 					// contributed slash commands
 					// TODO: spell this out in the UI
-					const history: IChatMessage[] = [];
+					const history: ICSChatMessage[] = [];
 					for (const request of model.getRequests()) {
 						if (!request.response) {
 							continue;
@@ -551,7 +551,7 @@ export class ChatService extends Disposable implements ICSChatService {
 						history.push({ role: ChatMessageRole.User, content: request.message.text });
 						history.push({ role: ChatMessageRole.Assistant, content: request.response.response.asString() });
 					}
-					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<IChatProgress>(p => {
+					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<ICSChatProgress>(p => {
 						progressCallback(p);
 					}), history, token);
 					agentOrCommandFollowups = Promise.resolve(commandResult?.followUp);

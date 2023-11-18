@@ -8,10 +8,10 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatContentReference, IChatProgressMessage, IChatReplyFollowup, IChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatContentReference, IChatProgressMessage, ICSChatReplyFollowup, ICSChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
@@ -60,7 +60,7 @@ export interface IChatRequestViewModel {
 	readonly dataId: string;
 	readonly username: string;
 	readonly avatarIconUri?: URI;
-	readonly message: IParsedChatRequest | IChatReplyFollowup;
+	readonly message: IParsedChatRequest | ICSChatReplyFollowup;
 	readonly messageText: string;
 	currentRenderedHeight: number | undefined;
 }
@@ -92,22 +92,22 @@ export interface IChatResponseViewModel {
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 	readonly agent?: IChatAgentData;
-	readonly slashCommand?: IChatAgentCommand;
+	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
-	readonly vote: InteractiveSessionVoteDirection | undefined;
-	readonly replyFollowups?: IChatReplyFollowup[];
-	readonly commandFollowups?: IChatResponseCommandFollowup[];
+	readonly vote: CSChatSessionVoteDirection | undefined;
+	readonly replyFollowups?: ICSChatReplyFollowup[];
+	readonly commandFollowups?: ICSChatResponseCommandFollowup[];
 	readonly errorDetails?: IChatResponseErrorDetails;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
 	renderData?: IChatResponseRenderData;
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
-	setVote(vote: InteractiveSessionVoteDirection): void;
+	setVote(vote: CSChatSessionVoteDirection): void;
 	usedReferencesExpanded?: boolean;
 }
 
@@ -311,11 +311,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	}
 
 	get replyFollowups() {
-		return this._model.followups?.filter((f): f is IChatReplyFollowup => f.kind === 'reply');
+		return this._model.followups?.filter((f): f is ICSChatReplyFollowup => f.kind === 'reply');
 	}
 
 	get commandFollowups() {
-		return this._model.followups?.filter((f): f is IChatResponseCommandFollowup => f.kind === 'command');
+		return this._model.followups?.filter((f): f is ICSChatResponseCommandFollowup => f.kind === 'command');
 	}
 
 	get errorDetails() {
@@ -400,7 +400,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		this.logService.trace(`ChatResponseViewModel#${tag}: ${message}`);
 	}
 
-	setVote(vote: InteractiveSessionVoteDirection): void {
+	setVote(vote: CSChatSessionVoteDirection): void {
 		this._modelChangeCount++;
 		this._model.setVote(vote);
 	}
@@ -411,6 +411,6 @@ export interface IChatWelcomeMessageViewModel {
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 	readonly content: IChatWelcomeMessageContent[];
-	readonly sampleQuestions: IChatReplyFollowup[];
+	readonly sampleQuestions: ICSChatReplyFollowup[];
 	currentRenderedHeight?: number;
 }

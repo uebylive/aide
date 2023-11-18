@@ -29,7 +29,7 @@ import { SelectAndInsertCodeSymbolAction, SelectAndInsertFileAction, dynamicRefe
 import { ICSChatWidgetService, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatInputPart } from 'vs/workbench/contrib/csChat/browser/csChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
-import { ICSChatAgentService, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/csChat/common/csChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatFileVariableLeader, chatSubcommandLeader, chatSymbolVariableLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/csChat/common/csChatRequestParser';
@@ -275,7 +275,7 @@ class InputEditorSlashCommandMode extends Disposable {
 		}));
 	}
 
-	private async repopulateAgentCommand(agent: IChatAgentData, slashCommand: IChatAgentCommand) {
+	private async repopulateAgentCommand(agent: IChatAgentData, slashCommand: ICSChatAgentCommand) {
 		if (slashCommand.shouldRepopulate) {
 			const value = `${chatAgentLeader}${agent.id} ${chatSubcommandLeader}${slashCommand.name} `;
 			this.widget.inputEditor.setValue(value);

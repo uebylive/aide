@@ -14,23 +14,23 @@ import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChat, IChatAsyncContent, IChatContent, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatTreeData, IChatUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChat, ICSChatAsyncContent, IChatContent, IChatContentInlineReference, IChatContentReference, ICSChatFollowup, IChatMarkdownContent, ICSChatProgress, IChatProgressMessage, ICSChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatTreeData, IChatUsedContext, CSChatSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export interface IChatRequestModel {
 	readonly id: string;
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 	readonly session: IChatModel;
-	readonly message: IParsedChatRequest | IChatReplyFollowup;
+	readonly message: IParsedChatRequest | ICSChatReplyFollowup;
 	readonly response: IChatResponseModel | undefined;
 }
 
 export type IChatProgressResponseContent =
 	| IChatMarkdownContent
 	| IChatTreeData
-	| IChatAsyncContent
+	| ICSChatAsyncContent
 	| IChatContentInlineReference;
 
 export interface IResponse {
@@ -50,14 +50,14 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly slashCommand?: IChatAgentCommand;
+	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
-	readonly vote: InteractiveSessionVoteDirection | undefined;
-	readonly followups?: IChatFollowup[] | undefined;
+	readonly vote: CSChatSessionVoteDirection | undefined;
+	readonly followups?: ICSChatFollowup[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
-	setVote(vote: InteractiveSessionVoteDirection): void;
+	setVote(vote: CSChatSessionVoteDirection): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -199,11 +199,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._isCanceled;
 	}
 
-	public get vote(): InteractiveSessionVoteDirection | undefined {
+	public get vote(): CSChatSessionVoteDirection | undefined {
 		return this._vote;
 	}
 
-	public get followups(): IChatFollowup[] | undefined {
+	public get followups(): ICSChatFollowup[] | undefined {
 		return this._followups;
 	}
 
@@ -228,15 +228,15 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this.session.responderAvatarIconUri;
 	}
 
-	private _followups?: IChatFollowup[];
+	private _followups?: ICSChatFollowup[];
 
 	private _agent: IChatAgentData | undefined;
 	public get agent(): IChatAgentData | undefined {
 		return this._agent;
 	}
 
-	private _slashCommand: IChatAgentCommand | undefined;
-	public get slashCommand(): IChatAgentCommand | undefined {
+	private _slashCommand: ICSChatAgentCommand | undefined;
+	public get slashCommand(): ICSChatAgentCommand | undefined {
 		return this._slashCommand;
 	}
 
@@ -262,9 +262,9 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		public readonly requestId: string,
 		private _isComplete: boolean = false,
 		private _isCanceled = false,
-		private _vote?: InteractiveSessionVoteDirection,
+		private _vote?: CSChatSessionVoteDirection,
 		private _errorDetails?: IChatResponseErrorDetails,
-		followups?: ReadonlyArray<IChatFollowup>
+		followups?: ReadonlyArray<ICSChatFollowup>
 	) {
 		super();
 		this._agent = agent;
@@ -296,7 +296,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 	}
 
-	setAgent(agent: IChatAgentData, slashCommand?: IChatAgentCommand) {
+	setAgent(agent: IChatAgentData, slashCommand?: ICSChatAgentCommand) {
 		this._agent = agent;
 		this._slashCommand = slashCommand;
 		this._onDidChange.fire();
@@ -318,12 +318,12 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	setFollowups(followups: IChatFollowup[] | undefined): void {
+	setFollowups(followups: ICSChatFollowup[] | undefined): void {
 		this._followups = followups;
 		this._onDidChange.fire(); // Fire so that command followups get rendered on the row
 	}
 
-	setVote(vote: InteractiveSessionVoteDirection): void {
+	setVote(vote: CSChatSessionVoteDirection): void {
 		this._vote = vote;
 		this._onDidChange.fire();
 	}
@@ -354,11 +354,11 @@ export interface ISerializableChatRequestData {
 	message: string | IParsedChatRequest;
 	response: ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference> | undefined;
 	agent?: ISerializableChatAgentData;
-	slashCommand?: IChatAgentCommand;
+	slashCommand?: ICSChatAgentCommand;
 	responseErrorDetails: IChatResponseErrorDetails | undefined;
-	followups: ReadonlyArray<IChatFollowup> | undefined;
+	followups: ReadonlyArray<ICSChatFollowup> | undefined;
 	isCanceled: boolean | undefined;
-	vote: InteractiveSessionVoteDirection | undefined;
+	vote: CSChatSessionVoteDirection | undefined;
 	/** For backward compat: should be optional */
 	usedContext?: IChatUsedContext;
 	contentReferences?: ReadonlyArray<IChatContentReference>;
@@ -366,7 +366,7 @@ export interface ISerializableChatRequestData {
 
 export interface IExportableChatData {
 	providerId: string;
-	welcomeMessage: (string | IChatReplyFollowup[])[] | undefined;
+	welcomeMessage: (string | ICSChatReplyFollowup[])[] | undefined;
 	requests: ISerializableChatRequestData[];
 	requesterUsername: string;
 	responderUsername: string;
@@ -627,7 +627,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		return request;
 	}
 
-	acceptResponseProgress(request: ChatRequestModel, progress: IChatProgress, quiet?: boolean): void {
+	acceptResponseProgress(request: ChatRequestModel, progress: ICSChatProgress, quiet?: boolean): void {
 		if (!this._session) {
 			throw new Error('acceptResponseProgress: No session');
 		}
@@ -691,7 +691,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		request.response.complete();
 	}
 
-	setFollowups(request: ChatRequestModel, followups: IChatFollowup[] | undefined): void {
+	setFollowups(request: ChatRequestModel, followups: ICSChatFollowup[] | undefined): void {
 		if (!request.response) {
 			// Maybe something went wrong?
 			return;
@@ -767,12 +767,12 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 }
 
-export type IChatWelcomeMessageContent = IMarkdownString | IChatReplyFollowup[];
+export type IChatWelcomeMessageContent = IMarkdownString | ICSChatReplyFollowup[];
 
 export interface IChatWelcomeMessageModel {
 	readonly id: string;
 	readonly content: IChatWelcomeMessageContent[];
-	readonly sampleQuestions: IChatReplyFollowup[];
+	readonly sampleQuestions: ICSChatReplyFollowup[];
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 
@@ -789,7 +789,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	constructor(
 		private readonly session: ChatModel,
 		public readonly content: IChatWelcomeMessageContent[],
-		public readonly sampleQuestions: IChatReplyFollowup[]
+		public readonly sampleQuestions: ICSChatReplyFollowup[]
 	) {
 		this._id = 'welcome_' + ChatWelcomeMessageModel.nextId++;
 	}

@@ -28,7 +28,7 @@ import { IChatExecuteActionContext } from 'vs/workbench/contrib/csChat/browser/a
 import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatWidgetHistoryService } from 'vs/workbench/contrib/csChat/common/csChatWidgetHistoryService';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
@@ -55,7 +55,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: IChatReplyFollowup; response: IChatResponseViewModel | undefined }>());
+	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: ICSChatReplyFollowup; response: IChatResponseViewModel | undefined }>());
 	readonly onDidAcceptFollowup = this._onDidAcceptFollowup.event;
 
 	private inputEditorHeight = 0;
@@ -285,7 +285,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 	}
 
-	async renderFollowups(items: IChatReplyFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
+	async renderFollowups(items: ICSChatReplyFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
 		if (!this.options.renderFollowups) {
 			return;
 		}

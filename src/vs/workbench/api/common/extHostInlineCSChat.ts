@@ -19,7 +19,7 @@ import { ApiCommand, ApiCommandArgument, ApiCommandResult, ExtHostCommands } fro
 import { IRange } from 'vs/editor/common/core/range';
 import { IPosition } from 'vs/editor/common/core/position';
 import { raceCancellation } from 'vs/base/common/async';
-import { IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 class ProviderWrapper {
 
@@ -232,7 +232,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		};
 	}
 
-	async $provideFollowups(handle: number, sessionId: number, responseId: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined> {
+	async $provideFollowups(handle: number, sessionId: number, responseId: number, token: CancellationToken): Promise<ICSChatReplyFollowup[] | undefined> {
 		const entry = this._inputProvider.get(handle);
 		const sessionData = this._inputSessions.get(sessionId);
 		const response = sessionData?.responses[responseId];

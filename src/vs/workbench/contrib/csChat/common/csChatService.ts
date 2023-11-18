@@ -11,10 +11,10 @@ import { URI } from 'vs/base/common/uri';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { Location, ProviderResult } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatModel, IChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 export interface IChat {
 	id: number; // TODO Maybe remove this and move to a subclass that only the provider knows about
@@ -29,7 +29,7 @@ export interface IChat {
 export interface IChatRequest {
 	session: IChat;
 	message: string;
-	variables: Record<string, IChatRequestVariableValue[]>;
+	variables: Record<string, ICSChatRequestVariableValue[]>;
 }
 
 export interface IChatResponseErrorDetails {
@@ -97,7 +97,7 @@ export interface IChatContentInlineReference {
 
 export interface IChatAgentDetection {
 	agentName: string;
-	command?: IChatAgentCommand;
+	command?: ICSChatAgentCommand;
 	kind: 'agentDetection';
 }
 
@@ -116,7 +116,7 @@ export interface IChatTreeData {
 	kind: 'treeData';
 }
 
-export interface IChatAsyncContent {
+export interface ICSChatAsyncContent {
 	/**
 	 * The placeholder to show while the content is loading
 	 */
@@ -130,11 +130,11 @@ export interface IChatProgressMessage {
 	kind: 'progressMessage';
 }
 
-export type IChatProgress =
+export type ICSChatProgress =
 	| IChatContent
 	| IChatMarkdownContent
 	| IChatTreeData
-	| IChatAsyncContent
+	| ICSChatAsyncContent
 	| IChatUsedContext
 	| IChatContentReference
 	| IChatContentInlineReference
@@ -146,8 +146,8 @@ export interface IChatProvider {
 	readonly displayName: string;
 	readonly iconUrl?: string;
 	prepareSession(token: CancellationToken): ProviderResult<IChat | undefined>;
-	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined>;
-	provideSampleQuestions?(token: CancellationToken): ProviderResult<IChatReplyFollowup[] | undefined>;
+	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString | ICSChatReplyFollowup[])[] | undefined>;
+	provideSampleQuestions?(token: CancellationToken): ProviderResult<ICSChatReplyFollowup[] | undefined>;
 }
 
 export interface ISlashCommand {
@@ -179,14 +179,14 @@ export interface ISlashCommand {
 	yieldsTo?: ReadonlyArray<{ readonly command: string }>;
 }
 
-export interface IChatReplyFollowup {
+export interface ICSChatReplyFollowup {
 	kind: 'reply';
 	message: string;
 	title?: string;
 	tooltip?: string;
 }
 
-export interface IChatResponseCommandFollowup {
+export interface ICSChatResponseCommandFollowup {
 	kind: 'command';
 	commandId: string;
 	args?: any[];
@@ -194,17 +194,17 @@ export interface IChatResponseCommandFollowup {
 	when?: string;
 }
 
-export type IChatFollowup = IChatReplyFollowup | IChatResponseCommandFollowup;
+export type ICSChatFollowup = ICSChatReplyFollowup | ICSChatResponseCommandFollowup;
 
 // Name has to match the one in vscode.d.ts for some reason
-export enum InteractiveSessionVoteDirection {
+export enum CSChatSessionVoteDirection {
 	Down = 0,
 	Up = 1
 }
 
 export interface IChatVoteAction {
 	kind: 'vote';
-	direction: InteractiveSessionVoteDirection;
+	direction: CSChatSessionVoteDirection;
 	reportIssue?: boolean;
 }
 
@@ -238,12 +238,12 @@ export interface IChatTerminalAction {
 
 export interface IChatCommandAction {
 	kind: 'command';
-	command: IChatResponseCommandFollowup;
+	command: ICSChatResponseCommandFollowup;
 }
 
 export interface IChatFollowupAction {
 	kind: 'followUp';
-	followup: IChatReplyFollowup;
+	followup: ICSChatReplyFollowup;
 }
 
 export interface IChatBugReportAction {
@@ -252,7 +252,7 @@ export interface IChatBugReportAction {
 
 export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IChatFollowupAction | IChatBugReportAction;
 
-export interface IChatUserActionEvent {
+export interface ICSChatUserActionEvent {
 	action: ChatUserAction;
 	providerId: string;
 	agentId: string | undefined;
@@ -273,9 +273,9 @@ export interface IChatDynamicRequest {
 }
 
 export interface IChatCompleteResponse {
-	message: string | ReadonlyArray<IChatProgress>;
+	message: string | ReadonlyArray<ICSChatProgress>;
 	errorDetails?: IChatResponseErrorDetails;
-	followups?: IChatFollowup[];
+	followups?: ICSChatFollowup[];
 }
 
 export interface IChatDetail {
@@ -299,7 +299,7 @@ export interface ICSChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
 
-	onDidSubmitAgent: Event<{ agent: IChatAgentData; slashCommand: IChatAgentCommand; sessionId: string }>;
+	onDidSubmitAgent: Event<{ agent: IChatAgentData; slashCommand: ICSChatAgentCommand; sessionId: string }>;
 	onDidRegisterProvider: Event<{ providerId: string }>;
 	registerProvider(provider: IChatProvider): IDisposable;
 	hasSessions(providerId: string): boolean;
@@ -322,8 +322,8 @@ export interface ICSChatService {
 	getHistory(): IChatDetail[];
 	removeHistoryEntry(sessionId: string): void;
 
-	onDidPerformUserAction: Event<IChatUserActionEvent>;
-	notifyUserAction(event: IChatUserActionEvent): void;
+	onDidPerformUserAction: Event<ICSChatUserActionEvent>;
+	notifyUserAction(event: ICSChatUserActionEvent): void;
 	onDidDisposeSession: Event<{ sessionId: string; providerId: string; reason: 'initializationFailed' | 'cleared' }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;

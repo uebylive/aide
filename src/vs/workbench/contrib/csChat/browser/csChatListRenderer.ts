@@ -53,11 +53,11 @@ import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowu
 import { convertParsedRequestToMarkdown, reduceInlineContentReferences, walkTreeAndAnnotateReferenceLinks } from 'vs/workbench/contrib/csChat/browser/csChatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatOptions';
 import { CodeBlockPart, ICodeBlockData, ICodeBlockPart } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
-import { IChatAgentMetadata } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentMetadata } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { IChatProgressResponseContent } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatContentReference, IChatReplyFollowup, IChatResponseProgressFileTreeData, ICSChatService, InteractiveSessionVoteDirection, IChatContentInlineReference } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatContentReference, ICSChatReplyFollowup, IChatResponseProgressFileTreeData, ICSChatService, CSChatSessionVoteDirection, IChatContentInlineReference } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseMarkdownRenderData, IChatResponseRenderData, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
@@ -109,8 +109,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly renderer: MarkdownRenderer;
 
-	protected readonly _onDidClickFollowup = this._register(new Emitter<IChatReplyFollowup>());
-	readonly onDidClickFollowup: Event<IChatReplyFollowup> = this._onDidClickFollowup.event;
+	protected readonly _onDidClickFollowup = this._register(new Emitter<ICSChatReplyFollowup>());
+	readonly onDidClickFollowup: Event<ICSChatReplyFollowup> = this._onDidClickFollowup.event;
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
@@ -278,7 +278,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		CONTEXT_REQUEST.bindTo(templateData.contextKeyService).set(isRequestVM(element));
 		if (isResponseVM(element)) {
 			CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING.bindTo(templateData.contextKeyService).set(!!element.agent?.metadata.supportIssueReporting);
-			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set(element.vote === InteractiveSessionVoteDirection.Up ? 'up' : element.vote === InteractiveSessionVoteDirection.Down ? 'down' : '');
+			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set(element.vote === CSChatSessionVoteDirection.Up ? 'up' : element.vote === CSChatSessionVoteDirection.Down ? 'down' : '');
 		} else {
 			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set('');
 		}
@@ -423,7 +423,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
-	private getAgentIcon(agent: IChatAgentMetadata): URI | ThemeIcon | undefined {
+	private getAgentIcon(agent: ICSChatAgentMetadata): URI | ThemeIcon | undefined {
 		if (agent.themeIcon) {
 			return agent.themeIcon;
 		} else {

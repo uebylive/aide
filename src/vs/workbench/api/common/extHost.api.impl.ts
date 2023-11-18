@@ -29,6 +29,9 @@ import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostAp
 import { ExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
 import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
 import { ExtHostCSChat } from 'vs/workbench/api/common/extHostCSChat';
+import { ExtHostCSChatAgents2 } from 'vs/workbench/api/common/extHostCSChatAgents2';
+import { ExtHostCSChatProvider } from 'vs/workbench/api/common/extHostCSChatProvider';
+import { ExtHostCSChatVariables } from 'vs/workbench/api/common/extHostCSChatVariables';
 import { ExtHostChat } from 'vs/workbench/api/common/extHostChat';
 import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
 import { ExtHostChatProvider } from 'vs/workbench/api/common/extHostChatProvider';
@@ -215,6 +218,9 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostChat = rpcProtocol.set(ExtHostContext.ExtHostChat, new ExtHostChat(rpcProtocol));
 	const extHostCSChatEditor = rpcProtocol.set(ExtHostContext.ExtHostInlineCSChat, new ExtHostCSChatEditor(rpcProtocol, extHostCommands, extHostDocuments, extHostLogService));
+	const extHostCSChatProvider = rpcProtocol.set(ExtHostContext.ExtHostCSChatProvider, new ExtHostCSChatProvider(rpcProtocol, extHostLogService));
+	const extHostCSChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostCSChatAgents2, new ExtHostCSChatAgents2(rpcProtocol, extHostCSChatProvider, extHostLogService));
+	const extHostCSChatVariables = rpcProtocol.set(ExtHostContext.ExtHostCSChatVariables, new ExtHostCSChatVariables(rpcProtocol));
 	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
@@ -1381,7 +1387,27 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			transferChatSession(session: vscode.CSChatSession, toWorkspace: vscode.Uri) {
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostCSChat.transferChatSession(session, toWorkspace);
-			}
+			},
+			registerChatResponseProvider(id: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatProvider.registerProvider(extension.identifier, id, provider, metadata);
+			},
+			requestChatAccess(id: string) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatProvider.requestChatResponseProvider(extension.identifier, id);
+			},
+			registerVariable(name: string, description: string, resolver: vscode.ChatVariableResolver) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatVariables.registerVariableResolver(extension, name, description, resolver);
+			},
+			registerMappedEditsProvider(selector: vscode.DocumentSelector, provider: vscode.MappedEditsProvider) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
+			},
+			createChatAgent(name: string, handler: vscode.ChatAgentExtendedHandler) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatAgents2.createChatAgent(extension, name, handler);
+			},
 		};
 
 		// namespace: ai

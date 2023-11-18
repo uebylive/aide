@@ -8,11 +8,11 @@ import { Button, IButtonStyles } from 'vs/base/browser/ui/button/button';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IChatFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 const $ = dom.$;
 
-export class ChatFollowups<T extends IChatFollowup> extends Disposable {
+export class ChatFollowups<T extends ICSChatFollowup> extends Disposable {
 	constructor(
 		container: HTMLElement,
 		followups: T[],

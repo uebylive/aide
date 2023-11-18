@@ -9,12 +9,12 @@ import { Iterable } from 'vs/base/common/iterator';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { IParsedChatRequest, ChatRequestVariablePart, ChatRequestDynamicReferencePart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolveResult, IDynamicReference, IInlineChatVariableResolver, IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatRequestVariableValue, ICSChatVariableData, IChatVariableResolveResult, IDynamicReference, IInlineChatVariableResolver, IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { ChatDynamicReferenceModel } from 'vs/workbench/contrib/inlineCSChat/browser/contrib/inlineCSChatDynamicReferences';
 import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
 
 interface IChatData {
-	data: IChatVariableData;
+	data: ICSChatVariableData;
 	resolver: IInlineChatVariableResolver;
 }
 
@@ -29,7 +29,7 @@ export class InlineCSChatVariablesService implements IInlineCSChatVariablesServi
 	}
 
 	async resolveVariables(prompt: IParsedChatRequest, token: CancellationToken): Promise<IChatVariableResolveResult> {
-		const resolvedVariables: Record<string, IChatRequestVariableValue[]> = {};
+		const resolvedVariables: Record<string, ICSChatRequestVariableValue[]> = {};
 		const jobs: Promise<any>[] = [];
 
 		const parsedPrompt: string[] = [];
@@ -68,7 +68,7 @@ export class InlineCSChatVariablesService implements IInlineCSChatVariablesServi
 		return this._resolver.has(name.toLowerCase());
 	}
 
-	getVariables(): Iterable<Readonly<IChatVariableData>> {
+	getVariables(): Iterable<Readonly<ICSChatVariableData>> {
 		const all = Iterable.map(this._resolver.values(), data => data.data);
 		return Iterable.filter(all, data => !data.hidden);
 	}
@@ -92,7 +92,7 @@ export class InlineCSChatVariablesService implements IInlineCSChatVariablesServi
 		return model.references;
 	}
 
-	registerVariable(data: IChatVariableData, resolver: IInlineChatVariableResolver): IDisposable {
+	registerVariable(data: ICSChatVariableData, resolver: IInlineChatVariableResolver): IDisposable {
 		const key = data.name.toLowerCase();
 		if (this._resolver.has(key)) {
 			throw new Error(`A chat variable with the name '${data.name}' already exists.`);

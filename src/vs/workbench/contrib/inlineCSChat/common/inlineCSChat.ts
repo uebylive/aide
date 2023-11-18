@@ -20,8 +20,8 @@ import { IProgress } from 'vs/platform/progress/common/progress';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { diffInserted, diffRemoved, editorHoverHighlight, editorWidgetBackground, editorWidgetBorder, focusBorder, inputBackground, inputPlaceholderForeground, registerColor, transparent, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
 import { Extensions as ExtensionsMigration, IConfigurationMigrationRegistry } from 'vs/workbench/common/configuration';
-import { IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 export interface IInlineCSChatSlashCommand {
 	command: string;
@@ -46,7 +46,7 @@ export interface IInlineCSChatRequest {
 	attempt: number;
 	requestId: string;
 	live: boolean;
-	variables?: Record<string, IChatRequestVariableValue[]>;
+	variables?: Record<string, ICSChatRequestVariableValue[]>;
 }
 
 export type IInlineCSChatResponse = IInlineCSChatEditResponse | IInlineCSChatBulkEditResponse | IInlineCSChatMessageResponse;
@@ -115,7 +115,7 @@ export interface IInlineCSChatSessionProvider {
 
 	provideResponse(item: IInlineCSChatSession, request: IInlineCSChatRequest, progress: IProgress<IInlineCSChatProgressItem>, token: CancellationToken): ProviderResult<IInlineCSChatResponse>;
 
-	provideFollowups?(session: IInlineCSChatSession, response: IInlineCSChatResponse, token: CancellationToken): ProviderResult<IChatReplyFollowup[]>;
+	provideFollowups?(session: IInlineCSChatSession, response: IInlineCSChatResponse, token: CancellationToken): ProviderResult<ICSChatReplyFollowup[]>;
 
 	handleInlineChatResponseFeedback?(session: IInlineCSChatSession, response: IInlineCSChatResponse, kind: InlineCSChatResponseFeedbackKind): void;
 }

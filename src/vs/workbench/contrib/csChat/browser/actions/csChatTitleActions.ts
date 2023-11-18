@@ -16,7 +16,7 @@ import { ResourceNotebookCellEdit } from 'vs/workbench/contrib/bulkEdit/browser/
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
-import { ICSChatService, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -59,10 +59,10 @@ export function registerChatTitleActions() {
 				requestId: item.requestId,
 				action: {
 					kind: 'vote',
-					direction: InteractiveSessionVoteDirection.Up,
+					direction: CSChatSessionVoteDirection.Up,
 				}
 			});
-			item.setVote(InteractiveSessionVoteDirection.Up);
+			item.setVote(CSChatSessionVoteDirection.Up);
 		}
 	});
 
@@ -101,10 +101,10 @@ export function registerChatTitleActions() {
 				requestId: item.requestId,
 				action: {
 					kind: 'vote',
-					direction: InteractiveSessionVoteDirection.Down,
+					direction: CSChatSessionVoteDirection.Down,
 				}
 			});
-			item.setVote(InteractiveSessionVoteDirection.Down);
+			item.setVote(CSChatSessionVoteDirection.Down);
 		}
 	});
 

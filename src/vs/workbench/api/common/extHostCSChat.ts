@@ -11,7 +11,7 @@ import { toDisposable } from 'vs/base/common/lifecycle';
 import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ExtHostCSChatShape, IChatDto, IMainContext, MainContext, MainThreadCSChatShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
-import { IChatReplyFollowup, IChatUserActionEvent } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatReplyFollowup, ICSChatUserActionEvent } from 'vs/workbench/contrib/csChat/common/csChatService';
 import type * as vscode from 'vscode';
 
 class ChatProviderWrapper<T> {
@@ -93,7 +93,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		};
 	}
 
-	async $provideWelcomeMessage(handle: number, token: CancellationToken): Promise<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined> {
+	async $provideWelcomeMessage(handle: number, token: CancellationToken): Promise<(string | IMarkdownString | ICSChatReplyFollowup[])[] | undefined> {
 		const entry = this._chatProvider.get(handle);
 		if (!entry) {
 			return undefined;
@@ -118,7 +118,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		});
 	}
 
-	async $provideSampleQuestions(handle: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined> {
+	async $provideSampleQuestions(handle: number, token: CancellationToken): Promise<ICSChatReplyFollowup[] | undefined> {
 		const entry = this._chatProvider.get(handle);
 		if (!entry) {
 			return undefined;
@@ -140,7 +140,7 @@ export class ExtHostCSChat implements ExtHostCSChatShape {
 		this._chatSessions.delete(sessionId);
 	}
 
-	async $onDidPerformUserAction(event: IChatUserActionEvent): Promise<void> {
+	async $onDidPerformUserAction(event: ICSChatUserActionEvent): Promise<void> {
 		this._onDidPerformUserAction.fire(event as any);
 	}
 

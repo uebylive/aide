@@ -45,6 +45,7 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/chatProvider';
+import * as csChatProvider from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
@@ -2203,6 +2204,23 @@ export namespace ChatMessage {
 	}
 }
 
+export namespace CSChatMessage {
+	export function to(message: csChatProvider.ICSChatMessage): vscode.ChatMessage {
+		const res = new types.ChatMessage(CSChatMessageRole.to(message.role), message.content);
+		res.name = message.name;
+		return res;
+	}
+
+
+	export function from(message: vscode.ChatMessage): csChatProvider.ICSChatMessage {
+		return {
+			role: CSChatMessageRole.from(message.role),
+			content: message.content,
+			name: message.name
+		};
+	}
+}
+
 
 export namespace ChatMessageRole {
 
@@ -2223,6 +2241,29 @@ export namespace ChatMessageRole {
 			case types.ChatMessageRole.User:
 			default:
 				return chatProvider.ChatMessageRole.User;
+		}
+	}
+}
+
+export namespace CSChatMessageRole {
+
+	export function to(role: csChatProvider.ChatMessageRole): vscode.ChatMessageRole {
+		switch (role) {
+			case csChatProvider.ChatMessageRole.System: return types.ChatMessageRole.System;
+			case csChatProvider.ChatMessageRole.User: return types.ChatMessageRole.User;
+			case csChatProvider.ChatMessageRole.Assistant: return types.ChatMessageRole.Assistant;
+			case csChatProvider.ChatMessageRole.Function: return types.ChatMessageRole.Function;
+		}
+	}
+
+	export function from(role: vscode.ChatMessageRole): csChatProvider.ChatMessageRole {
+		switch (role) {
+			case types.ChatMessageRole.System: return csChatProvider.ChatMessageRole.System;
+			case types.ChatMessageRole.Assistant: return csChatProvider.ChatMessageRole.Assistant;
+			case types.ChatMessageRole.Function: return csChatProvider.ChatMessageRole.Function;
+			case types.ChatMessageRole.User:
+			default:
+				return csChatProvider.ChatMessageRole.User;
 		}
 	}
 }

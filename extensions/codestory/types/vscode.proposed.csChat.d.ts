@@ -149,5 +149,17 @@ declare module 'vscode' {
 		export function registerCSChatEditorSessionProvider(provider: CSChatEditorSessionProvider, metadata?: CSChatEditorSessionProviderMetadata): Disposable;
 
 		export function transferChatSession(session: CSChatSession, toWorkspace: Uri): void;
+
+		export function createChatAgent(name: string, handler: ChatAgentHandler): ChatAgent2;
+
+		export function createChatAgent(name: string, handler: ChatAgentExtendedHandler): ChatAgent2;
+
+		export function registerChatResponseProvider(id: string, provider: ChatResponseProvider, metadata: ChatResponseProviderMetadata): Disposable;
+
+		export function requestChatAccess(id: string): Thenable<ChatAccess>;
+
+		export function registerVariable(name: string, description: string, resolver: ChatVariableResolver): Disposable;
+
+		export function registerMappedEditsProvider(documentSelector: DocumentSelector, provider: MappedEditsProvider): Disposable;
 	}
 }

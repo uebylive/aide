@@ -6,7 +6,7 @@
 import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IRange } from 'vs/editor/common/core/range';
 import { Location } from 'vs/editor/common/languages';
-import { IChatAgent, IChatAgentCommand } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IChatAgent, ICSChatAgentCommand } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
@@ -82,7 +82,7 @@ export class ChatRequestAgentPart implements IParsedChatRequestPart {
 export class ChatRequestAgentSubcommandPart implements IParsedChatRequestPart {
 	static readonly Kind = 'subcommand';
 	readonly kind = ChatRequestAgentSubcommandPart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly command: IChatAgentCommand) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly command: ICSChatAgentCommand) { }
 
 	get text(): string {
 		return `${chatSubcommandLeader}${this.command.name}`;

@@ -69,7 +69,7 @@ import { ILogService } from 'vs/platform/log/common/log';
 import { ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/csChat/browser/csChatListRenderer';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IUntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
-import { IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
 
@@ -646,9 +646,9 @@ export class InlineChatWidget implements IInlineChatWidget {
 		}
 	}
 
-	updateFollowUps(items: IChatReplyFollowup[], onFollowup: (followup: IChatReplyFollowup) => void): void;
+	updateFollowUps(items: ICSChatReplyFollowup[], onFollowup: (followup: ICSChatReplyFollowup) => void): void;
 	updateFollowUps(items: undefined): void;
-	updateFollowUps(items: IChatReplyFollowup[] | undefined, onFollowup?: ((followup: IChatReplyFollowup) => void)) {
+	updateFollowUps(items: ICSChatReplyFollowup[] | undefined, onFollowup?: ((followup: ICSChatReplyFollowup) => void)) {
 		this._followUpDisposables.clear();
 		this._elements.followUps.classList.toggle('hidden', !items || items.length === 0);
 		reset(this._elements.followUps);

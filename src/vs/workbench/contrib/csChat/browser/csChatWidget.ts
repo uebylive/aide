@@ -30,7 +30,7 @@ import { ChatViewPane } from 'vs/workbench/contrib/csChat/browser/csChatViewPane
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { ICSChatService, IChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatService, ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 const $ = dom.$;
@@ -274,7 +274,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	private async renderFollowups(items: IChatReplyFollowup[] | undefined, response?: IChatResponseViewModel): Promise<void> {
+	private async renderFollowups(items: ICSChatReplyFollowup[] | undefined, response?: IChatResponseViewModel): Promise<void> {
 		this.inputPart.renderFollowups(items, response);
 
 		if (this.bodyDimension) {
