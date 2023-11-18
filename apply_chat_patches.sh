@@ -1,79 +1,130 @@
 #!/bin/bash
 
-# The upstream remote name
+# This is a script for applying the latest changes from CHAT_DIR in the upstream vscode repo to the CSCHAT_DIR in our repo
+
+# Method for fixing the files in the csChat folder
+fix_files() {
+	rm -rf $CSCHAT_DIR
+	cp -r $CHAT_DIR $CSCHAT_DIR
+
+	# Rename all files within cschat to replace occurences of 'chat' to 'csChat'. Ensure only filenames are changed, not the paths or content.
+	find $CSCHAT_DIR -depth -name "*chat*" -execdir bash -c 'mv -i "$1" "${1//chat/csChat}"' bash {} \;
+
+	# Additionally, also replace files with occurences of 'voiceChat' to 'csVoiceChat'
+	find $CSCHAT_DIR -depth -name "*voiceChat*" -execdir bash -c 'mv -i "$1" "${1//voiceChat/csVoiceChat}"' bash {} \;
+
+	# Delete the src/vs/workbench/contrib/csChat/test folder
+	rm -rf $CSCHAT_DIR/test
+}
+
+# Create a patch between the current version of the chat folder and the upstream version. But do this by
+# copying it over to the csChat folder, renaming all files and then generating a patch file.
+create_cschat_patch() {
+	# Fix the files
+	fix_files
+
+	# Commit the changes
+	git add $CSCHAT_DIR
+	git commit -m "Add current changes"
+	CURRENT_CHANGES=$(git rev-parse HEAD)
+
+	# Merge the latest changes from upstream
+	echo "About to fetch and merge changes from $UPSTREAM_REMOTE/$UPSTREAM_BRANCH. Please ensure everything is ready."
+	read -p "Press enter to continue"
+
+	# Start the merge and check for conflicts
+	if ! git merge --no-commit $UPSTREAM_REMOTE/$UPSTREAM_BRANCH; then
+		echo "Merge conflicts detected. Please resolve them now."
+		read -p "Once resolved and all changes are staged, press enter to continue"
+	fi
+
+	# Commit merge if no conflicts or after conflicts are resolved
+	git commit -m "Merged changes from $UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
+
+	# Fix the files again
+	fix_files
+
+	# Commit the changes
+	git add $CSCHAT_DIR
+	git commit -m "Add upstream changes"
+	UPSTREAM_CHANGES=$(git rev-parse HEAD)
+
+	# Create a patch file with the diff on only the cschat folder between the 'Add current changes' commit and
+	# the 'Add upstream changes' commit. Do remember that we have performed a merge in between these two commits.
+	git diff $CURRENT_CHANGES $UPSTREAM_CHANGES -- $CSCHAT_DIR > chat_changes.patch
+
+	# Reset the branch to original state
+	git reset --hard HEAD~2
+}
+
+apply_cschat_patch() {
+	# Check if the patch file exists
+	if [ ! -f chat_changes.patch ]; then
+		echo "Patch file not found. Exiting."
+		exit 1
+	fi
+
+	# Merge the latest changes from upstream
+	echo "About to fetch and merge changes from $UPSTREAM_REMOTE/$UPSTREAM_BRANCH. Please ensure everything is ready."
+	read -p "Press enter to continue"
+
+	# Start the merge and check for conflicts
+	if ! git merge --no-commit $UPSTREAM_REMOTE/$UPSTREAM_BRANCH; then
+		echo "Merge conflicts detected. Please resolve them now."
+		read -p "Once resolved and all changes are staged, press enter to continue"
+	fi
+
+	# Apply the patch with the --reject option
+	git apply --reject chat_changes.patch
+
+	# Check if there are any rejected files
+	if [ -f chat_changes.patch.rej ]; then
+		echo "Rejections detected. Please resolve them now."
+		read -p "Once resolved and all changes are staged, press enter to continue"
+	fi
+
+	# Commit the changes
+	git add $CSCHAT_DIR
+	git commit -m "Patch upstream chat changes into csChat"
+
+	# Delete the patch
+	rm chat_changes.patch
+}
+
 UPSTREAM_REMOTE=upstream
+UPSTREAM_BRANCH=main
 
-# The main branch name
-MAIN_BRANCH=main
-
-# The last sync commit hash
-LAST_SYNC_COMMIT_HASH="9e0bd20b88f922b999163e03f56bd4d63f62d770"
+OUR_REMOTE=origin
+OUR_BRANCH=cs-main
 
 # The directories for chat and csChat
 CHAT_DIR=src/vs/workbench/contrib/chat
 CSCHAT_DIR=src/vs/workbench/contrib/csChat
 
-# The name of the patch file
-PATCH_FILE="chat_to_csChat_$(date +%Y%m%d).patch"
-
-# Generate the patch for the chat directory since the last sync
-git diff $LAST_SYNC_COMMIT_HASH $UPSTREAM_REMOTE/$MAIN_BRANCH -- $CHAT_DIR > $PATCH_FILE
-
-# Check if the patch file is created and is not empty
-if [ ! -s $PATCH_FILE ]; then
-	echo "No changes found in the $CHAT_DIR directory."
-	exit 0
+# Verify this is the OUR_BRANCH branch
+CURRENT_BRANCH=$(git branch --show-current)
+if [ "$CURRENT_BRANCH" != "$OUR_BRANCH" ]; then
+	echo "You are not on the $OUR_BRANCH branch. Please checkout the $OUR_BRANCH branch and try again."
+	exit 1
 fi
 
-# Function to calculate new paths based on specific rules
-get_new_cs_path() {
-	local old_path="$1"
-	local dirname=$(dirname "$old_path")
-	local basename=$(basename "$old_path")
+# Fetch the latest changes
+git fetch $OUR_REMOTE
+git fetch $UPSTREAM_REMOTE
 
-	# Apply generic renaming rule unless the file doesn't contain 'chat'
-	if [[ $basename == *"chat"* && $basename != "codeBlockPart.ts" ]]; then
-		# For files containing 'voiceChat', replace 'voiceChat' with 'csVoiceChat'
-		if [[ $basename == *"voiceChat"* ]]; then
-			basename="${basename//voiceChat/csVoiceChat}"
-		# Otherwise, prefix 'cs' before 'Chat' in the filename
-		else
-			basename="${basename//chat/csChat}"
-		fi
-	fi
+# Verify that OUR_BRANCH is in sync with OUR_REMOTE
+if ! git diff --quiet $OUR_REMOTE/$OUR_BRANCH; then
+	echo "Your $OUR_BRANCH branch is not in sync with $OUR_REMOTE/$OUR_BRANCH. Please push your changes and try again."
+	exit 1
+fi
 
-	# Correct the dirname replacement to handle slashes properly
-	dirname=$(echo $dirname | sed 's|/chat/|/csChat/|g')
+# Create a new branch with unix timestamp as suffix
+TIMESTAMP=$(date +%s)
+PATCH_BRANCH=chat-patch-$TIMESTAMP
+git checkout -b $PATCH_BRANCH
 
-	# Combine the directory name with the new basename
-	echo "$dirname/$basename"
-}
+# Create a patch file for the current diff
+create_cschat_patch
 
-# Function to apply patch with the necessary adjustments
-apply_patch_with_renames() {
-	# Create a new patch file for adjusted paths
-	local adjusted_patch_file="adjusted_$PATCH_FILE"
-	> "$adjusted_patch_file" # Clear the adjusted patch file content
-
-	# Read through the original patch file line by line
-	while IFS= read -r line
-	do
-		# Check if the line starts with "--- a/" or "+++ b/"
-		if [[ $line == "--- a/"* || $line == "+++ b/"* ]]; then
-			# Extract the file path without the prefix
-			local path_with_prefix=${line:6}
-			# Calculate the new path
-			local new_path=$(get_new_cs_path "$path_with_prefix")
-			# Replace the line with the new path
-			line="${line:0:6}$new_path"
-		fi
-
-		# Write the modified line to the new patch file
-		echo "$line" >> "$adjusted_patch_file"
-	done < "$PATCH_FILE"
-
-	# Apply the new patch file with the adjusted paths
-	git apply --verbose --reject "$adjusted_patch_file"
-}
-
-apply_patch_with_renames
+# Apply the patch
+apply_cschat_patch
