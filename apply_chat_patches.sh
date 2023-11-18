@@ -27,7 +27,7 @@ create_cschat_patch() {
 
 	# Commit the changes
 	git add $CSCHAT_DIR
-	git commit -m "Add current changes"
+	git commit -m "Add current changes" --no-verify
 	CURRENT_CHANGES=$(git rev-parse HEAD)
 
 	# Merge the latest changes from upstream
@@ -48,7 +48,7 @@ create_cschat_patch() {
 
 	# Commit the changes
 	git add $CSCHAT_DIR
-	git commit -m "Add upstream changes"
+	git commit -m "Add upstream changes" --no-verify
 	UPSTREAM_CHANGES=$(git rev-parse HEAD)
 
 	# Create a patch file with the diff on only the cschat folder between the 'Add current changes' commit and
