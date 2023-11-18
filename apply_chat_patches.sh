@@ -20,6 +20,8 @@ fix_files() {
 # Create a patch between the current version of the chat folder and the upstream version. But do this by
 # copying it over to the csChat folder, renaming all files and then generating a patch file.
 create_cschat_patch() {
+	git checkout 1a3461f764c5ff26eba9447eec49ff2db4971a0d
+
 	# Fix the files
 	fix_files
 
