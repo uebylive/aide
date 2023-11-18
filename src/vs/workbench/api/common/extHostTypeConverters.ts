@@ -2338,6 +2338,8 @@ export namespace CSChatEditorResponseFeedbackKind {
 				return types.CSChatEditorResponseFeedbackKind.Undone;
 			case InlineCSChatResponseFeedbackKind.Accepted:
 				return types.CSChatEditorResponseFeedbackKind.Accepted;
+			case InlineCSChatResponseFeedbackKind.Bug:
+				return types.CSChatEditorResponseFeedbackKind.Bug;
 		}
 	}
 }

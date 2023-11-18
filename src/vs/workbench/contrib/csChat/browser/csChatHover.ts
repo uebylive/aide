@@ -24,14 +24,14 @@ export class HoverChatService extends Disposable implements ICSHoverChatService 
 	private _isHidden: boolean = false;
 
 	constructor(
-		@IWorkbenchLayoutService private readonly workbenchLayoutService: IWorkbenchLayoutService,
+		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService,
 		@ICSChatService private readonly chatService: ICSChatService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
-		this._register(this.workbenchLayoutService.onDidChangePartVisibility(() => {
-			const isAuxiliaryBarVisible = this.workbenchLayoutService.isVisible(Parts.AUXILIARYBAR_PART);
+		this._register(this.layoutService.onDidChangePartVisibility(() => {
+			const isAuxiliaryBarVisible = this.layoutService.isVisible(Parts.AUXILIARYBAR_PART);
 			if (isAuxiliaryBarVisible) {
 				this.close();
 			} else if (!this._isHidden) {
@@ -59,7 +59,7 @@ export class HoverChatService extends Disposable implements ICSHoverChatService 
 			return;
 		}
 
-		const isAuxiliaryBarVisible = this.workbenchLayoutService.isVisible(Parts.AUXILIARYBAR_PART);
+		const isAuxiliaryBarVisible = this.layoutService.isVisible(Parts.AUXILIARYBAR_PART);
 		if (isAuxiliaryBarVisible) {
 			return;
 		}
@@ -74,7 +74,7 @@ export class HoverChatService extends Disposable implements ICSHoverChatService 
 			hint.classList.add('hover-chat-hint');
 			hint.innerText = 'Press shift twice to focus';
 			this._container.appendChild(hint);
-			this.workbenchLayoutService.container.appendChild(hoverChatContainer);
+			this.layoutService.mainContainer.appendChild(hoverChatContainer);
 		}
 
 		if (!this._currentChat) {

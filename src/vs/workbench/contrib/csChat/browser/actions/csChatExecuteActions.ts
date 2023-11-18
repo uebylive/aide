@@ -8,17 +8,13 @@ import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { IChatWidget, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 export interface IChatExecuteActionContext {
-	widget: IChatWidget;
+	widget?: IChatWidget;
 	inputValue?: string;
-}
-
-export function isExecuteActionContext(thing: unknown): thing is IChatExecuteActionContext {
-	return typeof thing === 'object' && thing !== null && 'widget' in thing;
 }
 
 export class SubmitAction extends Action2 {
@@ -44,12 +40,11 @@ export class SubmitAction extends Action2 {
 	}
 
 	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context = args[0];
-		if (!isExecuteActionContext(context)) {
-			return;
-		}
+		const context: IChatExecuteActionContext = args[0];
 
-		context.widget.acceptInput(context.inputValue);
+		const widgetService = accessor.get(ICSChatWidgetService);
+		const widget = context.widget ?? widgetService.lastFocusedWidget;
+		widget?.acceptInput(context.inputValue);
 	}
 }
 
@@ -76,8 +71,8 @@ export function registerChatExecuteActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const context = args[0];
-			if (!isExecuteActionContext(context)) {
+			const context: IChatExecuteActionContext = args[0];
+			if (!context.widget) {
 				return;
 			}
 

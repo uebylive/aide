@@ -3,14 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Selection } from 'vs/editor/common/core/selection';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IChatWidgetContrib } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
-import { Selection } from 'vs/editor/common/core/selection';
+import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 
 export const ICSChatWidgetService = createDecorator<ICSChatWidgetService>('csChatWidgetService');
 export const ICSQuickChatService = createDecorator<ICSQuickChatService>('csQuickChatService');
@@ -40,6 +39,7 @@ export interface ICSQuickChatService {
 	readonly _serviceBrand: undefined;
 	readonly onDidClose: Event<void>;
 	readonly enabled: boolean;
+	readonly focused: boolean;
 	toggle(providerId?: string, options?: IQuickChatOpenOptions): void;
 	focus(): void;
 	open(providerId?: string, options?: IQuickChatOpenOptions): void;
@@ -129,7 +129,6 @@ export interface IChatWidget {
 	focusLastMessage(): void;
 	focusInput(): void;
 	hasInputFocus(): boolean;
-	getSlashCommands(): Promise<ISlashCommand[] | undefined>;
 	getCodeBlockInfoForEditor(uri: URI): IChatCodeBlockInfo | undefined;
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];

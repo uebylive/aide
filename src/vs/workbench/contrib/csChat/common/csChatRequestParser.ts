@@ -9,7 +9,7 @@ import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatFileVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ICSChatSlashCommandService } from 'vs/workbench/contrib/csChat/common/csChatSlashCommands';
 import { ICSChatVariablesService, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 const agentReg = /^@([\w_\-]+)(?=(\s|$|\b))/i; // An @-agent
@@ -21,7 +21,7 @@ export class ChatRequestParser {
 	constructor(
 		@ICSChatAgentService private readonly agentService: ICSChatAgentService,
 		@ICSChatVariablesService private readonly variableService: ICSChatVariablesService,
-		@ICSChatService private readonly chatService: ICSChatService,
+		@ICSChatSlashCommandService private readonly slashCommandService: ICSChatSlashCommandService
 	) { }
 
 	async parseChatRequest(sessionId: string, message: string): Promise<IParsedChatRequest> {
@@ -174,7 +174,7 @@ export class ChatRequestParser {
 				return new ChatRequestAgentSubcommandPart(slashRange, slashEditorRange, subCommand);
 			}
 		} else {
-			const slashCommands = await this.chatService.getSlashCommands(sessionId, CancellationToken.None);
+			const slashCommands = this.slashCommandService.getCommands();
 			const slashCommand = slashCommands.find(c => c.command === command);
 			if (slashCommand) {
 				// Valid standalone slash command

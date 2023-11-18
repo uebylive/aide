@@ -215,7 +215,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostChat = rpcProtocol.set(ExtHostContext.ExtHostChat, new ExtHostChat(rpcProtocol));
 	const extHostCSChatEditor = rpcProtocol.set(ExtHostContext.ExtHostInlineCSChat, new ExtHostCSChatEditor(rpcProtocol, extHostCommands, extHostDocuments, extHostLogService));
-	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol, extHostLogService));
+	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostIssueReporter = rpcProtocol.set(ExtHostContext.ExtHostIssueReporter, new ExtHostIssueReporter(rpcProtocol));

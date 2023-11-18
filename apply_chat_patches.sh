@@ -1,6 +1,19 @@
 #!/bin/bash
 
 # This is a script for applying the latest changes from CHAT_DIR in the upstream vscode repo to the CSCHAT_DIR in our repo
+# This needs to be updated to handle all the following paths:
+# extensions/codestory/*.d.ts
+# src/vscode-dts/vscode.proposed.*.d.ts
+# src/vs/workbench/api/browser/mainThread*Chat.ts
+# src/vs/workbench/api/browser/mainThreadInline*Chat.ts
+# src/vs/workbench/api/common/extHost.api.impl.ts
+# src/vs/workbench/api/common/extHost.protocol.ts
+# src/vs/workbench/api/common/extHost*Chat.ts
+# src/vs/workbench/api/common/extHostInline*Chat.ts
+# src/vs/workbench/api/common/extHostTypeConverters.ts
+# src/vs/workbench/api/common/extHostTypes.ts
+# src/vs/workbench/contrib/csChat
+# src/vs/workbench/contrib/inlineChat
 
 # Method for fixing the files in the csChat folder
 fix_files() {

@@ -16,7 +16,7 @@ import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { getClearAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatClearActions';
 import { getHoverActionsForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatHoverActions';
-import { getMoveToEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatMoveActions';
+import { getMoveToEditorAction, getMoveToNewWindowAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatQuickInputActions';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
 import { ICSChatContributionService, IChatProviderContribution, IRawChatProviderContribution } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
@@ -138,6 +138,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		disposables.add(registerAction2(getHistoryAction(viewId, providerDescriptor.id)));
 		disposables.add(registerAction2(getClearAction(viewId, providerDescriptor.id)));
 		disposables.add(registerAction2(getMoveToEditorAction(viewId, providerDescriptor.id)));
+		disposables.add(registerAction2(getMoveToNewWindowAction(viewId, providerDescriptor.id)));
 
 		// "Open Chat" Actions
 		disposables.add(registerAction2(getOpenChatEditorAction(providerDescriptor.id, providerDescriptor.label, providerDescriptor.when)));

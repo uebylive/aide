@@ -1217,7 +1217,7 @@ export interface ExtHostInlineChatShape {
 }
 
 export interface MainThreadInlineCSChatShape extends IDisposable {
-	$registerCSChatEditorProvider(handle: number, label: string, debugName: string, supportsFeedback: boolean): Promise<void>;
+	$registerCSChatEditorProvider(handle: number, label: string, debugName: string, supportsFeedback: boolean, supportsFollowups: boolean, supportsIssueReporting: boolean): Promise<void>;
 	$handleProgressChunk(requestId: string, chunk: Dto<IInlineCSChatProgressItem>): Promise<void>;
 	$unregisterCSChatEditorProvider(handle: number): Promise<void>;
 }
@@ -1227,6 +1227,7 @@ export type IInlineCSChatResponseDto = Dto<IInlineCSChatEditResponse | Omit<IInl
 export interface ExtHostInlineCSChatShape {
 	$prepareSession(handle: number, uri: UriComponents, range: ISelection, token: CancellationToken): Promise<IInlineCSChatSession | undefined>;
 	$provideResponse(handle: number, session: IInlineCSChatSession, request: IInlineCSChatRequest, token: CancellationToken): Promise<IInlineCSChatResponseDto | undefined>;
+	$provideFollowups(handle: number, sessionId: number, responseId: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined>;
 	$handleFeedback(handle: number, sessionId: number, responseId: number, kind: InlineCSChatResponseFeedbackKind): void;
 	$releaseSession(handle: number, sessionId: number): void;
 }
@@ -1294,7 +1295,6 @@ export interface MainThreadCSChatShape extends IDisposable {
 	$acceptChatState(sessionId: number, state: any): Promise<void>;
 	$sendRequestToProvider(providerId: string, message: IChatDynamicRequest): void;
 	$unregisterChatProvider(handle: number): Promise<void>;
-	$acceptResponseProgress(handle: number, sessionId: number, progress: IChatResponseProgressDto, responsePartHandle?: number): Promise<number | void>;
 	$transferChatSession(sessionId: number, toWorkspace: UriComponents): void;
 }
 
@@ -1307,13 +1307,9 @@ export interface ExtHostChatShape {
 }
 
 export interface ExtHostCSChatShape {
-	$prepareChat(handle: number, initialState: any, token: CancellationToken): Promise<IChatDto | undefined>;
+	$prepareChat(handle: number, token: CancellationToken): Promise<IChatDto | undefined>;
 	$provideWelcomeMessage(handle: number, token: CancellationToken): Promise<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined>;
 	$provideSampleQuestions(handle: number, token: CancellationToken): Promise<IChatReplyFollowup[] | undefined>;
-	$provideFollowups(handle: number, sessionId: number, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
-	$provideReply(handle: number, sessionId: number, request: IChatRequestDto, token: CancellationToken): Promise<IChatResponseDto | undefined>;
-	$removeRequest(handle: number, sessionId: number, requestId: string): void;
-	$provideSlashCommands(handle: number, sessionId: number, token: CancellationToken): Promise<ISlashCommand[] | undefined>;
 	$releaseSession(sessionId: number): void;
 	$onDidPerformUserAction(event: IChatUserActionEvent): Promise<void>;
 }

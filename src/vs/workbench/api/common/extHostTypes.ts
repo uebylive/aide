@@ -4117,7 +4117,8 @@ export enum CSChatEditorResponseFeedbackKind {
 	Unhelpful = 0,
 	Helpful = 1,
 	Undone = 2,
-	Accepted = 3
+	Accepted = 3,
+	Bug = 4
 }
 
 export enum ChatMessageRole {
