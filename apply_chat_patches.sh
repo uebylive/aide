@@ -113,10 +113,10 @@ git fetch $OUR_REMOTE
 git fetch $UPSTREAM_REMOTE
 
 # Verify that OUR_BRANCH is in sync with OUR_REMOTE
-if ! git diff --quiet $OUR_REMOTE/$OUR_BRANCH; then
-	echo "Your $OUR_BRANCH branch is not in sync with $OUR_REMOTE/$OUR_BRANCH. Please push your changes and try again."
-	exit 1
-fi
+# if ! git diff --quiet $OUR_REMOTE/$OUR_BRANCH; then
+# 	echo "Your $OUR_BRANCH branch is not in sync with $OUR_REMOTE/$OUR_BRANCH. Please push your changes and try again."
+# 	exit 1
+# fi
 
 # Create a new branch with unix timestamp as suffix
 TIMESTAMP=$(date +%s)
