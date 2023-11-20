@@ -86,17 +86,18 @@ export interface Repository {
 	last_index_unix_secs: number;
 }
 
+
 export type SyncStatus =
-	| { tag: 'Error'; message: string }
-	| { tag: 'Uninitialized' }
-	| { tag: 'Cancelling' }
-	| { tag: 'Cancelled' }
-	| { tag: 'Queued' }
-	| { tag: 'Syncing' }
-	| { tag: 'Indexing' }
-	| { tag: 'Done' }
-	| { tag: 'Removed' }
-	| { tag: 'RemoteRemoved' };
+	| { tag: 'error'; message: string }
+	| { tag: 'uninitialized' }
+	| { tag: 'cancelling' }
+	| { tag: 'cancelled' }
+	| { tag: 'queued' }
+	| { tag: 'syncing' }
+	| { tag: 'indexing' }
+	| { tag: 'done' }
+	| { tag: 'removed' }
+	| { tag: 'remote_removed' };
 
 export interface RepoStatus {
 	// The string here is generated from RepoRef.to_string()
@@ -372,8 +373,8 @@ export type EditFileResponse =
 	| { type: 'Status'; session_id: string; status: string };
 
 export type SyncUpdate =
-	| { kind: 'ProgressEvent'; value: Progress }
-	| { kind: 'KeepAlive' };
+	| { ProgressEvent: { ref: string; ev: ProgressEvent } }
+	| { KeepAlive: { timestamp: number } };
 
 export interface Progress {
 	ref: string;
@@ -381,5 +382,5 @@ export interface Progress {
 }
 
 export type ProgressEvent =
-	| { kind: 'IndexPercent'; value: number }
-	| { kind: 'StatusChange'; value: SyncStatus };
+	| { index_percent: number }
+	| { sync_status: SyncStatus };
