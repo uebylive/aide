@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { encode } from 'gpt-tokenizer';
 
@@ -38,13 +39,14 @@ const convertRoleToString = (role: RoleStringForOpenai): RoleString => {
 };
 
 
-export class CSChatState {
-	private _messages: OpenAI.Chat.CreateChatCompletionRequestMessage[];
+export class CSChatState implements vscode.ChatAgentContext {
+	history: OpenAI.Chat.CreateChatCompletionRequestMessage[];
+
 	private _tokenLimit: number;
 	private _agentCustomInstruction: string | null;
 
 	constructor(agentCustomInstruction: string | null) {
-		this._messages = [];
+		this.history = [];
 		this._tokenLimit = 1000;
 		this._agentCustomInstruction = agentCustomInstruction;
 		this.addSystemPrompt(
@@ -58,7 +60,7 @@ export class CSChatState {
 		// we will obviously need the system prompt so we will always keep that
 		// after that going backwards we will store the messages(user + assistant) until we reach 6k tokens
 		// we will then remove the rest of the messages
-		const messages = this._messages.map((message) => {
+		const messages = this.history.map((message) => {
 			return {
 				role: convertRoleToString(message.role),
 				content: message.content ?? '',
@@ -75,7 +77,7 @@ export class CSChatState {
 				break;
 			}
 			totalTokenCount += messageTokenCount;
-			finalMessages.push(this._messages[index]);
+			finalMessages.push(this.history[index]);
 		}
 		finalMessages.push(
 			{
@@ -84,44 +86,44 @@ export class CSChatState {
 			}
 		);
 		finalMessages.reverse();
-		this._messages = finalMessages;
+		this.history = finalMessages;
 	}
 
 	getMessages(): OpenAI.Chat.CreateChatCompletionRequestMessage[] {
-		return this._messages;
+		return this.history;
 	}
 
 	getMessageLength(): number {
-		return this._messages.length;
+		return this.history.length;
 	}
 
 	addSystemPrompt(agentCustomInstruction: string | null): void {
-		this._messages.push({
+		this.history.push({
 			role: 'system',
 			content: chatSystemPrompt(agentCustomInstruction),
 		});
 	}
 
 	addUserMessage(message: string): void {
-		this._messages.push({
+		this.history.push({
 			role: 'user',
 			content: message,
 		});
 	}
 
 	removeLastMessage(): void {
-		this._messages.pop();
+		this.history.pop();
 	}
 
 	addCodeStoryMessage(message: string): void {
-		this._messages.push({
+		this.history.push({
 			role: 'assistant',
 			content: message,
 		});
 	}
 
 	addCodeContext(codeContext: string, extraSurroundingContext: string): void {
-		this._messages.push({
+		this.history.push({
 			role: 'user',
 			content: `
 The code in question is the following:
@@ -138,7 +140,7 @@ ${extraSurroundingContext}
 	}
 
 	addExplainCodeContext(codeContext: string): void {
-		this._messages.push({
+		this.history.push({
 			role: 'user',
 			content: codeContext,
 		});

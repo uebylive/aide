@@ -7,7 +7,6 @@ import { EventEmitter } from 'events';
 import winston from 'winston';
 
 import { loadOrSaveToStorage } from './storage/types';
-import { getProject } from './utilities/parseTypescript';
 import logger from './logger';
 import { CodeGraph } from './codeGraph/graph';
 import postHogClient from './posthog/client';
@@ -24,19 +23,16 @@ import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
 import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
-import { CSChatProvider } from './providers/chatprovider';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
-import { GoLangParser } from './languages/goCodeSymbols';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId } from './utilities/uniqueId';
-import { LanguageParser } from './languages/languageCodeSymbols';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
-import { readSideCarURL } from './utilities/sidecarUrl';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
+import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprovider';
 
 
 class ProgressiveTrackSymbols {
@@ -188,7 +184,8 @@ export async function activate(context: ExtensionContext) {
 	codeGraph.loadGraph(filesToTrack);
 
 	// Register chat provider
-	const chatProvider = new CSChatProvider(
+	const chatSessionProvider = new CSChatSessionProvider();
+	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, codeGraph, repoName, repoHash,
 		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
@@ -196,20 +193,20 @@ export async function activate(context: ExtensionContext) {
 	);
 	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(sidecarClient, currentRepo, rootPath ?? '');
 	const interactiveSession = csChat.registerCSChatSessionProvider(
-		'cs-chat', chatProvider
+		'cs-chat', chatSessionProvider
 	);
 	const interactiveEditorSession = csChat.registerCSChatEditorSessionProvider(
 		interactiveEditorSessionProvider,
 	);
 	context.subscriptions.push(interactiveEditorSession);
 	context.subscriptions.push(interactiveSession);
+	context.subscriptions.push(chatAgentProvider);
 	await commands.executeCommand('workbench.action.chat.clear');
 	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
 
 	context.subscriptions.push(
 		debug(
 			// TODO(codestory): Fix this properly later on
-			chatProvider,
 			codeSymbolsLanguageCollection,
 			sidecarClient,
 			repoName,

@@ -190,7 +190,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: Record<string, vscode.CSChatVariableValue[]>,
+		variables: Record<string, any[]>,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -389,7 +389,7 @@ interface CodeSelectionUriRange {
 }
 
 async function convertVSCodeVariableToSidecar(
-	variables: Record<string, vscode.CSChatVariableValue[]>,
+	variables: Record<string, any[]>,
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
@@ -444,7 +444,7 @@ async function convertVSCodeVariableToSidecar(
 				});
 			}
 		} else {
-			const parsedValue = variableValue.value as vscode.CSChatDynamicVariableValue;
+			const parsedValue = variableValue.value as any;
 			const fsFilePath = parsedValue.uri.fsPath;
 			const cachedFile = fileCache.get(fsFilePath);
 			if (cachedFile === undefined) {

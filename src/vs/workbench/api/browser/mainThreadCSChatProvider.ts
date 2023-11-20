@@ -8,30 +8,30 @@ import { DisposableMap } from 'vs/base/common/lifecycle';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IProgress, Progress } from 'vs/platform/progress/common/progress';
-import { ExtHostChatProviderShape, ExtHostContext, MainContext, MainThreadChatProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IChatResponseProviderMetadata, IChatResponseFragment, IChatProviderService, IChatMessage } from 'vs/workbench/contrib/chat/common/chatProvider';
+import { ExtHostCSChatProviderShape, ExtHostContext, MainContext, MainThreadCSChatProviderShape } from 'vs/workbench/api/common/extHost.protocol';
+import { ICSChatResponseProviderMetadata, ICSChatResponseFragment, ICSChatProviderService, ICSChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
-@extHostNamedCustomer(MainContext.MainThreadChatProvider)
-export class MainThreadChatProvider implements MainThreadChatProviderShape {
+@extHostNamedCustomer(MainContext.MainThreadCSChatProvider)
+export class MainThreadCSChatProvider implements MainThreadCSChatProviderShape {
 
-	private readonly _proxy: ExtHostChatProviderShape;
+	private readonly _proxy: ExtHostCSChatProviderShape;
 	private readonly _providerRegistrations = new DisposableMap<number>();
-	private readonly _pendingProgress = new Map<number, IProgress<IChatResponseFragment>>();
+	private readonly _pendingProgress = new Map<number, IProgress<ICSChatResponseFragment>>();
 
 	constructor(
 		extHostContext: IExtHostContext,
-		@IChatProviderService private readonly _chatProviderService: IChatProviderService,
+		@ICSChatProviderService private readonly _chatProviderService: ICSChatProviderService,
 		@ILogService private readonly _logService: ILogService,
 	) {
-		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChatProvider);
+		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCSChatProvider);
 	}
 
 	dispose(): void {
 		this._providerRegistrations.dispose();
 	}
 
-	$registerProvider(handle: number, identifier: string, metadata: IChatResponseProviderMetadata): void {
+	$registerProvider(handle: number, identifier: string, metadata: ICSChatResponseProviderMetadata): void {
 		const registration = this._chatProviderService.registerChatResponseProvider(identifier, {
 			metadata,
 			provideChatResponse: async (messages, options, progress, token) => {
@@ -47,7 +47,7 @@ export class MainThreadChatProvider implements MainThreadChatProviderShape {
 		this._providerRegistrations.set(handle, registration);
 	}
 
-	async $handleProgressChunk(requestId: number, chunk: IChatResponseFragment): Promise<void> {
+	async $handleProgressChunk(requestId: number, chunk: ICSChatResponseFragment): Promise<void> {
 		this._pendingProgress.get(requestId)?.report(chunk);
 	}
 
@@ -55,7 +55,7 @@ export class MainThreadChatProvider implements MainThreadChatProviderShape {
 		this._providerRegistrations.deleteAndDispose(handle);
 	}
 
-	async $fetchResponse(extension: ExtensionIdentifier, providerId: string, requestId: number, messages: IChatMessage[], options: {}, token: CancellationToken): Promise<any> {
+	async $fetchResponse(extension: ExtensionIdentifier, providerId: string, requestId: number, messages: ICSChatMessage[], options: {}, token: CancellationToken): Promise<any> {
 		this._logService.debug('[CHAT] extension request STARTED', extension.value, requestId);
 
 		const task = this._chatProviderService.fetchChatResponse(providerId, messages, options, new Progress(value => {

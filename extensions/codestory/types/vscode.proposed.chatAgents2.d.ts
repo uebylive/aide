@@ -231,6 +231,7 @@ declare module 'vscode' {
 	}
 
 	export interface ChatAgentRequest {
+		threadId: string;
 
 		/**
 		 * The prompt entered by the user. The {@link ChatAgent2.name name} of the agent or the {@link ChatAgentSlashCommand.name slash command}

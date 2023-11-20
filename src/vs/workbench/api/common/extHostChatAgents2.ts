@@ -82,6 +82,7 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 		try {
 			const task = agent.invoke(
 				{
+					threadId: sessionId,
 					prompt: request.message,
 					variables: typeConvert.ChatVariable.objectTo(request.variables),
 					slashCommand

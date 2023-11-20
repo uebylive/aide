@@ -6,7 +6,7 @@
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ExtHostCSChatProviderShape, IMainContext, MainContext, MainThreadChatProviderShape } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostCSChatProviderShape, IMainContext, MainContext, MainThreadCSChatProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import type * as vscode from 'vscode';
 import { Progress } from 'vs/platform/progress/common/progress';
@@ -92,14 +92,14 @@ export class ExtHostCSChatProvider implements ExtHostCSChatProviderShape {
 
 	private static _idPool = 1;
 
-	private readonly _proxy: MainThreadChatProviderShape;
+	private readonly _proxy: MainThreadCSChatProviderShape;
 	private readonly _providers = new Map<number, ProviderData>();
 
 	constructor(
 		mainContext: IMainContext,
 		private readonly _logService: ILogService,
 	) {
-		this._proxy = mainContext.getProxy(MainContext.MainThreadChatProvider);
+		this._proxy = mainContext.getProxy(MainContext.MainThreadCSChatProvider);
 	}
 
 	registerProvider(extension: ExtensionIdentifier, identifier: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata): IDisposable {
@@ -162,7 +162,7 @@ export class ExtHostCSChatProvider implements ExtHostCSChatProviderShape {
 
 				const cts = new CancellationTokenSource(token);
 				const requestId = (Math.random() * 1e6) | 0;
-				const requestPromise = that._proxy.$fetchResponse(from, identifier, requestId, messages.map(typeConvert.ChatMessage.from), options ?? {}, cts.token);
+				const requestPromise = that._proxy.$fetchResponse(from, identifier, requestId, messages.map(typeConvert.CSChatMessage.from), options ?? {}, cts.token);
 				const res = new ChatRequest(requestPromise, cts);
 				that._pendingRequest.set(requestId, { res });
 

@@ -72,7 +72,6 @@ export const debuggingFlow = async (
 	workingDirectory: string,
 	testSuiteRunCommand: string,
 	activeFilesTracker: ActiveFilesTracker,
-	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	uniqueId: string,
 	agentCustomInstruction: string | null,
 	reporef: RepoRef,
@@ -121,18 +120,13 @@ export const debuggingFlow = async (
 		planAndQueries?.additionalInstructions?.join('\n') ?? ''
 	);
 
-	if (userProvidedContext) {
-		// Add tooling event for user provided context
-		await toolingEventCollection.userProvidedContext(userProvidedContext);
-	} else {
-		// Adding tooling event for search
-		await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
-	}
+	// Adding tooling event for search
+	await toolingEventCollection.addSearchEvent(planAndQueries?.queries ?? []);
+
 	// Now we will try and do the search over the symbols
 	const relevantCodeSnippetList = await generateCodeSymbolsForQueries(
 		planAndQueries?.queries ?? [],
 		sidecarClient,
-		userProvidedContext,
 		reporef,
 	);
 	// Add the search results here
@@ -146,7 +140,6 @@ export const debuggingFlow = async (
 	const fileCodeSymbolInformationList = await generateFileInformationSummary(
 		relevantCodeSnippetList,
 		codeSymbolsLanguageCollection,
-		userProvidedContext,
 		workingDirectory,
 	);
 	initialMessages.push(

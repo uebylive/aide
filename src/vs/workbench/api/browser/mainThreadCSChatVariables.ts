@@ -4,28 +4,28 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DisposableMap } from 'vs/base/common/lifecycle';
-import { ExtHostChatVariablesShape, ExtHostContext, MainContext, MainThreadChatVariablesShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IChatVariableData, IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
+import { ExtHostChatVariablesShape, ExtHostContext, MainContext, MainThreadCSChatVariablesShape } from 'vs/workbench/api/common/extHost.protocol';
+import { ICSChatVariableData, ICSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
-@extHostNamedCustomer(MainContext.MainThreadChatVariables)
-export class MainThreadChatVariables implements MainThreadChatVariablesShape {
+@extHostNamedCustomer(MainContext.MainThreadCSChatVariables)
+export class MainThreadCSChatVariables implements MainThreadCSChatVariablesShape {
 
 	private readonly _proxy: ExtHostChatVariablesShape;
 	private readonly _variables = new DisposableMap<number>();
 
 	constructor(
 		extHostContext: IExtHostContext,
-		@IChatVariablesService private readonly _chatVariablesService: IChatVariablesService,
+		@ICSChatVariablesService private readonly _chatVariablesService: ICSChatVariablesService,
 	) {
-		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChatVariables);
+		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCSChatVariables);
 	}
 
 	dispose(): void {
 		this._variables.clearAndDisposeAll();
 	}
 
-	$registerVariable(handle: number, data: IChatVariableData): void {
+	$registerVariable(handle: number, data: ICSChatVariableData): void {
 		const registration = this._chatVariablesService.registerVariable(data, (messageText, _arg, _model, token) => {
 			return this._proxy.$resolveVariable(handle, messageText, token);
 		});
