@@ -14,7 +14,7 @@ import { CodeGraph } from '../codeGraph/graph';
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { deterministicClassifier } from '../chatState/promptClassifier';
+import { UserMessageType, deterministicClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { ProjectContext } from '../utilities/workspaceContext';
@@ -316,7 +316,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._projectContext = projectContext;
 		this._chatSessionState = new CSChatState(null);
 
-		this.chatAgent = vscode.csChat.createChatAgent('Aide', this.defaultAgent);
+		this.chatAgent = vscode.csChat.createChatAgent('aide', this.defaultAgent);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.supportIssueReporting = true;
 		this.chatAgent.description = 'Aide is your personal AI assistant that can write, debug, find, understand and explain code for you.';
@@ -331,16 +331,18 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 	defaultAgent: vscode.ChatAgentExtendedHandler = (request, context, progress, token) => {
 		return (async () => {
-			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
-			const deterministicRequestType = deterministicClassifier(request.prompt.toString());
-			const requestType = deterministicRequestType;
+			let requestType: UserMessageType = 'general';
+			const slashCommand = request.slashCommand?.name;
+			if (slashCommand) {
+				requestType = slashCommand as UserMessageType;
+			} else {
+				const deterministicRequestType = deterministicClassifier(request.prompt.toString());
+				if (deterministicRequestType) {
+					requestType = deterministicRequestType;
+				}
+			}
 			logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
-			if (requestType === 'help') {
-				progress.report(new CSChatProgressContent(
-					`Here are some helpful docs for resolving the most common issues: [Code Story](https://docs.codestory.ai)\n`
-				));
-				return new CSChatResponseForProgress();
-			} else if (requestType === 'instruction') {
+			if (requestType === 'instruction') {
 				const prompt = request.prompt.toString().slice(7).trim();
 				if (prompt.length === 0) {
 					return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
@@ -411,17 +413,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		provideSlashCommands: (token: vscode.CancellationToken): vscode.ProviderResult<vscode.ChatAgentSlashCommand[]> => {
 			return [
 				{
-					name: 'help',
-					description: 'Get help on how to use CodeStory',
-					followupPlaceholder: 'Ask me a question or type \'/\' for bb?',
-				},
-				{
 					name: 'explain',
 					description: 'Explain the code for the selection at a local and global level',
-				},
-				{
-					name: 'general',
-					description: 'Ask any kind of general questions to the AI with our without context',
 				},
 				{
 					name: 'search',
