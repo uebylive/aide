@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+import * as vscode from 'vscode';
 import { commands, ExtensionContext, csChat, TextDocument, window, workspace } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
@@ -37,6 +38,7 @@ import { readSideCarURL } from './utilities/sidecarUrl';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
+import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 
 
 class ProgressiveTrackSymbols {
@@ -136,6 +138,8 @@ export async function activate(context: ExtensionContext) {
 		RepoRefBackend.local,
 	);
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
+	// Show the indexing percentage on startup
+	await reportIndexingPercentage(sidecarClient, currentRepo);
 
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
@@ -143,9 +147,6 @@ export async function activate(context: ExtensionContext) {
 
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonLanguageParser);
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
 
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
@@ -186,6 +187,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 	);
 	codeGraph.loadGraph(filesToTrack);
+
 
 	// Register chat provider
 	const chatProvider = new CSChatProvider(
@@ -258,7 +260,6 @@ export async function activate(context: ExtensionContext) {
 		logger
 	);
 	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
-
 	// Keeps track of the symbols which are changing and creates a graph of
 	// those changes
 	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
