@@ -111,7 +111,6 @@ export async function activate(context: ExtensionContext) {
 	// upto
 	const projectContext = new ProjectContext();
 	await projectContext.collectContext();
-	console.log('what are my labels');
 	console.log(projectContext.labels);
 
 	// TODO(codestory): Download the rust binary here appropriate for the platform
