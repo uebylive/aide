@@ -190,7 +190,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: Record<string, any[]>,
+		variables: Record<string, vscode.CSChatVariableValue[]>,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -389,7 +389,7 @@ interface CodeSelectionUriRange {
 }
 
 async function convertVSCodeVariableToSidecar(
-	variables: Record<string, any[]>,
+	variables: Record<string, vscode.CSChatVariableValue[]>,
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();

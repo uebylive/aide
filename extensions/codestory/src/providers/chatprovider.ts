@@ -54,20 +54,6 @@ class CSChatSession implements vscode.CSChatSession {
 	}
 }
 
-class CSChatRequestArgs {
-	command: string;
-	args: any;
-
-	constructor(command: string, args: any) {
-		this.command = command;
-		this.args = args;
-	}
-
-	toString(): string {
-		return `CSChatRequestArgs { command: "${this.command}", args: ${JSON.stringify(this.args, null, 2)} }`;
-	}
-}
-
 class CSChatReplyFollowup implements vscode.CSChatSessionReplyFollowup {
 	message: string;
 	tooltip?: string | undefined;
@@ -86,13 +72,13 @@ class CSChatReplyFollowup implements vscode.CSChatSessionReplyFollowup {
 	}
 }
 
-export class CSChatRequest implements vscode.ChatAgentRequest {
+export class CSChatRequest implements vscode.CSChatAgentRequest {
 	threadId: string;
 	prompt: string;
-	variables: Record<string, vscode.ChatVariableValue[]>;
+	variables: Record<string, vscode.CSChatVariableValue[]>;
 	slashCommand?: vscode.ChatAgentSlashCommand;
 
-	constructor(threadId: string, prompt: string, variables: Record<string, vscode.ChatVariableValue[]> = {}, slashCommand?: vscode.ChatAgentSlashCommand) {
+	constructor(threadId: string, prompt: string, variables: Record<string, vscode.CSChatVariableValue[]> = {}, slashCommand?: vscode.ChatAgentSlashCommand) {
 		this.threadId = threadId;
 		this.prompt = prompt;
 		this.variables = variables;
@@ -329,7 +315,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent.slashCommandProvider = this.slashCommandProvider;
 	}
 
-	defaultAgent: vscode.ChatAgentExtendedHandler = (request, context, progress, token) => {
+	defaultAgent: vscode.CSChatAgentExtendedHandler = (request, context, progress, token) => {
 		return (async () => {
 			let requestType: UserMessageType = 'general';
 			const slashCommand = request.slashCommand?.name;

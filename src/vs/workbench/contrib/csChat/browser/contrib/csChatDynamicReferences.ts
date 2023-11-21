@@ -208,9 +208,9 @@ export class SelectAndInsertCodeSymbolAction extends Action2 {
 			return;
 		}
 
-		const selectionRange = (pick as unknown as { range: Range }).range;
+		const selectionRange = pick.symbol?.location.range;
 		const result = parseVariableInfo(pick.label);
-		if (!result) {
+		if (!result || !selectionRange) {
 			logService.trace('SelectAndInsertCodeSymbolAction: failed to parse code symbol');
 			doCleanup();
 			return;

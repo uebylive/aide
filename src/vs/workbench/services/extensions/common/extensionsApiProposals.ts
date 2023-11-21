@@ -36,6 +36,7 @@ export const allApiProposals = Object.freeze({
 	contribViewsWelcome: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.contribViewsWelcome.d.ts',
 	createFileSystemWatcher: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.createFileSystemWatcher.d.ts',
 	csChat: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.csChat.d.ts',
+	csChatAgents2: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.csChatAgents2.d.ts',
 	csChatVariables: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.csChatVariables.d.ts',
 	customEditorMove: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.customEditorMove.d.ts',
 	debugFocus: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.debugFocus.d.ts',

@@ -1404,7 +1404,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
 			},
-			createChatAgent(name: string, handler: vscode.ChatAgentExtendedHandler) {
+			createChatAgent(name: string, handler: vscode.CSChatAgentExtendedHandler) {
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostCSChatAgents2.createChatAgent(extension, name, handler);
 			},

@@ -150,9 +150,7 @@ declare module 'vscode' {
 
 		export function transferChatSession(session: CSChatSession, toWorkspace: Uri): void;
 
-		export function createChatAgent(name: string, handler: ChatAgentHandler): ChatAgent2;
-
-		export function createChatAgent(name: string, handler: ChatAgentExtendedHandler): ChatAgent2;
+		export function createChatAgent(name: string, handler: CSChatAgentExtendedHandler): ChatAgent2;
 
 		export function registerChatResponseProvider(id: string, provider: ChatResponseProvider, metadata: ChatResponseProviderMetadata): Disposable;
 

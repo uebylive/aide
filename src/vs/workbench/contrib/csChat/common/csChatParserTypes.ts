@@ -116,14 +116,14 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 export class ChatRequestDynamicReferencePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
 	readonly kind = ChatRequestDynamicReferencePart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly name: string, readonly arg: string, readonly data: Location) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly leader: string, readonly name: string, readonly arg: string, readonly data: Location) { }
 
 	get referenceText(): string {
 		return `${this.name}:${this.arg}`;
 	}
 
 	get text(): string {
-		return `${chatFileVariableLeader}${this.referenceText}`;
+		return `${this.leader}${this.referenceText}`;
 	}
 
 	get promptText(): string {
@@ -170,6 +170,7 @@ export function reviveParsedChatRequest(serialized: IParsedChatRequest): IParsed
 				return new ChatRequestDynamicReferencePart(
 					new OffsetRange(part.range.start, part.range.endExclusive),
 					part.editorRange,
+					(part as ChatRequestDynamicReferencePart).leader,
 					(part as ChatRequestDynamicReferencePart).name,
 					(part as ChatRequestDynamicReferencePart).arg,
 					(part as ChatRequestDynamicReferencePart).data

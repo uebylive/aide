@@ -7,13 +7,14 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatFileVariableLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicReferencePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatFileVariableLeader, chatSubcommandLeader, chatSymbolVariableLeader, chatVariableLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IDynamicReference, IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 import { IInlineCSChatSlashCommand } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 
-const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
+const variableReg = /^\$([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A $-variable with an optional numeric : arg ($response:2)
 const slashReg = /\/([\w_\-]+)(?=(\s|$|\b))/i; // A / command
-const variableWithArgReg = /\#([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (#file:foo.ts)
+const fileVariableWithArgReg = /^(\#)([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (#file:foo.ts)
+const symbolVariableWithArgReg = /^(@)([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (@symbol:get_jwt)
 
 export class InlineCSChatRequestParser {
 	constructor(
@@ -31,9 +32,10 @@ export class InlineCSChatRequestParser {
 			const char = message.charAt(i);
 			let newPart: IParsedChatRequestPart | undefined;
 			if (previousChar.match(/\s/) || i === 0) {
-				if (char === chatFileVariableLeader) {
-					newPart = this.tryToParseVariable(message.slice(i), i, new Position(lineNumber, column), parts) ||
-						await this.tryToParseDynamicVariable(message.slice(i), i, new Position(lineNumber, column), references);
+				if (char === chatVariableLeader) {
+					newPart = this.tryToParseVariable(message.slice(i), i, new Position(lineNumber, column), parts);
+				} else if (char === chatFileVariableLeader || char === chatSymbolVariableLeader) {
+					newPart = await this.tryToParseDynamicVariable(message.slice(i), i, new Position(lineNumber, column), references);
 				} else if (char === chatSubcommandLeader) {
 					// TODO try to make this sync
 					newPart = await this.tryToParseSlashCommand(sessionId, message.slice(i), message, i, new Position(lineNumber, column), parts, slashCommands);
@@ -146,12 +148,12 @@ export class InlineCSChatRequestParser {
 	}
 
 	private async tryToParseDynamicVariable(message: string, offset: number, position: IPosition, references: ReadonlyArray<IDynamicReference>): Promise<ChatRequestDynamicReferencePart | undefined> {
-		const nextVarMatch = message.match(variableWithArgReg);
+		const nextVarMatch = message.match(fileVariableWithArgReg) ?? message.match(symbolVariableWithArgReg);
 		if (!nextVarMatch) {
 			return;
 		}
 
-		const [full, name, arg] = nextVarMatch;
+		const [full, leader, name, arg] = nextVarMatch;
 		const range = new OffsetRange(offset, offset + full.length);
 		const editorRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column + full.length);
 
@@ -159,7 +161,7 @@ export class InlineCSChatRequestParser {
 			r.range.startLineNumber === position.lineNumber &&
 			r.range.startColumn === position.column);
 		if (refAtThisPosition) {
-			return new ChatRequestDynamicReferencePart(range, editorRange, name, arg, refAtThisPosition.data);
+			return new ChatRequestDynamicReferencePart(range, editorRange, leader, name, arg, refAtThisPosition.data);
 		}
 
 		return;

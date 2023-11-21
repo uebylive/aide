@@ -42,7 +42,7 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadCSChatAgents2);
 	}
 
-	createChatAgent(extension: IExtensionDescription, name: string, handler: vscode.ChatAgentExtendedHandler): vscode.ChatAgent2 {
+	createChatAgent(extension: IExtensionDescription, name: string, handler: vscode.CSChatAgentExtendedHandler): vscode.ChatAgent2 {
 		const handle = ExtHostCSChatAgents2._idPool++;
 		const agent = new ExtHostCSChatAgent(extension, name, this._proxy, handle, handler);
 		this._agents.set(handle, agent);
@@ -79,14 +79,23 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 
 		const stopWatch = StopWatch.create(false);
 		let firstProgress: number | undefined;
+
+		const requestObj: vscode.CSChatAgentRequest = {
+			threadId: sessionId,
+			prompt: request.message,
+			variables: {},
+			slashCommand
+		};
+
+		if (request.variables) {
+			for (const key of Object.keys(request.variables)) {
+				requestObj.variables[key] = request.variables[key].map(typeConvert.CSChatVariable.to);
+			}
+		}
+
 		try {
 			const task = agent.invoke(
-				{
-					threadId: sessionId,
-					prompt: request.message,
-					variables: typeConvert.ChatVariable.objectTo(request.variables),
-					slashCommand
-				},
+				requestObj,
 				{ history: context.history.map(typeConvert.CSChatMessage.to) },
 				new Progress<vscode.ChatAgentExtendedProgress>(progress => {
 					throwIfDone();
@@ -232,7 +241,7 @@ class ExtHostCSChatAgent {
 		private readonly _id: string,
 		private readonly _proxy: MainThreadCSChatAgentsShape2,
 		private readonly _handle: number,
-		private readonly _callback: vscode.ChatAgentExtendedHandler,
+		private readonly _callback: vscode.CSChatAgentExtendedHandler,
 	) { }
 
 	acceptFeedback(feedback: vscode.ChatAgentResult2Feedback) {
@@ -439,7 +448,7 @@ class ExtHostCSChatAgent {
 		} satisfies vscode.ChatAgent2;
 	}
 
-	invoke(request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, progress: Progress<vscode.ChatAgentExtendedProgress>, token: CancellationToken): vscode.ProviderResult<vscode.ChatAgentResult2> {
+	invoke(request: vscode.CSChatAgentRequest, context: vscode.ChatAgentContext, progress: Progress<vscode.ChatAgentExtendedProgress>, token: CancellationToken): vscode.ProviderResult<vscode.ChatAgentResult2> {
 		return this._callback(request, context, progress, token);
 	}
 }
