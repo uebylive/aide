@@ -13,8 +13,8 @@ import { IInlineCSChatSlashCommand } from 'vs/workbench/contrib/inlineCSChat/com
 
 const variableReg = /^\$([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A $-variable with an optional numeric : arg ($response:2)
 const slashReg = /\/([\w_\-]+)(?=(\s|$|\b))/i; // A / command
-const fileVariableWithArgReg = /^(\#)([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (#file:foo.ts)
-const symbolVariableWithArgReg = /^(@)([\w_\-]+):([\w_\-\.]+)(?=(\s|$|\b))/i; // A variable with a string : arg (@symbol:get_jwt)
+const fileVariableWithArgReg = /^(\#)([\w_\-]+):([\w_\-\.:]+)(?=(\s|$|\b))/i; // A variable with a string : arg (#file:foo.ts)
+const symbolVariableWithArgReg = /^(@)([\w_\-]+):([\w_\-\.:]+)(?=(\s|$|\b))/i; // A variable with a string : arg (@symbol:get_jwt)
 
 export class InlineCSChatRequestParser {
 	constructor(
