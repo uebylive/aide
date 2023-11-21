@@ -66,8 +66,9 @@ create_cschat_patch() {
 	# the 'Add upstream changes' commit. Do remember that we have performed a merge in between these two commits.
 	git diff $CURRENT_CHANGES $UPSTREAM_CHANGES -- $CSCHAT_DIR > chat_changes.patch
 
-	# Reset the branch to original state
-	git reset --hard HEAD~2
+	# Go back to cs-main and delete the patch branch
+	git checkout $OUR_BRANCH
+	git branch -D $PATCH_BRANCH
 }
 
 apply_cschat_patch() {
@@ -76,6 +77,9 @@ apply_cschat_patch() {
 		echo "Patch file not found. Exiting."
 		exit 1
 	fi
+
+	# Create PATCH_BRANCH
+	git checkout -b $PATCH_BRANCH
 
 	# Merge the latest changes from upstream
 	echo "About to fetch and merge changes from $UPSTREAM_REMOTE/$UPSTREAM_BRANCH. Please ensure everything is ready."
@@ -99,9 +103,6 @@ apply_cschat_patch() {
 	# Commit the changes
 	git add $CSCHAT_DIR
 	git commit -m "Patch upstream chat changes into csChat"
-
-	# Delete the patch
-	rm chat_changes.patch
 }
 
 UPSTREAM_REMOTE=upstream
