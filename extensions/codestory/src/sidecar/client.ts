@@ -198,6 +198,7 @@ export class SideCarClient {
 		repoRef: RepoRef,
 		threadId: string,
 		variables: Record<string, vscode.CSChatVariableValue[]>,
+		projectLabels: string[],
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -207,7 +208,7 @@ export class SideCarClient {
 			query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecar(variables),
-			project_labels: [],
+			project_labels: projectLabels,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
