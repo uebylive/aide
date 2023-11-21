@@ -16,7 +16,7 @@ import { IConfigurationService, IConfigurationChangeEvent } from 'vs/platform/co
 import { DisposableStore, Disposable } from 'vs/base/common/lifecycle';
 import { GutterActionsRegistry } from 'vs/workbench/contrib/codeEditor/browser/editorLineNumberMenu';
 import { Action } from 'vs/base/common/actions';
-import { IInlineCSChatService, ShowGutterIcon } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED, IInlineCSChatService, ShowGutterIcon } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { RunOnceScheduler } from 'vs/base/common/async';
 import { Iterable } from 'vs/base/common/iterator';
 import { Range } from 'vs/editor/common/core/range';
