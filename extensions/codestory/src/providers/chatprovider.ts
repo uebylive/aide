@@ -388,7 +388,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.variables);
+				const projectLabels = this._projectContext.labels;
+				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.variables, projectLabels);
 				await reportFromStreamToSearchProgress(followupResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}

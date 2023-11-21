@@ -33,6 +33,7 @@ import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprovider';
+import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 
 
 class ProgressiveTrackSymbols {
@@ -105,8 +106,7 @@ export async function activate(context: ExtensionContext) {
 	// upto
 	const projectContext = new ProjectContext();
 	await projectContext.collectContext();
-	console.log('what are my labels');
-	console.log(projectContext.labels);
+	const projectLabels = projectContext.labels;
 
 	// TODO(codestory): Download the rust binary here appropriate for the platform
 	// we are on. Similar to how we were doing for Aide binary
@@ -132,6 +132,8 @@ export async function activate(context: ExtensionContext) {
 		RepoRefBackend.local,
 	);
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
+	// Show the indexing percentage on startup
+	await reportIndexingPercentage(sidecarClient, currentRepo);
 
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
@@ -139,9 +141,6 @@ export async function activate(context: ExtensionContext) {
 
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('typescript', projectManagement);
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('python', pythonLanguageParser);
-	// codeSymbolsLanguageCollection.addCodeIndexerForType('go', goLangParser);
 
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
@@ -182,6 +181,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 	);
 	codeGraph.loadGraph(filesToTrack);
+
 
 	// Register chat provider
 	const chatSessionProvider = new CSChatSessionProvider();
@@ -255,7 +255,6 @@ export async function activate(context: ExtensionContext) {
 		logger
 	);
 	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
-
 	// Keeps track of the symbols which are changing and creates a graph of
 	// those changes
 	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();

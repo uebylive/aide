@@ -30,43 +30,33 @@ export class ProjectContext {
 	async collectContext() {
 		const workspaceFolders = vscode.workspace.workspaceFolders;
 		if (workspaceFolders !== undefined) {
-			workspaceFolders.forEach(async (folder) => {
+			await Promise.all(workspaceFolders.map(async (folder) => {
 				await this.addContextForFolder(folder.uri.fsPath);
-			});
+			}));
 		}
 	}
 
 	async addContextForFolder(folderPath: string) {
-		this.fileIndicators.forEach(async (labels, fileName) => {
+		await Promise.all(Array.from(this.fileIndicators.entries()).map(async ([fileName, labels]) => {
 			await this.addLabelIfApplicable(folderPath, fileName, labels);
-		});
+		}));
 	}
 
 	async addLabelIfApplicable(folderPath: string, fileName: string, labels: string[]) {
 		const filePath = path.join(folderPath, fileName);
-		console.log(filePath);
-		console.log(labels);
 		const fileUri = vscode.Uri.file(filePath);
-		vscode.workspace.fs.stat(fileUri).then(
-			() => {
-				console.log('do we ever get here???');
-				console.log(fileUri.fsPath);
-				labels.forEach((label) => this._labels.push(label));
-				const contentIndicator = this.contentIndicators.get(fileName);
-				if (contentIndicator !== undefined) {
-					vscode.workspace.fs.readFile(fileUri).then((fileContent) => {
-						try {
-							contentIndicator(new TextDecoder().decode(fileContent)).forEach((label) =>
-								this._labels.push(label),
-							);
-						} catch { }
-					});
-				}
-			},
-			() => {
-				console.log('we keep failing here');
-			},
-		);
+		try {
+			const workspaceStat = await vscode.workspace.fs.stat(fileUri);
+			labels.forEach((label) => this._labels.push(label));
+			const contentIndicator = this.contentIndicators.get(fileName);
+			if (contentIndicator !== undefined) {
+				const fileContent = await vscode.workspace.fs.readFile(fileUri);
+				contentIndicator(new TextDecoder().decode(fileContent)).forEach((label) =>
+					this._labels.push(label)
+				);
+			}
+		} catch (error) {
+		}
 	}
 
 	initializeIndicators() {
@@ -113,7 +103,7 @@ export class ProjectContext {
 			}
 			if (dependencies.react) {
 				labels.push('react');
-			};
+			}
 			if (dependencies.vue) {
 				labels.push('vue');
 			}

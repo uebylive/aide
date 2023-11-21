@@ -97,6 +97,12 @@ export class SideCarClient {
 		return symbols;
 	}
 
+	async getRepoStatus(): Promise<RepoStatus> {
+		const response = await fetch(this.getRepoListUrl());
+		const repoList = (await response.json()) as RepoStatus;
+		return repoList;
+	}
+
 
 	async *getRepoSyncStatus(): AsyncIterableIterator<SyncUpdate> {
 		const baseUrl = new URL(this._url);
@@ -110,7 +116,8 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const syncUpdate = JSON.parse('{' + lineSinglePartTrimmed) as SyncUpdate;
+				const finalString = '{' + lineSinglePartTrimmed;
+				const syncUpdate = JSON.parse(finalString) as SyncUpdate;
 				yield syncUpdate;
 			}
 		}
@@ -191,6 +198,7 @@ export class SideCarClient {
 		repoRef: RepoRef,
 		threadId: string,
 		variables: Record<string, vscode.CSChatVariableValue[]>,
+		projectLabels: string[],
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -200,6 +208,7 @@ export class SideCarClient {
 			query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecar(variables),
+			project_labels: projectLabels,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
