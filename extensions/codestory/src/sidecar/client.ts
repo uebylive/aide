@@ -207,6 +207,7 @@ export class SideCarClient {
 			query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecar(variables),
+			project_labels: [],
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
