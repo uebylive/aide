@@ -44,6 +44,7 @@ import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/co
 
 const decorationDescription = 'chat';
 const placeholderDecorationType = 'chat-session-detail';
+const agentTextDecorationType = 'chat-agent-text';
 const slashCommandTextDecorationType = 'chat-session-text';
 const variableTextDecorationType = 'chat-variable-text';
 
@@ -101,8 +102,12 @@ class InputEditorDecorations extends Disposable {
 		this.codeEditorService.removeDecorationType(variableTextDecorationType);
 		this.codeEditorService.removeDecorationType(dynamicReferenceDecorationType);
 		this.codeEditorService.removeDecorationType(slashCommandTextDecorationType);
+		this.codeEditorService.removeDecorationType(agentTextDecorationType);
 
 		const theme = this.themeService.getColorTheme();
+		this.codeEditorService.registerDecorationType(decorationDescription, agentTextDecorationType, {
+			opacity: '0',
+		});
 		this.codeEditorService.registerDecorationType(decorationDescription, slashCommandTextDecorationType, {
 			color: theme.getColor(chatSlashCommandForeground)?.toString(),
 			backgroundColor: theme.getColor(chatSlashCommandBackground)?.toString(),
@@ -234,19 +239,21 @@ class InputEditorDecorations extends Disposable {
 
 		this.widget.inputEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, placeholderDecoration ?? []);
 
-		const textDecorations: IDecorationOptions[] | undefined = [];
+		const agentDecorations: IDecorationOptions[] = [];
+		const slashDecorations: IDecorationOptions[] | undefined = [];
 		if (agentPart) {
-			textDecorations.push({ range: agentPart.editorRange });
+			agentDecorations.push({ range: agentPart.editorRange });
 			if (agentSubcommandPart) {
-				textDecorations.push({ range: agentSubcommandPart.editorRange });
+				slashDecorations.push({ range: agentSubcommandPart.editorRange });
 			}
 		}
 
 		if (slashCommandPart) {
-			textDecorations.push({ range: slashCommandPart.editorRange });
+			slashDecorations.push({ range: slashCommandPart.editorRange });
 		}
 
-		this.widget.inputEditor.setDecorationsByType(decorationDescription, slashCommandTextDecorationType, textDecorations);
+		this.widget.inputEditor.setDecorationsByType(decorationDescription, agentTextDecorationType, agentDecorations);
+		this.widget.inputEditor.setDecorationsByType(decorationDescription, slashCommandTextDecorationType, slashDecorations);
 
 		const varDecorations: IDecorationOptions[] = [];
 		const variableParts = parsedRequest.filter((p): p is ChatRequestVariablePart => p instanceof ChatRequestVariablePart);
@@ -473,7 +480,7 @@ class AgentCompletions extends Disposable {
 						const agentLabel = `${chatAgentLeader}${agent.id}`;
 						const withSlash = `/${c.name}`;
 						return <CompletionItem>{
-							label: { label: withSlash, description: agentLabel },
+							label: { label: withSlash, description: '' },
 							insertText: `${agentLabel} ${withSlash} `,
 							detail: `(${agentLabel}) ${c.description}`,
 							range: new Range(1, 1, 1, 1),
@@ -516,7 +523,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				const files = await this.doGetFileSearchResults('', _token);
+				const files = await this.doGetFileSearchResults(_token);
 				const insertAndReplaceRange = new Range(position.lineNumber, position.column, position.lineNumber, position.column);
 				const range = new Range(position.lineNumber, position.column - (varWord ? varWord.word.length : 0), position.lineNumber, position.column);
 
@@ -543,7 +550,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		}));
 	}
 
-	private doGetFileSearchResults(filePattern: string, token: CancellationToken): Promise<ISearchComplete> {
+	private doGetFileSearchResults(token: CancellationToken): Promise<ISearchComplete> {
 		return this.searchService.fileSearch(
 			this.fileQueryBuilder.file(
 				this.contextService.getWorkspace().folders,

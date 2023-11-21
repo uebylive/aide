@@ -44,6 +44,10 @@ export function walkTreeAndAnnotateReferenceLinks(element: HTMLElement): void {
 }
 
 function renderResourceWidget(name: string): HTMLElement {
+	if (name === '!') {
+		return dom.$('');
+	}
+
 	const container = dom.$('span.chat-resource-widget');
 	const alias = dom.$('span', undefined, name);
 	container.appendChild(alias);

@@ -316,7 +316,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._projectContext = projectContext;
 		this._chatSessionState = new CSChatState(null);
 
-		this.chatAgent = vscode.csChat.createChatAgent('aide', this.defaultAgent);
+		this.chatAgent = vscode.csChat.createChatAgent('', this.defaultAgent);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.supportIssueReporting = true;
 		this.chatAgent.description = 'Aide is your personal AI assistant that can write, debug, find, understand and explain code for you.';
