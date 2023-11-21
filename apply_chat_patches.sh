@@ -2,7 +2,7 @@
 
 # This is a script for applying the latest changes from CHAT_DIR in the upstream vscode repo to the CSCHAT_DIR in our repo
 # This needs to be updated to handle all the following paths:
-# extensions/codestory/*.d.ts
+# extensions/codestory/types/*.d.ts
 # src/vscode-dts/vscode.proposed.*.d.ts
 # src/vs/workbench/api/browser/mainThread*Chat.ts
 # src/vs/workbench/api/browser/mainThreadInline*Chat.ts
@@ -33,8 +33,6 @@ fix_files() {
 # Create a patch between the current version of the chat folder and the upstream version. But do this by
 # copying it over to the csChat folder, renaming all files and then generating a patch file.
 create_cschat_patch() {
-	git checkout 1a3461f764c5ff26eba9447eec49ff2db4971a0d
-
 	# Fix the files
 	fix_files
 
@@ -128,10 +126,10 @@ git fetch $OUR_REMOTE
 git fetch $UPSTREAM_REMOTE
 
 # Verify that OUR_BRANCH is in sync with OUR_REMOTE
-# if ! git diff --quiet $OUR_REMOTE/$OUR_BRANCH; then
-# 	echo "Your $OUR_BRANCH branch is not in sync with $OUR_REMOTE/$OUR_BRANCH. Please push your changes and try again."
-# 	exit 1
-# fi
+if ! git diff --quiet $OUR_REMOTE/$OUR_BRANCH; then
+	echo "Your $OUR_BRANCH branch is not in sync with $OUR_REMOTE/$OUR_BRANCH. Please push your changes and try again."
+	exit 1
+fi
 
 # Create a new branch with unix timestamp as suffix
 TIMESTAMP=$(date +%s)
