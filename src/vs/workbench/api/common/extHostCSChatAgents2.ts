@@ -106,6 +106,10 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 					}
 
 					const convertedProgress = typeConvert.ChatResponseProgress.from(agent.extension, progress);
+					if (!convertedProgress) {
+						this._logService.error('Unknown progress type: ' + JSON.stringify(progress));
+						return;
+					}
 					if ('placeholder' in progress && 'resolvedContent' in progress) {
 						const resolvedContent = Promise.all([this._proxy.$handleProgressChunk(requestId, convertedProgress), progress.resolvedContent]);
 						raceCancellation(resolvedContent, token).then(res => {
@@ -114,6 +118,10 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 							}
 							const [progressHandle, progressContent] = res;
 							const convertedContent = typeConvert.ChatResponseProgress.from(agent.extension, progressContent);
+							if (!convertedContent) {
+								this._logService.error('Unknown progress type: ' + JSON.stringify(progressContent));
+								return;
+							}
 							this._proxy.$handleProgressChunk(requestId, convertedContent, progressHandle ?? undefined);
 						});
 					} else {

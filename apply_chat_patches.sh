@@ -99,10 +99,6 @@ apply_cschat_patch() {
 		echo "Rejections detected. Please resolve them now."
 		read -p "Once resolved and all changes are staged, press enter to continue"
 	fi
-
-	# Commit the changes
-	git add $CSCHAT_DIR
-	git commit -m "Patch upstream chat changes into csChat"
 }
 
 UPSTREAM_REMOTE=upstream

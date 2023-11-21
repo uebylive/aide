@@ -201,6 +201,7 @@ export class MenuId {
 	static readonly CSChatExecute = new MenuId('CSChatExecute');
 	static readonly CSChatInputSide = new MenuId('CSChatInputSide');
 	static readonly AccessibleView = new MenuId('AccessibleView');
+	static readonly MultiDiffEditorFileToolbar = new MenuId('MultiDiffEditorFileToolbar');
 
 	/**
 	 * Create or reuse a `MenuId` with the given identifier
