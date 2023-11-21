@@ -34,6 +34,11 @@
       {
         "command": "webview.copySettings",
         "title": "CodeStory: Import settings and keybindings from VSCode"
+      },
+      {
+        "command": "codestory.feedback",
+        "title": "Provide feedback on Discord",
+        "icon": "assets/discord.svg"
       }
     ],
     "viewsContainers": {
@@ -52,6 +57,14 @@
         "icon": "assets/aide-white.svg"
       }
     ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codestory.feedback",
+          "group": "navigation"
+        }
+      ]
+    },
     "keybindings": [
       {
         "command": "workbench.action.csFocusHoverChat.cs-chat",

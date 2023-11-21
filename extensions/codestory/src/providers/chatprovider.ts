@@ -229,28 +229,31 @@ export class CSChatSessionProvider implements vscode.CSChatSessionProvider<CSCha
 	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.CSChatWelcomeMessageContent[]> {
 		logger.info('provideWelcomeMessage', token);
 		return [
-			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',
-			'Here are some things you can ask me to get started:',
+			'Hi, I\'m **Aide**, your personal coding assistant! I can find, understand, explain, debug or write code for you. Here are a few things you can ask me:',
 			[
 				new CSChatReplyFollowup('Explain the active file in the editor'),
 				new CSChatReplyFollowup('Add documentation to the selected code'),
 				new CSChatReplyFollowup('How can I clean up this code?'),
 			],
-			'You can start your request with \'**`/`**\' to give me specific instructions and type \'**`@`**\' to find files and code symbols that I can use to narrow down the context of your request.',
-			'I might make mistakes, though! Like we all do once in a while. If you find me doing so, please share your feedback via **[Discord](https://discord.gg/Cwg3vqgb)** or **founders@codestory.ai** so I can get better.',
+			'You may use `/` to find specific instructions I\'m good at, and `@` or `#` to point me to specific code I should look at while answering your questions.'
 		];
 	}
 
 	prepareSession(token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
 		logger.info('prepareSession', token);
-		const iconUri = vscode.Uri.joinPath(
+		const userUri = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
-			'aide-white.svg'
+			'aide-user.png'
+		);
+		const agentUri = vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'assets',
+			'aide-agent.png'
 		);
 		return new CSChatSession(
-			new CSChatParticipant('You'),
-			new CSChatParticipant('Aide', iconUri),
+			new CSChatParticipant('You', userUri),
+			new CSChatParticipant('Aide', agentUri),
 			'',
 			'Ask away and use # to refer code symbols and files',
 		);
@@ -310,12 +313,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
-			'aide-user.png'
-		);
-		const agentUri = vscode.Uri.joinPath(
-			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
-			'assets',
-			'aide-agent.png'
+			'aide-white.svg'
 		);
 		this.chatAgent.slashCommandProvider = this.slashCommandProvider;
 	}

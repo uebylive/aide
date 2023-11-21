@@ -271,4 +271,12 @@ export async function activate(context: ExtensionContext) {
 	window.onDidChangeActiveTextEditor((editor) => {
 		activeFilesTracker.onDidChangeActiveTextEditor(editor);
 	});
+
+	// Register feedback commands
+	context.subscriptions.push(
+		commands.registerCommand('codestory.feedback', async () => {
+			// Redirect to Discord server link
+			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
+		})
+	);
 }

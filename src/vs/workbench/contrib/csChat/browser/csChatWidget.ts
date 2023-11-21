@@ -440,9 +440,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
-		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
 		this._register(model.onDidChange(e => {
 			if (e.kind === 'initialize') {
+				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
 				this.inputPart.setState(model.providerId, viewState.inputValue ?? '', requester);
 			}
 		}));
@@ -462,6 +462,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
+		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
 		this.inputPart.setState(model.providerId, viewState.inputValue, requester);
 
 		if (this.tree) {
