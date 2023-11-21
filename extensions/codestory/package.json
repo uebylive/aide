@@ -14,7 +14,9 @@
   ],
   "enabledApiProposals": [
     "csChat",
-    "csChatVariables"
+    "csChatVariables",
+    "defaultChatAgent",
+    "chatAgents2Additions"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",

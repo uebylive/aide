@@ -19,6 +19,7 @@ import { ApiCommand, ApiCommandArgument, ApiCommandResult, ExtHostCommands } fro
 import { IRange } from 'vs/editor/common/core/range';
 import { IPosition } from 'vs/editor/common/core/position';
 import { raceCancellation } from 'vs/base/common/async';
+import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 class ProviderWrapper {
 
@@ -28,7 +29,7 @@ class ProviderWrapper {
 
 	constructor(
 		readonly extension: Readonly<IRelaxedExtensionDescription>,
-		readonly provider: vscode.CSChatEditorSessionProvider,
+		readonly provider: vscode.CSChatEditorSessionProvider
 	) { }
 }
 
@@ -93,11 +94,10 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		));
 	}
 
-	registerProvider(extension: Readonly<IRelaxedExtensionDescription>, provider: vscode.CSChatEditorSessionProvider, metadata: vscode.CSChatEditorSessionProviderMetadata): vscode.Disposable {
+	registerProvider(extension: Readonly<IRelaxedExtensionDescription>, provider: vscode.CSChatEditorSessionProvider, metadata?: vscode.CSChatEditorSessionProviderMetadata): vscode.Disposable {
 		const wrapper = new ProviderWrapper(extension, provider);
 		this._inputProvider.set(wrapper.handle, wrapper);
-		this._proxy.$registerCSChatEditorProvider(wrapper.handle, metadata.label, extension.identifier.value, typeof provider.handleCSChatEditorResponseFeedback === 'function');
-		console.log('Registration complete for csChat editor session provider');
+		this._proxy.$registerCSChatEditorProvider(wrapper.handle, metadata?.label ?? extension.displayName ?? extension.name, extension.identifier.value, typeof provider.handleCSChatEditorResponseFeedback === 'function', typeof provider.provideFollowups === 'function', metadata?.supportReportIssue ?? false);
 		return toDisposable(() => {
 			this._proxy.$unregisterCSChatEditorProvider(wrapper.handle);
 			this._inputProvider.delete(wrapper.handle);
@@ -202,33 +202,48 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 			placeholder: res.placeholder,
 		};
 
-		if (ExtHostCSChatEditor._isMessageResponse(res)) {
-			return {
-				...stub,
-				id,
-				type: InlineChatResponseType.Message,
-				message: typeConvert.MarkdownString.from(res.contents),
-			};
-		}
+		if (ExtHostCSChatEditor._isEditResponse(res)) {
+			const { edits, contents } = res;
+			const message = contents !== undefined ? typeConvert.MarkdownString.from(contents) : undefined;
+			if (edits instanceof extHostTypes.WorkspaceEdit) {
+				return {
+					...stub,
+					id,
+					type: InlineChatResponseType.BulkEdit,
+					edits: typeConvert.WorkspaceEdit.from(edits),
+					message
+				};
 
-		const { edits } = res;
-		if (edits instanceof extHostTypes.WorkspaceEdit) {
-			return {
-				...stub,
-				id,
-				type: InlineChatResponseType.BulkEdit,
-				edits: typeConvert.WorkspaceEdit.from(edits),
-			};
-
-		} else {
-			return {
-				...stub,
-				id,
-				type: InlineChatResponseType.EditorEdit,
-				edits: (<vscode.TextEdit[]>edits).map(typeConvert.TextEdit.from),
-			};
+			} else {
+				return {
+					...stub,
+					id,
+					type: InlineChatResponseType.EditorEdit,
+					edits: (<vscode.TextEdit[]>edits).map(typeConvert.TextEdit.from),
+					message
+				};
+			}
 		}
+		return {
+			...stub,
+			id,
+			type: InlineChatResponseType.Message,
+			message: typeConvert.MarkdownString.from(res.contents),
+		};
 	}
+
+	async $provideFollowups(handle: number, sessionId: number, responseId: number, token: CancellationToken): Promise<ICSChatReplyFollowup[] | undefined> {
+		const entry = this._inputProvider.get(handle);
+		const sessionData = this._inputSessions.get(sessionId);
+		const response = sessionData?.responses[responseId];
+		if (entry && response && entry.provider.provideFollowups) {
+			const task = Promise.resolve(entry.provider.provideFollowups(sessionData.session, response, token));
+			const followups = await raceCancellation(task, token);
+			return followups?.map(typeConvert.ChatReplyFollowup.from);
+		}
+		return undefined;
+	}
+
 
 	$handleFeedback(handle: number, sessionId: number, responseId: number, kind: InlineCSChatResponseFeedbackKind): void {
 		const entry = this._inputProvider.get(handle);
@@ -244,7 +259,7 @@ export class ExtHostCSChatEditor implements ExtHostInlineCSChatShape {
 		// TODO@jrieken remove this
 	}
 
-	private static _isMessageResponse(thing: any): thing is vscode.CSChatEditorMessageResponse {
-		return typeof thing === 'object' && typeof (<vscode.CSChatEditorMessageResponse>thing).contents === 'object';
+	private static _isEditResponse(thing: any): thing is vscode.CSChatEditorResponse {
+		return typeof thing === 'object' && typeof (<vscode.CSChatEditorResponse>thing).edits === 'object';
 	}
 }

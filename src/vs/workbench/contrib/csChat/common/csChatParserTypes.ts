@@ -6,7 +6,7 @@
 import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IRange } from 'vs/editor/common/core/range';
 import { Location } from 'vs/editor/common/languages';
-import { IChatAgent, IChatAgentCommand } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IChatAgent, ICSChatAgentCommand } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ISlashCommand } from 'vs/workbench/contrib/csChat/common/csChatService';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
@@ -82,7 +82,7 @@ export class ChatRequestAgentPart implements IParsedChatRequestPart {
 export class ChatRequestAgentSubcommandPart implements IParsedChatRequestPart {
 	static readonly Kind = 'subcommand';
 	readonly kind = ChatRequestAgentSubcommandPart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly command: IChatAgentCommand) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly command: ICSChatAgentCommand) { }
 
 	get text(): string {
 		return `${chatSubcommandLeader}${this.command.name}`;
@@ -116,14 +116,14 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 export class ChatRequestDynamicReferencePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
 	readonly kind = ChatRequestDynamicReferencePart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly name: string, readonly arg: string, readonly data: Location) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly leader: string, readonly name: string, readonly arg: string, readonly data: Location) { }
 
 	get referenceText(): string {
 		return `${this.name}:${this.arg}`;
 	}
 
 	get text(): string {
-		return `${chatFileVariableLeader}${this.referenceText}`;
+		return `${this.leader}${this.referenceText}`;
 	}
 
 	get promptText(): string {
@@ -170,6 +170,7 @@ export function reviveParsedChatRequest(serialized: IParsedChatRequest): IParsed
 				return new ChatRequestDynamicReferencePart(
 					new OffsetRange(part.range.start, part.range.endExclusive),
 					part.editorRange,
+					(part as ChatRequestDynamicReferencePart).leader,
 					(part as ChatRequestDynamicReferencePart).name,
 					(part as ChatRequestDynamicReferencePart).arg,
 					(part as ChatRequestDynamicReferencePart).data

@@ -11,10 +11,10 @@ import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat
 import { ChatDynamicReferenceModel } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest, ChatRequestVariablePart, ChatRequestDynamicReferencePart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { ICSChatVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolveResult, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatVariablesService, ICSChatRequestVariableValue, ICSChatVariableData, IChatVariableResolver, IChatVariableResolveResult, IDynamicReference } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 interface IChatData {
-	data: IChatVariableData;
+	data: ICSChatVariableData;
 	resolver: IChatVariableResolver;
 }
 
@@ -29,7 +29,7 @@ export class ChatVariablesService implements ICSChatVariablesService {
 	}
 
 	async resolveVariables(prompt: IParsedChatRequest, model: IChatModel, token: CancellationToken): Promise<IChatVariableResolveResult> {
-		const resolvedVariables: Record<string, IChatRequestVariableValue[]> = {};
+		const resolvedVariables: Record<string, ICSChatRequestVariableValue[]> = {};
 		const jobs: Promise<any>[] = [];
 
 		const parsedPrompt: string[] = [];
@@ -68,7 +68,7 @@ export class ChatVariablesService implements ICSChatVariablesService {
 		return this._resolver.has(name.toLowerCase());
 	}
 
-	getVariables(): Iterable<Readonly<IChatVariableData>> {
+	getVariables(): Iterable<Readonly<ICSChatVariableData>> {
 		const all = Iterable.map(this._resolver.values(), data => data.data);
 		return Iterable.filter(all, data => !data.hidden);
 	}
@@ -91,7 +91,7 @@ export class ChatVariablesService implements ICSChatVariablesService {
 		return model.references;
 	}
 
-	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable {
+	registerVariable(data: ICSChatVariableData, resolver: IChatVariableResolver): IDisposable {
 		const key = data.name.toLowerCase();
 		if (this._resolver.has(key)) {
 			throw new Error(`A chat variable with the name '${data.name}' already exists.`);

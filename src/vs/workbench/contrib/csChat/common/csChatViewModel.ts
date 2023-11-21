@@ -8,10 +8,10 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatReplyFollowup, IChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatContentReference, IChatProgressMessage, ICSChatReplyFollowup, ICSChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
@@ -55,13 +55,12 @@ export interface IChatViewModel {
 
 export interface IChatRequestViewModel {
 	readonly id: string;
-	readonly providerRequestId: string | undefined;
 	readonly sessionId: string;
 	/** This ID updates every time the underlying data changes */
 	readonly dataId: string;
 	readonly username: string;
 	readonly avatarIconUri?: URI;
-	readonly message: IParsedChatRequest | IChatReplyFollowup;
+	readonly message: IParsedChatRequest | ICSChatReplyFollowup;
 	readonly messageText: string;
 	currentRenderedHeight: number | undefined;
 }
@@ -88,25 +87,27 @@ export interface IChatResponseViewModel {
 	/** This ID updates every time the underlying data changes */
 	readonly dataId: string;
 	readonly providerId: string;
-	readonly providerResponseId: string | undefined;
 	/** The ID of the associated IChatRequestViewModel */
 	readonly requestId: string;
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 	readonly agent?: IChatAgentData;
-	readonly slashCommand?: IChatAgentCommand;
+	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
+	readonly usedContext: IChatUsedContext | undefined;
+	readonly contentReferences: ReadonlyArray<IChatContentReference>;
+	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
-	readonly vote: InteractiveSessionVoteDirection | undefined;
-	readonly replyFollowups?: IChatReplyFollowup[];
-	readonly commandFollowups?: IChatResponseCommandFollowup[];
+	readonly vote: CSChatSessionVoteDirection | undefined;
+	readonly replyFollowups?: ICSChatReplyFollowup[];
+	readonly commandFollowups?: ICSChatResponseCommandFollowup[];
 	readonly errorDetails?: IChatResponseErrorDetails;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
 	renderData?: IChatResponseRenderData;
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
-	setVote(vote: InteractiveSessionVoteDirection): void;
+	setVote(vote: CSChatSessionVoteDirection): void;
 	usedReferencesExpanded?: boolean;
 }
 
@@ -173,12 +174,12 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 			} else if (e.kind === 'addResponse') {
 				this.onAddResponse(e.response);
 			} else if (e.kind === 'removeRequest') {
-				const requestIdx = this._items.findIndex(item => isRequestVM(item) && item.providerRequestId === e.requestId);
+				const requestIdx = this._items.findIndex(item => isRequestVM(item) && item.id === e.requestId);
 				if (requestIdx >= 0) {
 					this._items.splice(requestIdx, 1);
 				}
 
-				const responseIdx = e.responseId && this._items.findIndex(item => isResponseVM(item) && item.providerResponseId === e.responseId);
+				const responseIdx = e.responseId && this._items.findIndex(item => isResponseVM(item) && item.id === e.responseId);
 				if (typeof responseIdx === 'number' && responseIdx >= 0) {
 					const items = this._items.splice(responseIdx, 1);
 					const item = items[0];
@@ -216,10 +217,6 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 export class ChatRequestViewModel implements IChatRequestViewModel {
 	get id() {
 		return this._model.id;
-	}
-
-	get providerRequestId() {
-		return this._model.providerRequestId;
 	}
 
 	get dataId() {
@@ -269,10 +266,6 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.providerId;
 	}
 
-	get providerResponseId() {
-		return this._model.providerResponseId;
-	}
-
 	get sessionId() {
 		return this._model.session.sessionId;
 	}
@@ -297,6 +290,18 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.response;
 	}
 
+	get usedContext(): IChatUsedContext | undefined {
+		return this._model.usedContext;
+	}
+
+	get contentReferences(): ReadonlyArray<IChatContentReference> {
+		return this._model.contentReferences;
+	}
+
+	get progressMessages(): ReadonlyArray<IChatProgressMessage> {
+		return this._model.progressMessages;
+	}
+
 	get isComplete() {
 		return this._model.isComplete;
 	}
@@ -306,11 +311,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	}
 
 	get replyFollowups() {
-		return this._model.followups?.filter((f): f is IChatReplyFollowup => f.kind === 'reply');
+		return this._model.followups?.filter((f): f is ICSChatReplyFollowup => f.kind === 'reply');
 	}
 
 	get commandFollowups() {
-		return this._model.followups?.filter((f): f is IChatResponseCommandFollowup => f.kind === 'command');
+		return this._model.followups?.filter((f): f is ICSChatResponseCommandFollowup => f.kind === 'command');
 	}
 
 	get errorDetails() {
@@ -395,7 +400,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		this.logService.trace(`ChatResponseViewModel#${tag}: ${message}`);
 	}
 
-	setVote(vote: InteractiveSessionVoteDirection): void {
+	setVote(vote: CSChatSessionVoteDirection): void {
 		this._modelChangeCount++;
 		this._model.setVote(vote);
 	}
@@ -406,6 +411,6 @@ export interface IChatWelcomeMessageViewModel {
 	readonly username: string;
 	readonly avatarIconUri?: URI;
 	readonly content: IChatWelcomeMessageContent[];
-	readonly sampleQuestions: IChatReplyFollowup[];
+	readonly sampleQuestions: ICSChatReplyFollowup[];
 	currentRenderedHeight?: number;
 }

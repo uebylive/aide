@@ -453,7 +453,7 @@ async function convertVSCodeVariableToSidecar(
 				});
 			}
 		} else {
-			const parsedValue = variableValue.value as vscode.CSChatDynamicVariableValue;
+			const parsedValue = variableValue.value as any;
 			const fsFilePath = parsedValue.uri.fsPath;
 			const cachedFile = fileCache.get(fsFilePath);
 			if (cachedFile === undefined) {

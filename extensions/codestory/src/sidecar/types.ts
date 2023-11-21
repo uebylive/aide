@@ -182,7 +182,7 @@ export interface DeepContextForView {
 
 export interface TextDocument {
 	text: String;
-	utf8Array: number[],
+	utf8Array: number[];
 	language: String;
 	fsFilePath: String;
 	relativePath: String;
@@ -255,7 +255,7 @@ export interface DiagnosticRelatedInformation {
 			character: number;
 			byteOffset: number;
 		};
-	}
+	};
 }
 
 

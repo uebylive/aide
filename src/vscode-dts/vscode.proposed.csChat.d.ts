@@ -38,6 +38,7 @@ declare module 'vscode' {
 	// todo@API make classes
 	export interface CSChatEditorResponse {
 		edits: TextEdit[] | WorkspaceEdit;
+		contents?: MarkdownString;
 		placeholder?: string;
 		wholeRange?: Range;
 	}
@@ -61,7 +62,8 @@ declare module 'vscode' {
 		Unhelpful = 0,
 		Helpful = 1,
 		Undone = 2,
-		Accepted = 3
+		Accepted = 3,
+		Bug = 4
 	}
 
 	export interface TextDocumentContext {
@@ -70,7 +72,14 @@ declare module 'vscode' {
 	}
 
 	export interface CSChatEditorSessionProviderMetadata {
-		label: string;
+		label?: string;
+		supportReportIssue?: boolean;
+	}
+
+	export interface CSChatEditorReplyFollowup {
+		message: string;
+		tooltip?: string;
+		title?: string;
 	}
 
 	export interface CSChatEditorSessionProvider<S extends CSChatEditorSession = CSChatEditorSession, R extends CSChatEditorResponse | CSChatEditorMessageResponse = CSChatEditorResponse | CSChatEditorMessageResponse> {
@@ -80,12 +89,11 @@ declare module 'vscode' {
 
 		provideCSChatEditorResponse(session: S, request: CSChatEditorRequest, progress: Progress<CSChatEditorProgressItem>, token: CancellationToken): ProviderResult<R>;
 
+		provideFollowups?(session: S, response: R, token: CancellationToken): ProviderResult<CSChatEditorReplyFollowup[]>;
+
 		// eslint-disable-next-line local/vscode-dts-provider-naming
 		handleCSChatEditorResponseFeedback?(session: S, response: R, kind: CSChatEditorResponseFeedbackKind): void;
 	}
-
-
-	export interface CSChatSessionState { }
 
 	export interface CSChatSessionParticipantInformation {
 		name: string;
@@ -100,80 +108,7 @@ declare module 'vscode' {
 		requester: CSChatSessionParticipantInformation;
 		responder: CSChatSessionParticipantInformation;
 		inputPlaceholder?: string;
-
-		saveState?(): CSChatSessionState;
 	}
-
-	export interface CSChatSessionRequestArgs {
-		command: string;
-		args: any;
-	}
-
-	export interface CSChatRequest {
-		session: CSChatSession;
-		message: string;
-	}
-
-	export interface CSChatResponseErrorDetails {
-		message: string;
-		responseIsIncomplete?: boolean;
-		responseIsFiltered?: boolean;
-	}
-
-	export interface CSChatResponseForProgress {
-		errorDetails?: CSChatResponseErrorDetails;
-	}
-
-	export interface CSChatContentReference {
-		reference: Uri | Location;
-	}
-
-	export interface CSChatInlineContentReference {
-		inlineReference: Uri | Location;
-		title?: string; // eg symbol name
-	}
-
-	export interface CSChatProgressContent {
-		content: string | MarkdownString;
-	}
-
-	export interface CSChatProgressId {
-		responseId: string;
-	}
-
-	export interface CSChatProgressTask {
-		placeholder: string;
-		resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>;
-	}
-
-	export interface FileTreeData {
-		label: string;
-		uri: Uri;
-		children?: FileTreeData[];
-	}
-
-	export interface CSChatProgressFileTree {
-		treeData: FileTreeData;
-	}
-
-	export interface DocumentContext {
-		uri: Uri;
-		version: number;
-		ranges: Range[];
-	}
-
-	export interface CSChatProgressUsedContext {
-		documents: DocumentContext[];
-	}
-
-	export type CSChatProgress =
-		| CSChatProgressContent
-		| CSChatProgressId
-		| CSChatProgressTask
-		| CSChatProgressFileTree
-		| CSChatProgressUsedContext
-		| CSChatContentReference
-		| CSChatInlineContentReference;
 
 	export interface CSChatResponseCommand {
 		commandId: string;
@@ -182,40 +117,18 @@ declare module 'vscode' {
 		when?: string;
 	}
 
-	export interface CSChatSessionSlashCommand {
-		command: string;
-		kind: CompletionItemKind;
-		detail?: string;
-		shouldRepopulate?: boolean;
-		followupPlaceholder?: string;
-		executeImmediately?: boolean;
-		yieldTo?: ReadonlyArray<{ readonly command: string }>;
-	}
-
 	export interface CSChatSessionReplyFollowup {
 		message: string;
 		tooltip?: string;
 		title?: string;
-
-		// Extensions can put any serializable data here, such as an ID/version
-		metadata?: any;
 	}
-
-	export type CSChatSessionFollowup = CSChatSessionReplyFollowup | CSChatResponseCommand;
 
 	export type CSChatWelcomeMessageContent = string | MarkdownString | CSChatSessionReplyFollowup[];
 
 	export interface CSChatSessionProvider<S extends CSChatSession = CSChatSession> {
 		provideWelcomeMessage?(token: CancellationToken): ProviderResult<CSChatWelcomeMessageContent[]>;
 		provideSampleQuestions?(token: CancellationToken): ProviderResult<CSChatSessionReplyFollowup[]>;
-		provideFollowups?(session: S, token: CancellationToken): ProviderResult<(string | CSChatSessionFollowup)[]>;
-		provideSlashCommands?(session: S, token: CancellationToken): ProviderResult<CSChatSessionSlashCommand[]>;
-
-		prepareSession(initialState: CSChatSessionState | undefined, token: CancellationToken): ProviderResult<S>;
-		provideResponseWithProgress(request: CSChatRequest, progress: Progress<CSChatProgress>, token: CancellationToken): ProviderResult<CSChatResponseForProgress>;
-
-		// eslint-disable-next-line local/vscode-dts-provider-naming
-		removeRequest(session: S, requestId: string): void;
+		prepareSession(token: CancellationToken): ProviderResult<S>;
 	}
 
 	export interface CSChatSessionDynamicRequest {
@@ -223,12 +136,6 @@ declare module 'vscode' {
 		 * The message that will be displayed in the UI
 		 */
 		message: string;
-
-		/**
-		 * Any extra metadata/context that will go to the provider.
-		 * NOTE not actually used yet.
-		 */
-		metadata?: any;
 	}
 
 	export namespace csChat {
@@ -242,5 +149,15 @@ declare module 'vscode' {
 		export function registerCSChatEditorSessionProvider(provider: CSChatEditorSessionProvider, metadata?: CSChatEditorSessionProviderMetadata): Disposable;
 
 		export function transferChatSession(session: CSChatSession, toWorkspace: Uri): void;
+
+		export function createChatAgent(name: string, handler: CSChatAgentExtendedHandler): ChatAgent2;
+
+		export function registerChatResponseProvider(id: string, provider: ChatResponseProvider, metadata: ChatResponseProviderMetadata): Disposable;
+
+		export function requestChatAccess(id: string): Thenable<ChatAccess>;
+
+		export function registerVariable(name: string, description: string, resolver: ChatVariableResolver): Disposable;
+
+		export function registerMappedEditsProvider(documentSelector: DocumentSelector, provider: MappedEditsProvider): Disposable;
 	}
 }

@@ -16,8 +16,7 @@ export type EventType =
 	| 'testExecutionHarness'
 	| 'terminalExecution'
 	| 'executionBranchFinishReason'
-	| 'taskComplete'
-	| 'usingUserProvidedContext';
+	| 'taskComplete';
 
 export interface AntonData {
 	events: AntonEvent[];

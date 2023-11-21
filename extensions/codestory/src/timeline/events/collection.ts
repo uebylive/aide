@@ -3,11 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import { Progress, Uri } from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 
 import { CodeSnippetInformation, CodeSymbolInformation } from '../../utilities/types';
-import { CodeGraph } from '../../codeGraph/graph';
 import {
 	CodeModificationContextAndDiff,
 	CodeSymbolModificationInstruction,
@@ -58,7 +56,6 @@ interface ToolingEvent {
 	numberOfBranchElements: number | null;
 	executionBranchFinishReason: string | null;
 	codeModificationInstructionList: CodeSymbolModificationInstruction[] | null;
-	userProvidedContext: vscode.InteractiveUserProvidedContext | null;
 	// codeNodeReferencesForSymbol: GetReferencesForCodeNode | null;
 	// planChangesForNode: PlanChangesForChildNode | null;
 	// lookupCodeSnippetForSymbols: LookupCodeSnippetForSymbols | null;
@@ -93,7 +90,6 @@ export const thinkingEvent = (
 		numberOfBranchElements: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -125,7 +121,6 @@ export const addPlanForHelp = (userQuery: string, planForHelp: string): ToolingE
 		numberOfBranchElements: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -160,7 +155,6 @@ export const relevantSearchResults = (
 		numberOfBranchElements: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -192,7 +186,6 @@ export const searchForQuery = (userQuery: string): ToolingEvent => {
 		numberOfBranchElements: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -200,36 +193,6 @@ export const searchForQuery = (userQuery: string): ToolingEvent => {
 		codeSnippetInformationList: null,
 	};
 };
-
-
-export const usingUserProvidedContext = (userProvidedContext: vscode.InteractiveUserProvidedContext): ToolingEvent => {
-	return {
-		eventId: uuidv4(),
-		eventType: 'usingUserProvidedContext',
-		eventOutput: null,
-		eventInput: 'user_provided_context',
-		eventContext: null,
-		eventTimestamp: Date.now(),
-		numberOfBranchElements: null,
-		codeSymbolReference: null,
-		stdout: null,
-		stderr: null,
-		codeSymbolName: null,
-		codeSymbolModificationInstruction: null,
-		codeModificationContextAndDiff: null,
-		fileSaveEvent: null,
-		executionEventId: null,
-		testExecutionHarness: null,
-		exitCode: null,
-		args: null,
-		markdownReferences: null,
-		executionBranchFinishReason: null,
-		codeModificationInstructionList: null,
-		userProvidedContext,
-		codeSnippetInformationList: null,
-	};
-};
-
 
 export const branchElementsEvents = (
 	numberOfBranchElements: number,
@@ -257,7 +220,6 @@ export const branchElementsEvents = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -292,7 +254,6 @@ export const addInstructionsForModification = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -331,7 +292,6 @@ export const saveFileToolingEvent = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		codeSnippetInformationList: null,
 	};
 };
@@ -363,7 +323,6 @@ export const addModificationDiffAndThoughts = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -398,7 +357,6 @@ export const saveFileEvent = (filePath: string, codeSymbolName: string): Tooling
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -438,7 +396,6 @@ export const testExecutionEvent = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		// codeNodeReferencesForSymbol: null,
 		// planChangesForNode: null,
 		// lookupCodeSnippetForSymbols: null,
@@ -481,7 +438,6 @@ export const terminalEvent = (
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		codeSnippetInformationList: null,
 	};
 };
@@ -513,7 +469,6 @@ export const executionBranchFinishEvent = (
 		markdownReferences: null,
 		executionBranchFinishReason,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		codeSnippetInformationList: null,
 	};
 };
@@ -541,13 +496,12 @@ export const taskComplete = (): ToolingEvent => {
 		markdownReferences: null,
 		executionBranchFinishReason: null,
 		codeModificationInstructionList: null,
-		userProvidedContext: null,
 		codeSnippetInformationList: null,
 	};
 };
 
 type ChatProgress = {
-	progress: Progress<CSChatProgress>;
+	progress: vscode.Progress<CSChatProgress>;
 	cancellationToken: CSChatCancellationToken;
 };
 
@@ -600,38 +554,12 @@ export class ToolingEventCollection {
 		await this.save();
 	}
 
-	public async userProvidedContext(userContext: vscode.InteractiveUserProvidedContext | undefined) {
-		if (userContext === undefined) {
-			return;
-		}
-		console.log('[userProvidedContext]');
-		console.log(userContext);
-		const event = usingUserProvidedContext(userContext);
-		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressContent(
-				`## Using user provided context:
-
-Looking at the following files
-${userContext.fileContext.map((filePath) => {
-					return `* ${filePath}`;
-				}).join('\n')}
-
-Looking at the code symbols:
-${userContext.codeSymbolsContext.map((codeSymbol) => {
-					return `* ${codeSymbol.documentSymbolName} in ${codeSymbol.filePath}:${codeSymbol.startLineNumber}:${codeSymbol.endLineNumber}\n`;
-				})}
-`,
-			),
-		);
-	}
-
 	createFileTreeFromCodeSymbols(
 		codeSnippets: CodeSnippetInformation[],
 		workingDirectory: string,
 	): CSChatProgressFileTree {
 		// Create a root CSChatFileTreeData object with an empty label and URI
-		const rootTreeData = new CSChatFileTreeData('', Uri.file(''));
+		const rootTreeData = new CSChatFileTreeData('', vscode.Uri.file(''));
 
 		// Iterate through codeSnippets and build the file tree
 		for (const codeSnippet of codeSnippets) {
@@ -649,7 +577,7 @@ ${userContext.codeSymbolsContext.map((codeSymbol) => {
 
 				if (!childNode) {
 					// Create a new node for the segment
-					const uri = Uri.file(codeSnippet.filePath);
+					const uri = vscode.Uri.file(codeSnippet.filePath);
 					childNode = new CSChatFileTreeData(segment, uri);
 					currentNode.children.push(childNode);
 				}

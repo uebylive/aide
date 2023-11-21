@@ -19,7 +19,6 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
 	sidecarClient: SideCarClient,
-	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	reporef: RepoRef,
 ): Promise<CodeSnippetInformation[]> => {
 	// we will ping the sidecar binary to get the code snippets which are relevant
@@ -35,8 +34,7 @@ export const generateCodeSymbolsForQueries = async (
 		}
 	}
 	return codeSnippetInformationList;
-}
-
+};
 
 
 export const getOpenFilesInWorkspace = (): string[] => {

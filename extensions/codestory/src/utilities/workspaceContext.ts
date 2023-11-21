@@ -103,7 +103,7 @@ export class ProjectContext {
 			}
 			if (dependencies.react) {
 				labels.push('react');
-			};
+			}
 			if (dependencies.vue) {
 				labels.push('vue');
 			}

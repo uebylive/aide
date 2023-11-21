@@ -11,7 +11,6 @@ import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLangua
 export const generateFileInformationSummary = async (
 	codeSnippetInformationList: CodeSnippetInformation[],
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined,
 	workingDirectory: string
 ): Promise<FileCodeSymbolInformation[]> => {
 	// We want to get all the files being referenced here and then take all
@@ -20,11 +19,6 @@ export const generateFileInformationSummary = async (
 	const fileSet: Set<string> = new Set();
 	for (let index = 0; index < codeSnippetInformationList.length; index++) {
 		fileSet.add(codeSnippetInformationList[index].filePath);
-	}
-	if (userProvidedContext !== undefined) {
-		for (let index = 0; index < userProvidedContext.fileContext.length ?? 0; index++) {
-			fileSet.add(userProvidedContext.fileContext[index]);
-		}
 	}
 
 	const fileList: string[] = Array.from(fileSet);

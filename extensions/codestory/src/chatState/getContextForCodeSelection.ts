@@ -56,7 +56,7 @@ export const getRelevantContextForCodeSelection = (
 
 
 export const getContextForPromptFromUserContext = (
-	selectionContext: vscode.InteractiveUserProvidedContext,
+	selectionContext: any,
 ): string => {
 	const fileList = selectionContext.fileContext;
 	const codeSnippetInformation = selectionContext.codeSymbolsContext;

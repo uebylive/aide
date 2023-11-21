@@ -16,26 +16,26 @@ export const enum ChatMessageRole {
 	Function,
 }
 
-export interface IChatMessage {
+export interface ICSChatMessage {
 	readonly role: ChatMessageRole;
 	readonly content: string;
 	readonly name?: string;
 }
 
-export interface IChatResponseFragment {
+export interface ICSChatResponseFragment {
 	index: number;
 	part: string;
 }
 
-export interface IChatResponseProviderMetadata {
+export interface ICSChatResponseProviderMetadata {
 	readonly extension: ExtensionIdentifier;
 	readonly displayName: string;
 	readonly description?: string;
 }
 
 export interface IChatResponseProvider {
-	metadata: IChatResponseProviderMetadata;
-	provideChatResponse(messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
+	metadata: ICSChatResponseProviderMetadata;
+	provideChatResponse(messages: ICSChatMessage[], options: { [name: string]: any }, progress: IProgress<ICSChatResponseFragment>, token: CancellationToken): Promise<any>;
 }
 
 export const ICSChatProviderService = createDecorator<ICSChatProviderService>('csChatProviderService');
@@ -46,7 +46,7 @@ export interface ICSChatProviderService {
 
 	registerChatResponseProvider(identifier: string, provider: IChatResponseProvider): IDisposable;
 
-	fetchChatResponse(identifier: string, messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
+	fetchChatResponse(identifier: string, messages: ICSChatMessage[], options: { [name: string]: any }, progress: IProgress<ICSChatResponseFragment>, token: CancellationToken): Promise<any>;
 }
 
 export class ChatProviderService implements ICSChatProviderService {
@@ -63,7 +63,7 @@ export class ChatProviderService implements ICSChatProviderService {
 		return toDisposable(() => this._providers.delete(identifier));
 	}
 
-	fetchChatResponse(identifier: string, messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any> {
+	fetchChatResponse(identifier: string, messages: ICSChatMessage[], options: { [name: string]: any }, progress: IProgress<ICSChatResponseFragment>, token: CancellationToken): Promise<any> {
 		const provider = this._providers.get(identifier);
 		if (!provider) {
 			throw new Error(`Chat response provider with identifier ${identifier} is not registered.`);

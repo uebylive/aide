@@ -6,14 +6,13 @@
 import { Dimension } from 'vs/base/browser/dom';
 import { Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { URI } from 'vs/base/common/uri';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { TextEdit } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { IInlineChatWidgetContrib } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
 import { IInlineCSChatSlashCommand } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { ExpansionState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { IUntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
 
 export interface IInlineChatWidget {
 	readonly onDidChangeInput: Event<this>;
@@ -30,7 +29,7 @@ export interface IInlineChatWidget {
 	readPlaceholder(): void;
 	reset(): void;
 	selectAll(includeSlashCommand?: boolean): void;
-	showCreatePreview(uri: URI, edits: TextEdit[]): void;
+	showCreatePreview(model: IUntitledTextEditorModel): Promise<void>;
 	showEditsPreview(textModel0: ITextModel, textModelN: ITextModel, allEdits: ISingleEditOperation[][]): Promise<void>;
 	showsAnyPreview(): boolean;
 	updateInfo(message: string): void;

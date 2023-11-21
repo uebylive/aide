@@ -8,13 +8,13 @@ import { Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
-import { Range, IRange } from 'vs/editor/common/core/range';
-import { ProviderResult, Location } from 'vs/editor/common/languages';
+import { IRange, Range } from 'vs/editor/common/core/range';
+import { Location, ProviderResult } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { IChatModel, ChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ChatModel, IChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
+import { ICSChatRequestVariableValue } from 'vs/workbench/contrib/csChat/common/csChatVariables';
 
 export interface IChat {
 	id: number; // TODO Maybe remove this and move to a subclass that only the provider knows about
@@ -23,14 +23,13 @@ export interface IChat {
 	responderUsername: string;
 	responderAvatarIconUri?: URI;
 	inputPlaceholder?: string;
-	onDidChangeState?: Event<any>;
 	dispose?(): void;
 }
 
 export interface IChatRequest {
 	session: IChat;
 	message: string;
-	variables: Record<string, IChatRequestVariableValue[]>;
+	variables: Record<string, ICSChatRequestVariableValue[]>;
 }
 
 export interface IChatResponseErrorDetails {
@@ -70,11 +69,12 @@ export function isIDocumentContext(obj: unknown): obj is IDocumentContext {
 	);
 }
 
-export type IUsedContext = {
+export interface IChatUsedContext {
 	documents: IDocumentContext[];
-};
+	kind: 'usedContext';
+}
 
-export function isIUsedContext(obj: unknown): obj is IUsedContext {
+export function isIUsedContext(obj: unknown): obj is IChatUsedContext {
 	return (
 		!!obj &&
 		typeof obj === 'object' &&
@@ -86,40 +86,68 @@ export function isIUsedContext(obj: unknown): obj is IUsedContext {
 
 export interface IChatContentReference {
 	reference: URI | Location;
+	kind: 'reference';
 }
 
 export interface IChatContentInlineReference {
 	inlineReference: URI | Location;
 	name?: string;
+	kind: 'inlineReference';
 }
 
 export interface IChatAgentDetection {
 	agentName: string;
-	command?: IChatAgentCommand;
+	command?: ICSChatAgentCommand;
+	kind: 'agentDetection';
 }
 
-export type IChatProgress =
-	| { content: string | IMarkdownString }
-	| { requestId: string }
-	| { treeData: IChatResponseProgressFileTreeData }
-	| { placeholder: string; resolvedContent: Promise<string | IMarkdownString | { treeData: IChatResponseProgressFileTreeData }> }
-	| IUsedContext
+export interface IChatContent {
+	content: string;
+	kind: 'content';
+}
+
+export interface IChatMarkdownContent {
+	content: IMarkdownString;
+	kind: 'markdownContent';
+}
+
+export interface IChatTreeData {
+	treeData: IChatResponseProgressFileTreeData;
+	kind: 'treeData';
+}
+
+export interface ICSChatAsyncContent {
+	/**
+	 * The placeholder to show while the content is loading
+	 */
+	content: string;
+	resolvedContent: Promise<string | IMarkdownString | IChatTreeData>;
+	kind: 'asyncContent';
+}
+
+export interface IChatProgressMessage {
+	content: string;
+	kind: 'progressMessage';
+}
+
+export type ICSChatProgress =
+	| IChatContent
+	| IChatMarkdownContent
+	| IChatTreeData
+	| ICSChatAsyncContent
+	| IChatUsedContext
 	| IChatContentReference
 	| IChatContentInlineReference
-	| IChatAgentDetection;
+	| IChatAgentDetection
+	| IChatProgressMessage;
 
-export interface IPersistedChatState { }
 export interface IChatProvider {
 	readonly id: string;
 	readonly displayName: string;
 	readonly iconUrl?: string;
-	prepareSession(initialState: IPersistedChatState | undefined, token: CancellationToken): ProviderResult<IChat | undefined>;
-	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString | IChatReplyFollowup[])[] | undefined>;
-	provideSampleQuestions?(token: CancellationToken): ProviderResult<IChatReplyFollowup[] | undefined>;
-	provideFollowups?(session: IChat, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
-	provideReply(request: IChatRequest, progress: (progress: IChatProgress) => void, token: CancellationToken): ProviderResult<IChatResponse>;
-	provideSlashCommands?(session: IChat, token: CancellationToken): ProviderResult<ISlashCommand[]>;
-	removeRequest?(session: IChat, requestId: string): void;
+	prepareSession(token: CancellationToken): ProviderResult<IChat | undefined>;
+	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString | ICSChatReplyFollowup[])[] | undefined>;
+	provideSampleQuestions?(token: CancellationToken): ProviderResult<ICSChatReplyFollowup[] | undefined>;
 }
 
 export interface ISlashCommand {
@@ -151,15 +179,14 @@ export interface ISlashCommand {
 	yieldsTo?: ReadonlyArray<{ readonly command: string }>;
 }
 
-export interface IChatReplyFollowup {
+export interface ICSChatReplyFollowup {
 	kind: 'reply';
 	message: string;
 	title?: string;
 	tooltip?: string;
-	metadata?: any;
 }
 
-export interface IChatResponseCommandFollowup {
+export interface ICSChatResponseCommandFollowup {
 	kind: 'command';
 	commandId: string;
 	args?: any[];
@@ -167,18 +194,18 @@ export interface IChatResponseCommandFollowup {
 	when?: string;
 }
 
-export type IChatFollowup = IChatReplyFollowup | IChatResponseCommandFollowup;
+export type ICSChatFollowup = ICSChatReplyFollowup | ICSChatResponseCommandFollowup;
 
 // Name has to match the one in vscode.d.ts for some reason
-export enum InteractiveSessionVoteDirection {
+export enum CSChatSessionVoteDirection {
 	Down = 0,
 	Up = 1
 }
 
 export interface IChatVoteAction {
 	kind: 'vote';
-	responseId: string;
-	direction: InteractiveSessionVoteDirection;
+	direction: CSChatSessionVoteDirection;
+	reportIssue?: boolean;
 }
 
 export enum InteractiveSessionCopyKind {
@@ -189,7 +216,6 @@ export enum InteractiveSessionCopyKind {
 
 export interface IChatCopyAction {
 	kind: 'copy';
-	responseId: string;
 	codeBlockIndex: number;
 	copyType: InteractiveSessionCopyKind;
 	copiedCharacters: number;
@@ -199,7 +225,6 @@ export interface IChatCopyAction {
 
 export interface IChatInsertAction {
 	kind: 'insert';
-	responseId: string;
 	codeBlockIndex: number;
 	totalCharacters: number;
 	newFile?: boolean;
@@ -207,24 +232,27 @@ export interface IChatInsertAction {
 
 export interface IChatTerminalAction {
 	kind: 'runInTerminal';
-	responseId: string;
 	codeBlockIndex: number;
 	languageId?: string;
 }
 
 export interface IChatCommandAction {
 	kind: 'command';
-	command: IChatResponseCommandFollowup;
+	command: ICSChatResponseCommandFollowup;
 }
 
 export interface IChatFollowupAction {
 	kind: 'followUp';
-	followup: IChatReplyFollowup;
+	followup: ICSChatReplyFollowup;
 }
 
-export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IChatFollowupAction;
+export interface IChatBugReportAction {
+	kind: 'bug';
+}
 
-export interface IChatUserActionEvent {
+export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IChatFollowupAction | IChatBugReportAction;
+
+export interface ICSChatUserActionEvent {
 	action: ChatUserAction;
 	providerId: string;
 	agentId: string | undefined;
@@ -245,9 +273,9 @@ export interface IChatDynamicRequest {
 }
 
 export interface IChatCompleteResponse {
-	message: string | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference>;
+	message: string | ReadonlyArray<ICSChatProgress>;
 	errorDetails?: IChatResponseErrorDetails;
-	followups?: IChatFollowup[];
+	followups?: ICSChatFollowup[];
 }
 
 export interface IChatDetail {
@@ -271,7 +299,7 @@ export interface ICSChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
 
-	onDidSubmitSlashCommand: Event<{ slashCommand: string; sessionId: string } | { agent: IChatAgentData; slashCommand: IChatAgentCommand; sessionId: string }>;
+	onDidSubmitAgent: Event<{ agent: IChatAgentData; slashCommand: ICSChatAgentCommand; sessionId: string }>;
 	onDidRegisterProvider: Event<{ providerId: string }>;
 	registerProvider(provider: IChatProvider): IDisposable;
 	hasSessions(providerId: string): boolean;
@@ -285,18 +313,17 @@ export interface ICSChatService {
 	/**
 	 * Returns whether the request was accepted.
 	 */
-	sendRequest(sessionId: string, message: string, usedSlashCommand?: ISlashCommand): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
+	sendRequest(sessionId: string, message: string): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
 	removeRequest(sessionid: string, requestId: string): Promise<void>;
 	cancelCurrentRequestForSession(sessionId: string): void;
-	getSlashCommands(sessionId: string, token: CancellationToken): Promise<ISlashCommand[]>;
 	clearSession(sessionId: string): void;
 	addCompleteRequest(sessionId: string, message: IParsedChatRequest | string, response: IChatCompleteResponse): void;
 	sendRequestToProvider(sessionId: string, message: IChatDynamicRequest): void;
 	getHistory(): IChatDetail[];
 	removeHistoryEntry(sessionId: string): void;
 
-	onDidPerformUserAction: Event<IChatUserActionEvent>;
-	notifyUserAction(event: IChatUserActionEvent): void;
+	onDidPerformUserAction: Event<ICSChatUserActionEvent>;
+	notifyUserAction(event: ICSChatUserActionEvent): void;
 	onDidDisposeSession: Event<{ sessionId: string; providerId: string; reason: 'initializationFailed' | 'cleared' }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;

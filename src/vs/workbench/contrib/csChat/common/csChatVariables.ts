@@ -11,14 +11,14 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { IChatModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 
-export interface IChatVariableData {
+export interface ICSChatVariableData {
 	name: string;
 	description: string;
 	hidden?: boolean;
 	canTakeArgument?: boolean;
 }
 
-export interface IChatRequestVariableValue {
+export interface ICSChatRequestVariableValue {
 	level: 'short' | 'medium' | 'full';
 	value: string;
 	description?: string;
@@ -26,16 +26,16 @@ export interface IChatRequestVariableValue {
 
 export interface IChatVariableResolver {
 	// TODO should we spec "zoom level"
-	(messageText: string, arg: string | undefined, model: IChatModel, token: CancellationToken): Promise<IChatRequestVariableValue[] | undefined>;
+	(messageText: string, arg: string | undefined, model: IChatModel, token: CancellationToken): Promise<ICSChatRequestVariableValue[] | undefined>;
 }
 
 export const ICSChatVariablesService = createDecorator<ICSChatVariablesService>('ICSChatVariablesService');
 
 export interface ICSChatVariablesService {
 	_serviceBrand: undefined;
-	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable;
+	registerVariable(data: ICSChatVariableData, resolver: IChatVariableResolver): IDisposable;
 	hasVariable(name: string): boolean;
-	getVariables(): Iterable<Readonly<IChatVariableData>>;
+	getVariables(): Iterable<Readonly<ICSChatVariableData>>;
 	getDynamicReferences(sessionId: string): ReadonlyArray<IDynamicReference>; // should be its own service?
 
 	/**
@@ -46,16 +46,16 @@ export interface ICSChatVariablesService {
 
 export interface IInlineChatVariableResolver {
 	// TODO should we spec "zoom level"
-	(messageText: string, arg: string | undefined, token: CancellationToken): Promise<IChatRequestVariableValue[] | undefined>;
+	(messageText: string, arg: string | undefined, token: CancellationToken): Promise<ICSChatRequestVariableValue[] | undefined>;
 }
 
 export const IInlineCSChatVariablesService = createDecorator<IInlineCSChatVariablesService>('IInlineCSChatVariablesService');
 
 export interface IInlineCSChatVariablesService {
 	_serviceBrand: undefined;
-	registerVariable(data: IChatVariableData, resolver: IInlineChatVariableResolver): IDisposable;
+	registerVariable(data: ICSChatVariableData, resolver: IInlineChatVariableResolver): IDisposable;
 	hasVariable(name: string): boolean;
-	getVariables(): Iterable<Readonly<IChatVariableData>>;
+	getVariables(): Iterable<Readonly<ICSChatVariableData>>;
 	getDynamicReferences(sessionId: string): ReadonlyArray<IDynamicReference>; // should be its own service?
 
 	/**
@@ -65,7 +65,7 @@ export interface IInlineCSChatVariablesService {
 }
 
 export interface IChatVariableResolveResult {
-	variables: Record<string, IChatRequestVariableValue[]>;
+	variables: Record<string, ICSChatRequestVariableValue[]>;
 	prompt: string;
 }
 

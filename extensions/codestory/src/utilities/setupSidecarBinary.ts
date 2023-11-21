@@ -8,8 +8,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as cp from 'child_process';
-import { spawn, exec, execFile } from 'child_process';
+import { spawn, spawnSync, exec, execFile } from 'child_process';
 import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
 import { sidecarUseSelfRun } from './sidecarUrl';
 
@@ -17,7 +16,7 @@ import { sidecarUseSelfRun } from './sidecarUrl';
 function unzipSidecarZipFolder(source: string, extractDir: string) {
 	if (source.endsWith('.zip')) {
 		if (process.platform === 'win32') {
-			cp.spawnSync('powershell.exe', [
+			spawnSync('powershell.exe', [
 				'-NoProfile',
 				'-ExecutionPolicy', 'Bypass',
 				'-NonInteractive',
@@ -26,14 +25,14 @@ function unzipSidecarZipFolder(source: string, extractDir: string) {
 				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${extractDir}"`
 			]);
 		} else {
-			cp.spawnSync('unzip', ['-o', source, '-d', `${extractDir}`]);
+			spawnSync('unzip', ['-o', source, '-d', `${extractDir}`]);
 		}
 	} else {
 		// tar does not create extractDir by default
 		if (!fs.existsSync(extractDir)) {
 			fs.mkdirSync(extractDir);
 		}
-		cp.spawnSync('tar', ['-xzf', source, '-C', extractDir, '--strip-components', '1']);
+		spawnSync('tar', ['-xzf', source, '-C', extractDir, '--strip-components', '1']);
 	}
 }
 
@@ -187,6 +186,7 @@ export async function startSidecarBinary(
 	await window.withProgress(
 		{
 			location: ProgressLocation.SourceControl,
+			// allow-any-unicode-next-line
 			title: 'Downloading the sidecar binary 🦀',
 			cancellable: false,
 		},
@@ -323,6 +323,7 @@ export async function startSidecarBinary(
 			const url = `${serverUrl}/api/health`;
 			const response = await fetch(url);
 			if (response.status === 200) {
+				// allow-any-unicode-next-line
 				console.log('HC finished! We are green 🛳️');
 				return;
 			} else {

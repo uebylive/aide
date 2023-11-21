@@ -3,21 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { v4 as uuidv4 } from 'uuid';
-import { commands, env } from 'vscode';
-import { CodeGraph } from '../codeGraph/graph';
+import { commands } from 'vscode';
 import { MessageHandlerData } from '@estruyf/vscode';
+
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
 import { PromptState } from '../types';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { CSChatProvider } from '../providers/chatprovider';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 
 export const debug = (
-	csChatProvider: CSChatProvider,
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	sidecarClient: SideCarClient,
 	repoName: string,
@@ -58,7 +56,6 @@ export const debug = (
 					workingDirectory,
 					testSuiteRunCommand,
 					activeFilesTracker,
-					undefined,
 					uniqueId,
 					agentCustomInstruction,
 					reporef,

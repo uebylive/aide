@@ -678,7 +678,7 @@ class LineIndentManager {
 	getIndentString(indentStyle: IndentStyleSpaces) {
 		return indentStyle.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(indentStyle.indentSize ?? 0);
 	}
-};
+}
 
 class AdjustedLineContent {
 	public originalContent: string;

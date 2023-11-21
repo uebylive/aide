@@ -6,112 +6,114 @@
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import * as errors from 'vs/base/common/errors';
 import { Emitter, Event } from 'vs/base/common/event';
+import { combinedDisposable } from 'vs/base/common/lifecycle';
+import { Schemas } from 'vs/base/common/network';
 import Severity from 'vs/base/common/severity';
 import { URI } from 'vs/base/common/uri';
 import { TextEditorCursorStyle } from 'vs/editor/common/config/editorOptions';
-import { OverviewRulerLane } from 'vs/editor/common/model';
-import * as languageConfiguration from 'vs/editor/common/languages/languageConfiguration';
 import { score } from 'vs/editor/common/languageSelector';
+import * as languageConfiguration from 'vs/editor/common/languages/languageConfiguration';
+import { OverviewRulerLane } from 'vs/editor/common/model';
+import { ExtensionIdentifierSet, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import * as files from 'vs/platform/files/common/files';
-import { ExtHostContext, MainContext, CandidatePortSource, ExtHostLogLevelServiceShape } from 'vs/workbench/api/common/extHost.protocol';
-import { UIKind } from 'vs/workbench/services/extensions/common/extensionHostProtocol';
+import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
+import { ILogService, ILoggerService, LogLevel } from 'vs/platform/log/common/log';
+import { matchesScheme } from 'vs/platform/opener/common/opener';
+import { getRemoteName } from 'vs/platform/remote/common/remoteHosts';
+import { TelemetryTrustedValue } from 'vs/platform/telemetry/common/telemetryUtils';
+import { EditSessionIdentityMatch } from 'vs/platform/workspace/common/editSessions';
+import { CandidatePortSource, ExtHostContext, ExtHostLogLevelServiceShape, MainContext } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
 import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
+import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
+import { ExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
+import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
+import { ExtHostCSChat } from 'vs/workbench/api/common/extHostCSChat';
+import { ExtHostCSChatAgents2 } from 'vs/workbench/api/common/extHostCSChatAgents2';
+import { ExtHostCSChatProvider } from 'vs/workbench/api/common/extHostCSChatProvider';
+import { ExtHostCSChatVariables } from 'vs/workbench/api/common/extHostCSChatVariables';
+import { ExtHostChat } from 'vs/workbench/api/common/extHostChat';
+import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
+import { ExtHostChatProvider } from 'vs/workbench/api/common/extHostChatProvider';
+import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariables';
 import { ExtHostClipboard } from 'vs/workbench/api/common/extHostClipboard';
+import { ExtHostEditorInsets } from 'vs/workbench/api/common/extHostCodeInsets';
 import { IExtHostCommands } from 'vs/workbench/api/common/extHostCommands';
 import { createExtHostComments } from 'vs/workbench/api/common/extHostComments';
 import { ExtHostConfigProvider, IExtHostConfiguration } from 'vs/workbench/api/common/extHostConfiguration';
+import { ExtHostCustomEditors } from 'vs/workbench/api/common/extHostCustomEditors';
+import { IExtHostDebugService } from 'vs/workbench/api/common/extHostDebugService';
+import { IExtHostDecorations } from 'vs/workbench/api/common/extHostDecorations';
 import { ExtHostDiagnostics } from 'vs/workbench/api/common/extHostDiagnostics';
 import { ExtHostDialogs } from 'vs/workbench/api/common/extHostDialogs';
 import { ExtHostDocumentContentProvider } from 'vs/workbench/api/common/extHostDocumentContentProviders';
 import { ExtHostDocumentSaveParticipant } from 'vs/workbench/api/common/extHostDocumentSaveParticipant';
 import { ExtHostDocuments } from 'vs/workbench/api/common/extHostDocuments';
 import { IExtHostDocumentsAndEditors } from 'vs/workbench/api/common/extHostDocumentsAndEditors';
+import { IExtHostEditorTabs } from 'vs/workbench/api/common/extHostEditorTabs';
+import { ExtHostAiEmbeddingVector } from 'vs/workbench/api/common/extHostEmbeddingVector';
 import { Extension, IExtHostExtensionService } from 'vs/workbench/api/common/extHostExtensionService';
 import { ExtHostFileSystem } from 'vs/workbench/api/common/extHostFileSystem';
+import { IExtHostConsumerFileSystem } from 'vs/workbench/api/common/extHostFileSystemConsumer';
 import { ExtHostFileSystemEventService, FileSystemWatcherCreateOptions } from 'vs/workbench/api/common/extHostFileSystemEventService';
+import { IExtHostFileSystemInfo } from 'vs/workbench/api/common/extHostFileSystemInfo';
+import { IExtHostInitDataService } from 'vs/workbench/api/common/extHostInitDataService';
+import { ExtHostCSChatEditor } from 'vs/workbench/api/common/extHostInlineCSChat';
+import { ExtHostInteractiveEditor } from 'vs/workbench/api/common/extHostInlineChat';
+import { ExtHostInteractive } from 'vs/workbench/api/common/extHostInteractive';
+import { ExtHostIssueReporter } from 'vs/workbench/api/common/extHostIssueReporter';
+import { ExtHostLabelService } from 'vs/workbench/api/common/extHostLabelService';
 import { ExtHostLanguageFeatures } from 'vs/workbench/api/common/extHostLanguageFeatures';
 import { ExtHostLanguages } from 'vs/workbench/api/common/extHostLanguages';
+import { IExtHostLocalizationService } from 'vs/workbench/api/common/extHostLocalizationService';
+import { IExtHostManagedSockets } from 'vs/workbench/api/common/extHostManagedSockets';
 import { ExtHostMessageService } from 'vs/workbench/api/common/extHostMessageService';
+import { ExtHostNotebookController } from 'vs/workbench/api/common/extHostNotebook';
+import { ExtHostNotebookDocumentSaveParticipant } from 'vs/workbench/api/common/extHostNotebookDocumentSaveParticipant';
+import { ExtHostNotebookDocuments } from 'vs/workbench/api/common/extHostNotebookDocuments';
+import { ExtHostNotebookEditors } from 'vs/workbench/api/common/extHostNotebookEditors';
+import { ExtHostNotebookKernels } from 'vs/workbench/api/common/extHostNotebookKernels';
+import { ExtHostNotebookRenderers } from 'vs/workbench/api/common/extHostNotebookRenderers';
 import { IExtHostOutputService } from 'vs/workbench/api/common/extHostOutput';
+import { ExtHostProfileContentHandlers } from 'vs/workbench/api/common/extHostProfileContentHandler';
 import { ExtHostProgress } from 'vs/workbench/api/common/extHostProgress';
+import { ExtHostQuickDiff } from 'vs/workbench/api/common/extHostQuickDiff';
 import { createExtHostQuickOpen } from 'vs/workbench/api/common/extHostQuickOpen';
+import { IExtHostRpcService } from 'vs/workbench/api/common/extHostRpcService';
 import { ExtHostSCM } from 'vs/workbench/api/common/extHostSCM';
+import { IExtHostSearch } from 'vs/workbench/api/common/extHostSearch';
+import { IExtHostSecretState } from 'vs/workbench/api/common/extHostSecretState';
+import { ExtHostShare } from 'vs/workbench/api/common/extHostShare';
+import { ExtHostSpeech } from 'vs/workbench/api/common/extHostSpeech';
 import { ExtHostStatusBar } from 'vs/workbench/api/common/extHostStatusBar';
 import { IExtHostStorage } from 'vs/workbench/api/common/extHostStorage';
+import { IExtensionStoragePaths } from 'vs/workbench/api/common/extHostStoragePaths';
+import { IExtHostTask } from 'vs/workbench/api/common/extHostTask';
+import { ExtHostTelemetryLogger, IExtHostTelemetry, isNewAppInstall } from 'vs/workbench/api/common/extHostTelemetry';
 import { IExtHostTerminalService } from 'vs/workbench/api/common/extHostTerminalService';
+import { ExtHostTesting } from 'vs/workbench/api/common/extHostTesting';
 import { ExtHostEditors } from 'vs/workbench/api/common/extHostTextEditors';
+import { ExtHostTheming } from 'vs/workbench/api/common/extHostTheming';
+import { ExtHostTimeline } from 'vs/workbench/api/common/extHostTimeline';
 import { ExtHostTreeViews } from 'vs/workbench/api/common/extHostTreeViews';
+import { IExtHostTunnelService } from 'vs/workbench/api/common/extHostTunnelService';
 import * as typeConverters from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { TelemetryTrustedValue } from 'vs/platform/telemetry/common/telemetryUtils';
+import { ExtHostUriOpeners } from 'vs/workbench/api/common/extHostUriOpener';
+import { IURITransformerService } from 'vs/workbench/api/common/extHostUriTransformerService';
 import { ExtHostUrls } from 'vs/workbench/api/common/extHostUrls';
 import { ExtHostWebviews } from 'vs/workbench/api/common/extHostWebview';
+import { ExtHostWebviewPanels } from 'vs/workbench/api/common/extHostWebviewPanels';
+import { ExtHostWebviewViews } from 'vs/workbench/api/common/extHostWebviewView';
 import { IExtHostWindow } from 'vs/workbench/api/common/extHostWindow';
 import { IExtHostWorkspace } from 'vs/workbench/api/common/extHostWorkspace';
-import { ProxyIdentifier } from 'vs/workbench/services/extensions/common/proxyIdentifier';
-import { ExtensionDescriptionRegistry } from 'vs/workbench/services/extensions/common/extensionDescriptionRegistry';
-import type * as vscode from 'vscode';
-import { ExtensionIdentifierSet, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import { ExtHostEditorInsets } from 'vs/workbench/api/common/extHostCodeInsets';
-import { ExtHostLabelService } from 'vs/workbench/api/common/extHostLabelService';
-import { getRemoteName } from 'vs/platform/remote/common/remoteHosts';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { IExtHostDecorations } from 'vs/workbench/api/common/extHostDecorations';
-import { IExtHostTask } from 'vs/workbench/api/common/extHostTask';
-import { IExtHostDebugService } from 'vs/workbench/api/common/extHostDebugService';
-import { IExtHostSearch } from 'vs/workbench/api/common/extHostSearch';
-import { ILoggerService, ILogService, LogLevel } from 'vs/platform/log/common/log';
-import { IURITransformerService } from 'vs/workbench/api/common/extHostUriTransformerService';
-import { IExtHostRpcService } from 'vs/workbench/api/common/extHostRpcService';
-import { IExtHostInitDataService } from 'vs/workbench/api/common/extHostInitDataService';
-import { ExtHostNotebookController } from 'vs/workbench/api/common/extHostNotebook';
-import { ExtHostTheming } from 'vs/workbench/api/common/extHostTheming';
-import { IExtHostTunnelService } from 'vs/workbench/api/common/extHostTunnelService';
-import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
-import { ExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
-import { ExtHostTimeline } from 'vs/workbench/api/common/extHostTimeline';
-import { IExtensionStoragePaths } from 'vs/workbench/api/common/extHostStoragePaths';
-import { IExtHostConsumerFileSystem } from 'vs/workbench/api/common/extHostFileSystemConsumer';
-import { ExtHostWebviewViews } from 'vs/workbench/api/common/extHostWebviewView';
-import { ExtHostCustomEditors } from 'vs/workbench/api/common/extHostCustomEditors';
-import { ExtHostWebviewPanels } from 'vs/workbench/api/common/extHostWebviewPanels';
-import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
-import { IExtHostFileSystemInfo } from 'vs/workbench/api/common/extHostFileSystemInfo';
-import { ExtHostTesting } from 'vs/workbench/api/common/extHostTesting';
-import { ExtHostUriOpeners } from 'vs/workbench/api/common/extHostUriOpener';
-import { IExtHostSecretState } from 'vs/workbench/api/common/extHostSecretState';
-import { IExtHostEditorTabs } from 'vs/workbench/api/common/extHostEditorTabs';
-import { ExtHostTelemetryLogger, IExtHostTelemetry, isNewAppInstall } from 'vs/workbench/api/common/extHostTelemetry';
-import { ExtHostNotebookKernels } from 'vs/workbench/api/common/extHostNotebookKernels';
-import { TextSearchCompleteMessageType } from 'vs/workbench/services/search/common/searchExtTypes';
-import { ExtHostNotebookRenderers } from 'vs/workbench/api/common/extHostNotebookRenderers';
-import { Schemas } from 'vs/base/common/network';
-import { matchesScheme } from 'vs/platform/opener/common/opener';
-import { ExtHostNotebookEditors } from 'vs/workbench/api/common/extHostNotebookEditors';
-import { ExtHostNotebookDocuments } from 'vs/workbench/api/common/extHostNotebookDocuments';
-import { ExtHostInteractive } from 'vs/workbench/api/common/extHostInteractive';
-import { combinedDisposable } from 'vs/base/common/lifecycle';
-import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import { DebugConfigurationProviderTriggerKind } from 'vs/workbench/contrib/debug/common/debug';
-import { IExtHostLocalizationService } from 'vs/workbench/api/common/extHostLocalizationService';
-import { EditSessionIdentityMatch } from 'vs/platform/workspace/common/editSessions';
-import { ExtHostProfileContentHandlers } from 'vs/workbench/api/common/extHostProfileContentHandler';
-import { ExtHostQuickDiff } from 'vs/workbench/api/common/extHostQuickDiff';
-import { ExtHostChat } from 'vs/workbench/api/common/extHostChat';
-import { ExtHostCSChat } from 'vs/workbench/api/common/extHostCSChat';
-import { ExtHostInteractiveEditor } from 'vs/workbench/api/common/extHostInlineChat';
-import { ExtHostCSChatEditor } from 'vs/workbench/api/common/extHostInlineCSChat';
-import { ExtHostNotebookDocumentSaveParticipant } from 'vs/workbench/api/common/extHostNotebookDocumentSaveParticipant';
-import { ExtHostIssueReporter } from 'vs/workbench/api/common/extHostIssueReporter';
-import { IExtHostManagedSockets } from 'vs/workbench/api/common/extHostManagedSockets';
-import { ExtHostShare } from 'vs/workbench/api/common/extHostShare';
-import { ExtHostChatProvider } from 'vs/workbench/api/common/extHostChatProvider';
-import { ExtHostSpeech } from 'vs/workbench/api/common/extHostSpeech';
-import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariables';
-import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
-import { ExtHostAiEmbeddingVector } from 'vs/workbench/api/common/extHostEmbeddingVector';
-import { ExtHostChatAgents } from 'vs/workbench/api/common/extHostChatAgents';
-import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
+import { ExtensionDescriptionRegistry } from 'vs/workbench/services/extensions/common/extensionDescriptionRegistry';
+import { UIKind } from 'vs/workbench/services/extensions/common/extensionHostProtocol';
+import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
+import { ProxyIdentifier } from 'vs/workbench/services/extensions/common/proxyIdentifier';
+import { TextSearchCompleteMessageType } from 'vs/workbench/services/search/common/searchExtTypes';
+import type * as vscode from 'vscode';
 
 export interface IExtensionRegistries {
 	mine: ExtensionDescriptionRegistry;
@@ -212,12 +214,14 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	rpcProtocol.set(ExtHostContext.ExtHostInteractive, new ExtHostInteractive(rpcProtocol, extHostNotebook, extHostDocumentsAndEditors, extHostCommands, extHostLogService));
 	const extHostInteractiveEditor = rpcProtocol.set(ExtHostContext.ExtHostInlineChat, new ExtHostInteractiveEditor(rpcProtocol, extHostCommands, extHostDocuments, extHostLogService));
 	const extHostChatProvider = rpcProtocol.set(ExtHostContext.ExtHostChatProvider, new ExtHostChatProvider(rpcProtocol, extHostLogService));
-	const extHostChatAgents = rpcProtocol.set(ExtHostContext.ExtHostChatAgents, new ExtHostChatAgents(rpcProtocol, extHostChatProvider, extHostLogService));
 	const extHostChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostChatAgents2, new ExtHostChatAgents2(rpcProtocol, extHostChatProvider, extHostLogService));
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
-	const extHostChat = rpcProtocol.set(ExtHostContext.ExtHostChat, new ExtHostChat(rpcProtocol, extHostLogService));
+	const extHostChat = rpcProtocol.set(ExtHostContext.ExtHostChat, new ExtHostChat(rpcProtocol));
 	const extHostCSChatEditor = rpcProtocol.set(ExtHostContext.ExtHostInlineCSChat, new ExtHostCSChatEditor(rpcProtocol, extHostCommands, extHostDocuments, extHostLogService));
-	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol, extHostLogService));
+	const extHostCSChatProvider = rpcProtocol.set(ExtHostContext.ExtHostCSChatProvider, new ExtHostCSChatProvider(rpcProtocol, extHostLogService));
+	const extHostCSChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostCSChatAgents2, new ExtHostCSChatAgents2(rpcProtocol, extHostCSChatProvider, extHostLogService));
+	const extHostCSChatVariables = rpcProtocol.set(ExtHostContext.ExtHostCSChatVariables, new ExtHostCSChatVariables(rpcProtocol));
+	const extHostCSChat = rpcProtocol.set(ExtHostContext.ExtHostCSChat, new ExtHostCSChat(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostIssueReporter = rpcProtocol.set(ExtHostContext.ExtHostIssueReporter, new ExtHostIssueReporter(rpcProtocol));
@@ -1183,6 +1187,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 			createSourceControl(id: string, label: string, rootUri?: vscode.Uri) {
 				return extHostSCM.createSourceControl(extension, id, label, rootUri);
+			},
+			registerSourceControlInputBoxValueProvider(provider: vscode.SourceControlInputBoxValueProvider): vscode.Disposable {
+				checkProposedApiEnabled(extension, 'scmInputBoxValueProvider');
+				return extHostSCM.registerSourceControlInputBoxValueProvider(extension, provider);
 			}
 		};
 
@@ -1337,7 +1345,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 
 			registerInteractiveEditorSessionProvider(provider: vscode.InteractiveEditorSessionProvider, metadata?: vscode.InteractiveEditorSessionProviderMetadata) {
 				checkProposedApiEnabled(extension, 'interactive');
-				return extHostInteractiveEditor.registerProvider(extension, provider, metadata = { label: metadata?.label ?? extension.displayName ?? extension.name });
+				return extHostInteractiveEditor.registerProvider(extension, provider, metadata);
 			},
 			registerInteractiveSessionProvider(id: string, provider: vscode.InteractiveSessionProvider) {
 				checkProposedApiEnabled(extension, 'interactive');
@@ -1379,7 +1387,27 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			transferChatSession(session: vscode.CSChatSession, toWorkspace: vscode.Uri) {
 				checkProposedApiEnabled(extension, 'csChat');
 				return extHostCSChat.transferChatSession(session, toWorkspace);
-			}
+			},
+			registerChatResponseProvider(id: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatProvider.registerProvider(extension.identifier, id, provider, metadata);
+			},
+			requestChatAccess(id: string) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatProvider.requestChatResponseProvider(extension.identifier, id);
+			},
+			registerVariable(name: string, description: string, resolver: vscode.ChatVariableResolver) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatVariables.registerVariableResolver(extension, name, description, resolver);
+			},
+			registerMappedEditsProvider(selector: vscode.DocumentSelector, provider: vscode.MappedEditsProvider) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
+			},
+			createChatAgent(name: string, handler: vscode.CSChatAgentExtendedHandler) {
+				checkProposedApiEnabled(extension, 'csChat');
+				return extHostCSChatAgents2.createChatAgent(extension, name, handler);
+			},
 		};
 
 		// namespace: ai
@@ -1420,10 +1448,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'chatAgents2');
 				return extHostChatAgents2.createChatAgent(extension, name, handler);
 			},
-			registerAgent(name: string, agent: vscode.ChatAgent, metadata: vscode.ChatAgentMetadata) {
-				checkProposedApiEnabled(extension, 'chatAgents');
-				return extHostChatAgents.registerAgent(extension.identifier, name, agent, metadata);
-			}
 		};
 
 		// namespace: speech
@@ -1615,6 +1639,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			NotebookControllerAffinity2: extHostTypes.NotebookControllerAffinity2,
 			NotebookEdit: extHostTypes.NotebookEdit,
 			NotebookKernelSourceAction: extHostTypes.NotebookKernelSourceAction,
+			NotebookVariablesRequestKind: extHostTypes.NotebookVariablesRequestKind,
 			PortAttributes: extHostTypes.PortAttributes,
 			LinkedEditingRanges: extHostTypes.LinkedEditingRanges,
 			TestResultState: extHostTypes.TestResultState,

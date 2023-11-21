@@ -9,7 +9,6 @@ import { Disposable, toDisposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { URI } from 'vs/base/common/uri';
 import * as nls from 'vs/nls';
-import { IEditorModel } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { EditorInputCapabilities, IEditorSerializer, IUntypedEditorInput } from 'vs/workbench/common/editor';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
@@ -114,7 +113,7 @@ export class ChatEditorInput extends EditorInput {
 	}
 }
 
-export class ChatEditorModel extends Disposable implements IEditorModel {
+export class ChatEditorModel extends Disposable {
 	private _onWillDispose = this._register(new Emitter<void>());
 	readonly onWillDispose = this._onWillDispose.event;
 
@@ -149,7 +148,7 @@ export namespace ChatUri {
 
 
 	export function generate(handle: number): URI {
-		return URI.from({ scheme, path: `chat-${handle}` });
+		return URI.from({ scheme, path: `cschat-${handle}` });
 	}
 
 	export function parse(resource: URI): { handle: number } | undefined {
@@ -157,7 +156,7 @@ export namespace ChatUri {
 			return undefined;
 		}
 
-		const match = resource.path.match(/chat-(\d+)/);
+		const match = resource.path.match(/cschat-(\d+)/);
 		const handleStr = match?.[1];
 		if (typeof handleStr !== 'string') {
 			return undefined;

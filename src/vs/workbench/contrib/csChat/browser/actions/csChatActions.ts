@@ -22,7 +22,9 @@ import { buttonBackground } from 'vs/platform/theme/common/colorRegistry';
 import { registerThemingParticipant } from 'vs/platform/theme/common/themeService';
 import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { IViewsService } from 'vs/workbench/common/views';
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
+import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { runAccessibilityHelpAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatAccessibilityHelp';
 import { ChatDynamicReferenceModel } from 'vs/workbench/contrib/csChat/browser/contrib/csChatDynamicReferences';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
@@ -319,7 +321,7 @@ const getHistoryChatActionDescriptorForViewTitle = (viewId: string, providerId: 
 		id: MenuId.ViewTitle,
 		when: ContextKeyExpr.equals('view', viewId),
 		group: 'navigation',
-		order: 0
+		order: -1
 	},
 	category: CHAT_CATEGORY,
 	icon: Codicon.history,
@@ -336,7 +338,8 @@ export function getHistoryAction(viewId: string, providerId: string) {
 		async runInView(accessor: ServicesAccessor, view: ChatViewPane) {
 			const chatService = accessor.get(ICSChatService);
 			const quickInputService = accessor.get(IQuickInputService);
-			const editorService = accessor.get(IEditorService);
+			const chatContribService = accessor.get(ICSChatContributionService);
+			const viewsService = accessor.get(IViewsService);
 			const items = chatService.getHistory();
 			const picks = items.map(i => (<IQuickPickItem & { chat: IChatDetail }>{
 				label: i.title,
@@ -348,7 +351,7 @@ export function getHistoryAction(viewId: string, providerId: string) {
 			}));
 			const selection = await quickInputService.pick(picks,
 				{
-					placeHolder: localize('interactiveSession.history.pick', "Select a chat session to restore"),
+					placeHolder: localize('interactiveSession.history.pick', "Switch to chat session"),
 					onDidTriggerItemButton: context => {
 						chatService.removeHistoryEntry(context.item.chat.sessionId);
 						context.removeItem();
@@ -356,9 +359,12 @@ export function getHistoryAction(viewId: string, providerId: string) {
 				});
 			if (selection) {
 				const sessionId = selection.chat.sessionId;
-				await editorService.openEditor({
-					resource: ChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ target: { sessionId }, pinned: true }
-				});
+				const provider = chatContribService.registeredProviders[0]?.id;
+				if (provider) {
+					const viewId = chatContribService.getViewIdForProvider(provider);
+					const view = await viewsService.openView(viewId) as ChatViewPane;
+					view.loadSession(sessionId);
+				}
 			}
 		}
 	};

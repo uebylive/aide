@@ -45,6 +45,7 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/chatProvider';
+import * as csChatProvider from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
@@ -2158,20 +2159,10 @@ export namespace DataTransfer {
 }
 
 export namespace ChatReplyFollowup {
-	export function to(followup: IChatReplyFollowup): vscode.InteractiveSessionReplyFollowup {
-		return {
-			message: followup.message,
-			metadata: followup.metadata,
-			title: followup.title,
-			tooltip: followup.tooltip,
-		};
-	}
-
-	export function from(followup: vscode.InteractiveSessionReplyFollowup): IChatReplyFollowup {
+	export function from(followup: vscode.InteractiveSessionReplyFollowup | vscode.InteractiveEditorReplyFollowup): IChatReplyFollowup {
 		return {
 			kind: 'reply',
 			message: followup.message,
-			metadata: followup.metadata,
 			title: followup.title,
 			tooltip: followup.tooltip,
 		};
@@ -2179,7 +2170,7 @@ export namespace ChatReplyFollowup {
 }
 
 export namespace ChatFollowup {
-	export function from(followup: string | vscode.InteractiveSessionFollowup): IChatFollowup {
+	export function from(followup: string | vscode.ChatAgentFollowup): IChatFollowup {
 		if (typeof followup === 'string') {
 			return <IChatReplyFollowup>{ title: followup, message: followup, kind: 'reply' };
 		} else if ('commandId' in followup) {
@@ -2213,6 +2204,23 @@ export namespace ChatMessage {
 	}
 }
 
+export namespace CSChatMessage {
+	export function to(message: csChatProvider.ICSChatMessage): vscode.ChatMessage {
+		const res = new types.ChatMessage(CSChatMessageRole.to(message.role), message.content);
+		res.name = message.name;
+		return res;
+	}
+
+
+	export function from(message: vscode.ChatMessage): csChatProvider.ICSChatMessage {
+		return {
+			role: CSChatMessageRole.from(message.role),
+			content: message.content,
+			name: message.name
+		};
+	}
+}
+
 
 export namespace ChatMessageRole {
 
@@ -2233,6 +2241,29 @@ export namespace ChatMessageRole {
 			case types.ChatMessageRole.User:
 			default:
 				return chatProvider.ChatMessageRole.User;
+		}
+	}
+}
+
+export namespace CSChatMessageRole {
+
+	export function to(role: csChatProvider.ChatMessageRole): vscode.ChatMessageRole {
+		switch (role) {
+			case csChatProvider.ChatMessageRole.System: return types.ChatMessageRole.System;
+			case csChatProvider.ChatMessageRole.User: return types.ChatMessageRole.User;
+			case csChatProvider.ChatMessageRole.Assistant: return types.ChatMessageRole.Assistant;
+			case csChatProvider.ChatMessageRole.Function: return types.ChatMessageRole.Function;
+		}
+	}
+
+	export function from(role: vscode.ChatMessageRole): csChatProvider.ChatMessageRole {
+		switch (role) {
+			case types.ChatMessageRole.System: return csChatProvider.ChatMessageRole.System;
+			case types.ChatMessageRole.Assistant: return csChatProvider.ChatMessageRole.Assistant;
+			case types.ChatMessageRole.Function: return csChatProvider.ChatMessageRole.Function;
+			case types.ChatMessageRole.User:
+			default:
+				return csChatProvider.ChatMessageRole.User;
 		}
 	}
 }
@@ -2330,6 +2361,8 @@ export namespace InteractiveEditorResponseFeedbackKind {
 				return types.InteractiveEditorResponseFeedbackKind.Undone;
 			case InlineChatResponseFeedbackKind.Accepted:
 				return types.InteractiveEditorResponseFeedbackKind.Accepted;
+			case InlineChatResponseFeedbackKind.Bug:
+				return types.InteractiveEditorResponseFeedbackKind.Bug;
 		}
 	}
 }
@@ -2346,33 +2379,34 @@ export namespace CSChatEditorResponseFeedbackKind {
 				return types.CSChatEditorResponseFeedbackKind.Undone;
 			case InlineCSChatResponseFeedbackKind.Accepted:
 				return types.CSChatEditorResponseFeedbackKind.Accepted;
+			case InlineCSChatResponseFeedbackKind.Bug:
+				return types.CSChatEditorResponseFeedbackKind.Bug;
 		}
 	}
 }
 
 export namespace ChatResponseProgress {
-	export function from(extension: IExtensionDescription, progress: vscode.InteractiveProgress | vscode.ChatAgentExtendedProgress): extHostProtocol.IChatResponseProgressDto {
+	export function from(extension: IExtensionDescription, progress: vscode.ChatAgentExtendedProgress): extHostProtocol.IChatProgressDto {
 		if ('placeholder' in progress && 'resolvedContent' in progress) {
-			return { placeholder: progress.placeholder };
-		} else if ('responseId' in progress) {
-			return { requestId: progress.responseId };
+			return { content: progress.placeholder, kind: 'asyncContent' } satisfies extHostProtocol.IChatAsyncContentDto;
 		} else if ('markdownContent' in progress) {
 			checkProposedApiEnabled(extension, 'chatAgents2Additions');
-			return { content: MarkdownString.from(progress.markdownContent) };
+			return { content: MarkdownString.from(progress.markdownContent), kind: 'markdownContent' };
 		} else if ('content' in progress) {
 			if (typeof progress.content === 'string') {
-				return progress;
+				return { content: progress.content, kind: 'content' };
 			}
 
 			checkProposedApiEnabled(extension, 'chatAgents2Additions');
-			return { content: MarkdownString.from(progress.content) };
+			return { content: MarkdownString.from(progress.content), kind: 'markdownContent' };
 		} else if ('documents' in progress) {
 			return {
 				documents: progress.documents.map(d => ({
 					uri: d.uri,
 					version: d.version,
 					ranges: d.ranges.map(r => Range.from(r))
-				}))
+				})),
+				kind: 'usedContext'
 			};
 		} else if ('reference' in progress) {
 			return {
@@ -2380,7 +2414,8 @@ export namespace ChatResponseProgress {
 					{
 						uri: progress.reference.uri,
 						range: Range.from(progress.reference.range)
-					} : progress.reference
+					} : progress.reference,
+				kind: 'reference'
 			};
 		} else if ('inlineReference' in progress) {
 			return {
@@ -2389,13 +2424,18 @@ export namespace ChatResponseProgress {
 						uri: progress.inlineReference.uri,
 						range: Range.from(progress.inlineReference.range)
 					} : progress.inlineReference,
-				title: progress.title,
+				name: progress.title,
+				kind: 'inlineReference'
 			};
 		} else if ('agentName' in progress) {
 			checkProposedApiEnabled(extension, 'chatAgents2Additions');
-			return progress;
+			return { agentName: progress.agentName, command: progress.command, kind: 'agentDetection' };
+		} else if ('treeData' in progress) {
+			return { treeData: progress.treeData, kind: 'treeData' };
+		} else if ('message' in progress) {
+			return { content: progress.message, kind: 'progressMessage' };
 		} else {
-			return progress;
+			throw new Error('Invalid progress type: ' + JSON.stringify(progress));
 		}
 	}
 }

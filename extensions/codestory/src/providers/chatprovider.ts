@@ -7,31 +7,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 import logger from '../logger';
 import { CSChatState } from '../chatState/state';
-import { getSelectedCodeContext, getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
-import { generateChatCompletion, generateChatCompletionAx } from '../chatState/openai';
+import { getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
 import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
-import { formatPathsInAnswer, reportFromStreamToProgress, reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
+import { reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
 import { CodeGraph } from '../codeGraph/graph';
-import { createContextPrompt, getContextForPromptFromUserContext, getRelevantContextForCodeSelection } from '../chatState/getContextForCodeSelection';
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { deterministicClassifier, promptClassifier } from '../chatState/promptClassifier';
+import { UserMessageType, deterministicClassifier } from '../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
-import { getLSPGraphContextForChat } from '../editor/activeView/ranges';
-import { DeepContextForView } from '../sidecar/types';
 import { ProjectContext } from '../utilities/workspaceContext';
-
-class CSChatSessionState implements vscode.CSChatSessionState {
-	public chatContext: CSChatState;
-
-	constructor(agentCustomInstruction: string | null) {
-		this.chatContext = new CSChatState(
-			agentCustomInstruction,
-		);
-	}
-}
 
 class CSChatParticipant implements vscode.CSChatSessionParticipantInformation {
 	name: string;
@@ -51,48 +37,20 @@ class CSChatSession implements vscode.CSChatSession {
 	requester: CSChatParticipant;
 	responder: CSChatParticipant;
 	inputPlaceholder?: string | undefined;
-	agentCustomInstruction: string | null;
-	threadId: string;
-	public chatSessionState: CSChatSessionState;
-
-	saveState(): CSChatSessionState {
-		logger.info('Saving state' + this.toString());
-		return this.chatSessionState;
-	}
 
 	constructor(
 		requester: CSChatParticipant,
 		responder: CSChatParticipant,
-		initialState: CSChatSessionState | undefined,
 		agentCustomInstruction: string | null,
 		inputPlaceholder?: string | undefined,
 	) {
-		this.threadId = uuidv4();
 		this.requester = requester;
 		this.responder = responder;
 		this.inputPlaceholder = inputPlaceholder;
-		this.agentCustomInstruction = agentCustomInstruction;
-		this.chatSessionState = initialState ?? new CSChatSessionState(
-			this.agentCustomInstruction,
-		);
 	}
 
 	toString(): string {
 		return `CSChatSession { requester: ${this.requester.toString()}, responder: ${this.responder.toString()}, inputPlaceholder: "${this.inputPlaceholder}" }`;
-	}
-}
-
-class CSChatRequestArgs implements vscode.CSChatSessionRequestArgs {
-	command: string;
-	args: any;
-
-	constructor(command: string, args: any) {
-		this.command = command;
-		this.args = args;
-	}
-
-	toString(): string {
-		return `CSChatRequestArgs { command: "${this.command}", args: ${JSON.stringify(this.args, null, 2)} }`;
 	}
 }
 
@@ -114,24 +72,25 @@ class CSChatReplyFollowup implements vscode.CSChatSessionReplyFollowup {
 	}
 }
 
-export class CSChatRequest implements vscode.CSChatRequest {
-	session: CSChatSession;
-	message: string;
+export class CSChatRequest implements vscode.CSChatAgentRequest {
+	threadId: string;
+	prompt: string;
 	variables: Record<string, vscode.CSChatVariableValue[]>;
-	userProvidedContext: vscode.InteractiveUserProvidedContext | undefined;
+	slashCommand?: vscode.ChatAgentSlashCommand;
 
-	constructor(session: CSChatSession, message: string, variables: Record<string, vscode.CSChatVariableValue[]> = {}) {
-		this.session = session;
-		this.message = message;
+	constructor(threadId: string, prompt: string, variables: Record<string, vscode.CSChatVariableValue[]> = {}, slashCommand?: vscode.ChatAgentSlashCommand) {
+		this.threadId = threadId;
+		this.prompt = prompt;
 		this.variables = variables;
+		this.slashCommand = slashCommand;
 	}
 
 	toString(): string {
-		return `CSChatRequest { session: ${this.session.toString()}, message: ${this.message.toString()}, variables: ${JSON.stringify(this.variables, null, 2)} }`;
+		return `CSChatRequest { threadId: "${this.threadId}", prompt: "${this.prompt}", variables: ${JSON.stringify(this.variables, null, 2)}, slashCommand: ${this.slashCommand?.toString()} }`;
 	}
 }
 
-class CSChatResponseErrorDetails implements vscode.CSChatResponseErrorDetails {
+class CSChatResponseErrorDetails implements vscode.ChatAgentErrorDetails {
 	message: string;
 	responseIsIncomplete?: boolean | undefined;
 	responseIsFiltered?: boolean | undefined;
@@ -147,10 +106,10 @@ class CSChatResponseErrorDetails implements vscode.CSChatResponseErrorDetails {
 	}
 }
 
-export class CSChatProgressContent implements vscode.CSChatProgressContent {
-	content: string | vscode.MarkdownString;
+export class CSChatProgressContent implements vscode.ChatAgentContent {
+	content: string;
 
-	constructor(content: string | vscode.MarkdownString) {
+	constructor(content: string) {
 		this.content = content;
 	}
 
@@ -159,10 +118,10 @@ export class CSChatProgressContent implements vscode.CSChatProgressContent {
 	}
 }
 
-export class CSChatProgressUsedContext implements vscode.CSChatProgressUsedContext {
-	documents: vscode.DocumentContext[];
+export class CSChatProgressUsedContext implements vscode.ChatAgentUsedContext {
+	documents: vscode.ChatAgentDocumentContext[];
 
-	constructor(documents: vscode.DocumentContext[]) {
+	constructor(documents: vscode.ChatAgentDocumentContext[]) {
 		this.documents = documents;
 	}
 
@@ -171,7 +130,7 @@ export class CSChatProgressUsedContext implements vscode.CSChatProgressUsedConte
 	}
 }
 
-export class CSChatContentReference implements vscode.CSChatContentReference {
+export class CSChatContentReference implements vscode.ChatAgentContentReference {
 	reference: vscode.Uri | vscode.Location;
 
 	constructor(reference: vscode.Uri | vscode.Location) {
@@ -183,11 +142,11 @@ export class CSChatContentReference implements vscode.CSChatContentReference {
 	}
 }
 
-export class CSChatInlineContentReference implements vscode.CSChatInlineContentReference {
+export class CSChatInlineContentReference implements vscode.ChatAgentInlineContentReference {
 	inlineReference: vscode.Uri | vscode.Location;
 	title?: string;
 
-	constructor(inlineReference: vscode.Uri | vscode.Location, title?: string) {
+	constructor(inlineReference: vscode.Uri | vscode.Location) {
 		this.inlineReference = inlineReference;
 	}
 
@@ -196,24 +155,12 @@ export class CSChatInlineContentReference implements vscode.CSChatInlineContentR
 	}
 }
 
-class CSChatProgressId implements vscode.CSChatProgressId {
-	responseId: string;
-
-	constructor(responseId: string) {
-		this.responseId = responseId;
-	}
-
-	toString(): string {
-		return `CSChatProgressId { responseId: "${this.responseId}" }`;
-	}
-}
-
-export class CSChatFileTreeData implements vscode.FileTreeData {
+export class CSChatFileTreeData implements vscode.ChatAgentFileTreeData {
 	label: string;
 	uri: vscode.Uri;
-	children?: vscode.FileTreeData[] | undefined;
+	children?: CSChatFileTreeData[] | undefined;
 
-	constructor(label: string, uri: vscode.Uri, children?: vscode.FileTreeData[] | undefined) {
+	constructor(label: string, uri: vscode.Uri, children?: CSChatFileTreeData[] | undefined) {
 		this.label = label;
 		this.uri = uri;
 		this.children = children;
@@ -224,7 +171,7 @@ export class CSChatFileTreeData implements vscode.FileTreeData {
 	}
 }
 
-export class CSChatProgressFileTree implements vscode.CSChatProgressFileTree {
+export class CSChatProgressFileTree implements vscode.ChatAgentFileTree {
 	treeData: CSChatFileTreeData;
 
 	constructor(treeData: CSChatFileTreeData) {
@@ -236,7 +183,7 @@ export class CSChatProgressFileTree implements vscode.CSChatProgressFileTree {
 	}
 }
 
-export class CSChatProgressTask implements vscode.CSChatProgressTask {
+export class CSChatProgressTask implements vscode.ChatAgentTask {
 	placeholder: string;
 	resolvedContent: Thenable<CSChatProgressContent | CSChatProgressFileTree>;
 
@@ -250,9 +197,9 @@ export class CSChatProgressTask implements vscode.CSChatProgressTask {
 	}
 }
 
-export type CSChatProgress = CSChatProgressContent | CSChatProgressId | CSChatProgressTask | CSChatProgressFileTree | CSChatProgressUsedContext | CSChatContentReference | CSChatInlineContentReference;
+export type CSChatProgress = CSChatProgressContent | CSChatProgressTask | CSChatProgressFileTree | CSChatProgressUsedContext | CSChatContentReference | CSChatInlineContentReference;
 
-class CSChatResponseForProgress implements vscode.CSChatResponseForProgress {
+class CSChatResponseForProgress implements vscode.ChatAgentResult2 {
 	errorDetails?: CSChatResponseErrorDetails | undefined;
 
 	constructor(errorDetails?: CSChatResponseErrorDetails | undefined) {
@@ -278,9 +225,42 @@ export class CSChatCancellationToken implements vscode.CancellationToken {
 	}
 }
 
-export class CSChatProvider implements vscode.CSChatSessionProvider {
-	private _chatSessionState: CSChatSessionState;
+export class CSChatSessionProvider implements vscode.CSChatSessionProvider<CSChatSession> {
+	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.CSChatWelcomeMessageContent[]> {
+		logger.info('provideWelcomeMessage', token);
+		return [
+			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',
+			'Here are some things you can ask me to get started:',
+			[
+				new CSChatReplyFollowup('Explain the active file in the editor'),
+				new CSChatReplyFollowup('Add documentation to the selected code'),
+				new CSChatReplyFollowup('How can I clean up this code?'),
+			],
+			'You can start your request with \'**`/`**\' to give me specific instructions and type \'**`@`**\' to find files and code symbols that I can use to narrow down the context of your request.',
+			'I might make mistakes, though! Like we all do once in a while. If you find me doing so, please share your feedback via **[Discord](https://discord.gg/Cwg3vqgb)** or **founders@codestory.ai** so I can get better.',
+		];
+	}
 
+	prepareSession(token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
+		logger.info('prepareSession', token);
+		const iconUri = vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'assets',
+			'aide-white.svg'
+		);
+		return new CSChatSession(
+			new CSChatParticipant('You'),
+			new CSChatParticipant('Aide', iconUri),
+			'',
+			'Ask away and use # to refer code symbols and files',
+		);
+	}
+}
+
+export class CSChatAgentProvider implements vscode.Disposable {
+	private chatAgent: vscode.ChatAgent2;
+
+	private _chatSessionState: CSChatState;
 	private _codeGraph: CodeGraph;
 	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _workingDirectory: string;
@@ -310,9 +290,6 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 	) {
 		this._workingDirectory = workingDirectory;
 		this._codeGraph = codeGraph;
-		this._chatSessionState = new CSChatSessionState(
-			agentCustomInstruction,
-		);
 		this._repoHash = repoHash;
 		this._repoName = repoName;
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
@@ -323,114 +300,36 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
-	}
+		this._chatSessionState = new CSChatState(null);
 
-	provideSlashCommands?(session: CSChatSession, token: vscode.CancellationToken): vscode.ProviderResult<vscode.CSChatSessionSlashCommand[]> {
-		logger.info('provideSlashCommands', session);
-		return [
-			{
-				command: 'help',
-				kind: vscode.CompletionItemKind.Text,
-				detail: 'Get help on how to use CodeStory',
-				shouldRepopulate: true,
-				followupPlaceholder: 'Ask me a question or type \'/\' for bb?',
-				executeImmediately: false,
-			},
-			// {
-			// 	command: 'agent',
-			// 	kind: vscode.CompletionItemKind.Text,
-			// 	detail: 'Invoke the CodeStory agent to do codebase wide changes',
-			// 	shouldRepopulate: true,
-			// 	executeImmediately: false,
-			// },
-			{
-				command: 'explain',
-				kind: vscode.CompletionItemKind.Text,
-				detail: 'Explain the code for the selection at a local and global level',
-				shouldRepopulate: true,
-				executeImmediately: false,
-			},
-			{
-				command: 'general',
-				kind: vscode.CompletionItemKind.Text,
-				detail: 'Ask any kind of general questions to the AI with our without context',
-				shouldRepopulate: true,
-				executeImmediately: false,
-			},
-			{
-				command: 'search',
-				kind: vscode.CompletionItemKind.Text,
-				detail: 'Search for the relevant code symbols from the codebase',
-				shouldRepopulate: true,
-				executeImmediately: false,
-			},
-		];
-	}
-
-	provideWelcomeMessage?(token: CSChatCancellationToken): vscode.ProviderResult<vscode.CSChatWelcomeMessageContent[]> {
-		logger.info('provideWelcomeMessage', token);
-		return [
-			'Hi, I\'m **Aide**, your personal AI assistant! I can write, debug, find, understand and explain code for you.',
-			'Here are some things you can ask me to get started:',
-			[
-				// new CSChatReplyFollowup(
-				// 	'/agent add comments to the entrypoint',
-				// 	'Add comments to the entrypoint',
-				// 	'Add comments to the entrypoint'
-				// ),
-				new CSChatReplyFollowup(
-					'/explain the active file in the editor',
-					'Explain the active file in the editor',
-					'Explain the active file in the editor'
-				),
-				new CSChatReplyFollowup(
-					'Where are the race conditions in the selected code?',
-				),
-			],
-			'You can start your request with \'**`/`**\' to give me specific instructions and type \'**`@`**\' to find files and code symbols that I can use to narrow down the context of your request.',
-			'I might make mistakes, though! Like we all do once in a while. If you find me doing so, please share your feedback via **[Discord](https://discord.gg/Cwg3vqgb)** or **founders@codestory.ai** so I can get better.',
-		];
-	}
-
-	prepareSession(initialState: CSChatSessionState | undefined, token: CSChatCancellationToken): vscode.ProviderResult<CSChatSession> {
-		logger.info('prepareSession', initialState, token);
-		const iconUri = vscode.Uri.joinPath(
+		this.chatAgent = vscode.csChat.createChatAgent('', this.defaultAgent);
+		this.chatAgent.isDefault = true;
+		this.chatAgent.supportIssueReporting = true;
+		this.chatAgent.description = 'Aide is your personal AI assistant that can write, debug, find, understand and explain code for you.';
+		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
+		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
 			'aide-white.svg'
 		);
-		return new CSChatSession(
-			new CSChatParticipant('You'),
-			new CSChatParticipant('Aide', iconUri),
-			initialState,
-			this._agentCustomInformation,
-			'Ask away and use # to refer code symbols and files',
-		);
+		this.chatAgent.slashCommandProvider = this.slashCommandProvider;
 	}
 
-	resolveRequest(session: CSChatSession, context: CSChatRequestArgs | string, token: CSChatCancellationToken): vscode.ProviderResult<CSChatRequest> {
-		logger.info('resolveRequest', session, context, token);
-		// Here there can be actions from the / commands or just normal string
-		// followup, so we need to handle both of them separately
-		session.chatSessionState.chatContext.addUserMessage(context.toString());
-		logger.info(`[codestory][message_length][resolveRequest] ${this._chatSessionState.chatContext.getMessageLength()}`);
-		return new CSChatRequest(session, context.toString());
-	}
-
-	provideResponseWithProgress(request: CSChatRequest, progress: vscode.Progress<CSChatProgress>, token: CSChatCancellationToken): vscode.ProviderResult<CSChatResponseForProgress> {
+	defaultAgent: vscode.CSChatAgentExtendedHandler = (request, context, progress, token) => {
 		return (async () => {
-			// export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
-			const deterministicRequestType = deterministicClassifier(request.message.toString());
-			const requestType = deterministicRequestType;
-			const userProvidedContext = request.userProvidedContext ? getContextForPromptFromUserContext(request.userProvidedContext) : null;
+			let requestType: UserMessageType = 'general';
+			const slashCommand = request.slashCommand?.name;
+			if (slashCommand) {
+				requestType = slashCommand as UserMessageType;
+			} else {
+				const deterministicRequestType = deterministicClassifier(request.prompt.toString());
+				if (deterministicRequestType) {
+					requestType = deterministicRequestType;
+				}
+			}
 			logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
-			if (requestType === 'help') {
-				progress.report(new CSChatProgressContent(
-					`Here are some helpful docs for resolving the most common issues: [Code Story](https://docs.codestory.ai)\n`
-				));
-				return new CSChatResponseForProgress();
-			} else if (requestType === 'instruction') {
-				const prompt = request.message.toString().slice(7).trim();
+			if (requestType === 'instruction') {
+				const prompt = request.prompt.toString().slice(7).trim();
 				if (prompt.length === 0) {
 					return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
 				}
@@ -450,7 +349,6 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 					this._workingDirectory,
 					this._testSuiteRunCommand,
 					this._activeFilesTracker,
-					request.userProvidedContext,
 					uniqueId,
 					this._agentCustomInformation,
 					this._currentRepoRef,
@@ -458,48 +356,62 @@ export class CSChatProvider implements vscode.CSChatSessionProvider {
 				return new CSChatResponseForProgress();
 			} else if (requestType === 'explain') {
 				// Implement the explain feature here
-				const explainString = request.message.toString().slice('/explain'.length).trim();
+				const explainString = request.prompt.toString().slice('/explain'.length).trim();
 				const currentSelection = getSelectedCodeContextForExplain(this._workingDirectory, this._currentRepoRef);
 				if (currentSelection === null) {
 					progress.report(new CSChatProgressContent('Selecting code on the editor can help us explain it better'));
 					return new CSChatResponseForProgress();
 				} else {
-					const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.session.threadId);
+					const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
 					await reportFromStreamToSearchProgress(explainResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 					return new CSChatResponseForProgress();
 				}
 			} else if (requestType === 'search') {
 				logSearchPrompt(
-					request.message.toString(),
+					request.prompt.toString(),
 					this._repoName,
 					this._repoHash,
 					this._uniqueUserId,
 				);
-				const searchString = request.message.toString().slice('/search'.length).trim();
-				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.session.threadId);
+				const searchString = request.prompt.toString().slice('/search'.length).trim();
+				const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
 				await reportFromStreamToSearchProgress(searchResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				// We get back here a bunch of responses which we have to pass properly to the agent
 				return new CSChatResponseForProgress();
 			} else {
-				this._chatSessionState.chatContext.cleanupChatHistory();
-				this._chatSessionState.chatContext.addUserMessage(request.message.toString());
-				const query = request.message.toString().trim();
+				this._chatSessionState.cleanupChatHistory();
+				this._chatSessionState.addUserMessage(request.prompt.toString());
+				const query = request.prompt.toString().trim();
 				logChatPrompt(
-					request.message.toString(),
+					request.prompt.toString(),
 					this._repoName,
 					this._repoHash,
 					this._uniqueUserId,
 				);
 				const projectLabels = this._projectContext.labels;
-				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.session.threadId, request.variables, projectLabels);
+				const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.variables, projectLabels);
 				await reportFromStreamToSearchProgress(followupResponse, progress, token, this._currentRepoRef, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
 		})();
-	}
+	};
 
-	removeRequest(session: CSChatSession, requestId: string) {
-		logger.info('removeRequest', session, requestId);
-		// Do nothing
+	slashCommandProvider = {
+		provideSlashCommands: (token: vscode.CancellationToken): vscode.ProviderResult<vscode.ChatAgentSlashCommand[]> => {
+			return [
+				{
+					name: 'explain',
+					description: 'Explain the code for the selection at a local and global level',
+				},
+				{
+					name: 'search',
+					description: 'Search for the relevant code symbols from the codebase',
+				},
+			];
+		}
+	};
+
+	dispose() {
+		console.log('Dispose CSChatAgentProvider');
 	}
 }
