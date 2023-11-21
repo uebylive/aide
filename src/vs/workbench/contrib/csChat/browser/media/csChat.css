@@ -274,6 +274,7 @@
 
 .csChat-item-container.interactive-item-compact.no-padding {
 	padding: unset;
+	gap: unset;
 }
 
 .csChat-item-container.interactive-item-compact .header {
@@ -615,6 +616,7 @@
 }
 
 .csChat-item-container .progress-steps .progress-step .codicon-check {
+	font-size: 14px;
 	color: var(--vscode-debugIcon-startForeground);
 }
 
