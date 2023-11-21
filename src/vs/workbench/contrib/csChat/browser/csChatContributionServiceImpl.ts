@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { FileAccess } from 'vs/base/common/network';
 import { localize, localize2 } from 'vs/nls';
 import { registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
@@ -101,7 +101,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private registerViewContainer(): ViewContainer {
 		// Register View Container
 		const title = localize2('chat.viewContainer.label', "Chat");
-		const icon = Codicon.commentDiscussion;
+		const icon = FileAccess.asBrowserUri('vs/workbench/contrib/csChat/browser/media/aide-white.svg');
 		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 			id: viewContainerId,
