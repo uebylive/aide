@@ -527,7 +527,7 @@ function getVariableType(
 }
 
 function getCurrentActiveWindow(): {
-	fsFilePath: string;
+	filePath: string;
 	contents: string;
 } | undefined {
 	const activeWindow = vscode.window.activeTextEditor;
@@ -537,7 +537,7 @@ function getCurrentActiveWindow(): {
 	const fsFilePath = activeWindow.document.uri.fsPath;
 	const contents = activeWindow.document.getText();
 	return {
-		fsFilePath,
+		filePath: fsFilePath,
 		contents,
 	};
 }
