@@ -99,7 +99,7 @@ export class QuickChatService extends Disposable implements ICSQuickChatService 
 		this._input.ignoreFocusOut = true;
 		disposableStore.add(this._input);
 
-		this._container ??= dom.$('.interactive-session');
+		this._container ??= dom.$('.cschat-session');
 		this._input.widget = this._container;
 
 		this._input.show();
@@ -146,7 +146,7 @@ export class QuickChatService extends Disposable implements ICSQuickChatService 
 class QuickChat extends Disposable {
 	// TODO@TylerLeonhardt: be responsive to window size
 	static DEFAULT_MIN_HEIGHT = 200;
-	private static readonly DEFAULT_HEIGHT_OFFSET = 100;
+	private static readonly DEFAULT_HEIGHT_OFFSET = 0;
 
 	private widget!: ChatWidget;
 	private sash!: Sash;
@@ -226,7 +226,7 @@ class QuickChat extends Disposable {
 			scopedInstantiationService.createInstance(
 				ChatWidget,
 				{ resource: true },
-				{ renderInputOnTop: true, renderStyle: 'compact', supportsFileReferences: true },
+				{ renderStyle: 'compact', supportsFileReferences: true },
 				{
 					listForeground: quickInputForeground,
 					listBackground: quickInputBackground,

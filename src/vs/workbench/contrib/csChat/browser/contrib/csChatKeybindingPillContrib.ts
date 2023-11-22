@@ -21,7 +21,7 @@ export class KeybindingPillContribution implements IEditorContribution {
 			if (event.selection.isEmpty()) {
 				this.pillWidget?.hide();
 			} else {
-				this.pillWidget?.showAt(event.selection.getStartPosition());
+				this.pillWidget?.showAt(event.selection.getPosition());
 			}
 		});
 	}

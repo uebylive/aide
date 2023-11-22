@@ -10,13 +10,9 @@ import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import { CodeGraph } from './codeGraph/graph';
 import postHogClient from './posthog/client';
-import { CodeStoryViewProvider } from './providers/codeStoryView';
-import { healthCheck } from './subscriptions/health';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
 import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
-import { CodeBlockChangeDescriptionGenerator } from './activeChanges/codeBlockChangeDescriptionGenerator';
-import { triggerCodeSymbolChange } from './activeChanges/timeline';
 import { gitCommit } from './subscriptions/gitCommit';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
@@ -202,7 +198,6 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(interactiveSession);
 	context.subscriptions.push(chatAgentProvider);
 	await commands.executeCommand('workbench.action.chat.clear');
-	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
 
 	context.subscriptions.push(
 		debug(
@@ -227,27 +222,6 @@ export async function activate(context: ExtensionContext) {
 			await copySettings(rootPath ?? '', logger);
 		}
 	);
-
-	// Register the codestory view provider
-	// Create a new CodeStoryViewProvider instance and register it with the extension's context
-	const provider = new CodeStoryViewProvider(context.extensionUri, new Date());
-	context.subscriptions.push(
-		window.registerWebviewViewProvider(CodeStoryViewProvider.viewType, provider, {
-			webviewOptions: { retainContextWhenHidden: true },
-		})
-	);
-
-	// Now we want to register the HC
-	context.subscriptions.push(
-		healthCheck(
-			context,
-			provider,
-			repoName,
-			repoHash,
-			uniqueUserId,
-		)
-	);
-	commands.executeCommand('codestory.healthCheck');
 
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		codeSymbolsLanguageCollection,
@@ -277,23 +251,6 @@ export async function activate(context: ExtensionContext) {
 		await trackCodeSymbolChanges.fileOpened(uri, logger);
 	});
 
-	// Now we parse the documents on save as well
-	context.subscriptions.push(
-		workspace.onDidSaveTextDocument(async (doc) => {
-			const uri = doc.uri;
-			const fsPath = doc.uri.fsPath;
-			await trackCodeSymbolChanges.fileSaved(uri, logger);
-			await triggerCodeSymbolChange(
-				provider,
-				trackCodeSymbolChanges,
-				timeKeeperFileSaved,
-				fsPath,
-				new CodeBlockChangeDescriptionGenerator(logger),
-				logger
-			);
-		})
-	);
-
 	// Add git commit to the subscriptions here
 	// Git commit
 	context.subscriptions.push(gitCommit(logger, repoName, repoHash, uniqueUserId));
@@ -313,4 +270,12 @@ export async function activate(context: ExtensionContext) {
 	window.onDidChangeActiveTextEditor((editor) => {
 		activeFilesTracker.onDidChangeActiveTextEditor(editor);
 	});
+
+	// Register feedback commands
+	context.subscriptions.push(
+		commands.registerCommand('codestory.feedback', async () => {
+			// Redirect to Discord server link
+			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
+		})
+	);
 }

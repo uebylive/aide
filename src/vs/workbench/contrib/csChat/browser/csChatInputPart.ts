@@ -25,7 +25,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { DEFAULT_FONT_FAMILY } from 'vs/workbench/browser/style';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IChatExecuteActionContext } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
-import { IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { IChatRequester, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
 import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
@@ -37,9 +37,14 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { ModesHoverController } from 'vs/editor/contrib/hover/browser/hover';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
+import { ILanguageService } from 'vs/editor/common/languages/language';
+import { FileAccess } from 'vs/base/common/network';
+import { Codicon } from 'vs/base/common/codicons';
+import { ThemeIcon } from 'vs/base/common/themables';
 
 const $ = dom.$;
 
+const INPUT_EDITOR_MIN_HEIGHT = 80;
 const INPUT_EDITOR_MAX_HEIGHT = 250;
 
 export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
@@ -61,6 +66,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private inputEditorHeight = 0;
 	private container!: HTMLElement;
 
+	private requesterContainer!: HTMLElement;
 	private followupsContainer!: HTMLElement;
 	private followupsDisposables = this._register(new DisposableStore());
 
@@ -80,7 +86,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private providerId: string | undefined;
 
 	private cachedDimensions: dom.Dimension | undefined;
-	private cachedToolbarWidth: number | undefined;
+	private cachedToolbarHeight: number | undefined;
 
 	readonly inputUri = URI.parse(`${ChatInputPart.INPUT_SCHEME}:input-${ChatInputPart._counter++}`);
 
@@ -93,7 +99,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
+		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@ILanguageService private readonly _languageService: ILanguageService,
 	) {
 		super();
 
@@ -116,7 +123,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return localize('chatInput', "Chat Input");
 	}
 
-	setState(providerId: string, inputValue: string | undefined): void {
+	setState(providerId: string, inputValue: string | undefined, requester: IChatRequester): void {
 		this.providerId = providerId;
 		const history = this.historyService.getHistory(providerId);
 		this.history = new HistoryNavigator(history, 50);
@@ -124,6 +131,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		if (typeof inputValue === 'string') {
 			this.setValue(inputValue);
 		}
+		this._renderRequester(requester);
 	}
 
 	get element(): HTMLElement {
@@ -193,11 +201,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	render(container: HTMLElement, initialValue: string, widget: IChatWidget) {
-		this.container = dom.append(container, $('.interactive-input-part'));
+		this.container = dom.append(container, $('.cschat-input-part'));
 
 		this.followupsContainer = dom.append(this.container, $('.interactive-input-followups'));
-		const inputAndSideToolbar = dom.append(this.container, $('.interactive-input-and-side-toolbar'));
-		const inputContainer = dom.append(inputAndSideToolbar, $('.interactive-input-and-execute-toolbar'));
+		const header = dom.append(this.container, $('.header'));
+		const user = dom.append(header, $('.user'));
+		dom.append(user, $('.avatar-container'));
+		dom.append(user, $('h3.username'));
+		this.requesterContainer = user;
+		const inputAndSideToolbar = dom.append(this.container, $('.cschat-input-and-side-toolbar'));
+		const inputContainer = dom.append(inputAndSideToolbar, $('.cschat-input-and-execute-toolbar'));
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(inputContainer));
 		CONTEXT_IN_CHAT_INPUT.bindTo(inputScopedContextKeyService).set(true);
@@ -229,7 +242,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
-			const currentHeight = Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
+			let currentHeight = Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
+			currentHeight = Math.max(currentHeight, INPUT_EDITOR_MIN_HEIGHT);
 			if (currentHeight !== this.inputEditorHeight) {
 				this.inputEditorHeight = currentHeight;
 				this._onDidChangeHeight.fire();
@@ -257,10 +271,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				shouldForwardArgs: true
 			}
 		}));
-		this.toolbar.getElement().classList.add('interactive-execute-toolbar');
+		this.toolbar.getElement().classList.add('cschat-execute-toolbar');
 		this.toolbar.context = <IChatExecuteActionContext>{ widget };
 		this._register(this.toolbar.onDidChangeMenuItems(() => {
-			if (this.cachedDimensions && typeof this.cachedToolbarWidth === 'number' && this.cachedToolbarWidth !== this.toolbar.getItemsWidth()) {
+			if (this.cachedDimensions && typeof this.cachedToolbarHeight === 'number' && this.cachedToolbarHeight !== this.toolbar.getItemsWidth()) {
 				this.layout(this.cachedDimensions.height, this.cachedDimensions.width);
 			}
 		}));
@@ -275,13 +289,30 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarSide.context = <IChatExecuteActionContext>{ widget };
 		}
 
-		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', null, this.inputUri, true);
+		const langId = this._languageService.createById('markdown');
+		this.inputModel = this.modelService.getModel(this.inputUri) || this.modelService.createModel('', langId, this.inputUri, true);
 		this.inputModel.updateOptions({ bracketColorizationOptions: { enabled: false, independentColorPoolPerBracketType: false } });
 		this._inputEditor.setModel(this.inputModel);
 		if (initialValue) {
 			this.inputModel.setValue(initialValue);
 			const lineNumber = this.inputModel.getLineCount();
 			this._inputEditor.setPosition({ lineNumber, column: this.inputModel.getLineMaxColumn(lineNumber) });
+		}
+	}
+
+	private _renderRequester(requester: IChatRequester): void {
+		const username = requester.username || localize('requester', "You");
+		this.requesterContainer.querySelector('h3.username')!.textContent = username;
+
+		const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
+		if (requester.avatarIconUri) {
+			const avatarImgIcon = dom.$<HTMLImageElement>('img.icon');
+			avatarImgIcon.src = FileAccess.uriToBrowserUri(requester.avatarIconUri).toString(true);
+			avatarContainer.replaceChildren(dom.$('.avatar', undefined, avatarImgIcon));
+		} else {
+			const defaultIcon = Codicon.account;
+			const avatarIcon = dom.$(ThemeIcon.asCSSSelector(defaultIcon));
+			avatarContainer.replaceChildren(dom.$('.avatar.codicon-avatar', undefined, avatarIcon));
 		}
 	}
 
@@ -305,29 +336,31 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private _layout(height: number, width: number, allowRecurse = true): number {
 		const followupsHeight = this.followupsContainer.offsetHeight;
+		const requesterHeight = this.requesterContainer.offsetHeight;
 
-		const inputPartBorder = 1;
-		const inputPartHorizontalPadding = 40;
-		const inputPartVerticalPadding = 24;
-		const inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
+		const inputPartBorder = 0;
+		const inputPartHorizontalPadding = 32;
+		const inputPartVerticalPadding = 30;
+		let inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - requesterHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
+		inputEditorHeight = Math.max(inputEditorHeight, INPUT_EDITOR_MIN_HEIGHT);
 
-		const inputEditorBorder = 2;
-		const inputPartHeight = followupsHeight + inputEditorHeight + inputPartVerticalPadding + inputPartBorder + inputEditorBorder;
+		const inputEditorBorder = 0;
+		const inputPartHeight = followupsHeight + requesterHeight + inputEditorHeight + inputPartVerticalPadding + inputPartBorder + inputEditorBorder;
 
-		const editorBorder = 2;
-		const editorPadding = 8;
-		const executeToolbarWidth = this.cachedToolbarWidth = this.toolbar.getItemsWidth();
-		const sideToolbarWidth = this.options.renderStyle === 'compact' ? 20 : 0;
+		const editorBorder = 0;
+		const editorPadding = 0;
+		const executeToolbarHeight = this.cachedToolbarHeight = this.toolbar.getItemsWidth();
+		const sideToolbarHeight = this.options.renderStyle === 'compact' ? 20 : 0;
 
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
-		this._inputEditor.layout({ width: width - inputPartHorizontalPadding - editorBorder - editorPadding - executeToolbarWidth - sideToolbarWidth, height: inputEditorHeight });
+		this._inputEditor.layout({ width: width - inputPartHorizontalPadding - editorBorder - editorPadding - sideToolbarHeight, height: inputEditorHeight });
 
 		if (allowRecurse && initialEditorScrollWidth < 10) {
 			// This is probably the initial layout. Now that the editor is layed out with its correct width, it should report the correct contentHeight
 			return this._layout(height, width, false);
 		}
 
-		return inputPartHeight;
+		return inputPartHeight + executeToolbarHeight;
 	}
 
 	saveState(): void {

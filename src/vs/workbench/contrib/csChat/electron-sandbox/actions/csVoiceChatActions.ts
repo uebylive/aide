@@ -702,7 +702,7 @@ registerThemingParticipant((theme, collector) => {
 
 	// Show a "microphone" icon when recording is in progress that glows via outline.
 	collector.addRule(`
-		.monaco-workbench:not(.reduce-motion) .interactive-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled),
+		.monaco-workbench:not(.reduce-motion) .cschat-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled),
 		.monaco-workbench:not(.reduce-motion) .inline-chat .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled) {
 			color: ${activeRecordingColor};
 			outline: 1px solid ${activeRecordingColor};
@@ -711,7 +711,7 @@ registerThemingParticipant((theme, collector) => {
 			border-radius: 50%;
 		}
 
-		.monaco-workbench:not(.reduce-motion) .interactive-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::before,
+		.monaco-workbench:not(.reduce-motion) .cschat-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::before,
 		.monaco-workbench:not(.reduce-motion) .inline-chat .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::before {
 			position: absolute;
 			outline: 1px solid ${activeRecordingColor};
@@ -721,7 +721,7 @@ registerThemingParticipant((theme, collector) => {
 			height: 16px;
 		}
 
-		.monaco-workbench:not(.reduce-motion) .interactive-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::after,
+		.monaco-workbench:not(.reduce-motion) .cschat-input-part .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::after,
 		.monaco-workbench:not(.reduce-motion) .inline-chat .monaco-action-bar .action-label.codicon-loading.codicon-modifier-spin:not(.disabled)::after {
 			content: '';
 			position: absolute;

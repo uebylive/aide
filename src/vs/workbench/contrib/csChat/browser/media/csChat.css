@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.interactive-session {
+.cschat-session {
 	max-width: 850px;
 	margin: auto;
 }
@@ -14,7 +14,7 @@
 }
 
 .csChat-item-container {
-	padding: 16px 20px;
+	padding: 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -25,28 +25,34 @@
 	-webkit-user-select: text;
 }
 
+.cschat-input-part .header,
 .csChat-item-container .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	margin-bottom: 3px;
 }
 
+.cschat-input-part .header.hidden,
 .csChat-item-container .header.hidden {
 	display: none;
 }
 
+.cschat-input-part .header .user,
 .csChat-item-container .header .user {
 	display: flex;
 	align-items: center;
 	gap: 6px;
 }
 
+.cschat-input-part .header .username,
 .csChat-item-container .header .username {
-	margin: 0;
-	font-size: 12px;
+	margin: 0 2px;
+	font-size: 13px;
 	font-weight: 600;
 }
 
+.cschat-input-part .header .detail-container,
 .csChat-item-container .header .detail-container {
 	font-size: 0.9em;
 	opacity: 0.7;
@@ -87,12 +93,14 @@
 	animation: ellipsis steps(4, end) 1s infinite;
 }
 
+.cschat-input-part .header .avatar-container,
 .csChat-item-container .header .avatar-container {
 	display: flex;
 	pointer-events: none;
 	user-select: none;
 }
 
+.cschat-input-part .header .avatar,
 .csChat-item-container .header .avatar {
 	display: flex;
 	align-items: center;
@@ -101,25 +109,30 @@
 	height: 24px;
 }
 
+.cschat-input-part .header .avatar.codicon-avatar,
 .csChat-item-container .header .avatar.codicon-avatar {
 	background: var(--vscode-chat-avatarBackground);
 }
 
+.cschat-input-part .header .avatar+.avatar,
 .csChat-item-container .header .avatar+.avatar {
 	margin-left: -8px;
 }
 
+.cschat-input-part .header .avatar .icon,
 .csChat-item-container .header .avatar .icon {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
 }
 
+.cschat-input-part .header .avatar .codicon,
 .csChat-item-container .header .avatar .codicon {
 	color: var(--vscode-chat-avatarForeground) !important;
 	font-size: 14px;
 }
 
+.cschat-input-part .header .agent-avatar-container,
 .csChat-item-container .header .agent-avatar-container {
 	margin-left: -30px;
 	transition: margin 0.15s ease-out;
@@ -127,11 +140,13 @@
 	z-index: -1;
 }
 
+.cschat-input-part .header .agent-avatar-container.loading,
 .csChat-item-container .header .agent-avatar-container.loading {
 	margin-left: 0px;
 	z-index: 1;
 }
 
+.cschat-input-part .header .agent-avatar-container.complete,
 .csChat-item-container .header .agent-avatar-container.complete {
 	margin-left: -12px;
 	z-index: 1;
@@ -269,7 +284,7 @@
 }
 
 .csChat-item-container.interactive-item-compact {
-	padding: 8px 20px;
+	padding: 8px;
 }
 
 .csChat-item-container.interactive-item-compact.no-padding {
@@ -278,17 +293,17 @@
 }
 
 .csChat-item-container.interactive-item-compact .header {
-	height: 16px;
+	height: 24px;
 }
 
 .csChat-item-container.interactive-item-compact .header .avatar {
-	width: 18px;
-	height: 18px;
+	width: 24px;
+	height: 24px;
 }
 
 .csChat-item-container.interactive-item-compact .header .avatar .icon {
-	width: 16px;
-	height: 16px;
+	width: 24px;
+	height: 24px;
 }
 
 .csChat-item-container.interactive-item-compact .header .codicon-avatar .codicon {
@@ -324,45 +339,44 @@
 	margin: 0 0 8px 0;
 }
 
-.interactive-session .interactive-input-and-execute-toolbar {
+.cschat-session .cschat-input-and-execute-toolbar {
 	display: flex;
+	flex-direction: column;
 	box-sizing: border-box;
 	cursor: text;
-	margin: 0px 20px;
-	background-color: var(--vscode-input-background);
-	border: 1px solid var(--vscode-input-border, transparent);
-	border-radius: 4px;
+	background-color: var(--vscode-sideBar-background);
 	position: relative;
-	padding: 0 6px;
-	margin-bottom: 4px;
 	align-items: center;
 	justify-content: space-between;
 }
 
-.interactive-session .interactive-input-and-side-toolbar {
+.cschat-session .cschat-input-and-side-toolbar {
 	display: flex;
 	gap: 4px;
 	align-items: center;
 }
 
-.interactive-session .interactive-input-and-execute-toolbar.focused {
+.cschat-session .cschat-input-and-execute-toolbar.focused {
 	border-color: var(--vscode-focusBorder);
 }
 
-.interactive-session .interactive-input-and-execute-toolbar .monaco-editor,
-.interactive-session .interactive-input-and-execute-toolbar .monaco-editor .monaco-editor-background {
-	background-color: var(--vscode-input-background) !important;
+.cschat-session .cschat-input-and-execute-toolbar .monaco-editor,
+.cschat-session .cschat-input-and-execute-toolbar .monaco-editor .monaco-editor-background {
+	background-color: var(--vscode-sideBar-background) !important;
 }
 
-.interactive-session .interactive-input-and-execute-toolbar .monaco-editor .cursors-layer {
+.cschat-session .cschat-input-and-execute-toolbar .monaco-editor .cursors-layer {
 	padding-left: 4px;
 }
 
-.interactive-session .interactive-input-part .interactive-execute-toolbar {
+.cschat-session .cschat-input-part .cschat-execute-toolbar {
 	height: 22px;
+	width: 100%;
+	display: flex;
+	justify-content: end;
 }
 
-.interactive-session .interactive-input-part .interactive-execute-toolbar .codicon-debug-stop {
+.cschat-session .cschat-input-part .cschat-execute-toolbar .codicon-debug-stop {
 	color: var(--vscode-icon-foreground) !important;
 }
 
@@ -408,10 +422,16 @@
 	color: var(--vscode-notificationsInfoIcon-foreground) !important; /* Have to override default styles which apply to all lists */
 }
 
-.interactive-session .interactive-input-part {
+.csChat-item-container .value .interactive-slash-command {
+	color: var(--vscode-textLink-foreground);
+}
+
+.cschat-session .cschat-input-part {
 	padding: 12px 0px;
 	display: flex;
 	flex-direction: column;
+	padding: 15px 16px 12px 16px;
+	border-top: 1px solid var(--vscode-chat-requestBorder, transparent);
 }
 
 .interactive-session-followups {
@@ -435,26 +455,26 @@
 	padding: 4px 8px;
 }
 
-.interactive-session .interactive-input-part .interactive-input-followups {
+.cschat-session .cschat-input-part .interactive-input-followups {
 	margin: 0px 20px;
 }
 
-.interactive-session .interactive-input-part .interactive-input-followups .interactive-session-followups {
+.cschat-session .cschat-input-part .interactive-input-followups .interactive-session-followups {
 	margin-bottom: 8px;
 }
 
-.interactive-session .interactive-input-part .interactive-input-followups .interactive-session-followups .monaco-button {
+.cschat-session .cschat-input-part .interactive-input-followups .interactive-session-followups .monaco-button {
 	display: block;
 	color: var(--vscode-textLink-foreground);
 	font-size: 12px;
 }
 
-.interactive-session .interactive-input-part .interactive-input-followups .interactive-session-followups code {
+.cschat-session .cschat-input-part .interactive-input-followups .interactive-session-followups code {
 	font-family: var(--monaco-monospace-font);
 	font-size: 11px;
 }
 
-.interactive-session .interactive-input-part .interactive-input-followups .interactive-session-followups .monaco-button .codicon-sparkle {
+.cschat-session .cschat-input-part .interactive-input-followups .interactive-session-followups .monaco-button .codicon-sparkle {
 	float: left;
 }
 
@@ -480,15 +500,19 @@
 
 /* #region Quick Chat */
 
-.quick-input-widget .interactive-session .interactive-input-part {
-	padding: 8px 6px 6px 6px;
+.quick-input-widget .cschat-session .monaco-list-rows {
+	background: unset !important;
 }
 
-.quick-input-widget .interactive-session .interactive-input-part .interactive-execute-toolbar {
+.quick-input-widget .cschat-session .cschat-input-part {
+	padding: 8px;
+}
+
+.quick-input-widget .cschat-session .cschat-input-part .cschat-execute-toolbar {
 	bottom: 1px;
 }
 
-.quick-input-widget .interactive-session .interactive-input-and-execute-toolbar {
+.quick-input-widget .cschat-session .cschat-input-and-execute-toolbar {
 	margin: 0;
 	border-radius: 2px;
 	padding: 0 4px 0 6px;
@@ -501,6 +525,12 @@
 
 .quick-input-widget .interactive-response {
 	min-height: 86px;
+}
+
+.quick-input-widget .cschat-session .cschat-input-and-execute-toolbar,
+.quick-input-widget .cschat-session .cschat-input-and-execute-toolbar .monaco-editor,
+.quick-input-widget .cschat-session .cschat-input-and-execute-toolbar .monaco-editor .monaco-editor-background {
+	background-color: unset !important;
 }
 
 /* #endregion */
@@ -546,40 +576,40 @@
 	padding: 1px 3px;
 }
 
-.interactive-session .chat-used-context.chat-used-context-collapsed .chat-used-context-list {
+.cschat-session .chat-used-context.chat-used-context-collapsed .chat-used-context-list {
 	display: none;
 }
 
-.interactive-session .chat-used-context {
+.cschat-session .chat-used-context {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
 }
 
 .interactive-response-progress-tree,
-.interactive-session .chat-used-context-list {
+.cschat-session .chat-used-context-list {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 4px;
 	margin-bottom: 8px;
 	padding: 4px;
 }
 
-.interactive-session .chat-used-context-list .monaco-list .monaco-list-row {
+.cschat-session .chat-used-context-list .monaco-list .monaco-list-row {
 	border-radius: 2px;
 }
 
-.interactive-session .chat-used-context-label {
+.cschat-session .chat-used-context-label {
 	font-size: 12px;
 	color: var(--vscode-foreground);
 	opacity: 0.8;
 	user-select: none;
 }
 
-.interactive-session .chat-used-context-label:hover {
+.cschat-session .chat-used-context-label:hover {
 	opacity: unset;
 }
 
-.interactive-session .chat-used-context-label .monaco-button {
+.cschat-session .chat-used-context-label .monaco-button {
 	/* unset Button styles */
 	display: inline-flex;
 	width: 100%;
@@ -589,15 +619,15 @@
 	justify-content: initial;
 }
 
-.interactive-session .chat-used-context-label .monaco-text-button:focus {
+.cschat-session .chat-used-context-label .monaco-text-button:focus {
 	outline: none;
 }
 
-.interactive-session .chat-used-context-label .monaco-text-button:focus-visible {
+.cschat-session .chat-used-context-label .monaco-text-button:focus-visible {
 	outline: 1px solid var(--vscode-focusBorder);
 }
 
-.interactive-session .chat-used-context .chat-used-context-label .monaco-button .codicon {
+.cschat-session .chat-used-context .chat-used-context-label .monaco-button .codicon {
 	margin: 0 0 0 4px;
 }
 
@@ -619,67 +649,6 @@
 	font-size: 14px;
 	color: var(--vscode-debugIcon-startForeground);
 }
-
-
-/* #region Quick Chat */
-
-.monaco-workbench > .hover-chat-container {
-	position: fixed;
-	right: 13px;
-	bottom: 34px;
-	display: block;
-	border: 1px solid var(--vscode-chat-requestBorder);
-	z-index: 5;
-}
-
-.hover-chat-input-container::before {
-	backdrop-filter: blur(10px);
-	content: "";
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	z-index: -1;
-}
-
-.hover-chat-input-container {
-	position: relative;
-	padding: 2px;
-}
-
-.hover-chat-container .hover-chat-hint {
-	margin: 0;
-	padding-left: 8px;
-	margin-bottom: -4px;
-	color: var(--vscode-editorGhostText-foreground);
-}
-
-.hover-chat-container .interactive-session .interactive-input-part {
-	padding: 8px 6px 6px 6px;
-}
-
-.hover-chat-container .interactive-session .interactive-input-part .interactive-execute-toolbar {
-	bottom: 1px;
-}
-
-.hover-chat-container .interactive-session .interactive-input-and-execute-toolbar {
-	margin: 0;
-	border-radius: 4px;
-	padding: 0 6px;
-}
-
-.hover-chat-container .interactive-session .interactive-input-and-execute-toolbar .interactive-input-editor {
-	width: 346px;
-	height: 36px;
-}
-
-.hover-chat-container .interactive-list {
-	border-bottom-right-radius: 6px;
-	border-bottom-left-radius: 6px;
-}
-
-/* #endregion */
 
 .keybindingPillWidget {
 	display: flex !important;

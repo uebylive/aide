@@ -58,10 +58,6 @@ function yarnInstall(dir, opts) {
 		}
 		run('sudo', ['docker', 'run', '-e', 'GITHUB_TOKEN', '-e', 'npm_config_arch', '-v', `${process.env['VSCODE_HOST_MOUNT']}:/root/vscode`, '-v', `${process.env['VSCODE_HOST_MOUNT']}/.build/.netrc:/root/.netrc`, process.env['VSCODE_REMOTE_DEPENDENCIES_CONTAINER_NAME'], 'yarn', '--cwd', dir, ...args], opts);
 		run('sudo', ['chown', '-R', `${userinfo.uid}:${userinfo.gid}`, `${dir}/node_modules`], opts);
-	} else if (/^extensions\/codestory$/.test(dir)) {
-		console.log(`Installing dependencies in ${dir}...`);
-		run(yarn, ['run', 'install:all', ...args], opts);
-		run(yarn, ['run', 'build:webview_sideview', ...args], opts);
 	} else {
 		console.log(`Installing dependencies in ${dir}...`);
 		run(yarn, args, opts);

@@ -6891,6 +6891,14 @@ declare namespace monaco.languages {
 		 * The editor will only resolve a completion item once.
 		 */
 		resolveCompletionItem?(item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>;
+		/**
+		 * Callback on focusing a completion item.
+		 */
+		onFocusCompletionItem?(completionItem: CompletionItem, token: CancellationToken): Promise<void>;
+		/**
+		 * Callback when the completion list is closed.
+		 */
+		onDidBlur?(): void;
 	}
 
 	/**

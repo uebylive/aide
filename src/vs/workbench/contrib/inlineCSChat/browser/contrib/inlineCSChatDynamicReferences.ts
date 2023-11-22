@@ -83,7 +83,7 @@ interface InsertFileVariableContext {
 	uri: URI;
 }
 
-function isInsertFileVariableContext(context: any): context is InsertFileVariableContext {
+export function isInsertFileVariableContext(context: any): context is InsertFileVariableContext {
 	return 'widget' in context && 'range' in context && 'uri' in context;
 }
 
@@ -93,7 +93,7 @@ interface InsertSymbolVariableContext {
 	pick: ISymbolQuickPickItem;
 }
 
-function isInsertSymbolVariableContext(context: any): context is InsertSymbolVariableContext {
+export function isInsertSymbolVariableContext(context: any): context is InsertSymbolVariableContext {
 	return 'widget' in context && 'range' in context && 'pick' in context;
 }
 

@@ -160,7 +160,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const renderInputOnTop = this.viewOptions.renderInputOnTop ?? false;
 		const renderStyle = this.viewOptions.renderStyle;
 
-		this.container = dom.append(parent, $('.interactive-session'));
+		this.container = dom.append(parent, $('.cschat-session'));
 		if (renderInputOnTop) {
 			this.createInput(this.container, { renderFollowups: false, renderStyle });
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));
@@ -440,6 +440,13 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
+		this._register(model.onDidChange(e => {
+			if (e.kind === 'initialize') {
+				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+				this.inputPart.setState(model.providerId, viewState.inputValue ?? '', requester);
+			}
+		}));
+
 		this.container.setAttribute('data-session-id', model.sessionId);
 		this.viewModel = this.instantiationService.createInstance(ChatViewModel, model);
 		this.viewModelDisposables.add(this.viewModel.onDidChange(e => {
@@ -455,7 +462,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
-		this.inputPart.setState(model.providerId, viewState.inputValue);
+		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+		this.inputPart.setState(model.providerId, viewState.inputValue, requester);
 
 		if (this.tree) {
 			this.onDidChangeItems();

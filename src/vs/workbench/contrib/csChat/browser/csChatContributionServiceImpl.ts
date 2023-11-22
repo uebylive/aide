@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { FileAccess } from 'vs/base/common/network';
 import { localize, localize2 } from 'vs/nls';
 import { registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
@@ -15,7 +15,6 @@ import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as 
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { getClearAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatClearActions';
-import { getHoverActionsForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatHoverActions';
 import { getMoveToEditorAction, getMoveToNewWindowAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/csChat/browser/actions/csChatQuickInputActions';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/csChat/browser/csChatViewPane';
@@ -27,7 +26,7 @@ import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle
 const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatProviderContribution[]>({
 	extensionPoint: 'csChatSession',
 	jsonSchema: {
-		description: localize('vscode.extension.contributes.csChatSession', 'Contributes an CS Chat Session provider'),
+		description: localize('vscode.extension.contributes.csChatSession', 'Contributes a CS Chat Session provider'),
 		type: 'array',
 		items: {
 			additionalProperties: false,
@@ -101,7 +100,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private registerViewContainer(): ViewContainer {
 		// Register View Container
 		const title = localize2('chat.viewContainer.label', "Chat");
-		const icon = Codicon.commentDiscussion;
+		const icon = FileAccess.asBrowserUri('vs/workbench/contrib/csChat/browser/media/aide-white.svg');
 		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 			id: viewContainerId,
@@ -143,9 +142,6 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		// "Open Chat" Actions
 		disposables.add(registerAction2(getOpenChatEditorAction(providerDescriptor.id, providerDescriptor.label, providerDescriptor.when)));
 		disposables.add(registerAction2(getQuickChatActionForProvider(providerDescriptor.id, providerDescriptor.label)));
-
-		// Hover Chat Actions
-		getHoverActionsForProvider(providerDescriptor.id, providerDescriptor.label).map(action => disposables.add(registerAction2(action)));
 
 		return {
 			dispose: () => {

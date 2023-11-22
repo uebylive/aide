@@ -34,6 +34,11 @@
       {
         "command": "webview.copySettings",
         "title": "CodeStory: Import settings and keybindings from VSCode"
+      },
+      {
+        "command": "codestory.feedback",
+        "title": "Provide feedback on Discord",
+        "icon": "assets/discord.svg"
       }
     ],
     "viewsContainers": {
@@ -45,29 +50,22 @@
         }
       ]
     },
-    "views": {
-      "changeTracker": [
-        {
-          "type": "webview",
-          "id": "codestory.webView",
-          "name": "Change Tracker"
-        }
-      ]
-    },
     "csChatSession": [
       {
         "id": "cs-chat",
         "label": "CodeStory Agent",
-        "icon": "assets/message-code.svg"
+        "icon": "assets/aide-white.svg"
       }
     ],
-    "keybindings": [
-      {
-        "command": "workbench.action.csFocusHoverChat.cs-chat",
-        "key": "shift shift",
-        "mac": "shift shift"
-      }
-    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "codestory.feedback",
+          "when": "view == cs-chat",
+          "group": "navigation"
+        }
+      ]
+    },
     "configuration": {
       "type": "object",
       "title": "Aide Extension settings",
@@ -116,9 +114,6 @@
     }
   },
   "scripts": {
-    "install:all": "yarn install && cd webview-ui-sideview && yarn install",
-    "start:webview_sideview": "cd webview-ui-sideview && npm run start",
-    "build:webview_sideview": "cd webview-ui-sideview && npm run build",
     "vscode:prepublish": "npm run compile:tsc",
     "compile": "gulp compile-extension:codestory",
     "watch": "gulp watch-extension:codestory",

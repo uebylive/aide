@@ -13,7 +13,6 @@ import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWel
 
 export const ICSChatWidgetService = createDecorator<ICSChatWidgetService>('csChatWidgetService');
 export const ICSQuickChatService = createDecorator<ICSQuickChatService>('csQuickChatService');
-export const ICSHoverChatService = createDecorator<ICSHoverChatService>('csHoverChatService');
 export const ICSChatAccessibilityService = createDecorator<ICSChatAccessibilityService>('csChatAccessibilityService');
 
 export interface ICSChatWidgetService {
@@ -45,13 +44,6 @@ export interface ICSQuickChatService {
 	open(providerId?: string, options?: IQuickChatOpenOptions): void;
 	close(): void;
 	openInChatView(): void;
-}
-
-export interface ICSHoverChatService {
-	readonly _serviceBrand: undefined;
-	readonly enabled: boolean;
-	toggle(providerId?: string): void;
-	open(providerId?: string): void;
 }
 
 export interface IQuickChatOpenOptions {
@@ -105,6 +97,11 @@ export interface IChatResourceViewContext {
 }
 
 export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewContext;
+
+export interface IChatRequester {
+	username: string;
+	avatarIconUri?: URI;
+}
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;

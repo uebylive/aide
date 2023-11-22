@@ -168,7 +168,7 @@ export class InlineChatWidget implements IInlineChatWidget {
 	private static _modelPool: number = 1;
 
 	private readonly _elements = h(
-		'div.inline-chat@root',
+		'div.inline-cschat@root',
 		[
 			h('div.body', [
 				h('div.content@content', [
@@ -979,7 +979,7 @@ export class InlineChatZoneWidget extends ZoneWidget {
 		@IInstantiationService private readonly _instaService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
-		super(editor, { showFrame: false, showArrow: false, isAccessible: true, className: 'inline-chat-widget', keepEditorSelection: true, showInHiddenAreas: true, ordinal: 10000 });
+		super(editor, { showFrame: false, showArrow: false, isAccessible: true, className: 'inline-cschat-widget', keepEditorSelection: true, showInHiddenAreas: true, ordinal: 10000 });
 
 		this._ctxVisible = CTX_INLINE_CHAT_VISIBLE.bindTo(contextKeyService);
 		this._ctxCursorPosition = CTX_INLINE_CHAT_OUTER_CURSOR_POSITION.bindTo(contextKeyService);
