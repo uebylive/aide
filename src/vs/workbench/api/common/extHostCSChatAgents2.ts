@@ -182,6 +182,7 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 
 		const requestObj: vscode.CSChatAgentEditRequest = {
 			threadId: sessionId,
+			response: request.response,
 			context: request.context
 		};
 

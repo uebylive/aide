@@ -12,6 +12,7 @@ declare module 'vscode' {
 
 	export interface CSChatAgentEditRequest {
 		threadId: string;
+		response: string;
 
 		/**
 		 * List of code blocks to be exported to the codebase.

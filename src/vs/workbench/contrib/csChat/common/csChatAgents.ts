@@ -99,6 +99,7 @@ export interface ICSChatAgentEditRequest {
 	sessionId: string;
 	agentId: string;
 	responseId: string;
+	response: string;
 	context: ICSChatAgentEditContext[];
 }
 

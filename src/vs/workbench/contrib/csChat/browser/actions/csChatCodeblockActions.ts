@@ -215,6 +215,7 @@ export function registerChatCodeBlockActions() {
 				sessionId: context.element.sessionId,
 				agentId: context.element.agent?.id ?? '',
 				responseId: context.element.requestId,
+				response: context.element.response.asString(),
 				context: [{
 					code: context.code,
 					languageId: context.languageId,
