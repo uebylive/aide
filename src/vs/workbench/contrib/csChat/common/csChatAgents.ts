@@ -27,7 +27,7 @@ export interface IChatAgent extends IChatAgentData {
 	invoke(request: ICSChatAgentRequest, progress: (part: ICSChatProgress) => void, history: ICSChatMessage[], token: CancellationToken): Promise<ICSChatAgentResult>;
 	provideFollowups?(sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]>;
 	provideSlashCommands(token: CancellationToken): Promise<ICSChatAgentCommand[]>;
-	provideEdits?(request: ICSChatAgentEditRequest, token: CancellationToken): Promise<WorkspaceEdit | undefined>;
+	provideEdits?(request: ICSChatAgentEditRequest, progress: (part: ICSChatAgentEditRepsonse) => void, token: CancellationToken): Promise<ICSChatAgentEditRepsonse | undefined>;
 }
 
 export interface ICSChatAgentCommand {
@@ -99,7 +99,12 @@ export interface ICSChatAgentEditRequest {
 	sessionId: string;
 	agentId: string;
 	responseId: string;
+	response: string;
 	context: ICSChatAgentEditContext[];
+}
+
+export interface ICSChatAgentEditRepsonse {
+	edits: WorkspaceEdit;
 }
 
 export const ICSChatAgentService = createDecorator<ICSChatAgentService>('csChatAgentService');
@@ -109,7 +114,7 @@ export interface ICSChatAgentService {
 	readonly onDidChangeAgents: Event<void>;
 	registerAgent(agent: IChatAgent): IDisposable;
 	invokeAgent(id: string, request: ICSChatAgentRequest, progress: (part: ICSChatProgress) => void, history: ICSChatMessage[], token: CancellationToken): Promise<ICSChatAgentResult>;
-	getEdits(context: ICSChatAgentEditRequest, token: CancellationToken): Promise<WorkspaceEdit | undefined>;
+	getEdits(context: ICSChatAgentEditRequest, progress: (part: ICSChatAgentEditRepsonse) => void, token: CancellationToken): Promise<ICSChatAgentEditRepsonse | undefined>;
 	getFollowups(id: string, sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]>;
 	getAgents(): Array<IChatAgent>;
 	getAgent(id: string): IChatAgent | undefined;
@@ -199,7 +204,7 @@ export class ChatAgentService extends Disposable implements ICSChatAgentService 
 		return data.agent.provideFollowups(sessionId, token);
 	}
 
-	async getEdits(context: ICSChatAgentEditRequest, token: CancellationToken): Promise<WorkspaceEdit | undefined> {
+	async getEdits(context: ICSChatAgentEditRequest, progress: (part: ICSChatAgentEditRepsonse) => void, token: CancellationToken): Promise<ICSChatAgentEditRepsonse | undefined> {
 		const agentId = context.agentId;
 		const data = this._agents.get(agentId);
 		if (!data) {
@@ -210,6 +215,6 @@ export class ChatAgentService extends Disposable implements ICSChatAgentService 
 			return;
 		}
 
-		return data.agent.provideEdits(context, token);
+		return data.agent.provideEdits(context, progress, token);
 	}
 }

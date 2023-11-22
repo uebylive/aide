@@ -174,13 +174,40 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 		return agent.provideSlashCommand(token);
 	}
 
-	async $provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<IWorkspaceEditDto | undefined> {
+	async $provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<{ edits: IWorkspaceEditDto } | undefined> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
 			return undefined;
 		}
 
-		return agent.provideEdits(sessionId, request, token);
+		const requestObj: vscode.CSChatAgentEditRequest = {
+			threadId: sessionId,
+			response: request.response,
+			context: request.context
+		};
+
+		try {
+			const task = agent.provideEdits(
+				requestObj,
+				new Progress<vscode.CSChatAgentEditResponse>(progress => {
+					if (!progress.edits) {
+						this._logService.error('Unknown progress type: ' + JSON.stringify(progress));
+						return;
+					}
+					const edits = typeConvert.WorkspaceEdit.from(progress.edits);
+					this._proxy.$handleEditProgressChunk(request.responseId, { edits });
+				}),
+				token
+			);
+
+			return await raceCancellation(Promise.resolve(task).then(() => {
+				return undefined;
+			}), token);
+		} catch (e) {
+			this._logService.error(e, agent.extension);
+		}
+
+		return undefined;
 	}
 
 	$provideFollowups(handle: number, sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]> {
@@ -311,24 +338,6 @@ class ExtHostCSChatAgent {
 			return [];
 		}
 		return followups.map(f => typeConvert.ChatFollowup.from(f));
-	}
-
-	async provideEdits(sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<IWorkspaceEditDto | undefined> {
-		if (!this._editsProvider) {
-			return undefined;
-		}
-
-		const editRequest: vscode.CSChatAgentEditRequest = {
-			threadId: sessionId,
-			context: request.context
-		};
-
-		const edits = await this._editsProvider.provideEdits(editRequest, token);
-		if (!edits) {
-			return undefined;
-		}
-
-		return typeConvert.WorkspaceEdit.from(edits);
 	}
 
 	get apiAgent(): vscode.ChatAgent2 {
@@ -493,5 +502,12 @@ class ExtHostCSChatAgent {
 
 	invoke(request: vscode.CSChatAgentRequest, context: vscode.ChatAgentContext, progress: Progress<vscode.ChatAgentExtendedProgress>, token: CancellationToken): vscode.ProviderResult<vscode.ChatAgentResult2> {
 		return this._callback(request, context, progress, token);
+	}
+
+	provideEdits(request: vscode.CSChatAgentEditRequest, progress: Progress<vscode.CSChatAgentEditResponse>, token: CancellationToken): vscode.ProviderResult<vscode.CSChatAgentEditResponse> {
+		if (!this._editsProvider) {
+			return Promise.resolve(undefined);
+		}
+		return this._editsProvider.provideEdits(request, progress, token);
 	}
 }

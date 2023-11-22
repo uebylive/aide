@@ -12,11 +12,16 @@ declare module 'vscode' {
 
 	export interface CSChatAgentEditRequest {
 		threadId: string;
+		response: string;
 
 		/**
 		 * List of code blocks to be exported to the codebase.
 		 */
 		context: CSChatCodeblockContext[];
+	}
+
+	export interface CSChatAgentEditResponse {
+		edits: WorkspaceEdit;
 	}
 
 	/**
@@ -28,7 +33,7 @@ declare module 'vscode' {
 		 * @param result The same instance of the result object that was returned by the chat agent, and it can be extended with arbitrary properties if needed.
 		 * @param token A cancellation token.
 		 */
-		provideEdits(request: CSChatAgentEditRequest, token: CancellationToken): ProviderResult<WorkspaceEdit | undefined>;
+		provideEdits(request: CSChatAgentEditRequest, progress: Progress<CSChatAgentEditResponse>, token: CancellationToken): ProviderResult<CSChatAgentEditResponse>;
 	}
 
 	export type CSChatAgentExtendedHandler = (request: CSChatAgentRequest, context: ChatAgentContext, progress: Progress<ChatAgentExtendedProgress>, token: CancellationToken) => ProviderResult<ChatAgentResult2>;
