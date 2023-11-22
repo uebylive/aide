@@ -425,7 +425,10 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			// 1. When edits are made, add a decoration to the changes to highlight agent changes.
 			// 2. Displaying the list of edits performed in the chat widget as links (something like the references box).
 			// 3. Add options above the inline decorations and in the chat widget to accept/reject the changes.
-			// 4. (IF you will be getting edits incrementally from sidecar) Support a progress object so you can push/stream edits one at a time.
+			// 4. (IF you will be getting edits incrementally from sidecar) Support a progress object so you can
+			// push/stream edits one at a time.
+			// 5. Add an option to export all codeblocks within a response, rather than one at a time. The API already
+			// accepts a list so your implementation need not change.
 			//
 			// The code below uses the open file & a test file for testing purposes.
 			// You can pass in any file uri(s) and it should apply correctly.
