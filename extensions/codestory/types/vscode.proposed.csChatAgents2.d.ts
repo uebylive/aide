@@ -4,6 +4,33 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export interface CSChatCodeblockContext {
+		code: string;
+		languageId: string;
+		codeBlockIndex: number;
+	}
+
+	export interface CSChatAgentEditRequest {
+		threadId: string;
+
+		/**
+		 * List of code blocks to be exported to the codebase.
+		 */
+		context: CSChatCodeblockContext[];
+	}
+
+	/**
+	 * Will be invoked when the export to codebase action is triggered.
+	 */
+	export interface CSChatEditProvider {
+		/**
+		 *
+		 * @param result The same instance of the result object that was returned by the chat agent, and it can be extended with arbitrary properties if needed.
+		 * @param token A cancellation token.
+		 */
+		provideEdits(request: CSChatAgentEditRequest, token: CancellationToken): ProviderResult<WorkspaceEdit | undefined>;
+	}
+
 	export type CSChatAgentExtendedHandler = (request: CSChatAgentRequest, context: ChatAgentContext, progress: Progress<ChatAgentExtendedProgress>, token: CancellationToken) => ProviderResult<ChatAgentResult2>;
 
 	export interface CSChatAgentRequest {
@@ -24,5 +51,12 @@ declare module 'vscode' {
 		slashCommand?: ChatAgentSlashCommand;
 
 		variables: Record<string, CSChatVariableValue[]>;
+	}
+
+	export interface ChatAgent2 {
+		/**
+		 * This provider will be called
+		 */
+		editsProvider?: CSChatEditProvider;
 	}
 }

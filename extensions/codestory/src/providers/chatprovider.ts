@@ -315,6 +315,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			'aide-white.svg'
 		);
 		this.chatAgent.slashCommandProvider = this.slashCommandProvider;
+		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
 	defaultAgent: vscode.CSChatAgentExtendedHandler = (request, context, progress, token) => {
@@ -398,7 +399,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		})();
 	};
 
-	slashCommandProvider = {
+	slashCommandProvider: vscode.ChatAgentSlashCommandProvider = {
 		provideSlashCommands: (token: vscode.CancellationToken): vscode.ProviderResult<vscode.ChatAgentSlashCommand[]> => {
 			return [
 				{
@@ -410,6 +411,49 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					description: 'Describe a workflow to find',
 				},
 			];
+		}
+	};
+
+	editsProvider: vscode.CSChatEditProvider = {
+		provideEdits: async (request, token) => {
+			logger.info('provideEditsWithProgress', request, token);
+			// Notes to @theskcd:
+			// 1. This API currently just applies the edits without any decoration.
+			// 2. The current API does not support streaming edits so everything gets applied at once.
+			//
+			// WIP items on editor side, in order of priority:
+			// 1. When edits are made, add a decoration to the changes to highlight agent changes.
+			// 2. Displaying the list of edits performed in the chat widget as links (something like the references box).
+			// 3. Add options above the inline decorations and in the chat widget to accept/reject the changes.
+			// 4. (IF you will be getting edits incrementally from sidecar) Support a progress object so you can
+			// push/stream edits one at a time.
+			// 5. Add an option to export all codeblocks within a response, rather than one at a time. The API already
+			// accepts a list so your implementation need not change.
+			//
+			// The code below uses the open file & a test file for testing purposes.
+			// You can pass in any file uri(s) and it should apply correctly.
+			const activeEditorUri = vscode.window.activeTextEditor?.document.uri;
+			// Test with a hard-coded file /Users/nareshr/github/upi-deeplinks-python-sdk/setu/body.py
+			// const testFileUri = vscode.Uri.file('/Users/nareshr/github/upi-deeplinks-python-sdk/setu/body.py');
+			const workspaceEdits = new vscode.WorkspaceEdit();
+
+			const codeblocks = request.context;
+			if (activeEditorUri && codeblocks.length > 0) {
+				codeblocks.forEach((codeblock) => {
+					const newWorkspaceEdit = new vscode.WorkspaceEdit();
+					newWorkspaceEdit.insert(
+						activeEditorUri,
+						new vscode.Position(0, 0),
+						codeblock.code
+					);
+					// workspaceEdits.insert(
+					// 	testFileUri,
+					// 	new vscode.Position(0, 0),
+					// 	codeblock.code
+					// );
+				});
+			}
+			return workspaceEdits;
 		}
 	};
 

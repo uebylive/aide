@@ -25,8 +25,9 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
-import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
+import { ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
@@ -171,6 +172,81 @@ export function registerChatCodeBlockActions() {
 		}
 
 		return false;
+	});
+
+	registerAction2(class ExportToCodebaseAction extends ChatCodeBlockAction {
+		constructor() {
+			super({
+				id: 'workbench.action.csChat.exportToCodebase',
+				title: {
+					value: localize('interactive.exportToCodebase.label', "Apply changes to codebase"),
+					original: 'Apply changes to codebase'
+				},
+				precondition: CONTEXT_PROVIDER_EXISTS,
+				f1: true,
+				category: CHAT_CATEGORY,
+				icon: Codicon.merge,
+				menu: {
+					id: MenuId.CSChatCodeBlock,
+					group: 'navigation',
+					when: CONTEXT_IN_CHAT_SESSION,
+				},
+			});
+		}
+
+		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+			const chatAgentService = accessor.get(ICSChatAgentService);
+			const editorService = accessor.get(IEditorService);
+			const bulkEditService = accessor.get(IBulkEditService);
+
+			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
+				// When run from command palette or not a response
+				return;
+			}
+
+			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
+				return;
+			}
+
+			this.notifyUserAction(accessor, context);
+			const cancellationTokenSource = new CancellationTokenSource();
+
+			const editRequest: ICSChatAgentEditRequest = {
+				sessionId: context.element.sessionId,
+				agentId: context.element.agent?.id ?? '',
+				responseId: context.element.requestId,
+				context: [{
+					code: context.code,
+					languageId: context.languageId,
+					codeBlockIndex: context.codeBlockIndex,
+				}]
+			};
+
+			const edits = await chatAgentService.getEdits(editRequest, cancellationTokenSource.token);
+			if (!edits) {
+				return;
+			}
+
+			await bulkEditService.apply(edits);
+		}
+
+		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+			if (isResponseVM(context.element)) {
+				const chatService = accessor.get(ICSChatService);
+				chatService.notifyUserAction({
+					providerId: context.element.providerId,
+					agentId: context.element.agent?.id,
+					sessionId: context.element.sessionId,
+					requestId: context.element.requestId,
+					action: {
+						kind: 'insert',
+						codeBlockIndex: context.codeBlockIndex,
+						totalCharacters: context.code.length,
+					}
+				});
+			}
+		}
+
 	});
 
 	registerAction2(class InsertCodeBlockAction extends ChatCodeBlockAction {
