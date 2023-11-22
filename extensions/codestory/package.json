@@ -61,17 +61,11 @@
       "view/title": [
         {
           "command": "codestory.feedback",
+          "when": "view == cs-chat",
           "group": "navigation"
         }
       ]
     },
-    "keybindings": [
-      {
-        "command": "workbench.action.csFocusHoverChat.cs-chat",
-        "key": "shift shift",
-        "mac": "shift shift"
-      }
-    ],
     "configuration": {
       "type": "object",
       "title": "Aide Extension settings",

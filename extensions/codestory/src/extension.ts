@@ -198,7 +198,6 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(interactiveSession);
 	context.subscriptions.push(chatAgentProvider);
 	await commands.executeCommand('workbench.action.chat.clear');
-	await commands.executeCommand('workbench.action.csToggleHoverChat.cs-chat');
 
 	context.subscriptions.push(
 		debug(

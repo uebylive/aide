@@ -146,7 +146,7 @@ export class QuickChatService extends Disposable implements ICSQuickChatService 
 class QuickChat extends Disposable {
 	// TODO@TylerLeonhardt: be responsive to window size
 	static DEFAULT_MIN_HEIGHT = 200;
-	private static readonly DEFAULT_HEIGHT_OFFSET = 100;
+	private static readonly DEFAULT_HEIGHT_OFFSET = 0;
 
 	private widget!: ChatWidget;
 	private sash!: Sash;

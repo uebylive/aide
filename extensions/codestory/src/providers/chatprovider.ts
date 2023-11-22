@@ -234,8 +234,7 @@ export class CSChatSessionProvider implements vscode.CSChatSessionProvider<CSCha
 				new CSChatReplyFollowup('Explain the active file in the editor'),
 				new CSChatReplyFollowup('Add documentation to the selected code'),
 				new CSChatReplyFollowup('How can I clean up this code?'),
-			],
-			'You may use `/` to find specific instructions I\'m good at, and `@` or `#` to point me to specific code I should look at while answering your questions.'
+			]
 		];
 	}
 

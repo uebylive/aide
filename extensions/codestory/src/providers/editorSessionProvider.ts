@@ -192,7 +192,7 @@ export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
 		this.threadId = uuidv4();
 		this.textDocument = textDocument;
 		this.wholeRange = range;
-		this.message = 'Aide generated code might be incorrect';
+		this.message = '';
 		this.range = range;
 	}
 

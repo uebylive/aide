@@ -340,7 +340,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		const inputPartBorder = 0;
 		const inputPartHorizontalPadding = 32;
-		const inputPartVerticalPadding = 24;
+		const inputPartVerticalPadding = 30;
 		let inputEditorHeight = Math.min(this._inputEditor.getContentHeight(), height - followupsHeight - requesterHeight - inputPartHorizontalPadding - inputPartBorder, INPUT_EDITOR_MAX_HEIGHT);
 		inputEditorHeight = Math.max(inputEditorHeight, INPUT_EDITOR_MIN_HEIGHT);
 
