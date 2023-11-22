@@ -14,11 +14,11 @@ import { localize } from 'vs/nls';
 import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
 import { Progress } from 'vs/platform/progress/common/progress';
-import { ExtHostCSChatAgentsShape2, IMainContext, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostCSChatAgentsShape2, IMainContext, IWorkspaceEditDto, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { ExtHostCSChatProvider } from 'vs/workbench/api/common/extHostCSChatProvider';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { ICSChatAgentCommand, ICSChatAgentRequest, ICSChatAgentResult } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, ICSChatAgentEditRequest, ICSChatAgentRequest, ICSChatAgentResult } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ICSChatMessage } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { ICSChatFollowup, ICSChatUserActionEvent, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
@@ -174,6 +174,15 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 		return agent.provideSlashCommand(token);
 	}
 
+	async $provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<IWorkspaceEditDto | undefined> {
+		const agent = this._agents.get(handle);
+		if (!agent) {
+			return undefined;
+		}
+
+		return agent.provideEdits(sessionId, request, token);
+	}
+
 	$provideFollowups(handle: number, sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
@@ -232,6 +241,7 @@ class ExtHostCSChatAgent {
 	private _slashCommandProvider: vscode.ChatAgentSlashCommandProvider | undefined;
 	private _lastSlashCommands: vscode.ChatAgentSlashCommand[] | undefined;
 	private _followupProvider: vscode.FollowupProvider | undefined;
+	private _editsProvider: vscode.CSChatEditProvider | undefined;
 	private _description: string | undefined;
 	private _fullName: string | undefined;
 	private _iconPath: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined;
@@ -301,6 +311,24 @@ class ExtHostCSChatAgent {
 			return [];
 		}
 		return followups.map(f => typeConvert.ChatFollowup.from(f));
+	}
+
+	async provideEdits(sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<IWorkspaceEditDto | undefined> {
+		if (!this._editsProvider) {
+			return undefined;
+		}
+
+		const editRequest: vscode.CSChatAgentEditRequest = {
+			threadId: sessionId,
+			context: request.context
+		};
+
+		const edits = await this._editsProvider.provideEdits(editRequest, token);
+		if (!edits) {
+			return undefined;
+		}
+
+		return typeConvert.WorkspaceEdit.from(edits);
 	}
 
 	get apiAgent(): vscode.ChatAgent2 {
@@ -377,6 +405,13 @@ class ExtHostCSChatAgent {
 			},
 			set followupProvider(v) {
 				that._followupProvider = v;
+				updateMetadataSoon();
+			},
+			get editsProvider() {
+				return that._editsProvider;
+			},
+			set editsProvider(v) {
+				that._editsProvider = v;
 				updateMetadataSoon();
 			},
 			get isDefault() {

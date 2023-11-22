@@ -7,6 +7,8 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
+import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
+import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
 import { ExtHostCSChatAgentsShape2, ExtHostContext, ICSChatProgressDto, IExtensionCSChatAgentMetadata, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ICSChatFollowup, ICSChatProgress, ICSChatService, IChatTreeData } from 'vs/workbench/contrib/csChat/common/csChatService';
@@ -33,6 +35,7 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 		extHostContext: IExtHostContext,
 		@ICSChatAgentService private readonly _chatAgentService: ICSChatAgentService,
 		@ICSChatService private readonly _chatService: ICSChatService,
+		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService,
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCSChatAgents2);
@@ -84,7 +87,15 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 					return []; // save an IPC call
 				}
 				return this._proxy.$provideSlashCommands(handle, token);
-			}
+			},
+			provideEdits: async (request, token) => {
+				const response = await this._proxy.$provideEdits(handle, request.sessionId, request, token);
+				if (!response) {
+					return undefined;
+				}
+
+				return reviveWorkspaceEditDto(response, this._uriIdentService);
+			},
 		});
 		this._agents.set(handle, {
 			name,

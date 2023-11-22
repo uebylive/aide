@@ -54,7 +54,7 @@ import { IChatAgentCommand, IChatAgentMetadata, IChatAgentRequest, IChatAgentRes
 import { IChatMessage, IChatResponseFragment, IChatResponseProviderMetadata } from 'vs/workbench/contrib/chat/common/chatProvider';
 import { IChatAsyncContent, IChatDynamicRequest, IChatFollowup, IChatProgress, IChatReplyFollowup, IChatResponseErrorDetails, IChatUserActionEvent, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue, IChatVariableData } from 'vs/workbench/contrib/chat/common/chatVariables';
-import { ICSChatAgentCommand, ICSChatAgentMetadata, ICSChatAgentRequest, ICSChatAgentResult } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, ICSChatAgentEditRequest, ICSChatAgentMetadata, ICSChatAgentRequest, ICSChatAgentResult } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ICSChatMessage, ICSChatResponseFragment, ICSChatResponseProviderMetadata } from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { CSChatSessionVoteDirection, ICSChatAsyncContent, ICSChatFollowup, ICSChatProgress, ICSChatReplyFollowup, ICSChatUserActionEvent } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ICSChatRequestVariableValue, ICSChatVariableData } from 'vs/workbench/contrib/csChat/common/csChatVariables';
@@ -1223,6 +1223,7 @@ export interface ExtHostChatAgentsShape2 {
 export interface ExtHostCSChatAgentsShape2 {
 	$invokeAgent(handle: number, sessionId: string, requestId: string, request: ICSChatAgentRequest, context: { history: ICSChatMessage[] }, token: CancellationToken): Promise<ICSChatAgentResult | undefined>;
 	$provideSlashCommands(handle: number, token: CancellationToken): Promise<ICSChatAgentCommand[]>;
+	$provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<IWorkspaceEditDto | undefined>;
 	$provideFollowups(handle: number, sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]>;
 	$acceptFeedback(handle: number, sessionId: string, requestId: string, vote: CSChatSessionVoteDirection, reportIssue?: boolean): void;
 	$acceptAction(handle: number, sessionId: string, requestId: string, action: ICSChatUserActionEvent): void;
