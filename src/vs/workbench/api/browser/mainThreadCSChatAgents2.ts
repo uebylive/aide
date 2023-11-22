@@ -9,8 +9,8 @@ import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
-import { ExtHostCSChatAgentsShape2, ExtHostContext, ICSChatProgressDto, IExtensionCSChatAgentMetadata, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
-import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ExtHostCSChatAgentsShape2, ExtHostContext, ICSChatProgressDto, IExtensionCSChatAgentMetadata, IWorkspaceEditDto, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { ICSChatAgentEditRepsonse, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ICSChatFollowup, ICSChatProgress, ICSChatService, IChatTreeData } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
@@ -26,6 +26,7 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _pendingProgress = new Map<string, (part: ICSChatProgress) => void>();
+	private readonly _pendingEdits = new Map<string, (part: ICSChatAgentEditRepsonse) => void>();
 	private readonly _proxy: ExtHostCSChatAgentsShape2;
 
 	private _responsePartHandlePool = 0;
@@ -88,13 +89,21 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 				}
 				return this._proxy.$provideSlashCommands(handle, token);
 			},
-			provideEdits: async (request, token) => {
-				const response = await this._proxy.$provideEdits(handle, request.sessionId, request, token);
-				if (!response) {
-					return undefined;
+			provideEdits: async (request, progress, token) => {
+				this._pendingEdits.set(request.responseId, progress);
+				let response: { edits: IWorkspaceEditDto } | undefined;
+				try {
+					response = await this._proxy.$provideEdits(handle, request.sessionId, request, token);
+				} finally {
+					this._pendingEdits.delete(request.responseId);
 				}
 
-				return reviveWorkspaceEditDto(response, this._uriIdentService);
+				const edits = reviveWorkspaceEditDto(response?.edits, this._uriIdentService);
+				if (!edits) {
+					return;
+				}
+
+				return { edits };
 			},
 		});
 		this._agents.set(handle, {
@@ -145,5 +154,10 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 
 		const revivedProgress = revive(progress);
 		this._pendingProgress.get(requestId)?.(revivedProgress as ICSChatProgress);
+	}
+
+	async $handleEditProgressChunk(responseId: string, chunk: { edits: IWorkspaceEditDto }): Promise<number | void> {
+		const edits = reviveWorkspaceEditDto(chunk.edits, this._uriIdentService);
+		this._pendingEdits.get(responseId)?.({ edits });
 	}
 }

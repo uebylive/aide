@@ -27,7 +27,7 @@ import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentEditRepsonse, ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
@@ -209,7 +209,7 @@ export function registerChatCodeBlockActions() {
 			}
 
 			this.notifyUserAction(accessor, context);
-			const cancellationTokenSource = new CancellationTokenSource();
+			const { token } = new CancellationTokenSource();
 
 			const editRequest: ICSChatAgentEditRequest = {
 				sessionId: context.element.sessionId,
@@ -222,12 +222,20 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 
-			const edits = await chatAgentService.getEdits(editRequest, cancellationTokenSource.token);
-			if (!edits) {
+			const progressCallback = async (progress: ICSChatAgentEditRepsonse) => {
+				if (token.isCancellationRequested) {
+					return;
+				}
+
+				await bulkEditService.apply(progress.edits);
+			};
+
+			const response = await chatAgentService.getEdits(editRequest, progressCallback, token);
+			if (!response) {
 				return;
 			}
 
-			await bulkEditService.apply(edits);
+			await bulkEditService.apply(response.edits);
 		}
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {

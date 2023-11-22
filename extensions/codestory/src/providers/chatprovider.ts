@@ -415,45 +415,38 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	};
 
 	editsProvider: vscode.CSChatEditProvider = {
-		provideEdits: async (request, token) => {
-			logger.info('provideEditsWithProgress', request, token);
-			// Notes to @theskcd:
-			// 1. This API currently just applies the edits without any decoration.
-			// 2. The current API does not support streaming edits so everything gets applied at once.
+		provideEdits: async (request, progress, token) => {
+			logger.info('provideEditsWithProgress', request, progress, token);
+			// Notes to @theskcd: This API currently applies the edits without any decoration.
 			//
 			// WIP items on editor side, in order of priority:
 			// 1. When edits are made, add a decoration to the changes to highlight agent changes.
 			// 2. Displaying the list of edits performed in the chat widget as links (something like the references box).
-			// 3. Add options above the inline decorations and in the chat widget to accept/reject the changes.
-			// 4. (IF you will be getting edits incrementally from sidecar) Support a progress object so you can
-			// push/stream edits one at a time.
+			// 3. Allow cancelling an ongoing edit operation.
+			// 4. Add options above the inline decorations and in the chat widget to accept/reject the changes.
 			// 5. Add an option to export all codeblocks within a response, rather than one at a time. The API already
 			// accepts a list so your implementation need not change.
 			//
-			// The code below uses the open file & a test file for testing purposes.
+			// The code below uses the open file for testing purposes.
 			// You can pass in any file uri(s) and it should apply correctly.
 			const activeEditorUri = vscode.window.activeTextEditor?.document.uri;
-			// Test with a hard-coded file /Users/nareshr/github/upi-deeplinks-python-sdk/setu/body.py
-			// const testFileUri = vscode.Uri.file('/Users/nareshr/github/upi-deeplinks-python-sdk/setu/body.py');
-			const workspaceEdits = new vscode.WorkspaceEdit();
-
 			const codeblocks = request.context;
 			if (activeEditorUri && codeblocks.length > 0) {
-				codeblocks.forEach((codeblock) => {
-					const newWorkspaceEdit = new vscode.WorkspaceEdit();
-					newWorkspaceEdit.insert(
-						activeEditorUri,
-						new vscode.Position(0, 0),
-						codeblock.code
-					);
-					// workspaceEdits.insert(
-					// 	testFileUri,
-					// 	new vscode.Position(0, 0),
-					// 	codeblock.code
-					// );
-				});
+				for (const codeblock of codeblocks) {
+					const lines = codeblock.code.split('\n');
+					for (let index = 0; index < lines.length; index++) {
+						const edits = new vscode.WorkspaceEdit();
+						edits.insert(
+							activeEditorUri,
+							new vscode.Position(index, 0),
+							lines[index] + '\n'
+						);
+						progress.report({ edits });
+						await new Promise(resolve => setTimeout(resolve, 3000));
+					}
+				}
 			}
-			return workspaceEdits;
+			return { edits: new vscode.WorkspaceEdit() };
 		}
 	};
 
