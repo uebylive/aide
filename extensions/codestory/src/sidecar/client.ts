@@ -203,12 +203,14 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
+		const activeWindowData = getCurrentActiveWindow();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			project_labels: projectLabels,
+			active_window_data: activeWindowData,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -522,4 +524,20 @@ function getVariableType(
 		}
 	}
 	return 'CodeSymbol';
+}
+
+function getCurrentActiveWindow(): {
+	fsFilePath: string;
+	contents: string;
+} | undefined {
+	const activeWindow = vscode.window.activeTextEditor;
+	if (activeWindow === undefined) {
+		return undefined;
+	}
+	const fsFilePath = activeWindow.document.uri.fsPath;
+	const contents = activeWindow.document.getText();
+	return {
+		fsFilePath,
+		contents,
+	};
 }
