@@ -461,7 +461,11 @@ export class CSChatAgentProvider implements vscode.Disposable {
 								new vscode.Position(textEdit.range.startPosition.line, textEdit.range.startPosition.character),
 								new vscode.Position(textEdit.range.endPosition.line, textEdit.range.endPosition.character),
 							);
-							edits.replace(activeEditorUri, range, textEdit.content);
+							if (textEdit.should_insert) {
+								edits.insert(activeEditorUri, range.start, textEdit.content);
+							} else {
+								edits.replace(activeEditorUri, range, textEdit.content);
+							}
 						}
 						console.log('what are the edits');
 						console.log(edits);
