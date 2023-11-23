@@ -351,26 +351,38 @@ export type DiffActionResponse =
 	| 'AcceptIncomingChanges'
 	| 'AcceptBothChanges';
 
+
 export type EditFileResponse =
-	| { type: 'Message'; message: string }
+	| { Message: { message: string } }
 	| {
-		type: 'Action';
-		action: DiffActionResponse;
-		range: {
-			start_position: {
-				line: number;
-				character: number;
-			};
-			end_position: {
-				line: number;
-				character: number;
-			};
-		};
-		content: string;
-		previous_content: string;
+		Action: {
+			action: DiffActionResponse; range: {
+				start_position: {
+					line: number;
+					character: number;
+				};
+				end_position: {
+					line: number;
+					character: number;
+				};
+			}; content: string; previous_content: string;
+		}
 	}
-	| { type: 'TextEdit'; range: Range; content: string }
-	| { type: 'Status'; session_id: string; status: string };
+	| {
+		TextEdit: {
+			range: {
+				startPosition: {
+					line: number;
+					character: number;
+				};
+				endPosition: {
+					line: number;
+					character: number;
+				};
+			}; content: string
+		}
+	}
+	| { Status: { session_id: string, status: string } };
 
 export type SyncUpdate =
 	| { ProgressEvent: { ref: string; ev: ProgressEvent } }

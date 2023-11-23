@@ -429,21 +429,55 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			//
 			// The code below uses the open file for testing purposes.
 			// You can pass in any file uri(s) and it should apply correctly.
+			const activeDocument = vscode.window.activeTextEditor?.document;
+			if (!activeDocument) {
+				return { edits: new vscode.WorkspaceEdit() };
+			}
+			const filePath = activeDocument.uri.fsPath;
+			const fileContent = activeDocument.getText();
+			const language = activeDocument.languageId;
 			const activeEditorUri = vscode.window.activeTextEditor?.document.uri;
 			const codeblocks = request.context;
 			if (activeEditorUri && codeblocks.length > 0) {
 				for (const codeblock of codeblocks) {
-					const lines = codeblock.code.split('\n');
-					for (let index = 0; index < lines.length; index++) {
+					const llmContent = codeblock.code;
+					const messageContent = request.response;
+					const sessionId = request.threadId;
+					const editFileResponseStream = await this._sideCarClient.editFileRequest(
+						filePath,
+						fileContent,
+						language,
+						llmContent,
+						messageContent,
+						sessionId,
+					);
+					for await (const editResponse of editFileResponseStream) {
+						console.log('what is our edit response');
+						console.log(editResponse);
 						const edits = new vscode.WorkspaceEdit();
-						edits.insert(
-							activeEditorUri,
-							new vscode.Position(index, 0),
-							lines[index] + '\n'
-						);
+						if ('TextEdit' in editResponse) {
+							const textEdit = editResponse.TextEdit;
+							const range = new vscode.Range(
+								new vscode.Position(textEdit.range.startPosition.line, textEdit.range.startPosition.character),
+								new vscode.Position(textEdit.range.endPosition.line, textEdit.range.endPosition.character),
+							);
+							edits.replace(activeEditorUri, range, textEdit.content);
+						}
+						console.log('what are the edits');
+						console.log(edits);
 						progress.report({ edits });
-						await new Promise(resolve => setTimeout(resolve, 3000));
 					}
+					// const lines = codeblock.code.split('\n');
+					// for (let index = 0; index < lines.length; index++) {
+					// 	const edits = new vscode.WorkspaceEdit();
+					// 	edits.insert(
+					// 		activeEditorUri,
+					// 		new vscode.Position(index, 0),
+					// 		lines[index] + '\n'
+					// 	);
+					// 	progress.report({ edits });
+					// 	await new Promise(resolve => setTimeout(resolve, 3000));
+					// }
 				}
 			}
 			return { edits: new vscode.WorkspaceEdit() };
