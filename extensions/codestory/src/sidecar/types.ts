@@ -379,7 +379,8 @@ export type EditFileResponse =
 					line: number;
 					character: number;
 				};
-			}; content: string
+			}; content: string;
+			should_insert: boolean;
 		}
 	}
 	| { Status: { session_id: string, status: string } };
