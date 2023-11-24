@@ -296,18 +296,18 @@ export const extractCodeFromDocumentation = (input: string): string | null => {
 	return match ? match[1].trim() : null;
 };
 
-enum AnswerStreamContext {
+export enum AnswerStreamContext {
 	BeforeCodeBlock,
 	InCodeBlock,
 	AfterCodeBlock,
 }
 
-interface AnswerStreamLine {
+export interface AnswerStreamLine {
 	line: string;
 	context: AnswerStreamContext;
 }
 
-class AnswerSplitOnNewLineAccumulator {
+export class AnswerSplitOnNewLineAccumulator {
 	accumulator: string;
 	runningAnswer: string;
 	lines: AnswerStreamLine[];
@@ -370,7 +370,7 @@ class AnswerSplitOnNewLineAccumulator {
 	}
 }
 
-enum StateEnum {
+export enum StateEnum {
 	Initial,
 	InitialAfterFilePath,
 	InProgress,
@@ -602,7 +602,7 @@ class DocumentManager {
 	}
 }
 
-class LineContent {
+export class LineContent {
 	content: string;
 	_indentStyle: IndentStyleSpaces;
 	_isSent: boolean;
@@ -645,7 +645,7 @@ class LineContent {
 	}
 }
 
-class LineIndentManager {
+export class LineIndentManager {
 	indentDelta: number;
 	_replyIndentStyle: IndentStyleSpaces | undefined | null;
 	constructor(indentLevel: number, line: string) {
@@ -680,7 +680,7 @@ class LineIndentManager {
 	}
 }
 
-class AdjustedLineContent {
+export class AdjustedLineContent {
 	public originalContent: string;
 	public originalIndentLevel: number;
 	public adjustedContent: string;

@@ -18,6 +18,9 @@ import { UserMessageType, deterministicClassifier } from '../chatState/promptCla
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { ProjectContext } from '../utilities/workspaceContext';
+import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
+import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
+import { InLineAgentContextSelection } from '../sidecar/types';
 
 class CSChatParticipant implements vscode.CSChatSessionParticipantInformation {
 	name: string;
@@ -451,37 +454,53 @@ export class CSChatAgentProvider implements vscode.Disposable {
 						messageContent,
 						sessionId,
 					);
+					let enteredTextEdit = false;
+					let startOfEdit = false;
+					let answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
+					let streamProcessor = null;
+					let finalAnswer = '';
 					for await (const editResponse of editFileResponseStream) {
-						console.log('what is our edit response');
 						console.log(editResponse);
-						const edits = new vscode.WorkspaceEdit();
-						if ('TextEdit' in editResponse) {
-							const textEdit = editResponse.TextEdit;
-							const range = new vscode.Range(
-								new vscode.Position(textEdit.range.startPosition.line, textEdit.range.startPosition.character),
-								new vscode.Position(textEdit.range.endPosition.line, textEdit.range.endPosition.character),
-							);
-							if (textEdit.should_insert) {
-								edits.insert(activeEditorUri, range.start, textEdit.content);
-							} else {
-								edits.replace(activeEditorUri, range, textEdit.content);
+						if ('TextEditStreaming' in editResponse) {
+							const textEditStreaming = editResponse.TextEditStreaming.data;
+							if ('Start' in textEditStreaming) {
+								startOfEdit = true;
+								const agentContext = textEditStreaming.Start.context_selection;
+								streamProcessor = new StreamProcessor(
+									progress,
+									activeDocument,
+									activeDocument.getText().split(/\r\n|\r|\n/g),
+									agentContext,
+									undefined,
+									activeEditorUri,
+								);
+								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
+								continue;
+							}
+							if ('EditStreaming' in textEditStreaming) {
+								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
+								// check if we can get any lines back here
+								while (true) {
+									const currentLine = answerSplitOnNewLineAccumulator.getLine();
+									if (currentLine === null) {
+										break;
+									}
+									// Let's process the line
+									if (streamProcessor !== null) {
+										streamProcessor.processLine(currentLine);
+									}
+									finalAnswer = finalAnswer + currentLine.line + '\n';
+								}
+							}
+							if ('End' in textEditStreaming) {
+								startOfEdit = false;
+								enteredTextEdit = false;
+								streamProcessor = null;
+								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
+								finalAnswer = '';
 							}
 						}
-						console.log('what are the edits');
-						console.log(edits);
-						progress.report({ edits });
 					}
-					// const lines = codeblock.code.split('\n');
-					// for (let index = 0; index < lines.length; index++) {
-					// 	const edits = new vscode.WorkspaceEdit();
-					// 	edits.insert(
-					// 		activeEditorUri,
-					// 		new vscode.Position(index, 0),
-					// 		lines[index] + '\n'
-					// 	);
-					// 	progress.report({ edits });
-					// 	await new Promise(resolve => setTimeout(resolve, 3000));
-					// }
 				}
 			}
 			return { edits: new vscode.WorkspaceEdit() };
@@ -490,5 +509,225 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 	dispose() {
 		console.log('Dispose CSChatAgentProvider');
+	}
+}
+
+
+class StreamProcessor {
+	filePathMarker: string;
+	beginMarker: string;
+	endMarker: string;
+	document: DocumentManager;
+	currentState: StateEnum;
+	endDetected: boolean;
+	beginDetected: boolean;
+	previousLine: LineIndentManager | null;
+	documentLineIndex: number;
+	sentEdits: boolean;
+	uri: vscode.Uri;
+	constructor(progress: vscode.Progress<vscode.CSChatAgentEditResponse>,
+		document: vscode.TextDocument,
+		lines: string[],
+		contextSelection: InLineAgentContextSelection,
+		indentStyle: IndentStyleSpaces | undefined,
+		uri: vscode.Uri,
+	) {
+		// Initialize document with the given parameters
+		this.document = new DocumentManager(
+			progress,
+			document,
+			lines,
+			contextSelection,
+			indentStyle,
+			uri,
+		);
+
+		// Set markers for file path, begin, and end
+		this.filePathMarker = '// FILEPATH:';
+		this.beginMarker = '// BEGIN';
+		this.endMarker = '// END';
+		this.beginDetected = false;
+		this.endDetected = false;
+		this.currentState = StateEnum.Initial;
+		this.previousLine = null;
+		this.documentLineIndex = this.document.firstSentLineIndex;
+		this.sentEdits = false;
+		this.uri = uri;
+	}
+
+	async processLine(answerStreamLine: AnswerStreamLine) {
+		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
+			return;
+		}
+		const line = answerStreamLine.line;
+		if (line.startsWith(this.filePathMarker) && this.currentState === StateEnum.Initial) {
+			this.currentState = StateEnum.InitialAfterFilePath;
+			return;
+		}
+		if (line.startsWith(this.beginMarker) || line.startsWith(this.endMarker)) {
+			this.endDetected = true;
+			return;
+		}
+		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
+			if (this.previousLine) {
+				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
+				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
+				if (anchor !== null) {
+					this.sentEdits = true;
+					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
+				} else if (this.documentLineIndex >= this.document.getLineCount()) {
+					this.sentEdits = true;
+					this.documentLineIndex = this.document.appendLine(adjustedLine);
+				} else {
+					const currentLine = this.document.getLine(this.documentLineIndex);
+					this.sentEdits = true;
+					if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '' && currentLine.indentLevel < adjustedLine.adjustedIndentLevel)) {
+						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
+					} else {
+						this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
+					}
+				}
+			} else {
+				const initialAnchor = this.findInitialAnchor(line);
+				this.previousLine = new LineIndentManager(this.document.getLine(initialAnchor).indentLevel, line);
+				const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
+				this.documentLineIndex = this.document.replaceLine(initialAnchor, adjustedInitialLine);
+			}
+			this.beginDetected = true;
+		}
+		return this.beginDetected;
+	}
+
+	// Find the initial anchor line in the document
+	findInitialAnchor(lineContent: string): number {
+		const trimmedContent = lineContent.trim();
+		for (let index = this.document.firstSentLineIndex; index < this.document.getLineCount(); index++) {
+			const line = this.document.getLine(index);
+			if (line.isSent && line.trimmedContent === trimmedContent) {
+				return index;
+			}
+		}
+		return this.document.firstRangeLine;
+	}
+
+	// Find the anchor line in the document based on indentation and content
+	findAnchor(adjustedLine: AdjustedLineContent, startIndex: number): number | null {
+		for (let index = startIndex; index < this.document.getLineCount(); index++) {
+			const line = this.document.getLine(index);
+			if (line.isSent) {
+				if (line.trimmedContent.length > 0 && line.indentLevel < adjustedLine.adjustedIndentLevel) {
+					return null;
+				}
+				if (line.content === adjustedLine.adjustedContent) {
+					return index;
+				}
+			}
+		}
+		return null;
+	}
+}
+
+
+class DocumentManager {
+	indentStyle: IndentStyleSpaces;
+	progress: vscode.Progress<vscode.CSChatAgentEditResponse>;
+	lines: LineContent[];
+	firstSentLineIndex: number;
+	firstRangeLine: number;
+	uri: vscode.Uri;
+
+	constructor(
+		progress: vscode.Progress<vscode.CSChatAgentEditResponse>,
+		document: vscode.TextDocument,
+		lines: string[],
+		// Fix the way we provide context over here?
+		contextSelection: InLineAgentContextSelection,
+		indentStyle: IndentStyleSpaces | undefined,
+		uri: vscode.Uri,
+	) {
+		this.progress = progress; // Progress tracking
+		this.lines = []; // Stores all the lines in the document
+		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
+		// this.indentStyle = IndentationHelper.getDocumentIndentStyleUsingSelection(contextSelection); // Determines the indentation style
+
+		// Split the editor's text into lines and initialize each line
+		const editorLines = document.getText().split(/\r\n|\r|\n/g);
+		for (let i = 0; i < editorLines.length; i++) {
+			this.lines[i] = new LineContent(editorLines[i], this.indentStyle);
+		}
+
+		// Mark the lines as 'sent' based on the location provided
+		const locationSections = [contextSelection.above, contextSelection.range, contextSelection.below];
+		for (const section of locationSections) {
+			for (let j = 0; j < section.lines.length; j++) {
+				const lineIndex = section.first_line_index + j;
+				this.lines[lineIndex].markSent();
+			}
+		}
+
+		// Determine the index of the first 'sent' line
+		this.firstSentLineIndex = contextSelection.above.has_content
+			? contextSelection.above.first_line_index
+			: contextSelection.range.first_line_index;
+
+		this.firstRangeLine = contextSelection.range.first_line_index;
+		this.uri = uri;
+	}
+
+	// Returns the total number of lines
+	getLineCount() {
+		return this.lines.length;
+	}
+
+	// Retrieve a specific line
+	getLine(index: number): LineContent {
+		return this.lines[index];
+	}
+
+	// Replace a specific line and report the change
+	replaceLine(index: number, newLine: AdjustedLineContent) {
+		console.log('replaceLine', index, newLine);
+		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
+		const edits = new vscode.WorkspaceEdit();
+		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+		this.progress.report({ edits });
+		return index + 1;
+	}
+
+	// Replace multiple lines starting from a specific index
+	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
+		console.log('replaceLines', startIndex, endIndex, newLine);
+		if (startIndex === endIndex) {
+			return this.replaceLine(startIndex, newLine);
+		} else {
+			this.lines.splice(
+				startIndex,
+				endIndex - startIndex + 1,
+				new LineContent(newLine.adjustedContent, this.indentStyle)
+			);
+			const edits = new vscode.WorkspaceEdit();
+			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			return startIndex + 1;
+		}
+	}
+
+	// Add a new line at the end
+	appendLine(newLine: AdjustedLineContent) {
+		console.log('appendLine', newLine);
+		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
+		const edits = new vscode.WorkspaceEdit();
+		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
+		this.progress.report({ edits });
+		return this.lines.length;
+	}
+
+	// Insert a new line after a specific index
+	insertLineAfter(index: number, newLine: AdjustedLineContent) {
+		console.log('insertLineAfter', index, newLine);
+		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
+		const edits = new vscode.WorkspaceEdit();
+		edits.replace(this.uri, new vscode.Range(index + 1, 0, index + 1, 1000), '\n' + newLine.adjustedContent);
+		this.progress.report({ edits });
+		return index + 2;
 	}
 }
