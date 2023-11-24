@@ -351,6 +351,34 @@ export type DiffActionResponse =
 	| 'AcceptIncomingChanges'
 	| 'AcceptBothChanges';
 
+export type TextEditStreaming =
+	| {
+		Start: {
+			context_selection: InLineAgentContextSelection;
+		}
+	}
+	| {
+		End: {
+			reason: string;
+		}
+	}
+	| {
+		EditStreaming: {
+			range: {
+				startPosition: {
+					line: number;
+					character: number;
+				};
+				endPosition: {
+					line: number;
+					character: number;
+				};
+			};
+			content_up_until_now: string;
+			content_delta: string;
+		}
+	};
+
 
 export type EditFileResponse =
 	| { Message: { message: string } }
@@ -383,7 +411,8 @@ export type EditFileResponse =
 			should_insert: boolean;
 		}
 	}
-	| { Status: { session_id: string, status: string } };
+	| { Status: { session_id: string, status: string } }
+	| { TextEditStreaming: { data: TextEditStreaming } };
 
 export type SyncUpdate =
 	| { ProgressEvent: { ref: string; ev: ProgressEvent } }
