@@ -3,19 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { Queue } from 'vs/base/common/async';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
+import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
 import { Range } from 'vs/editor/common/core/range';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import { DocumentContextItem, WorkspaceEdit } from 'vs/editor/common/languages';
+import { DocumentContextItem, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { ILanguageService } from 'vs/editor/common/languages/language';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
@@ -31,6 +35,8 @@ import { ICSChatAgentEditRepsonse, ICSChatAgentEditRequest, ICSChatAgentService 
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
+import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
+import { asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -198,6 +204,8 @@ export function registerChatCodeBlockActions() {
 			const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
 			const bulkEditService = accessor.get(IBulkEditService);
+			const textModelService = accessor.get(ITextModelService);
+			const codeEditorService = accessor.get(ICodeEditorService);
 
 			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
 				// When run from command palette or not a response
@@ -223,12 +231,28 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 
+			const textModel = await textModelService.createModelReference(URI.parse('/Users/nareshr/github/axflow/packages/models/src/huggingface/text-generation.ts'));
+			const codeEditor = codeEditorService.getActiveCodeEditor();
+			let isFirstEdit = true;
+
+			const progressEdits: WorkspaceEdit[] = [];
+			const progressiveEditsQueue = new Queue();
+
 			const progressCallback = async (progress: ICSChatAgentEditRepsonse) => {
 				if (token.isCancellationRequested) {
 					return;
 				}
 
-				await bulkEditService.apply(progress.edits);
+				progressEdits.push(progress.edits);
+
+				progressiveEditsQueue.queue(async () => {
+					await this._makeChanges(textModel.object.textEditorModel, codeEditor, isFirstEdit, progress.edits);
+				});
+
+				if (isFirstEdit) {
+					isFirstEdit = false;
+				}
+				// await bulkEditService.apply(progress.edits);
 			};
 
 			const response = await chatAgentService.getEdits(editRequest, progressCallback, token);
@@ -237,6 +261,34 @@ export function registerChatCodeBlockActions() {
 			}
 
 			await bulkEditService.apply(response.edits);
+
+			textModel.dispose();
+		}
+
+		private async _makeChanges(textModel: ITextModel, codeEditor: ICodeEditor | null, isFirstEdit: boolean, edits: WorkspaceEdit) {
+			console.log('[IDE][edit]');
+			console.log(edits);
+			if (isFirstEdit) {
+				codeEditor?.pushUndoStop();
+			}
+
+			const editOperations: { uri: URI; edit: ISingleEditOperation }[] = edits.edits.map(edit => {
+				const typedEdit = edit as IWorkspaceTextEdit;
+				return {
+					uri: typedEdit.resource,
+					edit: {
+						range: Range.lift(typedEdit.textEdit.range),
+						text: typedEdit.textEdit.text,
+					}
+				};
+			});
+
+			for (const editOp of editOperations) {
+				const { edit } = editOp;
+				const wordCount = countWords(edit.text ?? '');
+				const speed = wordCount / 2;
+				await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, CancellationToken.None));
+			}
 		}
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {

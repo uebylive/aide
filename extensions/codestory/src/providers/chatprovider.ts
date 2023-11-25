@@ -720,7 +720,7 @@ class DocumentManager {
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		console.log('what line are we appendLine', newLine.adjustedContent);
-		edits.insert(this.uri, new vscode.Position(this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
 		this.progress.report({ edits });
 		return this.lines.length;
 	}
@@ -731,7 +731,7 @@ class DocumentManager {
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
-		edits.insert(this.uri, new vscode.Position(index, 1000), '\n' + newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
 		this.progress.report({ edits });
 		return index + 2;
 	}
