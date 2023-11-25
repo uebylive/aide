@@ -309,6 +309,7 @@ export class LiveStrategy extends EditModeStrategy {
 
 		const durationInSec = opts.duration / 1000;
 		for (const edit of edits) {
+			console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
 			const wordCount = countWords(edit.text ?? '');
 			const speed = wordCount / durationInSec;
 			// console.log({ durationInSec, wordCount, speed: wordCount / durationInSec });

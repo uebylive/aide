@@ -201,6 +201,7 @@ export function registerChatCodeBlockActions() {
 		}
 
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+			console.log('we are here in runWithContext');
 			const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
 			const bulkEditService = accessor.get(IBulkEditService);
@@ -208,11 +209,13 @@ export function registerChatCodeBlockActions() {
 			const codeEditorService = accessor.get(ICodeEditorService);
 
 			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
+				console.log('empty');
 				// When run from command palette or not a response
 				return;
 			}
 
 			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
+				console.log('empty else');
 				return;
 			}
 
@@ -231,7 +234,6 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 
-			const textModel = await textModelService.createModelReference(URI.parse('/Users/nareshr/github/axflow/packages/models/src/huggingface/text-generation.ts'));
 			const codeEditor = codeEditorService.getActiveCodeEditor();
 			let isFirstEdit = true;
 
@@ -246,7 +248,7 @@ export function registerChatCodeBlockActions() {
 				progressEdits.push(progress.edits);
 
 				progressiveEditsQueue.queue(async () => {
-					await this._makeChanges(textModel.object.textEditorModel, codeEditor, isFirstEdit, progress.edits);
+					await this._makeChanges(textModelService, codeEditor, isFirstEdit, progress.edits);
 				});
 
 				if (isFirstEdit) {
@@ -260,14 +262,13 @@ export function registerChatCodeBlockActions() {
 				return;
 			}
 
-			await bulkEditService.apply(response.edits);
+			// await bulkEditService.apply(response.edits);
 
-			textModel.dispose();
 		}
 
-		private async _makeChanges(textModel: ITextModel, codeEditor: ICodeEditor | null, isFirstEdit: boolean, edits: WorkspaceEdit) {
-			console.log('[IDE][edit]');
-			console.log(edits);
+		private async _makeChanges(textModelService: ITextModelService, codeEditor: ICodeEditor | null, isFirstEdit: boolean, edits: WorkspaceEdit) {
+			// console.log('[IDE][edit]');
+			// console.log(edits);
 			if (isFirstEdit) {
 				codeEditor?.pushUndoStop();
 			}
@@ -284,9 +285,11 @@ export function registerChatCodeBlockActions() {
 			});
 
 			for (const editOp of editOperations) {
+				const textModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
 				const { edit } = editOp;
+				console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
 				const wordCount = countWords(edit.text ?? '');
-				const speed = wordCount / 2;
+				const speed = wordCount / 1;
 				await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, CancellationToken.None));
 			}
 		}
