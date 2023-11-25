@@ -460,12 +460,13 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					let streamProcessor = null;
 					let finalAnswer = '';
 					for await (const editResponse of editFileResponseStream) {
-						console.log(editResponse);
 						if ('TextEditStreaming' in editResponse) {
 							const textEditStreaming = editResponse.TextEditStreaming.data;
 							if ('Start' in textEditStreaming) {
 								startOfEdit = true;
 								const agentContext = textEditStreaming.Start.context_selection;
+								console.log('agentContext');
+								console.log(agentContext);
 								streamProcessor = new StreamProcessor(
 									progress,
 									activeDocument,
@@ -689,6 +690,7 @@ class DocumentManager {
 		console.log('replaceLine', index, newLine);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		const edits = new vscode.WorkspaceEdit();
+		console.log('What line are we replaceLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
 		this.progress.report({ edits });
 		return index + 1;
@@ -706,6 +708,7 @@ class DocumentManager {
 				new LineContent(newLine.adjustedContent, this.indentStyle)
 			);
 			const edits = new vscode.WorkspaceEdit();
+			console.log('What line are we replaceLines', newLine.adjustedContent);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
 			return startIndex + 1;
 		}
@@ -716,7 +719,8 @@ class DocumentManager {
 		console.log('appendLine', newLine);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
-		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
+		console.log('what line are we appendLine', newLine.adjustedContent);
+		edits.insert(this.uri, new vscode.Position(this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
 		this.progress.report({ edits });
 		return this.lines.length;
 	}
@@ -726,7 +730,8 @@ class DocumentManager {
 		console.log('insertLineAfter', index, newLine);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
-		edits.replace(this.uri, new vscode.Range(index + 1, 0, index + 1, 1000), '\n' + newLine.adjustedContent);
+		console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
+		edits.insert(this.uri, new vscode.Position(index, 1000), '\n' + newLine.adjustedContent);
 		this.progress.report({ edits });
 		return index + 2;
 	}

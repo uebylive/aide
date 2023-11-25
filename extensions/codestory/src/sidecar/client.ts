@@ -220,6 +220,7 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
+				console.log(lineSinglePartTrimmed);
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
 				yield conversationMessage;
 			}
