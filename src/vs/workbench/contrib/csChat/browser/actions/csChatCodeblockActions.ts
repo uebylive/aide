@@ -204,7 +204,6 @@ export function registerChatCodeBlockActions() {
 			console.log('we are here in runWithContext');
 			const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
-			const bulkEditService = accessor.get(IBulkEditService);
 			const textModelService = accessor.get(ITextModelService);
 			const codeEditorService = accessor.get(ICodeEditorService);
 
@@ -249,11 +248,10 @@ export function registerChatCodeBlockActions() {
 
 				progressiveEditsQueue.queue(async () => {
 					await this._makeChanges(textModelService, codeEditor, isFirstEdit, progress.edits);
+					if (isFirstEdit) {
+						isFirstEdit = false;
+					}
 				});
-
-				if (isFirstEdit) {
-					isFirstEdit = false;
-				}
 				// await bulkEditService.apply(progress.edits);
 			};
 
@@ -266,12 +264,20 @@ export function registerChatCodeBlockActions() {
 
 		}
 
-		private async _makeChanges(textModelService: ITextModelService, codeEditor: ICodeEditor | null, isFirstEdit: boolean, edits: WorkspaceEdit) {
-			// console.log('[IDE][edit]');
-			// console.log(edits);
-			if (isFirstEdit) {
-				codeEditor?.pushUndoStop();
+		private async _makeChanges(
+			textModelService: ITextModelService,
+			codeEditor: ICodeEditor | null,
+			isFirstEdit: boolean,
+			edits: WorkspaceEdit,
+		) {
+			console.log('[IDE][edit]');
+			console.log(edits);
+			if ((edits.edits[0] as IWorkspaceTextEdit).textEdit.text === '') {
+				console.log('[IDE][empty_line]', (edits.edits[0] as IWorkspaceTextEdit).textEdit.range);
 			}
+			// if (isFirstEdit) {
+			// 	codeEditor?.pushUndoStop();
+			// }
 
 			const editOperations: { uri: URI; edit: ISingleEditOperation }[] = edits.edits.map(edit => {
 				const typedEdit = edit as IWorkspaceTextEdit;

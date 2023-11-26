@@ -445,6 +445,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			if (activeEditorUri && codeblocks.length > 0) {
 				for (const codeblock of codeblocks) {
 					const llmContent = codeblock.code;
+					const codeBlockIndex = codeblock.codeBlockIndex;
 					const messageContent = request.response;
 					const sessionId = request.threadId;
 					const editFileResponseStream = await this._sideCarClient.editFileRequest(
@@ -453,6 +454,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 						language,
 						llmContent,
 						messageContent,
+						codeBlockIndex,
 						sessionId,
 					);
 					let enteredTextEdit = false;
@@ -481,7 +483,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							}
 							if ('EditStreaming' in textEditStreaming) {
 								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
-								// console.log(textEditStreaming.EditStreaming.content_up_until_now);
 								// check if we can get any lines back here
 								while (true) {
 									const currentLine = answerSplitOnNewLineAccumulator.getLine();
@@ -559,7 +560,7 @@ class StreamProcessor {
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
-		console.log('prepareLine', answerStreamLine.line, this.documentLineIndex);
+		// console.log('prepareLine', answerStreamLine.line, this.documentLineIndex);
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -574,21 +575,46 @@ class StreamProcessor {
 		}
 		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
 			if (this.previousLine) {
+				// if previous line is there, then we can reindent the current line
+				// contents here
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
+				// find the anchor point for the current line
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
 					this.sentEdits = true;
+					// if no anchor line, then we have to replace the current line
+					console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 				} else if (this.documentLineIndex >= this.document.getLineCount()) {
+					// we found the anchor point but we have more lines in our own index
+					// than the original document, so here the right thing to do is
+					// append to the document
 					this.sentEdits = true;
+					console.log('appendLine', adjustedLine, this.document.getLineCount());
 					this.documentLineIndex = this.document.appendLine(adjustedLine);
 				} else {
+					// we need to get the current line right now
 					const currentLine = this.document.getLine(this.documentLineIndex);
 					this.sentEdits = true;
-					console.log(this.documentLineIndex, currentLine.content);
+					// console.log(this.documentLineIndex, currentLine.content);
+					// TODO(skcd): This bit is a bit unclear, so lets try to understand this properly
+					// isSent is set when we are part of the original lines
+					// if the current line has an indent level which is less than the adjusted line indent level
+					// then we are trying to insert the line after the previous line
+					// otherwise we just replace
+					// to think of this we can imagine a scenario like the following:
+					// def fun(a, b):
+					//    if a > 0:
+					// 		return a + b <- adjusted line
+					//   else: < - original current line
+					//      return a - b
+					// since adjusted line is indented more, we want to insert it after the previous document line
+					// but if that's not the case, then we just replace the current line
 					if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '' && currentLine.indentLevel < adjustedLine.adjustedIndentLevel)) {
+						console.log('insertLineAfter', this.documentLineIndex - 1, adjustedLine);
 						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					} else {
+						console.log('replaceLine', this.documentLineIndex, adjustedLine);
 						this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
 					}
 				}
@@ -596,6 +622,7 @@ class StreamProcessor {
 				const initialAnchor = this.findInitialAnchor(line);
 				this.previousLine = new LineIndentManager(this.document.getLine(initialAnchor).indentLevel, line);
 				const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
+				console.log('noPreviousLine', 'replaceLine', initialAnchor, adjustedInitialLine);
 				this.documentLineIndex = this.document.replaceLine(initialAnchor, adjustedInitialLine);
 			}
 			this.beginDetected = true;
@@ -620,6 +647,9 @@ class StreamProcessor {
 		for (let index = startIndex; index < this.document.getLineCount(); index++) {
 			const line = this.document.getLine(index);
 			if (line.isSent) {
+				// This checks for when we want to insert code which has more indent
+				// that the current line, but in that case we can never find an anchor
+				// cause our code is deeper than the code which is present on the line
 				if (line.trimmedContent.length > 0 && line.indentLevel < adjustedLine.adjustedIndentLevel) {
 					return null;
 				}
@@ -717,8 +747,12 @@ class DocumentManager {
 				new LineContent(newLine.adjustedContent, this.indentStyle)
 			);
 			const edits = new vscode.WorkspaceEdit();
-			// console.log('What line are we replaceLines', newLine.adjustedContent);
+			if (newLine.adjustedContent === '') {
+				console.log('[extension]empty_line', 'replace_lines');
+			}
+			console.log('What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			this.progress.report({ edits });
 			return startIndex + 1;
 		}
 	}

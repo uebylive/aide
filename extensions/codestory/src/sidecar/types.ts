@@ -354,16 +354,19 @@ export type DiffActionResponse =
 export type TextEditStreaming =
 	| {
 		Start: {
+			code_block_index: number;
 			context_selection: InLineAgentContextSelection;
-		}
+		};
 	}
 	| {
 		End: {
+			code_block_index: number;
 			reason: string;
-		}
+		};
 	}
 	| {
 		EditStreaming: {
+			code_block_index: number;
 			range: {
 				startPosition: {
 					line: number;
@@ -376,7 +379,7 @@ export type TextEditStreaming =
 			};
 			content_up_until_now: string;
 			content_delta: string;
-		}
+		};
 	};
 
 

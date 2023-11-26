@@ -166,6 +166,7 @@ export class SideCarClient {
 		language: string,
 		llmContent: string,
 		userQuery: string,
+		codeBlockIndex: number,
 		sessionId: string,
 	): AsyncIterableIterator<EditFileResponse> {
 		const baseUrl = new URL(this._url);
@@ -178,6 +179,7 @@ export class SideCarClient {
 			new_content: llmContent,
 			user_query: userQuery,
 			session_id: sessionId,
+			code_block_index: codeBlockIndex,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
