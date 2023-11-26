@@ -467,6 +467,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							const textEditStreaming = editResponse.TextEditStreaming.data;
 							if ('Start' in textEditStreaming) {
 								startOfEdit = true;
+								// TODO(ghostwriternr): here you can get the code block index easily
+								const codeBlockIndex = textEditStreaming.Start.code_block_index;
 								const agentContext = textEditStreaming.Start.context_selection;
 								console.log('agentContext');
 								console.log(agentContext);
@@ -477,11 +479,14 @@ export class CSChatAgentProvider implements vscode.Disposable {
 									agentContext,
 									undefined,
 									activeEditorUri,
+									codeBlockIndex,
 								);
 								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 								continue;
 							}
 							if ('EditStreaming' in textEditStreaming) {
+								// TODO(ghostwriternr): here you can get the code block index easily
+								const codeBlockIndex = textEditStreaming.EditStreaming.code_block_index;
 								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
 								// check if we can get any lines back here
 								while (true) {
@@ -535,6 +540,7 @@ class StreamProcessor {
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
+		codeBlockIndex: number,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -544,6 +550,7 @@ class StreamProcessor {
 			contextSelection,
 			indentStyle,
 			uri,
+			codeBlockIndex,
 		);
 
 		// Set markers for file path, begin, and end
@@ -670,6 +677,7 @@ class DocumentManager {
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 	uri: vscode.Uri;
+	codeBlockIndex: number;
 
 	constructor(
 		progress: vscode.Progress<vscode.CSChatAgentEditResponse>,
@@ -679,10 +687,12 @@ class DocumentManager {
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
+		codeBlockIndex: number,
 	) {
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
+		this.codeBlockIndex = codeBlockIndex;
 		// this.indentStyle = IndentationHelper.getDocumentIndentStyleUsingSelection(contextSelection); // Determines the indentation style
 
 		// Split the editor's text into lines and initialize each line
@@ -730,6 +740,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('What line are we replaceLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
 		this.progress.report({ edits });
 		return index + 1;
 	}
@@ -751,6 +762,7 @@ class DocumentManager {
 				console.log('[extension]empty_line', 'replace_lines');
 			}
 			console.log('What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
+			// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
 			this.progress.report({ edits });
 			return startIndex + 1;
@@ -765,6 +777,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
+		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
 		this.progress.report({ edits });
 		return this.lines.length;
 	}
@@ -777,6 +790,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
 		this.progress.report({ edits });
 		return index + 2;
 	}
