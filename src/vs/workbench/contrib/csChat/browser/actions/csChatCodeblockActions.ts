@@ -4,9 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Queue } from 'vs/base/common/async';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
+import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { MovingAverage } from 'vs/base/common/numbers';
+import { StopWatch } from 'vs/base/common/stopwatch';
 import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
@@ -36,7 +38,7 @@ import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/c
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
-import { asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
+import { ProgressingEditsOptions, asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -219,7 +221,7 @@ export function registerChatCodeBlockActions() {
 			}
 
 			this.notifyUserAction(accessor, context);
-			const { token } = new CancellationTokenSource();
+			const requestCts = new CancellationTokenSource();
 
 			const editRequest: ICSChatAgentEditRequest = {
 				sessionId: context.element.sessionId,
@@ -237,31 +239,39 @@ export function registerChatCodeBlockActions() {
 			let isFirstEdit = true;
 
 			const progressEdits: WorkspaceEdit[] = [];
+
+			const progressiveEditsAvgDuration = new MovingAverage();
+			const progressiveEditsCts = new CancellationTokenSource(requestCts.token);
+			const progressiveEditsClock = StopWatch.create();
 			const progressiveEditsQueue = new Queue();
 
 			const progressCallback = async (progress: ICSChatAgentEditRepsonse) => {
-				if (token.isCancellationRequested) {
+				if (requestCts.token.isCancellationRequested) {
 					return;
 				}
 
 				progressEdits.push(progress.edits);
+				progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
+				progressiveEditsClock.reset();
 
 				progressiveEditsQueue.queue(async () => {
-					await this._makeChanges(textModelService, codeEditor, isFirstEdit, progress.edits);
+					await this._makeChanges(
+						textModelService, codeEditor, isFirstEdit, progress.edits,
+						{ duration: progressiveEditsAvgDuration.value, token: progressiveEditsCts.token }
+					);
 					if (isFirstEdit) {
 						isFirstEdit = false;
 					}
 				});
-				// await bulkEditService.apply(progress.edits);
 			};
 
-			const response = await chatAgentService.getEdits(editRequest, progressCallback, token);
+			const response = await chatAgentService.getEdits(editRequest, progressCallback, requestCts.token);
 			if (!response) {
 				return;
 			}
 
-			// await bulkEditService.apply(response.edits);
-
+			progressiveEditsCts.dispose(true);
+			requestCts.dispose();
 		}
 
 		private async _makeChanges(
@@ -269,15 +279,11 @@ export function registerChatCodeBlockActions() {
 			codeEditor: ICodeEditor | null,
 			isFirstEdit: boolean,
 			edits: WorkspaceEdit,
+			opts: ProgressingEditsOptions
 		) {
-			console.log('[IDE][edit]');
-			console.log(edits);
-			if ((edits.edits[0] as IWorkspaceTextEdit).textEdit.text === '') {
-				console.log('[IDE][empty_line]', (edits.edits[0] as IWorkspaceTextEdit).textEdit.range);
+			if (isFirstEdit) {
+				codeEditor?.pushUndoStop();
 			}
-			// if (isFirstEdit) {
-			// 	codeEditor?.pushUndoStop();
-			// }
 
 			const editOperations: { uri: URI; edit: ISingleEditOperation }[] = edits.edits.map(edit => {
 				const typedEdit = edit as IWorkspaceTextEdit;
@@ -290,13 +296,14 @@ export function registerChatCodeBlockActions() {
 				};
 			});
 
+			const durationInSec = opts.duration / 1000;
 			for (const editOp of editOperations) {
 				const textModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
 				const { edit } = editOp;
 				console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
 				const wordCount = countWords(edit.text ?? '');
-				const speed = wordCount / 1;
-				await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, CancellationToken.None));
+				const speed = wordCount / durationInSec;
+				await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, opts.token));
 			}
 		}
 
