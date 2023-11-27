@@ -105,6 +105,7 @@ export interface ICSChatAgentEditRequest {
 
 export interface ICSChatAgentEditRepsonse {
 	edits: WorkspaceEdit;
+	codeBlockIndex: number;
 }
 
 export const ICSChatAgentService = createDecorator<ICSChatAgentService>('csChatAgentService');

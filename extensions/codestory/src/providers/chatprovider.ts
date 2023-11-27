@@ -435,7 +435,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			// You can pass in any file uri(s) and it should apply correctly.
 			const activeDocument = vscode.window.activeTextEditor?.document;
 			if (!activeDocument) {
-				return { edits: new vscode.WorkspaceEdit() };
+				return { edits: new vscode.WorkspaceEdit(), codeBlockIndex: 0 };
 			}
 			const filePath = activeDocument.uri.fsPath;
 			const fileContent = activeDocument.getText();
@@ -467,7 +467,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							const textEditStreaming = editResponse.TextEditStreaming.data;
 							if ('Start' in textEditStreaming) {
 								startOfEdit = true;
-								// TODO(ghostwriternr): here you can get the code block index easily
 								const codeBlockIndex = textEditStreaming.Start.code_block_index;
 								const agentContext = textEditStreaming.Start.context_selection;
 								console.log('agentContext');
@@ -485,7 +484,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 								continue;
 							}
 							if ('EditStreaming' in textEditStreaming) {
-								// TODO(ghostwriternr): here you can get the code block index easily
 								const codeBlockIndex = textEditStreaming.EditStreaming.code_block_index;
 								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
 								// check if we can get any lines back here
@@ -512,7 +510,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					}
 				}
 			}
-			return { edits: new vscode.WorkspaceEdit() };
+			return { edits: new vscode.WorkspaceEdit(), codeBlockIndex: 0 };
 		}
 	};
 
@@ -740,8 +738,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('What line are we replaceLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
-		this.progress.report({ edits });
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return index + 1;
 	}
 
@@ -762,9 +759,8 @@ class DocumentManager {
 				console.log('[extension]empty_line', 'replace_lines');
 			}
 			console.log('What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
-			// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			this.progress.report({ edits });
+			this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 			return startIndex + 1;
 		}
 	}
@@ -777,8 +773,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
-		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
-		this.progress.report({ edits });
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return this.lines.length;
 	}
 
@@ -790,8 +785,7 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		// TODO(ghostwriternr): get the code block index here using this.codeBlockIndex
-		this.progress.report({ edits });
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return index + 2;
 	}
 }

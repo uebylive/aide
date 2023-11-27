@@ -22,6 +22,7 @@ declare module 'vscode' {
 
 	export interface CSChatAgentEditResponse {
 		edits: WorkspaceEdit;
+		codeBlockIndex: number;
 	}
 
 	/**
