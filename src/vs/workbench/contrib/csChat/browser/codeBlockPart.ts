@@ -39,6 +39,7 @@ import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEdito
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IMarkdownVulnerability } from 'vs/workbench/contrib/csChat/browser/csChatMarkdownDecorationsRenderer';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
+import { ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 
 const $ = dom.$;
 
@@ -51,6 +52,7 @@ export interface ICodeBlockData {
 	parentContextKeyService?: IContextKeyService;
 	hideToolbar?: boolean;
 	vulns?: IMarkdownVulnerability[];
+	edits?: ICSChatAgentEditResponse[];
 }
 
 export interface ICodeBlockActionContext {
@@ -69,7 +71,6 @@ export interface ICodeBlockPart {
 	render(data: ICodeBlockData, width: number): void;
 	focus(): void;
 	dispose(): void;
-	setApplyingEdits(isApplyingEdits: boolean): void;
 }
 
 const defaultCodeblockPadding = 10;
@@ -88,6 +89,8 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 	public readonly textModel: ITextModel;
 	public readonly element: HTMLElement;
 	public readonly childWrapper: HTMLElement;
+
+	private readonly exportedLocationRibbon: HTMLElement;
 
 	private currentCodeBlockData: ICodeBlockData | undefined;
 	private currentScrollWidth = 0;
@@ -138,9 +141,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			])
 		}));
 
-		const exportedLocationRibbon = dom.append(this.childWrapper, $('.interactive-result-editor-location-ribbon'));
-		exportedLocationRibbon.textContent = localize('chat.codeBlockLocation', 'text-generation.ts');
-
+		this.exportedLocationRibbon = dom.append(this.childWrapper, $('.interactive-result-editor-location-ribbon'));
 		const toolbarElement = dom.append(this.childWrapper, $('.cschat-result-code-block-toolbar'));
 		const editorScopedService = this.editor.contextKeyService.createScoped(toolbarElement);
 		const editorScopedInstantiationService = scopedInstantiationService.createChild(new ServiceCollection([IContextKeyService, editorScopedService]));
@@ -293,6 +294,22 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			dom.show(this.toolbar.getElement());
 		}
 
+		if (data.edits?.length && isResponseVM(data.element)) {
+			this.element.classList.add('applying-edits');
+			dom.clearNode(this.exportedLocationRibbon);
+			this.exportedLocationRibbon.appendChild(
+				$('.editor-location-text', undefined, localize('chat.codeBlock.edits', "Applying edits..."))
+			);
+		} else {
+			this.element.classList.remove('applying-edits');
+			dom.clearNode(this.exportedLocationRibbon);
+		}
+
+		// If exported location ribbon has a child, it means we are applying edits. Add a class.
+		if (this.exportedLocationRibbon.firstChild) {
+			this.element.classList.add('applying-edits');
+		}
+
 		if (data.vulns?.length && isResponseVM(data.element)) {
 			dom.clearNode(this.vulnsListElement);
 			this.childWrapper.classList.remove('no-vulns');
@@ -345,9 +362,5 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 
 	private setLanguage(vscodeLanguageId: string | undefined): void {
 		this.textModel.setLanguage(vscodeLanguageId ?? PLAINTEXT_LANGUAGE_ID);
-	}
-
-	setApplyingEdits(applying: boolean): void {
-		this.childWrapper.classList.toggle('chat-edit-applying', applying);
 	}
 }

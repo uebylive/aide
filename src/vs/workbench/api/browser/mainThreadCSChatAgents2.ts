@@ -10,7 +10,7 @@ import { revive } from 'vs/base/common/marshalling';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
 import { ExtHostCSChatAgentsShape2, ExtHostContext, ICSChatAgentEditResponseDto, ICSChatProgressDto, IExtensionCSChatAgentMetadata, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
-import { ICSChatAgentEditRepsonse, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentEditResponse, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ICSChatFollowup, ICSChatProgress, ICSChatService, IChatTreeData } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
@@ -26,7 +26,7 @@ export class MainThreadCSChatAgents2 extends Disposable implements MainThreadCSC
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _pendingProgress = new Map<string, (part: ICSChatProgress) => void>();
-	private readonly _pendingEdits = new Map<string, (part: ICSChatAgentEditRepsonse) => void>();
+	private readonly _pendingEdits = new Map<string, (part: ICSChatAgentEditResponse) => void>();
 	private readonly _proxy: ExtHostCSChatAgentsShape2;
 
 	private _responsePartHandlePool = 0;

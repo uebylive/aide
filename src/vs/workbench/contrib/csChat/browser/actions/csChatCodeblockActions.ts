@@ -33,7 +33,7 @@ import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ICSChatAgentEditRepsonse, ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentEditResponse, ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
@@ -213,10 +213,16 @@ export function registerChatCodeBlockActions() {
 			const textModelService = accessor.get(ITextModelService);
 			const codeEditorService = accessor.get(ICodeEditorService);
 
-			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
-				// When run from command palette or not a response
+			if (isResponseFiltered(context)) {
+				// When run from command palette
 				return;
 			}
+
+			if (!isResponseVM(context.element)) {
+				// When element is not a response
+				return;
+			}
+			const responseVM: IChatResponseViewModel = context.element;
 
 			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
 				return;
@@ -226,10 +232,10 @@ export function registerChatCodeBlockActions() {
 			const requestCts = new CancellationTokenSource();
 
 			const editRequest: ICSChatAgentEditRequest = {
-				sessionId: context.element.sessionId,
-				agentId: context.element.agent?.id ?? '',
-				responseId: context.element.requestId,
-				response: context.element.response.asString(),
+				sessionId: responseVM.sessionId,
+				agentId: responseVM.agent?.id ?? '',
+				responseId: responseVM.requestId,
+				response: responseVM.response.asString(),
 				context: [{
 					code: context.code,
 					languageId: context.languageId,
@@ -245,10 +251,12 @@ export function registerChatCodeBlockActions() {
 			const progressiveEditsClock = StopWatch.create();
 			const progressiveEditsQueue = new Queue();
 
-			const progressCallback = async (progress: ICSChatAgentEditRepsonse) => {
+			const progressCallback = async (progress: ICSChatAgentEditResponse) => {
 				if (requestCts.token.isCancellationRequested) {
 					return;
 				}
+
+				responseVM.recordEdit(progress);
 
 				progressEdits.push(progress.edits);
 				progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());

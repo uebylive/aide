@@ -820,7 +820,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				const vulns = extractVulnerabilitiesFromText(text);
 
 				const hideToolbar = isResponseVM(element) && element.errorDetails?.responseIsFiltered;
-				const data = { languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities };
+				const edits = isResponseVM(element) ? element.appliedEdits : undefined;
+				const data: ICodeBlockData = { languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, edits, vulns: vulns.vulnerabilities };
 				const ref = this.renderCodeBlock(data, disposables);
 
 				// Attach this after updating text/layout of the editor, so it should only be fired when the size updates later (horizontal scrollbar, wrapping)

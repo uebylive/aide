@@ -396,19 +396,29 @@
 	padding: 1px;
 	overflow: hidden;
 	border-radius: 5px;
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 4px;
 }
 
 .interactive-response .cschat-result-code-block::after {
 	content: '';
 	display: block;
+	position: absolute;
+}
+
+.interactive-response .applying-edits.cschat-result-code-block {
+	border: unset;
+	border-radius: unset;
+}
+
+.interactive-response .applying-edits.cschat-result-code-block::after {
 	height: 400%;
 	width: 400%;
-	position: absolute;
 	top: -150%;
 	left: -150%;
 	background-size: 100% 100%;
 	background-position: 0px 0px;
-	background-image: linear-gradient(0deg, var(--vscode-foreground) 0%, #A100FF00 50%, #71C4FF00 100%);
+	background-image: linear-gradient(0deg, var(--vscode-input-border, transparent) 0%, #00000000 50%, #00000000 100%);
 	animation: rotateBorder 2s linear infinite;
 }
 
@@ -423,8 +433,11 @@
 
 .interactive-result-editor-location-ribbon {
 	background-color: var(--vscode-statusBar-background);
-	padding: 2px 8px 2px 8px;
 	border-radius: 0 0 4px 4px;
+}
+
+.interactive-result-editor-location-ribbon .editor-location-text {
+	padding: 2px 8px 2px 8px;
 }
 
 .interactive-item-compact .cschat-result-code-block {
