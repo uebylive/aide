@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Queue } from 'vs/base/common/async';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { MovingAverage } from 'vs/base/common/numbers';
@@ -38,7 +38,7 @@ import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/c
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
-import { ProgressingEditsOptions, asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
+import { asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -199,24 +199,26 @@ export function registerChatCodeBlockActions() {
 					group: 'navigation',
 					when: CONTEXT_IN_CHAT_SESSION,
 				},
+				toggled: {
+					condition: CTX_INLINE_CHAT_VISIBLE,
+					icon: Codicon.loading,
+					title: 'Applying changes to codebase...',
+				}
 			});
 		}
 
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			console.log('we are here in runWithContext');
 			const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
 			const textModelService = accessor.get(ITextModelService);
 			const codeEditorService = accessor.get(ICodeEditorService);
 
 			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
-				console.log('empty');
 				// When run from command palette or not a response
 				return;
 			}
 
 			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
-				console.log('empty else');
 				return;
 			}
 
@@ -235,9 +237,7 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 
-			const codeEditor = codeEditorService.getActiveCodeEditor();
-			let isFirstEdit = true;
-
+			const isFirstEditMap = new Map<URI, boolean>();
 			const progressEdits: WorkspaceEdit[] = [];
 
 			const progressiveEditsAvgDuration = new MovingAverage();
@@ -255,12 +255,41 @@ export function registerChatCodeBlockActions() {
 				progressiveEditsClock.reset();
 
 				progressiveEditsQueue.queue(async () => {
-					await this._makeChanges(
-						textModelService, codeEditor, isFirstEdit, progress.edits,
-						{ duration: progressiveEditsAvgDuration.value, token: progressiveEditsCts.token }
-					);
-					if (isFirstEdit) {
-						isFirstEdit = false;
+					if (requestCts.token.isCancellationRequested) {
+						return;
+					}
+
+					const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
+						const typedEdit = edit as IWorkspaceTextEdit;
+						return {
+							uri: typedEdit.resource,
+							edit: {
+								range: Range.lift(typedEdit.textEdit.range),
+								text: typedEdit.textEdit.text,
+							}
+						};
+					});
+					const durationInSec = progressiveEditsAvgDuration.value / 1000;
+					for (const editOp of editOperations) {
+						const textEditorModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
+						const codeEditor = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
+						if (!codeEditor) {
+							await editorService.openEditor({
+								resource: editOp.uri,
+								options: {
+									preserveFocus: true,
+									pinned: true,
+								}
+							});
+						}
+
+						const isFirstEdit = isFirstEditMap.get(editOp.uri) ?? true;
+						if (isFirstEdit) {
+							isFirstEditMap.set(editOp.uri, false);
+							codeEditor?.pushUndoStop();
+						}
+
+						await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token);
 					}
 				});
 			};
@@ -275,36 +304,14 @@ export function registerChatCodeBlockActions() {
 		}
 
 		private async _makeChanges(
-			textModelService: ITextModelService,
-			codeEditor: ICodeEditor | null,
-			isFirstEdit: boolean,
-			edits: WorkspaceEdit,
-			opts: ProgressingEditsOptions
+			textModel: ITextModel,
+			edit: ISingleEditOperation,
+			editAvgDuration: number,
+			token: CancellationToken,
 		) {
-			if (isFirstEdit) {
-				codeEditor?.pushUndoStop();
-			}
-
-			const editOperations: { uri: URI; edit: ISingleEditOperation }[] = edits.edits.map(edit => {
-				const typedEdit = edit as IWorkspaceTextEdit;
-				return {
-					uri: typedEdit.resource,
-					edit: {
-						range: Range.lift(typedEdit.textEdit.range),
-						text: typedEdit.textEdit.text,
-					}
-				};
-			});
-
-			const durationInSec = opts.duration / 1000;
-			for (const editOp of editOperations) {
-				const textModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
-				const { edit } = editOp;
-				console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
-				const wordCount = countWords(edit.text ?? '');
-				const speed = wordCount / durationInSec;
-				await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, opts.token));
-			}
+			const wordCount = countWords(edit.text ?? '');
+			const speed = wordCount / editAvgDuration;
+			await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token));
 		}
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {

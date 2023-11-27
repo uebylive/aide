@@ -69,6 +69,7 @@ export interface ICodeBlockPart {
 	render(data: ICodeBlockData, width: number): void;
 	focus(): void;
 	dispose(): void;
+	setApplyingEdits(isApplyingEdits: boolean): void;
 }
 
 const defaultCodeblockPadding = 10;
@@ -86,6 +87,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 
 	public readonly textModel: ITextModel;
 	public readonly element: HTMLElement;
+	public readonly childWrapper: HTMLElement;
 
 	private currentCodeBlockData: ICodeBlockData | undefined;
 	private currentScrollWidth = 0;
@@ -101,11 +103,12 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
 	) {
 		super();
-		this.element = $('.interactive-result-code-block');
+		this.element = $('.cschat-result-code-block');
+		this.childWrapper = dom.append(this.element, $('.cschat-result-code-block-wrapper'));
 
-		this.contextKeyService = this._register(contextKeyService.createScoped(this.element));
+		this.contextKeyService = this._register(contextKeyService.createScoped(this.childWrapper));
 		const scopedInstantiationService = instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
-		const editorElement = dom.append(this.element, $('.interactive-result-editor'));
+		const editorElement = dom.append(this.childWrapper, $('.interactive-result-editor'));
 		this.editor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, {
 			...getSimpleEditorOptions(this.configurationService),
 			readOnly: true,
@@ -135,7 +138,10 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			])
 		}));
 
-		const toolbarElement = dom.append(this.element, $('.interactive-result-code-block-toolbar'));
+		const exportedLocationRibbon = dom.append(this.childWrapper, $('.interactive-result-editor-location-ribbon'));
+		exportedLocationRibbon.textContent = localize('chat.codeBlockLocation', 'text-generation.ts');
+
+		const toolbarElement = dom.append(this.childWrapper, $('.cschat-result-code-block-toolbar'));
 		const editorScopedService = this.editor.contextKeyService.createScoped(toolbarElement);
 		const editorScopedInstantiationService = scopedInstantiationService.createChild(new ServiceCollection([IContextKeyService, editorScopedService]));
 		this.toolbar = this._register(editorScopedInstantiationService.createInstance(MenuWorkbenchToolBar, toolbarElement, menuId, {
@@ -144,7 +150,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			}
 		}));
 
-		const vulnsContainer = dom.append(this.element, $('.interactive-result-vulns'));
+		const vulnsContainer = dom.append(this.childWrapper, $('.interactive-result-vulns'));
 		const vulnsHeaderElement = dom.append(vulnsContainer, $('.interactive-result-vulns-header', undefined));
 		this.vulnsButton = new Button(vulnsHeaderElement, {
 			buttonBackground: undefined,
@@ -164,7 +170,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			const element = this.currentCodeBlockData!.element as IChatResponseViewModel;
 			element.vulnerabilitiesListExpanded = !element.vulnerabilitiesListExpanded;
 			this.vulnsButton.label = this.getVulnerabilitiesLabel();
-			this.element.classList.toggle('chat-vulnerabilities-collapsed', !element.vulnerabilitiesListExpanded);
+			this.childWrapper.classList.toggle('chat-vulnerabilities-collapsed', !element.vulnerabilitiesListExpanded);
 			this._onDidChangeContentHeight.fire();
 			// this.updateAriaLabel(collapseButton.element, referencesLabel, element.usedReferencesExpanded);
 		});
@@ -194,11 +200,11 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			}
 		}));
 		this._register(this.editor.onDidBlurEditorWidget(() => {
-			this.element.classList.remove('focused');
+			this.childWrapper.classList.remove('focused');
 			WordHighlighterContribution.get(this.editor)?.stopHighlighting();
 		}));
 		this._register(this.editor.onDidFocusEditorWidget(() => {
-			this.element.classList.add('focused');
+			this.childWrapper.classList.add('focused');
 			WordHighlighterContribution.get(this.editor)?.restoreViewState(true);
 		}));
 
@@ -289,12 +295,12 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 
 		if (data.vulns?.length && isResponseVM(data.element)) {
 			dom.clearNode(this.vulnsListElement);
-			this.element.classList.remove('no-vulns');
-			this.element.classList.toggle('chat-vulnerabilities-collapsed', !data.element.vulnerabilitiesListExpanded);
+			this.childWrapper.classList.remove('no-vulns');
+			this.childWrapper.classList.toggle('chat-vulnerabilities-collapsed', !data.element.vulnerabilitiesListExpanded);
 			dom.append(this.vulnsListElement, ...data.vulns.map(v => $('li', undefined, $('span.chat-vuln-title', undefined, v.title), ' ' + v.description)));
 			this.vulnsButton.label = this.getVulnerabilitiesLabel();
 		} else {
-			this.element.classList.add('no-vulns');
+			this.childWrapper.classList.add('no-vulns');
 		}
 	}
 
@@ -339,5 +345,9 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 
 	private setLanguage(vscodeLanguageId: string | undefined): void {
 		this.textModel.setLanguage(vscodeLanguageId ?? PLAINTEXT_LANGUAGE_ID);
+	}
+
+	setApplyingEdits(applying: boolean): void {
+		this.childWrapper.classList.toggle('chat-edit-applying', applying);
 	}
 }
