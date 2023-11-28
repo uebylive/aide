@@ -362,8 +362,14 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	confirmEdit(codeblockIndex: number, accept: boolean): void {
 		const recordedEdits = this.appliedEdits.get(codeblockIndex);
-		if (recordedEdits) {
-			recordedEdits.applied = accept;
+		if (!recordedEdits) {
+			return;
+		}
+
+		if (accept) {
+			recordedEdits.applied = true;
+		} else {
+			this.appliedEdits.delete(codeblockIndex);
 		}
 		this._onDidChange.fire();
 	}
