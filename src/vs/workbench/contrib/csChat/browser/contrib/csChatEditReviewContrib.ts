@@ -17,6 +17,8 @@ import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 export class CSChatEditReviewLens extends Disposable {
+	static selector = 'file';
+
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@ICSChatWidgetService private readonly csChatWidgetService: ICSChatWidgetService,
@@ -24,7 +26,7 @@ export class CSChatEditReviewLens extends Disposable {
 	) {
 		super();
 
-		this._register(this.languageFeaturesService.codeLensProvider.register({ scheme: '*', hasAccessToAllModels: true }, {
+		this._register(this.languageFeaturesService.codeLensProvider.register({ scheme: CSChatEditReviewLens.selector, hasAccessToAllModels: true }, {
 			provideCodeLenses: (model: ITextModel, token: CancellationToken) => {
 				const widget = this.csChatWidgetService.lastFocusedWidget;
 				if (!widget) {
