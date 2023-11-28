@@ -53,6 +53,12 @@ export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 	element: IChatResponseViewModel;
 }
 
+export interface IChatEditConfirmationContext {
+	codeblockIndex: number;
+	responseVM: IChatResponseViewModel;
+	type: 'approve' | 'reject';
+}
+
 export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockActionContext {
 	return typeof thing === 'object' && thing !== null && 'code' in thing && 'element' in thing;
 }
@@ -63,6 +69,10 @@ function isResponseFiltered(context: ICodeBlockActionContext) {
 
 function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] | undefined {
 	return isResponseVM(context.element) ? context.element.usedContext?.documents : undefined;
+}
+
+function isEditConfirmationContext(thing: unknown): thing is IChatEditConfirmationContext {
+	return typeof thing === 'object' && thing !== null && 'codeblockIndex' in thing && 'responseVM' in thing && 'type' in thing;
 }
 
 abstract class ChatCodeBlockAction extends Action2 {
@@ -775,3 +785,25 @@ function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): 
 		languageId: editor.getModel()!.getLanguageId(),
 	};
 }
+
+export class EditConfirmationAction extends Action2 {
+	static readonly ID = 'workbench.action.csChat.editConfirmation';
+
+	constructor() {
+		super({
+			id: EditConfirmationAction.ID,
+			title: ''
+		});
+	}
+
+	async run(_accessor: ServicesAccessor, ...args: any[]) {
+		const context = args[0];
+		if (!isEditConfirmationContext(context)) {
+			return;
+		}
+
+		const { codeblockIndex, responseVM, type } = context;
+		responseVM.confirmEdit(codeblockIndex, type === 'approve');
+	}
+}
+registerAction2(EditConfirmationAction);

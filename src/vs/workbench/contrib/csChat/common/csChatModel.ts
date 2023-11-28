@@ -13,6 +13,7 @@ import { basename } from 'vs/base/common/resources';
 import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ICSChatAgentCommand, IChatAgentData, ICSChatAgentService, ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -53,7 +54,7 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly appliedEdits: ICSChatAgentEditResponse[];
+	readonly appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
 	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
 	readonly isComplete: boolean;
@@ -63,6 +64,7 @@ export interface IChatResponseModel {
 	readonly errorDetails?: IChatResponseErrorDetails;
 	setVote(vote: CSChatSessionVoteDirection): void;
 	recordEdit(edits: ICSChatAgentEditResponse): void;
+	confirmEdit(codeblockIndex: number, accept: boolean): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -265,8 +267,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._progressMessages;
 	}
 
-	private readonly _appliedEdits: ICSChatAgentEditResponse[] = [];
-	public get appliedEdits(): ICSChatAgentEditResponse[] {
+	private readonly _appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }> = new Map();
+	public get appliedEdits(): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
 		return this._appliedEdits;
 	}
 
@@ -311,11 +313,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 	}
 
-	recordEdits(edits: ICSChatAgentEditResponse[]) {
-		this._appliedEdits.push(...edits);
-		this._onDidChange.fire();
-	}
-
 	setAgent(agent: IChatAgentData, slashCommand?: ICSChatAgentCommand) {
 		this._agent = agent;
 		this._slashCommand = slashCommand;
@@ -352,9 +349,22 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	recordEdit(edits: ICSChatAgentEditResponse): void {
+	recordEdit(editResponse: ICSChatAgentEditResponse): void {
 		this.session.activeEditsRequestId = this.requestId;
-		this._appliedEdits.push(edits);
+		const recordedEdits = this.appliedEdits.get(editResponse.codeBlockIndex);
+		if (recordedEdits) {
+			recordedEdits.edits.push(editResponse.edits);
+		} else {
+			this.appliedEdits.set(editResponse.codeBlockIndex, { edits: [editResponse.edits], applied: false });
+		}
+		this._onDidChange.fire();
+	}
+
+	confirmEdit(codeblockIndex: number, accept: boolean): void {
+		const recordedEdits = this.appliedEdits.get(codeblockIndex);
+		if (recordedEdits) {
+			recordedEdits.applied = accept;
+		}
 		this._onDidChange.fire();
 	}
 }

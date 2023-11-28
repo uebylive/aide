@@ -6,6 +6,7 @@
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ICSChatAgentCommand, ICSChatAgentEditResponse, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
@@ -99,7 +100,7 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly appliedEdits: ICSChatAgentEditResponse[];
+	readonly appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly vote: CSChatSessionVoteDirection | undefined;
@@ -112,6 +113,7 @@ export interface IChatResponseViewModel {
 	currentRenderedHeight: number | undefined;
 	setVote(vote: CSChatSessionVoteDirection): void;
 	recordEdit(edit: ICSChatAgentEditResponse): void;
+	confirmEdit(codeblockIndex: number, accept: boolean): void;
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 }
@@ -311,7 +313,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.progressMessages;
 	}
 
-	get appliedEdits(): ICSChatAgentEditResponse[] {
+	get appliedEdits(): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
 		return this._model.appliedEdits;
 	}
 
@@ -426,6 +428,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	recordEdit(edit: ICSChatAgentEditResponse): void {
 		this._modelChangeCount++;
 		this._model.recordEdit(edit);
+	}
+
+	confirmEdit(codeblockIndex: number, accept: boolean): void {
+		this._modelChangeCount++;
+		this._model.confirmEdit(codeblockIndex, accept);
 	}
 }
 

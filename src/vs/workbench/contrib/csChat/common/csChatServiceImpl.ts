@@ -12,6 +12,7 @@ import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/co
 import { revive } from 'vs/base/common/marshalling';
 import { StopWatch } from 'vs/base/common/stopwatch';
 import { URI, UriComponents } from 'vs/base/common/uri';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { localize } from 'vs/nls';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -21,7 +22,7 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData, ICSChatAgentRequest, ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData, ICSChatAgentRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -334,7 +335,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		delete this._persistedSessions[sessionId];
 	}
 
-	getEdits(sessionId: string, requestId: string): ICSChatAgentEditResponse[] {
+	getEditsByCodeblock(sessionId: string, requestId: string): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {
 			throw new Error(`Unknown session: ${sessionId}`);

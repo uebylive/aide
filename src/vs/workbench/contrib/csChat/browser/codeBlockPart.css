@@ -16,7 +16,7 @@
 .cschat-result-code-block .monaco-toolbar {
 	display: none;
 	position: absolute;
-	top: -1px;
+	top: -2px;
 	right: 10px;
 	height: 26px;
 	background-color: var(--vscode-interactive-result-editor-background-color, var(--vscode-editor-background));

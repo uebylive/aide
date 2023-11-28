@@ -39,7 +39,8 @@ import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEdito
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IMarkdownVulnerability } from 'vs/workbench/contrib/csChat/browser/csChatMarkdownDecorationsRenderer';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { basename } from 'vs/base/common/path';
 
 const $ = dom.$;
 
@@ -52,7 +53,7 @@ export interface ICodeBlockData {
 	parentContextKeyService?: IContextKeyService;
 	hideToolbar?: boolean;
 	vulns?: IMarkdownVulnerability[];
-	edits?: ICSChatAgentEditResponse[];
+	edits?: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
 }
 
 export interface ICodeBlockActionContext {
@@ -294,20 +295,27 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			dom.show(this.toolbar.getElement());
 		}
 
-		if (data.edits?.length && isResponseVM(data.element)) {
-			this.element.classList.add('applying-edits');
+		if (data.edits?.get(this.currentCodeBlockData?.codeBlockIndex) && isResponseVM(data.element)) {
+			const matchingEdits = data.edits?.get(this.currentCodeBlockData?.codeBlockIndex);
+			const edits = matchingEdits?.edits.map(edit => edit.edits).flat() as IWorkspaceTextEdit[];
+			const distinctURIs = [...new Set(edits.map(edit => edit.resource))];
 			dom.clearNode(this.exportedLocationRibbon);
-			this.exportedLocationRibbon.appendChild(
-				$('.editor-location-text', undefined, localize('chat.codeBlock.edits', "Applying edits..."))
-			);
+			if (matchingEdits?.applied) {
+				distinctURIs.forEach(uri => {
+					const uriElement = dom.append(this.exportedLocationRibbon, $('.editor-location-uri'));
+					dom.append(uriElement, $('span.editor-location-text', undefined, basename(uri.fsPath)));
+				});
+				this.element.classList.remove('applying-edits');
+			} else {
+				distinctURIs.forEach(uri => {
+					const uriElement = dom.append(this.exportedLocationRibbon, $('.editor-location-uri'));
+					dom.append(uriElement, $('span.editor-location-text', undefined, `Editing ${basename(uri.fsPath)}...`));
+				});
+				this.element.classList.add('applying-edits');
+			}
 		} else {
 			this.element.classList.remove('applying-edits');
 			dom.clearNode(this.exportedLocationRibbon);
-		}
-
-		// If exported location ribbon has a child, it means we are applying edits. Add a class.
-		if (this.exportedLocationRibbon.firstChild) {
-			this.element.classList.add('applying-edits');
 		}
 
 		if (data.vulns?.length && isResponseVM(data.element)) {

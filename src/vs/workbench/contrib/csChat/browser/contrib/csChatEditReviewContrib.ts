@@ -5,15 +5,16 @@
 
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
-import { isObject } from 'vs/base/common/types';
-import { URI } from 'vs/base/common/uri';
+import { Range } from 'vs/editor/common/core/range';
 import { CodeLensList, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { EditConfirmationAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatCodeblockActions';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 export class CSChatEditReviewLens extends Disposable {
@@ -39,23 +40,30 @@ export class CSChatEditReviewLens extends Disposable {
 					return;
 				}
 
-				const edits = this.csChatService.getEdits(sessionId, requestId);
-				if (!edits || edits.length === 0) {
+				const responseVM = widget.viewModel?.getItems().find(item => isResponseVM(item) && item.requestId === requestId);
+				if (!isResponseVM(responseVM)) {
+					return;
+				}
+
+				const editsByCodeblock = this.csChatService.getEditsByCodeblock(sessionId, requestId);
+				if (!editsByCodeblock) {
 					return;
 				}
 
 				let foundUri = false;
-				let startLineNumber = model.getLineCount();
-				for (const editResponse of edits) {
-					const edits = editResponse.edits.edits;
-					for (const edit of edits) {
-						if (isObject(edit) && URI.isUri((<IWorkspaceTextEdit>edit).resource) && isObject((<IWorkspaceTextEdit>edit).textEdit)) {
-							const resource = (<IWorkspaceTextEdit>edit).resource;
-							if (resource.toString() === model.uri.toString()) {
-								foundUri = true;
-								const textEdit = (<IWorkspaceTextEdit>edit).textEdit;
-								startLineNumber = Math.min(startLineNumber, textEdit.range.startLineNumber);
+				const codeblockRanges: { [codeblockIndex: number]: Range } = {};
+				for (const codeblockEdits of editsByCodeblock) {
+					for (const workspaceEdit of codeblockEdits[1].edits) {
+						for (const e of workspaceEdit.edits) {
+							const edit = e as IWorkspaceTextEdit;
+							if (edit.resource.toString() !== model.uri.toString()) {
+								continue;
 							}
+
+							foundUri = true;
+							const codeblockIndex = codeblockEdits[0];
+							const codeblockRange = codeblockRanges[codeblockIndex] || Range.lift(edit.textEdit.range);
+							codeblockRanges[codeblockIndex] = codeblockRange.plusRange(edit.textEdit.range);
 						}
 					}
 				}
@@ -64,18 +72,32 @@ export class CSChatEditReviewLens extends Disposable {
 					return;
 				}
 
-				const range = {
-					startLineNumber,
-					startColumn: 1,
-					endLineNumber: startLineNumber,
-					endColumn: 1
-				};
+				const lenses = Object.keys(codeblockRanges).map(codeblockIndex => {
+					const codeblockRange = codeblockRanges[Number(codeblockIndex)];
+					const approveCommand = {
+						id: EditConfirmationAction.ID,
+						title: 'Approve edits',
+						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'approve' }]
+					};
+					const rejectCommand = {
+						id: EditConfirmationAction.ID,
+						title: 'Reject edits',
+						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'reject' }]
+					};
+					return [
+						{
+							range: codeblockRange,
+							command: approveCommand
+						},
+						{
+							range: codeblockRange,
+							command: rejectCommand
+						}
+					];
+				}).flat();
 
 				return <CodeLensList>{
-					lenses: [
-						{ range, command: { id: 'csChat.editReview.approve', title: 'Approve Changes' } },
-						{ range, command: { id: 'csChat.editReview.reject', title: 'Reject Changes' } }
-					],
+					lenses,
 					dispose: () => { }
 				};
 			}
