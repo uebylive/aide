@@ -29,6 +29,7 @@ import { ChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib
 import { ChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatInputEditorContrib';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatHistoryVariables';
+import 'vs/workbench/contrib/csChat/browser/contrib/csChatEditReviewContrib';
 import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ChatService } from 'vs/workbench/contrib/csChat/common/csChatServiceImpl';

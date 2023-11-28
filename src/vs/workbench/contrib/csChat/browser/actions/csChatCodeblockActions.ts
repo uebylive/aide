@@ -15,11 +15,13 @@ import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
+import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
+import { Selection } from 'vs/editor/common/core/selection';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import { DocumentContextItem, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { ILanguageService } from 'vs/editor/common/languages/language';
-import { ITextModel } from 'vs/editor/common/model';
+import { ICursorStateComputer, ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
@@ -38,7 +40,7 @@ import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/c
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
-import { asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
+import { InlineDiffDecorations, asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -243,7 +245,7 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 
-			const isFirstEditMap = new Map<URI, boolean>();
+			const editTracker = new Map<URI, { isFirstEdit: boolean; decorations: InlineDiffDecorations; editRange: Range }>();
 			const progressEdits: WorkspaceEdit[] = [];
 
 			const progressiveEditsAvgDuration = new MovingAverage();
@@ -280,29 +282,44 @@ export function registerChatCodeBlockActions() {
 					const durationInSec = progressiveEditsAvgDuration.value / 1000;
 					for (const editOp of editOperations) {
 						const textEditorModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
-						const codeEditor = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
+						let codeEditor: ICodeEditor | undefined | null = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
 						if (!codeEditor) {
-							await editorService.openEditor({
-								resource: editOp.uri,
-								options: {
-									preserveFocus: true,
-									pinned: true,
-								}
-							});
+							codeEditor = await codeEditorService.openCodeEditor(
+								{ resource: editOp.uri },
+								codeEditorService.getFocusedCodeEditor()
+							);
 						}
 
-						const isFirstEdit = isFirstEditMap.get(editOp.uri) ?? true;
+						let { isFirstEdit, decorations, editRange } = editTracker.get(editOp.uri) ?? { isFirstEdit: true };
 						if (isFirstEdit) {
-							isFirstEditMap.set(editOp.uri, false);
 							codeEditor?.pushUndoStop();
 						}
+						if (!decorations) {
+							decorations = new InlineDiffDecorations(codeEditor!, true);
+						}
+						if (!editRange) {
+							editRange = Range.lift(editOp.edit.range);
+						} else {
+							editRange = editRange.plusRange(Range.lift(editOp.edit.range));
+						}
+						editTracker.set(editOp.uri, { isFirstEdit: false, decorations, editRange });
 
-						await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token);
+						const cursorStateComputerAndInlineDiffCollection: ICursorStateComputer = (undoEdits) => {
+							let last: Position | null = null;
+							for (const edit of undoEdits) {
+								last = !last || last.isBefore(edit.range.getEndPosition()) ? edit.range.getEndPosition() : last;
+								decorations!.collectEditOperation(edit);
+							}
+							return last && [Selection.fromPositions(last)];
+						};
+
+						await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token, cursorStateComputerAndInlineDiffCollection);
+						decorations.update();
 					}
 				});
 			};
 
-			const response = await chatAgentService.getEdits(editRequest, progressCallback, requestCts.token);
+			const response = await chatAgentService.makeEdits(editRequest, progressCallback, requestCts.token);
 			if (!response) {
 				return;
 			}
@@ -316,10 +333,11 @@ export function registerChatCodeBlockActions() {
 			edit: ISingleEditOperation,
 			editAvgDuration: number,
 			token: CancellationToken,
+			cursorStateComputer: ICursorStateComputer
 		) {
 			const wordCount = countWords(edit.text ?? '');
 			const speed = wordCount / editAvgDuration;
-			await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token));
+			await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token), cursorStateComputer);
 		}
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {

@@ -21,7 +21,7 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData, ICSChatAgentRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentService, ICSChatAgentCommand, IChatAgentData, ICSChatAgentRequest, ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ChatModel, ChatModelInitState, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, ISerializableChatData, ISerializableChatsData } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -332,6 +332,25 @@ export class ChatService extends Disposable implements ICSChatService {
 
 	removeHistoryEntry(sessionId: string): void {
 		delete this._persistedSessions[sessionId];
+	}
+
+	getEdits(sessionId: string, requestId: string): ICSChatAgentEditResponse[] {
+		const model = this._sessionModels.get(sessionId);
+		if (!model) {
+			throw new Error(`Unknown session: ${sessionId}`);
+		}
+
+		const request = model.getRequest(requestId);
+		if (!request) {
+			throw new Error(`Unknown request: ${requestId}`);
+		}
+
+		const response = request.response;
+		if (!response) {
+			throw new Error(`Request has no response: ${requestId}`);
+		}
+
+		return response.appliedEdits;
 	}
 
 	startSession(providerId: string, token: CancellationToken): ChatModel {

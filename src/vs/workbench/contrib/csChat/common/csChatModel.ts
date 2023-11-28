@@ -353,6 +353,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	recordEdit(edits: ICSChatAgentEditResponse): void {
+		this.session.activeEditsRequestId = this.requestId;
 		this._appliedEdits.push(edits);
 		this._onDidChange.fire();
 	}
@@ -370,6 +371,8 @@ export interface IChatModel {
 	readonly inputPlaceholder?: string;
 	readonly requesterUsername: string;
 	readonly requesterAvatarIconUri: URI | undefined;
+	readonly activeEditsRequestId?: string;
+	getRequest(requestId: string): IChatRequestModel | undefined;
 	getRequests(): IChatRequestModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -467,6 +470,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	private _requests: ChatRequestModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
+	private _activeEditsRequestId: string | undefined;
 
 	private _session: IChat | undefined;
 	get session(): IChat | undefined {
@@ -515,6 +519,14 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _initialResponderAvatarIconUri: URI | undefined;
 	get responderAvatarIconUri(): URI | undefined {
 		return this._session ? this._session.responderAvatarIconUri : this._initialResponderAvatarIconUri;
+	}
+
+	get activeEditsRequestId(): string | undefined {
+		return this._activeEditsRequestId;
+	}
+
+	set activeEditsRequestId(id: string | undefined) {
+		this._activeEditsRequestId = id;
 	}
 
 	get initState(): ChatModelInitState {
@@ -639,6 +651,10 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	waitForInitialization(): Promise<void> {
 		return this._isInitializedDeferred.p;
+	}
+
+	getRequest(requestId: string): IChatRequestModel | undefined {
+		return this._requests.find(request => request.id === requestId);
 	}
 
 	getRequests(): ChatRequestModel[] {
