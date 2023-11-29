@@ -53,17 +53,19 @@ export class CSChatEditReviewLens extends Disposable {
 				let foundUri = false;
 				const codeblockRanges: { [codeblockIndex: number]: Range } = {};
 				for (const codeblockEdits of editsByCodeblock) {
-					for (const workspaceEdit of codeblockEdits[1].edits) {
-						for (const e of workspaceEdit.edits) {
-							const edit = e as IWorkspaceTextEdit;
-							if (edit.resource.toString() !== model.uri.toString()) {
-								continue;
-							}
+					if (!codeblockEdits[1].applied) {
+						for (const workspaceEdit of codeblockEdits[1].edits) {
+							for (const e of workspaceEdit.edits) {
+								const edit = e as IWorkspaceTextEdit;
+								if (edit.resource.toString() !== model.uri.toString()) {
+									continue;
+								}
 
-							foundUri = true;
-							const codeblockIndex = codeblockEdits[0];
-							const codeblockRange = codeblockRanges[codeblockIndex] || Range.lift(edit.textEdit.range);
-							codeblockRanges[codeblockIndex] = codeblockRange.plusRange(edit.textEdit.range);
+								foundUri = true;
+								const codeblockIndex = codeblockEdits[0];
+								const codeblockRange = codeblockRanges[codeblockIndex] || Range.lift(edit.textEdit.range);
+								codeblockRanges[codeblockIndex] = codeblockRange.plusRange(edit.textEdit.range);
+							}
 						}
 					}
 				}
@@ -77,12 +79,12 @@ export class CSChatEditReviewLens extends Disposable {
 					const approveCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Approve edits',
-						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'approve' }]
+						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'approve', uri: model.uri }]
 					};
 					const rejectCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Reject edits',
-						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'reject' }]
+						arguments: [{ codeblockIndex: Number(codeblockIndex), responseVM, type: 'reject', uri: model.uri }]
 					};
 					return [
 						{

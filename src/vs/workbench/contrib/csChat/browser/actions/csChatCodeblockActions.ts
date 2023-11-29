@@ -6,6 +6,7 @@
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
@@ -48,6 +49,7 @@ export interface IChatEditConfirmationContext {
 	codeblockIndex: number;
 	responseVM: IChatResponseViewModel;
 	type: 'approve' | 'reject';
+	uri: URI;
 }
 
 export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockActionContext {
@@ -211,10 +213,7 @@ export function registerChatCodeBlockActions() {
 		}
 
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			// const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
-			// const textModelService = accessor.get(ITextModelService);
-			// const codeEditorService = accessor.get(ICodeEditorService);
 			const chatEditSessionService = accessor.get(ICSChatEditSessionService);
 
 			if (isResponseFiltered(context)) {
@@ -232,6 +231,8 @@ export function registerChatCodeBlockActions() {
 				return;
 			}
 
+			this.notifyUserAction(accessor, context);
+
 			const editRequest: ICSChatAgentEditRequest = {
 				sessionId: responseVM.sessionId,
 				agentId: responseVM.agent?.id ?? '',
@@ -244,119 +245,24 @@ export function registerChatCodeBlockActions() {
 				}]
 			};
 			await chatEditSessionService.sendEditRequest(responseVM, editRequest);
-
-			// const requestCts = new CancellationTokenSource();
-			// const editTracker = new Map<URI, { isFirstEdit: boolean; decorations: CSChatEditsDiffDecorations; editRange: Range }>();
-			// const progressEdits: WorkspaceEdit[] = [];
-
-			// const progressiveEditsAvgDuration = new MovingAverage();
-			// const progressiveEditsCts = new CancellationTokenSource(requestCts.token);
-			// const progressiveEditsClock = StopWatch.create();
-			// const progressiveEditsQueue = new Queue();
-
-			// const progressCallback = async (progress: ICSChatAgentEditResponse) => {
-			// 	if (requestCts.token.isCancellationRequested) {
-			// 		return;
-			// 	}
-
-			// 	responseVM.recordEdit(progress);
-
-			// 	progressEdits.push(progress.edits);
-			// 	progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
-			// 	progressiveEditsClock.reset();
-
-			// 	progressiveEditsQueue.queue(async () => {
-			// 		if (requestCts.token.isCancellationRequested) {
-			// 			return;
-			// 		}
-
-			// 		const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
-			// 			const typedEdit = edit as IWorkspaceTextEdit;
-			// 			return {
-			// 				uri: typedEdit.resource,
-			// 				edit: {
-			// 					range: Range.lift(typedEdit.textEdit.range),
-			// 					text: typedEdit.textEdit.text,
-			// 				}
-			// 			};
-			// 		});
-			// 		const durationInSec = progressiveEditsAvgDuration.value / 1000;
-			// 		for (const editOp of editOperations) {
-			// 			const textEditorModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
-			// 			let codeEditor: ICodeEditor | undefined | null = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
-			// 			if (!codeEditor) {
-			// 				codeEditor = await codeEditorService.openCodeEditor(
-			// 					{ resource: editOp.uri },
-			// 					codeEditorService.getFocusedCodeEditor()
-			// 				);
-			// 			}
-
-			// 			let { isFirstEdit, decorations, editRange } = editTracker.get(editOp.uri) ?? { isFirstEdit: true };
-			// 			if (isFirstEdit) {
-			// 				codeEditor?.pushUndoStop();
-			// 			}
-			// 			if (!decorations) {
-			// 				decorations = new CSChatEditsDiffDecorations(codeEditor!, true);
-			// 			}
-			// 			if (!editRange) {
-			// 				editRange = Range.lift(editOp.edit.range);
-			// 			} else {
-			// 				editRange = editRange.plusRange(Range.lift(editOp.edit.range));
-			// 			}
-			// 			editTracker.set(editOp.uri, { isFirstEdit: false, decorations, editRange });
-
-			// 			const cursorStateComputerAndInlineDiffCollection: ICursorStateComputer = (undoEdits) => {
-			// 				let last: Position | null = null;
-			// 				for (const edit of undoEdits) {
-			// 					last = !last || last.isBefore(edit.range.getEndPosition()) ? edit.range.getEndPosition() : last;
-			// 					decorations!.collectEditOperation(edit);
-			// 				}
-			// 				return last && [Selection.fromPositions(last)];
-			// 			};
-
-			// 			await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token, cursorStateComputerAndInlineDiffCollection);
-			// 			decorations.update();
-			// 		}
-			// 	});
-			// };
-
-			// const response = await chatAgentService.makeEdits(editRequest, progressCallback, requestCts.token);
-			// if (!response) {
-			// 	return;
-			// }
-
-			// progressiveEditsCts.dispose(true);
-			// requestCts.dispose();
 		}
 
-		// private async _makeChanges(
-		// 	textModel: ITextModel,
-		// 	edit: ISingleEditOperation,
-		// 	editAvgDuration: number,
-		// 	token: CancellationToken,
-		// 	cursorStateComputer: ICursorStateComputer
-		// ) {
-		// 	const wordCount = countWords(edit.text ?? '');
-		// 	const speed = wordCount / editAvgDuration;
-		// 	await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token), cursorStateComputer);
-		// }
-
-		// private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-		// 	if (isResponseVM(context.element)) {
-		// 		const chatService = accessor.get(ICSChatService);
-		// 		chatService.notifyUserAction({
-		// 			providerId: context.element.providerId,
-		// 			agentId: context.element.agent?.id,
-		// 			sessionId: context.element.sessionId,
-		// 			requestId: context.element.requestId,
-		// 			action: {
-		// 				kind: 'insert',
-		// 				codeBlockIndex: context.codeBlockIndex,
-		// 				totalCharacters: context.code.length,
-		// 			}
-		// 		});
-		// 	}
-		// }
+		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+			if (isResponseVM(context.element)) {
+				const chatService = accessor.get(ICSChatService);
+				chatService.notifyUserAction({
+					providerId: context.element.providerId,
+					agentId: context.element.agent?.id,
+					sessionId: context.element.sessionId,
+					requestId: context.element.requestId,
+					action: {
+						kind: 'insert',
+						codeBlockIndex: context.codeBlockIndex,
+						totalCharacters: context.code.length,
+					}
+				});
+			}
+		}
 
 	});
 
@@ -788,13 +694,16 @@ export class EditConfirmationAction extends Action2 {
 	}
 
 	async run(_accessor: ServicesAccessor, ...args: any[]) {
+		const chatEditSessionService = _accessor.get(ICSChatEditSessionService);
+
 		const context = args[0];
 		if (!isEditConfirmationContext(context)) {
 			return;
 		}
 
-		const { codeblockIndex, responseVM, type } = context;
+		const { codeblockIndex, responseVM, type, uri } = context;
 		responseVM.confirmEdit(codeblockIndex, type === 'approve');
+		chatEditSessionService.confirmEdits(codeblockIndex, uri, type === 'approve');
 	}
 }
 registerAction2(EditConfirmationAction);

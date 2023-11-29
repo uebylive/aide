@@ -14,12 +14,12 @@ import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IBulkEditService } from 'vs/editor/browser/services/bulkEditService';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { Position } from 'vs/editor/common/core/position';
+import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
 import { LineRangeMapping } from 'vs/editor/common/diff/rangeMapping';
-import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { IEditorDecorationsCollection, ScrollType } from 'vs/editor/common/editorCommon';
+import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { ICursorStateComputer, IModelDecorationOptions, IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
@@ -46,6 +46,7 @@ export const ICSChatEditSessionService = createDecorator<ICSChatEditSessionServi
 
 interface ICSChatEditSessionService {
 	sendEditRequest(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
+	confirmEdits(codeblockIndex: number, uri: URI, apply: boolean): Promise<void>;
 }
 
 export abstract class EditModeStrategy {
@@ -63,7 +64,6 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 	private readonly textModels = new Map<URI, ICSChatCodeblockTextModels>();
 	private readonly editStrategies = new Map<URI, EditModeStrategy>();
-	private readonly progressEdits: WorkspaceEdit[] = [];
 
 	constructor(
 		@ILogService private readonly logService: ILogService,
@@ -106,7 +106,6 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 				responseVM.recordEdit(progress);
 
-				this.progressEdits.push(progress.edits);
 				progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
 				progressiveEditsClock.reset();
 
@@ -188,6 +187,8 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		} else {
 			await editStrategy.makeChanges([edit]);
 		}
+
+		await editStrategy.renderChanges();
 	}
 
 	private async getTextModels(uri: URI): Promise<ICSChatCodeblockTextModels> {
@@ -217,12 +218,34 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		return textModel;
 	}
 
+	confirmEdits(codeblockIndex: number, uri: URI, apply: boolean): Promise<void> {
+		const editStrategy = this.editStrategies.get(uri);
+		if (!editStrategy) {
+			this.error('confirmEdits', `Edit strategy for ${uri.toString()} not found`);
+			return Promise.resolve();
+		}
+
+		if (apply) {
+			return editStrategy.apply();
+		} else {
+			return editStrategy.cancel();
+		}
+	}
+
 	private trace(method: string, message: string): void {
 		this.logService.trace(`CSChatEditSession#${method}: ${message}`);
 	}
 
 	private error(method: string, message: string): void {
 		this.logService.error(`CSChatEditSession#${method} ${message}`);
+	}
+
+	public override dispose(): void {
+		super.dispose();
+		for (const editStrategy of this.editStrategies.values()) {
+			editStrategy.dispose();
+		}
+		this.editStrategies.clear();
 	}
 }
 
@@ -272,6 +295,7 @@ export class LiveStrategy extends EditModeStrategy {
 		if (this._editCount > 0) {
 			this._editor.pushUndoStop();
 		}
+		this._diffDecorations.clear();
 	}
 
 	async cancel() {
@@ -281,12 +305,20 @@ export class LiveStrategy extends EditModeStrategy {
 		}
 		const targetAltVersion = textModelNSnapshotAltVersion ?? textModelNAltVersion;
 		LiveStrategy._undoModelUntil(modelN, targetAltVersion);
+		this._diffDecorations.clear();
 	}
 
 	override async makeChanges(edits: ISingleEditOperation[]): Promise<void> {
 		// push undo stop before first edit
 		if (++this._editCount === 1) {
 			this._editor.pushUndoStop();
+			// Scroll to the location of the first edit
+			const firstEditRange = edits[0].range;
+			const firstEditPosition: IPosition = {
+				lineNumber: firstEditRange.startLineNumber,
+				column: firstEditRange.startColumn
+			};
+			this._editor.revealPositionInCenter(firstEditPosition, ScrollType.Immediate);
 		}
 		this._editor.executeEdits('inline-chat-live', edits, this.cursorStateComputerAndInlineDiffCollection);
 	}
