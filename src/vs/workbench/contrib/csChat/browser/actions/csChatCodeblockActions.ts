@@ -21,6 +21,7 @@ import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
@@ -689,6 +690,7 @@ export class EditConfirmationAction extends Action2 {
 
 	async run(_accessor: ServicesAccessor, ...args: any[]) {
 		const chatEditSessionService = _accessor.get(ICSChatEditSessionService);
+		const commandService = _accessor.get(ICommandService);
 
 		const context = args[0];
 		if (!isEditConfirmationContext(context)) {
@@ -697,6 +699,8 @@ export class EditConfirmationAction extends Action2 {
 
 		const { type, uri } = context;
 		chatEditSessionService.confirmEdits(uri, type === 'approve');
+
+		commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
 	}
 }
 registerAction2(EditConfirmationAction);

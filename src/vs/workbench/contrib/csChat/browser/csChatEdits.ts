@@ -49,6 +49,7 @@ export const ICSChatEditSessionService = createDecorator<ICSChatEditSessionServi
 export interface ICSChatEditSessionService {
 	readonly _serviceBrand: undefined;
 
+	readonly isEditing: boolean;
 	readonly activeEditRequestId: string | undefined;
 	readonly activeEditCodeblockNumber: number | undefined;
 
@@ -65,7 +66,7 @@ export abstract class EditModeStrategy {
 	abstract makeChanges(edits: ISingleEditOperation[]): Promise<void>;
 	abstract undoChanges(altVersionId: number): Promise<void>;
 	abstract renderChanges(): Promise<void>;
-	abstract getEditRangesInProgress(): Location[];
+	abstract getEditRangeInProgress(): Location[];
 }
 
 export class ChatEditSessionService extends Disposable implements ICSChatEditSessionService {
@@ -91,6 +92,10 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		super();
 		this.editResponseIdInProgress = CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.bindTo(contextKeyService);
 		this.editCodeblockInProgress = CONTEXT_CHAT_EDIT_CODEBLOCK_NUMBER_IN_PROGRESS.bindTo(contextKeyService);
+	}
+
+	get isEditing(): boolean {
+		return this._pendingRequests.size > 0;
 	}
 
 	get activeEditRequestId(): string | undefined {
@@ -151,27 +156,26 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 			};
 
 			const listener = token.onCancellationRequested(() => {
-				// TODO: Cancel the request
+				this._pendingEdits.delete(responseVM.sessionId);
+				progressiveEditsQueue.dispose();
 			});
 
 			try {
 				const response = await this.csChatAgentService.makeEdits(request, progressCallback, token);
 				if (token.isCancellationRequested) {
 					return;
-				} else if (!response) {
-					return;
 				}
-				// TODO: Handle response
+
+				if (response) {
+					await this._makeChanges(responseVM, response, undefined);
+				}
 			} finally {
-				this._pendingEdits.delete(responseVM.sessionId);
 				listener.dispose();
 			}
 		});
 
 		this._pendingRequests.set(responseVM.sessionId, rawResponsePromise);
 		rawResponsePromise.finally(() => {
-			this.editResponseIdInProgress.reset();
-			this.editCodeblockInProgress.reset();
 			this._pendingRequests.delete(responseVM.sessionId);
 		});
 		return rawResponsePromise;
@@ -256,12 +260,12 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		if (forUri) {
 			const editStrategy = this.editStrategies.get(forUri);
 			if (editStrategy) {
-				const editRanges = editStrategy.getEditRangesInProgress();
+				const editRanges = editStrategy.getEditRangeInProgress();
 				locations.push(...editRanges);
 			}
 		} else {
 			for (const [_, editStrategy] of this.editStrategies) {
-				const editRanges = editStrategy.getEditRangesInProgress();
+				const editRanges = editStrategy.getEditRangeInProgress();
 				locations.push(...editRanges);
 			}
 		}
@@ -276,10 +280,13 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		}
 
 		if (apply) {
-			return editStrategy.apply();
+			editStrategy.apply();
 		} else {
-			return editStrategy.cancel();
+			editStrategy.cancel();
 		}
+
+		this.dispose();
+		return Promise.resolve();
 	}
 
 	private trace(method: string, message: string): void {
@@ -292,10 +299,18 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 	public override dispose(): void {
 		super.dispose();
-		for (const editStrategy of this.editStrategies.values()) {
-			editStrategy.dispose();
-		}
+
+		this._pendingRequests.forEach(promise => promise.cancel());
+		this._pendingRequests.clear();
+		this._pendingEdits.clear();
+		this.editStrategies.forEach(editStrategy => editStrategy.dispose());
+		this.textModels.forEach(textModel => {
+			textModel.textModel0.dispose();
+		});
+		this.textModels.clear();
 		this.editStrategies.clear();
+		this.editResponseIdInProgress.reset();
+		this.editCodeblockInProgress.reset();
 	}
 }
 
@@ -399,13 +414,20 @@ export class LiveStrategy extends EditModeStrategy {
 		this._diffDecorations.update();
 	}
 
-	override getEditRangesInProgress(): Location[] {
-		return this._diffDecorations.decorationRanges.map(range => {
+	override getEditRangeInProgress(): Location[] {
+		const uri = this._models.textModel0.uri;
+		const wrappingRange: IRange = this._diffDecorations.decorationRanges.reduce((prev, curr) => {
 			return {
-				uri: this._models.textModel0.uri,
-				range
+				startLineNumber: Math.min(prev.startLineNumber, curr.startLineNumber),
+				startColumn: 1,
+				endLineNumber: Math.max(prev.endLineNumber, curr.endLineNumber),
+				endColumn: 1
 			};
-		});
+		}, { startLineNumber: Number.MAX_VALUE, startColumn: 1, endLineNumber: 0, endColumn: 1 } as IRange);
+		return [{
+			range: wrappingRange,
+			uri
+		}];
 	}
 
 	private static _undoModelUntil(model: ITextModel, targetAltVersion: number): void {
@@ -416,6 +438,10 @@ export class LiveStrategy extends EditModeStrategy {
 
 	protected _updateSummaryMessage(uri: URI, diff: IDocumentDiff | null) {
 		const mappings = diff?.changes ?? [];
+		if (mappings.length === 0) {
+			return;
+		}
+
 		let linesChanged = 0;
 		for (const change of mappings) {
 			linesChanged += change.changedLineCount;
@@ -429,22 +455,20 @@ export class LiveStrategy extends EditModeStrategy {
 			message = localize('lines.N', "Changed {0} lines", linesChanged);
 		}
 
-		if (mappings.length > 0) {
-			// Get editSummary with range containing the whole codeblock
-			const range: IRange = mappings.map(m => m.modified).reduce((prev, curr) => {
-				return {
-					startLineNumber: Math.min(prev.startLineNumber, curr.startLineNumber),
-					startColumn: 1,
-					endLineNumber: Math.max(prev.endLineNumber, curr.endLineNumberExclusive),
-					endColumn: 1
-				};
-			}, { startLineNumber: Number.MAX_VALUE, startColumn: 1, endLineNumber: 0, endColumn: 1 } as IRange);
-			const editSummary: IChatEditSummary = {
-				location: { uri, range },
-				summary: message
+		// Get editSummary with range containing the whole codeblock
+		const range: IRange = mappings.map(m => m.modified).reduce((prev, curr) => {
+			return {
+				startLineNumber: Math.min(prev.startLineNumber, curr.startLineNumber),
+				startColumn: 1,
+				endLineNumber: Math.max(prev.endLineNumber, curr.endLineNumberExclusive),
+				endColumn: 1
 			};
-			this._response.recordEdits(this._editCodeblockInProgress, editSummary);
-		}
+		}, { startLineNumber: Number.MAX_VALUE, startColumn: 1, endLineNumber: 0, endColumn: 1 } as IRange);
+		const editSummary: IChatEditSummary = {
+			location: { uri, range },
+			summary: message
+		};
+		this._response.recordEdits(this._editCodeblockInProgress, editSummary);
 	}
 
 	private cursorStateComputerAndInlineDiffCollection: ICursorStateComputer = (undoEdits) => {

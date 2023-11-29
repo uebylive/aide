@@ -25,8 +25,8 @@ export class CSChatEditReviewLens extends Disposable {
 
 		this._register(this.languageFeaturesService.codeLensProvider.register({ scheme: CSChatEditReviewLens.selector, hasAccessToAllModels: true }, {
 			provideCodeLenses: (model: ITextModel, token: CancellationToken) => {
-				const codeblockIndex = this.csChatEditSessionService.activeEditCodeblockNumber;
-				if (!codeblockIndex || codeblockIndex < 0) {
+				const { isEditing, activeEditCodeblockNumber: codeblockIndex } = this.csChatEditSessionService;
+				if (isEditing || codeblockIndex === undefined || codeblockIndex < 0) {
 					return;
 				}
 
