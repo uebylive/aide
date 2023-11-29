@@ -95,7 +95,9 @@ export class IndentationHelper {
 	// we get the whitespace string and the indent level this way for the string we want to add
 	static guessIndentLevel(line: string, indentStyle: IndentStyleSpaces): [string, number] {
 		const indentationUtils = new IndentationUtils();
-		// U_(e, r.kind === "spaces", r.kind === "spaces" ? r.indentSize : 1) }
+		if (indentStyle === null) {
+			return ['', 0];
+		}
 		const [whiteSpaceString, indentationLevel] = indentationUtils.guessIndent(line, indentStyle.kind === IndentStyle.Spaces, indentStyle.indentSize ?? 1);
 		return [whiteSpaceString, indentationLevel];
 	}
