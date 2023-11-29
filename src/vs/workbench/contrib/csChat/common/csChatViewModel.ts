@@ -6,11 +6,10 @@
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ICSChatAgentCommand, ICSChatAgentEditResponse, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ChatModelInitState, IChatEditSummary, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IChatContentReference, ICSChatReplyFollowup, ICSChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, CSChatSessionVoteDirection, IChatProgressMessage } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
@@ -100,7 +99,7 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
+	readonly appliedEdits: Map<number, IChatEditSummary>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly vote: CSChatSessionVoteDirection | undefined;
@@ -112,8 +111,7 @@ export interface IChatResponseViewModel {
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: CSChatSessionVoteDirection): void;
-	recordEdit(edit: ICSChatAgentEditResponse): void;
-	confirmEdit(codeblockIndex: number, accept: boolean): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void;
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 }
@@ -313,7 +311,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.progressMessages;
 	}
 
-	get appliedEdits(): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
+	get appliedEdits(): Map<number, IChatEditSummary> {
 		return this._model.appliedEdits;
 	}
 
@@ -425,14 +423,9 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		this._model.setVote(vote);
 	}
 
-	recordEdit(edit: ICSChatAgentEditResponse): void {
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void {
 		this._modelChangeCount++;
-		this._model.recordEdit(edit);
-	}
-
-	confirmEdit(codeblockIndex: number, accept: boolean): void {
-		this._modelChangeCount++;
-		this._model.confirmEdit(codeblockIndex, accept);
+		this._model.recordEdits(codeblockIndex, edits);
 	}
 }
 

@@ -9,7 +9,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IRange, Range } from 'vs/editor/common/core/range';
-import { Location, ProviderResult, WorkspaceEdit } from 'vs/editor/common/languages';
+import { Location, ProviderResult } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatModel, IChatModel, ISerializableChatData } from 'vs/workbench/contrib/csChat/common/csChatModel';
@@ -339,7 +339,6 @@ export interface ICSChatService {
 	sendRequestToProvider(sessionId: string, message: IChatDynamicRequest): void;
 	getHistory(): IChatDetail[];
 	removeHistoryEntry(sessionId: string): void;
-	getEditsByCodeblock(sessionId: string, responseId: string): Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
 
 	onDidPerformUserAction: Event<ICSChatUserActionEvent>;
 	notifyUserAction(event: ICSChatUserActionEvent): void;

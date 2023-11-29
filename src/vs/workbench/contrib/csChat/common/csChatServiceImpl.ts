@@ -12,7 +12,6 @@ import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/co
 import { revive } from 'vs/base/common/marshalling';
 import { StopWatch } from 'vs/base/common/stopwatch';
 import { URI, UriComponents } from 'vs/base/common/uri';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { localize } from 'vs/nls';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -167,7 +166,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ICSChatSlashCommandService private readonly chatSlashCommandService: ICSChatSlashCommandService,
 		@ICSChatVariablesService private readonly chatVariablesService: ICSChatVariablesService,
-		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService,
 	) {
 		super();
 
@@ -333,25 +332,6 @@ export class ChatService extends Disposable implements ICSChatService {
 
 	removeHistoryEntry(sessionId: string): void {
 		delete this._persistedSessions[sessionId];
-	}
-
-	getEditsByCodeblock(sessionId: string, requestId: string): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
-		const model = this._sessionModels.get(sessionId);
-		if (!model) {
-			throw new Error(`Unknown session: ${sessionId}`);
-		}
-
-		const request = model.getRequest(requestId);
-		if (!request) {
-			throw new Error(`Unknown request: ${requestId}`);
-		}
-
-		const response = request.response;
-		if (!response) {
-			throw new Error(`Request has no response: ${requestId}`);
-		}
-
-		return response.appliedEdits;
 	}
 
 	startSession(providerId: string, token: CancellationToken): ChatModel {

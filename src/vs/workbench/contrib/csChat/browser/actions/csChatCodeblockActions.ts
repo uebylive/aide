@@ -30,7 +30,7 @@ import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/cod
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 import { ICSChatAgentEditRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { CONTEXT_CHAT_EDIT_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
+import { CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
@@ -47,7 +47,6 @@ export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 
 export interface IChatEditConfirmationContext {
 	codeblockIndex: number;
-	responseVM: IChatResponseViewModel;
 	type: 'approve' | 'reject';
 	uri: URI;
 }
@@ -65,7 +64,7 @@ function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] 
 }
 
 function isEditConfirmationContext(thing: unknown): thing is IChatEditConfirmationContext {
-	return typeof thing === 'object' && thing !== null && 'codeblockIndex' in thing && 'responseVM' in thing && 'type' in thing;
+	return typeof thing === 'object' && thing !== null && 'codeblockIndex' in thing && 'type' in thing && 'uri' in thing;
 }
 
 abstract class ChatCodeBlockAction extends Action2 {
@@ -202,7 +201,7 @@ export function registerChatCodeBlockActions() {
 				menu: {
 					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_EDIT_IN_PROGRESS.toNegated()),
+					when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.isEqualTo('')),
 				}
 			});
 		}
@@ -696,9 +695,8 @@ export class EditConfirmationAction extends Action2 {
 			return;
 		}
 
-		const { codeblockIndex, responseVM, type, uri } = context;
-		responseVM.confirmEdit(codeblockIndex, type === 'approve');
-		chatEditSessionService.confirmEdits(codeblockIndex, uri, type === 'approve');
+		const { type, uri } = context;
+		chatEditSessionService.confirmEdits(uri, type === 'approve');
 	}
 }
 registerAction2(EditConfirmationAction);

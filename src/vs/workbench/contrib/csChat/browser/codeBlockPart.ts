@@ -39,7 +39,8 @@ import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEdito
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IMarkdownVulnerability } from 'vs/workbench/contrib/csChat/browser/csChatMarkdownDecorationsRenderer';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { IChatEditSummary } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 import { basename } from 'vs/base/common/path';
 
 const $ = dom.$;
@@ -53,7 +54,7 @@ export interface ICodeBlockData {
 	parentContextKeyService?: IContextKeyService;
 	hideToolbar?: boolean;
 	vulns?: IMarkdownVulnerability[];
-	edits?: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
+	edits?: IChatEditSummary | undefined;
 }
 
 export interface ICodeBlockActionContext {
@@ -104,7 +105,8 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		@ILanguageService private readonly languageService: ILanguageService,
 		@IModelService private readonly modelService: IModelService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
+		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@ICSChatEditSessionService private readonly editSessionService: ICSChatEditSessionService
 	) {
 		super();
 		this.element = $('.cschat-result-code-block');
@@ -295,23 +297,18 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			dom.show(this.toolbar.getElement());
 		}
 
-		if (data.edits?.get(this.currentCodeBlockData?.codeBlockIndex) && isResponseVM(data.element)) {
-			const matchingEdits = data.edits?.get(this.currentCodeBlockData?.codeBlockIndex);
-			const edits = matchingEdits?.edits.map(edit => edit.edits).flat() as IWorkspaceTextEdit[];
-			const distinctURIs = [...new Set(edits.map(edit => edit.resource))];
+		if (isResponseVM(data.element) && data.edits) {
 			dom.clearNode(this.exportedLocationRibbon);
-			if (matchingEdits?.applied) {
-				distinctURIs.forEach(uri => {
-					const uriElement = dom.append(this.exportedLocationRibbon, $('.editor-location-uri'));
-					dom.append(uriElement, $('span.editor-location-text', undefined, basename(uri.fsPath)));
-				});
-				this.element.classList.remove('applying-edits');
-			} else {
-				distinctURIs.forEach(uri => {
-					const uriElement = dom.append(this.exportedLocationRibbon, $('.editor-location-uri'));
-					dom.append(uriElement, $('span.editor-location-text', undefined, `Editing ${basename(uri.fsPath)}...`));
-				});
+			if (this.editSessionService.activeEditCodeblockNumber === data.codeBlockIndex) {
+				dom.append(this.exportedLocationRibbon, $('span.edit-summary', undefined, data.edits.summary));
+				const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.startColumn;
+				dom.append(this.exportedLocationRibbon, $('span.editor-location-text', undefined, rangeText));
 				this.element.classList.add('applying-edits');
+			} else {
+				dom.append(this.exportedLocationRibbon, $('span.edit-summary', undefined, data.edits.summary));
+				const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.startColumn;
+				dom.append(this.exportedLocationRibbon, $('span.editor-location-text', undefined, rangeText));
+				this.element.classList.remove('applying-edits');
 			}
 		} else {
 			this.element.classList.remove('applying-edits');

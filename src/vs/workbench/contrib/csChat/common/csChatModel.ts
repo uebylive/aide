@@ -13,9 +13,9 @@ import { basename } from 'vs/base/common/resources';
 import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
+import { Location } from 'vs/editor/common/languages';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ICSChatAgentCommand, IChatAgentData, ICSChatAgentService, ICSChatAgentEditResponse } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { IChat, ICSChatAsyncContent, IChatContent, IChatContentInlineReference, IChatContentReference, ICSChatFollowup, IChatMarkdownContent, ICSChatProgress, IChatProgressMessage, ICSChatReplyFollowup, IChatResponse, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatTreeData, IChatUsedContext, CSChatSessionVoteDirection, isIUsedContext, IChatAgentMarkdownContentWithVulnerability } from 'vs/workbench/contrib/csChat/common/csChatService';
 
@@ -42,6 +42,11 @@ export interface IResponse {
 	asString(): string;
 }
 
+export interface IChatEditSummary {
+	summary: string;
+	location: Location;
+}
+
 export interface IChatResponseModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
@@ -54,7 +59,7 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }>;
+	readonly appliedEdits: Map<number, IChatEditSummary>;
 	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
 	readonly isComplete: boolean;
@@ -63,8 +68,7 @@ export interface IChatResponseModel {
 	readonly followups?: ICSChatFollowup[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
 	setVote(vote: CSChatSessionVoteDirection): void;
-	recordEdit(edits: ICSChatAgentEditResponse): void;
-	confirmEdit(codeblockIndex: number, accept: boolean): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -267,8 +271,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._progressMessages;
 	}
 
-	private readonly _appliedEdits: Map<number, { edits: WorkspaceEdit[]; applied: boolean }> = new Map();
-	public get appliedEdits(): Map<number, { edits: WorkspaceEdit[]; applied: boolean }> {
+	private readonly _appliedEdits: Map<number, IChatEditSummary> = new Map();
+	public get appliedEdits(): Map<number, IChatEditSummary> {
 		return this._appliedEdits;
 	}
 
@@ -349,28 +353,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	recordEdit(editResponse: ICSChatAgentEditResponse): void {
-		this.session.activeEditsRequestId = this.requestId;
-		const recordedEdits = this.appliedEdits.get(editResponse.codeBlockIndex);
-		if (recordedEdits) {
-			recordedEdits.edits.push(editResponse.edits);
-		} else {
-			this.appliedEdits.set(editResponse.codeBlockIndex, { edits: [editResponse.edits], applied: false });
-		}
-		this._onDidChange.fire();
-	}
-
-	confirmEdit(codeblockIndex: number, accept: boolean): void {
-		const recordedEdits = this.appliedEdits.get(codeblockIndex);
-		if (!recordedEdits) {
-			return;
-		}
-
-		if (accept) {
-			recordedEdits.applied = true;
-		} else {
-			this.appliedEdits.delete(codeblockIndex);
-		}
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void {
+		this._appliedEdits.set(codeblockIndex, edits);
 		this._onDidChange.fire();
 	}
 }
@@ -486,7 +470,6 @@ export class ChatModel extends Disposable implements IChatModel {
 	private _requests: ChatRequestModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
-	private _activeEditsRequestId: string | undefined;
 
 	private _session: IChat | undefined;
 	get session(): IChat | undefined {
@@ -535,14 +518,6 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _initialResponderAvatarIconUri: URI | undefined;
 	get responderAvatarIconUri(): URI | undefined {
 		return this._session ? this._session.responderAvatarIconUri : this._initialResponderAvatarIconUri;
-	}
-
-	get activeEditsRequestId(): string | undefined {
-		return this._activeEditsRequestId;
-	}
-
-	set activeEditsRequestId(id: string | undefined) {
-		this._activeEditsRequestId = id;
 	}
 
 	get initState(): ChatModelInitState {

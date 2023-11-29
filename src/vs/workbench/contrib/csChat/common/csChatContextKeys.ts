@@ -10,7 +10,9 @@ export const CONTEXT_RESPONSE_VOTE = new RawContextKey<string>('chatSessionRespo
 export const CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING = new RawContextKey<boolean>('chatResponseSupportsIssueReporting', false, { type: 'boolean', description: localize('chatResponseSupportsIssueReporting', "True when the current chat response supports issue reporting.") });
 export const CONTEXT_RESPONSE_FILTERED = new RawContextKey<boolean>('chatSessionResponseFiltered', false, { type: 'boolean', description: localize('chatResponseFiltered', "True when the chat response was filtered out by the server.") });
 export const CONTEXT_CHAT_REQUEST_IN_PROGRESS = new RawContextKey<boolean>('chatSessionRequestInProgress', false, { type: 'boolean', description: localize('interactiveSessionRequestInProgress', "True when the current request is still in progress.") });
-export const CONTEXT_CHAT_EDIT_IN_PROGRESS = new RawContextKey<boolean>('chatSessionEditInProgress', false, { type: 'boolean', description: localize('interactiveSessionEditInProgress', "True when the current edit request is still in progress.") });
+
+export const CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS = new RawContextKey<string>('chatEditResponseIdInProgress', '', { type: 'string', description: localize('interactiveEditResponseIdInProgress', "The response ID of the current edit in progress.") });
+export const CONTEXT_CHAT_EDIT_CODEBLOCK_NUMBER_IN_PROGRESS = new RawContextKey<number>('chatEditCodeblockNumberInProgress', -1, { type: 'number', description: localize('interactiveEditCodeblockNumberInProgress', "The codeblock number of the current edit in progress.") });
 
 export const CONTEXT_RESPONSE = new RawContextKey<boolean>('chatResponse', false, { type: 'boolean', description: localize('chatResponse', "The chat item is a response.") });
 export const CONTEXT_REQUEST = new RawContextKey<boolean>('chatRequest', false, { type: 'boolean', description: localize('chatRequest', "The chat item is a request") });
