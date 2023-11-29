@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancelablePromise, Queue, createCancelablePromise } from 'vs/base/common/async';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
 import { MovingAverage } from 'vs/base/common/numbers';
@@ -123,12 +122,11 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 	}
 
 	private async _sendEditRequestAsync(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<void> {
-		const rawResponsePromise = createCancelablePromise<void>(async token => {
-			const progressiveEditsAvgDuration = new MovingAverage();
-			const progressiveEditsCts = new CancellationTokenSource(token);
-			const progressiveEditsClock = StopWatch.create();
-			const progressiveEditsQueue = new Queue();
+		const progressiveEditsAvgDuration = new MovingAverage();
+		const progressiveEditsClock = StopWatch.create();
+		const progressiveEditsQueue = new Queue();
 
+		const rawResponsePromise = createCancelablePromise<void>(async token => {
 			const progressCallback = async (progress: ICSChatAgentEditResponse) => {
 				if (token.isCancellationRequested) {
 					return;
@@ -140,13 +138,13 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 				progressiveEditsClock.reset();
 
 				progressiveEditsQueue.queue(async () => {
-					if (progressiveEditsCts.token.isCancellationRequested) {
+					if (token.isCancellationRequested) {
 						return;
 					}
 
 					const editOpts = {
 						duration: progressiveEditsAvgDuration.value,
-						token: progressiveEditsCts.token,
+						token,
 					};
 					await this._makeChanges(responseVM, progress, editOpts);
 				});
@@ -166,7 +164,6 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 				// TODO: Handle response
 			} finally {
 				this._pendingEdits.delete(responseVM.sessionId);
-				progressiveEditsCts.dispose(true);
 				listener.dispose();
 			}
 		});
