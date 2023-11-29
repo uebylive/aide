@@ -26,11 +26,14 @@ import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
 import { localize } from 'vs/nls';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService, createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ICSChatWidgetService, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatAgentEditRequest, ICSChatAgentEditResponse, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { CONTEXT_CHAT_EDIT_IN_PROGRESS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 import { ProgressingEditsOptions, asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
@@ -60,6 +63,7 @@ export abstract class EditModeStrategy {
 }
 
 export class ChatEditSessionService extends Disposable implements ICSChatEditSessionService {
+	private codeblockEditInProgress: IContextKey<boolean>;
 	private _pendingRequests = new Map<string, CancelablePromise<void>>();
 
 	private readonly textModels = new Map<URI, ICSChatCodeblockTextModels>();
@@ -67,6 +71,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 	constructor(
 		@ILogService private readonly logService: ILogService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instaService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
@@ -74,9 +79,11 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		@ICSChatAgentService protected readonly csChatAgentService: ICSChatAgentService,
 	) {
 		super();
+		this.codeblockEditInProgress = CONTEXT_CHAT_EDIT_IN_PROGRESS.bindTo(contextKeyService);
 	}
 
 	async sendEditRequest(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<{ responseCompletePromise: Promise<void> } | undefined> {
+		this.codeblockEditInProgress.set(true);
 		const widget = this.chatWidgetService.getWidgetBySessionId(responseVM.sessionId);
 		if (!widget) {
 			this.error('sendRequest', 'Edit session not initialised');
@@ -153,6 +160,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 		this._pendingRequests.set(responseVM.sessionId, rawResponsePromise);
 		rawResponsePromise.finally(() => {
+			this.codeblockEditInProgress.set(false);
 			this._pendingRequests.delete(responseVM.sessionId);
 		});
 		return rawResponsePromise;
@@ -178,7 +186,8 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 		let editStrategy = this.editStrategies.get(uri);
 		if (!editStrategy) {
-			editStrategy = this.instaService.createInstance(LiveStrategy, textModels, codeEditor, widget);
+			const scopedInstantiationService = this.instaService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
+			editStrategy = scopedInstantiationService.createInstance(LiveStrategy, textModels, codeEditor, widget);
 			this.editStrategies.set(uri, editStrategy);
 		}
 

@@ -410,10 +410,10 @@
 }
 
 .interactive-response .applying-edits.cschat-result-code-block::after {
-	height: 400%;
-	width: 400%;
-	top: -150%;
-	left: -150%;
+	height: 800%;
+	width: 800%;
+	top: -350%;
+	left: -350%;
 	background-size: 100% 100%;
 	background-position: 0px 0px;
 	background-image: linear-gradient(0deg, var(--vscode-foreground, transparent) 0%, #00000000 50%, #00000000 100%);

@@ -30,7 +30,7 @@ import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/cod
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 import { ICSChatAgentEditRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
+import { CONTEXT_CHAT_EDIT_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
@@ -202,12 +202,7 @@ export function registerChatCodeBlockActions() {
 				menu: {
 					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
-					when: CONTEXT_IN_CHAT_SESSION,
-				},
-				toggled: {
-					condition: CTX_INLINE_CHAT_VISIBLE,
-					icon: Codicon.loading,
-					title: 'Applying changes to codebase...',
+					when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_EDIT_IN_PROGRESS.toNegated()),
 				}
 			});
 		}
