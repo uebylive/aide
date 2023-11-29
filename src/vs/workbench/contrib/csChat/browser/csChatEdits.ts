@@ -144,23 +144,11 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 						return;
 					}
 
-					const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
-						const typedEdit = edit as IWorkspaceTextEdit;
-						return {
-							uri: typedEdit.resource,
-							edit: {
-								range: Range.lift(typedEdit.textEdit.range),
-								text: typedEdit.textEdit.text,
-							}
-						};
-					});
-
-					for (const editOp of editOperations) {
-						await this._makeChanges(responseVM, editOp.uri, editOp.edit, {
-							duration: progressiveEditsAvgDuration.value,
-							token: progressiveEditsCts.token,
-						});
-					}
+					const editOpts = {
+						duration: progressiveEditsAvgDuration.value,
+						token: progressiveEditsCts.token,
+					};
+					await this._makeChanges(responseVM, progress, editOpts);
 				});
 			};
 
@@ -192,38 +180,51 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		return rawResponsePromise;
 	}
 
-	private async _makeChanges(response: IChatResponseViewModel, uri: URI, edit: ISingleEditOperation, opts: ProgressingEditsOptions | undefined) {
-		const textModels = await this.getTextModels(uri);
-		let codeEditor: ICodeEditor | undefined | null = this.codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === uri.toString());
-		if (!codeEditor) {
-			codeEditor = await this.codeEditorService.openCodeEditor(
-				{ resource: uri },
-				this.codeEditorService.getFocusedCodeEditor()
-			);
+	private async _makeChanges(response: IChatResponseViewModel, progress: ICSChatAgentEditResponse, opts: ProgressingEditsOptions | undefined) {
+		const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
+			const typedEdit = edit as IWorkspaceTextEdit;
+			return {
+				uri: typedEdit.resource,
+				edit: {
+					range: Range.lift(typedEdit.textEdit.range),
+					text: typedEdit.textEdit.text,
+				}
+			};
+		});
+
+		for (const editOp of editOperations) {
+			const { uri, edit } = editOp;
+			const textModels = await this.getTextModels(uri);
+			let codeEditor: ICodeEditor | undefined | null = this.codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === uri.toString());
+			if (!codeEditor) {
+				codeEditor = await this.codeEditorService.openCodeEditor(
+					{ resource: uri },
+					this.codeEditorService.getFocusedCodeEditor()
+				);
+
+				if (!codeEditor) {
+					this.error('sendRequest', `Failed to find code editor for ${uri.toString()}`);
+				}
+			}
 
 			if (!codeEditor) {
-				this.error('sendRequest', `Failed to find code editor for ${uri.toString()}`);
+				return;
 			}
-		}
 
-		if (!codeEditor) {
-			return;
-		}
+			let editStrategy = this.editStrategies.get(uri);
+			if (!editStrategy) {
+				const scopedInstantiationService = this.instaService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
+				editStrategy = scopedInstantiationService.createInstance(LiveStrategy, this.activeEditCodeblockNumber!, textModels, codeEditor, response);
+				this.editStrategies.set(uri, editStrategy);
+			}
 
-		let editStrategy = this.editStrategies.get(uri);
-		if (!editStrategy) {
-			const scopedInstantiationService = this.instaService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
-			editStrategy = scopedInstantiationService.createInstance(LiveStrategy, this.activeEditCodeblockNumber!, textModels, codeEditor, response);
-			this.editStrategies.set(uri, editStrategy);
+			if (opts) {
+				await editStrategy.makeProgressiveChanges([edit], opts);
+			} else {
+				await editStrategy.makeChanges([edit]);
+			}
+			await editStrategy.renderChanges();
 		}
-
-		if (opts) {
-			await editStrategy.makeProgressiveChanges([edit], opts);
-		} else {
-			await editStrategy.makeChanges([edit]);
-		}
-
-		await editStrategy.renderChanges();
 	}
 
 	private async getTextModels(uri: URI): Promise<ICSChatCodeblockTextModels> {
