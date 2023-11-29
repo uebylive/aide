@@ -3,27 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Queue } from 'vs/base/common/async';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
+import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { MovingAverage } from 'vs/base/common/numbers';
-import { StopWatch } from 'vs/base/common/stopwatch';
-import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { Selection } from 'vs/editor/common/core/selection';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import { DocumentContextItem, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { DocumentContextItem, WorkspaceEdit } from 'vs/editor/common/languages';
 import { ILanguageService } from 'vs/editor/common/languages/language';
-import { ICursorStateComputer, ITextModel } from 'vs/editor/common/model';
+import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
@@ -35,12 +27,11 @@ import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ICSChatAgentEditResponse, ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
+import { ICSChatAgentEditRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
-import { InlineDiffDecorations, asProgressiveEdit, performAsyncTextEdit } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -220,10 +211,11 @@ export function registerChatCodeBlockActions() {
 		}
 
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			const chatAgentService = accessor.get(ICSChatAgentService);
+			// const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
-			const textModelService = accessor.get(ITextModelService);
-			const codeEditorService = accessor.get(ICodeEditorService);
+			// const textModelService = accessor.get(ITextModelService);
+			// const codeEditorService = accessor.get(ICodeEditorService);
+			const chatEditSessionService = accessor.get(ICSChatEditSessionService);
 
 			if (isResponseFiltered(context)) {
 				// When run from command palette
@@ -240,9 +232,6 @@ export function registerChatCodeBlockActions() {
 				return;
 			}
 
-			this.notifyUserAction(accessor, context);
-			const requestCts = new CancellationTokenSource();
-
 			const editRequest: ICSChatAgentEditRequest = {
 				sessionId: responseVM.sessionId,
 				agentId: responseVM.agent?.id ?? '',
@@ -254,118 +243,120 @@ export function registerChatCodeBlockActions() {
 					codeBlockIndex: context.codeBlockIndex,
 				}]
 			};
+			await chatEditSessionService.sendEditRequest(responseVM, editRequest);
 
-			const editTracker = new Map<URI, { isFirstEdit: boolean; decorations: InlineDiffDecorations; editRange: Range }>();
-			const progressEdits: WorkspaceEdit[] = [];
+			// const requestCts = new CancellationTokenSource();
+			// const editTracker = new Map<URI, { isFirstEdit: boolean; decorations: CSChatEditsDiffDecorations; editRange: Range }>();
+			// const progressEdits: WorkspaceEdit[] = [];
 
-			const progressiveEditsAvgDuration = new MovingAverage();
-			const progressiveEditsCts = new CancellationTokenSource(requestCts.token);
-			const progressiveEditsClock = StopWatch.create();
-			const progressiveEditsQueue = new Queue();
+			// const progressiveEditsAvgDuration = new MovingAverage();
+			// const progressiveEditsCts = new CancellationTokenSource(requestCts.token);
+			// const progressiveEditsClock = StopWatch.create();
+			// const progressiveEditsQueue = new Queue();
 
-			const progressCallback = async (progress: ICSChatAgentEditResponse) => {
-				if (requestCts.token.isCancellationRequested) {
-					return;
-				}
+			// const progressCallback = async (progress: ICSChatAgentEditResponse) => {
+			// 	if (requestCts.token.isCancellationRequested) {
+			// 		return;
+			// 	}
 
-				responseVM.recordEdit(progress);
+			// 	responseVM.recordEdit(progress);
 
-				progressEdits.push(progress.edits);
-				progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
-				progressiveEditsClock.reset();
+			// 	progressEdits.push(progress.edits);
+			// 	progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
+			// 	progressiveEditsClock.reset();
 
-				progressiveEditsQueue.queue(async () => {
-					if (requestCts.token.isCancellationRequested) {
-						return;
-					}
+			// 	progressiveEditsQueue.queue(async () => {
+			// 		if (requestCts.token.isCancellationRequested) {
+			// 			return;
+			// 		}
 
-					const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
-						const typedEdit = edit as IWorkspaceTextEdit;
-						return {
-							uri: typedEdit.resource,
-							edit: {
-								range: Range.lift(typedEdit.textEdit.range),
-								text: typedEdit.textEdit.text,
-							}
-						};
-					});
-					const durationInSec = progressiveEditsAvgDuration.value / 1000;
-					for (const editOp of editOperations) {
-						const textEditorModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
-						let codeEditor: ICodeEditor | undefined | null = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
-						if (!codeEditor) {
-							codeEditor = await codeEditorService.openCodeEditor(
-								{ resource: editOp.uri },
-								codeEditorService.getFocusedCodeEditor()
-							);
-						}
+			// 		const editOperations: { uri: URI; edit: ISingleEditOperation }[] = progress.edits.edits.map(edit => {
+			// 			const typedEdit = edit as IWorkspaceTextEdit;
+			// 			return {
+			// 				uri: typedEdit.resource,
+			// 				edit: {
+			// 					range: Range.lift(typedEdit.textEdit.range),
+			// 					text: typedEdit.textEdit.text,
+			// 				}
+			// 			};
+			// 		});
+			// 		const durationInSec = progressiveEditsAvgDuration.value / 1000;
+			// 		for (const editOp of editOperations) {
+			// 			const textEditorModel = (await textModelService.createModelReference(editOp.uri)).object.textEditorModel;
+			// 			let codeEditor: ICodeEditor | undefined | null = codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === editOp.uri.toString());
+			// 			if (!codeEditor) {
+			// 				codeEditor = await codeEditorService.openCodeEditor(
+			// 					{ resource: editOp.uri },
+			// 					codeEditorService.getFocusedCodeEditor()
+			// 				);
+			// 			}
 
-						let { isFirstEdit, decorations, editRange } = editTracker.get(editOp.uri) ?? { isFirstEdit: true };
-						if (isFirstEdit) {
-							codeEditor?.pushUndoStop();
-						}
-						if (!decorations) {
-							decorations = new InlineDiffDecorations(codeEditor!, true);
-						}
-						if (!editRange) {
-							editRange = Range.lift(editOp.edit.range);
-						} else {
-							editRange = editRange.plusRange(Range.lift(editOp.edit.range));
-						}
-						editTracker.set(editOp.uri, { isFirstEdit: false, decorations, editRange });
+			// 			let { isFirstEdit, decorations, editRange } = editTracker.get(editOp.uri) ?? { isFirstEdit: true };
+			// 			if (isFirstEdit) {
+			// 				codeEditor?.pushUndoStop();
+			// 			}
+			// 			if (!decorations) {
+			// 				decorations = new CSChatEditsDiffDecorations(codeEditor!, true);
+			// 			}
+			// 			if (!editRange) {
+			// 				editRange = Range.lift(editOp.edit.range);
+			// 			} else {
+			// 				editRange = editRange.plusRange(Range.lift(editOp.edit.range));
+			// 			}
+			// 			editTracker.set(editOp.uri, { isFirstEdit: false, decorations, editRange });
 
-						const cursorStateComputerAndInlineDiffCollection: ICursorStateComputer = (undoEdits) => {
-							let last: Position | null = null;
-							for (const edit of undoEdits) {
-								last = !last || last.isBefore(edit.range.getEndPosition()) ? edit.range.getEndPosition() : last;
-								decorations!.collectEditOperation(edit);
-							}
-							return last && [Selection.fromPositions(last)];
-						};
+			// 			const cursorStateComputerAndInlineDiffCollection: ICursorStateComputer = (undoEdits) => {
+			// 				let last: Position | null = null;
+			// 				for (const edit of undoEdits) {
+			// 					last = !last || last.isBefore(edit.range.getEndPosition()) ? edit.range.getEndPosition() : last;
+			// 					decorations!.collectEditOperation(edit);
+			// 				}
+			// 				return last && [Selection.fromPositions(last)];
+			// 			};
 
-						await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token, cursorStateComputerAndInlineDiffCollection);
-						decorations.update();
-					}
-				});
-			};
+			// 			await this._makeChanges(textEditorModel, editOp.edit, durationInSec, progressiveEditsCts.token, cursorStateComputerAndInlineDiffCollection);
+			// 			decorations.update();
+			// 		}
+			// 	});
+			// };
 
-			const response = await chatAgentService.makeEdits(editRequest, progressCallback, requestCts.token);
-			if (!response) {
-				return;
-			}
+			// const response = await chatAgentService.makeEdits(editRequest, progressCallback, requestCts.token);
+			// if (!response) {
+			// 	return;
+			// }
 
-			progressiveEditsCts.dispose(true);
-			requestCts.dispose();
+			// progressiveEditsCts.dispose(true);
+			// requestCts.dispose();
 		}
 
-		private async _makeChanges(
-			textModel: ITextModel,
-			edit: ISingleEditOperation,
-			editAvgDuration: number,
-			token: CancellationToken,
-			cursorStateComputer: ICursorStateComputer
-		) {
-			const wordCount = countWords(edit.text ?? '');
-			const speed = wordCount / editAvgDuration;
-			await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token), cursorStateComputer);
-		}
+		// private async _makeChanges(
+		// 	textModel: ITextModel,
+		// 	edit: ISingleEditOperation,
+		// 	editAvgDuration: number,
+		// 	token: CancellationToken,
+		// 	cursorStateComputer: ICursorStateComputer
+		// ) {
+		// 	const wordCount = countWords(edit.text ?? '');
+		// 	const speed = wordCount / editAvgDuration;
+		// 	await performAsyncTextEdit(textModel, asProgressiveEdit(edit, speed, token), cursorStateComputer);
+		// }
 
-		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(ICSChatService);
-				chatService.notifyUserAction({
-					providerId: context.element.providerId,
-					agentId: context.element.agent?.id,
-					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
-					action: {
-						kind: 'insert',
-						codeBlockIndex: context.codeBlockIndex,
-						totalCharacters: context.code.length,
-					}
-				});
-			}
-		}
+		// private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
+		// 	if (isResponseVM(context.element)) {
+		// 		const chatService = accessor.get(ICSChatService);
+		// 		chatService.notifyUserAction({
+		// 			providerId: context.element.providerId,
+		// 			agentId: context.element.agent?.id,
+		// 			sessionId: context.element.sessionId,
+		// 			requestId: context.element.requestId,
+		// 			action: {
+		// 				kind: 'insert',
+		// 				codeBlockIndex: context.codeBlockIndex,
+		// 				totalCharacters: context.code.length,
+		// 			}
+		// 		});
+		// 	}
+		// }
 
 	});
 
