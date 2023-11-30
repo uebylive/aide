@@ -356,7 +356,7 @@
 	align-items: center;
 }
 
-.cschat-session .cschat-input-and-execute-toolbar.focused {
+.cschat-session .cschat-input-part.focused {
 	border-color: var(--vscode-focusBorder);
 }
 

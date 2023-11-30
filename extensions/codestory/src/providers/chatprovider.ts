@@ -257,7 +257,7 @@ export class CSChatSessionProvider implements vscode.CSChatSessionProvider<CSCha
 			new CSChatParticipant('You', userUri),
 			new CSChatParticipant('Aide', agentUri),
 			'',
-			'Use / to find specific commands, and @ or # to point me to code to refer while answering your questions',
+			'Try using /, # or @ to find specific commands',
 		);
 	}
 }
@@ -310,7 +310,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent = vscode.csChat.createChatAgent('', this.defaultAgent);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.supportIssueReporting = true;
-		this.chatAgent.description = 'Use / to find specific commands, and @ or # to point me to code to refer while answering your questions';
+		this.chatAgent.description = 'Try using /, # or @ to find specific commands';
 		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),

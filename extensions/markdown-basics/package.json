@@ -89,10 +89,6 @@
       }
     ],
     "snippets": [
-      {
-        "language": "markdown",
-        "path": "./snippets/markdown.code-snippets"
-      }
     ],
     "configurationDefaults": {
       "[markdown]": {
