@@ -47,6 +47,7 @@ export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 }
 
 export interface IChatEditConfirmationContext {
+	responseId: string;
 	codeblockIndex: number;
 	type: 'approve' | 'reject';
 	uri: URI;
@@ -689,6 +690,7 @@ export class EditConfirmationAction extends Action2 {
 	}
 
 	async run(_accessor: ServicesAccessor, ...args: any[]) {
+		const chatWidgetService = _accessor.get(ICSChatWidgetService);
 		const chatEditSessionService = _accessor.get(ICSChatEditSessionService);
 		const commandService = _accessor.get(ICommandService);
 
@@ -696,11 +698,32 @@ export class EditConfirmationAction extends Action2 {
 		if (!isEditConfirmationContext(context)) {
 			return;
 		}
+		const { responseId, codeblockIndex, type, uri } = context;
 
-		const { type, uri } = context;
+		// Get the decorations to update
 		chatEditSessionService.confirmEdits(uri, type === 'approve');
 
+		// Get the codelens to update
 		commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
+
+		// Get the widget to update
+		const widget = chatWidgetService.lastFocusedWidget;
+		if (!widget) {
+			return;
+		}
+
+		const response = widget.viewModel?.getItems().find(
+			(item) => isResponseVM(item) && item.id === responseId) as IChatResponseViewModel | undefined;
+		if (!response) {
+			return;
+		}
+
+		const editSummary = response.appliedEdits.get(codeblockIndex);
+		if (!editSummary) {
+			return;
+		}
+
+		response.recordEdits(codeblockIndex, editSummary);
 	}
 }
 registerAction2(EditConfirmationAction);

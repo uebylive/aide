@@ -117,3 +117,12 @@
 .cschat-result-code-block .interactive-result-vulns-header .monaco-text-button:focus-visible {
 	outline: 1px solid var(--vscode-focusBorder);
 }
+
+.interactive-result-editor-location-ribbon .edit-summary {
+	display: flex;
+	justify-content: space-between;
+}
+
+.interactive-result-editor-location-ribbon .edit-summary {
+	padding: 4px 8px;
+}

@@ -42,6 +42,7 @@ import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csCha
 import { IChatEditSummary } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 import { basename } from 'vs/base/common/path';
+import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 
 const $ = dom.$;
 
@@ -106,6 +107,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		@IModelService private readonly modelService: IModelService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@ICodeEditorService private readonly editorService: ICodeEditorService,
 		@ICSChatEditSessionService private readonly editSessionService: ICSChatEditSessionService
 	) {
 		super();
@@ -297,23 +299,27 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			dom.show(this.toolbar.getElement());
 		}
 
-		if (isResponseVM(data.element) && data.edits) {
-			dom.clearNode(this.exportedLocationRibbon);
-			if (this.editSessionService.activeEditCodeblockNumber === data.codeBlockIndex) {
-				dom.append(this.exportedLocationRibbon, $('span.edit-summary', undefined, data.edits.summary));
-				const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.startColumn;
-				dom.append(this.exportedLocationRibbon, $('span.editor-location-text', undefined, rangeText));
-				this.element.classList.add('applying-edits');
-			} else {
-				dom.append(this.exportedLocationRibbon, $('span.edit-summary', undefined, data.edits.summary));
-				const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.startColumn;
-				dom.append(this.exportedLocationRibbon, $('span.editor-location-text', undefined, rangeText));
-				this.element.classList.remove('applying-edits');
-			}
-		} else {
-			this.element.classList.remove('applying-edits');
-			dom.clearNode(this.exportedLocationRibbon);
+		dom.clearNode(this.exportedLocationRibbon);
+		this.element.classList.toggle('applying-edits', !!(isResponseVM(data.element) && data.edits && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0));
+		if (isResponseVM(data.element) && data.edits && data.element.appliedEdits.get(data.codeBlockIndex)) {
+			const summary = this.exportedLocationRibbon.appendChild($('div.edit-summary', undefined));
+			const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.endLineNumber;
+			dom.append(summary, $('span.editor-location-text', undefined, rangeText));
+			dom.append(summary, $('span.edit-summary-text', undefined, data.edits.summary));
 		}
+		this.exportedLocationRibbon.onclick = () => {
+			if (isResponseVM(data.element) && data.edits) {
+				this.editorService.openCodeEditor({
+					resource: data.edits.location.uri,
+					options: {
+						selection: data.edits.location.range,
+						preserveFocus: true,
+						pinned: true,
+						revealIfVisible: true,
+					}
+				}, this.editor);
+			}
+		};
 
 		if (data.vulns?.length && isResponseVM(data.element)) {
 			dom.clearNode(this.vulnsListElement);

@@ -430,8 +430,11 @@
 }
 
 .interactive-result-editor-location-ribbon {
+	cursor: pointer;
+	color: var(--vscode-statusBar-foreground);
 	background-color: var(--vscode-statusBar-background);
 	border-radius: 0 0 4px 4px;
+	white-space: pre;
 }
 
 .interactive-result-editor-location-ribbon .editor-location-uri {

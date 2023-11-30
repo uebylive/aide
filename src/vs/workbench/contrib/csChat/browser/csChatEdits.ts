@@ -50,7 +50,7 @@ export interface ICSChatEditSessionService {
 	readonly _serviceBrand: undefined;
 
 	readonly isEditing: boolean;
-	readonly activeEditRequestId: string | undefined;
+	readonly activeEditResponseId: string | undefined;
 	readonly activeEditCodeblockNumber: number | undefined;
 
 	sendEditRequest(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
@@ -98,7 +98,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		return this._pendingRequests.size > 0;
 	}
 
-	get activeEditRequestId(): string | undefined {
+	get activeEditResponseId(): string | undefined {
 		const responseId = this.editResponseIdInProgress.get();
 		return responseId === '' ? undefined : responseId;
 	}
@@ -410,7 +410,7 @@ export class LiveStrategy extends EditModeStrategy {
 
 	override async renderChanges() {
 		const diff = await this._editorWorkerService.computeDiff(this._models.textModel0.uri, this._models.textModelN.uri, { ignoreTrimWhitespace: false, maxComputationTimeMs: 5000, computeMoves: false }, 'advanced');
-		this._updateSummaryMessage(this._models.textModel0.uri, diff);
+		this._updateSummaryMessage(this._models.textModelN.uri, diff);
 		this._diffDecorations.update();
 	}
 

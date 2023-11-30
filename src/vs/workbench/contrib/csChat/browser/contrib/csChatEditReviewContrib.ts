@@ -25,7 +25,7 @@ export class CSChatEditReviewLens extends Disposable {
 
 		this._register(this.languageFeaturesService.codeLensProvider.register({ scheme: CSChatEditReviewLens.selector, hasAccessToAllModels: true }, {
 			provideCodeLenses: (model: ITextModel, token: CancellationToken) => {
-				const { isEditing, activeEditCodeblockNumber: codeblockIndex } = this.csChatEditSessionService;
+				const { isEditing, activeEditCodeblockNumber: codeblockIndex, activeEditResponseId: responseId } = this.csChatEditSessionService;
 				if (isEditing || codeblockIndex === undefined || codeblockIndex < 0) {
 					return;
 				}
@@ -43,12 +43,12 @@ export class CSChatEditReviewLens extends Disposable {
 					const approveCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Approve edits',
-						arguments: [{ codeblockIndex: Number(codeblockIndex), type: 'approve', uri: model.uri }]
+						arguments: [{ responseId, codeblockIndex, type: 'approve', uri: model.uri }]
 					};
 					const rejectCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Reject edits',
-						arguments: [{ codeblockIndex: Number(codeblockIndex), type: 'reject', uri: model.uri }]
+						arguments: [{ responseId, codeblockIndex, type: 'reject', uri: model.uri }]
 					};
 					return [
 						{
