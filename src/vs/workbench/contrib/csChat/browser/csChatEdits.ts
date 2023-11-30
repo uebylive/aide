@@ -56,6 +56,7 @@ export interface ICSChatEditSessionService {
 	sendEditRequest(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
 	getEditRangesInProgress(uri?: URI): Location[];
 	confirmEdits(uri: URI, apply: boolean): Promise<void>;
+	cancelEdits(): Promise<void>;
 }
 
 export abstract class EditModeStrategy {
@@ -77,6 +78,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 	private _pendingRequests = new Map<string, CancelablePromise<void>>();
 	private _pendingEdits = new Map<string, WorkspaceEdit[]>();
+	private _receivedProgress = new Map<string, ICSChatAgentEditResponse[]>();
 
 	private readonly textModels = new Map<URI, ICSChatCodeblockTextModels>();
 	private readonly editStrategies = new Map<URI, EditModeStrategy>();
@@ -137,6 +139,8 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 					return;
 				}
 
+				this._receivedProgress.set(responseVM.sessionId, [...(this._receivedProgress.get(responseVM.sessionId) ?? []), progress]);
+
 				const pendingEdits = this._pendingEdits.get(responseVM.sessionId);
 				this._pendingEdits.set(responseVM.sessionId, pendingEdits ? [...pendingEdits, progress.edits] : [progress.edits]);
 				progressiveEditsAvgDuration.update(progressiveEditsClock.elapsed());
@@ -157,6 +161,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 			const listener = token.onCancellationRequested(() => {
 				this._pendingEdits.delete(responseVM.sessionId);
+				this._receivedProgress.delete(responseVM.sessionId);
 				progressiveEditsQueue.dispose();
 			});
 
@@ -289,6 +294,12 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		return Promise.resolve();
 	}
 
+	cancelEdits(): Promise<void> {
+		this.editStrategies.forEach(editStrategy => editStrategy.cancel());
+		this.dispose();
+		return Promise.resolve();
+	}
+
 	private trace(method: string, message: string): void {
 		this.logService.trace(`CSChatEditSession#${method}: ${message}`);
 	}
@@ -302,6 +313,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 		this._pendingRequests.forEach(promise => promise.cancel());
 		this._pendingRequests.clear();
+		this._receivedProgress.clear();
 		this._pendingEdits.clear();
 		this.editStrategies.forEach(editStrategy => editStrategy.dispose());
 		this.textModels.forEach(textModel => {

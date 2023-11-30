@@ -203,7 +203,12 @@ export function registerChatCodeBlockActions() {
 				menu: {
 					id: MenuId.CSChatCodeBlock,
 					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.isEqualTo('')),
+					when: CONTEXT_IN_CHAT_SESSION,
+				},
+				toggled: {
+					condition: CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.notEqualsTo(''),
+					title: 'Cancel applying changes',
+					icon: Codicon.debugStop,
 				}
 			});
 		}
@@ -211,6 +216,12 @@ export function registerChatCodeBlockActions() {
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
 			const editorService = accessor.get(IEditorService);
 			const chatEditSessionService = accessor.get(ICSChatEditSessionService);
+
+			if (chatEditSessionService.activeEditResponseId) {
+				// Cancel edit session
+				chatEditSessionService.cancelEdits();
+				return;
+			}
 
 			if (isResponseFiltered(context)) {
 				// When run from command palette
