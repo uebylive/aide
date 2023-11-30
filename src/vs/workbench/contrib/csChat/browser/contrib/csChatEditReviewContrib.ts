@@ -11,15 +11,17 @@ import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeat
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { EditConfirmationAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatCodeblockActions';
+import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
-export class CSChatEditReviewLens extends Disposable {
+class CSChatEditReviewLens extends Disposable {
 	static selector = 'file';
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@ICSChatEditSessionService private readonly csChatEditSessionService: ICSChatEditSessionService,
+		@ICSChatWidgetService private readonly csChatWidgetService: ICSChatWidgetService, // Inject the service here
 	) {
 		super();
 
@@ -40,15 +42,16 @@ export class CSChatEditReviewLens extends Disposable {
 				}
 
 				const lenses = editRanges.map(location => {
+					const lastFocusedWidget = this.csChatWidgetService.lastFocusedWidget;
 					const approveCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Approve edits',
-						arguments: [{ responseId, codeblockIndex, type: 'approve', uri: model.uri }]
+						arguments: [{ responseId, codeblockIndex, type: 'approve', uri: model.uri, widget: lastFocusedWidget }]
 					};
 					const rejectCommand = {
 						id: EditConfirmationAction.ID,
 						title: 'Reject edits',
-						arguments: [{ responseId, codeblockIndex, type: 'reject', uri: model.uri }]
+						arguments: [{ responseId, codeblockIndex, type: 'reject', uri: model.uri, widget: lastFocusedWidget }]
 					};
 					return [
 						{

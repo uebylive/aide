@@ -300,13 +300,28 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		}
 
 		dom.clearNode(this.exportedLocationRibbon);
-		this.element.classList.toggle('applying-edits', isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0);
+		const isApplyingEdits = isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0;
+		if (isApplyingEdits) {
+			if (!this.element.classList.contains('applying-edits')) {
+				this.element.classList.add('applying-edits');
+			}
+		} else {
+			this.element.classList.remove('applying-edits');
+		}
 		if (isResponseVM(data.element) && data.edits && data.element.appliedEdits.get(data.codeBlockIndex)) {
 			const summary = this.exportedLocationRibbon.appendChild($('div.edit-summary', undefined));
 			const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.endLineNumber;
 			dom.append(summary, $('span.editor-location-text', undefined, rangeText));
-			dom.append(summary, $('span.edit-summary-text', undefined, data.edits.summary));
+			if (rangeText.length <= 30) {
+				dom.append(summary, $('span.edit-summary-text', undefined, data.edits.summary));
+			}
 		}
+		if (isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) < 0 && data.element.appliedEdits.get(data.codeBlockIndex)) {
+			this.element.classList.toggle('approved-edits', true);
+		} else {
+			this.element.classList.toggle('approved-edits', false);
+		}
+
 		this.exportedLocationRibbon.onclick = () => {
 			if (isResponseVM(data.element) && data.edits) {
 				this.editorService.openCodeEditor({
