@@ -1204,12 +1204,17 @@ export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$handleProgressChunk(requestId: string, chunk: IChatProgressDto, responsePartHandle?: number): Promise<number | void>;
 }
 
+export interface ICSChatAgentEditResponseDto {
+	edits: IWorkspaceEditDto;
+	codeBlockIndex: number;
+}
+
 export interface MainThreadCSChatAgentsShape2 extends IDisposable {
 	$registerAgent(handle: number, name: string, metadata: IExtensionCSChatAgentMetadata): void;
 	$updateAgent(handle: number, metadataUpdate: IExtensionCSChatAgentMetadata): void;
 	$unregisterAgent(handle: number): void;
 	$handleProgressChunk(requestId: string, chunk: ICSChatProgressDto, responsePartHandle?: number): Promise<number | void>;
-	$handleEditProgressChunk(responseId: string, chunk: { edits: IWorkspaceEditDto }): Promise<number | void>;
+	$handleEditProgressChunk(responseId: string, chunk: ICSChatAgentEditResponseDto): Promise<number | void>;
 }
 
 export interface ExtHostChatAgentsShape2 {
@@ -1224,7 +1229,7 @@ export interface ExtHostChatAgentsShape2 {
 export interface ExtHostCSChatAgentsShape2 {
 	$invokeAgent(handle: number, sessionId: string, requestId: string, request: ICSChatAgentRequest, context: { history: ICSChatMessage[] }, token: CancellationToken): Promise<ICSChatAgentResult | undefined>;
 	$provideSlashCommands(handle: number, token: CancellationToken): Promise<ICSChatAgentCommand[]>;
-	$provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<{ edits: IWorkspaceEditDto } | undefined>;
+	$provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined>;
 	$provideFollowups(handle: number, sessionId: string, token: CancellationToken): Promise<ICSChatFollowup[]>;
 	$acceptFeedback(handle: number, sessionId: string, requestId: string, vote: CSChatSessionVoteDirection, reportIssue?: boolean): void;
 	$acceptAction(handle: number, sessionId: string, requestId: string, action: ICSChatUserActionEvent): void;

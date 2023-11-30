@@ -6,6 +6,7 @@
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
@@ -20,6 +21,7 @@ import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
 import { localize } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
@@ -27,8 +29,9 @@ import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/csChat/browser/actions/csChatActions';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
 import { ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ICSChatAgentEditRepsonse, ICSChatAgentEditRequest, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
+import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
+import { ICSChatAgentEditRequest } from 'vs/workbench/contrib/csChat/common/csChatAgents';
+import { CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/csChat/common/csChatContextKeys';
 import { ICSChatService, IDocumentContext, InteractiveSessionCopyKind } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
@@ -43,6 +46,13 @@ export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 	element: IChatResponseViewModel;
 }
 
+export interface IChatEditConfirmationContext {
+	responseId: string;
+	codeblockIndex: number;
+	type: 'approve' | 'reject';
+	uri: URI;
+}
+
 export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockActionContext {
 	return typeof thing === 'object' && thing !== null && 'code' in thing && 'element' in thing;
 }
@@ -53,6 +63,10 @@ function isResponseFiltered(context: ICodeBlockActionContext) {
 
 function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] | undefined {
 	return isResponseVM(context.element) ? context.element.usedContext?.documents : undefined;
+}
+
+function isEditConfirmationContext(thing: unknown): thing is IChatEditConfirmationContext {
+	return typeof thing === 'object' && thing !== null && 'codeblockIndex' in thing && 'type' in thing && 'uri' in thing;
 }
 
 abstract class ChatCodeBlockAction extends Action2 {
@@ -191,52 +205,53 @@ export function registerChatCodeBlockActions() {
 					group: 'navigation',
 					when: CONTEXT_IN_CHAT_SESSION,
 				},
+				toggled: {
+					condition: CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.notEqualsTo(''),
+					title: 'Cancel applying changes',
+					icon: Codicon.debugStop,
+				}
 			});
 		}
 
 		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			const chatAgentService = accessor.get(ICSChatAgentService);
 			const editorService = accessor.get(IEditorService);
-			const bulkEditService = accessor.get(IBulkEditService);
+			const chatEditSessionService = accessor.get(ICSChatEditSessionService);
 
-			if (isResponseFiltered(context) || !isResponseVM(context.element)) {
-				// When run from command palette or not a response
+			if (chatEditSessionService.activeEditResponseId) {
+				// Cancel edit session
+				chatEditSessionService.cancelEdits();
 				return;
 			}
+
+			if (isResponseFiltered(context)) {
+				// When run from command palette
+				return;
+			}
+
+			if (!isResponseVM(context.element)) {
+				// When element is not a response
+				return;
+			}
+			const responseVM: IChatResponseViewModel = context.element;
 
 			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
 				return;
 			}
 
 			this.notifyUserAction(accessor, context);
-			const { token } = new CancellationTokenSource();
 
 			const editRequest: ICSChatAgentEditRequest = {
-				sessionId: context.element.sessionId,
-				agentId: context.element.agent?.id ?? '',
-				responseId: context.element.requestId,
-				response: context.element.response.asString(),
+				sessionId: responseVM.sessionId,
+				agentId: responseVM.agent?.id ?? '',
+				responseId: responseVM.requestId,
+				response: responseVM.response.asString(),
 				context: [{
 					code: context.code,
 					languageId: context.languageId,
 					codeBlockIndex: context.codeBlockIndex,
 				}]
 			};
-
-			const progressCallback = async (progress: ICSChatAgentEditRepsonse) => {
-				if (token.isCancellationRequested) {
-					return;
-				}
-
-				await bulkEditService.apply(progress.edits);
-			};
-
-			const response = await chatAgentService.getEdits(editRequest, progressCallback, token);
-			if (!response) {
-				return;
-			}
-
-			await bulkEditService.apply(response.edits);
+			await chatEditSessionService.sendEditRequest(responseVM, editRequest);
 		}
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
@@ -674,3 +689,49 @@ function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): 
 		languageId: editor.getModel()!.getLanguageId(),
 	};
 }
+
+export class EditConfirmationAction extends Action2 {
+	static readonly ID = 'workbench.action.csChat.editConfirmation';
+
+	constructor() {
+		super({
+			id: EditConfirmationAction.ID,
+			title: ''
+		});
+	}
+
+	async run(_accessor: ServicesAccessor, ...args: any[]) {
+		const chatEditSessionService = _accessor.get(ICSChatEditSessionService);
+		const chatWidgetService = _accessor.get(ICSChatWidgetService);
+		const codeEditorService = _accessor.get(ICodeEditorService);
+		const commandService = _accessor.get(ICommandService);
+
+		const context = args[0];
+		if (!isEditConfirmationContext(context)) {
+			return;
+		}
+		const { type, uri } = context;
+
+		// Get the decorations to update
+		if (type === 'approve') {
+			chatEditSessionService.confirmEdits(uri);
+		} else {
+			chatEditSessionService.cancelEdits();
+		}
+
+		await commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
+
+		const editor = codeEditorService.getActiveCodeEditor();
+		if (!editor) {
+			return;
+		}
+
+		const widget = chatWidgetService.lastFocusedWidget;
+		if (!widget) {
+			return;
+		}
+		widget.focusInput();
+		editor.focus();
+	}
+}
+registerAction2(EditConfirmationAction);

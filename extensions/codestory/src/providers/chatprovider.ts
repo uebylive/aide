@@ -257,7 +257,7 @@ export class CSChatSessionProvider implements vscode.CSChatSessionProvider<CSCha
 			new CSChatParticipant('You', userUri),
 			new CSChatParticipant('Aide', agentUri),
 			'',
-			'Use / to find specific commands, and @ or # to point me to code to refer while answering your questions',
+			'Try using /, # or @ to find specific commands',
 		);
 	}
 }
@@ -310,7 +310,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent = vscode.csChat.createChatAgent('', this.defaultAgent);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.supportIssueReporting = true;
-		this.chatAgent.description = 'Use / to find specific commands, and @ or # to point me to code to refer while answering your questions';
+		this.chatAgent.description = 'Try using /, # or @ to find specific commands';
 		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
@@ -419,6 +419,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 	editsProvider: vscode.CSChatEditProvider = {
 		provideEdits: async (request, progress, token) => {
+			console.log('we are providing edits');
 			logger.info('provideEditsWithProgress', request, progress, token);
 			// Notes to @theskcd: This API currently applies the edits without any decoration.
 			//
@@ -434,7 +435,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			// You can pass in any file uri(s) and it should apply correctly.
 			const activeDocument = vscode.window.activeTextEditor?.document;
 			if (!activeDocument) {
-				return { edits: new vscode.WorkspaceEdit() };
+				return { edits: new vscode.WorkspaceEdit(), codeBlockIndex: 0 };
 			}
 			const filePath = activeDocument.uri.fsPath;
 			const fileContent = activeDocument.getText();
@@ -444,6 +445,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			if (activeEditorUri && codeblocks.length > 0) {
 				for (const codeblock of codeblocks) {
 					const llmContent = codeblock.code;
+					const codeBlockIndex = codeblock.codeBlockIndex;
 					const messageContent = request.response;
 					const sessionId = request.threadId;
 					const editFileResponseStream = await this._sideCarClient.editFileRequest(
@@ -452,6 +454,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 						language,
 						llmContent,
 						messageContent,
+						codeBlockIndex,
 						sessionId,
 					);
 					let enteredTextEdit = false;
@@ -464,6 +467,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							const textEditStreaming = editResponse.TextEditStreaming.data;
 							if ('Start' in textEditStreaming) {
 								startOfEdit = true;
+								const codeBlockIndex = textEditStreaming.Start.code_block_index;
 								const agentContext = textEditStreaming.Start.context_selection;
 								console.log('agentContext');
 								console.log(agentContext);
@@ -474,11 +478,13 @@ export class CSChatAgentProvider implements vscode.Disposable {
 									agentContext,
 									undefined,
 									activeEditorUri,
+									codeBlockIndex,
 								);
 								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 								continue;
 							}
 							if ('EditStreaming' in textEditStreaming) {
+								const codeBlockIndex = textEditStreaming.EditStreaming.code_block_index;
 								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
 								// check if we can get any lines back here
 								while (true) {
@@ -504,7 +510,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					}
 				}
 			}
-			return { edits: new vscode.WorkspaceEdit() };
+			return { edits: new vscode.WorkspaceEdit(), codeBlockIndex: 0 };
 		}
 	};
 
@@ -532,6 +538,7 @@ class StreamProcessor {
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
+		codeBlockIndex: number,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -541,6 +548,7 @@ class StreamProcessor {
 			contextSelection,
 			indentStyle,
 			uri,
+			codeBlockIndex,
 		);
 
 		// Set markers for file path, begin, and end
@@ -557,6 +565,7 @@ class StreamProcessor {
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
+		// console.log('prepareLine', answerStreamLine.line, this.documentLineIndex);
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -571,20 +580,46 @@ class StreamProcessor {
 		}
 		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
 			if (this.previousLine) {
+				// if previous line is there, then we can reindent the current line
+				// contents here
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
+				// find the anchor point for the current line
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
 					this.sentEdits = true;
+					// if no anchor line, then we have to replace the current line
+					console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 				} else if (this.documentLineIndex >= this.document.getLineCount()) {
+					// we found the anchor point but we have more lines in our own index
+					// than the original document, so here the right thing to do is
+					// append to the document
 					this.sentEdits = true;
+					console.log('appendLine', adjustedLine, this.document.getLineCount());
 					this.documentLineIndex = this.document.appendLine(adjustedLine);
 				} else {
+					// we need to get the current line right now
 					const currentLine = this.document.getLine(this.documentLineIndex);
 					this.sentEdits = true;
+					// console.log(this.documentLineIndex, currentLine.content);
+					// TODO(skcd): This bit is a bit unclear, so lets try to understand this properly
+					// isSent is set when we are part of the original lines
+					// if the current line has an indent level which is less than the adjusted line indent level
+					// then we are trying to insert the line after the previous line
+					// otherwise we just replace
+					// to think of this we can imagine a scenario like the following:
+					// def fun(a, b):
+					//    if a > 0:
+					// 		return a + b <- adjusted line
+					//   else: < - original current line
+					//      return a - b
+					// since adjusted line is indented more, we want to insert it after the previous document line
+					// but if that's not the case, then we just replace the current line
 					if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '' && currentLine.indentLevel < adjustedLine.adjustedIndentLevel)) {
+						console.log('insertLineAfter', this.documentLineIndex - 1, adjustedLine);
 						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					} else {
+						console.log('replaceLine', this.documentLineIndex, adjustedLine);
 						this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
 					}
 				}
@@ -592,6 +627,7 @@ class StreamProcessor {
 				const initialAnchor = this.findInitialAnchor(line);
 				this.previousLine = new LineIndentManager(this.document.getLine(initialAnchor).indentLevel, line);
 				const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
+				console.log('noPreviousLine', 'replaceLine', initialAnchor, adjustedInitialLine);
 				this.documentLineIndex = this.document.replaceLine(initialAnchor, adjustedInitialLine);
 			}
 			this.beginDetected = true;
@@ -616,6 +652,9 @@ class StreamProcessor {
 		for (let index = startIndex; index < this.document.getLineCount(); index++) {
 			const line = this.document.getLine(index);
 			if (line.isSent) {
+				// This checks for when we want to insert code which has more indent
+				// that the current line, but in that case we can never find an anchor
+				// cause our code is deeper than the code which is present on the line
 				if (line.trimmedContent.length > 0 && line.indentLevel < adjustedLine.adjustedIndentLevel) {
 					return null;
 				}
@@ -636,6 +675,7 @@ class DocumentManager {
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 	uri: vscode.Uri;
+	codeBlockIndex: number;
 
 	constructor(
 		progress: vscode.Progress<vscode.CSChatAgentEditResponse>,
@@ -645,10 +685,12 @@ class DocumentManager {
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
+		codeBlockIndex: number,
 	) {
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
+		this.codeBlockIndex = codeBlockIndex;
 		// this.indentStyle = IndentationHelper.getDocumentIndentStyleUsingSelection(contextSelection); // Determines the indentation style
 
 		// Split the editor's text into lines and initialize each line
@@ -658,7 +700,7 @@ class DocumentManager {
 		}
 
 		// Mark the lines as 'sent' based on the location provided
-		const locationSections = [contextSelection.above, contextSelection.range, contextSelection.below];
+		const locationSections = [contextSelection.range];
 		for (const section of locationSections) {
 			for (let j = 0; j < section.lines.length; j++) {
 				const lineIndex = section.first_line_index + j;
@@ -666,11 +708,14 @@ class DocumentManager {
 			}
 		}
 
-		// Determine the index of the first 'sent' line
-		this.firstSentLineIndex = contextSelection.above.has_content
-			? contextSelection.above.first_line_index
-			: contextSelection.range.first_line_index;
+		this.firstSentLineIndex = contextSelection.range.first_line_index;
 
+		// Determine the index of the first 'sent' line
+		// this.firstSentLineIndex = contextSelection.above.has_content
+		// 	? contextSelection.above.first_line_index
+		// 	: contextSelection.range.first_line_index;
+
+		// this.firstRangeLine = contextSelection.range.first_line_index;
 		this.firstRangeLine = contextSelection.range.first_line_index;
 		this.uri = uri;
 	}
@@ -687,18 +732,20 @@ class DocumentManager {
 
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
-		console.log('replaceLine', index, newLine);
+		// console.log('replaceLine');
+		// console.log('replaceLine', index, newLine);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		const edits = new vscode.WorkspaceEdit();
-		console.log('What line are we replaceLine', newLine.adjustedContent);
+		// console.log('What line are we replaceLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-		this.progress.report({ edits });
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return index + 1;
 	}
 
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
-		console.log('replaceLines', startIndex, endIndex, newLine);
+		// console.log('replaceLine');
+		// console.log('replaceLines', startIndex, endIndex, newLine);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -708,31 +755,37 @@ class DocumentManager {
 				new LineContent(newLine.adjustedContent, this.indentStyle)
 			);
 			const edits = new vscode.WorkspaceEdit();
-			console.log('What line are we replaceLines', newLine.adjustedContent);
+			if (newLine.adjustedContent === '') {
+				console.log('[extension]empty_line', 'replace_lines');
+			}
+			console.log('What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 			return startIndex + 1;
 		}
 	}
 
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
-		console.log('appendLine', newLine);
+		// console.log('appendLine');
+		// console.log('appendLine', newLine);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
-		console.log('what line are we appendLine', newLine.adjustedContent);
-		edits.insert(this.uri, new vscode.Position(this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
-		this.progress.report({ edits });
+		// console.log('what line are we appendLine', newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000), '\n' + newLine.adjustedContent);
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return this.lines.length;
 	}
 
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		console.log('insertLineAfter', index, newLine);
+		// console.log('insertLineAfter');
+		// console.log('insertLineAfter', index, newLine);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
-		console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
-		edits.insert(this.uri, new vscode.Position(index, 1000), '\n' + newLine.adjustedContent);
-		this.progress.report({ edits });
+		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		this.progress.report({ edits, codeBlockIndex: this.codeBlockIndex });
 		return index + 2;
 	}
 }

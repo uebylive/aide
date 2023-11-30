@@ -62,7 +62,7 @@ import { IWordCountResult, getNWords } from 'vs/workbench/contrib/csChat/common/
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { IChatEditSummary, IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/csChat/common/csChatModel';
 
 const $ = dom.$;
 
@@ -820,7 +820,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				const vulns = extractVulnerabilitiesFromText(text);
 
 				const hideToolbar = isResponseVM(element) && element.errorDetails?.responseIsFiltered;
-				const data = { languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities };
+				const edits: IChatEditSummary | undefined = isResponseVM(element) ? element.appliedEdits.get(codeBlockIndex) ?? undefined : undefined;
+				const data: ICodeBlockData = { languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, edits, vulns: vulns.vulnerabilities };
 				const ref = this.renderCodeBlock(data, disposables);
 
 				// Attach this after updating text/layout of the editor, so it should only be fired when the size updates later (horizontal scrollbar, wrapping)

@@ -13,6 +13,7 @@ import { basename } from 'vs/base/common/resources';
 import { URI, UriComponents, UriDto } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
+import { Location } from 'vs/editor/common/languages';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ICSChatAgentCommand, IChatAgentData, ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
@@ -41,6 +42,11 @@ export interface IResponse {
 	asString(): string;
 }
 
+export interface IChatEditSummary {
+	summary: string;
+	location: Location;
+}
+
 export interface IChatResponseModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
@@ -53,6 +59,7 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
+	readonly appliedEdits: Map<number, IChatEditSummary>;
 	readonly slashCommand?: ICSChatAgentCommand;
 	readonly response: IResponse;
 	readonly isComplete: boolean;
@@ -61,6 +68,7 @@ export interface IChatResponseModel {
 	readonly followups?: ICSChatFollowup[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
 	setVote(vote: CSChatSessionVoteDirection): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -263,6 +271,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._progressMessages;
 	}
 
+	private readonly _appliedEdits: Map<number, IChatEditSummary> = new Map();
+	public get appliedEdits(): Map<number, IChatEditSummary> {
+		return this._appliedEdits;
+	}
+
 	constructor(
 		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability>,
 		public readonly session: ChatModel,
@@ -339,6 +352,15 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._vote = vote;
 		this._onDidChange.fire();
 	}
+
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
+		if (edits) {
+			this._appliedEdits.set(codeblockIndex, edits);
+		} else {
+			this._appliedEdits.delete(codeblockIndex);
+		}
+		this._onDidChange.fire();
+	}
 }
 
 export interface IChatModel {
@@ -353,6 +375,8 @@ export interface IChatModel {
 	readonly inputPlaceholder?: string;
 	readonly requesterUsername: string;
 	readonly requesterAvatarIconUri: URI | undefined;
+	readonly activeEditsRequestId?: string;
+	getRequest(requestId: string): IChatRequestModel | undefined;
 	getRequests(): IChatRequestModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -622,6 +646,10 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	waitForInitialization(): Promise<void> {
 		return this._isInitializedDeferred.p;
+	}
+
+	getRequest(requestId: string): IChatRequestModel | undefined {
+		return this._requests.find(request => request.id === requestId);
 	}
 
 	getRequests(): ChatRequestModel[] {

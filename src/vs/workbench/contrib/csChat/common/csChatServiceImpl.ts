@@ -166,7 +166,7 @@ export class ChatService extends Disposable implements ICSChatService {
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@ICSChatSlashCommandService private readonly chatSlashCommandService: ICSChatSlashCommandService,
 		@ICSChatVariablesService private readonly chatVariablesService: ICSChatVariablesService,
-		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService
+		@ICSChatAgentService private readonly chatAgentService: ICSChatAgentService,
 	) {
 		super();
 

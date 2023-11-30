@@ -42,12 +42,6 @@ export const reportFromStreamToProgress = async (
 		return new CSChatProgressContent(firstPart.value.choices[0]?.delta?.content ?? '');
 	};
 
-	progress.report(new CSChatProgressTask(
-		// allow-any-unicode-next-line
-		'Thinking... 🤔',
-		firstPartOfMessage(),
-	));
-
 	if (cancellationToken.isCancellationRequested) {
 		return finalMessage;
 	}
@@ -93,12 +87,6 @@ export const reportFromStreamToSearchProgress = async (
 		// return new CSChatProgressContent('Your session id is: ' + sessionId);
 		return new CSChatProgressContent('');
 	};
-
-	progress.report(new CSChatProgressTask(
-		// allow-any-unicode-next-line
-		'Thinking... 🤔',
-		firstPartOfMessage(),
-	));
 
 	// Now we are in the good state, we can start reporting the progress by looking
 	// at the last step the agent has taken and reporting that to the chat

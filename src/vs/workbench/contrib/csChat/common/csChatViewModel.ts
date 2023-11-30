@@ -9,9 +9,9 @@ import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ICSChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ChatModelInitState, IChatEditSummary, IChatModel, IChatRequestModel, IChatResponseModel, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/csChat/common/csChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
-import { IChatContentReference, IChatProgressMessage, ICSChatReplyFollowup, ICSChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, CSChatSessionVoteDirection } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { IChatContentReference, ICSChatReplyFollowup, ICSChatResponseCommandFollowup, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatUsedContext, CSChatSessionVoteDirection, IChatProgressMessage } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { countWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
@@ -47,6 +47,7 @@ export interface IChatViewModel {
 	readonly onDidDisposeModel: Event<void>;
 	readonly onDidChange: Event<IChatViewModelChangeEvent>;
 	readonly requestInProgress: boolean;
+	readonly activeEditsRequestId?: string;
 	readonly inputPlaceholder?: string;
 	getItems(): (IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel)[];
 	setInputPlaceholder(text: string): void;
@@ -98,6 +99,7 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
+	readonly appliedEdits: Map<number, IChatEditSummary>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly vote: CSChatSessionVoteDirection | undefined;
@@ -109,6 +111,7 @@ export interface IChatResponseViewModel {
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: CSChatSessionVoteDirection): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void;
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 }
@@ -143,6 +146,10 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 
 	get requestInProgress(): boolean {
 		return this._model.requestInProgress;
+	}
+
+	get activeEditsRequestId(): string | undefined {
+		return this._model.activeEditsRequestId;
 	}
 
 	get providerId() {
@@ -304,6 +311,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.progressMessages;
 	}
 
+	get appliedEdits(): Map<number, IChatEditSummary> {
+		return this._model.appliedEdits;
+	}
+
 	get isComplete() {
 		return this._model.isComplete;
 	}
@@ -410,6 +421,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	setVote(vote: CSChatSessionVoteDirection): void {
 		this._modelChangeCount++;
 		this._model.setVote(vote);
+	}
+
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
+		this._modelChangeCount++;
+		this._model.recordEdits(codeblockIndex, edits);
 	}
 }
 

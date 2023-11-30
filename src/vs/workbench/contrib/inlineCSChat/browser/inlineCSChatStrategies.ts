@@ -142,7 +142,7 @@ export class PreviewStrategy extends EditModeStrategy {
 	}
 }
 
-class InlineDiffDecorations {
+export class InlineDiffDecorations {
 
 	private readonly _collection: IEditorDecorationsCollection;
 
@@ -301,7 +301,6 @@ export class LiveStrategy extends EditModeStrategy {
 	}
 
 	override async makeProgressiveChanges(edits: ISingleEditOperation[], opts: ProgressingEditsOptions): Promise<void> {
-
 		// push undo stop before first edit
 		if (++this._editCount === 1) {
 			this._editor.pushUndoStop();
@@ -309,9 +308,9 @@ export class LiveStrategy extends EditModeStrategy {
 
 		const durationInSec = opts.duration / 1000;
 		for (const edit of edits) {
+			console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
 			const wordCount = countWords(edit.text ?? '');
 			const speed = wordCount / durationInSec;
-			// console.log({ durationInSec, wordCount, speed: wordCount / durationInSec });
 			await performAsyncTextEdit(this._session.textModelN, asProgressiveEdit(edit, speed, opts.token));
 		}
 	}
@@ -504,7 +503,7 @@ export interface AsyncTextEdit {
 	readonly newText: AsyncIterable<string>;
 }
 
-export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdit) {
+export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdit, cursorStateComputer: ICursorStateComputer = () => null) {
 
 	const [id] = model.deltaDecorations([], [{
 		range: edit.range,
@@ -530,7 +529,7 @@ export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdi
 			? EditOperation.replace(range, part) // first edit needs to override the "anchor"
 			: EditOperation.insert(range.getEndPosition(), part);
 
-		model.pushEditOperations(null, [edit], () => null);
+		model.pushEditOperations(null, [edit], cursorStateComputer);
 		first = false;
 	}
 }

@@ -393,6 +393,7 @@ class StreamProcessor {
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
 	) {
+		console.log(contextSelection);
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(progress, document, lines, contextSelection, indentStyle);
 
@@ -409,6 +410,7 @@ class StreamProcessor {
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
+		console.log('prepareLine', answerStreamLine.line, this.documentLineIndex);
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -535,7 +537,8 @@ class DocumentManager {
 
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
-		console.log('replaceLine', index, newLine);
+		// console.log('replaceLine');
+		// console.log('replaceLine', index, newLine);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		this.progress.report({
 			edits: [
@@ -550,7 +553,8 @@ class DocumentManager {
 
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
-		console.log('replaceLines', startIndex, endIndex, newLine);
+		// console.log('replaceLines');
+		// console.log('replaceLines', startIndex, endIndex, newLine);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -573,7 +577,8 @@ class DocumentManager {
 
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
-		console.log('appendLine', newLine);
+		// console.log('appendLine');
+		// console.log('appendLine', newLine);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
@@ -588,7 +593,8 @@ class DocumentManager {
 
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		console.log('insertLineAfter', index, newLine);
+		// console.log('insertLineAfter');
+		// console.log('insertLineAfter', index, newLine);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [

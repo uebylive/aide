@@ -29,6 +29,7 @@ import { ChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib
 import { ChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChatWidget';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatInputEditorContrib';
 import 'vs/workbench/contrib/csChat/browser/contrib/csChatHistoryVariables';
+import 'vs/workbench/contrib/csChat/browser/contrib/csChatEditReviewContrib';
 import { ICSChatContributionService } from 'vs/workbench/contrib/csChat/common/csChatContributionService';
 import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
 import { ChatService } from 'vs/workbench/contrib/csChat/common/csChatServiceImpl';
@@ -61,6 +62,7 @@ import { EditorContributionInstantiation, registerEditorContribution } from 'vs/
 import { KeybindingPillContribution } from 'vs/workbench/contrib/csChat/browser/contrib/csChatKeybindingPillContrib';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { ChatEditSessionService, ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -313,4 +315,4 @@ registerSingleton(ICSChatProviderService, ChatProviderService, InstantiationType
 registerSingleton(ICSChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
 registerSingleton(ICSChatAgentService, ChatAgentService, InstantiationType.Delayed);
 registerSingleton(ICSChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
-
+registerSingleton(ICSChatEditSessionService, ChatEditSessionService, InstantiationType.Delayed);

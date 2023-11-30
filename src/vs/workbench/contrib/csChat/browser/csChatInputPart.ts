@@ -22,7 +22,6 @@ import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/b
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { DEFAULT_FONT_FAMILY } from 'vs/workbench/browser/style';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IChatExecuteActionContext } from 'vs/workbench/contrib/csChat/browser/actions/csChatExecuteActions';
 import { IChatRequester, IChatWidget } from 'vs/workbench/contrib/csChat/browser/csChat';
@@ -41,6 +40,7 @@ import { ILanguageService } from 'vs/editor/common/languages/language';
 import { FileAccess } from 'vs/base/common/network';
 import { Codicon } from 'vs/base/common/codicons';
 import { ThemeIcon } from 'vs/base/common/themables';
+import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
 
 const $ = dom.$;
 
@@ -225,11 +225,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const options = getSimpleEditorOptions(this.configurationService);
 		options.readOnly = false;
 		options.ariaLabel = this._getAriaLabel();
-		options.fontFamily = DEFAULT_FONT_FAMILY;
+		options.fontFamily = EDITOR_FONT_DEFAULTS.fontFamily;
 		options.fontSize = 13;
 		options.lineHeight = 20;
 		options.padding = this.options.renderStyle === 'compact' ? { top: 2, bottom: 2 } : { top: 8, bottom: 8 };
-		options.cursorWidth = 1;
+		options.cursorWidth = 3;
 		options.wrappingStrategy = 'advanced';
 		options.bracketPairColorization = { enabled: false };
 		options.suggest = { showIcons: false };
@@ -258,10 +258,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}));
 		this._register(this._inputEditor.onDidFocusEditorText(() => {
 			this._onDidFocus.fire();
-			inputContainer.classList.toggle('focused', true);
+			this.container.classList.toggle('focused', true);
 		}));
 		this._register(this._inputEditor.onDidBlurEditorText(() => {
-			inputContainer.classList.toggle('focused', false);
+			this.container.classList.toggle('focused', false);
 
 			this._onDidBlur.fire();
 		}));

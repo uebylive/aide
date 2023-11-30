@@ -14,7 +14,7 @@ import { localize } from 'vs/nls';
 import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
 import { Progress } from 'vs/platform/progress/common/progress';
-import { ExtHostCSChatAgentsShape2, IMainContext, IWorkspaceEditDto, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostCSChatAgentsShape2, ICSChatAgentEditResponseDto, IMainContext, MainContext, MainThreadCSChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { ExtHostCSChatProvider } from 'vs/workbench/api/common/extHostCSChatProvider';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
@@ -174,7 +174,7 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 		return agent.provideSlashCommand(token);
 	}
 
-	async $provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<{ edits: IWorkspaceEditDto } | undefined> {
+	async $provideEdits(handle: number, sessionId: string, request: ICSChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
 			return undefined;
@@ -195,7 +195,7 @@ export class ExtHostCSChatAgents2 implements ExtHostCSChatAgentsShape2 {
 						return;
 					}
 					const edits = typeConvert.WorkspaceEdit.from(progress.edits);
-					this._proxy.$handleEditProgressChunk(request.responseId, { edits });
+					this._proxy.$handleEditProgressChunk(request.responseId, { ...progress, edits });
 				}),
 				token
 			);
