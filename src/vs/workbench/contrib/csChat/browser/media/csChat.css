@@ -407,6 +407,11 @@
 
 .interactive-response .applying-edits.cschat-result-code-block {
 	border: unset;
+	padding: 4px;
+}
+
+.interactive-response .cschat-result-code-block.approved-edits {
+	border: 2px solid rgba(156,204,44, 0.8);
 }
 
 .interactive-response .applying-edits.cschat-result-code-block::after {
@@ -435,6 +440,7 @@
 	background-color: var(--vscode-statusBar-background);
 	border-radius: 0 0 4px 4px;
 	white-space: pre;
+	font-size: 12;
 }
 
 .interactive-result-editor-location-ribbon .editor-location-uri {
