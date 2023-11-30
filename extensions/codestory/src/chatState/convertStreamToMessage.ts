@@ -88,6 +88,12 @@ export const reportFromStreamToSearchProgress = async (
 		return new CSChatProgressContent('');
 	};
 
+	progress.report(new CSChatProgressTask(
+		// allow-any-unicode-next-line
+		'Thinking... 🤔',
+		firstPartOfMessage(),
+	));
+
 	// Now we are in the good state, we can start reporting the progress by looking
 	// at the last step the agent has taken and reporting that to the chat
 	if (cancellationToken.isCancellationRequested) {
