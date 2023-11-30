@@ -701,40 +701,37 @@ export class EditConfirmationAction extends Action2 {
 	}
 
 	async run(_accessor: ServicesAccessor, ...args: any[]) {
-		const chatWidgetService = _accessor.get(ICSChatWidgetService);
 		const chatEditSessionService = _accessor.get(ICSChatEditSessionService);
+		const chatWidgetService = _accessor.get(ICSChatWidgetService);
+		const codeEditorService = _accessor.get(ICodeEditorService);
 		const commandService = _accessor.get(ICommandService);
 
 		const context = args[0];
 		if (!isEditConfirmationContext(context)) {
 			return;
 		}
-		const { responseId, codeblockIndex, type, uri } = context;
+		const { type, uri } = context;
 
 		// Get the decorations to update
-		chatEditSessionService.confirmEdits(uri, type === 'approve');
+		if (type === 'approve') {
+			chatEditSessionService.confirmEdits(uri);
+		} else {
+			chatEditSessionService.cancelEdits();
+		}
 
-		// Get the codelens to update
-		commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
+		await commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
 
-		// Get the widget to update
+		const editor = codeEditorService.getActiveCodeEditor();
+		if (!editor) {
+			return;
+		}
+
 		const widget = chatWidgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
 		}
-
-		const response = widget.viewModel?.getItems().find(
-			(item) => isResponseVM(item) && item.id === responseId) as IChatResponseViewModel | undefined;
-		if (!response) {
-			return;
-		}
-
-		const editSummary = response.appliedEdits.get(codeblockIndex);
-		if (!editSummary) {
-			return;
-		}
-
-		response.recordEdits(codeblockIndex, editSummary);
+		widget.focusInput();
+		editor.focus();
 	}
 }
 registerAction2(EditConfirmationAction);

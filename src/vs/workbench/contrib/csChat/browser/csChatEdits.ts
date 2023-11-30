@@ -55,7 +55,7 @@ export interface ICSChatEditSessionService {
 
 	sendEditRequest(responseVM: IChatResponseViewModel, request: ICSChatAgentEditRequest): Promise<{ responseCompletePromise: Promise<void> } | undefined>;
 	getEditRangesInProgress(uri?: URI): Location[];
-	confirmEdits(uri: URI, apply: boolean): Promise<void>;
+	confirmEdits(uri: URI): Promise<void>;
 	cancelEdits(): Promise<void>;
 }
 
@@ -76,6 +76,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 	private editResponseIdInProgress: IContextKey<string>;
 	private editCodeblockInProgress: IContextKey<number>;
 
+	private activeResponse: IChatResponseViewModel | undefined;
 	private _pendingRequests = new Map<string, CancelablePromise<void>>();
 	private _pendingEdits = new Map<string, WorkspaceEdit[]>();
 	private _receivedProgress = new Map<string, ICSChatAgentEditResponse[]>();
@@ -116,8 +117,10 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 			return;
 		}
 
+		this.activeResponse = responseVM;
 		this.editResponseIdInProgress.set(responseVM.id);
 		this.editCodeblockInProgress.set(request.context[0].codeBlockIndex);
+		responseVM.recordEdits(request.context[0].codeBlockIndex, undefined);
 
 		if (this._pendingRequests.has(responseVM.sessionId)) {
 			this.trace('sendRequest', `Session ${responseVM.sessionId} already has a pending request`);
@@ -161,7 +164,6 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 			const listener = token.onCancellationRequested(() => {
 				this._pendingEdits.delete(responseVM.sessionId);
-				this._receivedProgress.delete(responseVM.sessionId);
 				progressiveEditsQueue.dispose();
 			});
 
@@ -277,18 +279,13 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		return locations;
 	}
 
-	confirmEdits(uri: URI, apply: boolean): Promise<void> {
+	confirmEdits(uri: URI): Promise<void> {
 		const editStrategy = this.editStrategies.get(uri);
 		if (!editStrategy) {
 			this.error('confirmEdits', `Edit strategy for ${uri.toString()} not found`);
 			return Promise.resolve();
 		}
-
-		if (apply) {
-			editStrategy.apply();
-		} else {
-			editStrategy.cancel();
-		}
+		editStrategy.apply();
 
 		this.dispose();
 		return Promise.resolve();
@@ -296,6 +293,8 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 
 	cancelEdits(): Promise<void> {
 		this.editStrategies.forEach(editStrategy => editStrategy.cancel());
+		this.activeResponse?.recordEdits(this.editCodeblockInProgress.get()!, undefined);
+
 		this.dispose();
 		return Promise.resolve();
 	}
@@ -311,18 +310,21 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 	public override dispose(): void {
 		super.dispose();
 
-		this._pendingRequests.forEach(promise => promise.cancel());
-		this._pendingRequests.clear();
+		const codeblockNumber = this.editCodeblockInProgress.get();
+
 		this._receivedProgress.clear();
 		this._pendingEdits.clear();
 		this.editStrategies.forEach(editStrategy => editStrategy.dispose());
+		this.editStrategies.clear();
 		this.textModels.forEach(textModel => {
 			textModel.textModel0.dispose();
 		});
 		this.textModels.clear();
-		this.editStrategies.clear();
 		this.editResponseIdInProgress.reset();
 		this.editCodeblockInProgress.reset();
+		const appliedEdits = this.activeResponse?.appliedEdits.get(codeblockNumber!);
+		this.activeResponse?.recordEdits(codeblockNumber!, appliedEdits);
+		this.activeResponse = undefined;
 	}
 }
 

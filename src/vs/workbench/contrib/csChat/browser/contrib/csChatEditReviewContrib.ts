@@ -66,7 +66,7 @@ export class CSChatEditReviewLens extends Disposable {
 					lenses,
 					dispose: () => { }
 				};
-			}
+			},
 		}));
 	}
 }

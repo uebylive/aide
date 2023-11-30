@@ -68,7 +68,7 @@ export interface IChatResponseModel {
 	readonly followups?: ICSChatFollowup[] | undefined;
 	readonly errorDetails?: IChatResponseErrorDetails;
 	setVote(vote: CSChatSessionVoteDirection): void;
-	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -353,8 +353,12 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void {
-		this._appliedEdits.set(codeblockIndex, edits);
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
+		if (edits) {
+			this._appliedEdits.set(codeblockIndex, edits);
+		} else {
+			this._appliedEdits.delete(codeblockIndex);
+		}
 		this._onDidChange.fire();
 	}
 }

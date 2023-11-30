@@ -111,7 +111,7 @@ export interface IChatResponseViewModel {
 	agentAvatarHasBeenRendered?: boolean;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: CSChatSessionVoteDirection): void;
-	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void;
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void;
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 }
@@ -423,7 +423,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		this._model.setVote(vote);
 	}
 
-	recordEdits(codeblockIndex: number, edits: IChatEditSummary): void {
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
 		this._modelChangeCount++;
 		this._model.recordEdits(codeblockIndex, edits);
 	}

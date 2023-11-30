@@ -300,7 +300,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		}
 
 		dom.clearNode(this.exportedLocationRibbon);
-		this.element.classList.toggle('applying-edits', !!(isResponseVM(data.element) && data.edits && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0));
+		this.element.classList.toggle('applying-edits', isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0);
 		if (isResponseVM(data.element) && data.edits && data.element.appliedEdits.get(data.codeBlockIndex)) {
 			const summary = this.exportedLocationRibbon.appendChild($('div.edit-summary', undefined));
 			const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.endLineNumber;
