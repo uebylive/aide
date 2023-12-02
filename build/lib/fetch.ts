@@ -10,7 +10,6 @@ import * as ansiColors from 'ansi-colors';
 import * as crypto from 'crypto';
 import * as through2 from 'through2';
 import { Stream } from 'stream';
-import fetch from 'node-fetch';
 
 export interface IFetchOptions {
 	base?: string;
@@ -53,8 +52,6 @@ export async function fetchUrl(url: string, options: IFetchOptions, retries = 10
 		const controller = new AbortController();
 		const timeout = setTimeout(() => controller.abort(), 30 * 1000);
 		try {
-			// @ts-ignore (We know this will work as the types are the same at the end
-			// of the day)
 			const response = await fetch(url, {
 				...options.nodeFetchOptions,
 				signal: controller.signal as any /* Typings issue with lib.dom.d.ts */
