@@ -213,15 +213,20 @@ export async function startSidecarBinary(
 	fs.unlinkSync(zipDestination);
 	// Get name of the corresponding executable for platform
 
-	const webserverPath = path.join(sidecarDestination, 'target', 'release', 'webserver');
+	let webserverPath = null;
+	if (os.platform() === 'win32') {
+		webserverPath = path.join(sidecarDestination, 'target', 'release', 'webserver.exe');
+	} else {
+		webserverPath = path.join(sidecarDestination, 'target', 'release', 'webserver');
+	}
 
 	if (os.platform() === 'darwin' || os.platform() === 'linux') {
 		// Now we want to change the permissions for the following files:
 		// target/release/webserver
 		// qdrant/qdrant_mac
 		// onnxruntime/libonnxruntime.dylib
-		const qdrantPath = path.join(sidecarDestination, 'qdrant', 'qdrant_mac');
-		const onnxPath = path.join(sidecarDestination, 'onnxruntime', 'libonnxruntime.dylib');
+		const qdrantPath = path.join(sidecarDestination, 'sidecar', 'qdrant', 'qdrant_mac');
+		const onnxPath = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.dylib');
 		fs.chmodSync(webserverPath, 0o7_5_5);
 		fs.chmodSync(qdrantPath, 0o7_5_5);
 		fs.chmodSync(onnxPath, 0o7_5_5);
@@ -230,9 +235,9 @@ export async function startSidecarBinary(
 	if (os.platform() === 'darwin') {
 		// We need to run this command on the darwin platform
 		await runCommand(`xattr -dr com.apple.quarantine ${webserverPath}`);
-		const qdrantPath = path.join(sidecarDestination, 'qdrant', 'qdrant_mac');
+		const qdrantPath = path.join(sidecarDestination, 'sidecar', 'qdrant', 'qdrant_mac');
 		await runCommand(`xattr -dr com.apple.quarantine ${qdrantPath}`);
-		const onnxPath = path.join(sidecarDestination, 'onnxruntime', 'libonnxruntime.dylib');
+		const onnxPath = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.dylib');
 		await runCommand(`xattr -dr com.apple.quarantine ${onnxPath}`);
 	}
 
@@ -268,10 +273,15 @@ export async function startSidecarBinary(
 			};
 			const settings: any = os.platform() === 'win32' ? windowsSettings : macLinuxSettings;
 
-			const qdrantDirectory = path.join(sidecarDestination, 'qdrant');
-			const dylibDirectory = path.join(sidecarDestination, 'onnxruntime');
-			const modelDirectory = path.join(sidecarDestination, 'models', 'all-MiniLM-L6-v2');
-			const sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver');
+			const qdrantDirectory = path.join(sidecarDestination, 'sidecar', 'qdrant');
+			const dylibDirectory = path.join(sidecarDestination, 'sidecar', 'onnxruntime');
+			const modelDirectory = path.join(sidecarDestination, 'sidecar', 'models', 'all-MiniLM-L6-v2');
+			let sidecarBinary = '';
+			if (os.platform() === 'win32') {
+				sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver.exe');
+			} else {
+				sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver');
+			}
 			const args = ['--qdrant-binary-directory', qdrantDirectory, '--dylib-directory', dylibDirectory, '--model-dir', modelDirectory, '--qdrant-url', 'http://127.0.0.1:6334'];
 			console.log('what are the args');
 			console.log(args, sidecarBinary);
