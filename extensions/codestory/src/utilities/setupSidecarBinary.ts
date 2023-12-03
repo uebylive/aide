@@ -225,11 +225,14 @@ export async function startSidecarBinary(
 		// target/release/webserver
 		// qdrant/qdrant_mac
 		// onnxruntime/libonnxruntime.dylib
+		// onnxruntime/libonnxruntime.so
 		const qdrantPath = path.join(sidecarDestination, 'sidecar', 'qdrant', 'qdrant_mac');
 		const onnxPath = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.dylib');
+		const onnxPathLinux = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.so');
 		fs.chmodSync(webserverPath, 0o7_5_5);
 		fs.chmodSync(qdrantPath, 0o7_5_5);
 		fs.chmodSync(onnxPath, 0o7_5_5);
+		fs.chmodSync(onnxPathLinux, 0o7_5_5);
 	}
 
 	if (os.platform() === 'darwin') {
