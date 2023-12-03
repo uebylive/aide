@@ -293,7 +293,7 @@ function packageTask(type, platform, arch, sourceFolderName, destinationFolderNa
 		const date = new Date().toISOString();
 
 		const productJsonStream = gulp.src(['product.json'], { base: '.' })
-			.pipe(json({ commit, date, version, serverDownloadUrlTemplate: 'https://github.com/codestoryai/binaries/releases/download/${version}.${release}/aide-reh-${os}-${arch}-${version}.${release}.tar.gz' }));
+			.pipe(json({ commit, date, version }));
 
 		const license = gulp.src(['remote/LICENSE'], { base: 'remote', allowEmpty: true });
 
