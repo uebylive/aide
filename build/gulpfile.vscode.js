@@ -250,7 +250,7 @@ function packageTask(platform, arch, sourceFolderName, destinationFolderName, op
 			.pipe(json(packageJsonUpdates));
 
 		const date = new Date().toISOString();
-		const productJsonUpdate = { commit, date, checksums, version };
+		const productJsonUpdate = { commit, date, checksums, version, serverDownloadUrlTemplate: 'https://github.com/codestoryai/binaries/releases/download/${version}.${release}/aide-reh-${os}-${arch}-${version}.${release}.tar.gz' };
 
 		const productJsonStream = gulp.src(['product.json'], { base: '.' })
 			.pipe(json(productJsonUpdate));
