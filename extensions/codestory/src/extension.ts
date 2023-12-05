@@ -30,6 +30,7 @@ import { CSInteractiveEditorSessionProvider } from './providers/editorSessionPro
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
+import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 
 
 class ProgressiveTrackSymbols {
@@ -97,6 +98,7 @@ export async function activate(context: ExtensionContext) {
 	const repoHash = await getGitCurrentHash(
 		rootPath,
 	);
+	const openAIKey = getOpenAIApiKey();
 
 	// We also get some context about the workspace we are in and what we are
 	// upto
@@ -120,7 +122,7 @@ export async function activate(context: ExtensionContext) {
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
 	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
-	const sidecarClient = new SideCarClient(sidecarUrl);
+	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey);
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
 		// We assume the root-path is the one we are interested in
@@ -165,7 +167,10 @@ export async function activate(context: ExtensionContext) {
 		// We should be using the searchIndexCollection instead here, but for now
 		// embedding search is fine
 		// Here we will ping the semantic client instead so we can get the results
-		const results = await sidecarClient.getSemanticSearchResult(prompt, currentRepo);
+		const results = await sidecarClient.getSemanticSearchResult(
+			prompt,
+			currentRepo,
+		);
 		return results;
 	});
 
@@ -187,7 +192,11 @@ export async function activate(context: ExtensionContext) {
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo, projectContext,
 	);
-	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(sidecarClient, currentRepo, rootPath ?? '');
+	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
+		sidecarClient,
+		currentRepo,
+		rootPath ?? '',
+	);
 	const interactiveSession = csChat.registerCSChatSessionProvider(
 		'cs-chat', chatSessionProvider
 	);

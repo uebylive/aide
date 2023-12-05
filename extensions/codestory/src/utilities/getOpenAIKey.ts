@@ -6,24 +6,21 @@
 
 import * as vscode from 'vscode';
 
-
-const OPENAI_API_KEY = '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';
-
-export const getOpenAIApiKey = (): string => {
+export const getOpenAIApiKey = (): string | null => {
 	const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
 	const openAIApiKey = codestoryConfiguration.get('openAIApiKey');
 	if (openAIApiKey === undefined) {
-		return OPENAI_API_KEY;
+		return null;
 	}
 	if (openAIApiKey === '') {
-		return OPENAI_API_KEY;
+		return null;
 	}
 	if (typeof openAIApiKey === 'string') {
 		if (openAIApiKey === 'NOT_SET') {
-			return OPENAI_API_KEY;
+			return null;
 		} else {
 			return openAIApiKey;
 		}
 	}
-	return OPENAI_API_KEY;
+	return null;
 };

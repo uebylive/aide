@@ -295,7 +295,11 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 	sidecarClient: SideCarClient;
 	repoRef: RepoRef;
 	workingDirectory: string;
-	constructor(sidecarClient: SideCarClient, repoRef: RepoRef, workingDirectory: string) {
+	constructor(
+		sidecarClient: SideCarClient,
+		repoRef: RepoRef,
+		workingDirectory: string,
+	) {
 		this.label = 'cs-chat-editor';
 		this.sidecarClient = sidecarClient;
 		this.repoRef = repoRef;
