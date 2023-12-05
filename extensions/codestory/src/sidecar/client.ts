@@ -42,11 +42,14 @@ export class RepoRef {
 
 export class SideCarClient {
 	private _url: string;
+	private _openAIKey: string | null = null;
 
 	constructor(
-		url: string
+		url: string,
+		openAIKey: string | null,
 	) {
 		this._url = url;
+		this._openAIKey = openAIKey;
 	}
 
 	getRepoListUrl(): string {
@@ -55,13 +58,18 @@ export class SideCarClient {
 		return baseUrl.toString();
 	}
 
-	async getRangeForDiagnostics(textDocumentWeb: TextDocument, snippetInformation: SnippetInformation, thresholdToExpand: number) {
+	async getRangeForDiagnostics(
+		textDocumentWeb: TextDocument,
+		snippetInformation: SnippetInformation,
+		thresholdToExpand: number,
+	) {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/tree_sitter/diagnostic_parsing';
 		const body = {
 			text_document_web: textDocumentWeb,
 			range: snippetInformation,
 			threshold_to_expand: thresholdToExpand,
+			openai_key: this._openAIKey,
 		};
 		const url = baseUrl.toString();
 		const response = await fetch(url, {
@@ -75,7 +83,12 @@ export class SideCarClient {
 		console.log(responseJson);
 	}
 
-	async getSymbolsForGoToDefinition(codeSnippet: string, repoRef: RepoRef, threadId: string, language: string): Promise<string[]> {
+	async getSymbolsForGoToDefinition(
+		codeSnippet: string,
+		repoRef: RepoRef,
+		threadId: string,
+		language: string,
+	): Promise<string[]> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/goto_definition_symbols';
 		const body = {
@@ -83,6 +96,7 @@ export class SideCarClient {
 			code_snippet: codeSnippet,
 			thread_id: threadId,
 			language: language,
+			openai_key: this._openAIKey,
 		};
 		const url = baseUrl.toString();
 		const response = await fetch(url, {
@@ -124,14 +138,20 @@ export class SideCarClient {
 	}
 
 
-	async *getInLineEditorResponse(context: InEditorRequest): AsyncIterableIterator<InLineAgentMessage> {
+	async *getInLineEditorResponse(
+		context: InEditorRequest,
+	): AsyncIterableIterator<InLineAgentMessage> {
 		console.log('getInLineEditorResponse');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/in_editor/answer';
 		console.log('getInLineEditorResponse');
 		console.log(context);
 		const url = baseUrl.toString();
-		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, context);
+		const finalContext = {
+			...context,
+			openai_key: this._openAIKey,
+		}
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, finalContext);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
 			for (const lineSinglePart of lineParts) {
@@ -145,16 +165,22 @@ export class SideCarClient {
 		}
 	}
 
-	async getParsedComments(context: InEditorTreeSitterDocumentationQuery): Promise<InEditorTreeSitterDocumentationReply> {
+	async getParsedComments(
+		context: InEditorTreeSitterDocumentationQuery,
+	): Promise<InEditorTreeSitterDocumentationReply> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/tree_sitter/documentation_parsing';
 		const url = baseUrl.toString();
+		const finalContext = {
+			...context,
+			openai_key: this._openAIKey,
+		}
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(context),
+			body: JSON.stringify(finalContext),
 		});
 		const responseJson = await response.json();
 		return responseJson as InEditorTreeSitterDocumentationReply;
@@ -180,6 +206,7 @@ export class SideCarClient {
 			user_query: userQuery,
 			session_id: sessionId,
 			code_block_index: codeBlockIndex,
+			openai_key: this._openAIKey,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -213,6 +240,7 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
+			openai_key: this._openAIKey,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -229,7 +257,12 @@ export class SideCarClient {
 		}
 	}
 
-	async *explainQuery(query: string, repoRef: RepoRef, selection: SelectionDataForExplain, threadId: string): AsyncIterableIterator<ConversationMessage> {
+	async *explainQuery(
+		query: string,
+		repoRef: RepoRef,
+		selection: SelectionDataForExplain,
+		threadId: string,
+	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/explain';
 		baseUrl.searchParams.set('repo_ref', repoRef.getRepresentation());
@@ -238,6 +271,9 @@ export class SideCarClient {
 		baseUrl.searchParams.set('end_line', selection.lineEnd.toString());
 		baseUrl.searchParams.set('relative_path', selection.relativeFilePath);
 		baseUrl.searchParams.set('thread_id', threadId);
+		if (this._openAIKey !== null) {
+			baseUrl.searchParams.set('openai_key', this._openAIKey);
+		}
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
@@ -253,7 +289,11 @@ export class SideCarClient {
 		}
 	}
 
-	async *searchQuery(query: string, repoRef: RepoRef, threadId: string): AsyncIterableIterator<ConversationMessage> {
+	async *searchQuery(
+		query: string,
+		repoRef: RepoRef,
+		threadId: string,
+	): AsyncIterableIterator<ConversationMessage> {
 		// how do we create the url properly here?
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/search_agent';
@@ -298,6 +338,9 @@ export class SideCarClient {
 			const baseUrl = new URL(this._url);
 			baseUrl.pathname = '/api/repo/sync';
 			baseUrl.searchParams.set('repo', repoRef.getRepresentation());
+			if (this._openAIKey !== null) {
+				baseUrl.searchParams.set('openai_key', this._openAIKey);
+			}
 			const url = baseUrl.toString();
 			const response = await fetch(url);
 			const responseJson = await response.json();
@@ -332,11 +375,17 @@ export class SideCarClient {
 		}
 	}
 
-	async getSemanticSearchResult(query: string, reporef: RepoRef): Promise<CodeSymbolInformationEmbeddings[]> {
+	async getSemanticSearchResult(
+		query: string,
+		reporef: RepoRef,
+	): Promise<CodeSymbolInformationEmbeddings[]> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/hybrid_search';
 		baseUrl.searchParams.set('repo', reporef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
+		if (this._openAIKey !== null) {
+			baseUrl.searchParams.set('openai_key', this._openAIKey);
+		}
 		const url = baseUrl.toString();
 		const response = await fetch(url);
 		const responseJson = await response.json();
