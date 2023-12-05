@@ -69,7 +69,6 @@ export class SideCarClient {
 			text_document_web: textDocumentWeb,
 			range: snippetInformation,
 			threshold_to_expand: thresholdToExpand,
-			openai_key: this._openAIKey,
 		};
 		const url = baseUrl.toString();
 		const response = await fetch(url, {
@@ -171,16 +170,12 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/tree_sitter/documentation_parsing';
 		const url = baseUrl.toString();
-		const finalContext = {
-			...context,
-			openai_key: this._openAIKey,
-		}
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(finalContext),
+			body: JSON.stringify(context),
 		});
 		const responseJson = await response.json();
 		return responseJson as InEditorTreeSitterDocumentationReply;

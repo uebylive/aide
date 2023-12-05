@@ -410,7 +410,6 @@ class StreamProcessor {
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
-		console.log('prepareLine', answerStreamLine.line, this.documentLineIndex);
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -538,7 +537,7 @@ class DocumentManager {
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
 		// console.log('replaceLine');
-		// console.log('replaceLine', index, newLine);
+		// console.log('replaceLine', index, newLine.adjustedContent);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		this.progress.report({
 			edits: [
@@ -554,7 +553,7 @@ class DocumentManager {
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
 		// console.log('replaceLines');
-		// console.log('replaceLines', startIndex, endIndex, newLine);
+		// console.log('replaceLines', startIndex, endIndex, newLine.adjustedContent);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -578,7 +577,7 @@ class DocumentManager {
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
 		// console.log('appendLine');
-		// console.log('appendLine', newLine);
+		// console.log('appendLine', newLine.adjustedContent);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
@@ -594,7 +593,7 @@ class DocumentManager {
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
 		// console.log('insertLineAfter');
-		// console.log('insertLineAfter', index, newLine);
+		// console.log('insertLineAfter', index, newLine.adjustedContent);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [

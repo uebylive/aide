@@ -8,7 +8,7 @@ import { Logger } from 'winston';
 import { getOpenAIApiKey } from '../utilities/getOpenAIKey';
 
 const openai = new OpenAI({
-	apiKey: getOpenAIApiKey(),
+	apiKey: getOpenAIApiKey() ?? '',
 });
 
 

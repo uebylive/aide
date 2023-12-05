@@ -136,12 +136,3 @@ export async function* callServerEventStreamingBufferedPOST(url: string, body: a
 		reader.releaseLock();
 	}
 }
-
-
-function add(a: number, b: number): number {
-	const tempA = a;
-
-	const tempB = b;
-
-	return tempA + tempB;
-}

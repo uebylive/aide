@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, csChat, TextDocument, window, workspace } from 'vscode';
+import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -31,6 +31,7 @@ import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
+import { AideQuickFix } from './quickActions/fix';
 
 
 class ProgressiveTrackSymbols {
@@ -182,6 +183,10 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 	);
 	codeGraph.loadGraph(filesToTrack);
+
+	// Register the quick action providers
+	const aideQuickFix = new AideQuickFix();
+	languages.registerCodeActionsProvider('*', aideQuickFix);
 
 
 	// Register chat provider

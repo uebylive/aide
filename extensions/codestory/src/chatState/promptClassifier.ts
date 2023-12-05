@@ -46,7 +46,7 @@ export const promptClassifier = async (userMessage: string): Promise<UserMessage
 		]
 	},
 		{
-			apiKey: getOpenAIApiKey(),
+			apiKey: getOpenAIApiKey() ?? '',
 		}
 	);
 	if (completion.choices.length === 0) {

@@ -11,7 +11,7 @@ import { OpenAIChat, OpenAIChatTypes } from '@axflow/models/openai/chat';
 import { StreamingJsonResponse, type MessageType } from '@axflow/models/shared';
 
 const openai = new OpenAI({
-	apiKey: getOpenAIApiKey(),
+	apiKey: getOpenAIApiKey() ?? '',
 });
 
 export const generateChatCompletion = async (
@@ -37,7 +37,7 @@ export const generateChatCompletionAx = async (
 			max_tokens: 1000,
 		},
 		{
-			apiKey: getOpenAIApiKey(),
+			apiKey: getOpenAIApiKey() ?? '',
 		},
 	);
 	return completion;

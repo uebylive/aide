@@ -20,7 +20,7 @@ import { generateFileInformationSummary } from './search';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 
 const openai = new OpenAI({
-	apiKey: getOpenAIApiKey(),
+	apiKey: getOpenAIApiKey() ?? '',
 });
 // const openai = new OpenAI({
 // 	apiKey: 'EMPTY',
