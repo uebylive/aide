@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This is a script for applying the latest changes from CHAT_DIR in the upstream vscode repo to the CSCHAT_DIR in our repo
+# This is a script for applying the latest changes from chat in the upstream vscode repo to cschat in our repo
 # This needs to be updated to handle all the following paths:
 # extensions/codestory/types/*.d.ts
 # src/vscode-dts/vscode.proposed.*.d.ts
@@ -15,13 +15,30 @@
 # src/vs/workbench/contrib/csChat
 # src/vs/workbench/contrib/inlineChat
 
+UPSTREAM_REMOTE=upstream
+UPSTREAM_BRANCH=main
+
+OUR_REMOTE=origin
+OUR_BRANCH=cs-main
+
+# The directories for chat and csChat
+CHAT_DIR=src/vs/workbench/contrib/chat
+CSCHAT_DIR=src/vs/workbench/contrib/csChat
+INLINE_CHAT_DIR=src/vs/workbench/contrib/inlineChat
+INLINE_CSCHAT_DIR=src/vs/workbench/contrib/inlineCSChat
+
 # Method for fixing the files in the csChat folder
 fix_files() {
 	rm -rf $CSCHAT_DIR
 	cp -r $CHAT_DIR $CSCHAT_DIR
+	rm -rf $INLINE_CSCHAT_DIR
+	cp -r $INLINE_CHAT_DIR $INLINE_CSCHAT_DIR
 
 	# Rename all files within cschat to replace occurences of 'chat' to 'csChat'. Ensure only filenames are changed, not the paths or content.
 	find $CSCHAT_DIR -depth -name "*chat*" -execdir bash -c 'mv -i "$1" "${1//chat/csChat}"' bash {} \;
+
+	# Rename all files within inlineCSChat to replace occurences of 'inlineChat' to 'inlineCSChat'. Ensure only filenames are changed, not the paths or content.
+	find $INLINE_CSCHAT_DIR -depth -name "*inlineChat*" -execdir bash -c 'mv -i "$1" "${1//inlineChat/inlineCSChat}"' bash {} \;
 
 	# Additionally, also replace files with occurences of 'voiceChat' to 'csVoiceChat'
 	find $CSCHAT_DIR -depth -name "*voiceChat*" -execdir bash -c 'mv -i "$1" "${1//voiceChat/csVoiceChat}"' bash {} \;
@@ -38,6 +55,7 @@ create_cschat_patch() {
 
 	# Commit the changes
 	git add $CSCHAT_DIR
+	git add $INLINE_CSCHAT_DIR
 	git commit -m "Add current changes" --no-verify
 	CURRENT_CHANGES=$(git rev-parse HEAD)
 
@@ -59,12 +77,14 @@ create_cschat_patch() {
 
 	# Commit the changes
 	git add $CSCHAT_DIR
+	git add $INLINE_CSCHAT_DIR
 	git commit -m "Add upstream changes" --no-verify
 	UPSTREAM_CHANGES=$(git rev-parse HEAD)
 
 	# Create a patch file with the diff on only the cschat folder between the 'Add current changes' commit and
 	# the 'Add upstream changes' commit. Do remember that we have performed a merge in between these two commits.
 	git diff $CURRENT_CHANGES $UPSTREAM_CHANGES -- $CSCHAT_DIR > chat_changes.patch
+	git diff $CURRENT_CHANGES $UPSTREAM_CHANGES -- $INLINE_CSCHAT_DIR >> chat_changes.patch
 
 	# Go back to cs-main and delete the patch branch
 	git checkout $OUR_BRANCH
@@ -100,16 +120,6 @@ apply_cschat_patch() {
 		read -p "Once resolved and all changes are staged, press enter to continue"
 	fi
 }
-
-UPSTREAM_REMOTE=upstream
-UPSTREAM_BRANCH=main
-
-OUR_REMOTE=origin
-OUR_BRANCH=cs-main
-
-# The directories for chat and csChat
-CHAT_DIR=src/vs/workbench/contrib/chat
-CSCHAT_DIR=src/vs/workbench/contrib/csChat
 
 # Verify this is the OUR_BRANCH branch
 CURRENT_BRANCH=$(git branch --show-current)
