@@ -85,7 +85,7 @@ export async function activate(context: ExtensionContext) {
 	}
 	const agentSystemInstruction = readCustomSystemInstruction();
 	if (agentSystemInstruction === null) {
-		window.showInformationMessage(
+		console.log(
 			'Aide can help you better if you give it custom instructions by going to your settings and setting it in aide.systemInstruction (search for this string in User Settings) and reload vscode for this to take effect by doing Cmd+Shift+P: Developer: Reload Window'
 		);
 	}
