@@ -46,6 +46,8 @@ import { SettingsEditor2Input } from 'vs/workbench/services/preferences/common/p
 import { IUserDataProfileService, CURRENT_PROFILE_CONTEXT } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ModelSelectionEditor } from 'vs/workbench/contrib/preferences/browser/modelSelectionEditor';
+import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 
 const SETTINGS_EDITOR_COMMAND_SEARCH = 'settings.action.search';
 
@@ -82,6 +84,17 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	),
 	[
 		new SyncDescriptor(KeybindingsEditorInput)
+	]
+);
+
+Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
+	EditorPaneDescriptor.create(
+		ModelSelectionEditor,
+		ModelSelectionEditor.ID,
+		nls.localize('modelSelectionEditor', "Model Selection Editor")
+	),
+	[
+		new SyncDescriptor(ModelSelectionEditorInput)
 	]
 );
 
@@ -180,6 +193,7 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 
 		this.registerSettingsActions();
 		this.registerKeybindingsActions();
+		this.registerModelSelectionActions();
 
 		this.updatePreferencesEditorMenuItem();
 		this._register(workspaceContextService.onDidChangeWorkbenchState(() => this.updatePreferencesEditorMenuItem()));
@@ -1214,6 +1228,29 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 				});
 			}
 		}
+	}
+
+	private registerModelSelectionActions() {
+		const id = 'workbench.action.openModelSelection';
+		this._register(registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id,
+					title: { value: nls.localize('openModelSelection', "Open model selection options"), original: 'Open model selection options' },
+					category,
+					icon: preferencesOpenSettingsIcon,
+					keybinding: {
+						when: null,
+						weight: KeybindingWeight.WorkbenchContrib,
+						primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyM)
+					},
+					menu: { id: MenuId.CommandPalette }
+				});
+			}
+			run(accessor: ServicesAccessor) {
+				return accessor.get(IPreferencesService).openModelSelectionSettings(false);
+			}
+		}));
 	}
 }
 

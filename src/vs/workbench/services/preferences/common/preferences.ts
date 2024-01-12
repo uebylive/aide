@@ -254,6 +254,7 @@ export interface IPreferencesService {
 	openWorkspaceSettings(options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	openFolderSettings(options: IOpenSettingsOptions & { folderUri: IOpenSettingsOptions['folderUri'] }): Promise<IEditorPane | undefined>;
 	openGlobalKeybindingSettings(textual: boolean, options?: IKeybindingsEditorOptions): Promise<void>;
+	openModelSelectionSettings(textual: boolean): Promise<void>;
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined>;
 	openLanguageSpecificSettings(languageId: string, options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	getEditableSettingsURI(configurationTarget: ConfigurationTarget, resource?: URI): Promise<URI | null>;
@@ -329,3 +330,20 @@ export interface IDefineKeybindingEditorContribution extends IEditorContribution
 export const FOLDER_SETTINGS_PATH = '.vscode/settings.json';
 export const DEFAULT_SETTINGS_EDITOR_SETTING = 'workbench.settings.openDefaultSettings';
 export const USE_SPLIT_JSON_SETTING = 'workbench.settings.useSplitJSON';
+
+export interface IModelItemEntry {
+	modelItem: IModelItem;
+}
+
+export interface IModelItem {
+	name: string;
+	provider: string;
+}
+
+export interface IProviderItemEntry {
+	providerItem: IProviderItem;
+}
+
+export interface IProviderItem {
+	name: string;
+}

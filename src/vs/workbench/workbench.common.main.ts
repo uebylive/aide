@@ -106,6 +106,7 @@ import 'vs/workbench/services/authentication/browser/authenticationService';
 import 'vs/workbench/services/hover/browser/hoverService';
 import 'vs/workbench/services/assignment/common/assignmentService';
 import 'vs/workbench/services/outline/browser/outlineService';
+import 'vs/workbench/services/aiModel/browser/aiModelService';
 import 'vs/workbench/services/languageDetection/browser/languageDetectionWorkerServiceImpl';
 import 'vs/editor/common/services/languageFeaturesService';
 import 'vs/editor/common/services/semanticTokensStylingService';

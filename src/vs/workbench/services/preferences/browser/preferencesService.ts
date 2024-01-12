@@ -45,6 +45,7 @@ import { isObject } from 'vs/base/common/types';
 import { SuggestController } from 'vs/editor/contrib/suggest/browser/suggestController';
 import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
+import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 
 const emptyEditableSettingsContent = '{\n}';
 
@@ -336,6 +337,12 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 			}
 		}
 
+	}
+
+	async openModelSelectionSettings(textual: boolean): Promise<void> {
+		if (!textual) {
+			await this.editorService.openEditor(this.instantiationService.createInstance(ModelSelectionEditorInput));
+		}
 	}
 
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined> {
