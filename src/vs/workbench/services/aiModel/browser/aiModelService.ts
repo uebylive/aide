@@ -3,139 +3,68 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { VSBuffer } from 'vs/base/common/buffer';
 import { parse } from 'vs/base/common/json';
 import { Disposable } from 'vs/base/common/lifecycle';
+import * as network from 'vs/base/common/network';
 import { URI } from 'vs/base/common/uri';
-import { IAIModelSelectionService, IModelSelectionSettings, LanguageModelItem, ModelProviderItem, ModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, IModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
 import { IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 
-/// JSON schema for the model selection settings file
-// {
-// 	"slowModel": "GPT-2",
-// 	"fastModel": "GPT-3"
-//  "models": [
-//    {
-//    	"title": "GPT-2",
-//    	"name": "gpt2",
-//    	"contextLength": 256,
-//    	"temperature": 0.7,
-//    	"provider": "OpenAI"
-//    },
-//    {
-//    	"title": "GPT-3",
-//    	"name": "gpt3",
-//    	"contextLength": 256,
-//    	"temperature": 0.7,
-//    	"provider": "OpenAI"
-//    }
-//  ],
-//  "providers": [
-//    {
-//    	"name": "OpenAI",
-//    	"baseURL": "https://api.openai.com/v1",
-//    	"apiKey": "your-api-key"
-//    },
-//    {
-//    	"name": "EleutherAI",
-//    	"baseURL": "https://models.eleuther.ai",
-//    	"apiKey": ""
-//    }
-//  ]
-// }
-
 const defaultModelSelectionSettings: IModelSelectionSettings = {
-	slowModel: 'GPT-4',
-	fastModel: 'GPT-3.5',
-	models: [
-		{
-			title: 'CodeStory',
-			name: 'CodeStory',
+	slowModel: 'gpt-4-32k',
+	fastModel: 'gpt-3.5-turbo',
+	models: {
+		'inline-chat-edit-lora-v0.0': {
+			name: 'CodeStory (Mistral 7B fine-tuned)',
 			contextLength: 8192,
 			temperature: 0.2,
 			provider: 'Ollama'
 		},
-		{
-			title: 'GPT-3.5',
+		'gpt-3.5-turbo': {
 			name: 'GPT-3.5',
-			contextLength: 16385,
+			contextLength: 4096,
 			temperature: 0.2,
 			provider: 'OpenAI'
 		},
-		{
-			title: 'GPT-4',
-			name: 'GPT-4',
-			contextLength: 8192,
+		'gpt-4-32k': {
+			name: 'GPT-4 32k',
+			contextLength: 32768,
 			temperature: 0.2,
 			provider: 'OpenAI'
 		},
-		{
-			title: 'GPT-4 Turbo',
+		'gpt-4-1106-preview': {
 			name: 'GPT-4 Turbo',
-			contextLength: 8192,
+			contextLength: 128000,
 			temperature: 0.2,
 			provider: 'OpenAI'
 		},
-	],
-	providers: [
-		{
+	},
+	providers: {
+		'openai-default': {
 			name: 'OpenAI',
-			baseURL: 'https://api.openai.com/v1',
-			apiKey: 'your-api-key'
+			apiKey: undefined
 		},
-		{
-			name: 'Azure OpenAI',
-		},
-		{
+		'ollama': {
 			name: 'Ollama',
-			baseURL: 'http://localhost:11434',
+			apiKey: null
 		},
-		{
+		'lmstudio': {
 			name: 'LM Studio',
-			baseURL: 'http://localhost:1234',
+			apiKey: null
 		},
-		{
+		'togetherai': {
 			name: 'Together AI',
-			baseURL: 'https://api.together.xyz',
-			apiKey: ''
+			apiKey: undefined
 		}
-	]
+	}
 };
-
-function parseModelSelectionSettings(value: any): ModelSelectionSettings {
-	const providersObj = 'providers' in value && Array.isArray(value.providers) ? value.providers : defaultModelSelectionSettings.providers;
-	const providers: ModelProviderItem[] = providersObj.map((provider: any) => {
-		const name = 'name' in provider && typeof provider.name === 'string' ? provider.name : '';
-		const baseURL = 'baseURL' in provider && typeof provider.baseURL === 'string' ? provider.baseURL : '';
-		const apiKey = 'apiKey' in provider && typeof provider.apiKey === 'string' ? provider.apiKey : '';
-		return new ModelProviderItem(name, baseURL, apiKey);
-	});
-
-	const modelsObj = 'models' in value && Array.isArray(value.models) ? value.models : defaultModelSelectionSettings.models;
-	const models: LanguageModelItem[] = modelsObj.map((model: any) => {
-		const title = 'title' in model && typeof model.title === 'string' ? model.title : '';
-		const name = 'name' in model && typeof model.name === 'string' ? model.name : '';
-		const contextLength = 'contextLength' in model && typeof model.contextLength === 'number' ? model.contextLength : 0;
-		const temperature = 'temperature' in model && typeof model.temperature === 'number' ? model.temperature : 0;
-		const provider = 'provider' in model && typeof model.provider === 'string' ? model.provider : '';
-		return new LanguageModelItem(title, name, contextLength, temperature, provider);
-	});
-
-	const slowModel = 'slowModel' in value && typeof value.slowModel === 'string' ? value.slowModel : defaultModelSelectionSettings.slowModel;
-	const fastModel = 'fastModel' in value && typeof value.fastModel === 'string' ? value.fastModel : defaultModelSelectionSettings.fastModel;
-
-	return new ModelSelectionSettings(slowModel, fastModel, models, providers);
-}
 
 export class AIModelsService extends Disposable implements IAIModelSelectionService {
 	_serviceBrand: undefined;
 
-	private modelSelectionSettings: ModelSelectionSettings = new ModelSelectionSettings(
-		defaultModelSelectionSettings.slowModel,
-		defaultModelSelectionSettings.fastModel,
-		defaultModelSelectionSettings.models.map((model) => new LanguageModelItem(model.title, model.name, model.contextLength, model.temperature, model.provider)),
-		defaultModelSelectionSettings.providers.map((provider) => new ModelProviderItem(provider.name, provider.baseURL ?? '', provider.apiKey ?? ''))
-	);
+	private modelSelectionSettings: IModelSelectionSettings = defaultModelSelectionSettings;
 
 	constructor(
 		@IFileService private readonly fileService: IFileService
@@ -148,23 +77,48 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return JSON.stringify(defaultModelSelectionSettings, null, '\t');
 	}
 
-	getModelSelectionSettings(): ModelSelectionSettings {
+	getModelSelectionSettings(): IModelSelectionSettings {
 		return this.modelSelectionSettings;
 	}
 
 	private async init(): Promise<void> {
 		const modelSelectionSettings = await this.readModelSelectionSettings();
-		this.modelSelectionSettings = parseModelSelectionSettings(modelSelectionSettings);
+		this.modelSelectionSettings = this.mergeModelSelectionSettings(modelSelectionSettings);
 	}
 
 	private async readModelSelectionSettings(): Promise<Object> {
+		const modelSelectionSettingsFile = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/modelSelection.json' });
 		try {
-			const content = await this.fileService.readFile(URI.file('$HOME/aiModels.json'));
+			const exists = await this.fileService.exists(modelSelectionSettingsFile);
+			if (!exists) {
+				await this.fileService.writeFile(modelSelectionSettingsFile, VSBuffer.fromString(this.getDefaultModelSelectionContent()));
+			}
+			const content = await this.fileService.readFile(modelSelectionSettingsFile);
 			const value = parse(content.value.toString());
-			return Array.isArray(value) ? {} : value;
+			return Array.isArray(value) ? defaultModelSelectionSettings : value;
 		} catch (e) {
 			return {};
 		}
+	}
+
+	private mergeModelSelectionSettings(modelSelectionSettings: Object): IModelSelectionSettings {
+		const mergedSettings = { ...defaultModelSelectionSettings };
+		if (modelSelectionSettings && isModelSelectionSettings(modelSelectionSettings)) {
+			if (modelSelectionSettings.models) {
+				mergedSettings.models = { ...defaultModelSelectionSettings.models, ...modelSelectionSettings.models };
+			}
+			if (modelSelectionSettings.providers) {
+				mergedSettings.providers = { ...defaultModelSelectionSettings.providers, ...modelSelectionSettings.providers };
+			}
+
+			if (modelSelectionSettings.slowModel && modelSelectionSettings.models[modelSelectionSettings.slowModel]) {
+				mergedSettings.slowModel = modelSelectionSettings.slowModel;
+			}
+			if (modelSelectionSettings.fastModel && modelSelectionSettings.models[modelSelectionSettings.fastModel]) {
+				mergedSettings.fastModel = modelSelectionSettings.fastModel;
+			}
+		}
+		return mergedSettings;
 	}
 }
 

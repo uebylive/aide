@@ -57,19 +57,25 @@ export class ModelSelectionEditorModel extends EditorModel {
 
 	override async resolve(): Promise<void> {
 		const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
-		this._modelItems = modelSelectionSettings.models.map(model => ({
-			name: model.name,
-			provider: model.provider,
-			contextLength: model.contextLength,
-			temperature: model.temperature
-		}));
-		this._providerItems = modelSelectionSettings.providers.map(provider => ({
-			name: provider.name,
-			apiKey: provider.apiKey,
-			baseURL: provider.baseURL
-		}));
-		this._fastModel = this._modelItems.find(model => model.name === modelSelectionSettings.fastModel) ?? defaultFastModel;
-		this._slowModel = this._modelItems.find(model => model.name === modelSelectionSettings.slowModel) ?? defaultSlowModel;
+		this._modelItems = Object.keys(modelSelectionSettings.models).map(modelKey => {
+			const model = modelSelectionSettings.models[modelKey];
+			return {
+				name: model.name,
+				provider: model.provider,
+				contextLength: model.contextLength,
+				temperature: model.temperature
+			} as IModelItem;
+		});
+		this._providerItems = Object.keys(modelSelectionSettings.providers).map(providerKey => {
+			const provider = modelSelectionSettings.providers[providerKey];
+			return {
+				name: provider.name,
+				baseURL: provider.baseURL,
+				apiKey: provider.apiKey
+			} as IProviderItem;
+		});
+		this._fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
+		this._slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
 
 		return super.resolve();
 	}

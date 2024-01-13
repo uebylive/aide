@@ -10,74 +10,48 @@ export interface IAIModelSelectionService {
 	readonly _serviceBrand: undefined;
 
 	getDefaultModelSelectionContent(): string;
-	getModelSelectionSettings(): ModelSelectionSettings;
+	getModelSelectionSettings(): IModelSelectionSettings;
 }
 
 export interface ILanguageModelItem {
-	readonly title: string;
 	readonly name: string;
 	readonly contextLength: number;
 	readonly temperature: number;
 	readonly provider: string;
 }
 
+export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
+	return obj && typeof obj === 'object'
+		&& 'name' in obj && typeof obj['name'] === 'string'
+		&& 'contextLength' in obj && typeof obj['contextLength'] === 'number'
+		&& 'temperature' in obj && typeof obj['temperature'] === 'number'
+		&& 'provider' in obj && typeof obj['provider'] === 'string';
+}
+
 export interface IModelProviderItem {
 	readonly name: string;
 	readonly baseURL?: string;
-	readonly apiKey?: string;
+	readonly apiKey?: string | null;
+}
+
+export function isModelProviderItem(obj: any): obj is IModelProviderItem {
+	return obj && typeof obj === 'object'
+		&& 'name' in obj && typeof obj['name'] === 'string'
+		&& ('baseURL' in obj ? typeof obj['baseURL'] === 'string' : true)
+		&& ('apiKey' in obj ? typeof obj['apiKey'] === 'string' || typeof obj['apiKey'] === 'undefined' : true);
 }
 
 export interface IModelSelectionSettings {
 	readonly slowModel: string;
 	readonly fastModel: string;
-	readonly models: ILanguageModelItem[];
-	readonly providers: IModelProviderItem[];
+	readonly models: Record<string, ILanguageModelItem>;
+	readonly providers: Record<string, IModelProviderItem>;
 }
 
-export class ModelSelectionSettings {
-	_modelSelectionSettingsBrand: void = undefined;
-
-	public readonly slowModel: string;
-	public readonly fastModel: string;
-	public readonly models: LanguageModelItem[];
-	public readonly providers: ModelProviderItem[];
-
-	constructor(slowModel: string, fastModel: string, models: LanguageModelItem[], providers: ModelProviderItem[]) {
-		this.slowModel = slowModel;
-		this.fastModel = fastModel;
-		this.models = models;
-		this.providers = providers;
-	}
-}
-
-export class LanguageModelItem {
-	_languageModelItemBrand: void = undefined;
-
-	public readonly title: string;
-	public readonly name: string;
-	public readonly contextLength: number;
-	public readonly temperature: number;
-	public readonly provider: string;
-
-	constructor(title: string, name: string, contextLength: number, temperature: number, provider: string) {
-		this.title = title;
-		this.name = name;
-		this.contextLength = contextLength;
-		this.temperature = temperature;
-		this.provider = provider;
-	}
-}
-
-export class ModelProviderItem {
-	_modelProviderBrand: void = undefined;
-
-	public readonly name: string;
-	public readonly baseURL: string;
-	public readonly apiKey: string;
-
-	constructor(name: string, baseURL: string, apiKey: string) {
-		this.name = name;
-		this.baseURL = baseURL;
-		this.apiKey = apiKey;
-	}
+export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettings {
+	return obj && typeof obj === 'object'
+		&& ('slowModel' in obj ? typeof obj['slowModel'] === 'string' : true)
+		&& ('fastModel' in obj ? typeof obj['fastModel'] === 'string' : true)
+		&& ('models' in obj ? isModelProviderItem(obj['models']) : true)
+		&& ('providers' in obj ? isModelProviderItem(obj['providers']) : true);
 }
