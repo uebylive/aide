@@ -9,6 +9,7 @@ export const IAIModelSelectionService = createDecorator<IAIModelSelectionService
 export interface IAIModelSelectionService {
 	readonly _serviceBrand: undefined;
 
+	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): ModelSelectionSettings;
 }
 

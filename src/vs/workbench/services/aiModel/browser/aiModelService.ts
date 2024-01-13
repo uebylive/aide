@@ -144,6 +144,10 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		this.init();
 	}
 
+	public getDefaultModelSelectionContent(): string {
+		return JSON.stringify(defaultModelSelectionSettings, null, '\t');
+	}
+
 	getModelSelectionSettings(): ModelSelectionSettings {
 		return this.modelSelectionSettings;
 	}

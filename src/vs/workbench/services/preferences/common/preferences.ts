@@ -233,6 +233,9 @@ export interface IKeybindingsEditorOptions extends IEditorOptions {
 	query?: string;
 }
 
+export interface IModelSelectionEditorModel<T> extends IPreferencesEditorModel<T> {
+}
+
 export const IPreferencesService = createDecorator<IPreferencesService>('preferencesService');
 
 export interface IPreferencesService {
@@ -254,8 +257,9 @@ export interface IPreferencesService {
 	openWorkspaceSettings(options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	openFolderSettings(options: IOpenSettingsOptions & { folderUri: IOpenSettingsOptions['folderUri'] }): Promise<IEditorPane | undefined>;
 	openGlobalKeybindingSettings(textual: boolean, options?: IKeybindingsEditorOptions): Promise<void>;
-	openModelSelectionSettings(textual: boolean): Promise<void>;
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined>;
+	openModelSelectionSettings(textual: boolean): Promise<void>;
+	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;
 	openLanguageSpecificSettings(languageId: string, options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	getEditableSettingsURI(configurationTarget: ConfigurationTarget, resource?: URI): Promise<URI | null>;
 

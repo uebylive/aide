@@ -1251,6 +1251,19 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 				return accessor.get(IPreferencesService).openModelSelectionSettings(false);
 			}
 		}));
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'workbench.action.openDefaultModelSelectionFile',
+					title: { value: nls.localize('openDefaultModelSelectionFile', "Open Default Model Selection (JSON)"), original: 'Open Default Model Selection (JSON)' },
+					category,
+					menu: { id: MenuId.CommandPalette }
+				});
+			}
+			run(accessor: ServicesAccessor) {
+				return accessor.get(IPreferencesService).OpenDefaultModelSelectionFile();
+			}
+		});
 	}
 }
 

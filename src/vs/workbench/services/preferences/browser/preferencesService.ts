@@ -37,7 +37,7 @@ import { IEditorService, SIDE_GROUP, SIDE_GROUP_TYPE } from 'vs/workbench/servic
 import { KeybindingsEditorInput } from 'vs/workbench/services/preferences/browser/keybindingsEditorInput';
 import { DEFAULT_SETTINGS_EDITOR_SETTING, FOLDER_SETTINGS_PATH, IKeybindingsEditorOptions, IKeybindingsEditorPane, IOpenSettingsOptions, IPreferencesEditorModel, IPreferencesService, ISetting, ISettingsEditorOptions, USE_SPLIT_JSON_SETTING, validateSettingsEditorOptions } from 'vs/workbench/services/preferences/common/preferences';
 import { SettingsEditor2Input } from 'vs/workbench/services/preferences/common/preferencesEditorInput';
-import { defaultKeybindingsContents, DefaultKeybindingsEditorModel, DefaultRawSettingsEditorModel, DefaultSettings, DefaultSettingsEditorModel, Settings2EditorModel, SettingsEditorModel, WorkspaceConfigurationEditorModel } from 'vs/workbench/services/preferences/common/preferencesModels';
+import { defaultKeybindingsContents, DefaultKeybindingsEditorModel, DefaultModelSelectionEditorModel, DefaultRawSettingsEditorModel, DefaultSettings, DefaultSettingsEditorModel, Settings2EditorModel, SettingsEditorModel, WorkspaceConfigurationEditorModel } from 'vs/workbench/services/preferences/common/preferencesModels';
 import { IRemoteAgentService } from 'vs/workbench/services/remote/common/remoteAgentService';
 import { ITextEditorService } from 'vs/workbench/services/textfile/common/textEditorService';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -93,6 +93,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 
 	readonly defaultKeybindingsResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/keybindings.json' });
 	private readonly defaultSettingsRawResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/defaultSettings.json' });
+	private readonly defaultModelSelectionSettingsRawResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/defaultModelSelection.json' });
 
 	get userSettingsResource(): URI {
 		return this.userDataProfileService.currentProfile.settingsResource;
@@ -160,6 +161,13 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 			return model;
 		}
 
+		if (this.defaultModelSelectionSettingsRawResource.toString() === uri.toString()) {
+			const defaultModelSelectionSettingsEditorModel = this.instantiationService.createInstance(DefaultModelSelectionEditorModel, uri);
+			const languageSelection = this.languageService.createById('jsonc');
+			const model = this._register(this.modelService.createModel(defaultModelSelectionSettingsEditorModel.content, languageSelection, uri));
+			return model;
+		}
+
 		return null;
 	}
 
@@ -199,6 +207,10 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 
 	openRawUserSettings(): Promise<IEditorPane | undefined> {
 		return this.editorService.openEditor({ resource: this.userSettingsResource });
+	}
+
+	openRawModelSelectionSettings(): Promise<IEditorPane | undefined> {
+		return this.editorService.openEditor({ resource: this.defaultModelSelectionSettingsRawResource });
 	}
 
 	private shouldOpenJsonByDefault(): boolean {
@@ -347,6 +359,10 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined> {
 		return this.editorService.openEditor({ resource: this.defaultKeybindingsResource, label: nls.localize('defaultKeybindings', "Default Keybindings") });
+	}
+
+	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined> {
+		return this.editorService.openEditor({ resource: this.defaultModelSelectionSettingsRawResource, label: nls.localize('defaultModelSelection', "Default Model Selection") });
 	}
 
 	private async openSettingsJson(resource: URI, options: IOpenSettingsOptions): Promise<IEditorPane | undefined> {
