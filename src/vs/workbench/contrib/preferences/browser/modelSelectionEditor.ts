@@ -92,14 +92,30 @@ export class ModelSelectionEditor extends EditorPane {
 				{
 					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.7,
+					weight: 0.3,
 					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
+				},
+				{
+					label: localize('contextLength', "Context Length"),
+					tooltip: '',
+					weight: 0.2,
+					templateId: ContextLengthColumnRenderer.TEMPLATE_ID,
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
+				},
+				{
+					label: localize('temperature', "Temperature"),
+					tooltip: '',
+					weight: 0.2,
+					templateId: TemperatureColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ModelsColumnRenderer),
-				this.instantiationService.createInstance(ModelProvidersColumnRenderer)
+				this.instantiationService.createInstance(ModelProvidersColumnRenderer),
+				this.instantiationService.createInstance(ContextLengthColumnRenderer),
+				this.instantiationService.createInstance(TemperatureColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.name },
@@ -126,12 +142,28 @@ export class ModelSelectionEditor extends EditorPane {
 					label: localize('provider', "Provider"),
 					tooltip: '',
 					weight: 0.3,
-					templateId: 'provider',
+					templateId: ProviderColumnsRenderer.TEMPLATE_ID,
+					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
+				},
+				{
+					label: localize("baseURL", "Base URL"),
+					tooltip: '',
+					weight: 0.4,
+					templateId: BaseURLColumnsRenderer.TEMPLATE_ID,
+					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
+				},
+				{
+					label: localize("apiKey", "API Key"),
+					tooltip: '',
+					weight: 0.3,
+					templateId: ApiKeyColumnsRenderer.TEMPLATE_ID,
 					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
 				}
 			],
 			[
-				this.instantiationService.createInstance(ProviderColumnsRenderer)
+				this.instantiationService.createInstance(ProviderColumnsRenderer),
+				this.instantiationService.createInstance(BaseURLColumnsRenderer),
+				this.instantiationService.createInstance(ApiKeyColumnsRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.name },
@@ -276,6 +308,74 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 	disposeTemplate(templateData: IModelProviderColumnTemplateData): void { }
 }
 
+interface IContextLengthColumnTemplateData {
+	contextLengthColumn: HTMLElement;
+	contextLengthLabelContainer: HTMLElement;
+	contextLengthLabel: HTMLElement;
+}
+
+class ContextLengthColumnRenderer implements ITableRenderer<IModelItemEntry, IContextLengthColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'contextLength';
+
+	readonly templateId: string = ContextLengthColumnRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IContextLengthColumnTemplateData {
+		const contextLengthColumn = DOM.append(container, $('.context-length'));
+		const contextLengthLabelContainer = DOM.append(contextLengthColumn, $('.context-length-label'));
+		const contextLengthLabel = DOM.append(contextLengthLabelContainer, $('span'));
+		return { contextLengthColumn, contextLengthLabelContainer, contextLengthLabel };
+	}
+
+	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IContextLengthColumnTemplateData): void {
+		const modelItem = modelItemEntry.modelItem;
+		templateData.contextLengthColumn.title = modelItem.contextLength.toString();
+
+		if (modelItem.contextLength) {
+			templateData.contextLengthLabelContainer.classList.remove('hide');
+			templateData.contextLengthLabel.innerText = modelItem.contextLength.toString();
+		} else {
+			templateData.contextLengthLabelContainer.classList.add('hide');
+			templateData.contextLengthLabel.innerText = '';
+		}
+	}
+
+	disposeTemplate(templateData: IContextLengthColumnTemplateData): void { }
+}
+
+interface ITemperatureColumnTemplateData {
+	temperatureColumn: HTMLElement;
+	temperatureLabelContainer: HTMLElement;
+	temperatureLabel: HTMLElement;
+}
+
+class TemperatureColumnRenderer implements ITableRenderer<IModelItemEntry, ITemperatureColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'temperature';
+
+	readonly templateId: string = TemperatureColumnRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): ITemperatureColumnTemplateData {
+		const temperatureColumn = DOM.append(container, $('.temperature'));
+		const temperatureLabelContainer = DOM.append(temperatureColumn, $('.temperature-label'));
+		const temperatureLabel = DOM.append(temperatureLabelContainer, $('span'));
+		return { temperatureColumn, temperatureLabelContainer, temperatureLabel };
+	}
+
+	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: ITemperatureColumnTemplateData): void {
+		const modelItem = modelItemEntry.modelItem;
+		templateData.temperatureColumn.title = modelItem.temperature.toString();
+
+		if (modelItem.temperature) {
+			templateData.temperatureLabelContainer.classList.remove('hide');
+			templateData.temperatureLabel.innerText = modelItem.temperature.toString();
+		} else {
+			templateData.temperatureLabelContainer.classList.add('hide');
+			templateData.temperatureLabel.innerText = '';
+		}
+	}
+
+	disposeTemplate(templateData: ITemperatureColumnTemplateData): void { }
+}
+
 interface IProviderColumnTemplateData {
 	providerColumn: HTMLElement;
 	providerLabelContainer: HTMLElement;
@@ -308,4 +408,72 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	}
 
 	disposeTemplate(templateData: IProviderColumnTemplateData): void { }
+}
+
+interface IBaseURLColumnTemplateData {
+	baseURLColumn: HTMLElement;
+	baseURLLabelContainer: HTMLElement;
+	baseURLLabel: HTMLElement;
+}
+
+class BaseURLColumnsRenderer implements ITableRenderer<IProviderItemEntry, IBaseURLColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'baseURL';
+
+	readonly templateId: string = BaseURLColumnsRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IBaseURLColumnTemplateData {
+		const baseURLColumn = DOM.append(container, $('.baseURL'));
+		const baseURLLabelContainer = DOM.append(baseURLColumn, $('.baseURL-label'));
+		const baseURLLabel = DOM.append(baseURLLabelContainer, $('span'));
+		return { baseURLColumn, baseURLLabelContainer, baseURLLabel };
+	}
+
+	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IBaseURLColumnTemplateData): void {
+		const providerItem = providerItemEntry.providerItem;
+		templateData.baseURLColumn.title = providerItem.baseURL ?? '';
+
+		if (providerItem.baseURL) {
+			templateData.baseURLLabelContainer.classList.remove('hide');
+			templateData.baseURLLabel.innerText = providerItem.baseURL;
+		} else {
+			templateData.baseURLLabelContainer.classList.add('hide');
+			templateData.baseURLLabel.innerText = '';
+		}
+	}
+
+	disposeTemplate(templateData: IBaseURLColumnTemplateData): void { }
+}
+
+interface IApiKeyColumnTemplateData {
+	apiKeyColumn: HTMLElement;
+	apiKeyLabelContainer: HTMLElement;
+	apiKeyLabel: HTMLElement;
+}
+
+class ApiKeyColumnsRenderer implements ITableRenderer<IProviderItemEntry, IApiKeyColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'apiKey';
+
+	readonly templateId: string = ApiKeyColumnsRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IApiKeyColumnTemplateData {
+		const apiKeyColumn = DOM.append(container, $('.apiKey'));
+		const apiKeyLabelContainer = DOM.append(apiKeyColumn, $('.baseURL-label'));
+		const apiKeyLabel = DOM.append(apiKeyLabelContainer, $('span'));
+		return { apiKeyColumn, apiKeyLabelContainer, apiKeyLabel };
+	}
+
+	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IApiKeyColumnTemplateData): void {
+		const providerItem = providerItemEntry.providerItem;
+		templateData.apiKeyColumn.title = providerItem.apiKey ?? '';
+
+		if (providerItem.apiKey) {
+			templateData.apiKeyLabelContainer.classList.remove('hide');
+			templateData.apiKeyLabel.innerText = providerItem.apiKey;
+		} else {
+			templateData.apiKeyLabelContainer.classList.add('hide');
+			templateData.apiKeyLabel.innerText = '';
+		}
+	}
+
+	disposeTemplate(templateData: IApiKeyColumnTemplateData): void { }
 }

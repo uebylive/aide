@@ -7,6 +7,21 @@ import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
+// TODO: Refactor this to the right place
+const defaultFastModel: IModelItem = {
+	name: 'GPT-3.5',
+	contextLength: 16385,
+	temperature: 0.2,
+	provider: 'OpenAI'
+};
+
+const defaultSlowModel: IModelItem = {
+	name: 'GPT-4',
+	contextLength: 8192,
+	temperature: 0.2,
+	provider: 'OpenAI'
+};
+
 export class ModelSelectionEditorModel extends EditorModel {
 
 	private _fastModel: IModelItem;
@@ -18,8 +33,8 @@ export class ModelSelectionEditorModel extends EditorModel {
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService
 	) {
 		super();
-		this._fastModel = { name: '', provider: '' };
-		this._slowModel = { name: '', provider: '' };
+		this._fastModel = defaultFastModel;
+		this._slowModel = defaultSlowModel;
 		this._modelItems = [];
 		this._providerItems = [];
 	}
@@ -44,13 +59,17 @@ export class ModelSelectionEditorModel extends EditorModel {
 		const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
 		this._modelItems = modelSelectionSettings.models.map(model => ({
 			name: model.name,
-			provider: '',
+			provider: model.provider,
+			contextLength: model.contextLength,
+			temperature: model.temperature
 		}));
 		this._providerItems = modelSelectionSettings.providers.map(provider => ({
-			name: provider.name
+			name: provider.name,
+			apiKey: provider.apiKey,
+			baseURL: provider.baseURL
 		}));
-		this._fastModel = this._modelItems.find(model => model.name === modelSelectionSettings.fastModel) ?? this._modelItems[0];
-		this._slowModel = this._modelItems.find(model => model.name === modelSelectionSettings.slowModel) ?? this._modelItems[0];
+		this._fastModel = this._modelItems.find(model => model.name === modelSelectionSettings.fastModel) ?? defaultFastModel;
+		this._slowModel = this._modelItems.find(model => model.name === modelSelectionSettings.slowModel) ?? defaultSlowModel;
 
 		return super.resolve();
 	}

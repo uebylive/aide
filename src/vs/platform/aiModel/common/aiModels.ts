@@ -17,12 +17,13 @@ export interface ILanguageModelItem {
 	readonly name: string;
 	readonly contextLength: number;
 	readonly temperature: number;
+	readonly provider: string;
 }
 
 export interface IModelProviderItem {
 	readonly name: string;
-	readonly baseURL: string;
-	readonly apiKey: string;
+	readonly baseURL?: string;
+	readonly apiKey?: string;
 }
 
 export interface IModelSelectionSettings {
@@ -55,12 +56,14 @@ export class LanguageModelItem {
 	public readonly name: string;
 	public readonly contextLength: number;
 	public readonly temperature: number;
+	public readonly provider: string;
 
-	constructor(title: string, name: string, contextLength: number, temperature: number) {
+	constructor(title: string, name: string, contextLength: number, temperature: number, provider: string) {
 		this.title = title;
 		this.name = name;
 		this.contextLength = contextLength;
 		this.temperature = temperature;
+		this.provider = provider;
 	}
 }
 

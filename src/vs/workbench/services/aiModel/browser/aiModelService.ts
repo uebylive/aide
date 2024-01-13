@@ -19,13 +19,15 @@ import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/
 //    	"title": "GPT-2",
 //    	"name": "gpt2",
 //    	"contextLength": 256,
-//    	"temperature": 0.7
+//    	"temperature": 0.7,
+//    	"provider": "OpenAI"
 //    },
 //    {
 //    	"title": "GPT-3",
 //    	"name": "gpt3",
 //    	"contextLength": 256,
-//    	"temperature": 0.7
+//    	"temperature": 0.7,
+//    	"provider": "OpenAI"
 //    }
 //  ],
 //  "providers": [
@@ -44,20 +46,29 @@ import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/
 
 const defaultModelSelectionSettings: IModelSelectionSettings = {
 	slowModel: 'GPT-4',
-	fastModel: 'GPT-3',
+	fastModel: 'GPT-3.5',
 	models: [
 		{
-			title: 'GPT-3',
-			name: 'gpt3',
+			title: 'GPT-3.5',
+			name: 'GPT-3.5',
 			contextLength: 16385,
-			temperature: 0.2
+			temperature: 0.2,
+			provider: 'OpenAI'
 		},
 		{
 			title: 'GPT-4',
-			name: 'gpt4',
+			name: 'GPT-4',
 			contextLength: 8192,
-			temperature: 0.2
-		}
+			temperature: 0.2,
+			provider: 'OpenAI'
+		},
+		{
+			title: 'GPT-4 Turbo',
+			name: 'GPT-4 Turbo',
+			contextLength: 8192,
+			temperature: 0.2,
+			provider: 'OpenAI'
+		},
 	],
 	providers: [
 		{
@@ -65,6 +76,22 @@ const defaultModelSelectionSettings: IModelSelectionSettings = {
 			baseURL: 'https://api.openai.com/v1',
 			apiKey: 'your-api-key'
 		},
+		{
+			name: 'Azure OpenAI',
+		},
+		{
+			name: 'Ollama',
+			baseURL: 'http://localhost:11434',
+		},
+		{
+			name: 'LM Studio',
+			baseURL: 'http://localhost:1234',
+		},
+		{
+			name: 'Together AI',
+			baseURL: 'https://api.together.xyz',
+			apiKey: ''
+		}
 	]
 };
 
@@ -83,7 +110,8 @@ function parseModelSelectionSettings(value: any): ModelSelectionSettings {
 		const name = 'name' in model && typeof model.name === 'string' ? model.name : '';
 		const contextLength = 'contextLength' in model && typeof model.contextLength === 'number' ? model.contextLength : 0;
 		const temperature = 'temperature' in model && typeof model.temperature === 'number' ? model.temperature : 0;
-		return new LanguageModelItem(title, name, contextLength, temperature);
+		const provider = 'provider' in model && typeof model.provider === 'string' ? model.provider : '';
+		return new LanguageModelItem(title, name, contextLength, temperature, provider);
 	});
 
 	const slowModel = 'slowModel' in value && typeof value.slowModel === 'string' ? value.slowModel : defaultModelSelectionSettings.slowModel;
@@ -98,8 +126,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	private modelSelectionSettings: ModelSelectionSettings = new ModelSelectionSettings(
 		defaultModelSelectionSettings.slowModel,
 		defaultModelSelectionSettings.fastModel,
-		defaultModelSelectionSettings.models.map((model) => new LanguageModelItem(model.title, model.name, model.contextLength, model.temperature)),
-		defaultModelSelectionSettings.providers.map((provider) => new ModelProviderItem(provider.name, provider.baseURL, provider.apiKey))
+		defaultModelSelectionSettings.models.map((model) => new LanguageModelItem(model.title, model.name, model.contextLength, model.temperature, model.provider)),
+		defaultModelSelectionSettings.providers.map((provider) => new ModelProviderItem(provider.name, provider.baseURL ?? '', provider.apiKey ?? ''))
 	);
 
 	constructor(
