@@ -219,8 +219,11 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderModels(): void {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
+
 			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name, value: items.modelItem.name })));
+			this.fastModelSelect.select(modelItems.findIndex(items => items.modelItem.name === this.modelSelectionEditorModel?.fastModel.modelItem.name));
 			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name, value: tems.modelItem.name })));
+			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.name === this.modelSelectionEditorModel?.slowModel.modelItem.name));
 
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
 			this.layoutTables();
@@ -538,11 +541,11 @@ class BaseURLColumnsRenderer implements ITableRenderer<IProviderItemEntry, IBase
 		templateData.baseURLColumn.title = providerItem.baseURL ?? '';
 
 		if (providerItem.baseURL) {
-			templateData.baseURLLabelContainer.classList.remove('hide');
 			templateData.baseURLLabel.innerText = providerItem.baseURL;
+			templateData.baseURLLabel.classList.remove('default-label');
 		} else {
-			templateData.baseURLLabelContainer.classList.add('hide');
-			templateData.baseURLLabel.innerText = '';
+			templateData.baseURLLabel.innerText = 'Default';
+			templateData.baseURLLabel.classList.add('default-label');
 		}
 	}
 
@@ -572,11 +575,11 @@ class ApiKeyColumnsRenderer implements ITableRenderer<IProviderItemEntry, IApiKe
 		templateData.apiKeyColumn.title = providerItem.apiKey ?? '';
 
 		if (providerItem.apiKey) {
-			templateData.apiKeyLabelContainer.classList.remove('hide');
 			templateData.apiKeyLabel.innerText = providerItem.apiKey;
+			templateData.apiKeyLabel.classList.remove('default-label');
 		} else {
-			templateData.apiKeyLabelContainer.classList.add('hide');
-			templateData.apiKeyLabel.innerText = '';
+			templateData.apiKeyLabel.innerText = 'Default';
+			templateData.apiKeyLabel.classList.add('default-label');
 		}
 	}
 

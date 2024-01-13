@@ -142,6 +142,11 @@
 	background-color: var(--vscode-keybindingTable-rowsBackground);
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row .default-label {
+	opacity: 0.5;
+	font-style: italic;
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-th {
 	background-color: var(--vscode-keybindingTable-headerBackground);
 }

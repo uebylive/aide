@@ -7,36 +7,17 @@ import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
-// TODO: Refactor this to the right place
-const defaultFastModel: IModelItem = {
-	name: 'GPT-3.5',
-	contextLength: 16385,
-	temperature: 0.2,
-	provider: 'OpenAI'
-};
-
-const defaultSlowModel: IModelItem = {
-	name: 'GPT-4',
-	contextLength: 8192,
-	temperature: 0.2,
-	provider: 'OpenAI'
-};
-
 export class ModelSelectionEditorModel extends EditorModel {
 
-	private _fastModel: IModelItem;
-	private _slowModel: IModelItem;
-	private _modelItems: IModelItem[];
-	private _providerItems: IProviderItem[];
+	private _fastModel!: IModelItem;
+	private _slowModel!: IModelItem;
+	private _modelItems!: IModelItem[];
+	private _providerItems!: IProviderItem[];
 
 	constructor(
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService
 	) {
 		super();
-		this._fastModel = defaultFastModel;
-		this._slowModel = defaultSlowModel;
-		this._modelItems = [];
-		this._providerItems = [];
 	}
 
 	get fastModel(): IModelItemEntry {
