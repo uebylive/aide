@@ -4,10 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as DOM from 'vs/base/browser/dom';
+import { ActionBar } from 'vs/base/browser/ui/actionbar/actionbar';
 import { HighlightedLabel } from 'vs/base/browser/ui/highlightedlabel/highlightedLabel';
 import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
 import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
+import { IAction } from 'vs/base/common/actions';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
@@ -20,6 +23,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
+import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
 import { IModelItemEntry, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
@@ -65,12 +69,12 @@ export class ModelSelectionEditor extends EditorPane {
 
 		const fastModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
 		DOM.append(fastModelContainer, $('span', undefined, 'Fast Model'));
-		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[{ text: 'GPT-3.5' }], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Fast Model') });
+		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Fast Model') });
 		this.fastModelSelect.render(fastModelContainer);
 
 		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
 		DOM.append(slowModelContainer, $('span', undefined, 'Slow Model'));
-		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[{ text: 'GPT-4' }], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Slow Model') });
+		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Slow Model') });
 		this.slowModelSelect.render(slowModelContainer);
 	}
 
@@ -88,6 +92,15 @@ export class ModelSelectionEditor extends EditorPane {
 			this.modelsTableContainer,
 			new ModelDelegate(),
 			[
+				{
+					label: '',
+					tooltip: '',
+					weight: 0,
+					minimumWidth: 40,
+					maximumWidth: 40,
+					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
+				},
 				{
 					label: localize('model', "Model"),
 					tooltip: '',
@@ -118,6 +131,7 @@ export class ModelSelectionEditor extends EditorPane {
 				}
 			],
 			[
+				this.instantiationService.createInstance(ModelActionsColumnRenderer),
 				this.instantiationService.createInstance(ModelsColumnRenderer),
 				this.instantiationService.createInstance(ModelProvidersColumnRenderer),
 				this.instantiationService.createInstance(ContextLengthColumnRenderer),
@@ -144,6 +158,15 @@ export class ModelSelectionEditor extends EditorPane {
 			new ProviderDelegate(),
 			[
 				{
+					label: '',
+					tooltip: '',
+					weight: 0,
+					minimumWidth: 40,
+					maximumWidth: 40,
+					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
+				},
+				{
 					label: localize('provider', "Provider"),
 					tooltip: '',
 					weight: 0.3,
@@ -166,6 +189,7 @@ export class ModelSelectionEditor extends EditorPane {
 				}
 			],
 			[
+				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
 				this.instantiationService.createInstance(BaseURLColumnsRenderer),
 				this.instantiationService.createInstance(ApiKeyColumnsRenderer)
@@ -195,6 +219,9 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderModels(): void {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
+			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name, value: items.modelItem.name })));
+			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name, value: tems.modelItem.name })));
+
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
 			this.layoutTables();
 		}
@@ -241,6 +268,43 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 
 	getHeight(element: IProviderItemEntry): number {
 		return 24;
+	}
+}
+
+interface IActionsColumnTemplateData {
+	readonly actionBar: ActionBar;
+}
+
+class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+
+	static readonly TEMPLATE_ID = 'modelActions';
+
+	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+		const element = DOM.append(container, $('.actions'));
+		const actionBar = new ActionBar(element, { animated: false });
+		return { actionBar };
+	}
+
+	renderElement(keybindingItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+		templateData.actionBar.clear();
+		const actions: IAction[] = [];
+		actions.push(this.createEditAction());
+		templateData.actionBar.push(actions, { icon: true });
+	}
+
+	private createEditAction(): IAction {
+		return <IAction>{
+			class: ThemeIcon.asClassName(settingsEditIcon),
+			enabled: true,
+			id: 'editKeybinding',
+			tooltip: localize('editModel', "Edit Model"),
+		};
+	}
+
+	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+		templateData.actionBar.dispose();
 	}
 }
 
@@ -378,6 +442,43 @@ class TemperatureColumnRenderer implements ITableRenderer<IModelItemEntry, ITemp
 	}
 
 	disposeTemplate(templateData: ITemperatureColumnTemplateData): void { }
+}
+
+interface IActionsColumnTemplateData {
+	readonly actionBar: ActionBar;
+}
+
+class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+
+	static readonly TEMPLATE_ID = 'providerActions';
+
+	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+		const element = DOM.append(container, $('.actions'));
+		const actionBar = new ActionBar(element, { animated: false });
+		return { actionBar };
+	}
+
+	renderElement(keybindingItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+		templateData.actionBar.clear();
+		const actions: IAction[] = [];
+		actions.push(this.createEditAction());
+		templateData.actionBar.push(actions, { icon: true });
+	}
+
+	private createEditAction(): IAction {
+		return <IAction>{
+			class: ThemeIcon.asClassName(settingsEditIcon),
+			enabled: true,
+			id: 'editKeybinding',
+			tooltip: localize('editProvider', "Edit Provider"),
+		};
+	}
+
+	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+		templateData.actionBar.dispose();
+	}
 }
 
 interface IProviderColumnTemplateData {
