@@ -13,6 +13,20 @@
 	padding: 0px 10px 11px 0;
 }
 
+.model-selection-editor > .model-selection-header .model-select-dropdown {
+	display: flex;
+	width: 300px;
+	text-wrap: nowrap;
+	gap: 20px;
+	padding: 4px 0;
+}
+
+.model-selection-editor > .model-selection-header .model-select-dropdown .monaco-select-box {
+	min-width: 100px;
+	min-height: 18px;
+	padding: 2px 20px 2px 8px;
+}
+
 .model-selection-editor .monaco-action-bar .action-item .monaco-custom-toggle {
 	margin: 0;
 	padding: 2px;

@@ -5,15 +5,18 @@
 
 import * as DOM from 'vs/base/browser/dom';
 import { HighlightedLabel } from 'vs/base/browser/ui/highlightedlabel/highlightedLabel';
+import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
 import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
+import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchTable } from 'vs/platform/list/browser/listService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
+import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
@@ -32,8 +35,8 @@ export class ModelSelectionEditor extends EditorPane {
 	private modelsTableContainer!: HTMLElement;
 	private providersTableContainer!: HTMLElement;
 
-	private fastModelSelect!: HTMLSelectElement;
-	private slowModelSelect!: HTMLSelectElement;
+	private fastModelSelect!: SelectBox;
+	private slowModelSelect!: SelectBox;
 	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
 
@@ -43,7 +46,8 @@ export class ModelSelectionEditor extends EditorPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IContextViewService private readonly contextViewService: IContextViewService
 	) {
 		super(ModelSelectionEditor.ID, telemetryService, themeService, storageService);
 	}
@@ -59,13 +63,15 @@ export class ModelSelectionEditor extends EditorPane {
 	private crateHeader(parent: HTMLElement): void {
 		this.headerContainer = DOM.append(parent, $('.model-selection-header'));
 
-		const fastModelContainer = DOM.append(this.headerContainer, $('.fast-model'));
+		const fastModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
 		DOM.append(fastModelContainer, $('span', undefined, 'Fast Model'));
-		this.fastModelSelect = DOM.append(fastModelContainer, $('select'));
+		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[{ text: 'GPT-3.5' }], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Fast Model') });
+		this.fastModelSelect.render(fastModelContainer);
 
-		const slowModelContainer = DOM.append(this.headerContainer, $('.slow-model'));
+		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
 		DOM.append(slowModelContainer, $('span', undefined, 'Slow Model'));
-		this.slowModelSelect = DOM.append(slowModelContainer, $('select'));
+		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[{ text: 'GPT-4' }], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Slow Model') });
+		this.slowModelSelect.render(slowModelContainer);
 	}
 
 	private createBody(parent: HTMLElement): void {
@@ -126,7 +132,6 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
 
-		console.log(this.modelsTable);
 		DOM.append(this.modelsTableContainer);
 	}
 
@@ -174,7 +179,6 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
 
-		console.log(this.providersTable);
 		DOM.append(this.providersTableContainer);
 	}
 

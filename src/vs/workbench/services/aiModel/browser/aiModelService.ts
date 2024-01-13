@@ -49,6 +49,13 @@ const defaultModelSelectionSettings: IModelSelectionSettings = {
 	fastModel: 'GPT-3.5',
 	models: [
 		{
+			title: 'CodeStory',
+			name: 'CodeStory',
+			contextLength: 8192,
+			temperature: 0.2,
+			provider: 'Ollama'
+		},
+		{
 			title: 'GPT-3.5',
 			name: 'GPT-3.5',
 			contextLength: 16385,
