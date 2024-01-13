@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as DOM from 'vs/base/browser/dom';
+import { HighlightedLabel } from 'vs/base/browser/ui/highlightedlabel/highlightedLabel';
 import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import 'vs/css!./media/modelSelectionEditor';
@@ -27,10 +28,16 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private modelSelectionEditorModel: ModelSelectionEditorModel | null = null;
 
+	private headerContainer!: HTMLElement;
 	private modelsTableContainer!: HTMLElement;
-	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTableContainer!: HTMLElement;
+
+	private fastModelSelect!: HTMLSelectElement;
+	private slowModelSelect!: HTMLSelectElement;
+	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
+
+	private dimension: DOM.Dimension | null = null;
 
 	constructor(
 		@ITelemetryService telemetryService: ITelemetryService,
@@ -45,7 +52,20 @@ export class ModelSelectionEditor extends EditorPane {
 		const modelSelectionEditorElement = DOM.append(parent, $('div', { class: 'model-selection-editor' }));
 		DOM.append(modelSelectionEditorElement, $('h2', undefined, 'Model Selection'));
 
+		this.crateHeader(modelSelectionEditorElement);
 		this.createBody(modelSelectionEditorElement);
+	}
+
+	private crateHeader(parent: HTMLElement): void {
+		this.headerContainer = DOM.append(parent, $('.model-selection-header'));
+
+		const fastModelContainer = DOM.append(this.headerContainer, $('.fast-model'));
+		DOM.append(fastModelContainer, $('span', undefined, 'Fast Model'));
+		this.fastModelSelect = DOM.append(fastModelContainer, $('select'));
+
+		const slowModelContainer = DOM.append(this.headerContainer, $('.slow-model'));
+		DOM.append(slowModelContainer, $('span', undefined, 'Slow Model'));
+		this.slowModelSelect = DOM.append(slowModelContainer, $('select'));
 	}
 
 	private createBody(parent: HTMLElement): void {
@@ -55,7 +75,8 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createModelsTable(parent: HTMLElement): void {
-		this.modelsTableContainer = DOM.append(parent, $('div', { class: 'model-selection-models-table' }));
+		this.modelsTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
+		DOM.append(this.modelsTableContainer, $('h3', undefined, 'Models'));
 		this.modelsTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
 			this.modelsTableContainer,
@@ -94,7 +115,8 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createProvidersTable(parent: HTMLElement): void {
-		this.providersTableContainer = DOM.append(parent, $('div', { class: 'model-selection-providers-table' }));
+		this.providersTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
+		DOM.append(this.providersTableContainer, $('h3', undefined, 'Providers'));
 		this.providersTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
 			this.providersTableContainer,
@@ -138,6 +160,7 @@ export class ModelSelectionEditor extends EditorPane {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
+			this.layoutTables();
 		}
 	}
 
@@ -148,12 +171,24 @@ export class ModelSelectionEditor extends EditorPane {
 		}
 	}
 
-	override setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
-		return super.setInput(input, options, context, token)
-			.then(() => this.render());
+	private layoutTables(): void {
+		if (!this.dimension) {
+			return;
+		}
+
+		this.modelsTable.layout();
+		this.providersTable.layout();
+	}
+
+	override async setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+		await super.setInput(input, options, context, token);
+		return await this.render();
 	}
 
 	layout(dimension: DOM.Dimension): void {
+		this.dimension = dimension;
+
+		this.layoutTables();
 	}
 }
 
@@ -175,6 +210,8 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 
 interface IModelColumnTemplateData {
 	modelColumn: HTMLElement;
+	modelLabelContainer: HTMLElement;
+	modelLabel: HighlightedLabel;
 }
 
 class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColumnTemplateData> {
@@ -184,12 +221,22 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 	renderTemplate(container: HTMLElement): IModelColumnTemplateData {
 		const modelColumn = DOM.append(container, $('.model'));
-		return { modelColumn };
+		const modelLabelContainer = DOM.append(modelColumn, $('.model-label'));
+		const modelLabel = new HighlightedLabel(modelLabelContainer);
+		return { modelColumn, modelLabelContainer, modelLabel };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelColumn.title = modelItem.name;
+
+		if (modelItem.name) {
+			templateData.modelLabelContainer.classList.remove('hide');
+			templateData.modelLabel.set(modelItem.name, []);
+		} else {
+			templateData.modelLabelContainer.classList.add('hide');
+			templateData.modelLabel.set(undefined);
+		}
 	}
 
 	disposeTemplate(templateData: IModelColumnTemplateData): void { }
@@ -197,6 +244,8 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 interface IModelProviderColumnTemplateData {
 	modelProviderColumn: HTMLElement;
+	providerLabelContainer: HTMLElement;
+	providerLabel: HighlightedLabel;
 }
 
 class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IModelProviderColumnTemplateData> {
@@ -206,12 +255,22 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 
 	renderTemplate(container: HTMLElement): IModelProviderColumnTemplateData {
 		const modelProviderColumn = DOM.append(container, $('.model-provider'));
-		return { modelProviderColumn };
+		const providerLabelContainer = DOM.append(modelProviderColumn, $('.provider-label'));
+		const providerLabel = new HighlightedLabel(providerLabelContainer);
+		return { modelProviderColumn, providerLabelContainer, providerLabel };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelProviderColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelProviderColumn.title = modelItem.name;
+
+		if (modelItem.provider) {
+			templateData.providerLabelContainer.classList.remove('hide');
+			templateData.providerLabel.set(modelItem.provider, []);
+		} else {
+			templateData.providerLabelContainer.classList.add('hide');
+			templateData.providerLabel.set(undefined);
+		}
 	}
 
 	disposeTemplate(templateData: IModelProviderColumnTemplateData): void { }
@@ -219,6 +278,8 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 
 interface IProviderColumnTemplateData {
 	providerColumn: HTMLElement;
+	providerLabelContainer: HTMLElement;
+	providerLabel: HighlightedLabel;
 }
 
 class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IProviderColumnTemplateData> {
@@ -228,12 +289,22 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 
 	renderTemplate(container: HTMLElement): IProviderColumnTemplateData {
 		const providerColumn = DOM.append(container, $('.provider'));
-		return { providerColumn };
+		const providerLabelContainer = DOM.append(providerColumn, $('.provider-label'));
+		const providerLabel = new HighlightedLabel(providerLabelContainer);
+		return { providerColumn, providerLabelContainer, providerLabel };
 	}
 
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerColumn.title = providerItem.name;
+
+		if (providerItem.name) {
+			templateData.providerLabelContainer.classList.remove('hide');
+			templateData.providerLabel.set(providerItem.name, []);
+		} else {
+			templateData.providerLabelContainer.classList.add('hide');
+			templateData.providerLabel.set(undefined);
+		}
 	}
 
 	disposeTemplate(templateData: IProviderColumnTemplateData): void { }

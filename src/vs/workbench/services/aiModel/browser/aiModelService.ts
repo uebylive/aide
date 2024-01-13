@@ -86,7 +86,7 @@ function parseModelSelectionSettings(value: any): ModelSelectionSettings {
 		return new LanguageModelItem(title, name, contextLength, temperature);
 	});
 
-	const slowModel = 'slowModel' in value && typeof value.slowModel === 'string' ? value.slowModel : defaultModelSelectionSettings.providers;
+	const slowModel = 'slowModel' in value && typeof value.slowModel === 'string' ? value.slowModel : defaultModelSelectionSettings.slowModel;
 	const fastModel = 'fastModel' in value && typeof value.fastModel === 'string' ? value.fastModel : defaultModelSelectionSettings.fastModel;
 
 	return new ModelSelectionSettings(slowModel, fastModel, models, providers);
