@@ -211,8 +211,10 @@ export class ModelSelectionEditor extends EditorPane {
 			const input: ModelSelectionEditorInput = this.input as ModelSelectionEditorInput;
 			this.modelSelectionEditorModel = await input.resolve();
 			await this.modelSelectionEditorModel.resolve();
-			this.renderModels();
+
 			this.renderProviders();
+			this.renderModels();
+			this.layoutTables();
 		}
 	}
 
@@ -226,7 +228,6 @@ export class ModelSelectionEditor extends EditorPane {
 			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
 
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
-			this.layoutTables();
 		}
 	}
 

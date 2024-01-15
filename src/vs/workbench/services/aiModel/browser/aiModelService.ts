@@ -5,14 +5,25 @@
 
 import * as nls from 'vs/nls';
 
+// base
+import { RunOnceScheduler } from 'vs/base/common/async';
+import { Emitter, Event } from 'vs/base/common/event';
 import { parse } from 'vs/base/common/json';
 import { IJSONSchema } from 'vs/base/common/jsonSchema';
-import { Disposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
+import * as objects from 'vs/base/common/objects';
+import { dirname } from 'vs/base/common/resources';
+
+// platform
 import { IAIModelSelectionService, IModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
-import { IFileService } from 'vs/platform/files/common/files';
+import { FileOperation, IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { Registry } from 'vs/platform/registry/common/platform';
 import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
+import { ILogService } from 'vs/platform/log/common/log';
+import { Registry } from 'vs/platform/registry/common/platform';
+import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
+
+// workbench
 import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 
 const defaultModelSelectionSettings: IModelSelectionSettings = {
@@ -67,19 +78,20 @@ const defaultModelSelectionSettings: IModelSelectionSettings = {
 export class AIModelsService extends Disposable implements IAIModelSelectionService {
 	_serviceBrand: undefined;
 
-	private modelSelectionSettings: IModelSelectionSettings = defaultModelSelectionSettings;
+	private modelSelection: ModelSelection;
+	// private readonly modelSelectionJsonSchema: ModelSelectionJsonSchema;
 
 	constructor(
-		@IUserDataProfileService private readonly userDataProfileService: IUserDataProfileService,
-		@IFileService private readonly fileService: IFileService
+		@IUserDataProfileService userDataProfileService: IUserDataProfileService,
+		@IUriIdentityService uriIdentityService: IUriIdentityService,
+		@IFileService fileService: IFileService,
+		@ILogService logService: ILogService,
 	) {
 		super();
 
-		// Just initializing and not assigning, since the schema is never updated.
-		// Registering allows the schema to be used in the model selection settings editor.
 		new ModelSelectionJsonSchema();
-
-		this.init();
+		this.modelSelection = this._register(new ModelSelection(userDataProfileService, uriIdentityService, fileService, logService));
+		this.modelSelection.initialize();
 	}
 
 	public getDefaultModelSelectionContent(): string {
@@ -87,12 +99,83 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	}
 
 	getModelSelectionSettings(): IModelSelectionSettings {
-		return this.modelSelectionSettings;
+		return this.modelSelection.modelSelection;
+	}
+}
+
+class ModelSelection extends Disposable {
+	private _rawModelSelection: Object = {};
+	private _modelSelection: IModelSelectionSettings = defaultModelSelectionSettings;
+	get modelSelection(): IModelSelectionSettings { return this._modelSelection; }
+
+	private readonly reloadConfigurationScheduler: RunOnceScheduler;
+
+	private readonly watchDisposables = this._register(new DisposableStore());
+
+	private readonly _onDidChange: Emitter<void> = this._register(new Emitter<void>());
+	readonly onDidChange: Event<void> = this._onDidChange.event;
+
+	constructor(
+		private readonly userDataProfileService: IUserDataProfileService,
+		private readonly uriIdentityService: IUriIdentityService,
+		private readonly fileService: IFileService,
+		logService: ILogService,
+	) {
+		super();
+
+		this.watch();
+
+		this.reloadConfigurationScheduler = this._register(new RunOnceScheduler(() => this.reload().then(changed => {
+			if (changed) {
+				this._onDidChange.fire();
+			}
+		}), 50));
+
+		this._register(Event.filter(this.fileService.onDidFilesChange, e => e.contains(this.userDataProfileService.currentProfile.modelSelectionResource))(() => {
+			logService.debug('Model selection file changed');
+			this.reloadConfigurationScheduler.schedule();
+		}));
+
+		this._register(this.fileService.onDidRunOperation((e) => {
+			if (e.operation === FileOperation.WRITE && e.resource.toString() === this.userDataProfileService.currentProfile.modelSelectionResource.toString()) {
+				logService.debug('Model selection file written');
+				this.reloadConfigurationScheduler.schedule();
+			}
+		}));
+
+		this._register(userDataProfileService.onDidChangeCurrentProfile(e => {
+			if (!this.uriIdentityService.extUri.isEqual(e.previous.modelSelectionResource, e.profile.modelSelectionResource)) {
+				e.join(this.whenCurrentProfileChanged());
+			}
+		}));
 	}
 
-	private async init(): Promise<void> {
-		const modelSelectionSettings = await this.readModelSelectionSettings();
-		this.modelSelectionSettings = this.mergeModelSelectionSettings(modelSelectionSettings);
+	private async whenCurrentProfileChanged(): Promise<void> {
+		this.watch();
+		this.reloadConfigurationScheduler.schedule();
+	}
+
+	private watch(): void {
+		this.watchDisposables.clear();
+		this.watchDisposables.add(this.fileService.watch(dirname(this.userDataProfileService.currentProfile.modelSelectionResource)));
+		// Also listen to the resource incase the resource is a symlink - https://github.com/microsoft/vscode/issues/118134
+		this.watchDisposables.add(this.fileService.watch(this.userDataProfileService.currentProfile.modelSelectionResource));
+	}
+
+	async initialize(): Promise<void> {
+		await this.reload();
+	}
+
+	private async reload(): Promise<boolean> {
+		const newModelSelection = await this.readModelSelectionSettings();
+		if (objects.equals(this._rawModelSelection, newModelSelection)) {
+			// no change
+			return false;
+		}
+
+		this._rawModelSelection = newModelSelection;
+		this._modelSelection = this.mergeModelSelectionSettings(newModelSelection);
+		return true;
 	}
 
 	private async readModelSelectionSettings(): Promise<Object> {
