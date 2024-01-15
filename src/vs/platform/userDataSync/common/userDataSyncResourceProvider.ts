@@ -26,6 +26,7 @@ import { parseUserDataProfilesManifest, stringifyLocalProfiles } from 'vs/platfo
 import { toFormattedString } from 'vs/base/common/jsonFormatter';
 import { trim } from 'vs/base/common/strings';
 import { IMachinesData, IUserDataSyncMachine } from 'vs/platform/userDataSync/common/userDataSyncMachines';
+import { getModelSelectionContentFromSyncContent } from 'vs/platform/userDataSync/common/modelSelectionSync';
 
 interface ISyncResourceUriInfo {
 	readonly remote: boolean;
@@ -286,8 +287,7 @@ export class UserDataSyncResourceProviderService implements IUserDataSyncResourc
 	private resolveModelSelectionNodeContent(syncData: ISyncData, node: string): string | null {
 		switch (node) {
 			case 'modelSelection.json':
-				// TODO: Implement this properly
-				return syncData.content;
+				return getModelSelectionContentFromSyncContent(syncData.content, this.logService);
 		}
 		return null;
 	}

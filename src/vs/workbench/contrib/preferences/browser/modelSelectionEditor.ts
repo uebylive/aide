@@ -138,7 +138,7 @@ export class ModelSelectionEditor extends EditorPane {
 				this.instantiationService.createInstance(TemperatureColumnRenderer)
 			],
 			{
-				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.name },
+				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.key },
 				horizontalScrolling: false,
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
@@ -195,7 +195,7 @@ export class ModelSelectionEditor extends EditorPane {
 				this.instantiationService.createInstance(ApiKeyColumnsRenderer)
 			],
 			{
-				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.name },
+				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
 				horizontalScrolling: false,
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
@@ -220,10 +220,10 @@ export class ModelSelectionEditor extends EditorPane {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
 
-			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name, value: items.modelItem.name })));
-			this.fastModelSelect.select(modelItems.findIndex(items => items.modelItem.name === this.modelSelectionEditorModel?.fastModel.modelItem.name));
-			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name, value: tems.modelItem.name })));
-			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.name === this.modelSelectionEditorModel?.slowModel.modelItem.name));
+			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name, value: items.modelItem.key })));
+			this.fastModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
+			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name, value: tems.modelItem.key })));
+			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
 
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
 			this.layoutTables();

@@ -340,6 +340,7 @@ export interface IModelItemEntry {
 }
 
 export interface IModelItem {
+	key: string;
 	name: string;
 	contextLength: number;
 	temperature: number;
@@ -351,6 +352,7 @@ export interface IProviderItemEntry {
 }
 
 export interface IProviderItem {
+	key: string;
 	name: string;
 	baseURL: string;
 	apiKey: string;

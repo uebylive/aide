@@ -5,17 +5,15 @@
 
 import * as nls from 'vs/nls';
 
-import { VSBuffer } from 'vs/base/common/buffer';
 import { parse } from 'vs/base/common/json';
 import { IJSONSchema } from 'vs/base/common/jsonSchema';
 import { Disposable } from 'vs/base/common/lifecycle';
-import * as network from 'vs/base/common/network';
-import { URI } from 'vs/base/common/uri';
 import { IAIModelSelectionService, IModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
 import { IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
+import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 
 const defaultModelSelectionSettings: IModelSelectionSettings = {
 	slowModel: 'gpt-4-32k',
@@ -72,6 +70,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	private modelSelectionSettings: IModelSelectionSettings = defaultModelSelectionSettings;
 
 	constructor(
+		@IUserDataProfileService private readonly userDataProfileService: IUserDataProfileService,
 		@IFileService private readonly fileService: IFileService
 	) {
 		super();
@@ -97,15 +96,10 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	}
 
 	private async readModelSelectionSettings(): Promise<Object> {
-		const modelSelectionSettingsFile = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/modelSelection.json' });
 		try {
-			const exists = await this.fileService.exists(modelSelectionSettingsFile);
-			if (!exists) {
-				await this.fileService.writeFile(modelSelectionSettingsFile, VSBuffer.fromString(this.getDefaultModelSelectionContent()));
-			}
-			const content = await this.fileService.readFile(modelSelectionSettingsFile);
+			const content = await this.fileService.readFile(this.userDataProfileService.currentProfile.modelSelectionResource);
 			const value = parse(content.value.toString());
-			return Array.isArray(value) ? defaultModelSelectionSettings : value;
+			return isModelSelectionSettings(value) ? value : {};
 		} catch (e) {
 			return {};
 		}
@@ -121,10 +115,10 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 				mergedSettings.providers = { ...defaultModelSelectionSettings.providers, ...modelSelectionSettings.providers };
 			}
 
-			if (modelSelectionSettings.slowModel && modelSelectionSettings.models[modelSelectionSettings.slowModel]) {
+			if (modelSelectionSettings.slowModel && mergedSettings.models[modelSelectionSettings.slowModel]) {
 				mergedSettings.slowModel = modelSelectionSettings.slowModel;
 			}
-			if (modelSelectionSettings.fastModel && modelSelectionSettings.models[modelSelectionSettings.fastModel]) {
+			if (modelSelectionSettings.fastModel && mergedSettings.models[modelSelectionSettings.fastModel]) {
 				mergedSettings.fastModel = modelSelectionSettings.fastModel;
 			}
 		}

@@ -41,6 +41,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 		this._modelItems = Object.keys(modelSelectionSettings.models).map(modelKey => {
 			const model = modelSelectionSettings.models[modelKey];
 			return {
+				key: modelKey,
 				name: model.name,
 				provider: model.provider,
 				contextLength: model.contextLength,
@@ -50,13 +51,28 @@ export class ModelSelectionEditorModel extends EditorModel {
 		this._providerItems = Object.keys(modelSelectionSettings.providers).map(providerKey => {
 			const provider = modelSelectionSettings.providers[providerKey];
 			return {
+				key: providerKey,
 				name: provider.name,
 				baseURL: provider.baseURL,
 				apiKey: provider.apiKey
 			} as IProviderItem;
 		});
-		this._fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
-		this._slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
+		const fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
+		this._fastModel = {
+			key: modelSelectionSettings.fastModel,
+			name: fastModel.name,
+			contextLength: fastModel.contextLength,
+			temperature: fastModel.temperature,
+			provider: fastModel.provider
+		};
+		const slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
+		this._slowModel = {
+			key: modelSelectionSettings.slowModel,
+			name: slowModel.name,
+			contextLength: slowModel.contextLength,
+			temperature: slowModel.temperature,
+			provider: slowModel.provider
+		};
 
 		return super.resolve();
 	}
