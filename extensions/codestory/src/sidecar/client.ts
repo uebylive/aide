@@ -146,9 +146,32 @@ export class SideCarClient {
 		console.log('getInLineEditorResponse');
 		console.log(context);
 		const url = baseUrl.toString();
+		// This is where we have to send the model selection object
+		const modelConfig = {
+			slow_model: "GPT3_5_16k",
+			fast_model: "GPT3_5_16k",
+			models: {
+				GPT3_5_16k: {
+					context_length: 16000,
+					temperature: 0.2,
+					provider: "Azure",
+				},
+			},
+			providers: [
+				{
+					OpenAIAzureConfig: {
+						deployment_id: "gpt35-turbo-access",
+						api_base: "https://codestory-gpt4.openai.azure.com",
+						api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
+						api_version: "2023-08-01-preview",
+					}
+				},
+			],
+		};
 		const finalContext = {
 			...context,
 			openai_key: this._openAIKey,
+			modelConfig: modelConfig,
 		}
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, finalContext);
 		for await (const line of asyncIterableResponse) {
