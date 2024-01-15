@@ -24,6 +24,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
 import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
 import { IModelItemEntry, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
@@ -50,6 +51,7 @@ export class ModelSelectionEditor extends EditorPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
@@ -71,11 +73,17 @@ export class ModelSelectionEditor extends EditorPane {
 		DOM.append(fastModelContainer, $('span', undefined, 'Fast Model'));
 		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Fast Model') });
 		this.fastModelSelect.render(fastModelContainer);
+		this._register(this.fastModelSelect.onDidSelect((e) => {
+			this.setFastModel(e.selected);
+		}));
 
 		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
 		DOM.append(slowModelContainer, $('span', undefined, 'Slow Model'));
 		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Slow Model') });
 		this.slowModelSelect.render(slowModelContainer);
+		this._register(this.slowModelSelect.onDidSelect((e) => {
+			this.setSlowModel(e.selected);
+		}));
 	}
 
 	private createBody(parent: HTMLElement): void {
@@ -222,9 +230,9 @@ export class ModelSelectionEditor extends EditorPane {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
 
-			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name, value: items.modelItem.key })));
+			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name }) as ISelectOptionItem));
 			this.fastModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
-			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name, value: tems.modelItem.key })));
+			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name }) as ISelectOptionItem));
 			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
 
 			this.modelsTable.splice(0, this.modelsTable.length, modelItems);
@@ -245,6 +253,24 @@ export class ModelSelectionEditor extends EditorPane {
 
 		this.modelsTable.layout();
 		this.providersTable.layout();
+	}
+
+	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
+	private async setSlowModel(modelName: string): Promise<void> {
+		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
+		if (!modelKey) {
+			return;
+		}
+		await this.modelSelectionEditingService.editModel('slowModel', modelKey);
+	}
+
+	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
+	private async setFastModel(modelName: string): Promise<void> {
+		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
+		if (!modelKey) {
+			return;
+		}
+		await this.modelSelectionEditingService.editModel('fastModel', modelKey);
 	}
 
 	override async setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {

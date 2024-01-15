@@ -55,3 +55,52 @@ export interface IAIModelSelectionService {
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): IModelSelectionSettings;
 }
+
+export const defaultModelSelectionSettings: IModelSelectionSettings = {
+	slowModel: 'gpt-4-32k',
+	fastModel: 'gpt-3.5-turbo',
+	models: {
+		'inline-chat-edit-lora-v0.0': {
+			name: 'CodeStory (Mistral 7B fine-tuned)',
+			contextLength: 8192,
+			temperature: 0.2,
+			provider: 'Ollama'
+		},
+		'gpt-3.5-turbo': {
+			name: 'GPT-3.5',
+			contextLength: 4096,
+			temperature: 0.2,
+			provider: 'OpenAI'
+		},
+		'gpt-4-32k': {
+			name: 'GPT-4 32k',
+			contextLength: 32768,
+			temperature: 0.2,
+			provider: 'OpenAI'
+		},
+		'gpt-4-1106-preview': {
+			name: 'GPT-4 Turbo',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: 'OpenAI'
+		},
+	},
+	providers: {
+		'openai-default': {
+			name: 'OpenAI',
+			apiKey: undefined
+		},
+		'ollama': {
+			name: 'Ollama',
+			apiKey: null
+		},
+		'lmstudio': {
+			name: 'LM Studio',
+			apiKey: null
+		},
+		'togetherai': {
+			name: 'Together AI',
+			apiKey: undefined
+		}
+	}
+};

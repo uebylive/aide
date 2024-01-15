@@ -15,7 +15,7 @@ import * as objects from 'vs/base/common/objects';
 import { dirname } from 'vs/base/common/resources';
 
 // platform
-import { IAIModelSelectionService, IModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, IModelSelectionSettings, defaultModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
 import { FileOperation, IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
@@ -25,55 +25,6 @@ import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity'
 
 // workbench
 import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
-
-const defaultModelSelectionSettings: IModelSelectionSettings = {
-	slowModel: 'gpt-4-32k',
-	fastModel: 'gpt-3.5-turbo',
-	models: {
-		'inline-chat-edit-lora-v0.0': {
-			name: 'CodeStory (Mistral 7B fine-tuned)',
-			contextLength: 8192,
-			temperature: 0.2,
-			provider: 'Ollama'
-		},
-		'gpt-3.5-turbo': {
-			name: 'GPT-3.5',
-			contextLength: 4096,
-			temperature: 0.2,
-			provider: 'OpenAI'
-		},
-		'gpt-4-32k': {
-			name: 'GPT-4 32k',
-			contextLength: 32768,
-			temperature: 0.2,
-			provider: 'OpenAI'
-		},
-		'gpt-4-1106-preview': {
-			name: 'GPT-4 Turbo',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: 'OpenAI'
-		},
-	},
-	providers: {
-		'openai-default': {
-			name: 'OpenAI',
-			apiKey: undefined
-		},
-		'ollama': {
-			name: 'Ollama',
-			apiKey: null
-		},
-		'lmstudio': {
-			name: 'LM Studio',
-			apiKey: null
-		},
-		'togetherai': {
-			name: 'Together AI',
-			apiKey: undefined
-		}
-	}
-};
 
 export class AIModelsService extends Disposable implements IAIModelSelectionService {
 	_serviceBrand: undefined;

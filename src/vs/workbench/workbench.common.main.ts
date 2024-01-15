@@ -60,6 +60,7 @@ import 'vs/workbench/services/workspaces/common/editSessionIdentityService';
 import 'vs/workbench/services/workspaces/common/canonicalUriService';
 import 'vs/workbench/services/extensions/browser/extensionUrlHandler';
 import 'vs/workbench/services/keybinding/common/keybindingEditing';
+import 'vs/workbench/services/aiModel/common/aiModelEditing';
 import 'vs/workbench/services/decorations/browser/decorationsService';
 import 'vs/workbench/services/dialogs/common/dialogService';
 import 'vs/workbench/services/progress/browser/progressService';
