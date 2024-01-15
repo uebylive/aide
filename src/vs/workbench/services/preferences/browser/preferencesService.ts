@@ -46,6 +46,7 @@ import { SuggestController } from 'vs/editor/contrib/suggest/browser/suggestCont
 import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
+import { IEditorOptions } from 'vs/platform/editor/common/editor';
 
 const emptyEditableSettingsContent = '{\n}';
 
@@ -92,8 +93,8 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 	}
 
 	readonly defaultKeybindingsResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/keybindings.json' });
+	readonly defaultModelSelectionsResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/modelSelection.json' });
 	private readonly defaultSettingsRawResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/defaultSettings.json' });
-	private readonly defaultModelSelectionSettingsRawResource = URI.from({ scheme: network.Schemas.vscode, authority: 'defaultsettings', path: '/defaultModelSelection.json' });
 
 	get userSettingsResource(): URI {
 		return this.userDataProfileService.currentProfile.settingsResource;
@@ -161,7 +162,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 			return model;
 		}
 
-		if (this.defaultModelSelectionSettingsRawResource.toString() === uri.toString()) {
+		if (this.defaultModelSelectionsResource.toString() === uri.toString()) {
 			const defaultModelSelectionSettingsEditorModel = this.instantiationService.createInstance(DefaultModelSelectionEditorModel, uri);
 			const languageSelection = this.languageService.createById('jsonc');
 			const model = this._register(this.modelService.createModel(defaultModelSelectionSettingsEditorModel.content, languageSelection, uri));
@@ -207,10 +208,6 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 
 	openRawUserSettings(): Promise<IEditorPane | undefined> {
 		return this.editorService.openEditor({ resource: this.userSettingsResource });
-	}
-
-	openRawModelSelectionSettings(): Promise<IEditorPane | undefined> {
-		return this.editorService.openEditor({ resource: this.defaultModelSelectionSettingsRawResource });
 	}
 
 	private shouldOpenJsonByDefault(): boolean {
@@ -351,8 +348,26 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 
 	}
 
-	async openModelSelectionSettings(textual: boolean): Promise<void> {
-		if (!textual) {
+	async openModelSelectionSettings(textual: boolean, options?: IEditorOptions): Promise<void> {
+		options = { pinned: true, revealIfOpened: true, ...options };
+		if (textual) {
+			const emptyContents = '// ' + nls.localize('emptyModelSelectionsHeader', "Place your model selections in this file to override the defaults") + '\n{\n}';
+			const editableModelSelection = this.userDataProfileService.currentProfile.modelSelectionResource;
+			const openDefaultModelSelection = !!this.configurationService.getValue('workbench.settings.openDefaultModelSelection');
+
+			// Create as needed and open in editor
+			await this.createIfNotExists(editableModelSelection, emptyContents);
+			if (openDefaultModelSelection) {
+				const activeEditorGroup = this.editorGroupService.activeGroup;
+				const sideEditorGroup = this.editorGroupService.addGroup(activeEditorGroup.id, GroupDirection.RIGHT);
+				await Promise.all([
+					this.editorService.openEditor({ resource: this.defaultModelSelectionsResource, options: { pinned: true, preserveFocus: true, revealIfOpened: true, override: DEFAULT_EDITOR_ASSOCIATION.id }, label: nls.localize('defaultModelSelection', "Default Model Selection"), description: '' }),
+					this.editorService.openEditor({ resource: editableModelSelection, options }, sideEditorGroup.id)
+				]);
+			} else {
+				await this.editorService.openEditor({ resource: editableModelSelection, options });
+			}
+		} else {
 			await this.editorService.openEditor(this.instantiationService.createInstance(ModelSelectionEditorInput));
 		}
 	}
@@ -362,7 +377,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 	}
 
 	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined> {
-		return this.editorService.openEditor({ resource: this.defaultModelSelectionSettingsRawResource, label: nls.localize('defaultModelSelection', "Default Model Selection") });
+		return this.editorService.openEditor({ resource: this.defaultModelSelectionsResource, label: nls.localize('defaultModelSelections', "Default Model Selection") });
 	}
 
 	private async openSettingsJson(resource: URI, options: IOpenSettingsOptions): Promise<IEditorPane | undefined> {

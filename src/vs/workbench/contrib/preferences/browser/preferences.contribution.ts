@@ -1231,6 +1231,7 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 	}
 
 	private registerModelSelectionActions() {
+		const that = this;
 		const id = 'workbench.action.openModelSelection';
 		this._register(registerAction2(class extends Action2 {
 			constructor() {
@@ -1244,7 +1245,20 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 						weight: KeybindingWeight.WorkbenchContrib,
 						primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyM)
 					},
-					menu: { id: MenuId.CommandPalette }
+					menu: [
+						{ id: MenuId.CommandPalette },
+						{
+							id: MenuId.EditorTitle,
+							when: ResourceContextKey.Resource.isEqualTo(that.userDataProfileService.currentProfile.modelSelectionResource.toString()),
+							group: 'navigation',
+							order: 1,
+						},
+						{
+							id: MenuId.GlobalActivity,
+							group: '2_configuration',
+							order: 5
+						}
+					]
 				});
 			}
 			run(accessor: ServicesAccessor) {
@@ -1262,6 +1276,22 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 			}
 			run(accessor: ServicesAccessor) {
 				return accessor.get(IPreferencesService).OpenDefaultModelSelectionFile();
+			}
+		});
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: 'workbench.action.openKeybindingsFile',
+					title: { value: nls.localize('openKeybindingsFile', "Open Model Selection (JSON)"), original: 'Open Model Selection (JSON)' },
+					category,
+					icon: preferencesOpenSettingsIcon,
+					menu: [
+						{ id: MenuId.CommandPalette }
+					]
+				});
+			}
+			run(accessor: ServicesAccessor) {
+				return accessor.get(IPreferencesService).openModelSelectionSettings(true);
 			}
 		});
 	}

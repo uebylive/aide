@@ -5,14 +5,6 @@
 
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
-export const IAIModelSelectionService = createDecorator<IAIModelSelectionService>('aiModelSelectionService');
-export interface IAIModelSelectionService {
-	readonly _serviceBrand: undefined;
-
-	getDefaultModelSelectionContent(): string;
-	getModelSelectionSettings(): IModelSelectionSettings;
-}
-
 export interface ILanguageModelItem {
 	readonly name: string;
 	readonly contextLength: number;
@@ -54,4 +46,12 @@ export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettin
 		&& ('fastModel' in obj ? typeof obj['fastModel'] === 'string' : true)
 		&& ('models' in obj ? isModelProviderItem(obj['models']) : true)
 		&& ('providers' in obj ? isModelProviderItem(obj['providers']) : true);
+}
+
+export const IAIModelSelectionService = createDecorator<IAIModelSelectionService>('aiModelSelectionService');
+export interface IAIModelSelectionService {
+	readonly _serviceBrand: undefined;
+
+	getDefaultModelSelectionContent(): string;
+	getModelSelectionSettings(): IModelSelectionSettings;
 }

@@ -51,7 +51,7 @@ export class ModelSelectionEditor extends EditorPane {
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextViewService private readonly contextViewService: IContextViewService
+		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(ModelSelectionEditor.ID, telemetryService, themeService, storageService);
 	}
