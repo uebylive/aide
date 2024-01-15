@@ -119,23 +119,6 @@
 	color: inherit;
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row.selected .monaco-table-tr .monaco-table-td .monaco-keybinding-key,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row.selected.focused .monaco-table-tr .monaco-table-td .monaco-keybinding-key {
-	color: var(--vscode-list-inactiveSelectionForeground);
-}
-
-.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row.focused .monaco-table-tr .monaco-table-td .monaco-keybinding-key {
-	color: var(--vscode-list-focusForeground);
-}
-
-.model-selection-editor > .model-selection-body > .table-container .monaco-table.focused .monaco-list-row.selected .monaco-table-tr .monaco-table-td .monaco-keybinding-key {
-	color: var(--vscode-list-activeSelectionForeground);
-}
-
-.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row:hover:not(.selected):not(.focused) .monaco-table-tr .monaco-table-td .monaco-keybinding-key {
-	color: var(--vscode-list-hoverForeground);
-}
-
 .model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row[data-parity=odd]:not(.focused):not(.selected):not(:hover) .monaco-table-tr,
 .model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list:not(:focus) .monaco-list-row[data-parity=odd].focused:not(.selected):not(:hover) .monaco-table-tr,
 .model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list:not(.focused) .monaco-list-row[data-parity=odd].focused:not(.selected):not(:hover) .monaco-table-tr {

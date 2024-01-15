@@ -1281,8 +1281,8 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
-					id: 'workbench.action.openKeybindingsFile',
-					title: { value: nls.localize('openKeybindingsFile', "Open Model Selection (JSON)"), original: 'Open Model Selection (JSON)' },
+					id: 'workbench.action.openModelSelectionFile',
+					title: { value: nls.localize('openModelSelectionFile', "Open Model Selection (JSON)"), original: 'Open Model Selection (JSON)' },
 					category,
 					icon: preferencesOpenSettingsIcon,
 					menu: [

@@ -298,7 +298,7 @@ export class ModelSelectionInitializer extends AbstractInitializer {
 		@IStorageService storageService: IStorageService,
 		@IUriIdentityService uriIdentityService: IUriIdentityService,
 	) {
-		super(SyncResource.Keybindings, userDataProfilesService, environmentService, logService, fileService, storageService, uriIdentityService);
+		super(SyncResource.ModelSelection, userDataProfilesService, environmentService, logService, fileService, storageService, uriIdentityService);
 	}
 
 	protected async doInitialize(remoteUserData: IRemoteUserData): Promise<void> {

@@ -290,7 +290,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IAct
 		return { actionBar };
 	}
 
-	renderElement(keybindingItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
 		actions.push(this.createEditAction());
@@ -301,7 +301,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IAct
 		return <IAction>{
 			class: ThemeIcon.asClassName(settingsEditIcon),
 			enabled: true,
-			id: 'editKeybinding',
+			id: 'editModelSelection',
 			tooltip: localize('editModel', "Edit Model"),
 		};
 	}
@@ -463,7 +463,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, I
 		return { actionBar };
 	}
 
-	renderElement(keybindingItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
 		actions.push(this.createEditAction());
@@ -474,7 +474,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, I
 		return <IAction>{
 			class: ThemeIcon.asClassName(settingsEditIcon),
 			enabled: true,
-			id: 'editKeybinding',
+			id: 'editModelSelection',
 			tooltip: localize('editProvider', "Edit Provider"),
 		};
 	}
