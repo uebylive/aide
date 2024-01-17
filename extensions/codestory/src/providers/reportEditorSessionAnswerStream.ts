@@ -9,7 +9,7 @@
  */
 
 import * as vscode from 'vscode';
-import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentMessage } from '../sidecar/types';
+import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../sidecar/types';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper, IndentationUtils } from './editorSessionProvider';
 
@@ -53,13 +53,14 @@ export const reportFromStreamToEditorSessionProgress = async (
 		[Symbol.asyncIterator]: () => stream
 	};
 
-	let enteredAnswerGenerationLoop = false;
+	let enteredGenerationLoop = false;
 	let skillUsed: InLineAgentAction | undefined = undefined;
 	let generatedAnswer: InLineAgentAnswer | null = null;
 	const answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 	let finalAnswer = '';
 	let contextSelection = null;
 	let streamProcessor = null;
+	let modelReplying: InLineAgentLLMType | undefined = undefined;
 
 	for await (const inlineAgentMessage of asyncIterable) {
 		// Here we are going to go in a state machine like flow, where we are going
@@ -72,6 +73,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 			// progress.report(CSInteractiveEditorProgressItem.normalMessage(inlineAgentMessage.keep_alive));
 			continue;
 		}
+		modelReplying = inlineAgentMessage.answer?.model;
 		const messageState = inlineAgentMessage.message_state;
 		if (messageState === 'Pending') {
 			// have a look at the steps here
@@ -88,7 +90,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 						progress.report(CSInteractiveEditorProgressItem.documentationGeneration());
 						continue;
 					}
-					if (lastStep === 'Edit') {
+					if (lastStep === 'Edit' || lastStep == 'Code') {
 						skillUsed = 'Edit';
 						progress.report(CSInteractiveEditorProgressItem.editGeneration());
 						continue;
@@ -106,8 +108,25 @@ export const reportFromStreamToEditorSessionProgress = async (
 				}
 			}
 		}
+
+
 		if (messageState === 'StreamingAnswer') {
-			enteredAnswerGenerationLoop = true;
+			// If this is the first time we are entering the generation loop,
+			// we have to add the prefix for the generation
+			if (!enteredGenerationLoop) {
+				// We also check the model which is replying over here, if the model
+				// is one of mistral or mixtral then we don't have the
+				// ```{language}
+				// // FILEPATH: {file_path}
+				// // BEGIN: {hash}
+				// prefix with us, so we have to manually add it back
+				if (shouldAddLeadingStrings(modelReplying)) {
+					answerSplitOnNewLineAccumulator.addDelta('```\n');
+					answerSplitOnNewLineAccumulator.addDelta('// FILEPATH: something\n');
+					answerSplitOnNewLineAccumulator.addDelta('// BEGIN: hashsomething\n');
+				}
+			}
+			enteredGenerationLoop = true;
 			// We are now going to stream the answer, this is where we have to carefully
 			// decide how we want to show the text edits on the UI
 			if (skillUsed === 'Doc') {
@@ -844,3 +863,13 @@ export const convertVSCodeDiagnostic = (
 	}
 	return null;
 };
+
+
+export const shouldAddLeadingStrings = (
+	model: InLineAgentLLMType | undefined,
+): boolean => {
+	if (model == 'MistralInstruct' || model == 'Mixtral') {
+		return true;
+	}
+	return false;
+}

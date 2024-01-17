@@ -277,6 +277,14 @@ export type InLineAgentMessageState =
 	| 'Finished'
 	| 'Errored';
 
+export type InLineAgentLLMType =
+	| 'MistralInstruct'
+	| 'Mixtral'
+	| 'Gpt4'
+	| 'GPT3_5_16k'
+	| 'Gpt4_32k'
+	| 'Gpt4Turbo';
+
 export interface InLineAgentDocumentSymbol {
 	name: string | null;
 	start_position: Position;
@@ -292,6 +300,7 @@ export interface InLineAgentAnswer {
 	state: InLineAgentMessageState;
 	document_symbol: InLineAgentDocumentSymbol | null;
 	context_selection: InLineAgentContextSelection | null;
+	model: InLineAgentLLMType;
 }
 
 

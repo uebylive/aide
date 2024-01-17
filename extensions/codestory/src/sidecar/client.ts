@@ -140,21 +140,23 @@ export class SideCarClient {
 	async *getInLineEditorResponse(
 		context: InEditorRequest,
 	): AsyncIterableIterator<InLineAgentMessage> {
-		console.log('getInLineEditorResponse');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/in_editor/answer';
-		console.log('getInLineEditorResponse');
-		console.log(context);
 		const url = baseUrl.toString();
 		// This is where we have to send the model selection object
 		const modelConfig = {
-			slow_model: "GPT3_5_16k",
-			fast_model: "GPT3_5_16k",
+			slow_model: "MistralInstruct",
+			fast_model: "MistralInstruct",
 			models: {
-				GPT3_5_16k: {
+				Mixtral: {
 					context_length: 16000,
 					temperature: 0.2,
-					provider: "Azure",
+					provider: "TogetherAI",
+				},
+				MistralInstruct: {
+					context_length: 16000,
+					temperature: 0.2,
+					provider: "TogetherAI",
 				},
 			},
 			providers: [
@@ -164,7 +166,12 @@ export class SideCarClient {
 						api_base: "https://codestory-gpt4.openai.azure.com",
 						api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
 						api_version: "2023-08-01-preview",
-					}
+					},
+				},
+				{
+					TogetherAI: {
+						api_key: "cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d",
+					},
 				},
 			],
 		};
