@@ -111,7 +111,6 @@ export async function* callServerEventStreamingBufferedPOST(url: string, body: a
 		body: JSON.stringify(body),
 	});
 
-
 	if (response.body === null) {
 		return;
 	}
