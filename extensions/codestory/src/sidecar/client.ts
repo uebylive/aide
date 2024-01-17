@@ -149,12 +149,12 @@ export class SideCarClient {
 			fast_model: "MistralInstruct",
 			models: {
 				Mixtral: {
-					context_length: 16000,
+					context_length: 32000,
 					temperature: 0.2,
 					provider: "TogetherAI",
 				},
 				MistralInstruct: {
-					context_length: 16000,
+					context_length: 8000,
 					temperature: 0.2,
 					provider: "TogetherAI",
 				},
