@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, IModelProviders, ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
@@ -49,12 +49,10 @@ export class ModelSelectionEditorModel extends EditorModel {
 			} as IModelItem;
 		});
 		this._providerItems = Object.keys(modelSelectionSettings.providers).map(providerKey => {
-			const provider = modelSelectionSettings.providers[providerKey];
+			const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
 			return {
-				key: providerKey,
-				name: provider.name,
-				baseURL: provider.baseURL,
-				apiKey: provider.apiKey
+				key: providerKey as ProviderType,
+				name: provider.name
 			} as IProviderItem;
 		});
 		const fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];

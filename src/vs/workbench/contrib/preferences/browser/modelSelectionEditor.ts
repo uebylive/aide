@@ -180,27 +180,11 @@ export class ModelSelectionEditor extends EditorPane {
 					weight: 0.3,
 					templateId: ProviderColumnsRenderer.TEMPLATE_ID,
 					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
-				},
-				{
-					label: localize("baseURL", "Base URL"),
-					tooltip: '',
-					weight: 0.4,
-					templateId: BaseURLColumnsRenderer.TEMPLATE_ID,
-					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
-				},
-				{
-					label: localize("apiKey", "API Key"),
-					tooltip: '',
-					weight: 0.3,
-					templateId: ApiKeyColumnsRenderer.TEMPLATE_ID,
-					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
-				this.instantiationService.createInstance(BaseURLColumnsRenderer),
-				this.instantiationService.createInstance(ApiKeyColumnsRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
@@ -543,72 +527,4 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	}
 
 	disposeTemplate(templateData: IProviderColumnTemplateData): void { }
-}
-
-interface IBaseURLColumnTemplateData {
-	baseURLColumn: HTMLElement;
-	baseURLLabelContainer: HTMLElement;
-	baseURLLabel: HTMLElement;
-}
-
-class BaseURLColumnsRenderer implements ITableRenderer<IProviderItemEntry, IBaseURLColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'baseURL';
-
-	readonly templateId: string = BaseURLColumnsRenderer.TEMPLATE_ID;
-
-	renderTemplate(container: HTMLElement): IBaseURLColumnTemplateData {
-		const baseURLColumn = DOM.append(container, $('.baseURL'));
-		const baseURLLabelContainer = DOM.append(baseURLColumn, $('.baseURL-label'));
-		const baseURLLabel = DOM.append(baseURLLabelContainer, $('span'));
-		return { baseURLColumn, baseURLLabelContainer, baseURLLabel };
-	}
-
-	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IBaseURLColumnTemplateData): void {
-		const providerItem = providerItemEntry.providerItem;
-		templateData.baseURLColumn.title = providerItem.baseURL ?? '';
-
-		if (providerItem.baseURL) {
-			templateData.baseURLLabel.innerText = providerItem.baseURL;
-			templateData.baseURLLabel.classList.remove('default-label');
-		} else {
-			templateData.baseURLLabel.innerText = 'Default';
-			templateData.baseURLLabel.classList.add('default-label');
-		}
-	}
-
-	disposeTemplate(templateData: IBaseURLColumnTemplateData): void { }
-}
-
-interface IApiKeyColumnTemplateData {
-	apiKeyColumn: HTMLElement;
-	apiKeyLabelContainer: HTMLElement;
-	apiKeyLabel: HTMLElement;
-}
-
-class ApiKeyColumnsRenderer implements ITableRenderer<IProviderItemEntry, IApiKeyColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'apiKey';
-
-	readonly templateId: string = ApiKeyColumnsRenderer.TEMPLATE_ID;
-
-	renderTemplate(container: HTMLElement): IApiKeyColumnTemplateData {
-		const apiKeyColumn = DOM.append(container, $('.apiKey'));
-		const apiKeyLabelContainer = DOM.append(apiKeyColumn, $('.baseURL-label'));
-		const apiKeyLabel = DOM.append(apiKeyLabelContainer, $('span'));
-		return { apiKeyColumn, apiKeyLabelContainer, apiKeyLabel };
-	}
-
-	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IApiKeyColumnTemplateData): void {
-		const providerItem = providerItemEntry.providerItem;
-		templateData.apiKeyColumn.title = providerItem.apiKey ?? '';
-
-		if (providerItem.apiKey) {
-			templateData.apiKeyLabel.innerText = providerItem.apiKey;
-			templateData.apiKeyLabel.classList.remove('default-label');
-		} else {
-			templateData.apiKeyLabel.innerText = 'Default';
-			templateData.apiKeyLabel.classList.add('default-label');
-		}
-	}
-
-	disposeTemplate(templateData: IApiKeyColumnTemplateData): void { }
 }
