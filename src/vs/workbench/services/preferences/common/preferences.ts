@@ -345,7 +345,7 @@ export interface IModelItem {
 	name: string;
 	contextLength: number;
 	temperature: number;
-	provider: ProviderType;
+	provider: IProviderItem;
 }
 
 export interface IProviderItemEntry {

@@ -40,10 +40,14 @@ export class ModelSelectionEditorModel extends EditorModel {
 		const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
 		this._modelItems = Object.keys(modelSelectionSettings.models).map(modelKey => {
 			const model = modelSelectionSettings.models[modelKey];
+			const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;
 			return {
 				key: modelKey,
 				name: model.name,
-				provider: model.provider,
+				provider: {
+					key: model.provider,
+					name: provider.name
+				},
 				contextLength: model.contextLength,
 				temperature: model.temperature
 			} as IModelItem;
@@ -56,20 +60,28 @@ export class ModelSelectionEditorModel extends EditorModel {
 			} as IProviderItem;
 		});
 		const fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
+		const fastModelProvider = modelSelectionSettings.providers[fastModel.provider as keyof IModelProviders] as ProviderConfig;
 		this._fastModel = {
 			key: modelSelectionSettings.fastModel,
 			name: fastModel.name,
 			contextLength: fastModel.contextLength,
 			temperature: fastModel.temperature,
-			provider: fastModel.provider
+			provider: {
+				key: fastModel.provider,
+				name: fastModelProvider.name
+			}
 		};
 		const slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
+		const slowModelProvider = modelSelectionSettings.providers[slowModel.provider as keyof IModelProviders] as ProviderConfig;
 		this._slowModel = {
 			key: modelSelectionSettings.slowModel,
 			name: slowModel.name,
 			contextLength: slowModel.contextLength,
 			temperature: slowModel.temperature,
-			provider: slowModel.provider
+			provider: {
+				key: slowModel.provider,
+				name: slowModelProvider.name
+			}
 		};
 
 		return super.resolve();

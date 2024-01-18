@@ -24,7 +24,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { settingsCopyIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
@@ -108,10 +108,10 @@ export class ModelSelectionEditor extends EditorPane {
 					minimumWidth: 40,
 					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; }
+					project(row: IModelItemEntry): IModelItemEntry { return row; },
 				},
 				{
-					label: localize('model', "Model"),
+					label: localize('name', "Name"),
 					tooltip: '',
 					weight: 0.3,
 					templateId: ModelsColumnRenderer.TEMPLATE_ID,
@@ -120,21 +120,21 @@ export class ModelSelectionEditor extends EditorPane {
 				{
 					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.3,
+					weight: 0.25,
 					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('contextLength', "Context Length"),
 					tooltip: '',
-					weight: 0.2,
+					weight: 0.15,
 					templateId: ContextLengthColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('temperature', "Temperature"),
 					tooltip: '',
-					weight: 0.2,
+					weight: 0.15,
 					templateId: TemperatureColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
@@ -154,6 +154,21 @@ export class ModelSelectionEditor extends EditorPane {
 				openOnSingleClick: false,
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
+
+		this._register(this.modelsTable.onMouseOver(e => {
+			if (e.element?.modelItem.provider) {
+				const providerItemIndex = this.modelSelectionEditorModel?.providerItems
+					.findIndex(provider => provider.providerItem.key === e.element?.modelItem.provider?.key);
+				if (providerItemIndex !== undefined && providerItemIndex !== -1) {
+					this.providersTable.setSelection([providerItemIndex]);
+				}
+			} else {
+				this.providersTable.setSelection([]);
+			}
+		}));
+		this._register(this.modelsTable.onMouseOut(e => {
+			this.providersTable.setSelection([]);
+		}));
 
 		DOM.append(this.modelsTableContainer);
 	}
@@ -176,7 +191,7 @@ export class ModelSelectionEditor extends EditorPane {
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('provider', "Provider"),
+					label: localize('name', "Name"),
 					tooltip: '',
 					weight: 0.3,
 					templateId: ProviderColumnsRenderer.TEMPLATE_ID,
@@ -274,7 +289,7 @@ class ModelDelegate implements ITableVirtualDelegate<IModelItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IModelItemEntry): number {
-		return 24;
+		return 48;
 	}
 }
 
@@ -282,7 +297,7 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IProviderItemEntry): number {
-		return 24;
+		return 48;
 	}
 }
 
@@ -327,6 +342,7 @@ interface IModelColumnTemplateData {
 	modelColumn: HTMLElement;
 	modelLabelContainer: HTMLElement;
 	modelLabel: HighlightedLabel;
+	modelKey: HTMLElement;
 }
 
 class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColumnTemplateData> {
@@ -338,12 +354,14 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 		const modelColumn = DOM.append(container, $('.model'));
 		const modelLabelContainer = DOM.append(modelColumn, $('.model-label'));
 		const modelLabel = new HighlightedLabel(modelLabelContainer);
-		return { modelColumn, modelLabelContainer, modelLabel };
+		const modelKey = DOM.append(modelLabelContainer, $('span'));
+		return { modelColumn, modelLabelContainer, modelLabel, modelKey };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelColumn.title = modelItem.name;
+		templateData.modelKey.innerText = modelItem.key;
 
 		if (modelItem.name) {
 			templateData.modelLabelContainer.classList.remove('hide');
@@ -381,7 +399,7 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 
 		if (modelItem.provider) {
 			templateData.providerLabelContainer.classList.remove('hide');
-			templateData.providerLabel.set(modelItem.provider, []);
+			templateData.providerLabel.set(modelItem.provider.name, []);
 		} else {
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
@@ -484,7 +502,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, I
 
 	private createCloneAction(): IAction {
 		return <IAction>{
-			class: ThemeIcon.asClassName(settingsCopyIcon),
+			class: ThemeIcon.asClassName(settingsCloneIcon),
 			enabled: true,
 			id: 'cloneProviderSelection',
 			tooltip: localize('cloneProvider', "Clone Provider"),
@@ -501,6 +519,7 @@ interface IProviderColumnTemplateData {
 	providerLogo: HTMLElement;
 	providerLabelContainer: HTMLElement;
 	providerLabel: HighlightedLabel;
+	providerKey: HTMLElement;
 }
 
 class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IProviderColumnTemplateData> {
@@ -513,12 +532,14 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 		const providerLogo = DOM.append(providerColumn, $('.provider-logo'));
 		const providerLabelContainer = DOM.append(providerColumn, $('.provider-label'));
 		const providerLabel = new HighlightedLabel(providerLabelContainer);
-		return { providerColumn, providerLogo, providerLabelContainer, providerLabel };
+		const providerKey = DOM.append(providerLabelContainer, $('span'));
+		return { providerColumn, providerLogo, providerLabelContainer, providerLabel, providerKey };
 	}
 
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerColumn.title = providerItem.name;
+		templateData.providerKey.innerText = providerItem.key;
 
 		if (providerItem.name) {
 			templateData.providerLabelContainer.classList.remove('hide');

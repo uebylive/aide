@@ -230,7 +230,7 @@ class ModelSelectionJsonSchema {
 						'type': 'object',
 						'properties': {
 							'name': {
-								'enum': ['TogetherAI'],
+								'enum': ['Together AI'],
 								'description': nls.localize('modelSelection.json.togetherAIProvider.name', 'Name of the provider')
 							},
 							'apiKey': {

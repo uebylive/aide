@@ -37,7 +37,7 @@ export interface AzureOpenAIProviderConfig {
 }
 
 export interface TogetherAIProviderConfig {
-	readonly name: 'TogetherAI';
+	readonly name: 'Together AI';
 	readonly apiKey: string;
 }
 
@@ -138,7 +138,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			apiVersion: '2023-08-01-preview'
 		},
 		'togetherai': {
-			name: 'TogetherAI',
+			name: 'Together AI',
 			apiKey: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
 		},
 		'ollama': {
