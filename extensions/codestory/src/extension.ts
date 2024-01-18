@@ -92,13 +92,6 @@ export async function activate(context: ExtensionContext) {
 	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
 
-	// Get model selection configuration
-	const modelConfiguration = await modelSelection.getConfiguration();
-	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
-	modelSelection.onDidChangeConfiguration((config) => {
-		console.log('Model configuration updated:' + JSON.stringify(config));
-	});
-
 	// Now we get all the required information and log it
 	const repoName = await getGitRepoName(
 		rootPath,
@@ -126,17 +119,26 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
+	// Get model selection configuration
+	const modelConfiguration = await modelSelection.getConfiguration();
+	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
+
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
 	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
-	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey);
+	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
 		// We assume the root-path is the one we are interested in
 		rootPath,
 		RepoRefBackend.local,
 	);
+	// setup the callback for the model configuration
+	modelSelection.onDidChangeConfiguration((config) => {
+		sidecarClient.updateModelConfiguration(config);
+		console.log('Model configuration updated:' + JSON.stringify(config));
+	});
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup
 	await reportIndexingPercentage(sidecarClient, currentRepo);
