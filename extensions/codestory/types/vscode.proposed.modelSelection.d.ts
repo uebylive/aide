@@ -21,6 +21,10 @@ declare module 'vscode' {
 	export interface ModelProviderConfiguration {
 		name: string;
 		apiKey?: string | null;
+		// passing additional keys for the payload
+		deploymentId?: string | null;
+		apiBase?: string | null;
+		apiVersion?: string | null;
 	}
 
 	export type LanguageModels = Record<string, LanguageModelConfiguration>;
