@@ -13,6 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
+import { providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -23,7 +24,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { settingsCopyIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
@@ -285,23 +286,23 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	}
 }
 
-interface IActionsColumnTemplateData {
+interface IModelActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'modelActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+	renderTemplate(container: HTMLElement): IModelActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
 		const actionBar = new ActionBar(element, { animated: false });
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IModelActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
 		actions.push(this.createEditAction());
@@ -317,7 +318,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IAct
 		};
 	}
 
-	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+	disposeTemplate(templateData: IModelActionsColumnTemplateData): void {
 		templateData.actionBar.dispose();
 	}
 }
@@ -458,45 +459,46 @@ class TemperatureColumnRenderer implements ITableRenderer<IModelItemEntry, ITemp
 	disposeTemplate(templateData: ITemperatureColumnTemplateData): void { }
 }
 
-interface IActionsColumnTemplateData {
+interface IProviderActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IProviderActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'providerActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
 		const actionBar = new ActionBar(element, { animated: false });
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
-		actions.push(this.createEditAction());
+		actions.push(this.createCloneAction());
 		templateData.actionBar.push(actions, { icon: true });
 	}
 
-	private createEditAction(): IAction {
+	private createCloneAction(): IAction {
 		return <IAction>{
-			class: ThemeIcon.asClassName(settingsEditIcon),
+			class: ThemeIcon.asClassName(settingsCopyIcon),
 			enabled: true,
-			id: 'editModelSelection',
-			tooltip: localize('editProvider', "Edit Provider"),
+			id: 'cloneProviderSelection',
+			tooltip: localize('cloneProvider', "Clone Provider"),
 		};
 	}
 
-	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+	disposeTemplate(templateData: IProviderActionsColumnTemplateData): void {
 		templateData.actionBar.dispose();
 	}
 }
 
 interface IProviderColumnTemplateData {
 	providerColumn: HTMLElement;
+	providerLogo: HTMLElement;
 	providerLabelContainer: HTMLElement;
 	providerLabel: HighlightedLabel;
 }
@@ -508,9 +510,10 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 
 	renderTemplate(container: HTMLElement): IProviderColumnTemplateData {
 		const providerColumn = DOM.append(container, $('.provider'));
+		const providerLogo = DOM.append(providerColumn, $('.provider-logo'));
 		const providerLabelContainer = DOM.append(providerColumn, $('.provider-label'));
 		const providerLabel = new HighlightedLabel(providerLabelContainer);
-		return { providerColumn, providerLabelContainer, providerLabel };
+		return { providerColumn, providerLogo, providerLabelContainer, providerLabel };
 	}
 
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
@@ -519,8 +522,12 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 
 		if (providerItem.name) {
 			templateData.providerLabelContainer.classList.remove('hide');
+			if (providerTypeValues.includes(providerItem.key)) {
+				templateData.providerLogo.classList.add(providerItem.key);
+			}
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
+			templateData.providerLabelContainer.classList.remove(providerItem.key);
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
 		}

@@ -7,7 +7,7 @@ import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
-const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
+export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
 
 export interface ILanguageModelItem {
 	readonly name: string;
