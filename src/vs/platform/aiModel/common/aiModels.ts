@@ -69,23 +69,41 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			temperature: 0.2,
 			provider: 'Ollama'
 		},
-		'gpt-3.5-turbo': {
+		'GPT3_5_16k': {
 			name: 'GPT-3.5',
 			contextLength: 4096,
 			temperature: 0.2,
 			provider: 'OpenAI'
 		},
-		'gpt-4-32k': {
+		'Gpt4': {
+			name: 'GPT-4',
+			contextLength: 8192,
+			temperature: 0.2,
+			provider: 'OpenAI',
+		},
+		'Gpt4_32k': {
 			name: 'GPT-4 32k',
 			contextLength: 32768,
 			temperature: 0.2,
 			provider: 'OpenAI'
 		},
-		'gpt-4-1106-preview': {
+		'Gpt4Turbo': {
 			name: 'GPT-4 Turbo',
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: 'OpenAI'
+		},
+		'Mixtral': {
+			name: 'Mixtral',
+			contextLength: 32000,
+			temperature: 0.2,
+			provider: 'TogetherAI',
+		},
+		'MistralInstruct': {
+			name: 'MistralInstruct',
+			contextLength: 8000,
+			temperature: 0.2,
+			provider: 'TogetherAI',
 		},
 	},
 	providers: {

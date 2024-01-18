@@ -155,12 +155,43 @@ export class SideCarClient {
 			[key]: value,
 		}));
 		// This is where we have to send the model selection object
+		// const modelConfig = {
+		// 	slow_model: this._modelConfiguration.slowModel,
+		// 	fast_model: this._modelConfiguration.fastModel,
+		// 	models: this._modelConfiguration.models,
+		// 	providers,
+		// };
 		const modelConfig = {
-			slow_model: this._modelConfiguration.slowModel,
-			fast_model: this._modelConfiguration.fastModel,
-			models: this._modelConfiguration.models,
-			providers,
-		};
+			slow_model: "MistralInstruct",
+			fast_model: "MistralInstruct",
+			models: {
+				Mixtral: {
+					context_length: 32000,
+					temperature: 0.2,
+					provider: "TogetherAI",
+				},
+				MistralInstruct: {
+					context_length: 8000,
+					temperature: 0.2,
+					provider: "TogetherAI",
+				},
+			},
+			providers: [
+				{
+					OpenAIAzureConfig: {
+						deployment_id: "gpt35-turbo-access",
+						api_base: "https://codestory-gpt4.openai.azure.com",
+						api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
+						api_version: "2023-08-01-preview",
+					},
+				},
+				{
+					TogetherAI: {
+						api_key: "cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d",
+					},
+				},
+			],
+		}
 		const finalContext = {
 			...context,
 			openai_key: this._openAIKey,
@@ -252,6 +283,37 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
 			openai_key: this._openAIKey,
+			model_config: {
+				slow_model: "MistralInstruct",
+				fast_model: "MistralInstruct",
+				models: {
+					Mixtral: {
+						context_length: 32000,
+						temperature: 0.2,
+						provider: "TogetherAI",
+					},
+					MistralInstruct: {
+						context_length: 8000,
+						temperature: 0.2,
+						provider: "TogetherAI",
+					},
+				},
+				providers: [
+					{
+						OpenAIAzureConfig: {
+							deployment_id: "gpt35-turbo-access",
+							api_base: "https://codestory-gpt4.openai.azure.com",
+							api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
+							api_version: "2023-08-01-preview",
+						},
+					},
+					{
+						TogetherAI: {
+							api_key: "cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d",
+						},
+					},
+				],
+			},
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
