@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages } from 'vscode';
+import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages, modelSelection } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -91,6 +91,13 @@ export async function activate(context: ExtensionContext) {
 	}
 	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
+
+	// Get model selection configuration
+	const modelConfiguration = await modelSelection.getConfiguration();
+	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
+	modelSelection.onDidChangeConfiguration((config) => {
+		console.log('Model configuration updated:' + JSON.stringify(config));
+	});
 
 	// Now we get all the required information and log it
 	const repoName = await getGitRepoName(

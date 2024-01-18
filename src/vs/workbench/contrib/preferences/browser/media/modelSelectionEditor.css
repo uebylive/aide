@@ -1,0 +1,145 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.model-selection-editor {
+	padding: 11px 0px 0px 27px;
+}
+
+/* header styling */
+
+.model-selection-editor > .model-selection-header {
+	padding: 0px 10px 11px 0;
+}
+
+.model-selection-editor > .model-selection-header .model-select-dropdown {
+	display: flex;
+	width: 300px;
+	text-wrap: nowrap;
+	gap: 20px;
+	padding: 4px 0;
+}
+
+.model-selection-editor > .model-selection-header .model-select-dropdown .monaco-select-box {
+	min-width: 100px;
+	min-height: 18px;
+	padding: 2px 20px 2px 8px;
+}
+
+.model-selection-editor .monaco-action-bar .action-item .monaco-custom-toggle {
+	margin: 0;
+	padding: 2px;
+}
+
+.model-selection-editor .monaco-action-bar .action-item > .codicon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: inherit;
+	box-sizing: content-box;
+}
+
+/** Table styling **/
+
+.model-selection-editor > .model-selection-body .table-container {
+	width: 100%;
+	border-spacing: 0;
+	border-collapse: separate;
+	margin-top: 36px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr {
+	cursor: default;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td {
+	align-items: center;
+	display: flex;
+	overflow: hidden;
+}
+
+/** Actions column styling **/
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .actions .monaco-action-bar {
+	display: none;
+	flex: 1;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-list-row.selected .monaco-table-tr .monaco-table-td .actions .monaco-action-bar,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table.focused .monaco-list-row.focused .monaco-table-tr .monaco-table-td .actions .monaco-action-bar,
+.model-selection-editor > .model-selection-body > .table-container .monaco-list-row:hover .monaco-table-tr .monaco-table-td .actions .monaco-action-bar {
+	display: flex;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .monaco-action-bar .action-item > .icon {
+	width:16px;
+	height: 16px;
+	cursor: pointer;
+	margin-top: 3px;
+}
+
+/** columns styling **/
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-label,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-default-label,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-id-label,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command .monaco-highlighted-label,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .source .monaco-highlighted-label,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .when .monaco-highlighted-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .hide {
+	display: none;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 90%;
+	display: flex;
+	overflow: hidden;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .code.strong {
+	padding: 1px 4px;
+	background-color: rgba(128, 128, 128, 0.17);
+	border-radius: 4px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .highlight {
+	font-weight: bold;
+	color: var(--vscode-list-highlightForeground);
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table.focused .monaco-list-row.selected .monaco-table-td .highlight,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table.focused .monaco-list-row.selected.focused .monaco-table-td .highlight {
+	color: inherit;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row[data-parity=odd]:not(.focused):not(.selected):not(:hover) .monaco-table-tr,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list:not(:focus) .monaco-list-row[data-parity=odd].focused:not(.selected):not(:hover) .monaco-table-tr,
+.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list:not(.focused) .monaco-list-row[data-parity=odd].focused:not(.selected):not(:hover) .monaco-table-tr {
+	background-color: var(--vscode-keybindingTable-rowsBackground);
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table .monaco-list-row .default-label {
+	opacity: 0.5;
+	font-style: italic;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-th {
+	background-color: var(--vscode-keybindingTable-headerBackground);
+}
+
+.model-selection-editor .monaco-table-th,
+.model-selection-editor .monaco-table-td {
+	padding-left: 10px;
+}
+
+.model-selection-editor .monaco-table-th[data-col-index="0"],
+.model-selection-editor .monaco-table-td[data-col-index="0"] {
+	padding-left: 20px;
+}
