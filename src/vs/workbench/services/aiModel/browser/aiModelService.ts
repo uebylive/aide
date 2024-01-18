@@ -30,7 +30,9 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	_serviceBrand: undefined;
 
 	private modelSelection: ModelSelection;
-	// private readonly modelSelectionJsonSchema: ModelSelectionJsonSchema;
+
+	private readonly _onDidChangeModelSelection: Emitter<IModelSelectionSettings> = this._register(new Emitter<IModelSelectionSettings>());
+	public readonly onDidChangeModelSelection: Event<IModelSelectionSettings> = this._onDidChangeModelSelection.event;
 
 	constructor(
 		@IUserDataProfileService userDataProfileService: IUserDataProfileService,
@@ -42,6 +44,9 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 
 		new ModelSelectionJsonSchema();
 		this.modelSelection = this._register(new ModelSelection(userDataProfileService, uriIdentityService, fileService, logService));
+		this.modelSelection.onDidChange(() => {
+			this._onDidChangeModelSelection.fire(this.modelSelection.modelSelection);
+		});
 		this.modelSelection.initialize();
 	}
 

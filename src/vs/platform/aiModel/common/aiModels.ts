@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 export interface ILanguageModelItem {
@@ -51,6 +52,8 @@ export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettin
 export const IAIModelSelectionService = createDecorator<IAIModelSelectionService>('aiModelSelectionService');
 export interface IAIModelSelectionService {
 	readonly _serviceBrand: undefined;
+
+	onDidChangeModelSelection: Event<IModelSelectionSettings>;
 
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): IModelSelectionSettings;
