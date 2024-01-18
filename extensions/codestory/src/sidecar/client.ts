@@ -11,6 +11,7 @@ import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPO
 import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
+import { ModelSelection } from 'vscode';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -43,13 +44,20 @@ export class RepoRef {
 export class SideCarClient {
 	private _url: string;
 	private _openAIKey: string | null = null;
+	private _modelConfiguration: ModelSelection;
 
 	constructor(
 		url: string,
 		openAIKey: string | null,
+		modelConfiguration: ModelSelection,
 	) {
 		this._url = url;
 		this._openAIKey = openAIKey;
+		this._modelConfiguration = modelConfiguration;
+	}
+
+	updateModelConfiguration(modelConfiguration: ModelSelection) {
+		this._modelConfiguration = modelConfiguration;
 	}
 
 	getRepoListUrl(): string {
