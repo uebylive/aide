@@ -56,7 +56,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 			const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
 			return {
 				key: providerKey as ProviderType,
-				name: provider.name
+				...provider
 			} as IProviderItem;
 		});
 		const fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
@@ -68,7 +68,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 			temperature: fastModel.temperature,
 			provider: {
 				key: fastModel.provider,
-				name: fastModelProvider.name
+				...fastModelProvider
 			}
 		};
 		const slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
@@ -80,7 +80,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 			temperature: slowModel.temperature,
 			provider: {
 				key: slowModel.provider,
-				name: slowModelProvider.name
+				...slowModelProvider
 			}
 		};
 

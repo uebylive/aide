@@ -222,3 +222,11 @@
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
 }
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-container {
+	line-height: 1.2rem;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-key {
+	color: var(--vscode-disabledForeground);
+}

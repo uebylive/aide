@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -120,21 +120,21 @@ export class ModelSelectionEditor extends EditorPane {
 				{
 					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.25,
+					weight: 0.3,
 					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('contextLength', "Context Length"),
 					tooltip: '',
-					weight: 0.15,
+					weight: 0.2,
 					templateId: ContextLengthColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('temperature', "Temperature"),
 					tooltip: '',
-					weight: 0.15,
+					weight: 0.2,
 					templateId: TemperatureColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
@@ -196,11 +196,19 @@ export class ModelSelectionEditor extends EditorPane {
 					weight: 0.3,
 					templateId: ProviderColumnsRenderer.TEMPLATE_ID,
 					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
+				},
+				{
+					label: localize('config', "Configuration"),
+					tooltip: '',
+					weight: 0.7,
+					templateId: ProviderConfigColumnRenderer.TEMPLATE_ID,
+					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
+				this.instantiationService.createInstance(ProviderConfigColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
@@ -297,7 +305,9 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IProviderItemEntry): number {
-		return 48;
+		console.log('getHeight' + JSON.stringify(element.providerItem));
+		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'key' && key !== 'name').length;
+		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
 	}
 }
 
@@ -541,11 +551,9 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 		templateData.providerColumn.title = providerItem.name;
 		templateData.providerKey.innerText = providerItem.key;
 
-		if (providerItem.name) {
+		if (providerTypeValues.includes(providerItem.key)) {
 			templateData.providerLabelContainer.classList.remove('hide');
-			if (providerTypeValues.includes(providerItem.key)) {
-				templateData.providerLogo.classList.add(providerItem.key);
-			}
+			templateData.providerLogo.classList.add(providerItem.key);
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
 			templateData.providerLabelContainer.classList.remove(providerItem.key);
@@ -555,4 +563,44 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	}
 
 	disposeTemplate(templateData: IProviderColumnTemplateData): void { }
+}
+
+interface IProviderConfigColumnTemplateData {
+	providerConfigColumn: HTMLElement;
+	providerConfigContainer: HTMLElement;
+}
+
+class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry, IProviderConfigColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'providerConfig';
+
+	readonly templateId: string = ProviderConfigColumnRenderer.TEMPLATE_ID;
+
+	renderTemplate(container: HTMLElement): IProviderConfigColumnTemplateData {
+		const providerConfigColumn = DOM.append(container, $('.provider-config'));
+		const providerConfigContainer = DOM.append(providerConfigColumn, $('.provider-config-container'));
+		return { providerConfigColumn, providerConfigContainer };
+	}
+
+	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderConfigColumnTemplateData): void {
+		const providerItem = providerItemEntry.providerItem;
+		templateData.providerConfigColumn.title = providerItem.name;
+
+		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name');
+		if (configKeys.length > 0) {
+			configKeys.forEach(key => {
+				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+				DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableProviderConfigKey[key]}: `));
+				DOM.append(configItem, $('span.provider-config-value', undefined, `${providerItem[key as keyof typeof providerItem]}`));
+			});
+		} else {
+			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+			DOM.append(configItem, $('span.provider-config-key', undefined, 'Default configuration'));
+		}
+	}
+
+	disposeElement(element: IProviderItemEntry, index: number, templateData: IProviderConfigColumnTemplateData, height: number | undefined): void {
+		DOM.reset(templateData.providerConfigContainer);
+	}
+
+	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 }

@@ -208,7 +208,7 @@ class ModelSelectionJsonSchema {
 							},
 							'apiBase': {
 								'type': 'string',
-								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiBase', 'API base URL of the provider')
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiBase', 'Base URL of the provider\'s API')
 							},
 							'apiKey': {
 								'type': 'string',

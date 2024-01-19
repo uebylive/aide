@@ -9,6 +9,12 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
 export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
 
+export const humanReadableProviderConfigKey: Record<string, string> = {
+	'apiKey': 'API Key',
+	'apiBase': 'Base URL',
+	'apiVersion': 'API Version'
+};
+
 export interface ILanguageModelItem {
 	readonly name: string;
 	readonly contextLength: number;
