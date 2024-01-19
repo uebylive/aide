@@ -13,10 +13,11 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
-import { asCssVariable, editorWidgetForeground, widgetBorder, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
+import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { isDark } from 'vs/platform/theme/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
 
 const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
 
@@ -61,16 +62,23 @@ export class EditModelConfigurationWidget extends Widget {
 		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
 
 		dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
+		this.updateStyles();
 
-		this._domNode.domNode.style.color = asCssVariable(editorWidgetForeground);
-		this._domNode.domNode.style.border = `2px solid ${widgetBorder}`;
-		this._domNode.domNode.style.boxShadow = `0 0 8px 2px ${widgetShadow}`;
-		this._domNode.domNode.style.backdropFilter = isDark(this._themeService.getColorTheme().type)
-			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
+		this._register(this._themeService.onDidColorThemeChange(() => {
+			this.updateStyles();
+		}));
 
 		if (parent) {
 			dom.append(parent, this._domNode.domNode);
 		}
+	}
+
+	private updateStyles(): void {
+		this._domNode.domNode.style.color = asCssVariable(editorWidgetForeground);
+		this._domNode.domNode.style.border = `0.5px solid ${asCssVariable(COMMAND_CENTER_BORDER)}`;
+		this._domNode.domNode.style.boxShadow = `0 0 8px 2px ${asCssVariable(widgetShadow)}`;
+		this._domNode.domNode.style.backdropFilter = isDark(this._themeService.getColorTheme().type)
+			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 	}
 
 	edit(): Promise<string | null> {
@@ -87,8 +95,8 @@ export class EditModelConfigurationWidget extends Widget {
 	}
 
 	layout(layout: dom.Dimension): void {
-		const top = Math.round((layout.height - EditModelConfigurationWidget.HEIGHT) / 4);
-		this._domNode.domNode.style.top = `${top}px !important`;
+		const top = Math.round((layout.height - EditModelConfigurationWidget.HEIGHT) / 3);
+		this._domNode.setTop(top);
 
 		const left = Math.round((layout.width - EditModelConfigurationWidget.WIDTH) / 2);
 		this._domNode.setLeft(left);

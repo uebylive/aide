@@ -5,10 +5,7 @@
 
 .edit-model-widget {
 	position: absolute;
-	width: 800px;
 	z-index: 2540;
-	left: 50%;
-	top: 25% !important;
 	-webkit-app-region: no-drag;
 	border-radius: 6px;
 	padding: 12px;
