@@ -10,6 +10,7 @@ import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selec
 import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
 import { IAction } from 'vs/base/common/actions';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { Codicon } from 'vs/base/common/codicons';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
@@ -21,6 +22,7 @@ import { WorkbenchTable } from 'vs/platform/list/browser/listService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
+import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
@@ -32,6 +34,8 @@ import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/bro
 import { IModelItemEntry, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
+
+const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, localize('defaultModelIcon', 'Icon for the default model.'));
 
 export class ModelSelectionEditor extends EditorPane {
 	static readonly ID: string = 'workbench.editor.modelSelectionEditor';
@@ -192,6 +196,15 @@ export class ModelSelectionEditor extends EditorPane {
 		this._register(this.modelsTable.onMouseOut(e => {
 			this.providersTable.setSelection([]);
 		}));
+		this._register(this.modelsTable.onDidOpen((e) => {
+			if (e.browserEvent?.defaultPrevented) {
+				return;
+			}
+			const activeModelEntry = this.activeModelEntry;
+			if (activeModelEntry) {
+				this.editModel(activeModelEntry, false);
+			}
+		}));
 
 		DOM.append(this.modelsTableContainer);
 	}
@@ -320,6 +333,11 @@ export class ModelSelectionEditor extends EditorPane {
 		this.layoutTables();
 	}
 
+	get activeModelEntry(): IModelItemEntry | null {
+		const focusedElement = this.modelsTable.getFocusedElements()[0];
+		return focusedElement ? <IModelItemEntry>focusedElement : null;
+	}
+
 	async editModel(modelItemEntry: IModelItemEntry, add: boolean): Promise<void> {
 		this.selectEntry(modelItemEntry);
 		this.showOverlayContainer();
@@ -434,7 +452,8 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 	renderTemplate(container: HTMLElement): IModelColumnTemplateData {
 		const modelColumn = DOM.append(container, $('.model'));
-		const modelLabelContainer = DOM.append(modelColumn, $('.model-label'));
+		DOM.append(modelColumn, $(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
+		const modelLabelContainer = DOM.append(modelColumn, $('.model-label-container'));
 		const modelLabel = new HighlightedLabel(modelLabelContainer);
 		const modelKey = DOM.append(modelLabelContainer, $('span'));
 		return { modelColumn, modelLabelContainer, modelLabel, modelKey };

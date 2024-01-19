@@ -151,16 +151,35 @@
 	font-family: var(--monaco-monospace-font);
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label {
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model {
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
+	align-items: center;
+	justify-content: center;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon {
+	display: flex;
+	align-items: center;
+	width: 22px;
+	height: 22px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon:before {
+	font-size: 22px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container {
 	display: flex;
 	flex-direction: column;
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label span.monaco-highlighted-label {
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container span.monaco-highlighted-label {
 	font-weight: bold;
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label span:not(.monaco-highlighted-label) {
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container span:not(.monaco-highlighted-label) {
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
 	font-size: 90%;
