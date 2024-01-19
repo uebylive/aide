@@ -59,7 +59,7 @@
 .edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name-container {
 	display: flex;
 	align-items: center;
-	padding: 4px 2px;
+	padding: 6px 2px;
 	border: 1px solid var(--vscode-commandCenter-border);
 	border-radius: 3px;
 	margin: 6px 0 24px 0;
@@ -80,4 +80,50 @@
 
 .edit-model-widget-content .edit-model-widget-body .monaco-list {
 	height: 200px;
+}
+
+.edit-model-widget-context-length.monaco-inputbox {
+	color: unset;
+	background-color: unset !important;
+	border: unset !important;
+}
+
+/* Style the range input */
+/*********** Baseline, reset styles ***********/
+.edit-model-widget-context-length.monaco-inputbox input[type="range"] {
+	-webkit-appearance: none;
+	padding: 0 !important;
+	appearance: none;
+	background: transparent;
+	cursor: pointer;
+}
+
+/* Removes default focus */
+.edit-model-widget-context-length.monaco-inputbox input[type="range"]:focus {
+	outline: none;
+}
+
+/* slider track */
+.edit-model-widget-context-length.monaco-inputbox input[type="range"]::-webkit-slider-runnable-track {
+	background-color: var(--vscode-commandCenter-border);
+	border-radius: 0.5rem;
+	height: 4px;
+}
+
+/* slider thumb */
+.edit-model-widget-context-length.monaco-inputbox input[type="range"]::-webkit-slider-thumb {
+	-webkit-appearance: none;
+	/* Override default look */
+	appearance: none;
+	margin-top: -4px;
+	/* Centers thumb on the track */
+	background-color: var(--vscode-editor-foreground);
+	border-radius: 8px;
+	height: 12px;
+	width: 12px;
+}
+
+.edit-model-widget-context-length.monaco-inputbox input[type="range"]:focus::-webkit-slider-thumb {
+	outline: 3px solid var(--vscode-focusBorder);
+	outline-offset: 0.125rem;
 }

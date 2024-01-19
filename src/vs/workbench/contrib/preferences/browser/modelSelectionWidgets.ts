@@ -5,6 +5,7 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { FastDomNode, createFastDomNode } from 'vs/base/browser/fastDomNode';
+import { InputBox } from 'vs/base/browser/ui/inputbox/inputBox';
 import { Widget } from 'vs/base/browser/ui/widget';
 import { Promises } from 'vs/base/common/async';
 import { Codicon } from 'vs/base/common/codicons';
@@ -13,6 +14,8 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
+import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
+import { defaultInputBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { isDark } from 'vs/platform/theme/common/theme';
@@ -25,7 +28,7 @@ export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-ic
 
 export class EditModelConfigurationWidget extends Widget {
 	private static readonly WIDTH = 400;
-	private static readonly HEIGHT = 600;
+	private static readonly HEIGHT = 200;
 
 	private _domNode: FastDomNode<HTMLElement>;
 	private _contentContainer: HTMLElement;
@@ -34,11 +37,13 @@ export class EditModelConfigurationWidget extends Widget {
 	private readonly title: HTMLElement;
 	private readonly modelName: HTMLElement;
 	private readonly providerValue: HTMLElement;
+	private readonly contextLengthValue: InputBox;
 
 	private _onHide = this._register(new Emitter<void>());
 
 	constructor(
 		parent: HTMLElement | null,
+		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IThemeService private readonly _themeService: IThemeService,
 	) {
 		super();
@@ -73,6 +78,9 @@ export class EditModelConfigurationWidget extends Widget {
 		const grid = dom.append(body, dom.$('.edit-model-widget-grid'));
 		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
 		this.providerValue = dom.append(grid, dom.$('span'));
+		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
+		this.contextLengthValue = this._register(new InputBox(grid, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'range' }));
+		this.contextLengthValue.element.classList.add('edit-model-widget-context-length');
 
 		this.updateStyles();
 		this._register(this._themeService.onDidColorThemeChange(() => {
