@@ -6,11 +6,20 @@
 import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
+export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
+
+export const humanReadableProviderConfigKey: Record<string, string> = {
+	'apiKey': 'API Key',
+	'apiBase': 'Base URL',
+	'apiVersion': 'API Version'
+};
+
 export interface ILanguageModelItem {
 	readonly name: string;
 	readonly contextLength: number;
 	readonly temperature: number;
-	readonly provider: string;
+	readonly provider: ProviderType;
 }
 
 export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
@@ -18,27 +27,51 @@ export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
 		&& 'name' in obj && typeof obj['name'] === 'string'
 		&& 'contextLength' in obj && typeof obj['contextLength'] === 'number'
 		&& 'temperature' in obj && typeof obj['temperature'] === 'number'
-		&& 'provider' in obj && typeof obj['provider'] === 'string';
+		&& 'provider' in obj && obj['provider'] in providerTypeValues;
 }
 
-export interface IModelProviderItem {
-	readonly name: string;
-	readonly baseURL?: string;
-	readonly apiKey?: string | null;
+export interface OpenAIProviderConfig {
+	readonly name: 'OpenAI';
+	readonly apiKey?: string;
 }
 
-export function isModelProviderItem(obj: any): obj is IModelProviderItem {
+export interface AzureOpenAIProviderConfig {
+	readonly name: 'Azure OpenAI';
+	readonly apiBase: string;
+	readonly apiKey: string;
+	readonly apiVersion: string;
+}
+
+export interface TogetherAIProviderConfig {
+	readonly name: 'Together AI';
+	readonly apiKey: string;
+}
+
+export interface OllamaProviderConfig {
+	readonly name: 'Ollama';
+}
+
+export type ProviderConfig = OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
+
+export type IModelProviders =
+	{ 'openai-default': OpenAIProviderConfig }
+	| { 'azure-openai': AzureOpenAIProviderConfig }
+	| { 'togetherai': TogetherAIProviderConfig }
+	| { 'ollama': OllamaProviderConfig };
+
+export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
 		&& 'name' in obj && typeof obj['name'] === 'string'
-		&& ('baseURL' in obj ? typeof obj['baseURL'] === 'string' : true)
-		&& ('apiKey' in obj ? typeof obj['apiKey'] === 'string' || typeof obj['apiKey'] === 'undefined' : true);
+		&& ('apiKey' in obj ? typeof obj['apiKey'] === 'string' : true)
+		&& ('apiBase' in obj ? typeof obj['apiBase'] === 'string' : true)
+		&& ('apiVersion' in obj ? typeof obj['apiVersion'] === 'string' : true);
 }
 
 export interface IModelSelectionSettings {
 	readonly slowModel: string;
 	readonly fastModel: string;
 	readonly models: Record<string, ILanguageModelItem>;
-	readonly providers: Record<string, IModelProviderItem>;
+	readonly providers: IModelProviders;
 }
 
 export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettings {
@@ -60,68 +93,62 @@ export interface IAIModelSelectionService {
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {
-	slowModel: 'gpt-4-32k',
-	fastModel: 'gpt-3.5-turbo',
+	slowModel: 'GPT3_5_16k',
+	fastModel: 'Gpt4',
 	models: {
-		'inline-chat-edit-lora-v0.0': {
-			name: 'CodeStory (Mistral 7B fine-tuned)',
-			contextLength: 8192,
+		'Gpt4Turbo': {
+			name: 'GPT-4 Turbo',
+			contextLength: 128000,
 			temperature: 0.2,
-			provider: 'Ollama'
-		},
-		'GPT3_5_16k': {
-			name: 'GPT-3.5',
-			contextLength: 4096,
-			temperature: 0.2,
-			provider: 'OpenAI'
-		},
-		'Gpt4': {
-			name: 'GPT-4',
-			contextLength: 8192,
-			temperature: 0.2,
-			provider: 'OpenAI',
+			provider: 'openai-default'
 		},
 		'Gpt4_32k': {
 			name: 'GPT-4 32k',
 			contextLength: 32768,
 			temperature: 0.2,
-			provider: 'OpenAI'
+			provider: 'openai-default'
 		},
-		'Gpt4Turbo': {
-			name: 'GPT-4 Turbo',
-			contextLength: 128000,
+		'Gpt4': {
+			name: 'GPT-4',
+			contextLength: 8192,
 			temperature: 0.2,
-			provider: 'OpenAI'
+			provider: 'openai-default'
+		},
+		'GPT3_5_16k': {
+			name: 'GPT-3.5',
+			contextLength: 4096,
+			temperature: 0.2,
+			provider: 'openai-default'
 		},
 		'Mixtral': {
 			name: 'Mixtral',
 			contextLength: 32000,
 			temperature: 0.2,
-			provider: 'TogetherAI',
+			provider: 'togetherai'
 		},
 		'MistralInstruct': {
-			name: 'MistralInstruct',
+			name: 'Mistral 7B Instruct',
 			contextLength: 8000,
 			temperature: 0.2,
-			provider: 'TogetherAI',
+			provider: 'togetherai'
 		},
 	},
 	providers: {
 		'openai-default': {
-			name: 'OpenAI',
-			apiKey: undefined
+			name: 'OpenAI'
 		},
-		'ollama': {
-			name: 'Ollama',
-			apiKey: null
-		},
-		'lmstudio': {
-			name: 'LM Studio',
-			apiKey: null
+		'azure-openai': {
+			name: 'Azure OpenAI',
+			apiBase: 'https://codestory-gpt4.openai.azure.com',
+			apiKey: '89ca8a49a33344c9b794b3dabcbbc5d0',
+			apiVersion: '2023-08-01-preview'
 		},
 		'togetherai': {
 			name: 'Together AI',
-			apiKey: undefined
+			apiKey: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
+		},
+		'ollama': {
+			name: 'Ollama'
 		}
 	}
 };

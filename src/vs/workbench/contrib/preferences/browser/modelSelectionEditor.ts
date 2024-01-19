@@ -13,6 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
+import { humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -23,7 +24,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
@@ -107,10 +108,10 @@ export class ModelSelectionEditor extends EditorPane {
 					minimumWidth: 40,
 					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; }
+					project(row: IModelItemEntry): IModelItemEntry { return row; },
 				},
 				{
-					label: localize('model', "Model"),
+					label: localize('name', "Name"),
 					tooltip: '',
 					weight: 0.3,
 					templateId: ModelsColumnRenderer.TEMPLATE_ID,
@@ -154,6 +155,21 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
 
+		this._register(this.modelsTable.onMouseOver(e => {
+			if (e.element?.modelItem.provider) {
+				const providerItemIndex = this.modelSelectionEditorModel?.providerItems
+					.findIndex(provider => provider.providerItem.key === e.element?.modelItem.provider?.key);
+				if (providerItemIndex !== undefined && providerItemIndex !== -1) {
+					this.providersTable.setSelection([providerItemIndex]);
+				}
+			} else {
+				this.providersTable.setSelection([]);
+			}
+		}));
+		this._register(this.modelsTable.onMouseOut(e => {
+			this.providersTable.setSelection([]);
+		}));
+
 		DOM.append(this.modelsTableContainer);
 	}
 
@@ -175,32 +191,24 @@ export class ModelSelectionEditor extends EditorPane {
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('provider', "Provider"),
+					label: localize('name', "Name"),
 					tooltip: '',
 					weight: 0.3,
 					templateId: ProviderColumnsRenderer.TEMPLATE_ID,
 					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
 				},
 				{
-					label: localize("baseURL", "Base URL"),
+					label: localize('config', "Configuration"),
 					tooltip: '',
-					weight: 0.4,
-					templateId: BaseURLColumnsRenderer.TEMPLATE_ID,
-					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
-				},
-				{
-					label: localize("apiKey", "API Key"),
-					tooltip: '',
-					weight: 0.3,
-					templateId: ApiKeyColumnsRenderer.TEMPLATE_ID,
+					weight: 0.7,
+					templateId: ProviderConfigColumnRenderer.TEMPLATE_ID,
 					project(row: IProviderItemEntry): IProviderItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
-				this.instantiationService.createInstance(BaseURLColumnsRenderer),
-				this.instantiationService.createInstance(ApiKeyColumnsRenderer)
+				this.instantiationService.createInstance(ProviderConfigColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
@@ -289,7 +297,7 @@ class ModelDelegate implements ITableVirtualDelegate<IModelItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IModelItemEntry): number {
-		return 24;
+		return 48;
 	}
 }
 
@@ -297,27 +305,29 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IProviderItemEntry): number {
-		return 24;
+		console.log('getHeight' + JSON.stringify(element.providerItem));
+		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'key' && key !== 'name').length;
+		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
 	}
 }
 
-interface IActionsColumnTemplateData {
+interface IModelActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'modelActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+	renderTemplate(container: HTMLElement): IModelActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
 		const actionBar = new ActionBar(element, { animated: false });
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IModelActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
 		actions.push(this.createEditAction());
@@ -333,7 +343,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IAct
 		};
 	}
 
-	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+	disposeTemplate(templateData: IModelActionsColumnTemplateData): void {
 		templateData.actionBar.dispose();
 	}
 }
@@ -342,6 +352,7 @@ interface IModelColumnTemplateData {
 	modelColumn: HTMLElement;
 	modelLabelContainer: HTMLElement;
 	modelLabel: HighlightedLabel;
+	modelKey: HTMLElement;
 }
 
 class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColumnTemplateData> {
@@ -353,12 +364,14 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 		const modelColumn = DOM.append(container, $('.model'));
 		const modelLabelContainer = DOM.append(modelColumn, $('.model-label'));
 		const modelLabel = new HighlightedLabel(modelLabelContainer);
-		return { modelColumn, modelLabelContainer, modelLabel };
+		const modelKey = DOM.append(modelLabelContainer, $('span'));
+		return { modelColumn, modelLabelContainer, modelLabel, modelKey };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelColumn.title = modelItem.name;
+		templateData.modelKey.innerText = modelItem.key;
 
 		if (modelItem.name) {
 			templateData.modelLabelContainer.classList.remove('hide');
@@ -396,7 +409,7 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 
 		if (modelItem.provider) {
 			templateData.providerLabelContainer.classList.remove('hide');
-			templateData.providerLabel.set(modelItem.provider, []);
+			templateData.providerLabel.set(modelItem.provider.name, []);
 		} else {
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
@@ -474,47 +487,49 @@ class TemperatureColumnRenderer implements ITableRenderer<IModelItemEntry, ITemp
 	disposeTemplate(templateData: ITemperatureColumnTemplateData): void { }
 }
 
-interface IActionsColumnTemplateData {
+interface IProviderActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IActionsColumnTemplateData> {
+class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IProviderActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'providerActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IActionsColumnTemplateData {
+	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
 		const actionBar = new ActionBar(element, { animated: false });
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
-		actions.push(this.createEditAction());
+		actions.push(this.createCloneAction());
 		templateData.actionBar.push(actions, { icon: true });
 	}
 
-	private createEditAction(): IAction {
+	private createCloneAction(): IAction {
 		return <IAction>{
-			class: ThemeIcon.asClassName(settingsEditIcon),
+			class: ThemeIcon.asClassName(settingsCloneIcon),
 			enabled: true,
-			id: 'editModelSelection',
-			tooltip: localize('editProvider', "Edit Provider"),
+			id: 'cloneProviderSelection',
+			tooltip: localize('cloneProvider', "Clone Provider"),
 		};
 	}
 
-	disposeTemplate(templateData: IActionsColumnTemplateData): void {
+	disposeTemplate(templateData: IProviderActionsColumnTemplateData): void {
 		templateData.actionBar.dispose();
 	}
 }
 
 interface IProviderColumnTemplateData {
 	providerColumn: HTMLElement;
+	providerLogo: HTMLElement;
 	providerLabelContainer: HTMLElement;
 	providerLabel: HighlightedLabel;
+	providerKey: HTMLElement;
 }
 
 class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IProviderColumnTemplateData> {
@@ -524,19 +539,24 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 
 	renderTemplate(container: HTMLElement): IProviderColumnTemplateData {
 		const providerColumn = DOM.append(container, $('.provider'));
+		const providerLogo = DOM.append(providerColumn, $('.provider-logo'));
 		const providerLabelContainer = DOM.append(providerColumn, $('.provider-label'));
 		const providerLabel = new HighlightedLabel(providerLabelContainer);
-		return { providerColumn, providerLabelContainer, providerLabel };
+		const providerKey = DOM.append(providerLabelContainer, $('span'));
+		return { providerColumn, providerLogo, providerLabelContainer, providerLabel, providerKey };
 	}
 
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerColumn.title = providerItem.name;
+		templateData.providerKey.innerText = providerItem.key;
 
-		if (providerItem.name) {
+		if (providerTypeValues.includes(providerItem.key)) {
 			templateData.providerLabelContainer.classList.remove('hide');
+			templateData.providerLogo.classList.add(providerItem.key);
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
+			templateData.providerLabelContainer.classList.remove(providerItem.key);
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
 		}
@@ -545,70 +565,42 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	disposeTemplate(templateData: IProviderColumnTemplateData): void { }
 }
 
-interface IBaseURLColumnTemplateData {
-	baseURLColumn: HTMLElement;
-	baseURLLabelContainer: HTMLElement;
-	baseURLLabel: HTMLElement;
+interface IProviderConfigColumnTemplateData {
+	providerConfigColumn: HTMLElement;
+	providerConfigContainer: HTMLElement;
 }
 
-class BaseURLColumnsRenderer implements ITableRenderer<IProviderItemEntry, IBaseURLColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'baseURL';
+class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry, IProviderConfigColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'providerConfig';
 
-	readonly templateId: string = BaseURLColumnsRenderer.TEMPLATE_ID;
+	readonly templateId: string = ProviderConfigColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IBaseURLColumnTemplateData {
-		const baseURLColumn = DOM.append(container, $('.baseURL'));
-		const baseURLLabelContainer = DOM.append(baseURLColumn, $('.baseURL-label'));
-		const baseURLLabel = DOM.append(baseURLLabelContainer, $('span'));
-		return { baseURLColumn, baseURLLabelContainer, baseURLLabel };
+	renderTemplate(container: HTMLElement): IProviderConfigColumnTemplateData {
+		const providerConfigColumn = DOM.append(container, $('.provider-config'));
+		const providerConfigContainer = DOM.append(providerConfigColumn, $('.provider-config-container'));
+		return { providerConfigColumn, providerConfigContainer };
 	}
 
-	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IBaseURLColumnTemplateData): void {
+	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderConfigColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
-		templateData.baseURLColumn.title = providerItem.baseURL ?? '';
+		templateData.providerConfigColumn.title = providerItem.name;
 
-		if (providerItem.baseURL) {
-			templateData.baseURLLabel.innerText = providerItem.baseURL;
-			templateData.baseURLLabel.classList.remove('default-label');
+		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name');
+		if (configKeys.length > 0) {
+			configKeys.forEach(key => {
+				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+				DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableProviderConfigKey[key]}: `));
+				DOM.append(configItem, $('span.provider-config-value', undefined, `${providerItem[key as keyof typeof providerItem]}`));
+			});
 		} else {
-			templateData.baseURLLabel.innerText = 'Default';
-			templateData.baseURLLabel.classList.add('default-label');
+			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+			DOM.append(configItem, $('span.provider-config-key', undefined, 'Default configuration'));
 		}
 	}
 
-	disposeTemplate(templateData: IBaseURLColumnTemplateData): void { }
-}
-
-interface IApiKeyColumnTemplateData {
-	apiKeyColumn: HTMLElement;
-	apiKeyLabelContainer: HTMLElement;
-	apiKeyLabel: HTMLElement;
-}
-
-class ApiKeyColumnsRenderer implements ITableRenderer<IProviderItemEntry, IApiKeyColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'apiKey';
-
-	readonly templateId: string = ApiKeyColumnsRenderer.TEMPLATE_ID;
-
-	renderTemplate(container: HTMLElement): IApiKeyColumnTemplateData {
-		const apiKeyColumn = DOM.append(container, $('.apiKey'));
-		const apiKeyLabelContainer = DOM.append(apiKeyColumn, $('.baseURL-label'));
-		const apiKeyLabel = DOM.append(apiKeyLabelContainer, $('span'));
-		return { apiKeyColumn, apiKeyLabelContainer, apiKeyLabel };
+	disposeElement(element: IProviderItemEntry, index: number, templateData: IProviderConfigColumnTemplateData, height: number | undefined): void {
+		DOM.reset(templateData.providerConfigContainer);
 	}
 
-	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IApiKeyColumnTemplateData): void {
-		const providerItem = providerItemEntry.providerItem;
-		templateData.apiKeyColumn.title = providerItem.apiKey ?? '';
-
-		if (providerItem.apiKey) {
-			templateData.apiKeyLabel.innerText = providerItem.apiKey;
-			templateData.apiKeyLabel.classList.remove('default-label');
-		} else {
-			templateData.apiKeyLabel.innerText = 'Default';
-			templateData.apiKeyLabel.classList.add('default-label');
-		}
-	}
-
-	disposeTemplate(templateData: IApiKeyColumnTemplateData): void { }
+	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 }

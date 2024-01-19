@@ -175,18 +175,95 @@ class ModelSelectionJsonSchema {
 		allowTrailingCommas: true,
 		allowComments: true,
 		definitions: {
-			'provider': {
+			'openaiProvider': {
 				'type': 'object',
 				'properties': {
-					'name': {
-						'type': 'string',
-						'description': nls.localize('modelSelection.json.provider.name', 'Name of the provider')
-					},
-					'apiKey': {
-						'type': ['string', 'null'],
-						'description': nls.localize('modelSelection.json.provider.apiKey', 'API key for the provider')
+					'openai-default': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['OpenAI'],
+								'description': nls.localize('modelSelection.json.openaiProvider.name', 'Name of the provider'),
+								'$vocabulary': 'openaiProviderName'
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.openaiProvider.apiKey', 'API key of the provider')
+							}
+						},
+						'required': ['name']
 					}
 				}
+			},
+			'azureOpenAIProvider': {
+				'type': 'object',
+				'properties': {
+					'azure-openai': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Azure OpenAI'],
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.name', 'Name of the provider'),
+								'$vocabulary': 'azureOpenAIProviderName'
+							},
+							'apiBase': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiBase', 'Base URL of the provider\'s API')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiKey', 'API key of the provider')
+							},
+							'apiVersion': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiVersion', 'API version of the provider')
+							}
+						},
+						'required': ['name', 'apiBase', 'apiKey', 'apiVersion']
+					}
+				},
+			},
+			'togetherAIProvider': {
+				'type': 'object',
+				'properties': {
+					'togetherai': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Together AI'],
+								'description': nls.localize('modelSelection.json.togetherAIProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.togetherAIProvider.apiKey', 'API key of the provider')
+							}
+						},
+						'required': ['name', 'apiKey']
+					}
+				}
+			},
+			'ollamaProvider': {
+				'type': 'object',
+				'properties': {
+					'ollama': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Ollama'],
+								'description': nls.localize('modelSelection.json.ollamaProvider.name', 'Name of the provider')
+							}
+						},
+						'required': ['name']
+					}
+				}
+			},
+			'providers': {
+				'oneOf': [
+					{ '$ref': '#/definitions/openaiProvider' },
+					{ '$ref': '#/definitions/azureOpenAIProvider' },
+					{ '$ref': '#/definitions/togetherAIProvider' },
+					{ '$ref': '#/definitions/ollamaProvider' }
+				]
 			},
 			'model': {
 				'type': 'object',
@@ -204,7 +281,7 @@ class ModelSelectionJsonSchema {
 						'description': nls.localize('modelSelection.json.model.temperature', 'Temperature of the model')
 					},
 					'provider': {
-						'type': 'string',
+						'enum': ['openai-default', 'azure-openai', 'togetherai', 'ollama'],
 						'description': nls.localize('modelSelection.json.model.provider', 'Provider of the model')
 					}
 				}
@@ -227,11 +304,8 @@ class ModelSelectionJsonSchema {
 				}
 			},
 			'providers': {
-				'type': 'object',
+				'$ref': '#/definitions/providers',
 				'description': nls.localize('modelSelection.json.providers', 'Providers available for selection'),
-				'additionalProperties': {
-					'$ref': '#/definitions/provider'
-				}
 			}
 		}
 	};

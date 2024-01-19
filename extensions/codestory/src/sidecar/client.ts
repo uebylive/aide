@@ -11,7 +11,6 @@ import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPO
 import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
-import { ModelSelection } from 'vscode';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -44,19 +43,19 @@ export class RepoRef {
 export class SideCarClient {
 	private _url: string;
 	private _openAIKey: string | null = null;
-	private _modelConfiguration: ModelSelection;
+	private _modelConfiguration: vscode.ModelSelection;
 
 	constructor(
 		url: string,
 		openAIKey: string | null,
-		modelConfiguration: ModelSelection,
+		modelConfiguration: vscode.ModelSelection,
 	) {
 		this._url = url;
 		this._openAIKey = openAIKey;
 		this._modelConfiguration = modelConfiguration;
 	}
 
-	updateModelConfiguration(modelConfiguration: ModelSelection) {
+	updateModelConfiguration(modelConfiguration: vscode.ModelSelection) {
 		this._modelConfiguration = modelConfiguration;
 	}
 
@@ -162,41 +161,41 @@ export class SideCarClient {
 		// 	providers,
 		// };
 		const modelConfig = {
-			slow_model: "MistralInstruct",
-			fast_model: "MistralInstruct",
+			slow_model: 'MistralInstruct',
+			fast_model: 'MistralInstruct',
 			models: {
 				Mixtral: {
 					context_length: 32000,
 					temperature: 0.2,
-					provider: "TogetherAI",
+					provider: 'TogetherAI',
 				},
 				MistralInstruct: {
 					context_length: 8000,
 					temperature: 0.2,
-					provider: "TogetherAI",
+					provider: 'TogetherAI',
 				},
 			},
 			providers: [
 				{
 					OpenAIAzureConfig: {
-						deployment_id: "gpt35-turbo-access",
-						api_base: "https://codestory-gpt4.openai.azure.com",
-						api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
-						api_version: "2023-08-01-preview",
+						deployment_id: 'gpt35-turbo-access',
+						api_base: 'https://codestory-gpt4.openai.azure.com',
+						api_key: '89ca8a49a33344c9b794b3dabcbbc5d0',
+						api_version: '2023-08-01-preview',
 					},
 				},
 				{
 					TogetherAI: {
-						api_key: "cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d",
+						api_key: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
 					},
 				},
 			],
-		}
+		};
 		const finalContext = {
 			...context,
 			openai_key: this._openAIKey,
 			modelConfig: modelConfig,
-		}
+		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, finalContext);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
@@ -284,32 +283,32 @@ export class SideCarClient {
 			active_window_data: activeWindowData,
 			openai_key: this._openAIKey,
 			model_config: {
-				slow_model: "MistralInstruct",
-				fast_model: "MistralInstruct",
+				slow_model: 'MistralInstruct',
+				fast_model: 'MistralInstruct',
 				models: {
 					Mixtral: {
 						context_length: 32000,
 						temperature: 0.2,
-						provider: "TogetherAI",
+						provider: 'TogetherAI',
 					},
 					MistralInstruct: {
 						context_length: 8000,
 						temperature: 0.2,
-						provider: "TogetherAI",
+						provider: 'TogetherAI',
 					},
 				},
 				providers: [
 					{
 						OpenAIAzureConfig: {
-							deployment_id: "gpt35-turbo-access",
-							api_base: "https://codestory-gpt4.openai.azure.com",
-							api_key: "89ca8a49a33344c9b794b3dabcbbc5d0",
-							api_version: "2023-08-01-preview",
+							deployment_id: 'gpt35-turbo-access',
+							api_base: 'https://codestory-gpt4.openai.azure.com',
+							api_key: '89ca8a49a33344c9b794b3dabcbbc5d0',
+							api_version: '2023-08-01-preview',
 						},
 					},
 					{
 						TogetherAI: {
-							api_key: "cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d",
+							api_key: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
 						},
 					},
 				],
