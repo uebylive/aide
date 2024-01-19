@@ -11,6 +11,12 @@
 
 .model-selection-editor > .model-selection-header {
 	padding-top: 20px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	justify-items: center;
+	align-items: center;
+	gap: 0 20px;
+	margin: 0 20%;
 }
 
 .model-selection-editor > .model-selection-header .model-select-dropdown {

@@ -38,6 +38,7 @@ export class EditModelConfigurationWidget extends Widget {
 	private readonly modelName: HTMLElement;
 	private readonly providerValue: HTMLElement;
 	private readonly contextLengthValue: InputBox;
+	private readonly temperatureValue: InputBox;
 
 	private _onHide = this._register(new Emitter<void>());
 
@@ -79,8 +80,14 @@ export class EditModelConfigurationWidget extends Widget {
 		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
 		this.providerValue = dom.append(grid, dom.$('span'));
 		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
-		this.contextLengthValue = this._register(new InputBox(grid, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'range' }));
+		this.contextLengthValue = this._register(new InputBox(grid, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'number' }));
 		this.contextLengthValue.element.classList.add('edit-model-widget-context-length');
+		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.temperature', "Temperature")));
+		this.temperatureValue = this._register(new InputBox(grid, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'range' }));
+		this.temperatureValue.element.classList.add('edit-model-widget-temperature');
+		this.temperatureValue.inputElement.min = '-1';
+		this.temperatureValue.inputElement.max = '1';
+		this.temperatureValue.inputElement.step = '0.1';
 
 		this.updateStyles();
 		this._register(this._themeService.onDidColorThemeChange(() => {
@@ -109,6 +116,8 @@ export class EditModelConfigurationWidget extends Widget {
 				this.title.textContent = `Edit ${entry.modelItem.key}`;
 				this.modelName.textContent = entry.modelItem.name;
 				this.providerValue.textContent = entry.modelItem.provider.name;
+				this.contextLengthValue.value = entry.modelItem.contextLength.toString();
+				this.temperatureValue.value = entry.modelItem.temperature.toString();
 			}
 			const disposable = this._onHide.event(() => {
 				disposable.dispose();
