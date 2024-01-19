@@ -18,17 +18,22 @@ import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { isDark } from 'vs/platform/theme/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
+import { IModelItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
-const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
+export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
+export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
 
 export class EditModelConfigurationWidget extends Widget {
-	private static readonly WIDTH = 800;
-	private static readonly HEIGHT = 400;
+	private static readonly WIDTH = 400;
+	private static readonly HEIGHT = 600;
 
 	private _domNode: FastDomNode<HTMLElement>;
 	private _contentContainer: HTMLElement;
 
 	private _isVisible: boolean = false;
+	private readonly title: HTMLElement;
+	private readonly modelName: HTMLElement;
+	private readonly providerValue: HTMLElement;
 
 	private _onHide = this._register(new Emitter<void>());
 
@@ -55,15 +60,21 @@ export class EditModelConfigurationWidget extends Widget {
 		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
 		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
 
-		const message = nls.localize('editModelConfiguration.initial', "Edit model configuration");
-		dom.append(header, dom.$('.message', undefined, message));
+		this.title = dom.append(header, dom.$('.message'));
 		const closeIcon = dom.append(header, dom.$(`.close-icon${ThemeIcon.asCSSSelector(editModelWidgetCloseIcon)}}`));
 		closeIcon.title = nls.localize('editModelConfiguration.close', "Close");
 		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
 
-		dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
-		this.updateStyles();
+		const body = dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
+		const modelNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
+		dom.append(modelNameContainer, dom.$(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
+		this.modelName = dom.append(modelNameContainer, dom.$('.edit-model-widget-model-name'));
 
+		const grid = dom.append(body, dom.$('.edit-model-widget-grid'));
+		dom.append(grid, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
+		this.providerValue = dom.append(grid, dom.$('span'));
+
+		this.updateStyles();
 		this._register(this._themeService.onDidColorThemeChange(() => {
 			this.updateStyles();
 		}));
@@ -81,11 +92,15 @@ export class EditModelConfigurationWidget extends Widget {
 			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 	}
 
-	edit(): Promise<string | null> {
+	edit(entry: IModelItemEntry): Promise<string | null> {
 		return Promises.withAsyncBody<string | null>(async (resolve) => {
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
+
+				this.title.textContent = `Edit ${entry.modelItem.key}`;
+				this.modelName.textContent = entry.modelItem.name;
+				this.providerValue.textContent = entry.modelItem.provider.name;
 			}
 			const disposable = this._onHide.event(() => {
 				disposable.dispose();

@@ -10,7 +10,6 @@ import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selec
 import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
 import { IAction } from 'vs/base/common/actions';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Codicon } from 'vs/base/common/codicons';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
@@ -22,11 +21,10 @@ import { WorkbenchTable } from 'vs/platform/list/browser/listService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditModelConfigurationWidget } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
+import { EditModelConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
 import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
@@ -34,8 +32,6 @@ import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/bro
 import { IModelItemEntry, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
-
-const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, localize('defaultModelIcon', 'Icon for the default model.'));
 
 export class ModelSelectionEditor extends EditorPane {
 	static readonly ID: string = 'workbench.editor.modelSelectionEditor';
@@ -342,7 +338,7 @@ export class ModelSelectionEditor extends EditorPane {
 		this.selectEntry(modelItemEntry);
 		this.showOverlayContainer();
 		try {
-			const key = await this.editModelConfigurationWidget.edit();
+			const key = await this.editModelConfigurationWidget.edit(modelItemEntry);
 			if (key) {
 				console.log(key);
 			}
