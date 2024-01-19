@@ -75,17 +75,50 @@
 .edit-model-widget-content .edit-model-widget-body .edit-model-widget-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 12px;
+	align-items: center;
+	gap: 16px;
+}
+
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-grid .subtitle {
+	color: var(--vscode-disabledForeground);
+	font-size: 90%;
+	display: block;
 }
 
 .edit-model-widget-content .edit-model-widget-body .monaco-list {
 	height: 200px;
 }
 
+.edit-model-widget-content .edit-model-widget-body .monaco-select-box {
+	min-width: 100px;
+	min-height: 18px;
+	padding: 4px 20px 4px 8px;
+}
+
 .edit-model-widget-temperature.monaco-inputbox {
 	color: unset;
 	background-color: unset !important;
 	border: unset !important;
+	left: -2px;
+}
+
+.edit-model-widget-context-length.monaco-inputbox .validation-message {
+	width: 200px;
+}
+
+.edit-model-widget-context-length.monaco-inputbox input[type=number]::-webkit-inner-spin-button {
+	/* Hide arrow button that shows in type=number fields */
+	-webkit-appearance: none !important;
+}
+
+.edit-model-widget-context-length.monaco-inputbox input[type=number] {
+	/* Hide arrow button that shows in type=number fields */
+	-moz-appearance: textfield !important;
+	appearance: textfield !important;
+}
+
+.edit-model-widget-temperature-container {
+	line-height: 1;
 }
 
 /* Style the range input */
@@ -126,4 +159,13 @@
 .edit-model-widget-temperature.monaco-inputbox input[type="range"]:focus::-webkit-slider-thumb {
 	outline: 3px solid var(--vscode-focusBorder);
 	outline-offset: 0.125rem;
+}
+
+/* Footer */
+.edit-model-widget-content .edit-model-widget-footer {
+	display: flex;
+	justify-content: flex-end;
+	gap: 12px;
+	margin-left: 40%;
+	margin-top: 24px;
 }

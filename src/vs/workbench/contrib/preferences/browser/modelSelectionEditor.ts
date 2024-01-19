@@ -337,7 +337,10 @@ export class ModelSelectionEditor extends EditorPane {
 		this.selectEntry(modelItemEntry);
 		this.showOverlayContainer();
 		try {
-			const key = await this.editModelConfigurationWidget.edit(modelItemEntry);
+			const key = await this.editModelConfigurationWidget.edit(
+				modelItemEntry,
+				this.modelSelectionEditorModel?.providerItems.map(item => item.providerItem) ?? [modelItemEntry.modelItem.provider]
+			);
 			if (key) {
 				console.log(key);
 			}

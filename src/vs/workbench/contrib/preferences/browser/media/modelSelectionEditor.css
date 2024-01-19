@@ -10,7 +10,7 @@
 /* header styling */
 
 .model-selection-editor > .model-selection-header {
-	padding-top: 20px;
+	padding-top: 28px;
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
 	justify-items: center;
