@@ -10,7 +10,7 @@
 /* header styling */
 
 .model-selection-editor > .model-selection-header {
-	padding: 0px 10px 11px 0;
+	padding-top: 20px;
 }
 
 .model-selection-editor > .model-selection-header .model-select-dropdown {
@@ -19,6 +19,7 @@
 	text-wrap: nowrap;
 	gap: 20px;
 	padding: 4px 0;
+	align-items: center;
 }
 
 .model-selection-editor > .model-selection-header .model-select-dropdown .monaco-select-box {
