@@ -156,15 +156,20 @@
 	flex-direction: column;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label span.monaco-highlighted-label {
+	font-weight: bold;
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label span:not(.monaco-highlighted-label) {
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
+	font-size: 90%;
 }
 
 /** provider column styling **/
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider {
 	display: flex;
-	gap: 8px;
+	gap: 12px;
 	align-items: center;
 	justify-content: center;
 }
@@ -218,9 +223,14 @@
 	flex-direction: column;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-label span.monaco-highlighted-label {
+	font-weight: bold;
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-label span:not(.monaco-highlighted-label) {
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
+	font-size: 90%;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-container {
