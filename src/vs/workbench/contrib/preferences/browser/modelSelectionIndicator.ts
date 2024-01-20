@@ -32,6 +32,10 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	) {
 		super();
 
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
+			this.renderModelSelectionStatusIndicator();
+		}));
+
 		this.registerActions();
 		this.renderModelSelectionStatusIndicator();
 	}
@@ -58,7 +62,11 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	}
 
 	private renderModelSelectionStatusIndicator() {
-		const text = '$(debug-breakpoint-data-unverified)';
+		const modelSelection = this.aiModelSelectionService.getModelSelectionSettings();
+		const fastModel = modelSelection.models[modelSelection.fastModel as keyof typeof modelSelection.models].name;
+		const slowModel = modelSelection.models[modelSelection.slowModel as keyof typeof modelSelection.models].name;
+
+		const text = `$(debug-breakpoint-data-unverified) ${fastModel}/${slowModel}`;
 		const properties: IStatusbarEntry = {
 			name: nls.localize('modelSelection', "Model Selection"),
 			kind: 'remote',
@@ -159,11 +167,13 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
-		this._register(quickPick.onDidAccept(() => {
+		this._register(quickPick.onDidAccept(async () => {
 			const item = quickPick.selectedItems[0];
+			console.log('Selected item', item.id);
 			const modelKey = item.id as string;
-			this.modelSelectionEditingService.editModel(type, modelKey);
+			await this.modelSelectionEditingService.editModelSelection(type, modelKey);
 			quickPick.hide();
+			this.renderModelSelectionStatusIndicator();
 		}));
 
 		quickPick.show();

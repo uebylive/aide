@@ -18,6 +18,10 @@ export class ModelSelectionEditorModel extends EditorModel {
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService
 	) {
 		super();
+
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
+			this.resolve();
+		}));
 	}
 
 	get fastModel(): IModelItemEntry {

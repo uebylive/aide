@@ -44,9 +44,9 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 
 		new ModelSelectionJsonSchema();
 		this.modelSelection = this._register(new ModelSelection(userDataProfileService, uriIdentityService, fileService, logService));
-		this.modelSelection.onDidChange(() => {
+		this._register(this.modelSelection.onDidChange(() => {
 			this._onDidChangeModelSelection.fire(this.modelSelection.modelSelection);
-		});
+		}));
 		this.modelSelection.initialize();
 	}
 
@@ -104,6 +104,8 @@ class ModelSelection extends Disposable {
 				e.join(this.whenCurrentProfileChanged());
 			}
 		}));
+
+		this.reloadConfigurationScheduler.schedule();
 	}
 
 	private async whenCurrentProfileChanged(): Promise<void> {
