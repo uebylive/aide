@@ -20,7 +20,6 @@ export class MainThreadModelSelection extends Disposable implements MainThreadMo
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostModelSelection);
 
-		this._proxy.$initializeConfiguration(this._getConfigurationData());
 		this._register(this._modelSelectionService.onDidChangeModelSelection(e => {
 			this._proxy.$acceptConfigurationChanged(e);
 		}));
@@ -30,7 +29,7 @@ export class MainThreadModelSelection extends Disposable implements MainThreadMo
 		return this._getConfigurationData();
 	}
 
-	private _getConfigurationData(): IModelSelectionSettings {
+	private async _getConfigurationData(): Promise<IModelSelectionSettings> {
 		return this._modelSelectionService.getModelSelectionSettings();
 	}
 }

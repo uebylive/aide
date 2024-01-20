@@ -10,7 +10,13 @@
 /* header styling */
 
 .model-selection-editor > .model-selection-header {
-	padding-top: 20px;
+	padding-top: 28px;
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	justify-items: center;
+	align-items: center;
+	gap: 0 20px;
+	margin: 0 20%;
 }
 
 .model-selection-editor > .model-selection-header .model-select-dropdown {
@@ -151,20 +157,44 @@
 	font-family: var(--monaco-monospace-font);
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label {
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model {
+	display: flex;
+	flex-direction: row;
+	gap: 12px;
+	align-items: center;
+	justify-content: center;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon {
+	display: flex;
+	align-items: center;
+	width: 22px;
+	height: 22px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon:before {
+	font-size: 22px;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container {
 	display: flex;
 	flex-direction: column;
 }
 
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label span:not(.monaco-highlighted-label) {
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container span.monaco-highlighted-label {
+	font-weight: bold;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container span:not(.monaco-highlighted-label) {
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
+	font-size: 90%;
 }
 
 /** provider column styling **/
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider {
 	display: flex;
-	gap: 8px;
+	gap: 12px;
 	align-items: center;
 	justify-content: center;
 }
@@ -218,9 +248,14 @@
 	flex-direction: column;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-label span.monaco-highlighted-label {
+	font-weight: bold;
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-label span:not(.monaco-highlighted-label) {
 	color: var(--vscode-disabledForeground);
 	font-family: var(--monaco-monospace-font);
+	font-size: 90%;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-container {
