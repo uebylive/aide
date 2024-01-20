@@ -14,8 +14,9 @@ import * as nls from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IAIModelSelectionService, IModelProviders, ProviderConfig } from 'vs/platform/aiModel/common/aiModels';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { IQuickInputService, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
+import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
+import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
@@ -26,7 +27,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	constructor(
 		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
-		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
 	) {
 		super();
 
@@ -97,52 +99,72 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
-		quickPick.onDidAccept(() => {
-			// const item = quickPick.selectedItems[0];
+		this._register(quickPick.onDidAccept(() => {
+			const item = quickPick.selectedItems[0];
 			quickPick.hide();
-			this.showModelPicker();
-		});
+			this.showModelPicker(item.id as 'fastModel' | 'slowModel');
+		}));
 
 		quickPick.show();
 	}
 
-	private showModelPicker(): void {
+	private showModelPicker(type: 'fastModel' | 'slowModel'): void {
 		const computeItems = (): QuickPickItem[] => {
 			const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
-			const items: QuickPickItem[] = Object.keys(modelSelectionSettings.models).map(key => {
+			const models = Object.keys(modelSelectionSettings.models).reduce((acc, key) => {
 				const model = modelSelectionSettings.models[key as keyof typeof modelSelectionSettings.models];
-				const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;
-				const tooltip = new MarkdownString();
-				tooltip.appendMarkdown(`### ${model.name}\n`);
-				tooltip.appendMarkdown(`- **Provider**: ${provider.name}\n`);
-				tooltip.appendMarkdown(`- **Context length**: ${model.contextLength}\n`);
-				tooltip.appendMarkdown(`- **Temperature**: ${model.temperature}`);
-				return {
-					type: 'item',
-					id: key,
-					label: model.name,
-					ariaLabel: model.name,
-					detail: provider.name,
-					tooltip,
-					iconClasses: ['model-selection-picker', 'model-icon'],
-					buttons: [{
-						iconClass: ThemeIcon.asClassName(Codicon.edit),
-						tooltip: nls.localize('modelSelection.edit', "Edit"),
-					}],
-					picked: modelSelectionSettings.slowModel === key
-				} as QuickPickItem;
-			});
+				acc[model.provider] = acc[model.provider] || [];
+				acc[model.provider].push(key);
+				return acc;
+			}, {} as { [providerKey: string]: string[] });
+
+			const items: QuickPickItem[] = Object.keys(models).map(providerKey => {
+				const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
+				return [{
+					type: 'separator',
+					label: provider.name,
+				} as IQuickPickSeparator,
+				...models[providerKey].map(modelKey => {
+					const model = modelSelectionSettings.models[modelKey as keyof typeof modelSelectionSettings.models];
+					const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;
+
+					const tooltip = new MarkdownString();
+					tooltip.appendMarkdown(`### ${model.name}\n`);
+					tooltip.appendMarkdown(`- **Provider**: ${provider.name}\n`);
+					tooltip.appendMarkdown(`- **Context length**: ${model.contextLength}\n`);
+					tooltip.appendMarkdown(`- **Temperature**: ${model.temperature}`);
+
+					return {
+						type: 'item',
+						id: modelKey,
+						label: model.name,
+						ariaLabel: model.name,
+						tooltip,
+						iconClasses: ['model-selection-picker', modelSelectionSettings[type] === modelKey ? 'selected-model-icon' : 'model-icon'],
+						buttons: [{
+							iconClass: ThemeIcon.asClassName(Codicon.edit),
+							tooltip: nls.localize('modelSelection.edit', "Edit"),
+						}]
+					} as IQuickPickItem;
+				})];
+			}).flat();
 			return items;
 		};
 
 		const quickPick = this.quickInputService.createQuickPick();
-		quickPick.placeholder = nls.localize('modelSelection.placeholder', "Select a model");
-		quickPick.title = nls.localize('modelSelection.title', "Select a model");
+		quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
+		quickPick.title = `Select ${type.replace('Model', '')} model`;
 		quickPick.items = computeItems();
 		quickPick.step = 2;
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
+		this._register(quickPick.onDidAccept(() => {
+			const item = quickPick.selectedItems[0];
+			const modelKey = item.id as string;
+			this.modelSelectionEditingService.editModel(type, modelKey);
+			quickPick.hide();
+		}));
 
 		quickPick.show();
 	}

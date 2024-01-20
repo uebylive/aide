@@ -8,3 +8,9 @@
 	font-family: 'codicon';
 	font-size: 16px;
 }
+
+.model-selection-picker.selected-model-icon::before {
+	content: '\EAB2';
+	font-family: 'codicon';
+	font-size: 16px;
+}
