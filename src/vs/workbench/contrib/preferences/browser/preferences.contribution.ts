@@ -48,6 +48,7 @@ import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/use
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ModelSelectionEditor } from 'vs/workbench/contrib/preferences/browser/modelSelectionEditor';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
+import { ModelSelectionIndicator } from 'vs/workbench/contrib/preferences/browser/modelSelectionIndicator';
 
 const SETTINGS_EDITOR_COMMAND_SEARCH = 'settings.action.search';
 
@@ -1371,6 +1372,7 @@ const workbenchContributionsRegistry = Registry.as<IWorkbenchContributionsRegist
 workbenchContributionsRegistry.registerWorkbenchContribution(PreferencesActionsContribution, LifecyclePhase.Starting);
 workbenchContributionsRegistry.registerWorkbenchContribution(PreferencesContribution, LifecyclePhase.Starting);
 workbenchContributionsRegistry.registerWorkbenchContribution(SettingsEditorTitleContribution, LifecyclePhase.Restored);
+workbenchContributionsRegistry.registerWorkbenchContribution(ModelSelectionIndicator, LifecyclePhase.Starting);
 
 registerEditorContribution(SettingsEditorContribution.ID, SettingsEditorContribution, EditorContributionInstantiation.AfterFirstRender);
 
