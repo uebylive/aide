@@ -124,7 +124,9 @@ class ModelSelection extends Disposable {
 	}
 
 	async initialize(): Promise<void> {
-		await this.reload();
+		const newModelSelection = await this.readModelSelectionSettings();
+		this._rawModelSelection = newModelSelection;
+		this._modelSelection = this.mergeModelSelectionSettings(newModelSelection);
 	}
 
 	private async reload(): Promise<boolean> {
