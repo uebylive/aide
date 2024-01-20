@@ -1243,7 +1243,7 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 					keybinding: {
 						when: null,
 						weight: KeybindingWeight.WorkbenchContrib,
-						primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyM)
+						primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Comma,
 					},
 					menu: [
 						{ id: MenuId.CommandPalette },

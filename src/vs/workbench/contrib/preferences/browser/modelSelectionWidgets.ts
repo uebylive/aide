@@ -59,14 +59,11 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode.setClassName('edit-model-widget');
 		this._domNode.setWidth(EditModelConfigurationWidget.WIDTH);
 		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
-		this._register(dom.addDisposableListener(this._domNode.domNode, dom.EventType.KEY_PRESS, (e: KeyboardEvent) => {
-			if (e.key === KeyCode.Escape.toString()) {
+		this.onkeydown(this._domNode.domNode, (e) => {
+			if (e.equals(KeyCode.Escape)) {
 				this.hide();
 			}
-		}));
-		this._register(dom.addDisposableListener(this._domNode.domNode, dom.EventType.BLUR, () => {
-			this.hide();
-		}, true));
+		});
 
 		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
 		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
@@ -115,6 +112,8 @@ export class EditModelConfigurationWidget extends Widget {
 			secondary: true
 		}));
 		this.cancelButton.label = nls.localize('editModelConfiguration.cancel', "Cancel");
+		this._register(this.cancelButton.onDidClick(() => this.hide()));
+
 		this.saveButton = this._register(new Button(footerContainer, {
 			...defaultButtonStyles,
 			title: nls.localize('editModelConfiguration.save', "Save")
@@ -152,6 +151,8 @@ export class EditModelConfigurationWidget extends Widget {
 				this.contextLengthValue.value = entry.modelItem.contextLength.toString();
 				this.temperatureValueLabel.textContent = entry.modelItem.temperature.toString();
 				this.temperatureValue.value = entry.modelItem.temperature.toString();
+
+				this.focus();
 			}
 			const disposable = this._onHide.event(() => {
 				disposable.dispose();
@@ -166,6 +167,10 @@ export class EditModelConfigurationWidget extends Widget {
 
 		const left = Math.round((layout.width - EditModelConfigurationWidget.WIDTH) / 2);
 		this._domNode.setLeft(left);
+	}
+
+	focus(): void {
+		this.providerValue.focus();
 	}
 
 	hide(): void {

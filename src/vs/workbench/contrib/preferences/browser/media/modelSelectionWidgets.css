@@ -115,6 +115,7 @@
 	/* Hide arrow button that shows in type=number fields */
 	-moz-appearance: textfield !important;
 	appearance: textfield !important;
+	background-color: var(--vscode-dropdown-background) !important;
 }
 
 .edit-model-widget-temperature-container {
