@@ -23,10 +23,6 @@ export class ExtHostModelSelection implements ExtHostModelSelectionShape {
 		return this._proxy.$getConfiguration();
 	}
 
-	$initializeConfiguration(data: vscode.ModelSelection): void {
-		this._onModelSelectionChange.fire(data);
-	}
-
 	$acceptConfigurationChanged(data: vscode.ModelSelection): void {
 		this._onModelSelectionChange.fire(data);
 	}

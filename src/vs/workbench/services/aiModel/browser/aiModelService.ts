@@ -44,8 +44,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 
 		new ModelSelectionJsonSchema();
 		this.modelSelection = this._register(new ModelSelection(userDataProfileService, uriIdentityService, fileService, logService));
-		this._register(this.modelSelection.onDidChange(() => {
-			this._onDidChangeModelSelection.fire(this.modelSelection.modelSelection);
+		this._register(this.modelSelection.onDidChange((modelSelection) => {
+			this._onDidChangeModelSelection.fire(modelSelection);
 		}));
 		this.modelSelection.initialize();
 	}
@@ -54,22 +54,27 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return JSON.stringify(defaultModelSelectionSettings, null, '\t');
 	}
 
-	getModelSelectionSettings(): IModelSelectionSettings {
-		return this.modelSelection.modelSelection;
+	async getModelSelectionSettings(): Promise<IModelSelectionSettings> {
+		const modelSelection = this.modelSelection.modelSelection;
+		if (!modelSelection) {
+			await this.modelSelection.initialize();
+		}
+		return this.modelSelection.modelSelection!;
 	}
 }
 
 class ModelSelection extends Disposable {
 	private _rawModelSelection: Object = {};
-	private _modelSelection: IModelSelectionSettings = defaultModelSelectionSettings;
-	get modelSelection(): IModelSelectionSettings { return this._modelSelection; }
+
+	private _modelSelection: IModelSelectionSettings | undefined;
+	get modelSelection() { return this._modelSelection; }
 
 	private readonly reloadConfigurationScheduler: RunOnceScheduler;
 
 	private readonly watchDisposables = this._register(new DisposableStore());
 
-	private readonly _onDidChange: Emitter<void> = this._register(new Emitter<void>());
-	readonly onDidChange: Event<void> = this._onDidChange.event;
+	private readonly _onDidChange: Emitter<IModelSelectionSettings> = this._register(new Emitter<IModelSelectionSettings>());
+	readonly onDidChange: Event<IModelSelectionSettings> = this._onDidChange.event;
 
 	constructor(
 		private readonly userDataProfileService: IUserDataProfileService,
@@ -83,7 +88,7 @@ class ModelSelection extends Disposable {
 
 		this.reloadConfigurationScheduler = this._register(new RunOnceScheduler(() => this.reload().then(changed => {
 			if (changed) {
-				this._onDidChange.fire();
+				this._onDidChange.fire(this._modelSelection!);
 			}
 		}), 50));
 
@@ -104,8 +109,6 @@ class ModelSelection extends Disposable {
 				e.join(this.whenCurrentProfileChanged());
 			}
 		}));
-
-		this.reloadConfigurationScheduler.schedule();
 	}
 
 	private async whenCurrentProfileChanged(): Promise<void> {

@@ -41,7 +41,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 	}
 
 	override async resolve(): Promise<void> {
-		const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
+		const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
 		this._modelItems = Object.keys(modelSelectionSettings.models).map(modelKey => {
 			const model = modelSelectionSettings.models[modelKey];
 			const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;

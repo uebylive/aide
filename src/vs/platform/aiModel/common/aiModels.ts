@@ -89,7 +89,7 @@ export interface IAIModelSelectionService {
 	onDidChangeModelSelection: Event<IModelSelectionSettings>;
 
 	getDefaultModelSelectionContent(): string;
-	getModelSelectionSettings(): IModelSelectionSettings;
+	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {

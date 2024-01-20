@@ -61,8 +61,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		});
 	}
 
-	private renderModelSelectionStatusIndicator() {
-		const modelSelection = this.aiModelSelectionService.getModelSelectionSettings();
+	private async renderModelSelectionStatusIndicator() {
+		const modelSelection = await this.aiModelSelectionService.getModelSelectionSettings();
 		const fastModel = modelSelection.models[modelSelection.fastModel as keyof typeof modelSelection.models].name;
 		const slowModel = modelSelection.models[modelSelection.slowModel as keyof typeof modelSelection.models].name;
 
@@ -103,7 +103,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 				tooltip: 'Slow model'
 			}
 		];
-		quickPick.step = 2;
+		quickPick.step = 1;
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
@@ -116,9 +116,9 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.show();
 	}
 
-	private showModelPicker(type: 'fastModel' | 'slowModel'): void {
-		const computeItems = (): QuickPickItem[] => {
-			const modelSelectionSettings = this.aiModelSelectionService.getModelSelectionSettings();
+	private async showModelPicker(type: 'fastModel' | 'slowModel'): Promise<void> {
+		const computeItems = async (): Promise<QuickPickItem[]> => {
+			const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
 			const models = Object.keys(modelSelectionSettings.models).reduce((acc, key) => {
 				const model = modelSelectionSettings.models[key as keyof typeof modelSelectionSettings.models];
 				acc[model.provider] = acc[model.provider] || [];
@@ -162,7 +162,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		const quickPick = this.quickInputService.createQuickPick();
 		quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
 		quickPick.title = `Select ${type.replace('Model', '')} model`;
-		quickPick.items = computeItems();
+		quickPick.items = await computeItems();
 		quickPick.step = 2;
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
