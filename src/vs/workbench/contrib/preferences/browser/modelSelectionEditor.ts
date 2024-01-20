@@ -301,7 +301,7 @@ export class ModelSelectionEditor extends EditorPane {
 		if (!modelKey) {
 			return;
 		}
-		await this.modelSelectionEditingService.editModel('slowModel', modelKey);
+		await this.modelSelectionEditingService.editModelSelection('slowModel', modelKey);
 	}
 
 	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
@@ -310,7 +310,7 @@ export class ModelSelectionEditor extends EditorPane {
 		if (!modelKey) {
 			return;
 		}
-		await this.modelSelectionEditingService.editModel('fastModel', modelKey);
+		await this.modelSelectionEditingService.editModelSelection('fastModel', modelKey);
 	}
 
 	override async setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {

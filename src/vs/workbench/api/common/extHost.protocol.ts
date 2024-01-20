@@ -1714,7 +1714,6 @@ export interface ExtHostConfigurationShape {
 }
 
 export interface ExtHostModelSelectionShape {
-	$initializeConfiguration(data: IModelSelectionSettings): void;
 	$acceptConfigurationChanged(data: IModelSelectionSettings): void;
 }
 
