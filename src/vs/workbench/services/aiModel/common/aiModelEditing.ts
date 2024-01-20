@@ -185,7 +185,10 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 	private resolveModelReference(): Promise<IReference<IResolvedTextEditorModel>> {
 		return this.fileService.exists(this.userDataProfileService.currentProfile.modelSelectionResource)
 			.then(exists => {
-				const EOL = this.configurationService.getValue<{ eol: string }>('files', { overrideIdentifier: 'json' })['eol'];
+				let EOL = this.configurationService.getValue<{ eol: string }>('files', { overrideIdentifier: 'json' })['eol'];
+				if (EOL === 'auto') {
+					EOL = '\n';
+				}
 				const result: Promise<any> = exists ? Promise.resolve(null) : this.textFileService.write(this.userDataProfileService.currentProfile.modelSelectionResource, this.getEmptyContent(EOL), { encoding: 'utf8' });
 				return result.then(() => this.textModelResolverService.createModelReference(this.userDataProfileService.currentProfile.modelSelectionResource));
 			});
