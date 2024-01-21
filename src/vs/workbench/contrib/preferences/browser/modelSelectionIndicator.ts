@@ -126,8 +126,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
 			const models = Object.keys(modelSelectionSettings.models).reduce((acc, key) => {
 				const model = modelSelectionSettings.models[key as keyof typeof modelSelectionSettings.models];
-				acc[model.provider] = acc[model.provider] || [];
-				acc[model.provider].push(key);
+				acc[model.provider.type] = acc[model.provider.type] || [];
+				acc[model.provider.type].push(key);
 				return acc;
 			}, {} as { [providerKey: string]: string[] });
 

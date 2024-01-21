@@ -76,12 +76,12 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 
 	private async doEditModelSelection(type: ModelType, key: string): Promise<void> {
 		const reference = await this.resolveAndValidate();
-		const model = reference.object.textEditorModel;
-		const { tabSize, insertSpaces } = model.getOptions();
-		const eol = model.getEOL();
-		const edits = setProperty(model.getValue(), [type], key, { tabSize, insertSpaces, eol });
+		const textModel = reference.object.textEditorModel;
+		const { tabSize, insertSpaces } = textModel.getOptions();
+		const eol = textModel.getEOL();
+		const edits = setProperty(textModel.getValue(), [type], key, { tabSize, insertSpaces, eol });
 		if (edits.length > 0) {
-			this.applyEditsToBuffer(edits[0], model);
+			this.applyEditsToBuffer(edits[0], textModel);
 		}
 		try {
 			await this.save();
@@ -108,13 +108,10 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 	private async doEditProviderConfiguration(providerKey: string, providerItem: ProviderConfig): Promise<void> {
 		const reference = await this.resolveAndValidate();
 		const textModel = reference.object.textEditorModel;
-		if (!isModelProviderItem(providerItem)) {
+		if (!isModelProviderItem(providerItem) || !providerTypeValues.includes(providerKey as ProviderType)) {
 			return;
 		} else {
-			const userModelSelectionConfiguration = <IModelSelectionSettings>json.parse(textModel.getValue());
-			if (providerTypeValues.includes(providerKey as ProviderType) && userModelSelectionConfiguration.providers[providerKey as keyof IModelProviders]) {
-				this.updateProviderConfiguration(providerKey, providerItem, textModel, false);
-			}
+			this.updateProviderConfiguration(providerKey, providerItem, textModel, false);
 		}
 		try {
 			await this.save();

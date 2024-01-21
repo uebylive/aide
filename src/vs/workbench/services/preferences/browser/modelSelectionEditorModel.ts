@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IAIModelSelectionService, IModelProviders, ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
+import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from 'vs/platform/aiModel/common/aiModels';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
@@ -40,26 +40,44 @@ export class ModelSelectionEditorModel extends EditorModel {
 		return this._providerItems.map(provider => ({ providerItem: provider }));
 	}
 
+	static getLanguageModelItem(modelItem: IModelItemEntry): ILanguageModelItem {
+		return {
+			name: modelItem.modelItem.name,
+			contextLength: modelItem.modelItem.contextLength,
+			temperature: modelItem.modelItem.temperature,
+			provider: modelItem.modelItem.providerConfig
+		};
+	}
+
+	static getProviderConfig(providerItem: IProviderItemEntry): ProviderConfig {
+		return {
+			name: providerItem.providerItem.name,
+			...(providerItem.providerItem.type !== 'ollama' ? { apiKey: (providerItem.providerItem as ProviderConfigsWithAPIKey).apiKey } : {}),
+			...(providerItem.providerItem.type === 'azure-openai' ? { apiBase: (providerItem.providerItem as AzureOpenAIProviderConfig).apiBase } : {})
+		} as ProviderConfig;
+	}
+
 	override async resolve(): Promise<void> {
 		const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
 		this._modelItems = Object.keys(modelSelectionSettings.models).map(modelKey => {
 			const model = modelSelectionSettings.models[modelKey];
-			const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;
+			const provider = modelSelectionSettings.providers[model.provider.type as keyof IModelProviders] as ProviderConfig;
 			return {
 				key: modelKey,
 				name: model.name,
-				provider: {
-					key: model.provider,
-					name: provider.name
-				},
 				contextLength: model.contextLength,
-				temperature: model.temperature
+				temperature: model.temperature,
+				provider: {
+					type: model.provider.type,
+					...provider
+				},
+				providerConfig: model.provider
 			} as IModelItem;
 		});
 		this._providerItems = Object.keys(modelSelectionSettings.providers).map(providerKey => {
 			const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
 			return {
-				key: providerKey as ProviderType,
+				type: providerKey as ProviderType,
 				...provider
 			} as IProviderItem;
 		});
@@ -71,9 +89,10 @@ export class ModelSelectionEditorModel extends EditorModel {
 			contextLength: fastModel.contextLength,
 			temperature: fastModel.temperature,
 			provider: {
-				key: fastModel.provider,
+				type: fastModel.provider.type,
 				...fastModelProvider
-			}
+			},
+			providerConfig: fastModel.provider
 		};
 		const slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
 		const slowModelProvider = modelSelectionSettings.providers[slowModel.provider as keyof IModelProviders] as ProviderConfig;
@@ -83,9 +102,10 @@ export class ModelSelectionEditorModel extends EditorModel {
 			contextLength: slowModel.contextLength,
 			temperature: slowModel.temperature,
 			provider: {
-				key: slowModel.provider,
+				type: slowModel.provider.type,
 				...slowModelProvider
-			}
+			},
+			providerConfig: slowModel.provider
 		};
 
 		return super.resolve();

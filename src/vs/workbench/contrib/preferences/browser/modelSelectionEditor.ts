@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { IAIModelSelectionService, humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ProviderType, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -24,8 +24,8 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditModelConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
-import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon, invalidModelConfigIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
+import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
@@ -47,10 +47,13 @@ export class ModelSelectionEditor extends EditorPane {
 	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
 
-	private overlayContainer!: HTMLElement;
+	private modelConfigurationOverlayContainer!: HTMLElement;
 	private editModelConfigurationWidget!: EditModelConfigurationWidget;
+	private providerConfigurationOverlayContainer!: HTMLElement;
+	private editProviderConfigurationWidget!: EditProviderConfigurationWidget;
 
 	private modelTableEntries: IModelItemEntry[] = [];
+	private providerTableEntries: IProviderItemEntry[] = [];
 
 	private dimension: DOM.Dimension | null = null;
 
@@ -73,25 +76,39 @@ export class ModelSelectionEditor extends EditorPane {
 	protected createEditor(parent: HTMLElement): void {
 		const modelSelectionEditorElement = DOM.append(parent, $('div', { class: 'model-selection-editor' }));
 
-		this.createOverlayContainer(modelSelectionEditorElement);
+		this.createOverlayContainers(modelSelectionEditorElement);
 		this.crateHeader(modelSelectionEditorElement);
 		this.createBody(modelSelectionEditorElement);
 	}
 
-	private createOverlayContainer(parent: HTMLElement): void {
-		this.overlayContainer = DOM.append(parent, $('.overlay-container'));
-		this.overlayContainer.style.position = 'absolute';
-		this.overlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
-		this.editModelConfigurationWidget = this._register(this.instantiationService.createInstance(EditModelConfigurationWidget, this.overlayContainer));
-		this.hideOverlayContainer();
+	private createOverlayContainers(parent: HTMLElement): void {
+		this.modelConfigurationOverlayContainer = DOM.append(parent, $('.overlay-container'));
+		this.modelConfigurationOverlayContainer.style.position = 'absolute';
+		this.modelConfigurationOverlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
+		this.editModelConfigurationWidget = this._register(this.instantiationService.createInstance(EditModelConfigurationWidget, this.modelConfigurationOverlayContainer));
+		this.hideOverlayContainer('model');
+
+		this.providerConfigurationOverlayContainer = DOM.append(parent, $('.overlay-container'));
+		this.providerConfigurationOverlayContainer.style.position = 'absolute';
+		this.providerConfigurationOverlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
+		this.editProviderConfigurationWidget = this._register(this.instantiationService.createInstance(EditProviderConfigurationWidget, this.providerConfigurationOverlayContainer));
+		this.hideOverlayContainer('provider');
 	}
 
-	private showOverlayContainer() {
-		this.overlayContainer.style.display = 'block';
+	private showOverlayContainer(type: 'model' | 'provider') {
+		if (type === 'model') {
+			this.modelConfigurationOverlayContainer.style.display = 'block';
+		} else if (type === 'provider') {
+			this.providerConfigurationOverlayContainer.style.display = 'block';
+		}
 	}
 
-	private hideOverlayContainer() {
-		this.overlayContainer.style.display = 'none';
+	private hideOverlayContainer(type: 'model' | 'provider') {
+		if (type === 'model') {
+			this.modelConfigurationOverlayContainer.style.display = 'none';
+		} else if (type === 'provider') {
+			this.providerConfigurationOverlayContainer.style.display = 'none';
+		}
 	}
 
 	private crateHeader(parent: HTMLElement): void {
@@ -185,7 +202,7 @@ export class ModelSelectionEditor extends EditorPane {
 		this._register(this.modelsTable.onMouseOver(e => {
 			if (e.element?.modelItem.provider) {
 				const providerItemIndex = this.modelSelectionEditorModel?.providerItems
-					.findIndex(provider => provider.providerItem.key === e.element?.modelItem.provider?.key);
+					.findIndex(provider => provider.providerItem.type === e.element?.modelItem.provider?.type);
 				if (providerItemIndex !== undefined && providerItemIndex !== -1) {
 					this.providersTable.setSelection([providerItemIndex]);
 				}
@@ -202,7 +219,7 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 			const activeModelEntry = this.activeModelEntry;
 			if (activeModelEntry) {
-				this.editModel(activeModelEntry, false);
+				this.editModel(activeModelEntry);
 			}
 		}));
 
@@ -242,18 +259,28 @@ export class ModelSelectionEditor extends EditorPane {
 				}
 			],
 			[
-				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
+				this.instantiationService.createInstance(ProviderActionsColumnRenderer, this),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
 				this.instantiationService.createInstance(ProviderConfigColumnRenderer)
 			],
 			{
-				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
+				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.type },
 				horizontalScrolling: false,
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
 				openOnSingleClick: false,
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
+
+		this._register(this.providersTable.onDidOpen((e) => {
+			if (e.browserEvent?.defaultPrevented) {
+				return;
+			}
+			const activeProviderEntry = this.activeProviderEntry;
+			if (activeProviderEntry && Object.keys(activeProviderEntry.providerItem).filter(key => key !== 'type' && key !== 'name').length > 0) {
+				this.editProvider(activeProviderEntry);
+			}
+		}));
 
 		DOM.append(this.providersTableContainer);
 	}
@@ -287,6 +314,8 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderProviders(): void {
 		if (this.modelSelectionEditorModel) {
 			const providerItems = this.modelSelectionEditorModel.providerItems;
+
+			this.providerTableEntries = providerItems;
 			this.providersTable.splice(0, this.providersTable.length, providerItems);
 		}
 	}
@@ -326,9 +355,13 @@ export class ModelSelectionEditor extends EditorPane {
 	layout(dimension: DOM.Dimension): void {
 		this.dimension = dimension;
 
-		this.overlayContainer.style.width = dimension.width + 'px';
-		this.overlayContainer.style.height = dimension.height + 'px';
+		this.modelConfigurationOverlayContainer.style.width = dimension.width + 'px';
+		this.modelConfigurationOverlayContainer.style.height = dimension.height + 'px';
 		this.editModelConfigurationWidget.layout(this.dimension);
+
+		this.providerConfigurationOverlayContainer.style.width = dimension.width + 'px';
+		this.providerConfigurationOverlayContainer.style.height = dimension.height + 'px';
+		this.editProviderConfigurationWidget.layout(this.dimension);
 
 		this.layoutTables();
 	}
@@ -338,26 +371,41 @@ export class ModelSelectionEditor extends EditorPane {
 		return focusedElement ? <IModelItemEntry>focusedElement : null;
 	}
 
-	async editModel(modelItemEntry: IModelItemEntry, add: boolean): Promise<void> {
-		this.selectEntry(modelItemEntry);
-		this.showOverlayContainer();
+	get activeProviderEntry(): IProviderItemEntry | null {
+		const focusedElement = this.providersTable.getFocusedElements()[0];
+		return focusedElement ? <IProviderItemEntry>focusedElement : null;
+	}
+
+	async editModel(modelItemEntry: IModelItemEntry): Promise<void> {
+		this.selectModelEntry(modelItemEntry);
+		this.showOverlayContainer('model');
 		try {
-			const key = await this.editModelConfigurationWidget.edit(
+			await this.editModelConfigurationWidget.edit(
 				modelItemEntry,
 				this.modelSelectionEditorModel?.providerItems.map(item => item.providerItem) ?? [modelItemEntry.modelItem.provider]
 			);
-			if (key) {
-				console.log(key);
-			}
 		} catch (error) {
 			console.error(error);
 		} finally {
-			this.hideOverlayContainer();
-			this.selectEntry(modelItemEntry);
+			this.hideOverlayContainer('model');
+			this.selectModelEntry(modelItemEntry);
 		}
 	}
 
-	private selectEntry(modelItemEntry: IModelItemEntry | number, focus: boolean = true): void {
+	async editProvider(providerItemEntry: IProviderItemEntry): Promise<void> {
+		this.selectProviderEntry(providerItemEntry);
+		this.showOverlayContainer('provider');
+		try {
+			await this.editProviderConfigurationWidget.edit(providerItemEntry);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			this.hideOverlayContainer('provider');
+			this.selectProviderEntry(providerItemEntry);
+		}
+	}
+
+	private selectModelEntry(modelItemEntry: IModelItemEntry | number, focus: boolean = true): void {
 		const index = typeof modelItemEntry === 'number' ? modelItemEntry : this.getIndexOfModel(modelItemEntry);
 		if (index !== -1 && index < this.modelsTable.length) {
 			if (focus) {
@@ -379,6 +427,29 @@ export class ModelSelectionEditor extends EditorPane {
 		}
 		return index;
 	}
+
+	private selectProviderEntry(providerItemEntry: IProviderItemEntry | number, focus: boolean = true): void {
+		const index = typeof providerItemEntry === 'number' ? providerItemEntry : this.getIndexOfProvider(providerItemEntry);
+		if (index !== -1 && index < this.providersTable.length) {
+			if (focus) {
+				this.providersTable.domFocus();
+				this.providersTable.setFocus([index]);
+			}
+			this.providersTable.setSelection([index]);
+		}
+	}
+
+	private getIndexOfProvider(listEntry: IProviderItemEntry): number {
+		const index = this.providerTableEntries.indexOf(listEntry);
+		if (index === -1) {
+			for (let i = 0; i < this.providerTableEntries.length; i++) {
+				if (this.providerTableEntries[i].providerItem.type === listEntry.providerItem.type) {
+					return i;
+				}
+			}
+		}
+		return index;
+	}
 }
 
 class ModelDelegate implements ITableVirtualDelegate<IModelItemEntry> {
@@ -393,7 +464,7 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IProviderItemEntry): number {
-		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'key' && key !== 'name').length;
+		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'type' && key !== 'name').length;
 		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
 	}
 }
@@ -432,7 +503,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 			enabled: true,
 			id: 'editModelSelection',
 			tooltip: localize('editModel', "Edit Model"),
-			run: () => this.modelSelectionEditor.editModel(modelSelectionItemEntry, false)
+			run: () => this.modelSelectionEditor.editModel(modelSelectionItemEntry)
 		};
 	}
 
@@ -443,6 +514,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 
 interface IModelColumnTemplateData {
 	modelColumn: HTMLElement;
+	modelIcon: HTMLElement;
 	modelLabelContainer: HTMLElement;
 	modelLabel: HighlightedLabel;
 	modelKey: HTMLElement;
@@ -455,17 +527,33 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 	renderTemplate(container: HTMLElement): IModelColumnTemplateData {
 		const modelColumn = DOM.append(container, $('.model'));
-		DOM.append(modelColumn, $(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
+		const modelIcon = DOM.append(modelColumn, $('.model-icon'));
 		const modelLabelContainer = DOM.append(modelColumn, $('.model-label-container'));
 		const modelLabel = new HighlightedLabel(modelLabelContainer);
 		const modelKey = DOM.append(modelLabelContainer, $('span'));
-		return { modelColumn, modelLabelContainer, modelLabel, modelKey };
+		return { modelColumn, modelIcon, modelLabelContainer, modelLabel, modelKey };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelColumn.title = modelItem.name;
 		templateData.modelKey.innerText = modelItem.key;
+
+		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(defaultModelIcon));
+		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
+		if (!isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) {
+			const incompleteFields = Object.keys(modelItem.providerConfig).filter(
+				key => (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === ''
+					|| (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === undefined
+			);
+			if (incompleteFields.length > 0) {
+				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
+			} else {
+				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
+			}
+		} else {
+			templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
+		}
 
 		if (modelItem.name) {
 			templateData.modelLabelContainer.classList.remove('hide');
@@ -585,11 +673,16 @@ interface IProviderActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IProviderActionsColumnTemplateData> {
+class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry, IProviderActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'providerActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
+
+	constructor(
+		private readonly modelSelectionEditor: ModelSelectionEditor
+	) {
+	}
 
 	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
@@ -597,19 +690,24 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, I
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(providerSelectionItemEntry: IProviderItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
+		if (Object.keys(providerSelectionItemEntry.providerItem).filter(key => key !== 'type' && key !== 'name').length === 0) {
+			return;
+		}
+
 		const actions: IAction[] = [];
-		actions.push(this.createCloneAction());
+		actions.push(this.createEditAction(providerSelectionItemEntry));
 		templateData.actionBar.push(actions, { icon: true });
 	}
 
-	private createCloneAction(): IAction {
+	private createEditAction(providerSelectionItemEntry: IProviderItemEntry): IAction {
 		return <IAction>{
-			class: ThemeIcon.asClassName(settingsCloneIcon),
+			class: ThemeIcon.asClassName(settingsEditIcon),
 			enabled: true,
-			id: 'cloneProviderSelection',
-			tooltip: localize('cloneProvider', "Clone Provider"),
+			id: 'editProviderSelection',
+			tooltip: localize('editProvider', "Edit Provider"),
+			run: () => this.modelSelectionEditor.editProvider(providerSelectionItemEntry)
 		};
 	}
 
@@ -643,14 +741,14 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerColumn.title = providerItem.name;
-		templateData.providerKey.innerText = providerItem.key;
+		templateData.providerKey.innerText = providerItem.type;
 
-		if (providerTypeValues.includes(providerItem.key)) {
+		if (providerTypeValues.includes(providerItem.type)) {
 			templateData.providerLabelContainer.classList.remove('hide');
-			templateData.providerLogo.classList.add(providerItem.key);
+			templateData.providerLogo.classList.add(providerItem.type);
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
-			templateData.providerLabelContainer.classList.remove(providerItem.key);
+			templateData.providerLabelContainer.classList.remove(providerItem.type);
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
 		}
@@ -679,7 +777,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerConfigColumn.title = providerItem.name;
 
-		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name');
+		const configKeys = Object.keys(providerItem).filter(key => key !== 'type' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
 		if (configKeys.length > 0) {
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
@@ -688,7 +786,9 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			});
 		} else {
 			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
-			DOM.append(configItem, $('span.provider-config-key', undefined, 'Default configuration'));
+			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.type);
+			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
+			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
 		}
 	}
 
@@ -697,4 +797,15 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	}
 
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
+
+	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
+		if (providerType === 'azure-openai') {
+			return { message: 'CodeStory default. Edit to provide your own deployment configuration.', complete: true };
+		} else if (providerType === 'openai-default' || providerType === 'togetherai') {
+			return { message: 'Configuration incomplete', complete: false };
+		} else if (providerType === 'ollama') {
+			return { message: 'No configuration required', complete: true };
+		}
+		return { message: 'No configuration options', complete: true };
+	}
 }

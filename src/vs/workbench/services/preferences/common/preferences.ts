@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
 import { IEditorContribution } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
-import { ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
 import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
 import { ConfigurationScope, EditPresentationTypes, IExtensionInfo } from 'vs/platform/configuration/common/configurationRegistry';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
@@ -346,10 +346,11 @@ export interface IModelItem {
 	contextLength: number;
 	temperature: number;
 	provider: IProviderItem;
+	providerConfig: ModelProviderConfig;
 }
 
 export interface IProviderItemEntry {
 	providerItem: IProviderItem;
 }
 
-export type IProviderItem = { key: ProviderType } & ProviderConfig;
+export type IProviderItem = { type: ProviderType } & ProviderConfig;
