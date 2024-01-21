@@ -13,6 +13,7 @@ import 'vs/css!./media/ModelSelectionIndicator';
 import * as nls from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IAIModelSelectionService, IModelProviders, ProviderConfig } from 'vs/platform/aiModel/common/aiModels';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
@@ -27,6 +28,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	constructor(
 		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
+		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
 	) {
@@ -66,13 +68,16 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		const fastModel = modelSelection.models[modelSelection.fastModel as keyof typeof modelSelection.models].name;
 		const slowModel = modelSelection.models[modelSelection.slowModel as keyof typeof modelSelection.models].name;
 
-		const text = `$(debug-breakpoint-data-unverified) ${fastModel}/${slowModel}`;
+		const text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
+		const keybindinLabel = this.keybindingService.lookupKeybinding(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID)?.getLabel();
+		const tooltip = nls.localize('modelSelectionTooltipWithKeybinding', "Select language model ({0})", keybindinLabel);
+
 		const properties: IStatusbarEntry = {
 			name: nls.localize('modelSelection', "Model Selection"),
 			kind: 'remote',
 			ariaLabel: getCodiconAriaLabel(text),
 			text,
-			tooltip: nls.localize('modelSelection', "Model Selection"),
+			tooltip,
 			command: ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID
 		};
 

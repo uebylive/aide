@@ -25,9 +25,9 @@ export interface ILanguageModelItem {
 export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
 	return obj && typeof obj === 'object'
 		&& 'name' in obj && typeof obj['name'] === 'string'
-		&& 'contextLength' in obj && typeof obj['contextLength'] === 'number'
-		&& 'temperature' in obj && typeof obj['temperature'] === 'number'
-		&& 'provider' in obj && obj['provider'] in providerTypeValues;
+		&& ('contextLength' in obj ? typeof obj['contextLength'] === 'number' : true)
+		&& ('temperature' in obj ? typeof obj['temperature'] === 'number' : true)
+		&& ('provider' in obj ? typeof obj['provider'] === 'string' : true);
 }
 
 export interface OpenAIProviderConfig {
@@ -78,8 +78,8 @@ export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettin
 	return obj && typeof obj === 'object'
 		&& ('slowModel' in obj ? typeof obj['slowModel'] === 'string' : true)
 		&& ('fastModel' in obj ? typeof obj['fastModel'] === 'string' : true)
-		&& ('models' in obj ? isModelProviderItem(obj['models']) : true)
-		&& ('providers' in obj ? isModelProviderItem(obj['providers']) : true);
+		&& ('models' in obj ? Object.keys(obj['models']).every(key => isLanguageModelItem(obj['models'][key])) : true)
+		&& ('providers' in obj ? Object.keys(obj['providers']).every(key => isModelProviderItem(obj['providers'][key])) : true);
 }
 
 export const IAIModelSelectionService = createDecorator<IAIModelSelectionService>('aiModelSelectionService');
