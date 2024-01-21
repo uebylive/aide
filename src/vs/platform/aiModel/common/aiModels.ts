@@ -11,8 +11,7 @@ export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-open
 
 export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiKey': 'API Key',
-	'apiBase': 'Base URL',
-	'apiVersion': 'API Version'
+	'apiBase': 'Base URL'
 };
 
 export interface ILanguageModelItem {
@@ -39,7 +38,6 @@ export interface AzureOpenAIProviderConfig {
 	readonly name: 'Azure OpenAI';
 	readonly apiBase: string;
 	readonly apiKey: string;
-	readonly apiVersion: string;
 }
 
 export interface TogetherAIProviderConfig {
@@ -63,8 +61,7 @@ export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
 		&& 'name' in obj && typeof obj['name'] === 'string'
 		&& ('apiKey' in obj ? typeof obj['apiKey'] === 'string' : true)
-		&& ('apiBase' in obj ? typeof obj['apiBase'] === 'string' : true)
-		&& ('apiVersion' in obj ? typeof obj['apiVersion'] === 'string' : true);
+		&& ('apiBase' in obj ? typeof obj['apiBase'] === 'string' : true);
 }
 
 export interface IModelSelectionSettings {
@@ -115,7 +112,13 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: 'openai-default'
 		},
 		'GPT3_5_16k': {
-			name: 'GPT-3.5',
+			name: 'GPT-3.5 Turbo 16k',
+			contextLength: 16385,
+			temperature: 0.2,
+			provider: 'openai-default'
+		},
+		'GPT3_5': {
+			name: 'GPT-3.5 Turbo',
 			contextLength: 4096,
 			temperature: 0.2,
 			provider: 'openai-default'
@@ -135,17 +138,17 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 	},
 	providers: {
 		'openai-default': {
-			name: 'OpenAI'
+			name: 'OpenAI',
+			apiKey: '',
 		},
 		'azure-openai': {
 			name: 'Azure OpenAI',
-			apiBase: 'https://codestory-gpt4.openai.azure.com',
-			apiKey: '89ca8a49a33344c9b794b3dabcbbc5d0',
-			apiVersion: '2023-08-01-preview'
+			apiBase: '',
+			apiKey: '',
 		},
 		'togetherai': {
 			name: 'Together AI',
-			apiKey: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
+			apiKey: '',
 		},
 		'ollama': {
 			name: 'Ollama'

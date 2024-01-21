@@ -16,6 +16,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
+import { humanReadableProviderConfigKey } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
@@ -221,10 +222,11 @@ export class EditProviderConfigurationWidget extends Widget {
 	private _contentContainer: HTMLElement;
 
 	private _isVisible: boolean = false;
-	private providerItemEntry: IProviderItemEntry | null = null;
+	private providerItemEntry: { providerItem: { -readonly [P in keyof IProviderItem]: IProviderItem[P] } } | null = null;
 
 	private readonly title: HTMLElement;
 	private readonly providerName: HTMLElement;
+	private readonly fieldsContainer: HTMLElement;
 	private readonly cancelButton: Button;
 	private readonly saveButton: Button;
 
@@ -232,9 +234,9 @@ export class EditProviderConfigurationWidget extends Widget {
 
 	constructor(
 		parent: HTMLElement | null,
-		// @IContextViewService private readonly contextViewService: IContextViewService,
+		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IThemeService private readonly _themeService: IThemeService,
-		// @IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
 	) {
 		super();
 
@@ -263,6 +265,8 @@ export class EditProviderConfigurationWidget extends Widget {
 		const providerNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
 		dom.append(providerNameContainer, dom.$(`.provider-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
 		this.providerName = dom.append(providerNameContainer, dom.$('.edit-model-widget-model-name'));
+
+		this.fieldsContainer = dom.append(body, dom.$('.edit-model-widget-grid'));
 
 		// Add save and cancel buttons
 		const footerContainer = dom.append(this._contentContainer, dom.$('.edit-model-widget-footer'));
@@ -309,6 +313,19 @@ export class EditProviderConfigurationWidget extends Widget {
 				this.title.textContent = `Edit ${entry.providerItem.key}`;
 				this.providerName.textContent = entry.providerItem.name;
 
+				Object.keys(entry.providerItem).filter(key => key !== 'key' && key !== 'name').forEach(key => {
+					const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
+					dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
+					dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
+					const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
+					const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
+					fieldValue.element.classList.add('edit-model-widget-field-value');
+					fieldValue.value = entry.providerItem[key as keyof IProviderItem].toString();
+					this._register(fieldValue.onDidChange((e) => {
+						(this.providerItemEntry!.providerItem[key as keyof IProviderItem] as unknown as string) = e;
+					}));
+				});
+
 				this.focus();
 			}
 			const disposable = this._onHide.event(() => {
@@ -327,18 +344,28 @@ export class EditProviderConfigurationWidget extends Widget {
 	}
 
 	focus(): void {
-		this.providerName.focus();
+		const firstInputBox = this.fieldsContainer.querySelector('input');
+		if (firstInputBox) {
+			firstInputBox.focus();
+		}
 	}
 
 	hide(): void {
 		this._domNode.setDisplay('none');
 		this._isVisible = false;
+		dom.reset(this.fieldsContainer);
 		this._onHide.fire();
 	}
 
 	async save(): Promise<void> {
 		if (this.providerItemEntry) {
-			// TODO: Implement
+			await this.modelSelectionEditingService.editProviderConfiguration(this.providerItemEntry.providerItem.key, {
+				name: this.providerItemEntry.providerItem.name,
+				...Object.keys(this.providerItemEntry.providerItem).filter(key => key !== 'key' && key !== 'name').reduce((obj, key) => {
+					obj[key] = this.providerItemEntry!.providerItem[key as keyof IProviderItem];
+					return obj;
+				}, {} as { [key: string]: string })
+			} as IProviderItem);
 		}
 		this.hide();
 	}

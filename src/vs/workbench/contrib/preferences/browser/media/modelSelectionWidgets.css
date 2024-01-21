@@ -102,19 +102,22 @@
 	left: -2px;
 }
 
-.edit-model-widget-context-length.monaco-inputbox .validation-message {
+.edit-model-widget-grid .monaco-inputbox .validation-message {
 	width: 200px;
 }
 
-.edit-model-widget-context-length.monaco-inputbox input[type=number]::-webkit-inner-spin-button {
+.edit-model-widget-grid .monaco-inputbox input[type=number]::-webkit-inner-spin-button {
 	/* Hide arrow button that shows in type=number fields */
 	-webkit-appearance: none !important;
 }
 
-.edit-model-widget-context-length.monaco-inputbox input[type=number] {
+.edit-model-widget-grid .monaco-inputbox input[type=number] {
 	/* Hide arrow button that shows in type=number fields */
 	-moz-appearance: textfield !important;
 	appearance: textfield !important;
+}
+
+.edit-model-widget-grid .monaco-inputbox input {
 	background-color: var(--vscode-dropdown-background) !important;
 }
 

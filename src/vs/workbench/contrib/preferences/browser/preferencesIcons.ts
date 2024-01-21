@@ -17,7 +17,6 @@ export const keybindingsEditIcon = registerIcon('keybindings-edit', Codicon.edit
 export const keybindingsAddIcon = registerIcon('keybindings-add', Codicon.add, localize('keybindingsAddIcon', 'Icon for the add action in the keybinding UI.'));
 
 export const settingsEditIcon = registerIcon('settings-edit', Codicon.edit, localize('settingsEditIcon', 'Icon for the edit action in the Settings UI.'));
-export const settingsCloneIcon = registerIcon('settings-copy', Codicon.copy, localize('settingsCloneIcon', 'Icon for the clone action in the Settings UI.'));
 
 export const settingsRemoveIcon = registerIcon('settings-remove', Codicon.close, localize('settingsRemoveIcon', 'Icon for the remove action in the Settings UI.'));
 export const settingsDiscardIcon = registerIcon('settings-discard', Codicon.discard, localize('preferencesDiscardIcon', 'Icon for the discard action in the Settings UI.'));

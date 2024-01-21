@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { IAIModelSelectionService, humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ProviderType, humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -25,7 +25,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
 import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
-import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
@@ -149,8 +149,8 @@ export class ModelSelectionEditor extends EditorPane {
 					label: '',
 					tooltip: '',
 					weight: 0,
-					minimumWidth: 64,
-					maximumWidth: 64,
+					minimumWidth: 40,
+					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; },
 				},
@@ -238,8 +238,8 @@ export class ModelSelectionEditor extends EditorPane {
 					label: '',
 					tooltip: '',
 					weight: 0,
-					minimumWidth: 64,
-					maximumWidth: 64,
+					minimumWidth: 40,
+					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
@@ -277,7 +277,7 @@ export class ModelSelectionEditor extends EditorPane {
 				return;
 			}
 			const activeProviderEntry = this.activeProviderEntry;
-			if (activeProviderEntry) {
+			if (activeProviderEntry && Object.keys(activeProviderEntry.providerItem).filter(key => key !== 'key' && key !== 'name').length > 0) {
 				this.editProvider(activeProviderEntry);
 			}
 		}));
@@ -675,9 +675,12 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 
 	renderElement(providerSelectionItemEntry: IProviderItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
+		if (Object.keys(providerSelectionItemEntry.providerItem).filter(key => key !== 'key' && key !== 'name').length === 0) {
+			return;
+		}
+
 		const actions: IAction[] = [];
 		actions.push(this.createEditAction(providerSelectionItemEntry));
-		actions.push(this.createCloneAction());
 		templateData.actionBar.push(actions, { icon: true });
 	}
 
@@ -688,15 +691,6 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 			id: 'editProviderSelection',
 			tooltip: localize('editProvider', "Edit Provider"),
 			run: () => this.modelSelectionEditor.editProvider(providerSelectionItemEntry)
-		};
-	}
-
-	private createCloneAction(): IAction {
-		return <IAction>{
-			class: ThemeIcon.asClassName(settingsCloneIcon),
-			enabled: true,
-			id: 'cloneProviderSelection',
-			tooltip: localize('cloneProvider', "Clone Provider"),
 		};
 	}
 
@@ -766,7 +760,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerConfigColumn.title = providerItem.name;
 
-		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name');
+		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
 		if (configKeys.length > 0) {
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
@@ -775,7 +769,9 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			});
 		} else {
 			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
-			DOM.append(configItem, $('span.provider-config-key', undefined, 'Default configuration'));
+			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.key);
+			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
+			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
 		}
 	}
 
@@ -784,4 +780,15 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	}
 
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
+
+	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
+		if (providerType === 'azure-openai') {
+			return { message: 'CodeStory default. Edit to provide your own deployment configuration.', complete: true };
+		} else if (providerType === 'openai-default' || providerType === 'togetherai') {
+			return { message: 'Configuration incomplete', complete: false };
+		} else if (providerType === 'ollama') {
+			return { message: 'No configuration required', complete: true };
+		}
+		return { message: 'No configuration options', complete: true };
+	}
 }
