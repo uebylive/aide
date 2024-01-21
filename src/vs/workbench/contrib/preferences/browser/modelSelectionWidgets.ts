@@ -171,7 +171,11 @@ export class EditModelConfigurationWidget extends Widget {
 						...this.modelItemEntry!,
 						modelItem: {
 							...this.modelItemEntry!.modelItem,
-							provider: providerItems[e.index]
+							provider: providerItems[e.index],
+							providerConfig: {
+								type: providerItems[e.index].type,
+								...(providerItems[e.index].type === 'azure-openai' ? { deploymentID: '' } : {})
+							} as ModelProviderConfig
 						}
 					});
 				}));
