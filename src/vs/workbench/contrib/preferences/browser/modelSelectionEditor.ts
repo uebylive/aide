@@ -202,7 +202,7 @@ export class ModelSelectionEditor extends EditorPane {
 		this._register(this.modelsTable.onMouseOver(e => {
 			if (e.element?.modelItem.provider) {
 				const providerItemIndex = this.modelSelectionEditorModel?.providerItems
-					.findIndex(provider => provider.providerItem.key === e.element?.modelItem.provider?.key);
+					.findIndex(provider => provider.providerItem.type === e.element?.modelItem.provider?.type);
 				if (providerItemIndex !== undefined && providerItemIndex !== -1) {
 					this.providersTable.setSelection([providerItemIndex]);
 				}
@@ -264,7 +264,7 @@ export class ModelSelectionEditor extends EditorPane {
 				this.instantiationService.createInstance(ProviderConfigColumnRenderer)
 			],
 			{
-				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.key },
+				identityProvider: { getId: (e: IProviderItemEntry) => e.providerItem.type },
 				horizontalScrolling: false,
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
@@ -277,7 +277,7 @@ export class ModelSelectionEditor extends EditorPane {
 				return;
 			}
 			const activeProviderEntry = this.activeProviderEntry;
-			if (activeProviderEntry && Object.keys(activeProviderEntry.providerItem).filter(key => key !== 'key' && key !== 'name').length > 0) {
+			if (activeProviderEntry && Object.keys(activeProviderEntry.providerItem).filter(key => key !== 'type' && key !== 'name').length > 0) {
 				this.editProvider(activeProviderEntry);
 			}
 		}));
@@ -443,7 +443,7 @@ export class ModelSelectionEditor extends EditorPane {
 		const index = this.providerTableEntries.indexOf(listEntry);
 		if (index === -1) {
 			for (let i = 0; i < this.providerTableEntries.length; i++) {
-				if (this.providerTableEntries[i].providerItem.key === listEntry.providerItem.key) {
+				if (this.providerTableEntries[i].providerItem.type === listEntry.providerItem.type) {
 					return i;
 				}
 			}
@@ -464,7 +464,7 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IProviderItemEntry): number {
-		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'key' && key !== 'name').length;
+		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'type' && key !== 'name').length;
 		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
 	}
 }
@@ -675,7 +675,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 
 	renderElement(providerSelectionItemEntry: IProviderItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
-		if (Object.keys(providerSelectionItemEntry.providerItem).filter(key => key !== 'key' && key !== 'name').length === 0) {
+		if (Object.keys(providerSelectionItemEntry.providerItem).filter(key => key !== 'type' && key !== 'name').length === 0) {
 			return;
 		}
 
@@ -724,14 +724,14 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 	renderElement(providerItemEntry: IProviderItemEntry, index: number, templateData: IProviderColumnTemplateData): void {
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerColumn.title = providerItem.name;
-		templateData.providerKey.innerText = providerItem.key;
+		templateData.providerKey.innerText = providerItem.type;
 
-		if (providerTypeValues.includes(providerItem.key)) {
+		if (providerTypeValues.includes(providerItem.type)) {
 			templateData.providerLabelContainer.classList.remove('hide');
-			templateData.providerLogo.classList.add(providerItem.key);
+			templateData.providerLogo.classList.add(providerItem.type);
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
-			templateData.providerLabelContainer.classList.remove(providerItem.key);
+			templateData.providerLabelContainer.classList.remove(providerItem.type);
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
 		}
@@ -760,7 +760,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 		const providerItem = providerItemEntry.providerItem;
 		templateData.providerConfigColumn.title = providerItem.name;
 
-		const configKeys = Object.keys(providerItem).filter(key => key !== 'key' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
+		const configKeys = Object.keys(providerItem).filter(key => key !== 'type' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
 		if (configKeys.length > 0) {
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
@@ -769,7 +769,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			});
 		} else {
 			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
-			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.key);
+			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.type);
 			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
 			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
 		}

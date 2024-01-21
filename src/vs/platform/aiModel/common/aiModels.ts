@@ -6,19 +6,37 @@
 import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+export const humanReadableProviderConfigKey: Record<string, string> = {
+	'apiKey': 'API Key',
+	'apiBase': 'Base URL',
+	'deploymentID': 'Deployment ID'
+};
+
 export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
 export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
 
-export const humanReadableProviderConfigKey: Record<string, string> = {
-	'apiKey': 'API Key',
-	'apiBase': 'Base URL'
-};
+export interface AzureOpenAIModelProviderConfig {
+	readonly type: 'azure-openai';
+	readonly deploymentID: string;
+}
+
+export interface GenericModelProviderConfig {
+	readonly type: Exclude<ProviderType, 'azure-openai'>;
+}
+
+export type ModelProviderConfig = AzureOpenAIModelProviderConfig | GenericModelProviderConfig;
+
+export function isModelProviderConfig(obj: any): obj is ModelProviderConfig {
+	return obj && typeof obj === 'object'
+		&& 'type' in obj && typeof obj['type'] === 'string'
+		&& ('deploymentID' in obj ? typeof obj['deploymentID'] === 'string' : true);
+}
 
 export interface ILanguageModelItem {
 	readonly name: string;
 	readonly contextLength: number;
 	readonly temperature: number;
-	readonly provider: ProviderType;
+	readonly provider: ModelProviderConfig;
 }
 
 export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
@@ -26,7 +44,7 @@ export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
 		&& 'name' in obj && typeof obj['name'] === 'string'
 		&& ('contextLength' in obj ? typeof obj['contextLength'] === 'number' : true)
 		&& ('temperature' in obj ? typeof obj['temperature'] === 'number' : true)
-		&& ('provider' in obj ? typeof obj['provider'] === 'string' : true);
+		&& ('provider' in obj ? isModelProviderConfig(obj['provider']) : true);
 }
 
 export interface OpenAIProviderConfig {
@@ -50,6 +68,7 @@ export interface OllamaProviderConfig {
 }
 
 export type ProviderConfig = OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
+export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, OllamaProviderConfig>;
 
 export type IModelProviders =
 	{ 'openai-default': OpenAIProviderConfig }
@@ -90,50 +109,69 @@ export interface IAIModelSelectionService {
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {
-	slowModel: 'GPT3_5_16k',
-	fastModel: 'Gpt4',
+	slowModel: 'Gpt4_32k',
+	fastModel: 'GPT3_5_16k',
 	models: {
 		'Gpt4Turbo': {
 			name: 'GPT-4 Turbo',
 			contextLength: 128000,
 			temperature: 0.2,
-			provider: 'azure-openai'
+			provider: {
+				type: 'azure-openai',
+				deploymentID: ''
+			}
 		},
 		'Gpt4_32k': {
 			name: 'GPT-4 32k',
 			contextLength: 32768,
 			temperature: 0.2,
-			provider: 'azure-openai'
+			provider: {
+				type: 'azure-openai',
+				deploymentID: ''
+			}
 		},
 		'Gpt4': {
 			name: 'GPT-4',
 			contextLength: 8192,
 			temperature: 0.2,
-			provider: 'azure-openai'
+			provider: {
+				type: 'azure-openai',
+				deploymentID: ''
+			}
 		},
 		'GPT3_5_16k': {
 			name: 'GPT-3.5 Turbo 16k',
 			contextLength: 16385,
 			temperature: 0.2,
-			provider: 'azure-openai'
+			provider: {
+				type: 'azure-openai',
+				deploymentID: ''
+			}
 		},
 		'GPT3_5': {
 			name: 'GPT-3.5 Turbo',
 			contextLength: 4096,
 			temperature: 0.2,
-			provider: 'azure-openai'
+			provider: {
+				type: 'azure-openai',
+				deploymentID: ''
+			}
 		},
 		'Mixtral': {
 			name: 'Mixtral',
 			contextLength: 32000,
 			temperature: 0.2,
-			provider: 'togetherai'
+			provider: {
+				type: 'togetherai'
+			}
 		},
 		'MistralInstruct': {
 			name: 'Mistral 7B Instruct',
 			contextLength: 8000,
 			temperature: 0.2,
-			provider: 'togetherai'
+			provider: {
+				type: 'togetherai'
+			}
 		},
 	},
 	providers: {
@@ -154,4 +192,30 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			name: 'Ollama'
 		}
 	}
+};
+
+export const isDefaultLanguageModelItem = (item: ILanguageModelItem) => {
+	const defaultItem = defaultModelSelectionSettings.models[item.name];
+	return defaultItem
+		&& defaultItem.contextLength === item.contextLength
+		&& defaultItem.temperature === item.temperature
+		&& defaultItem.provider.type === item.provider.type
+		&& (defaultItem.provider.type === 'azure-openai'
+			? defaultItem.provider.deploymentID === (item.provider as AzureOpenAIModelProviderConfig).deploymentID
+			: true
+		);
+};
+
+export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfig) => {
+	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
+	return defaultConfig
+		&& defaultConfig.name === config.name
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI'
+			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
+			: true
+		)
+		&& (defaultConfig.name === 'Azure OpenAI'
+			? defaultConfig.apiBase === (config as AzureOpenAIProviderConfig).apiBase
+			: true
+		);
 };
