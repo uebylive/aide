@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -58,11 +58,16 @@ export class ModelSelectionEditor extends EditorPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(ModelSelectionEditor.ID, telemetryService, themeService, storageService);
+
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
+			this.render();
+		}));
 	}
 
 	protected createEditor(parent: HTMLElement): void {

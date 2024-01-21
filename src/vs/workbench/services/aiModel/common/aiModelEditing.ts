@@ -95,13 +95,8 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 		const textModel = reference.object.textEditorModel;
 		if (!isLanguageModelItem(modelItem)) {
 			return;
-		} else if (add) {
-			this.updateModelConfiguration(modelKey, modelItem, textModel, true);
 		} else {
-			const userModelSelectionConfiguration = <IModelSelectionSettings>json.parse(textModel.getValue());
-			if (userModelSelectionConfiguration.models[modelKey]) {
-				this.updateModelConfiguration(modelKey, modelItem, textModel, false);
-			}
+			this.updateModelConfiguration(modelKey, modelItem, textModel, add);
 		}
 		try {
 			await this.save();

@@ -23,6 +23,7 @@ import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { isDark } from 'vs/platform/theme/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
+import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { IModelItemEntry, IProviderItem } from 'vs/workbench/services/preferences/common/preferences';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
@@ -36,6 +37,8 @@ export class EditModelConfigurationWidget extends Widget {
 	private _contentContainer: HTMLElement;
 
 	private _isVisible: boolean = false;
+	private modelItemEntry: IModelItemEntry | null = null;
+
 	private readonly title: HTMLElement;
 	private readonly modelName: HTMLElement;
 	private readonly providerValue: SelectBox;
@@ -51,6 +54,7 @@ export class EditModelConfigurationWidget extends Widget {
 		parent: HTMLElement | null,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IThemeService private readonly _themeService: IThemeService,
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
 	) {
 		super();
 
@@ -62,6 +66,8 @@ export class EditModelConfigurationWidget extends Widget {
 		this.onkeydown(this._domNode.domNode, (e) => {
 			if (e.equals(KeyCode.Escape)) {
 				this.hide();
+			} else if (e.equals(KeyCode.Enter)) {
+				this.save();
 			}
 		});
 
@@ -100,8 +106,8 @@ export class EditModelConfigurationWidget extends Widget {
 		this.temperatureValueLabel.style.textAlign = 'right';
 		this.temperatureValue = this._register(new InputBox(temperatureValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'range' }));
 		this.temperatureValue.element.classList.add('edit-model-widget-temperature');
-		this.temperatureValue.inputElement.min = '-1';
-		this.temperatureValue.inputElement.max = '1';
+		this.temperatureValue.inputElement.min = '0';
+		this.temperatureValue.inputElement.max = '2';
 		this.temperatureValue.inputElement.step = '0.1';
 
 		// Add save and cancel buttons
@@ -119,6 +125,7 @@ export class EditModelConfigurationWidget extends Widget {
 			title: nls.localize('editModelConfiguration.save', "Save")
 		}));
 		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
+		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
 		this.updateStyles();
 		this._register(this._themeService.onDidColorThemeChange(() => {
@@ -143,14 +150,28 @@ export class EditModelConfigurationWidget extends Widget {
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
+				this.modelItemEntry = entry;
 
 				this.title.textContent = `Edit ${entry.modelItem.key}`;
 				this.modelName.textContent = entry.modelItem.name;
+
 				this.providerValue.setOptions(providerItems.map(provider => ({ text: provider.name })));
 				this.providerValue.select(providerItems.findIndex(provider => provider.name === entry.modelItem.provider.name));
+				this._register(this.providerValue.onDidSelect((e) => {
+					this.modelItemEntry!.modelItem.provider = providerItems[e.index];
+				}));
+
 				this.contextLengthValue.value = entry.modelItem.contextLength.toString();
+				this._register(this.contextLengthValue.onDidChange((e) => {
+					this.modelItemEntry!.modelItem.contextLength = +e;
+				}));
+
 				this.temperatureValueLabel.textContent = entry.modelItem.temperature.toString();
 				this.temperatureValue.value = entry.modelItem.temperature.toString();
+				this._register(this.temperatureValue.onDidChange((e) => {
+					this.modelItemEntry!.modelItem.temperature = +e;
+					this.temperatureValueLabel.textContent = e;
+				}));
 
 				this.focus();
 			}
@@ -177,5 +198,17 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode.setDisplay('none');
 		this._isVisible = false;
 		this._onHide.fire();
+	}
+
+	async save(): Promise<void> {
+		if (this.modelItemEntry) {
+			await this.modelSelectionEditingService.editModelConfiguration(this.modelItemEntry.modelItem.key, {
+				name: this.modelItemEntry.modelItem.name,
+				contextLength: this.modelItemEntry.modelItem.contextLength,
+				temperature: this.modelItemEntry.modelItem.temperature,
+				provider: this.modelItemEntry.modelItem.provider.key
+			});
+		}
+		this.hide();
 	}
 }
