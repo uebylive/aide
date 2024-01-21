@@ -8,7 +8,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, EditFileResponse, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, DeepContextForView, EditFileResponse, getSideCarModelConfiguration, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 
@@ -150,9 +150,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/in_editor/answer';
 		const url = baseUrl.toString();
-		const providers = Object.entries(this._modelConfiguration.providers).map(([key, value]) => ({
-			[key]: value,
-		}));
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		// This is where we have to send the model selection object
 		// const modelConfig = {
 		// 	slow_model: this._modelConfiguration.slowModel,
@@ -160,6 +158,7 @@ export class SideCarClient {
 		// 	models: this._modelConfiguration.models,
 		// 	providers,
 		// };
+		console.log(JSON.stringify(sideCarModelConfiguration));
 		const modelConfig = {
 			slow_model: 'MistralInstruct',
 			fast_model: 'MistralInstruct',
@@ -194,7 +193,7 @@ export class SideCarClient {
 		const finalContext = {
 			...context,
 			openai_key: this._openAIKey,
-			modelConfig: modelConfig,
+			modelConfig: sideCarModelConfiguration,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, finalContext);
 		for await (const line of asyncIterableResponse) {
@@ -274,6 +273,7 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
@@ -282,37 +282,7 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
 			openai_key: this._openAIKey,
-			model_config: {
-				slow_model: 'MistralInstruct',
-				fast_model: 'MistralInstruct',
-				models: {
-					Mixtral: {
-						context_length: 32000,
-						temperature: 0.2,
-						provider: 'TogetherAI',
-					},
-					MistralInstruct: {
-						context_length: 8000,
-						temperature: 0.2,
-						provider: 'TogetherAI',
-					},
-				},
-				providers: [
-					{
-						OpenAIAzureConfig: {
-							deployment_id: 'gpt35-turbo-access',
-							api_base: 'https://codestory-gpt4.openai.azure.com',
-							api_key: '89ca8a49a33344c9b794b3dabcbbc5d0',
-							api_version: '2023-08-01-preview',
-						},
-					},
-					{
-						TogetherAI: {
-							api_key: 'cc10d6774e67efef2004b85efdb81a3c9ba0b7682cc33d59c30834183502208d',
-						},
-					},
-				],
-			},
+			model_config: sideCarModelConfiguration,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
