@@ -97,31 +97,31 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			name: 'GPT-4 Turbo',
 			contextLength: 128000,
 			temperature: 0.2,
-			provider: 'openai-default'
+			provider: 'azure-openai'
 		},
 		'Gpt4_32k': {
 			name: 'GPT-4 32k',
 			contextLength: 32768,
 			temperature: 0.2,
-			provider: 'openai-default'
+			provider: 'azure-openai'
 		},
 		'Gpt4': {
 			name: 'GPT-4',
 			contextLength: 8192,
 			temperature: 0.2,
-			provider: 'openai-default'
+			provider: 'azure-openai'
 		},
 		'GPT3_5_16k': {
 			name: 'GPT-3.5 Turbo 16k',
 			contextLength: 16385,
 			temperature: 0.2,
-			provider: 'openai-default'
+			provider: 'azure-openai'
 		},
 		'GPT3_5': {
 			name: 'GPT-3.5 Turbo',
 			contextLength: 4096,
 			temperature: 0.2,
-			provider: 'openai-default'
+			provider: 'azure-openai'
 		},
 		'Mixtral': {
 			name: 'Mixtral',
