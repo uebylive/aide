@@ -139,7 +139,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 				} as IQuickPickSeparator,
 				...models[providerKey].map(modelKey => {
 					const model = modelSelectionSettings.models[modelKey as keyof typeof modelSelectionSettings.models];
-					const provider = modelSelectionSettings.providers[model.provider as keyof IModelProviders] as ProviderConfig;
+					const provider = modelSelectionSettings.providers[model.provider.type as keyof IModelProviders] as ProviderConfig;
 
 					const tooltip = new MarkdownString();
 					tooltip.appendMarkdown(`### ${model.name}\n`);
