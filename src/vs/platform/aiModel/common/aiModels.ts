@@ -206,6 +206,18 @@ export const isDefaultLanguageModelItem = (item: ILanguageModelItem) => {
 		);
 };
 
+export const areLanguageModelItemsEqual = (a: ILanguageModelItem, b: ILanguageModelItem) => {
+	return a.name === b.name
+		&& a.contextLength === b.contextLength
+		&& a.temperature === b.temperature
+		&& a.provider.type === b.provider.type
+		&& (a.provider.type === 'azure-openai'
+			? (a.provider as AzureOpenAIModelProviderConfig).deploymentID === (b.provider as AzureOpenAIModelProviderConfig).deploymentID
+			: true
+		);
+};
+
+
 export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfig) => {
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig

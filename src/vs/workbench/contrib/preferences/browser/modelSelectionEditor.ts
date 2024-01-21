@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { IAIModelSelectionService, ProviderType, humanReadableProviderConfigKey, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ProviderType, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -24,7 +24,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
+import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon, invalidModelConfigIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
 import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
@@ -514,6 +514,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 
 interface IModelColumnTemplateData {
 	modelColumn: HTMLElement;
+	modelIcon: HTMLElement;
 	modelLabelContainer: HTMLElement;
 	modelLabel: HighlightedLabel;
 	modelKey: HTMLElement;
@@ -526,17 +527,33 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 	renderTemplate(container: HTMLElement): IModelColumnTemplateData {
 		const modelColumn = DOM.append(container, $('.model'));
-		DOM.append(modelColumn, $(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
+		const modelIcon = DOM.append(modelColumn, $('.model-icon'));
 		const modelLabelContainer = DOM.append(modelColumn, $('.model-label-container'));
 		const modelLabel = new HighlightedLabel(modelLabelContainer);
 		const modelKey = DOM.append(modelLabelContainer, $('span'));
-		return { modelColumn, modelLabelContainer, modelLabel, modelKey };
+		return { modelColumn, modelIcon, modelLabelContainer, modelLabel, modelKey };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
 		templateData.modelColumn.title = modelItem.name;
 		templateData.modelKey.innerText = modelItem.key;
+
+		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(defaultModelIcon));
+		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
+		if (!isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) {
+			const incompleteFields = Object.keys(modelItem.providerConfig).filter(
+				key => (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === ''
+					|| (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === undefined
+			);
+			if (incompleteFields.length > 0) {
+				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
+			} else {
+				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
+			}
+		} else {
+			templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
+		}
 
 		if (modelItem.name) {
 			templateData.modelLabelContainer.classList.remove('hide');

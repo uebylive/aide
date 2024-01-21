@@ -176,6 +176,10 @@
 	font-size: 22px;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon.codicon-invalid-model-config-icon:before {
+	color: var(--vscode-editorWarning-foreground);
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model-label-container {
 	display: flex;
 	flex-direction: column;

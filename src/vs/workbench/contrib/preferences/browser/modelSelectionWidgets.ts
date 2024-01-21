@@ -16,7 +16,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
-import { ModelProviderConfig, humanReadableProviderConfigKey, isDefaultLanguageModelItem, isDefaultProviderConfig } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, areLanguageModelItemsEqual, humanReadableProviderConfigKey, isDefaultLanguageModelItem, isDefaultProviderConfig } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
@@ -40,6 +40,7 @@ export class EditModelConfigurationWidget extends Widget {
 	private _contentContainer: HTMLElement;
 
 	private _isVisible: boolean = false;
+	private initialModelItemEntry: IModelItemEntry | null = null;
 	private modelItemEntry: IModelItemEntry | null = null;
 
 	private readonly title: HTMLElement;
@@ -131,6 +132,7 @@ export class EditModelConfigurationWidget extends Widget {
 			title: nls.localize('editModelConfiguration.save', "Save")
 		}));
 		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
+		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
 		this.updateStyles();
@@ -156,6 +158,7 @@ export class EditModelConfigurationWidget extends Widget {
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
+				this.initialModelItemEntry = entry;
 				this.modelItemEntry = entry;
 
 				this.title.textContent = `Edit ${entry.modelItem.key}`;
@@ -257,9 +260,10 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private updateModelItemEntry(updatedModelItemEntry: IModelItemEntry): void {
 		this.modelItemEntry = updatedModelItemEntry;
+		const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 		if (this.modelItemEntry) {
 			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (isDefaultLanguageModelItem(updatedModelItem)) {
+			if (isDefaultLanguageModelItem(updatedModelItem) || areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
