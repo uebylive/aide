@@ -90,8 +90,9 @@ export class EditModelConfigurationWidget extends Widget {
 		const providerLabelContainer = dom.append(grid, dom.$('.edit-model-widget-provider-label-container'));
 		dom.append(providerLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
 		dom.append(providerLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.providerKey', "provider")));
+		const providerSelectContainer = dom.append(grid, dom.$('.edit-model-widget-provider-select-container'));
 		this.providerValue = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: nls.localize('editModelConfiguration.providerValue', "Provider"), useCustomDrawn: true });
-		this.providerValue.render(grid);
+		this.providerValue.render(providerSelectContainer);
 
 		const contextLengthLabelContainer = dom.append(grid, dom.$('.edit-model-widget-context-length-label-container'));
 		dom.append(contextLengthLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
