@@ -24,7 +24,7 @@ import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles'
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditModelConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
+import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
 import { settingsCloneIcon, settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
@@ -47,10 +47,13 @@ export class ModelSelectionEditor extends EditorPane {
 	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
 
-	private overlayContainer!: HTMLElement;
+	private modelConfigurationOverlayContainer!: HTMLElement;
 	private editModelConfigurationWidget!: EditModelConfigurationWidget;
+	private providerConfigurationOverlayContainer!: HTMLElement;
+	private editProviderConfigurationWidget!: EditProviderConfigurationWidget;
 
 	private modelTableEntries: IModelItemEntry[] = [];
+	private providerTableEntries: IProviderItemEntry[] = [];
 
 	private dimension: DOM.Dimension | null = null;
 
@@ -73,25 +76,39 @@ export class ModelSelectionEditor extends EditorPane {
 	protected createEditor(parent: HTMLElement): void {
 		const modelSelectionEditorElement = DOM.append(parent, $('div', { class: 'model-selection-editor' }));
 
-		this.createOverlayContainer(modelSelectionEditorElement);
+		this.createOverlayContainers(modelSelectionEditorElement);
 		this.crateHeader(modelSelectionEditorElement);
 		this.createBody(modelSelectionEditorElement);
 	}
 
-	private createOverlayContainer(parent: HTMLElement): void {
-		this.overlayContainer = DOM.append(parent, $('.overlay-container'));
-		this.overlayContainer.style.position = 'absolute';
-		this.overlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
-		this.editModelConfigurationWidget = this._register(this.instantiationService.createInstance(EditModelConfigurationWidget, this.overlayContainer));
-		this.hideOverlayContainer();
+	private createOverlayContainers(parent: HTMLElement): void {
+		this.modelConfigurationOverlayContainer = DOM.append(parent, $('.overlay-container'));
+		this.modelConfigurationOverlayContainer.style.position = 'absolute';
+		this.modelConfigurationOverlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
+		this.editModelConfigurationWidget = this._register(this.instantiationService.createInstance(EditModelConfigurationWidget, this.modelConfigurationOverlayContainer));
+		this.hideOverlayContainer('model');
+
+		this.providerConfigurationOverlayContainer = DOM.append(parent, $('.overlay-container'));
+		this.providerConfigurationOverlayContainer.style.position = 'absolute';
+		this.providerConfigurationOverlayContainer.style.zIndex = '40'; // has to greater than sash z-index which is 35
+		this.editProviderConfigurationWidget = this._register(this.instantiationService.createInstance(EditProviderConfigurationWidget, this.providerConfigurationOverlayContainer));
+		this.hideOverlayContainer('provider');
 	}
 
-	private showOverlayContainer() {
-		this.overlayContainer.style.display = 'block';
+	private showOverlayContainer(type: 'model' | 'provider') {
+		if (type === 'model') {
+			this.modelConfigurationOverlayContainer.style.display = 'block';
+		} else if (type === 'provider') {
+			this.providerConfigurationOverlayContainer.style.display = 'block';
+		}
 	}
 
-	private hideOverlayContainer() {
-		this.overlayContainer.style.display = 'none';
+	private hideOverlayContainer(type: 'model' | 'provider') {
+		if (type === 'model') {
+			this.modelConfigurationOverlayContainer.style.display = 'none';
+		} else if (type === 'provider') {
+			this.providerConfigurationOverlayContainer.style.display = 'none';
+		}
 	}
 
 	private crateHeader(parent: HTMLElement): void {
@@ -132,8 +149,8 @@ export class ModelSelectionEditor extends EditorPane {
 					label: '',
 					tooltip: '',
 					weight: 0,
-					minimumWidth: 40,
-					maximumWidth: 40,
+					minimumWidth: 64,
+					maximumWidth: 64,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; },
 				},
@@ -202,7 +219,7 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 			const activeModelEntry = this.activeModelEntry;
 			if (activeModelEntry) {
-				this.editModel(activeModelEntry, false);
+				this.editModel(activeModelEntry);
 			}
 		}));
 
@@ -221,8 +238,8 @@ export class ModelSelectionEditor extends EditorPane {
 					label: '',
 					tooltip: '',
 					weight: 0,
-					minimumWidth: 40,
-					maximumWidth: 40,
+					minimumWidth: 64,
+					maximumWidth: 64,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
@@ -242,7 +259,7 @@ export class ModelSelectionEditor extends EditorPane {
 				}
 			],
 			[
-				this.instantiationService.createInstance(ProviderActionsColumnRenderer),
+				this.instantiationService.createInstance(ProviderActionsColumnRenderer, this),
 				this.instantiationService.createInstance(ProviderColumnsRenderer),
 				this.instantiationService.createInstance(ProviderConfigColumnRenderer)
 			],
@@ -254,6 +271,16 @@ export class ModelSelectionEditor extends EditorPane {
 				openOnSingleClick: false,
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
+
+		this._register(this.providersTable.onDidOpen((e) => {
+			if (e.browserEvent?.defaultPrevented) {
+				return;
+			}
+			const activeProviderEntry = this.activeProviderEntry;
+			if (activeProviderEntry) {
+				this.editProvider(activeProviderEntry);
+			}
+		}));
 
 		DOM.append(this.providersTableContainer);
 	}
@@ -287,6 +314,8 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderProviders(): void {
 		if (this.modelSelectionEditorModel) {
 			const providerItems = this.modelSelectionEditorModel.providerItems;
+
+			this.providerTableEntries = providerItems;
 			this.providersTable.splice(0, this.providersTable.length, providerItems);
 		}
 	}
@@ -326,9 +355,13 @@ export class ModelSelectionEditor extends EditorPane {
 	layout(dimension: DOM.Dimension): void {
 		this.dimension = dimension;
 
-		this.overlayContainer.style.width = dimension.width + 'px';
-		this.overlayContainer.style.height = dimension.height + 'px';
+		this.modelConfigurationOverlayContainer.style.width = dimension.width + 'px';
+		this.modelConfigurationOverlayContainer.style.height = dimension.height + 'px';
 		this.editModelConfigurationWidget.layout(this.dimension);
+
+		this.providerConfigurationOverlayContainer.style.width = dimension.width + 'px';
+		this.providerConfigurationOverlayContainer.style.height = dimension.height + 'px';
+		this.editProviderConfigurationWidget.layout(this.dimension);
 
 		this.layoutTables();
 	}
@@ -338,26 +371,41 @@ export class ModelSelectionEditor extends EditorPane {
 		return focusedElement ? <IModelItemEntry>focusedElement : null;
 	}
 
-	async editModel(modelItemEntry: IModelItemEntry, add: boolean): Promise<void> {
-		this.selectEntry(modelItemEntry);
-		this.showOverlayContainer();
+	get activeProviderEntry(): IProviderItemEntry | null {
+		const focusedElement = this.providersTable.getFocusedElements()[0];
+		return focusedElement ? <IProviderItemEntry>focusedElement : null;
+	}
+
+	async editModel(modelItemEntry: IModelItemEntry): Promise<void> {
+		this.selectModelEntry(modelItemEntry);
+		this.showOverlayContainer('model');
 		try {
-			const key = await this.editModelConfigurationWidget.edit(
+			await this.editModelConfigurationWidget.edit(
 				modelItemEntry,
 				this.modelSelectionEditorModel?.providerItems.map(item => item.providerItem) ?? [modelItemEntry.modelItem.provider]
 			);
-			if (key) {
-				console.log(key);
-			}
 		} catch (error) {
 			console.error(error);
 		} finally {
-			this.hideOverlayContainer();
-			this.selectEntry(modelItemEntry);
+			this.hideOverlayContainer('model');
+			this.selectModelEntry(modelItemEntry);
 		}
 	}
 
-	private selectEntry(modelItemEntry: IModelItemEntry | number, focus: boolean = true): void {
+	async editProvider(providerItemEntry: IProviderItemEntry): Promise<void> {
+		this.selectProviderEntry(providerItemEntry);
+		this.showOverlayContainer('provider');
+		try {
+			await this.editProviderConfigurationWidget.edit(providerItemEntry);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			this.hideOverlayContainer('provider');
+			this.selectProviderEntry(providerItemEntry);
+		}
+	}
+
+	private selectModelEntry(modelItemEntry: IModelItemEntry | number, focus: boolean = true): void {
 		const index = typeof modelItemEntry === 'number' ? modelItemEntry : this.getIndexOfModel(modelItemEntry);
 		if (index !== -1 && index < this.modelsTable.length) {
 			if (focus) {
@@ -373,6 +421,29 @@ export class ModelSelectionEditor extends EditorPane {
 		if (index === -1) {
 			for (let i = 0; i < this.modelTableEntries.length; i++) {
 				if (this.modelTableEntries[i].modelItem.key === listEntry.modelItem.key) {
+					return i;
+				}
+			}
+		}
+		return index;
+	}
+
+	private selectProviderEntry(providerItemEntry: IProviderItemEntry | number, focus: boolean = true): void {
+		const index = typeof providerItemEntry === 'number' ? providerItemEntry : this.getIndexOfProvider(providerItemEntry);
+		if (index !== -1 && index < this.providersTable.length) {
+			if (focus) {
+				this.providersTable.domFocus();
+				this.providersTable.setFocus([index]);
+			}
+			this.providersTable.setSelection([index]);
+		}
+	}
+
+	private getIndexOfProvider(listEntry: IProviderItemEntry): number {
+		const index = this.providerTableEntries.indexOf(listEntry);
+		if (index === -1) {
+			for (let i = 0; i < this.providerTableEntries.length; i++) {
+				if (this.providerTableEntries[i].providerItem.key === listEntry.providerItem.key) {
 					return i;
 				}
 			}
@@ -432,7 +503,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 			enabled: true,
 			id: 'editModelSelection',
 			tooltip: localize('editModel', "Edit Model"),
-			run: () => this.modelSelectionEditor.editModel(modelSelectionItemEntry, false)
+			run: () => this.modelSelectionEditor.editModel(modelSelectionItemEntry)
 		};
 	}
 
@@ -585,11 +656,16 @@ interface IProviderActionsColumnTemplateData {
 	readonly actionBar: ActionBar;
 }
 
-class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IProviderActionsColumnTemplateData> {
+class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry, IProviderActionsColumnTemplateData> {
 
 	static readonly TEMPLATE_ID = 'providerActions';
 
 	readonly templateId: string = ModelActionsColumnRenderer.TEMPLATE_ID;
+
+	constructor(
+		private readonly modelSelectionEditor: ModelSelectionEditor
+	) {
+	}
 
 	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
@@ -597,11 +673,22 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IModelItemEntry, I
 		return { actionBar };
 	}
 
-	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
+	renderElement(providerSelectionItemEntry: IProviderItemEntry, index: number, templateData: IProviderActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
+		actions.push(this.createEditAction(providerSelectionItemEntry));
 		actions.push(this.createCloneAction());
 		templateData.actionBar.push(actions, { icon: true });
+	}
+
+	private createEditAction(providerSelectionItemEntry: IProviderItemEntry): IAction {
+		return <IAction>{
+			class: ThemeIcon.asClassName(settingsEditIcon),
+			enabled: true,
+			id: 'editProviderSelection',
+			tooltip: localize('editProvider', "Edit Provider"),
+			run: () => this.modelSelectionEditor.editProvider(providerSelectionItemEntry)
+		};
 	}
 
 	private createCloneAction(): IAction {

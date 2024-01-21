@@ -24,7 +24,7 @@ import { isDark } from 'vs/platform/theme/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
-import { IModelItemEntry, IProviderItem } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
 export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
@@ -145,8 +145,8 @@ export class EditModelConfigurationWidget extends Widget {
 			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 	}
 
-	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<string | null> {
-		return Promises.withAsyncBody<string | null>(async (resolve) => {
+	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<null> {
+		return Promises.withAsyncBody<null>(async (resolve) => {
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
@@ -208,6 +208,137 @@ export class EditModelConfigurationWidget extends Widget {
 				temperature: this.modelItemEntry.modelItem.temperature,
 				provider: this.modelItemEntry.modelItem.provider.key
 			});
+		}
+		this.hide();
+	}
+}
+
+export class EditProviderConfigurationWidget extends Widget {
+	private static readonly WIDTH = 400;
+	private static readonly HEIGHT = 300;
+
+	private _domNode: FastDomNode<HTMLElement>;
+	private _contentContainer: HTMLElement;
+
+	private _isVisible: boolean = false;
+	private providerItemEntry: IProviderItemEntry | null = null;
+
+	private readonly title: HTMLElement;
+	private readonly providerName: HTMLElement;
+	private readonly cancelButton: Button;
+	private readonly saveButton: Button;
+
+	private _onHide = this._register(new Emitter<void>());
+
+	constructor(
+		parent: HTMLElement | null,
+		// @IContextViewService private readonly contextViewService: IContextViewService,
+		@IThemeService private readonly _themeService: IThemeService,
+		// @IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
+	) {
+		super();
+
+		this._domNode = createFastDomNode(document.createElement('div'));
+		this._domNode.setDisplay('none');
+		this._domNode.setClassName('edit-model-widget');
+		this._domNode.setWidth(EditProviderConfigurationWidget.WIDTH);
+		this._domNode.setHeight(EditProviderConfigurationWidget.HEIGHT);
+		this.onkeydown(this._domNode.domNode, (e) => {
+			if (e.equals(KeyCode.Escape)) {
+				this.hide();
+			} else if (e.equals(KeyCode.Enter)) {
+				this.save();
+			}
+		});
+
+		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
+		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
+
+		this.title = dom.append(header, dom.$('.message'));
+		const closeIcon = dom.append(header, dom.$(`.close-icon${ThemeIcon.asCSSSelector(editModelWidgetCloseIcon)}}`));
+		closeIcon.title = nls.localize('editModelConfiguration.close', "Close");
+		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
+
+		const body = dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
+		const providerNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
+		dom.append(providerNameContainer, dom.$(`.provider-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
+		this.providerName = dom.append(providerNameContainer, dom.$('.edit-model-widget-model-name'));
+
+		// Add save and cancel buttons
+		const footerContainer = dom.append(this._contentContainer, dom.$('.edit-model-widget-footer'));
+		this.cancelButton = this._register(new Button(footerContainer, {
+			...defaultButtonStyles,
+			title: nls.localize('editModelConfiguration.cancel', "Cancel"),
+			secondary: true
+		}));
+		this.cancelButton.label = nls.localize('editModelConfiguration.cancel', "Cancel");
+		this._register(this.cancelButton.onDidClick(() => this.hide()));
+
+		this.saveButton = this._register(new Button(footerContainer, {
+			...defaultButtonStyles,
+			title: nls.localize('editModelConfiguration.save', "Save")
+		}));
+		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
+		this._register(this.saveButton.onDidClick(async () => await this.save()));
+
+		this.updateStyles();
+		this._register(this._themeService.onDidColorThemeChange(() => {
+			this.updateStyles();
+		}));
+
+		if (parent) {
+			dom.append(parent, this._domNode.domNode);
+		}
+	}
+
+	private updateStyles(): void {
+		this._domNode.domNode.style.color = asCssVariable(editorWidgetForeground);
+		this._domNode.domNode.style.border = `0.5px solid ${asCssVariable(COMMAND_CENTER_BORDER)}`;
+		this._domNode.domNode.style.boxShadow = `0 0 8px 2px ${asCssVariable(widgetShadow)}`;
+		this._domNode.domNode.style.backdropFilter = isDark(this._themeService.getColorTheme().type)
+			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
+	}
+
+	edit(entry: IProviderItemEntry): Promise<null> {
+		return Promises.withAsyncBody<null>(async (resolve) => {
+			if (!this._isVisible) {
+				this._isVisible = true;
+				this._domNode.setDisplay('block');
+				this.providerItemEntry = entry;
+
+				this.title.textContent = `Edit ${entry.providerItem.key}`;
+				this.providerName.textContent = entry.providerItem.name;
+
+				this.focus();
+			}
+			const disposable = this._onHide.event(() => {
+				disposable.dispose();
+				resolve(null);
+			});
+		});
+	}
+
+	layout(layout: dom.Dimension): void {
+		const top = Math.round((layout.height - EditProviderConfigurationWidget.HEIGHT) / 3);
+		this._domNode.setTop(top);
+
+		const left = Math.round((layout.width - EditProviderConfigurationWidget.WIDTH) / 2);
+		this._domNode.setLeft(left);
+	}
+
+	focus(): void {
+		this.providerName.focus();
+	}
+
+	hide(): void {
+		this._domNode.setDisplay('none');
+		this._isVisible = false;
+		this._onHide.fire();
+	}
+
+	async save(): Promise<void> {
+		if (this.providerItemEntry) {
+			// TODO: Implement
 		}
 		this.hide();
 	}
