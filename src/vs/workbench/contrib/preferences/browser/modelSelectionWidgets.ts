@@ -16,7 +16,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
-import { ModelProviderConfig, areLanguageModelItemsEqual, humanReadableProviderConfigKey, isDefaultLanguageModelItem, isDefaultProviderConfig } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, isDefaultProviderConfig } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
@@ -260,10 +260,10 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private updateModelItemEntry(updatedModelItemEntry: IModelItemEntry): void {
 		this.modelItemEntry = updatedModelItemEntry;
-		const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 		if (this.modelItemEntry) {
+			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (isDefaultLanguageModelItem(updatedModelItem) || areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -287,6 +287,12 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private async save(): Promise<void> {
 		if (this.modelItemEntry) {
+			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
+			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
+			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+				return;
+			}
+
 			await this.modelSelectionEditingService.editModelConfiguration(this.modelItemEntry.modelItem.key, {
 				name: this.modelItemEntry.modelItem.name,
 				contextLength: this.modelItemEntry.modelItem.contextLength,
@@ -296,8 +302,8 @@ export class EditModelConfigurationWidget extends Widget {
 					...(this.modelItemEntry.modelItem.providerConfig.type === 'azure-openai' ? { deploymentID: this.modelItemEntry.modelItem.providerConfig.deploymentID } : {})
 				} as ModelProviderConfig
 			});
+			this.hide();
 		}
-		this.hide();
 	}
 }
 
@@ -310,6 +316,7 @@ export class EditProviderConfigurationWidget extends Widget {
 	private _contentContainer: HTMLElement;
 
 	private _isVisible: boolean = false;
+	private initialProviderItemEntry: IProviderItemEntry | null = null;
 	private providerItemEntry: EditableProviderItemEntry = null;
 
 	private readonly title: HTMLElement;
@@ -397,6 +404,7 @@ export class EditProviderConfigurationWidget extends Widget {
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
+				this.initialProviderItemEntry = entry;
 				this.providerItemEntry = entry;
 				this._domNode.setHeight(EditProviderConfigurationWidget.HEIGHT + Object.keys(entry.providerItem).filter(key => key !== 'type' && key !== 'name').length * 52);
 
@@ -442,8 +450,9 @@ export class EditProviderConfigurationWidget extends Widget {
 	private updateProviderItemEntry(updatedProviderItemEntry: EditableProviderItemEntry): void {
 		this.providerItemEntry = updatedProviderItemEntry;
 		if (this.providerItemEntry) {
+			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
 			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(updatedProviderItemEntry as IProviderItemEntry);
-			if (isDefaultProviderConfig(this.providerItemEntry.providerItem.type, updatedProviderConfig)) {
+			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -467,6 +476,12 @@ export class EditProviderConfigurationWidget extends Widget {
 
 	private async save(): Promise<void> {
 		if (this.providerItemEntry) {
+			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
+			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.providerItemEntry as IProviderItemEntry);
+			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
+				return;
+			}
+
 			await this.modelSelectionEditingService.editProviderConfiguration(this.providerItemEntry.providerItem.type, {
 				name: this.providerItemEntry.providerItem.name,
 				...Object.keys(this.providerItemEntry.providerItem).filter(key => key !== 'type' && key !== 'name').reduce((obj, key) => {
@@ -474,7 +489,7 @@ export class EditProviderConfigurationWidget extends Widget {
 					return obj;
 				}, {} as { [key: string]: string })
 			} as IProviderItem);
+			this.hide();
 		}
-		this.hide();
 	}
 }

@@ -231,3 +231,15 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 			: true
 		);
 };
+
+export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
+	return a.name === b.name
+		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI'
+			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
+			: true
+		)
+		&& (a.name === 'Azure OpenAI'
+			? (a as AzureOpenAIProviderConfig).apiBase === (b as AzureOpenAIProviderConfig).apiBase
+			: true
+		);
+};
