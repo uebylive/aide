@@ -194,6 +194,18 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 	}
 };
 
+export const supportedModels: Record<ProviderType, string[]> = {
+	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
+	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
+	'togetherai': ['Mixtral', 'MistralInstruct'],
+	'ollama': ['Mixtral', 'MistralInstruct']
+};
+
+export const providersSupportingModel = (model: string): ProviderType[] => {
+	return Object.keys(supportedModels)
+		.filter(provider => supportedModels[provider as ProviderType].includes(model)) as ProviderType[];
+};
+
 export const isDefaultLanguageModelItem = (item: ILanguageModelItem) => {
 	const defaultItem = defaultModelSelectionSettings.models[item.name];
 	return defaultItem

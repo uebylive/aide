@@ -16,7 +16,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
-import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, isDefaultProviderConfig } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, isDefaultProviderConfig, providersSupportingModel } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
@@ -164,7 +164,12 @@ export class EditModelConfigurationWidget extends Widget {
 				this.title.textContent = `Edit ${entry.modelItem.key}`;
 				this.modelName.textContent = entry.modelItem.name;
 
-				this.providerValue.setOptions(providerItems.map(provider => ({ text: provider.name })));
+				const supportedProviders = providersSupportingModel(entry.modelItem.key);
+				this.providerValue.setOptions(
+					providerItems
+						.filter(providerItem => supportedProviders.includes(providerItem.type))
+						.map(providerItem => ({ text: providerItem.name }))
+				);
 				this.providerValue.select(providerItems.findIndex(provider => provider.name === entry.modelItem.provider.name));
 				this._register(this.providerValue.onDidSelect((e) => {
 					this.updateModelItemEntry({
@@ -205,10 +210,6 @@ export class EditModelConfigurationWidget extends Widget {
 				}));
 
 				const provider = entry.modelItem.provider;
-				console.log('testing if deployment id should be rendered');
-				console.log(entry.modelItem.provider.type);
-				console.log(provider);
-				console.log(isDefaultProviderConfig(entry.modelItem.provider.type, provider));
 				if (!isDefaultProviderConfig(entry.modelItem.provider.type, provider)) {
 					Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
 						const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
