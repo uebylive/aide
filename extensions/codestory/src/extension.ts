@@ -22,7 +22,7 @@ import { activateExtensions, getExtensionsInDirectory } from './utilities/activa
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
-import { getUniqueId } from './utilities/uniqueId';
+import { getUniqueId, getUserId } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';

@@ -11,6 +11,7 @@
 import { networkInterfaces } from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
+import * as os from 'os';
 
 const invalidMacAddresses = new Set([
 	'00:00:00:00:00:00',
@@ -70,6 +71,10 @@ export async function getUniqueId(): Promise<string> {
 	if (disableTelemetry) {
 		return 'disabled-telemetry';
 	} else {
-		return await getMachineId();
+		return await getUserId();
 	}
+}
+
+export async function getUserId(): Promise<string> {
+	return os.userInfo().username;
 }
