@@ -93,7 +93,7 @@ export const getEditorModelItems = (modelSelectionSettings: IModelSelectionSetti
 		} as IProviderItem;
 	});
 	const _fastModel = modelSelectionSettings.models[modelSelectionSettings.fastModel];
-	const fastModelProvider = modelSelectionSettings.providers[_fastModel.provider as keyof IModelProviders] as ProviderConfig;
+	const fastModelProvider = modelSelectionSettings.providers[_fastModel.provider.type as keyof IModelProviders] as ProviderConfig;
 	const fastModel = {
 		key: modelSelectionSettings.fastModel,
 		name: _fastModel.name,
@@ -104,9 +104,9 @@ export const getEditorModelItems = (modelSelectionSettings: IModelSelectionSetti
 			...fastModelProvider
 		},
 		providerConfig: _fastModel.provider
-	};
+	} as IModelItem;
 	const _slowModel = modelSelectionSettings.models[modelSelectionSettings.slowModel];
-	const slowModelProvider = modelSelectionSettings.providers[_slowModel.provider as keyof IModelProviders] as ProviderConfig;
+	const slowModelProvider = modelSelectionSettings.providers[_slowModel.provider.type as keyof IModelProviders] as ProviderConfig;
 	const slowModel = {
 		key: modelSelectionSettings.slowModel,
 		name: _slowModel.name,
@@ -117,7 +117,7 @@ export const getEditorModelItems = (modelSelectionSettings: IModelSelectionSetti
 			...slowModelProvider
 		},
 		providerConfig: _slowModel.provider
-	};
+	} as IModelItem;
 
 	return { modelItems, providerItems, fastModel, slowModel };
 };

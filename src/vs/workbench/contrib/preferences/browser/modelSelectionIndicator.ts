@@ -20,7 +20,7 @@ import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { getEditorModelItems } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
 import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
-import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from 'vs/workbench/services/statusbar/browser/statusbar';
+import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
 	private static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
@@ -67,16 +67,24 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 	private async renderModelSelectionStatusIndicator() {
 		const modelSelection = await this.aiModelSelectionService.getModelSelectionSettings();
-		const fastModel = modelSelection.models[modelSelection.fastModel as keyof typeof modelSelection.models].name;
-		const slowModel = modelSelection.models[modelSelection.slowModel as keyof typeof modelSelection.models].name;
+		const editorModelItems = getEditorModelItems(modelSelection);
+		let text = '';
+		let kind: StatusbarEntryKind = 'remote';
+		if (isModelItemConfigComplete(editorModelItems.fastModel) && isModelItemConfigComplete(editorModelItems.slowModel)) {
+			const fastModel = editorModelItems.fastModel.name;
+			const slowModel = editorModelItems.slowModel.name;
+			text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
+		} else {
+			text = `$(error) Corrupt model configuration`;
+			kind = 'error';
+		}
 
-		const text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
 		const keybindinLabel = this.keybindingService.lookupKeybinding(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID)?.getLabel();
 		const tooltip = nls.localize('modelSelectionTooltipWithKeybinding', "Select language model ({0})", keybindinLabel);
 
 		const properties: IStatusbarEntry = {
 			name: nls.localize('modelSelection', "Model Selection"),
-			kind: 'remote',
+			kind,
 			ariaLabel: getCodiconAriaLabel(text),
 			text,
 			tooltip,
