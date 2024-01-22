@@ -195,7 +195,7 @@ class ModelSelectionJsonSchema {
 							},
 							'apiKey': {
 								'type': 'string',
-								'description': nls.localize('modelSelection.json.openaiProvider.apiKey', 'API key of the provider')
+								'description': nls.localize('modelSelection.json.openaiProvider.apiKey', 'API key for the provider')
 							}
 						},
 						'required': ['name']
@@ -219,14 +219,10 @@ class ModelSelectionJsonSchema {
 							},
 							'apiKey': {
 								'type': 'string',
-								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiKey', 'API key of the provider')
-							},
-							'apiVersion': {
-								'type': 'string',
-								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiVersion', 'API version of the provider')
+								'description': nls.localize('modelSelection.json.azureOpenAIProvider.apiKey', 'API key for the provider')
 							}
 						},
-						'required': ['name', 'apiBase', 'apiKey', 'apiVersion']
+						'required': ['name', 'apiBase', 'apiKey']
 					}
 				},
 			},
@@ -242,7 +238,7 @@ class ModelSelectionJsonSchema {
 							},
 							'apiKey': {
 								'type': 'string',
-								'description': nls.localize('modelSelection.json.togetherAIProvider.apiKey', 'API key of the provider')
+								'description': nls.localize('modelSelection.json.togetherAIProvider.apiKey', 'API key for the provider')
 							}
 						},
 						'required': ['name', 'apiKey']
@@ -272,6 +268,36 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/ollamaProvider' }
 				]
 			},
+			'azureOpenAIModelProviderConfig': {
+				'type': 'object',
+				'properties': {
+					'type': {
+						'enum': ['azure-openai'],
+						'description': nls.localize('modelSelection.json.azureOpenAIModelProviderConfig.type', 'Type of the provider')
+					},
+					'deploymentID': {
+						'type': 'string',
+						'description': nls.localize('modelSelection.json.azureOpenAIModelProviderConfig.deploymentID', 'Deployment ID configured on the provider')
+					}
+				},
+				'required': ['type', 'deploymentID']
+			},
+			'genericModelProviderConfig': {
+				'type': 'object',
+				'properties': {
+					'type': {
+						'enum': ['openai-default', 'togetherai', 'ollama'],
+						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
+					}
+				},
+				'required': ['type']
+			},
+			'modelProviderConfig': {
+				'oneOf': [
+					{ '$ref': '#/definitions/azureOpenAIModelProviderConfig' },
+					{ '$ref': '#/definitions/genericModelProviderConfig' }
+				]
+			},
 			'model': {
 				'type': 'object',
 				'properties': {
@@ -285,34 +311,35 @@ class ModelSelectionJsonSchema {
 					},
 					'temperature': {
 						'type': 'number',
-						'description': nls.localize('modelSelection.json.model.temperature', 'Temperature of the model')
+						'description': nls.localize('modelSelection.json.model.temperature', 'Temperature to use in requests')
 					},
 					'provider': {
-						'enum': ['openai-default', 'azure-openai', 'togetherai', 'ollama'],
-						'description': nls.localize('modelSelection.json.model.provider', 'Provider of the model')
+						'$ref': '#/definitions/modelProviderConfig',
+						'description': nls.localize('modelSelection.json.model.provider', 'Provider for the model')
 					}
-				}
+				},
+				'required': ['name', 'contextLength', 'temperature', 'provider']
 			}
 		},
 		properties: {
 			'slowModel': {
 				'type': 'string',
-				'description': nls.localize('modelSelection.json.slowModel', 'The default model for slow mode')
+				'description': nls.localize('modelSelection.json.slowModel', 'Model to use for sidebar chat')
 			},
 			'fastModel': {
 				'type': 'string',
-				'description': nls.localize('modelSelection.json.fastModel', 'The default model for fast mode')
+				'description': nls.localize('modelSelection.json.fastModel', 'Model to use for inline chat')
 			},
 			'models': {
 				'type': 'object',
-				'description': nls.localize('modelSelection.json.models', 'Models available for selection'),
+				'description': nls.localize('modelSelection.json.models', 'Configuration for supported models'),
 				'additionalProperties': {
 					'$ref': '#/definitions/model'
 				}
 			},
 			'providers': {
 				'$ref': '#/definitions/providers',
-				'description': nls.localize('modelSelection.json.providers', 'Providers available for selection'),
+				'description': nls.localize('modelSelection.json.providers', 'Configuration for supported providers'),
 			}
 		}
 	};
