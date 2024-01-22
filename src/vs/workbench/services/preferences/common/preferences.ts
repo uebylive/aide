@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
 import { IEditorContribution } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
-import { ModelProviderConfig, ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
+import { AzureOpenAIProviderConfig, ModelProviderConfig, OpenAIProviderConfig, ProviderConfig, ProviderType } from 'vs/platform/aiModel/common/aiModels';
 import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
 import { ConfigurationScope, EditPresentationTypes, IExtensionInfo } from 'vs/platform/configuration/common/configurationRegistry';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
@@ -354,3 +354,24 @@ export interface IProviderItemEntry {
 }
 
 export type IProviderItem = { type: ProviderType } & ProviderConfig;
+
+export const isProviderItemConfigComplete = (providerItem: IProviderItem): boolean => {
+	switch (providerItem.type) {
+		case 'azure-openai': {
+			const { name, apiKey, apiBase } = providerItem as AzureOpenAIProviderConfig;
+			// If both API key and API base are absent, we'll consider it complete because the backend has defaults.
+			// If only one is absent, we'll consider it incomplete.
+			return !!name && (!!apiKey || !!apiBase);
+		}
+		case 'openai-default': {
+			const { name, apiKey } = providerItem as OpenAIProviderConfig;
+			return !!name && !!apiKey;
+		}
+		case 'togetherai': {
+			const { name, apiKey } = providerItem as OpenAIProviderConfig;
+			return !!name && !!apiKey;
+		}
+		case 'ollama':
+			return true;
+	}
+};

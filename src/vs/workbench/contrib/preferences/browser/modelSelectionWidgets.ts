@@ -26,7 +26,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
 export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', Codicon.warning, nls.localize('invalidModelConfigIcon', 'Icon for the invalid model configuration.'));
@@ -165,21 +165,19 @@ export class EditModelConfigurationWidget extends Widget {
 				this.modelName.textContent = entry.modelItem.name;
 
 				const supportedProviders = providersSupportingModel(entry.modelItem.key);
-				this.providerValue.setOptions(
-					providerItems
-						.filter(providerItem => supportedProviders.includes(providerItem.type))
-						.map(providerItem => ({ text: providerItem.name }))
-				);
-				this.providerValue.select(providerItems.findIndex(provider => provider.name === entry.modelItem.provider.name));
+				const validProviders = providerItems.filter(providerItem => isProviderItemConfigComplete(providerItem) && supportedProviders.includes(providerItem.type));
+				this.providerValue.setOptions(validProviders.map(providerItem => ({ text: providerItem.name })));
+				this.providerValue.select(validProviders.findIndex(provider => provider.name === entry.modelItem.provider.name));
 				this._register(this.providerValue.onDidSelect((e) => {
+					const provider = validProviders[e.index];
 					this.updateModelItemEntry({
 						...this.modelItemEntry!,
 						modelItem: {
 							...this.modelItemEntry!.modelItem,
-							provider: providerItems[e.index],
+							provider: provider,
 							providerConfig: {
-								type: providerItems[e.index].type,
-								...(providerItems[e.index].type === 'azure-openai' ? { deploymentID: '' } : {})
+								type: provider.type,
+								...(provider.type === 'azure-openai' ? { deploymentID: '' } : {})
 							} as ModelProviderConfig
 						}
 					});

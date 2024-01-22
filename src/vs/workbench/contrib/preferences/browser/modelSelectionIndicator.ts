@@ -174,7 +174,6 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.canSelectMany = false;
 		this._register(quickPick.onDidAccept(async () => {
 			const item = quickPick.selectedItems[0];
-			console.log('Selected item', item.id);
 			const modelKey = item.id as string;
 			await this.modelSelectionEditingService.editModelSelection(type, modelKey);
 			quickPick.hide();
