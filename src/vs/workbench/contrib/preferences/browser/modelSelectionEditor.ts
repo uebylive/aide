@@ -29,7 +29,7 @@ import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/prefe
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItemEntry, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
 
@@ -301,10 +301,11 @@ export class ModelSelectionEditor extends EditorPane {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
 
-			this.fastModelSelect.setOptions(modelItems.map(items => ({ text: items.modelItem.name }) as ISelectOptionItem));
-			this.fastModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
-			this.slowModelSelect.setOptions(modelItems.map(tems => ({ text: tems.modelItem.name }) as ISelectOptionItem));
-			this.slowModelSelect.select(modelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
+			const validModelItems = modelItems.filter(model => isModelItemConfigComplete(model.modelItem));
+			this.fastModelSelect.setOptions(validModelItems.map(items => ({ text: items.modelItem.name }) as ISelectOptionItem));
+			this.fastModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
+			this.slowModelSelect.setOptions(validModelItems.map(tems => ({ text: tems.modelItem.name }) as ISelectOptionItem));
+			this.slowModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
 
 			this.modelTableEntries = modelItems;
 			this.modelsTable.splice(0, this.modelsTable.length, this.modelTableEntries);

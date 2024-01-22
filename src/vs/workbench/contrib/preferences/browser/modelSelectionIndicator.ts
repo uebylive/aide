@@ -18,6 +18,8 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
+import { getEditorModelItems } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
+import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
@@ -124,12 +126,15 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	private async showModelPicker(type: 'fastModel' | 'slowModel'): Promise<void> {
 		const computeItems = async (): Promise<QuickPickItem[]> => {
 			const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
-			const models = Object.keys(modelSelectionSettings.models).reduce((acc, key) => {
-				const model = modelSelectionSettings.models[key as keyof typeof modelSelectionSettings.models];
-				acc[model.provider.type] = acc[model.provider.type] || [];
-				acc[model.provider.type].push(key);
-				return acc;
-			}, {} as { [providerKey: string]: string[] });
+			const editorModelItems = getEditorModelItems(modelSelectionSettings);
+
+			const models = editorModelItems.modelItems
+				.filter(model => isModelItemConfigComplete(model))
+				.reduce((acc, model) => {
+					acc[model.provider.type] = acc[model.provider.type] || [];
+					acc[model.provider.type].push(model.key);
+					return acc;
+				}, {} as { [providerKey: string]: string[] });
 
 			const items: QuickPickItem[] = Object.keys(models).map(providerKey => {
 				const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
