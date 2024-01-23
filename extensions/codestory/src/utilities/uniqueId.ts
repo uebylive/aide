@@ -65,16 +65,20 @@ async function getMacMachineId(): Promise<string | undefined> {
 }
 
 
-export async function getUniqueId(): Promise<string> {
-	const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
-	const disableTelemetry = codestoryConfiguration.get('disableTelemetry');
-	if (disableTelemetry) {
-		return 'disabled-telemetry';
-	} else {
-		return await getUserId();
+export function getUniqueId(): string {
+	try {
+		const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
+		const disableTelemetry = codestoryConfiguration.get('disableTelemetry');
+		if (disableTelemetry) {
+			return 'disabled-telemetry';
+		} else {
+			return getUserId();
+		}
+	} catch (err) {
+		return 'You';
 	}
 }
 
-export async function getUserId(): Promise<string> {
+export function getUserId(): string {
 	return os.userInfo().username;
 }
