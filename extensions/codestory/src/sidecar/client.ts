@@ -498,7 +498,7 @@ async function convertVSCodeVariableToSidecar(
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
-	// const resolvedFileCache: Map<string, [string, string]> = new Map();
+	const resolvedFileCache: Map<string, [string, string]> = new Map();
 	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
 	for (let index = 0; index < variablesArr.length; index++) {
 		const keyValue = variablesArr[index];
@@ -536,7 +536,7 @@ async function convertVSCodeVariableToSidecar(
 				new vscode.Position(startRange.line, startRange.character),
 				new vscode.Position(endRange.line, endRange.character),
 			));
-			// resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
+			resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -575,7 +575,7 @@ async function convertVSCodeVariableToSidecar(
 				new vscode.Position(startRange.line, startRange.character),
 				new vscode.Position(endRange.line, endRange.character),
 			));
-			// resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
+			resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -591,18 +591,14 @@ async function convertVSCodeVariableToSidecar(
 	}
 	return {
 		variables: sidecarVariables,
-		file_content_map: [],
+		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
+			return {
+				file_path: filePath,
+				file_content: fileContent[0],
+				language: fileContent[1],
+			};
+		}),
 	};
-	// return {
-	// 	variables: sidecarVariables,
-	// 	file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
-	// 		return {
-	// 			file_path: filePath,
-	// 			file_content: fileContent[0],
-	// 			language: fileContent[1],
-	// 		};
-	// 	}),
-	// };
 }
 
 function getVariableType(
