@@ -16,7 +16,7 @@ import { KeyCode } from 'vs/base/common/keyCodes';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionWidgets';
 import * as nls from 'vs/nls';
-import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, isDefaultProviderConfig, providersSupportingModel } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
@@ -50,10 +50,10 @@ export class EditModelConfigurationWidget extends Widget {
 	private readonly contextLengthValue: InputBox;
 	private readonly temperatureValueLabel: HTMLElement;
 	private readonly temperatureValue: InputBox;
-	private readonly fieldItems: HTMLElement[] = [];
 	private readonly cancelButton: Button;
 	private readonly saveButton: Button;
 
+	private fieldItems: HTMLElement[] = [];
 	private _onHide = this._register(new Emitter<void>());
 
 	constructor(
@@ -222,42 +222,38 @@ export class EditModelConfigurationWidget extends Widget {
 			this.temperatureValueLabel.textContent = e;
 		}));
 
-		const provider = entry.modelItem.provider;
-		if (!isDefaultProviderConfig(entry.modelItem.provider.type, provider)) {
-			Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
-				const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
-				this.fieldItems.push(fieldLabelContainer);
-				dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
-				dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
-				const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
-				this.fieldItems.push(fieldValueContainer);
-				const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
-				fieldValue.element.classList.add('edit-model-widget-field-value');
-				fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
-				this._register(fieldValue.onDidChange((e) => {
-					this.updateModelItemEntry({
-						modelItem: {
-							...this.modelItemEntry!.modelItem,
-							providerConfig: {
-								...this.modelItemEntry!.modelItem.providerConfig,
-								[key]: e
-							}
+		Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
+			const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
+			this.fieldItems.push(fieldLabelContainer);
+			dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
+			dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
+			const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
+			this.fieldItems.push(fieldValueContainer);
+			const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
+			fieldValue.element.classList.add('edit-model-widget-field-value');
+			fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
+			this._register(fieldValue.onDidChange((e) => {
+				this.updateModelItemEntry({
+					modelItem: {
+						...this.modelItemEntry!.modelItem,
+						providerConfig: {
+							...this.modelItemEntry!.modelItem.providerConfig,
+							[key]: e
 						}
-					});
-				}));
-			});
+					}
+				});
+			}));
+		});
 
-			const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
-			this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
+		const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
+		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
 
-			// Move all items with index > 5 between the provider and context length fields
-			const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
-			for (let i = 6; i < gridItems.length; i++) {
-				this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
-			}
-		} else {
-			this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
+		// Move all items with index > 5 between the provider and context length fields
+		const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
+		for (let i = 6; i < gridItems.length; i++) {
+			this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
 		}
+
 	}
 
 	private resetFieldItems(): void {
@@ -265,7 +261,7 @@ export class EditModelConfigurationWidget extends Widget {
 			dom.reset(fieldItem, '');
 			fieldItem.remove();
 		});
-		this.fieldItems.length = 0;
+		this.fieldItems = [];
 	}
 
 	layout(layout: dom.Dimension): void {
