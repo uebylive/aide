@@ -497,7 +497,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 		const modelConfiguration = {
 			context_length: value.contextLength,
 			temperature: value.temperature,
-			provider: getModelProviderConfiguration(value.provider),
+			provider: getModelProviderConfiguration(value.provider, key),
 		};
 		// @ts-ignore
 		modelRecord[key] = modelConfiguration;
@@ -557,7 +557,7 @@ function getProviderconfiguration(type: string, value: ModelProviderConfiguratio
 	return null;
 }
 
-function getModelProviderConfiguration(providerConfiguration: ProviderSpecificConfiguration) {
+function getModelProviderConfiguration(providerConfiguration: ProviderSpecificConfiguration, llmType: string) {
 	if (providerConfiguration.type == "openai-default") {
 		return "OpenAI";
 	}
@@ -573,5 +573,12 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	if (providerConfiguration.type == "ollama") {
 		return "Ollama";
+	}
+	if (providerConfiguration.type == "codestory") {
+		return {
+			"CodeStory": {
+				"llm_type": llmType,
+			}
+		};
 	}
 }
