@@ -26,7 +26,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItemEntry, IProviderItem, IProviderItemEntry, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
 export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', Codicon.warning, nls.localize('invalidModelConfigIcon', 'Icon for the invalid model configuration.'));
@@ -181,68 +181,10 @@ export class EditModelConfigurationWidget extends Widget {
 							} as ModelProviderConfig
 						}
 					});
+					this.renderProviderConfigFields(this.modelItemEntry!);
 				}));
 
-				this.contextLengthValue.value = entry.modelItem.contextLength.toString();
-				this._register(this.contextLengthValue.onDidChange((e) => {
-					this.updateModelItemEntry({
-						...this.modelItemEntry!,
-						modelItem: {
-							...this.modelItemEntry!.modelItem,
-							contextLength: +e
-						}
-					});
-				}));
-
-				this.temperatureValueLabel.textContent = entry.modelItem.temperature.toString();
-				this.temperatureValue.value = entry.modelItem.temperature.toString();
-				this._register(this.temperatureValue.onDidChange((e) => {
-					this.updateModelItemEntry({
-						...this.modelItemEntry!,
-						modelItem: {
-							...this.modelItemEntry!.modelItem,
-							temperature: +e
-						}
-					});
-					this.temperatureValueLabel.textContent = e;
-				}));
-
-				const provider = entry.modelItem.provider;
-				if (!isDefaultProviderConfig(entry.modelItem.provider.type, provider)) {
-					Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
-						const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
-						this.fieldItems.push(fieldLabelContainer);
-						dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
-						dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
-						const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
-						this.fieldItems.push(fieldValueContainer);
-						const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
-						fieldValue.element.classList.add('edit-model-widget-field-value');
-						fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
-						this._register(fieldValue.onDidChange((e) => {
-							this.updateModelItemEntry({
-								modelItem: {
-									...this.modelItemEntry!.modelItem,
-									providerConfig: {
-										...this.modelItemEntry!.modelItem.providerConfig,
-										[key]: e
-									}
-								}
-							});
-						}));
-					});
-
-					const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
-					this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
-
-					// Move all items with index > 5 between the provider and context length fields
-					const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
-					for (let i = 6; i < gridItems.length; i++) {
-						this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
-					}
-				} else {
-					this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
-				}
+				this.renderProviderConfigFields(entry);
 
 				this.focus();
 			}
@@ -251,6 +193,79 @@ export class EditModelConfigurationWidget extends Widget {
 				resolve(null);
 			});
 		});
+	}
+
+	private renderProviderConfigFields(entry: IModelItemEntry): void {
+		this.resetFieldItems();
+
+		this.contextLengthValue.value = entry.modelItem.contextLength.toString();
+		this._register(this.contextLengthValue.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					contextLength: +e
+				}
+			});
+		}));
+
+		this.temperatureValueLabel.textContent = entry.modelItem.temperature.toString();
+		this.temperatureValue.value = entry.modelItem.temperature.toString();
+		this._register(this.temperatureValue.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					temperature: +e
+				}
+			});
+			this.temperatureValueLabel.textContent = e;
+		}));
+
+		const provider = entry.modelItem.provider;
+		if (!isDefaultProviderConfig(entry.modelItem.provider.type, provider)) {
+			Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
+				const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
+				this.fieldItems.push(fieldLabelContainer);
+				dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
+				dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
+				const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
+				this.fieldItems.push(fieldValueContainer);
+				const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
+				fieldValue.element.classList.add('edit-model-widget-field-value');
+				fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
+				this._register(fieldValue.onDidChange((e) => {
+					this.updateModelItemEntry({
+						modelItem: {
+							...this.modelItemEntry!.modelItem,
+							providerConfig: {
+								...this.modelItemEntry!.modelItem.providerConfig,
+								[key]: e
+							}
+						}
+					});
+				}));
+			});
+
+			const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
+			this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
+
+			// Move all items with index > 5 between the provider and context length fields
+			const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
+			for (let i = 6; i < gridItems.length; i++) {
+				this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
+			}
+		} else {
+			this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
+		}
+	}
+
+	private resetFieldItems(): void {
+		this.fieldItems.forEach((fieldItem) => {
+			dom.reset(fieldItem, '');
+			fieldItem.remove();
+		});
+		this.fieldItems.length = 0;
 	}
 
 	layout(layout: dom.Dimension): void {
@@ -280,10 +295,7 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private hide(): void {
 		this._domNode.setDisplay('none');
-		this.fieldItems.forEach((fieldItem) => {
-			dom.reset(fieldItem, '');
-			fieldItem.remove();
-		});
+		this.resetFieldItems();
 		this._isVisible = false;
 		this._onHide.fire();
 	}

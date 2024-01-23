@@ -29,7 +29,7 @@ import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/prefe
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
 
@@ -323,7 +323,7 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
-		const heightAdjustedForProvidersTable = 480;
+		const heightAdjustedForProvidersTable = 560;
 		const modelsTableContainerHeight = this.dimension.height - (DOM.getDomNodePagePosition(this.headerContainer).height + heightAdjustedForProvidersTable);
 		this.modelsTableContainer.style.height = `${modelsTableContainerHeight}px`;
 		this.modelsTable.layout(modelsTableContainerHeight);
@@ -475,7 +475,8 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 
 	getHeight(element: IProviderItemEntry): number {
 		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'type' && key !== 'name').length;
-		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
+		const isProviderConfigComplete = isProviderItemConfigComplete(element.providerItem);
+		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0) + (isProviderConfigComplete ? 16 : 0);
 	}
 }
 
@@ -787,6 +788,10 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 
 		const configKeys = Object.keys(providerItem).filter(key => key !== 'type' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
 		if (configKeys.length > 0) {
+			if (isProviderItemConfigComplete(providerItem)) {
+				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+				DOM.append(configItem, $(`span.provider-config-complete`, undefined, 'Configuration complete'));
+			}
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
 				DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableProviderConfigKey[key]}: `));
