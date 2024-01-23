@@ -13,9 +13,10 @@ import { IJSONSchema } from 'vs/base/common/jsonSchema';
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
 import * as objects from 'vs/base/common/objects';
 import { dirname } from 'vs/base/common/resources';
+import { Mutable } from 'vs/base/common/types';
 
 // platform
-import { IAIModelSelectionService, IModelSelectionSettings, defaultModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, defaultModelSelectionSettings, isDefaultProviderConfig, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
 import { FileOperation, IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
@@ -60,6 +61,64 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			await this.modelSelection.initialize();
 		}
 		return this.modelSelection.modelSelection!;
+	}
+
+	async getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings> {
+		const modelSelection = await this.getModelSelectionSettings();
+		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {
+			const key = untypedKey as ProviderType;
+			const acc = untypedAcc as { [key: string]: ProviderConfig };
+			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
+			if (provider.name === 'Azure OpenAI' && (isDefaultProviderConfig(key, provider) || (provider.apiBase.length > 0 && provider.apiKey.length > 0))) {
+				acc[key] = provider;
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI') && (provider.apiKey?.length ?? 0) > 0) {
+				acc[key] = provider;
+			} else if (provider.name === 'Ollama') {
+				acc[key] = provider;
+			}
+			return acc as IModelProviders;
+		}, {} as IModelProviders);
+		const validatedModels = Object.keys(modelSelection.models).reduce((untypedAcc, key) => {
+			const untypedValidatedProviders = validatedProviders as { [key: string]: ProviderConfig };
+			const model = modelSelection.models[key];
+			const acc = untypedAcc as { [key: string]: ILanguageModelItem };
+			if (model.name.length > 0
+				&& model.contextLength > 0
+				&& model.temperature >= 0 && model.temperature <= 2
+				&& model.provider
+				&& untypedValidatedProviders[model.provider.type]) {
+				if (model.provider.type === 'azure-openai') {
+					if (isDefaultProviderConfig(model.provider.type, modelSelection.providers[model.provider.type as keyof typeof modelSelection.providers])) {
+						acc[key] = model;
+					} else if (model.provider.deploymentID.length > 0) {
+						acc[key] = model;
+					}
+				} else if (model.provider.type === 'openai-default' || model.provider.type === 'togetherai' || model.provider.type === 'ollama') {
+					acc[key] = model;
+				}
+			}
+			return acc;
+		}, {} as Record<string, ILanguageModelItem>);
+		// TODO(ghostwriternr): Handle this better once we start charging our users.
+		let modelSelectionSettings = {
+			slowModel: modelSelection.slowModel,
+			fastModel: modelSelection.fastModel,
+			models: validatedModels,
+			providers: validatedProviders
+		} as IModelSelectionSettings;
+		['slowModel', 'fastModel'].forEach(untypedModelType => {
+			const untypedModelSelectionSettings = modelSelectionSettings as Mutable<Omit<IModelSelectionSettings, 'providers'>> & { ['providers']: { [key: string]: ProviderConfig } };
+			const modelType = untypedModelType as 'slowModel' | 'fastModel';
+			if (!validatedModels[modelSelection[modelType]]) {
+				untypedModelSelectionSettings[modelType] = defaultModelSelectionSettings[modelType];
+				const matchingDefaultModel = defaultModelSelectionSettings.models[defaultModelSelectionSettings[modelType] as keyof typeof defaultModelSelectionSettings.models] as ILanguageModelItem;
+				const matchingDefaultProvider = defaultModelSelectionSettings.providers[defaultModelSelectionSettings[modelType] as keyof typeof defaultModelSelectionSettings.providers] as ProviderConfig;
+				untypedModelSelectionSettings.models[modelSelectionSettings[modelType] as keyof typeof modelSelectionSettings.models] = matchingDefaultModel;
+				untypedModelSelectionSettings.providers[modelSelectionSettings[modelType]] = matchingDefaultProvider;
+			}
+			modelSelectionSettings = untypedModelSelectionSettings as IModelSelectionSettings;
+		});
+		return modelSelectionSettings;
 	}
 }
 

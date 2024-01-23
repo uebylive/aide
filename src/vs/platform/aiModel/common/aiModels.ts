@@ -111,6 +111,7 @@ export interface IAIModelSelectionService {
 
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
+	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {

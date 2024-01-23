@@ -817,7 +817,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
 		if (providerType === 'azure-openai') {
-			return { message: 'CodeStory default. Edit to provide your own deployment configuration.', complete: true };
+			return { message: 'CodeStory default. Edit to provide your own keys.', complete: true };
 		} else if (providerType === 'openai-default' || providerType === 'togetherai') {
 			return { message: 'Configuration incomplete', complete: false };
 		} else if (providerType === 'ollama') {
