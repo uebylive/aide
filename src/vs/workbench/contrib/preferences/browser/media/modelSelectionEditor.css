@@ -53,7 +53,7 @@
 	width: 100%;
 	border-spacing: 0;
 	border-collapse: separate;
-	margin-top: 36px;
+	padding-top: 36px;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-tr {
@@ -87,17 +87,6 @@
 }
 
 /** columns styling **/
-
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-label,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-default-label,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command > .command-id-label,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .command .monaco-highlighted-label,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .source .monaco-highlighted-label,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .when .monaco-highlighted-label {
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-tr .monaco-table-td .hide {
 	display: none;
@@ -152,11 +141,6 @@
 }
 
 /** model column styling **/
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .context-length,
-.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .temperature {
-	font-family: var(--monaco-monospace-font);
-}
-
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model {
 	display: flex;
 	flex-direction: row;
@@ -268,6 +252,10 @@
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-key {
 	color: var(--vscode-disabledForeground);
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-value.incomplete {
+	color: var(--vscode-editorWarning-foreground);
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-complete {

@@ -13,7 +13,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/modelSelectionEditor';
 import { localize } from 'vs/nls';
-import { IAIModelSelectionService, ProviderType, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -29,7 +29,7 @@ import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/prefe
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
 
@@ -40,6 +40,7 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private headerContainer!: HTMLElement;
 	private modelsTableContainer!: HTMLElement;
+	private providersTableTitle!: HTMLElement;
 	private providersTableContainer!: HTMLElement;
 
 	private fastModelSelect!: SelectBox;
@@ -162,33 +163,25 @@ export class ModelSelectionEditor extends EditorPane {
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
+					label: localize('configuration', "Configuration"),
+					tooltip: '',
+					weight: 0.5,
+					templateId: ModelConfigurationColumnRenderer.TEMPLATE_ID,
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
+				},
+				{
 					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.3,
+					weight: 0.2,
 					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; }
-				},
-				{
-					label: localize('contextLength', "Context Length"),
-					tooltip: '',
-					weight: 0.2,
-					templateId: ContextLengthColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; }
-				},
-				{
-					label: localize('temperature', "Temperature"),
-					tooltip: '',
-					weight: 0.2,
-					templateId: TemperatureColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ModelActionsColumnRenderer, this),
 				this.instantiationService.createInstance(ModelsColumnRenderer),
-				this.instantiationService.createInstance(ModelProvidersColumnRenderer),
-				this.instantiationService.createInstance(ContextLengthColumnRenderer),
-				this.instantiationService.createInstance(TemperatureColumnRenderer)
+				this.instantiationService.createInstance(ModelConfigurationColumnRenderer),
+				this.instantiationService.createInstance(ModelProvidersColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.key },
@@ -196,6 +189,8 @@ export class ModelSelectionEditor extends EditorPane {
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
 				openOnSingleClick: false,
+				supportDynamicHeights: true,
+				transformOptimization: false,
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
 
@@ -228,7 +223,7 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private createProvidersTable(parent: HTMLElement): void {
 		this.providersTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
-		DOM.append(this.providersTableContainer, $('h2', undefined, 'Providers'));
+		this.providersTableTitle = DOM.append(this.providersTableContainer, $('h2', undefined, 'Providers'));
 		this.providersTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
 			this.providersTableContainer,
@@ -269,6 +264,8 @@ export class ModelSelectionEditor extends EditorPane {
 				multipleSelectionSupport: false,
 				setRowLineHeight: false,
 				openOnSingleClick: false,
+				supportDynamicHeights: true,
+				transformOptimization: false,
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
 
@@ -326,7 +323,12 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
-		this.modelsTable.layout();
+		const heightAdjustedForProvidersTable = 480;
+		const modelsTableContainerHeight = this.dimension.height - (DOM.getDomNodePagePosition(this.headerContainer).height + heightAdjustedForProvidersTable);
+		this.modelsTableContainer.style.height = `${modelsTableContainerHeight}px`;
+		this.modelsTable.layout(modelsTableContainerHeight);
+
+		this.providersTableTitle.style.paddingTop = '36px';
 		this.providersTable.layout();
 	}
 
@@ -457,7 +459,16 @@ class ModelDelegate implements ITableVirtualDelegate<IModelItemEntry> {
 	readonly headerRowHeight = 30;
 
 	getHeight(element: IModelItemEntry): number {
-		return 48;
+		const topLevelKeyCount = Object.keys(element.modelItem).filter(key => key !== 'key' && key !== 'name' && key !== 'providerConfig').length;
+		const providerConfigKeyCount = Object.keys(element.modelItem.providerConfig)
+			.filter(
+				providerConfigKey => providerConfigKey !== 'type'
+					&& (
+						(element.modelItem.providerConfig.type !== 'azure-openai' || !isDefaultProviderConfig(element.modelItem.provider.type, element.modelItem.provider))
+						|| providerConfigKey !== 'deploymentID')
+			).length;
+		const keyCount = topLevelKeyCount + providerConfigKeyCount;
+		return 36 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
 	}
 }
 
@@ -602,72 +613,77 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 	disposeTemplate(templateData: IModelProviderColumnTemplateData): void { }
 }
 
-interface IContextLengthColumnTemplateData {
-	contextLengthColumn: HTMLElement;
-	contextLengthLabelContainer: HTMLElement;
-	contextLengthLabel: HTMLElement;
+interface IModelConfigurationColumnTemplateData {
+	modelConfigurationColumn: HTMLElement;
+	modelConfigurationContainer: HTMLElement;
 }
 
-class ContextLengthColumnRenderer implements ITableRenderer<IModelItemEntry, IContextLengthColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'contextLength';
+class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry, IModelConfigurationColumnTemplateData> {
+	static readonly TEMPLATE_ID = 'modelConfiguration';
 
-	readonly templateId: string = ContextLengthColumnRenderer.TEMPLATE_ID;
+	readonly templateId: string = ModelConfigurationColumnRenderer.TEMPLATE_ID;
 
-	renderTemplate(container: HTMLElement): IContextLengthColumnTemplateData {
-		const contextLengthColumn = DOM.append(container, $('.context-length'));
-		const contextLengthLabelContainer = DOM.append(contextLengthColumn, $('.context-length-label'));
-		const contextLengthLabel = DOM.append(contextLengthLabelContainer, $('span'));
-		return { contextLengthColumn, contextLengthLabelContainer, contextLengthLabel };
+	renderTemplate(container: HTMLElement): IModelConfigurationColumnTemplateData {
+		const modelConfigurationColumn = DOM.append(container, $('.provider-config'));
+		const modelConfigurationContainer = DOM.append(modelConfigurationColumn, $('.provider-config-container'));
+		return { modelConfigurationColumn, modelConfigurationContainer };
 	}
 
-	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IContextLengthColumnTemplateData): void {
+	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelConfigurationColumnTemplateData): void {
 		const modelItem = modelItemEntry.modelItem;
-		templateData.contextLengthColumn.title = modelItem.contextLength.toString();
+		templateData.modelConfigurationColumn.title = modelItem.name;
 
-		if (modelItem.contextLength) {
-			templateData.contextLengthLabelContainer.classList.remove('hide');
-			templateData.contextLengthLabel.innerText = modelItem.contextLength.toString();
+		const configKeys = Object.keys(modelItem)
+			.filter(key => key !== 'key' && key !== 'name' && key !== 'provider');
+		if (configKeys.length > 0) {
+			configKeys.forEach(key => {
+				const configItem = DOM.append(templateData.modelConfigurationContainer, $('.provider-config-item'));
+				if (key === 'providerConfig') {
+					Object.keys(modelItem.providerConfig)
+						.filter(providerConfigKey => providerConfigKey !== 'type' && ((modelItem.providerConfig.type !== 'azure-openai' || !isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) || providerConfigKey !== 'deploymentID'))
+						.forEach(providerConfigKey => {
+							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
+							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
+							DOM.append(configItem, $(`span.provider-config-value${providerConfigValue.length > 0 ? '' : '.incomplete'}`, undefined, `${providerConfigValue.length > 0 ? providerConfigValue : 'Not set'}`));
+						});
+				} else {
+					DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[key]}: `));
+					DOM.append(configItem, $('span.provider-config-value', undefined, `${modelItem[key as keyof typeof modelItem]}`));
+				}
+			});
 		} else {
-			templateData.contextLengthLabelContainer.classList.add('hide');
-			templateData.contextLengthLabel.innerText = '';
+			const configItem = DOM.append(templateData.modelConfigurationContainer, $('.provider-config-item'));
+			const emptyConfigMessage = this.getEmptyConfigurationMessage(modelItem);
+			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
+			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
 		}
 	}
 
-	disposeTemplate(templateData: IContextLengthColumnTemplateData): void { }
-}
-
-interface ITemperatureColumnTemplateData {
-	temperatureColumn: HTMLElement;
-	temperatureLabelContainer: HTMLElement;
-	temperatureLabel: HTMLElement;
-}
-
-class TemperatureColumnRenderer implements ITableRenderer<IModelItemEntry, ITemperatureColumnTemplateData> {
-	static readonly TEMPLATE_ID = 'temperature';
-
-	readonly templateId: string = TemperatureColumnRenderer.TEMPLATE_ID;
-
-	renderTemplate(container: HTMLElement): ITemperatureColumnTemplateData {
-		const temperatureColumn = DOM.append(container, $('.temperature'));
-		const temperatureLabelContainer = DOM.append(temperatureColumn, $('.temperature-label'));
-		const temperatureLabel = DOM.append(temperatureLabelContainer, $('span'));
-		return { temperatureColumn, temperatureLabelContainer, temperatureLabel };
+	disposeElement(element: IModelItemEntry, index: number, templateData: IModelConfigurationColumnTemplateData, height: number | undefined): void {
+		DOM.reset(templateData.modelConfigurationContainer);
 	}
 
-	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: ITemperatureColumnTemplateData): void {
-		const modelItem = modelItemEntry.modelItem;
-		templateData.temperatureColumn.title = modelItem.temperature.toString();
+	disposeTemplate(templateData: IModelConfigurationColumnTemplateData): void { }
 
-		if (modelItem.temperature) {
-			templateData.temperatureLabelContainer.classList.remove('hide');
-			templateData.temperatureLabel.innerText = modelItem.temperature.toString();
-		} else {
-			templateData.temperatureLabelContainer.classList.add('hide');
-			templateData.temperatureLabel.innerText = '';
+	private getEmptyConfigurationMessage(modelItem: IModelItem): { message: string; complete: boolean } {
+		if (!modelItem.provider) {
+			return { message: localize('noProvider', "No provider selected"), complete: false };
 		}
-	}
 
-	disposeTemplate(templateData: ITemperatureColumnTemplateData): void { }
+		if (isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) {
+			return { message: localize('defaultConfig', "Default configuration"), complete: true };
+		}
+
+		const incompleteFields = Object.keys(modelItem.providerConfig).filter(
+			key => (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === ''
+				|| (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === undefined
+		);
+		if (incompleteFields.length > 0) {
+			return { message: localize('incompleteConfig', "Incomplete configuration"), complete: false };
+		}
+
+		return { message: localize('completeConfig', "Complete configuration"), complete: true };
+	}
 }
 
 interface IProviderActionsColumnTemplateData {
