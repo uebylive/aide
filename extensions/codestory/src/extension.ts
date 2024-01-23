@@ -69,10 +69,10 @@ class ProgressiveTrackSymbols {
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
-	const uniqueUserId = await getUniqueId();
+	const uniqueUserId = getUniqueId();
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
 	postHogClient.capture({
-		distinctId: await getUniqueId(),
+		distinctId: getUniqueId(),
 		event: 'extension_activated',
 	});
 	let rootPath = workspace.rootPath;
