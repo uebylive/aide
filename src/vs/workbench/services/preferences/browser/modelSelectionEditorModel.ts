@@ -52,7 +52,7 @@ export class ModelSelectionEditorModel extends EditorModel {
 	static getProviderConfig(providerItem: IProviderItemEntry): ProviderConfig {
 		return {
 			name: providerItem.providerItem.name,
-			...(providerItem.providerItem.type !== 'ollama' ? { apiKey: (providerItem.providerItem as ProviderConfigsWithAPIKey).apiKey } : {}),
+			...(providerItem.providerItem.type !== 'ollama' && providerItem.providerItem.type !== 'codestory' ? { apiKey: (providerItem.providerItem as ProviderConfigsWithAPIKey).apiKey } : {}),
 			...(providerItem.providerItem.type === 'azure-openai' ? { apiBase: (providerItem.providerItem as AzureOpenAIProviderConfig).apiBase } : {})
 		} as ProviderConfig;
 	}

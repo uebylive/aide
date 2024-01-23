@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
-export const providerTypeValues: ProviderType[] = ['openai-default', 'azure-openai', 'togetherai', 'ollama'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -52,6 +52,10 @@ export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
 		&& ('provider' in obj ? isModelProviderConfig(obj['provider']) : true);
 }
 
+export interface CodeStoryProviderConfig {
+	readonly name: 'CodeStory';
+}
+
 export interface OpenAIProviderConfig {
 	readonly name: 'OpenAI';
 	readonly apiKey?: string;
@@ -72,11 +76,12 @@ export interface OllamaProviderConfig {
 	readonly name: 'Ollama';
 }
 
-export type ProviderConfig = OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
-export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, OllamaProviderConfig>;
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
+export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
-	{ 'openai-default': OpenAIProviderConfig }
+	{ 'codestory': CodeStoryProviderConfig }
+	| { 'openai-default': OpenAIProviderConfig }
 	| { 'azure-openai': AzureOpenAIProviderConfig }
 	| { 'togetherai': TogetherAIProviderConfig }
 	| { 'ollama': OllamaProviderConfig };
@@ -141,8 +146,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 8192,
 			temperature: 0.2,
 			provider: {
-				type: 'azure-openai',
-				deploymentID: ''
+				type: 'codestory'
 			}
 		},
 		'GPT3_5_16k': {
@@ -150,8 +154,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 16385,
 			temperature: 0.2,
 			provider: {
-				type: 'azure-openai',
-				deploymentID: ''
+				type: 'codestory'
 			}
 		},
 		'GPT3_5': {
@@ -181,6 +184,9 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		},
 	},
 	providers: {
+		'codestory': {
+			name: 'CodeStory'
+		},
 		'openai-default': {
 			name: 'OpenAI',
 			apiKey: '',
@@ -201,6 +207,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 };
 
 export const supportedModels: Record<ProviderType, string[]> = {
+	'codestory': ['Gpt4', 'GPT3_5_16k'],
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct'],

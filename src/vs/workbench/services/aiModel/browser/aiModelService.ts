@@ -73,7 +73,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 				acc[key] = provider;
 			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
-			} else if (provider.name === 'Ollama') {
+			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
 			}
 			return acc as IModelProviders;
@@ -93,7 +93,10 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					} else if (model.provider.deploymentID.length > 0) {
 						acc[key] = model;
 					}
-				} else if (model.provider.type === 'openai-default' || model.provider.type === 'togetherai' || model.provider.type === 'ollama') {
+				} else if (model.provider.type === 'codestory'
+					|| model.provider.type === 'openai-default'
+					|| model.provider.type === 'togetherai'
+					|| model.provider.type === 'ollama') {
 					acc[key] = model;
 				}
 			}
@@ -241,6 +244,21 @@ class ModelSelectionJsonSchema {
 		allowTrailingCommas: true,
 		allowComments: true,
 		definitions: {
+			'codestoryProvider': {
+				'type': 'object',
+				'properties': {
+					'codestory': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['CodeStory'],
+								'description': nls.localize('modelSelection.json.codestoryProvider.name', 'Name of the provider')
+							}
+						},
+						'required': ['name']
+					}
+				}
+			},
 			'openaiProvider': {
 				'type': 'object',
 				'properties': {
@@ -321,6 +339,7 @@ class ModelSelectionJsonSchema {
 			},
 			'providers': {
 				'oneOf': [
+					{ '$ref': '#/definitions/codestoryProvider' },
 					{ '$ref': '#/definitions/openaiProvider' },
 					{ '$ref': '#/definitions/azureOpenAIProvider' },
 					{ '$ref': '#/definitions/togetherAIProvider' },
@@ -345,7 +364,7 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['openai-default', 'togetherai', 'ollama'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'ollama'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},

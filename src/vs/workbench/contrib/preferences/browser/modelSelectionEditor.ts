@@ -820,7 +820,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			return { message: 'CodeStory default. Edit to provide your own keys.', complete: true };
 		} else if (providerType === 'openai-default' || providerType === 'togetherai') {
 			return { message: 'Configuration incomplete', complete: false };
-		} else if (providerType === 'ollama') {
+		} else if (providerType === 'codestory' || providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };
 		}
 		return { message: 'No configuration options', complete: true };
