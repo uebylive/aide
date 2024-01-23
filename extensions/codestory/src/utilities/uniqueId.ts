@@ -80,5 +80,15 @@ export function getUniqueId(): string {
 }
 
 export function getUserId(): string {
-	return os.userInfo().username;
+	try {
+		const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
+		const disableUseNameLookup = codestoryConfiguration.get('disableUseNameLookup');
+		if (disableUseNameLookup) {
+			return 'You';
+		} else {
+			return getUserId();
+		}
+	} catch (err) {
+		return 'You';
+	}
 }
