@@ -91,6 +91,11 @@
           "default": false,
           "description": "Disable telemetry and logging on the backend"
         },
+        "codestory.disableUseNameLookup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Disable user name lookup from env"
+        },
         "aide.systemInstruction": {
           "type": "string",
           "default": "",
