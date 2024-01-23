@@ -33,7 +33,7 @@ export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', 
 export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
 
 export class EditModelConfigurationWidget extends Widget {
-	private static readonly WIDTH = 400;
+	private static readonly WIDTH = 480;
 	private static readonly HEIGHT = 300;
 
 	private _domNode: FastDomNode<HTMLElement>;
@@ -165,7 +165,7 @@ export class EditModelConfigurationWidget extends Widget {
 				this.modelName.textContent = entry.modelItem.name;
 
 				const supportedProviders = providersSupportingModel(entry.modelItem.key);
-				const validProviders = providerItems.filter(providerItem => isProviderItemConfigComplete(providerItem) && supportedProviders.includes(providerItem.type));
+				const validProviders = providerItems.filter(providerItem => supportedProviders.includes(providerItem.type));
 				this.providerValue.setOptions(validProviders.map(providerItem => ({ text: providerItem.name })));
 				this.providerValue.select(validProviders.findIndex(provider => provider.name === entry.modelItem.provider.name));
 				this._register(this.providerValue.onDidSelect((e) => {
@@ -312,7 +312,7 @@ export class EditModelConfigurationWidget extends Widget {
 
 type EditableProviderItemEntry = { providerItem: { -readonly [P in keyof IProviderItem]: IProviderItem[P] } } | null;
 export class EditProviderConfigurationWidget extends Widget {
-	private static readonly WIDTH = 400;
+	private static readonly WIDTH = 480;
 	private static readonly HEIGHT = 140;
 
 	private _domNode: FastDomNode<HTMLElement>;

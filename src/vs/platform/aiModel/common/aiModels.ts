@@ -120,27 +120,9 @@ export interface IAIModelSelectionService {
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {
-	slowModel: 'Gpt4_32k',
+	slowModel: 'Gpt4',
 	fastModel: 'GPT3_5_16k',
 	models: {
-		'Gpt4Turbo': {
-			name: 'GPT-4 Turbo',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'azure-openai',
-				deploymentID: ''
-			}
-		},
-		'Gpt4_32k': {
-			name: 'GPT-4 32k',
-			contextLength: 32768,
-			temperature: 0.2,
-			provider: {
-				type: 'azure-openai',
-				deploymentID: ''
-			}
-		},
 		'Gpt4': {
 			name: 'GPT-4',
 			contextLength: 8192,
@@ -157,13 +139,28 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'codestory'
 			}
 		},
+		'Gpt4Turbo': {
+			name: 'GPT-4 Turbo',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
+		'Gpt4_32k': {
+			name: 'GPT-4 32k',
+			contextLength: 32768,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
 		'GPT3_5': {
 			name: 'GPT-3.5 Turbo',
 			contextLength: 4096,
 			temperature: 0.2,
 			provider: {
-				type: 'azure-openai',
-				deploymentID: ''
+				type: 'openai-default'
 			}
 		},
 		'Mixtral': {
