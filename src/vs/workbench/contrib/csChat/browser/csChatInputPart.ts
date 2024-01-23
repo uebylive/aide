@@ -327,7 +327,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private async _renderModelName(): Promise<void> {
 		const modelSelectionSettings = await this._aiModelSelectionService.getValidatedModelSelectionSettings();
-		const modelName = modelSelectionSettings.slowModel;
+		const modelName = modelSelectionSettings.models[modelSelectionSettings.slowModel].name;
 
 		if (modelName) {
 			this.modelNameContainer.textContent = modelName;
