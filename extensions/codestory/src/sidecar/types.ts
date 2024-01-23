@@ -47,6 +47,8 @@ export type ConversationState =
 	| 'Pending'
 	| 'Started'
 	| 'StreamingAnswer'
+	| 'ReRankingStarted'
+	| 'ReRankingFinished'
 	| 'Finished';
 
 export interface ConversationMessage {

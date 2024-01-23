@@ -498,7 +498,7 @@ async function convertVSCodeVariableToSidecar(
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
-	const resolvedFileCache: Map<string, [string, string]> = new Map();
+	// const resolvedFileCache: Map<string, [string, string]> = new Map();
 	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
 	for (let index = 0; index < variablesArr.length; index++) {
 		const keyValue = variablesArr[index];
@@ -536,7 +536,7 @@ async function convertVSCodeVariableToSidecar(
 				new vscode.Position(startRange.line, startRange.character),
 				new vscode.Position(endRange.line, endRange.character),
 			));
-			resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
+			// resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -575,7 +575,7 @@ async function convertVSCodeVariableToSidecar(
 				new vscode.Position(startRange.line, startRange.character),
 				new vscode.Position(endRange.line, endRange.character),
 			));
-			resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
+			// resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
 			if (variableType !== null) {
 				sidecarVariables.push({
 					name,
@@ -591,14 +591,18 @@ async function convertVSCodeVariableToSidecar(
 	}
 	return {
 		variables: sidecarVariables,
-		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
-			return {
-				file_path: filePath,
-				file_content: fileContent[0],
-				language: fileContent[1],
-			};
-		}),
+		file_content_map: [],
 	};
+	// return {
+	// 	variables: sidecarVariables,
+	// 	file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
+	// 		return {
+	// 			file_path: filePath,
+	// 			file_content: fileContent[0],
+	// 			language: fileContent[1],
+	// 		};
+	// 	}),
+	// };
 }
 
 function getVariableType(
@@ -623,17 +627,39 @@ function getVariableType(
 function getCurrentActiveWindow(): {
 	file_path: string;
 	file_content: string;
+	visible_range_content: string;
+	start_line: number;
+	end_line: number;
 	language: string;
 } | undefined {
 	const activeWindow = vscode.window.activeTextEditor;
 	if (activeWindow === undefined) {
 		return undefined;
 	}
+	if (activeWindow.visibleRanges.length == 0) {
+		// Then we return the full length of the file here or otherwise
+		// we return whats present in the range
+		return undefined;
+	}
+	const visibleRanges = activeWindow.visibleRanges;
+	const startPosition = activeWindow.visibleRanges[0].start;
+	const endPosition = activeWindow.visibleRanges[visibleRanges.length - 1].end;
 	const fsFilePath = activeWindow.document.uri.fsPath;
+	let range = new vscode.Range(
+		startPosition.line,
+		0,
+		endPosition.line,
+		activeWindow.document.lineAt(endPosition.line).text.length
+	);
+	const visibleRagneContents = activeWindow.document.getText(range);
 	const contents = activeWindow.document.getText();
 	return {
 		file_path: fsFilePath,
 		file_content: contents,
+		visible_range_content: visibleRagneContents,
+		// as these are 0 indexed
+		start_line: startPosition.line + 1,
+		end_line: endPosition.line + 1,
 		language: activeWindow.document.languageId,
 	};
 }
