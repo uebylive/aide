@@ -87,12 +87,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 				&& model.temperature >= 0 && model.temperature <= 2
 				&& model.provider
 				&& untypedValidatedProviders[model.provider.type]) {
-				if (model.provider.type === 'azure-openai') {
-					if (isDefaultProviderConfig(model.provider.type, modelSelection.providers[model.provider.type as keyof typeof modelSelection.providers])) {
-						acc[key] = model;
-					} else if (model.provider.deploymentID.length > 0) {
-						acc[key] = model;
-					}
+				if (model.provider.type === 'azure-openai' && model.provider.deploymentID.length > 0) {
+					acc[key] = model;
 				} else if (model.provider.type === 'codestory'
 					|| model.provider.type === 'openai-default'
 					|| model.provider.type === 'togetherai'

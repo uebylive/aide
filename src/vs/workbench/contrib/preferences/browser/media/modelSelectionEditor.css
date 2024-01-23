@@ -160,6 +160,10 @@
 	font-size: 22px;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon.codicon-default-model-icon:before {
+	color: var(--vscode-charts-green);
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .model .codicon.codicon-invalid-model-config-icon:before {
 	color: var(--vscode-editorWarning-foreground);
 }
@@ -188,15 +192,10 @@
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.codestory {
-	mask-image: url('logos/codestory.svg');
-	-webkit-mask-image: url('logos/codestory.svg');
-	mask-size: contain;
-	-webkit-mask-size: contain;
-	mask-repeat: no-repeat;
-	-webkit-mask-repeat: no-repeat;
-	mask-position: center;
-	-webkit-mask-position: center;
-	background-color: currentColor;
+	background-image: url('logos/codestory.svg');
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.openai-default {

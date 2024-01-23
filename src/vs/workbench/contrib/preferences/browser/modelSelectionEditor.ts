@@ -29,7 +29,7 @@ import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/prefe
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
 
 const $ = DOM.$;
 
@@ -323,7 +323,7 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
-		const heightAdjustedForProvidersTable = 480;
+		const heightAdjustedForProvidersTable = 560;
 		const modelsTableContainerHeight = this.dimension.height - (DOM.getDomNodePagePosition(this.headerContainer).height + heightAdjustedForProvidersTable);
 		this.modelsTableContainer.style.height = `${modelsTableContainerHeight}px`;
 		this.modelsTable.layout(modelsTableContainerHeight);
@@ -463,9 +463,7 @@ class ModelDelegate implements ITableVirtualDelegate<IModelItemEntry> {
 		const providerConfigKeyCount = Object.keys(element.modelItem.providerConfig)
 			.filter(
 				providerConfigKey => providerConfigKey !== 'type'
-					&& (
-						(element.modelItem.providerConfig.type !== 'azure-openai' || !isDefaultProviderConfig(element.modelItem.provider.type, element.modelItem.provider))
-						|| providerConfigKey !== 'deploymentID')
+					&& (element.modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID')
 			).length;
 		const keyCount = topLevelKeyCount + providerConfigKeyCount;
 		return 36 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
@@ -477,7 +475,8 @@ class ProviderDelegate implements ITableVirtualDelegate<IProviderItemEntry> {
 
 	getHeight(element: IProviderItemEntry): number {
 		const keyCount = Object.keys(element.providerItem).filter(key => key !== 'type' && key !== 'name').length;
-		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0);
+		const isProviderConfigComplete = isProviderItemConfigComplete(element.providerItem);
+		return 48 + (keyCount > 0 ? ((keyCount - 1) * 16) : 0) + (isProviderConfigComplete ? 16 : 0);
 	}
 }
 
@@ -553,18 +552,11 @@ class ModelsColumnRenderer implements ITableRenderer<IModelItemEntry, IModelColu
 
 		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(defaultModelIcon));
 		templateData.modelIcon.classList.remove(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
-		if (!isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) {
-			const incompleteFields = Object.keys(modelItem.providerConfig).filter(
-				key => (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === ''
-					|| (modelItem.providerConfig[key as keyof typeof modelItem.providerConfig] as any) === undefined
-			);
-			if (incompleteFields.length > 0) {
-				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
-			} else {
-				templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
-			}
-		} else {
+		const isProviderConfigComplete = isModelItemConfigComplete(modelItem);
+		if (isProviderConfigComplete) {
 			templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(defaultModelIcon));
+		} else {
+			templateData.modelIcon.classList.add(...ThemeIcon.asClassNameArray(invalidModelConfigIcon));
 		}
 
 		if (modelItem.name) {
@@ -640,7 +632,7 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 				const configItem = DOM.append(templateData.modelConfigurationContainer, $('.provider-config-item'));
 				if (key === 'providerConfig') {
 					Object.keys(modelItem.providerConfig)
-						.filter(providerConfigKey => providerConfigKey !== 'type' && ((modelItem.providerConfig.type !== 'azure-openai' || !isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) || providerConfigKey !== 'deploymentID'))
+						.filter(providerConfigKey => providerConfigKey !== 'type' && (modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID'))
 						.forEach(providerConfigKey => {
 							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
 							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
@@ -796,6 +788,10 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 
 		const configKeys = Object.keys(providerItem).filter(key => key !== 'type' && key !== 'name' && (providerItem[key as keyof typeof providerItem] as any) !== '');
 		if (configKeys.length > 0) {
+			if (isProviderItemConfigComplete(providerItem)) {
+				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
+				DOM.append(configItem, $(`span.provider-config-complete`, undefined, 'Configuration complete'));
+			}
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
 				DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableProviderConfigKey[key]}: `));
@@ -816,9 +812,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
-		if (providerType === 'azure-openai') {
-			return { message: 'CodeStory default. Edit to provide your own keys.', complete: true };
-		} else if (providerType === 'openai-default' || providerType === 'togetherai') {
+		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai') {
 			return { message: 'Configuration incomplete', complete: false };
 		} else if (providerType === 'codestory' || providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };
