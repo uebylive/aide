@@ -368,6 +368,9 @@ export type IProviderItem = { type: ProviderType } & ProviderConfig;
 
 export const isProviderItemConfigComplete = (providerItem: IProviderItem): boolean => {
 	switch (providerItem.type) {
+		case 'codestory': {
+			return true;
+		}
 		case 'azure-openai': {
 			const { name, apiKey, apiBase } = providerItem as AzureOpenAIProviderConfig;
 			// If both API key and API base are absent, we'll consider it complete because the backend has defaults.
