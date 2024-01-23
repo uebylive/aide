@@ -30,6 +30,6 @@ export class MainThreadModelSelection extends Disposable implements MainThreadMo
 	}
 
 	private async _getConfigurationData(): Promise<IModelSelectionSettings> {
-		return this._modelSelectionService.getModelSelectionSettings();
+		return this._modelSelectionService.getValidatedModelSelectionSettings();
 	}
 }

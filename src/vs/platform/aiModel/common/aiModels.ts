@@ -6,10 +6,15 @@
 import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+export const humanReadableModelConfigKey: Record<string, string> = {
+	'contextLength': 'Context Length',
+	'temperature': 'Temperature',
+	'deploymentID': 'Deployment ID'
+};
+
 export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiKey': 'API Key',
-	'apiBase': 'Base URL',
-	'deploymentID': 'Deployment ID'
+	'apiBase': 'Base URL'
 };
 
 export type ProviderType = 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
@@ -106,6 +111,7 @@ export interface IAIModelSelectionService {
 
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
+	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
 }
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {

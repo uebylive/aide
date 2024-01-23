@@ -18,7 +18,9 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
-import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from 'vs/workbench/services/statusbar/browser/statusbar';
+import { getEditorModelItems } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
+import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
 	private static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
@@ -65,16 +67,24 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 	private async renderModelSelectionStatusIndicator() {
 		const modelSelection = await this.aiModelSelectionService.getModelSelectionSettings();
-		const fastModel = modelSelection.models[modelSelection.fastModel as keyof typeof modelSelection.models].name;
-		const slowModel = modelSelection.models[modelSelection.slowModel as keyof typeof modelSelection.models].name;
+		const editorModelItems = getEditorModelItems(modelSelection);
+		let text = '';
+		let kind: StatusbarEntryKind = 'remote';
+		if (isModelItemConfigComplete(editorModelItems.fastModel) && isModelItemConfigComplete(editorModelItems.slowModel)) {
+			const fastModel = editorModelItems.fastModel.name;
+			const slowModel = editorModelItems.slowModel.name;
+			text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
+		} else {
+			text = `$(error) Corrupt model configuration`;
+			kind = 'error';
+		}
 
-		const text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
 		const keybindinLabel = this.keybindingService.lookupKeybinding(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID)?.getLabel();
 		const tooltip = nls.localize('modelSelectionTooltipWithKeybinding', "Select language model ({0})", keybindinLabel);
 
 		const properties: IStatusbarEntry = {
 			name: nls.localize('modelSelection', "Model Selection"),
-			kind: 'remote',
+			kind,
 			ariaLabel: getCodiconAriaLabel(text),
 			text,
 			tooltip,
@@ -124,12 +134,15 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	private async showModelPicker(type: 'fastModel' | 'slowModel'): Promise<void> {
 		const computeItems = async (): Promise<QuickPickItem[]> => {
 			const modelSelectionSettings = await this.aiModelSelectionService.getModelSelectionSettings();
-			const models = Object.keys(modelSelectionSettings.models).reduce((acc, key) => {
-				const model = modelSelectionSettings.models[key as keyof typeof modelSelectionSettings.models];
-				acc[model.provider.type] = acc[model.provider.type] || [];
-				acc[model.provider.type].push(key);
-				return acc;
-			}, {} as { [providerKey: string]: string[] });
+			const editorModelItems = getEditorModelItems(modelSelectionSettings);
+
+			const models = editorModelItems.modelItems
+				.filter(model => isModelItemConfigComplete(model))
+				.reduce((acc, model) => {
+					acc[model.provider.type] = acc[model.provider.type] || [];
+					acc[model.provider.type].push(model.key);
+					return acc;
+				}, {} as { [providerKey: string]: string[] });
 
 			const items: QuickPickItem[] = Object.keys(models).map(providerKey => {
 				const provider = modelSelectionSettings.providers[providerKey as keyof IModelProviders] as ProviderConfig;
@@ -174,7 +187,6 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.canSelectMany = false;
 		this._register(quickPick.onDidAccept(async () => {
 			const item = quickPick.selectedItems[0];
-			console.log('Selected item', item.id);
 			const modelKey = item.id as string;
 			await this.modelSelectionEditingService.editModelSelection(type, modelKey);
 			quickPick.hide();
