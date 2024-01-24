@@ -396,16 +396,17 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 
 export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
 	const platform = os.platform();
-	let marketplaceExtensionsDescriptions = [];
+	let marketplaceExtensionsDescriptions: any[] = [];
 	if (platform !== 'win32' && platform !== 'darwin') {
 		// If we are in any environment other than windows and mac, we should
 		// switch to not bundling the extensions here from the marketplace.
 		marketplaceExtensionsDescriptions = [];
+	} else {
+		marketplaceExtensionsDescriptions = [
+			...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
+			...(forWeb ? webBuiltInExtensions : [])
+		];
 	}
-	marketplaceExtensionsDescriptions = [
-		...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
-		...(forWeb ? webBuiltInExtensions : [])
-	];
 	const marketplaceExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...marketplaceExtensionsDescriptions
