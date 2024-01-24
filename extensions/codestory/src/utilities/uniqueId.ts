@@ -83,12 +83,14 @@ export function getUserId(): string {
 	try {
 		const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
 		const disableUseNameLookup = codestoryConfiguration.get('disableUseNameLookup');
+		console.log('disableUseNameLookup', disableUseNameLookup);
 		if (disableUseNameLookup) {
 			return 'You';
 		} else {
-			return getUserId();
+			return os.userInfo().username;
 		}
 	} catch (err) {
+		console.log('err', err);
 		return 'You';
 	}
 }
