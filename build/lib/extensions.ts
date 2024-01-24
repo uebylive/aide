@@ -5,6 +5,7 @@
 
 import * as es from 'event-stream';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as cp from 'child_process';
 import * as glob from 'glob';
 import * as gulp from 'gulp';
@@ -394,7 +395,14 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 }
 
 export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
-	const marketplaceExtensionsDescriptions = [
+	const platform = os.platform();
+	let marketplaceExtensionsDescriptions = [];
+	if (platform !== 'win32' && platform !== 'darwin') {
+		// If we are in any environment other than windows and mac, we should
+		// switch to not bundling the extensions here from the marketplace.
+		marketplaceExtensionsDescriptions = [];
+	}
+	marketplaceExtensionsDescriptions = [
 		...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
 		...(forWeb ? webBuiltInExtensions : [])
 	];
