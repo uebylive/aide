@@ -12,6 +12,7 @@ const nodeUtil = require('util');
 const es = require('event-stream');
 const filter = require('gulp-filter');
 const util = require('./lib/util');
+const os = require('os');
 const { getVersion } = require('./lib/getVersion');
 const task = require('./lib/task');
 const watcher = require('./lib/watch');
