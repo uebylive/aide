@@ -396,6 +396,7 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 
 export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
 	const platform = os.platform();
+	fancyLog('platform', platform);
 	let marketplaceExtensionsDescriptions: any[] = [];
 	if (platform !== 'win32' && platform !== 'darwin') {
 		// If we are in any environment other than windows and mac, we should
@@ -407,6 +408,7 @@ export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
 			...(forWeb ? webBuiltInExtensions : [])
 		];
 	}
+	fancyLog('marketplaceExtensions: ', marketplaceExtensionsDescriptions.length);
 	const marketplaceExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...marketplaceExtensionsDescriptions
