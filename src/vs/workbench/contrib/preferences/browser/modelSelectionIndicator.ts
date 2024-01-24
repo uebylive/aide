@@ -9,7 +9,7 @@ import { getCodiconAriaLabel } from 'vs/base/common/iconLabels';
 import { KeyChord, KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
-import 'vs/css!./media/ModelSelectionIndicator';
+import 'vs/css!./media/modelSelectionIndicator';
 import * as nls from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IAIModelSelectionService, IModelProviders, ProviderConfig } from 'vs/platform/aiModel/common/aiModels';
