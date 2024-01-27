@@ -25,7 +25,8 @@
 	background: var(--vscode-minimapSlider-activeBackground);
 }
 .monaco-editor .minimap-shadow-visible {
-	box-shadow: var(--vscode-scrollbar-shadow) -6px 0 6px -6px inset;
+	/*box-shadow: var(--vscode-scrollbar-shadow) -6px 0 6px -6px inset;*/
+	border: 1px var(--vscode-editorGroup-border) solid;
 }
 .monaco-editor .minimap-shadow-hidden {
 	position: absolute;
@@ -33,8 +34,8 @@
 }
 .monaco-editor .minimap-shadow-visible {
 	position: absolute;
-	left: -6px;
-	width: 6px;
+	left: -1px;
+	width: 1px;
 }
 .monaco-editor.no-minimap-shadow .minimap-shadow-visible {
 	position: absolute;

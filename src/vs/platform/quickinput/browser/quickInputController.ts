@@ -704,15 +704,14 @@ export class QuickInputController extends Disposable {
 	private updateStyles() {
 		if (this.ui) {
 			const {
-				quickInputTitleBackground, quickInputBackground, quickInputForeground, widgetBorder, widgetShadow,
+				quickInputTitleBackground, quickInputBackground, quickInputForeground, widgetBorder,
 			} = this.styles.widget;
 			this.ui.titleBar.style.backgroundColor = quickInputTitleBackground ?? '';
 			this.ui.container.style.backgroundColor = quickInputBackground ?? '';
 			this.ui.container.style.backdropFilter = isDark(this.themeService.getColorTheme().type)
-				? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
+				? 'blur(30px) saturate(190%) contrast(70%) brightness(60%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 			this.ui.container.style.color = quickInputForeground ?? '';
 			this.ui.container.style.border = widgetBorder ? `2px solid ${widgetBorder}` : '';
-			this.ui.container.style.boxShadow = widgetShadow ? `0 0 8px 2px ${widgetShadow}` : '';
 			this.ui.list.style(this.styles.list);
 
 			const content: string[] = [];

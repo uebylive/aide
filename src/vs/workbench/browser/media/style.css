@@ -10,52 +10,61 @@
 /* Font Families (with CJK support) */
 
 @font-face {
-	font-family: "Hack";
-	src: url("./fonts/Hack/Hack-Regular.ttf") format("truetype");
+	font-family: "Monaspace Neon";
+	src: url("./fonts/Monaspace/MonaspaceNeon-Regular.otf") format("opentype");
 	font-weight: normal;
 	font-style: normal;
 }
 
 @font-face {
-	font-family: "Hack";
-	src: url("./fonts/Hack/Hack-Bold.ttf") format("truetype");
+	font-family: "Monaspace Neon";
+	src: url("./fonts/Monaspace/MonaspaceNeon-Bold.otf") format("truetype");
 	font-weight: bold;
 	font-style: normal;
 }
 
 @font-face {
-	font-family: "Hack";
-	src: url("./fonts/Hack/Hack-Italic.ttf") format("truetype");
+	font-family: "Monaspace Neon";
+	src: url("./fonts/Monaspace/MonaspaceNeon-Italic.otf") format("truetype");
 	font-weight: normal;
 	font-style: italic;
 }
 
 @font-face {
-	font-family: "Hack";
-	src: url("./fonts/Hack/Hack-BoldItalic.ttf") format("truetype");
-	font-weight: bold;
-	font-style: italic;
+	font-family: "Monaspace Argon";
+	src: url("./fonts/Monaspace/MonaspaceArgon-Regular.otf") format("opentype");
+	font-weight: normal;
+	font-style: normal;
 }
 
 @font-face {
-	font-family: "IBM Plex Mono";
-	src: url("./fonts/IBMPlex/ibm-plex-mono.otf") format("opentype");
+	font-family: "Monaspace Argon";
+	src: url("./fonts/Monaspace/MonaspaceArgon-Bold.otf") format("truetype");
+	font-weight: bold;
+	font-style: normal;
 }
 
-.mac { font-family: "Hack", -apple-system, BlinkMacSystemFont, sans-serif; }
+@font-face {
+	font-family: "Monaspace Argon";
+	src: url("./fonts/Monaspace/MonaspaceArgon-Italic.otf") format("truetype");
+	font-weight: normal;
+	font-style: italic;
+}
+
+.mac { font-family: "Monaspace Neon", -apple-system, BlinkMacSystemFont, sans-serif; }
 .mac:lang(zh-Hans) { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif; }
 .mac:lang(zh-Hant) { font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", sans-serif; }
 .mac:lang(ja) { font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic Pro", sans-serif; }
 .mac:lang(ko) { font-family: -apple-system, BlinkMacSystemFont, "Nanum Gothic", "Apple SD Gothic Neo", "AppleGothic", sans-serif; }
 
-.windows { font-family: "Hack", "Segoe WPC", "Segoe UI", sans-serif; }
+.windows { font-family: "Monaspace Neon", "Segoe WPC", "Segoe UI", sans-serif; }
 .windows:lang(zh-Hans) { font-family: "Segoe WPC", "Segoe UI", "Microsoft YaHei", sans-serif; }
 .windows:lang(zh-Hant) { font-family: "Segoe WPC", "Segoe UI", "Microsoft Jhenghei", sans-serif; }
 .windows:lang(ja) { font-family: "Segoe WPC", "Segoe UI", "Yu Gothic UI", "Meiryo UI", sans-serif; }
 .windows:lang(ko) { font-family: "Segoe WPC", "Segoe UI", "Malgun Gothic", "Dotom", sans-serif; }
 
 /* Linux: add `system-ui` as first font and not `Ubuntu` to allow other distribution pick their standard OS font */
-.linux { font-family: "Hack", system-ui, "Ubuntu", "Droid Sans", sans-serif; }
+.linux { font-family: "Monaspace Neon", system-ui, "Ubuntu", "Droid Sans", sans-serif; }
 .linux:lang(zh-Hans) { font-family: system-ui, "Ubuntu", "Droid Sans", "Source Han Sans SC", "Source Han Sans CN", "Source Han Sans", sans-serif; }
 .linux:lang(zh-Hant) { font-family: system-ui, "Ubuntu", "Droid Sans", "Source Han Sans TC", "Source Han Sans TW", "Source Han Sans", sans-serif; }
 .linux:lang(ja) { font-family: system-ui, "Ubuntu", "Droid Sans", "Source Han Sans J", "Source Han Sans JP", "Source Han Sans", sans-serif; }

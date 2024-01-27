@@ -24,3 +24,6 @@ product.overrides.json
 # CodeStory
 .codestory.json
 .aider*
+
+# Jetbrains
+.idea
