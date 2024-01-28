@@ -113,7 +113,7 @@
         },
         "aide.disableIndexing": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Disable indexing of the repository"
         }
       }

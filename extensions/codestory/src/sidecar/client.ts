@@ -211,6 +211,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/file/edit_file';
 		const url = baseUrl.toString();
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body = {
 			file_path: filePath,
 			file_content: fileContent,
@@ -221,6 +222,7 @@ export class SideCarClient {
 			code_block_index: codeBlockIndex,
 			openai_key: this._openAIKey,
 			userId: this._userId,
+			model_config: sideCarModelConfiguration,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
