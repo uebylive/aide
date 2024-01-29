@@ -391,4 +391,7 @@ import 'vs/workbench/contrib/share/browser/share.contribution';
 // Account Entitlements
 import 'vs/workbench/contrib/accountEntitlements/browser/accountsEntitlements.contribution';
 
+// Explanations
+import 'vs/workbench/contrib/explanations/browser/explanations.contribution';
+
 //#endregion
