@@ -480,6 +480,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 									undefined,
 									activeEditorUri,
 									codeBlockIndex,
+									true,
 								);
 								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 								continue;
@@ -533,6 +534,7 @@ class StreamProcessor {
 	documentLineIndex: number;
 	sentEdits: boolean;
 	uri: vscode.Uri;
+	allowFlaky: boolean;
 	constructor(progress: vscode.Progress<vscode.CSChatAgentEditResponse>,
 		document: vscode.TextDocument,
 		lines: string[],
@@ -540,7 +542,9 @@ class StreamProcessor {
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
 		codeBlockIndex: number,
+		allowFlaky = false,
 	) {
+		this.allowFlaky = allowFlaky;
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
 			progress,
@@ -571,14 +575,26 @@ class StreamProcessor {
 			return;
 		}
 		const line = answerStreamLine.line;
-		if (line.startsWith(this.filePathMarker) && this.currentState === StateEnum.Initial) {
+		if (!this.allowFlaky) {
+			// in which case thats also okay, we should still be able to do
+			if ((line.startsWith(this.filePathMarker) && this.currentState === StateEnum.Initial) || (this.currentState === StateEnum.Initial && this.allowFlaky)) {
+				this.currentState = StateEnum.InitialAfterFilePath;
+				// but if we allow flaky, we should not be returning here
+				return;
+			}
+			if (line.startsWith(this.beginMarker) || line.startsWith(this.endMarker)) {
+				this.endDetected = true;
+				return;
+			}
+		} else if (this.allowFlaky && !line.startsWith(this.filePathMarker) && this.currentState === StateEnum.Initial) {
+			this.endDetected = true;
 			this.currentState = StateEnum.InitialAfterFilePath;
 			return;
+			// repeat the logic above if this is flaky and we still get // BEGIN and // END markers along with the // FILEPATH markers
+		} else if (this.allowFlaky && line.startsWith(this.filePathMarker)) {
+			this.allowFlaky = false;
 		}
-		if (line.startsWith(this.beginMarker) || line.startsWith(this.endMarker)) {
-			this.endDetected = true;
-			return;
-		}
+		// if this is flaky, then we might not have the being and the end markers
 		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
 			if (this.previousLine) {
 				// if previous line is there, then we can reindent the current line
