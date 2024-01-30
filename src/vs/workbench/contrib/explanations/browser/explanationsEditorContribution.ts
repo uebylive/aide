@@ -119,7 +119,6 @@ export class ExplanationsEditorContribution implements IExplanationsEditorContri
 	) {
 		this.setDecorationsScheduler = new RunOnceScheduler(() => this.setDecorations(), 30);
 		this.setDecorationsScheduler.schedule();
-		this.registerActions();
 		this.registerListeners();
 	}
 
