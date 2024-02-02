@@ -156,12 +156,46 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		}
 	}
 
-	public postEvent(event: string, completion?: DisplayedCompletion) {
-		// finish this, we have to take it from tabby and then connect it with the
-		// sidecar binary so we can send it requests continuously (
-		// we also need a loading spinner on the below bar to show that its
-		// processing
-		// )
-		// this._sidecarClient.inlineCompletionEvent(event, completion);
+	private postEvent(
+		event: 'show' | 'accept' | 'dismiss' | 'accept_word' | 'accept_line',
+		displayedCompletion: DisplayedCompletion,
+	) {
+		const { id, completion, displayedAt } = displayedCompletion;
+		const elapsed = Date.now() - displayedAt;
+		let eventData: { type: string; select_kind?: 'line'; elapsed?: number };
+		switch (event) {
+			case 'show':
+				eventData = { type: 'view' };
+				break;
+			case 'accept':
+				eventData = { type: 'select', elapsed };
+				break;
+			case 'dismiss':
+				eventData = { type: 'dismiss', elapsed };
+				break;
+			case 'accept_word':
+				// select_kind should be 'word' but not supported by Tabby Server yet, use 'line' instead
+				eventData = { type: 'select', select_kind: 'line', elapsed };
+				break;
+			case 'accept_line':
+				eventData = { type: 'select', select_kind: 'line', elapsed };
+				break;
+			default:
+				// unknown event type, should be unreachable
+				return;
+		}
+		try {
+			// const postBody: LogEventRequest = {
+			// 	...eventData,
+			// 	completion_id: completion.id,
+			// 	// Assume only one choice is provided for now
+			// 	choice_index: completion.choices[0]!.index,
+			// 	view_id: id,
+			// };
+			console.debug(`Post event ${event}`, { eventData });
+			// agent().postEvent(postBody);
+		} catch (error: any) {
+			console.debug('Error when posting event', { error });
+		}
 	}
 }
