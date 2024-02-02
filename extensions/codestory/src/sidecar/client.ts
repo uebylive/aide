@@ -383,7 +383,7 @@ export class SideCarClient {
 
 		const responseJson = await response.json();
 		console.log(responseJson);
-		return [];
+		return responseJson['completions'];
 	}
 
 
