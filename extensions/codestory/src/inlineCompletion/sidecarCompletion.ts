@@ -25,7 +25,7 @@ export type CompletionRequest = {
 	position: {
 		line: number;
 		character: number;
-		byte_offset: number;
+		byteOffset: number;
 	};
 	indentation?: string;
 	clipboard?: string;
@@ -97,7 +97,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 			position: {
 				line: position.line,
 				character: position.character,
-				byte_offset: document.offsetAt(position),
+				byteOffset: document.offsetAt(position),
 			},
 			indentation: this.getEditorIndentation(),
 			manually: context.triggerKind === InlineCompletionTriggerKind.Invoke,
