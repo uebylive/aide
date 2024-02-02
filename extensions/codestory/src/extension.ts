@@ -32,6 +32,7 @@ import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprov
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
+import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion';
 
 
 class ProgressiveTrackSymbols {
@@ -143,6 +144,12 @@ export async function activate(context: ExtensionContext) {
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup
 	await reportIndexingPercentage(sidecarClient, currentRepo);
+
+	// register the inline code completion provider
+	const completionProvider = new SidecarCompletionProvider(sidecarClient);
+	context.subscriptions.push(
+		languages.registerInlineCompletionItemProvider({ pattern: '**' }, completionProvider),
+	);
 
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);

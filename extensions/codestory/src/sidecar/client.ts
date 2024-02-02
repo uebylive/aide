@@ -12,6 +12,7 @@ import { ConversationMessage, DeepContextForView, EditFileResponse, getSideCarMo
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { getUserId } from '../utilities/uniqueId';
+import { CompletionRequest } from '../inlineCompletion/sidecarCompletion';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -342,6 +343,49 @@ export class SideCarClient {
 			}
 		}
 	}
+
+	async inlineCompletion(
+		completionRequest: CompletionRequest,
+		signal: AbortSignal,
+	): Promise<vscode.InlineCompletionItem[]> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion';
+		const body = {
+			...completionRequest,
+		};
+		const url = baseUrl.toString();
+
+		// Create an instance of AbortController
+		const controller = new AbortController();
+		const { signal: abortSignal } = controller;
+
+		// Combine the provided signal with the abortSignal
+		const combinedSignal = AbortSignal.abort([signal, abortSignal]);
+
+		// Set the combinedSignal as the signal option in the fetch request
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+			signal: combinedSignal, // Use the combined signal
+		});
+
+		// Check if the request was aborted
+		if (signal.aborted) {
+			// Send termination notification to the server
+			await fetch(url, {
+				method: 'DELETE',
+			});
+			return []; // Return an empty array or handle the aborted request accordingly
+		}
+
+		const responseJson = await response.json();
+		console.log(responseJson);
+		return [];
+	}
+
 
 	async indexRepositoryIfNotInvoked(repoRef: RepoRef): Promise<boolean> {
 		// First get the list of indexed repositories

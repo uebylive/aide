@@ -116,6 +116,11 @@
           "type": "boolean",
           "default": true,
           "description": "Disable indexing of the repository"
+        },
+        "aide.inlineCompletion.triggerMode": {
+          "type": "string",
+          "default": "automatic",
+          "description": "Set the trigger mode for inline completions, can be either of automatic or manual"
         }
       }
     }
