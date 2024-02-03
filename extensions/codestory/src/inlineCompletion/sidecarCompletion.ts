@@ -33,20 +33,25 @@ export type CompletionRequest = {
 };
 
 export type CompletionResponseChoice = {
-	index: number;
-	text: string;
-	// Range of the text to be replaced when applying the completion.
-	// The range should be limited to the current line.
-	replaceRange: {
-		start: number;
-		end: number;
-	};
+	insertText: string;
+	insertRange: {
+		startPosition: {
+			line: number;
+			character: number;
+			byteOffset: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+			byteOffset: number;
+		};
+	}
 };
 
 export type CompletionResponse = {
-	id: string;
-	choices: CompletionResponseChoice[];
-};
+	completions: CompletionResponseChoice[];
+}
+
 
 type DisplayedCompletion = {
 	id: string;
@@ -87,6 +92,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		context: InlineCompletionContext,
 		token: CancellationToken,
 	): Promise<InlineCompletionItem[] | null> {
+		console.log('we are calling the inline completion');
 		if (token?.isCancellationRequested) {
 			return null;
 		}
@@ -110,6 +116,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 
 		try {
 			this.loading = true;
+			console.log('we are doing something here');
 			const response = await this._sidecarClient.inlineCompletion(request, abortController.signal);
 			this.loading = false;
 
@@ -117,8 +124,21 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				return null;
 			}
 
-			return response;
+			// Now we generate an inline completion item from the response we got
+			const inlineCompletions = response.completions.map((choice, index) => {
+				const item = new InlineCompletionItem(
+					choice.insertText,
+					new Range(
+						new Position(choice.insertRange.startPosition.line, choice.insertRange.startPosition.character),
+						new Position(choice.insertRange.endPosition.line, choice.insertRange.endPosition.character),
+					),
+				);
+				return item;
+			});
+
+			return inlineCompletions;
 		} catch (error: any) {
+			console.log(error);
 			if (this.flyingRequestController === abortController) {
 				// the request was not replaced by a new request, set loading to false safely
 				this.loading = false;
@@ -142,7 +162,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		completion?: CompletionResponse,
 	) {
 		if (event === 'show' && completion) {
-			const comparisonId = completion.id.replace('cmpl-', '');
+			const comparisonId = 'completion-test'.replace('completion-', '');
 			const timestamp = Date.now();
 			this.displayedCompletion = {
 				id: `view-${comparisonId}-at-${timestamp}`,
