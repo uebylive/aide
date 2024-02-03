@@ -379,7 +379,7 @@ export class SideCarClient {
 		// Combine the provided signal with the abortSignal
 		// const combinedSignal = AbortSignal.abort([signal, abortSignal]);
 
-		// Set the combinedSignal as the signal option in the fetch request
+		// log the body here
 		let response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -398,6 +398,7 @@ export class SideCarClient {
 		// });
 
 		// Check if the request was aborted
+		//
 		if (signal.aborted) {
 			// Send termination notification to the server
 			await fetch(url, {

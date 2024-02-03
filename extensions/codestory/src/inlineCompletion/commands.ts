@@ -80,7 +80,7 @@ const acceptInlineCompletionNextLine = (completionProvider: SidecarCompletionPro
 
 const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider): Command => {
 	return {
-		command: 'tabby.inlineCompletion.dismiss',
+		command: 'aide.inlineCompletion.dismiss',
 		callback: () => {
 			completionProvider.handleEvent('dismiss');
 			commands.executeCommand('editor.action.inlineSuggest.hide');
@@ -88,7 +88,20 @@ const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider):
 	};
 };
 
-export const tabbyCommands = (
+const toggleInAutocomplete: Command = {
+	command: 'aide.inlineCompletion.toggleTabAutocompleteEnabled',
+	callback: () => {
+		const config = workspace.getConfiguration('aide');
+		const enabled = config.get('inlineCompletion.enableTabAutocomplete');
+		config.update(
+			'inlineCompletion.enableTabAutocomplete',
+			!enabled,
+			ConfigurationTarget.Global
+		);
+	},
+};
+
+export const sidecarCommands = (
 	completionProvider: SidecarCompletionProvider,
 ) =>
 	[
@@ -96,6 +109,7 @@ export const tabbyCommands = (
 		applyCallback,
 		triggerInlineCompletion,
 		acceptInlineCompletion,
+		toggleInAutocomplete,
 		acceptInlineCompletionNextWord(completionProvider),
 		acceptInlineCompletionNextLine(completionProvider),
 		dismissInlineCompletion(completionProvider),
