@@ -15,7 +15,10 @@ import {
 	window,
 	workspace,
 } from 'vscode';
+import { v4 as uuidV4 } from 'uuid';
 import { SideCarClient } from '../sidecar/client';
+import { disableLoadingStatus, setLoadingStatus } from './statusBar';
+
 
 export type CompletionRequest = {
 	filepath: string;
@@ -27,9 +30,11 @@ export type CompletionRequest = {
 		character: number;
 		byteOffset: number;
 	};
+	requestId: string;
 	indentation?: string;
 	clipboard?: string;
 	manually?: boolean;
+	id: string;
 };
 
 export type CompletionResponseChoice = {
@@ -45,12 +50,12 @@ export type CompletionResponseChoice = {
 			character: number;
 			byteOffset: number;
 		};
-	}
+	};
 };
 
 export type CompletionResponse = {
 	completions: CompletionResponseChoice[];
-}
+};
 
 
 type DisplayedCompletion = {
@@ -59,12 +64,20 @@ type DisplayedCompletion = {
 	displayedAt: number;
 };
 
+// This is in ms (so we can debounce accordingly)
+// we assume 250ms for the generation to be accepted and another 100ms for the response
+// to be accepted, so its a good number to debounce on.
+export const DEBOUNCE_DELAY = 350;
+
 export class SidecarCompletionProvider implements InlineCompletionItemProvider {
+	private static debounceTimeout: NodeJS.Timeout | undefined = undefined;
 	private triggerMode: 'automatic' | 'manual' | 'disabled' = 'automatic';
 	private flyingRequestController: AbortController | undefined;
 	private loading = false;
 	private displayedCompletion: DisplayedCompletion | null = null;
 	private _sidecarClient: SideCarClient;
+	private static lastRequestId: string | null = null;
+	private static debouncing = false;
 
 	public constructor(sidecarClient: SideCarClient) {
 		this._sidecarClient = sidecarClient;
@@ -86,13 +99,47 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		return undefined;
 	}
 
+	async checkRequestPossible(): Promise<string | null> {
+		// Here we check if the request which we are working on is still valid
+		// and has not been cancelled by the user
+		// if the timer is still going on, we should debounce this request
+		// and not let it go through
+		const uuid = uuidV4();
+		SidecarCompletionProvider.lastRequestId = uuid;
+		if (SidecarCompletionProvider.debouncing) {
+			SidecarCompletionProvider.debounceTimeout?.refresh();
+			const lastUUID = await new Promise((resolve) =>
+				setTimeout(() => {
+					resolve(SidecarCompletionProvider.lastRequestId);
+				}, DEBOUNCE_DELAY)
+			);
+			if (uuid !== lastUUID) {
+				return null;
+			}
+		} else {
+			SidecarCompletionProvider.debouncing = true;
+			SidecarCompletionProvider.debounceTimeout = setTimeout(async () => {
+				SidecarCompletionProvider.debouncing = false;
+			}, DEBOUNCE_DELAY);
+			return uuid;
+		}
+		// we do not reach this condition here but typescript is stupid
+		return uuid;
+	}
+
 	async provideInlineCompletionItems(
 		document: TextDocument,
 		position: Position,
 		context: InlineCompletionContext,
 		token: CancellationToken,
 	): Promise<InlineCompletionItem[] | null> {
-		console.log('we are calling the inline completion');
+		console.log('called to provide an inline completion here');
+		const requestId = await this.checkRequestPossible();
+		if (!requestId) {
+			console.log('request was rejected');
+			return null;
+		}
+		// at this point we have the request id
 		if (token?.isCancellationRequested) {
 			return null;
 		}
@@ -105,8 +152,10 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				character: position.character,
 				byteOffset: document.offsetAt(position),
 			},
+			requestId: SidecarCompletionProvider.lastRequestId as string,
 			indentation: this.getEditorIndentation(),
 			manually: context.triggerKind === InlineCompletionTriggerKind.Invoke,
+			id: requestId,
 		};
 
 		const abortController = new AbortController();
@@ -116,7 +165,8 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 
 		try {
 			this.loading = true;
-			console.log('we are doing something here');
+			// update the status bar to show that we are loading the response
+			setLoadingStatus();
 			const response = await this._sidecarClient.inlineCompletion(request, abortController.signal);
 			this.loading = false;
 
@@ -124,20 +174,48 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				return null;
 			}
 
-			// Now we generate an inline completion item from the response we got
-			const inlineCompletions = response.completions.map((choice, index) => {
-				const item = new InlineCompletionItem(
-					choice.insertText,
-					new Range(
-						new Position(choice.insertRange.startPosition.line, choice.insertRange.startPosition.character),
-						new Position(choice.insertRange.endPosition.line, choice.insertRange.endPosition.character),
-					),
-				);
-				return item;
-			});
-
-			return inlineCompletions;
+			// Now that we have the completions we can do some each checks here
+			// and return when we have a new line and call it a day
+			for await (const completion of response) {
+				// while polling we can check if the cancellation has been requested
+				// and if so we return null here
+				if (token.isCancellationRequested) {
+					return null;
+				}
+				if (completion.completions.length === 0) {
+					return null;
+				}
+				const inlineCompletionItem = completion.completions[0];
+				if (inlineCompletionItem.insertText === '') {
+					continue;
+				}
+				// First we check if we are at the end of a line or something, so we can
+				// just send the first line and call it a day, but taking care of the fact
+				// that it might also be our first line range so being careful with that
+				if (inlineCompletionItem.insertText.endsWith('\n') && inlineCompletionItem.insertText.length > 1) {
+					// we want to remove the \n over here
+					const insertText = inlineCompletionItem.insertText.slice(0, -1);
+					// now we change the range end position as well
+					const insertRange = new Range(
+						inlineCompletionItem.insertRange.startPosition.line,
+						inlineCompletionItem.insertRange.startPosition.character,
+						inlineCompletionItem.insertRange.endPosition.line,
+						inlineCompletionItem.insertRange.endPosition.character - 1,
+					);
+					const inlineCompletion: InlineCompletionItem = {
+						insertText: insertText,
+						range: insertRange,
+					};
+					// disable the status bar loading status
+					disableLoadingStatus();
+					// the stream might still be open, so we want to send
+					// a request to the server here asking it to stop streaming
+					return [inlineCompletion];
+				}
+			}
 		} catch (error: any) {
+			// in case of errors disable the loading as well
+			disableLoadingStatus();
 			console.log(error);
 			if (this.flyingRequestController === abortController) {
 				// the request was not replaced by a new request, set loading to false safely

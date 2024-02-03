@@ -56,6 +56,19 @@ const acceptInlineCompletion: Command = {
 	},
 };
 
+const toggleInlineCompletion: Command = {
+	command: 'aide.inlineCompletion.toggle',
+	callback: () => {
+		const config = workspace.getConfiguration('aide');
+		const enabled = config.get('inlineCompletion.enableTabAutocomplete');
+		config.update(
+			'inlineCompletion.enableTabAutocomplete',
+			!enabled,
+			ConfigurationTarget.Global
+		);
+	},
+};
+
 // I have to handleEvent and then handle it on the sidecar completion provider just like how we are doing
 // it in tabby https://github.com/TabbyML/tabby/blob/main/clients/vscode/src/commands.ts#L212
 const acceptInlineCompletionNextWord = (completionProvider: SidecarCompletionProvider): Command => {
@@ -80,7 +93,7 @@ const acceptInlineCompletionNextLine = (completionProvider: SidecarCompletionPro
 
 const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider): Command => {
 	return {
-		command: 'tabby.inlineCompletion.dismiss',
+		command: 'aide.inlineCompletion.dismiss',
 		callback: () => {
 			completionProvider.handleEvent('dismiss');
 			commands.executeCommand('editor.action.inlineSuggest.hide');
@@ -88,7 +101,7 @@ const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider):
 	};
 };
 
-export const tabbyCommands = (
+export const aideCommands = (
 	completionProvider: SidecarCompletionProvider,
 ) =>
 	[
@@ -96,6 +109,7 @@ export const tabbyCommands = (
 		applyCallback,
 		triggerInlineCompletion,
 		acceptInlineCompletion,
+		toggleInlineCompletion,
 		acceptInlineCompletionNextWord(completionProvider),
 		acceptInlineCompletionNextLine(completionProvider),
 		dismissInlineCompletion(completionProvider),
