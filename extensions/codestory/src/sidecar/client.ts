@@ -8,11 +8,11 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, DeepContextForView, EditFileResponse, getSideCarModelConfiguration, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { getUserId } from '../utilities/uniqueId';
-import { CompletionRequest } from '../inlineCompletion/sidecarCompletion';
+import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -347,30 +347,55 @@ export class SideCarClient {
 	async inlineCompletion(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,
-	): Promise<vscode.InlineCompletionItem[]> {
+	): Promise<CompletionResponse> {
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/inline_completion';
+		console.log("are we over here in inline completions");
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		baseUrl.pathname = '/api/inline_completion/inline_completion';
+
 		const body = {
-			...completionRequest,
+			filepath: completionRequest.filepath,
+			language: completionRequest.language,
+			text: completionRequest.text,
+			// The cursor position in the editor
+			position: {
+				line: completionRequest.position.line,
+				character: completionRequest.position.character,
+				byteOffset: completionRequest.position.byteOffset,
+			},
+			model_config: sideCarModelConfiguration,
 		};
+		console.log("json string message");
+		console.log("" + JSON.stringify(body));
+		console.log(body);
+		// ssssssssss
 		const url = baseUrl.toString();
+		console.log(url);
 
 		// Create an instance of AbortController
 		const controller = new AbortController();
 		const { signal: abortSignal } = controller;
 
 		// Combine the provided signal with the abortSignal
-		const combinedSignal = AbortSignal.abort([signal, abortSignal]);
+		// const combinedSignal = AbortSignal.abort([signal, abortSignal]);
 
 		// Set the combinedSignal as the signal option in the fetch request
-		const response = await fetch(url, {
+		let response = await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(body),
-			signal: combinedSignal, // Use the combined signal
+			// signal: combinedSignal, // Use the combined signal
 		});
+
+		// response = await fetch(url, {
+		// 	method: 'POST',
+		// 	headers: {
+		// 		'Content-Type': 'application/json',
+		// 	},
+		// 	body: JSON.stringify(body),
+		// });
 
 		// Check if the request was aborted
 		if (signal.aborted) {
@@ -378,12 +403,14 @@ export class SideCarClient {
 			await fetch(url, {
 				method: 'DELETE',
 			});
-			return []; // Return an empty array or handle the aborted request accordingly
+			return {
+				completions: [],
+			}
 		}
 
 		const responseJson = await response.json();
 		console.log(responseJson);
-		return responseJson['completions'];
+		return responseJson;
 	}
 
 
