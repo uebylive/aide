@@ -344,6 +344,25 @@ export class SideCarClient {
 		}
 	}
 
+	async cancelInlineCompletion(
+		requestId: string,
+	): Promise<null> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion/cancel_inline_completion';
+		const body = {
+			id: requestId,
+		};
+		const url = baseUrl.toString();
+		const _ = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+		return null;
+	}
+
 	async *inlineCompletion(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,
@@ -365,6 +384,7 @@ export class SideCarClient {
 				byteOffset: completionRequest.position.byteOffset,
 			},
 			model_config: sideCarModelConfiguration,
+			id: completionRequest.id,
 		};
 		const url = baseUrl.toString();
 

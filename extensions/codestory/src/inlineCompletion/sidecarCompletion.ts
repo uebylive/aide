@@ -20,6 +20,10 @@ import { SideCarClient } from '../sidecar/client';
 import { disableLoadingStatus, setLoadingStatus } from './statusBar';
 
 
+export type CancelCompletionRequest = {
+	id: string;
+};
+
 export type CompletionRequest = {
 	filepath: string;
 	language: string;
@@ -208,6 +212,10 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 					};
 					// disable the status bar loading status
 					disableLoadingStatus();
+					// explicitly not putting the cancel request here so we do not
+					// block the main thread
+					this._sidecarClient.cancelInlineCompletion(requestId);
+
 					// the stream might still be open, so we want to send
 					// a request to the server here asking it to stop streaming
 					return [inlineCompletion];
@@ -216,6 +224,8 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		} catch (error: any) {
 			// in case of errors disable the loading as well
 			disableLoadingStatus();
+			await this._sidecarClient.cancelInlineCompletion(requestId);
+
 			console.log(error);
 			if (this.flyingRequestController === abortController) {
 				// the request was not replaced by a new request, set loading to false safely
