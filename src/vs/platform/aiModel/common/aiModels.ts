@@ -179,6 +179,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'togetherai'
 			}
 		},
+		'CodeLlama13BInstruct': {
+			name: 'CodeLlama Instruct 13B',
+			contextLength: 16384,
+			temperature: 0.2,
+			provider: {
+				type: 'togetherai'
+			}
+		},
 		'codestory/export-to-codebase-openhermes-full': {
 			name: 'CodeStory Export To Codebase',
 			contextLength: 8192,
@@ -215,8 +223,8 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'codestory': ['Gpt4', 'GPT3_5_16k'],
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
-	'togetherai': ['Mixtral', 'MistralInstruct'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'ollama']
+	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct'],
+	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct']
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
