@@ -96,7 +96,6 @@ export const getFilesInLastCommit = async (workingDirectory: string): Promise<st
 			continue;
 		}
 		const filePath = splitLineInfo[0];
-		const numTries = parseInt(splitLineInfo[1]);
 		finalFileList.push(filePath);
 	}
 	return finalFileList;
