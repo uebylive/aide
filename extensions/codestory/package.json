@@ -121,6 +121,16 @@
           "type": "string",
           "default": "automatic",
           "description": "Set the trigger mode for inline completions, can be either of automatic or manual"
+        },
+        "aide.inlineCompletion.enableTabAutocomplete": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable tab autocomplete for inline completions"
+        },
+        "aide.inlineCompletion.toggleTabAutoCompleteEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Toggle tab autocomplete for inline completions"
         }
       }
     }

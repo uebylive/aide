@@ -33,6 +33,8 @@ import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
 import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion';
+import { sidecarCommands } from './inlineCompletion/commands';
+import { statusBarFromConfig } from './inlineCompletion/statusBar';
 
 
 class ProgressiveTrackSymbols {
@@ -150,6 +152,10 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(
 		languages.registerInlineCompletionItemProvider({ pattern: '**' }, completionProvider),
 	);
+	// register the rest of the commands for the completion provider
+	sidecarCommands(completionProvider);
+	// setup the status bar
+	statusBarFromConfig();
 
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
