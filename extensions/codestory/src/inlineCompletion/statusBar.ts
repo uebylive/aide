@@ -3,19 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-// Sets up the status bar so we can show the loading and non-loading status
-// for the inline completion features.
-
 import * as vscode from 'vscode';
 
 const statusBarItemText = (enabled: boolean | undefined) =>
-	enabled ? '$(check) CodeStory' : '$(circle-slash) CodeStory';
+	enabled ? '$(check) Aide' : '$(circle-slash) Aide';
 
 const statusBarItemTooltip = (enabled: boolean | undefined) =>
 	enabled ? 'Tab autocomplete is enabled' : 'Click to enable tab autocomplete';
 
 let lastStatusBar: vscode.StatusBarItem | undefined = undefined;
-
 export function setupStatusBar(
 	enabled: boolean | undefined,
 	loading?: boolean
@@ -24,10 +20,10 @@ export function setupStatusBar(
 		vscode.StatusBarAlignment.Right
 	);
 	statusBarItem.text = loading
-		? '$(loading~spin) CodeStory'
+		? '$(loading~spin) Aide'
 		: statusBarItemText(enabled);
 	statusBarItem.tooltip = statusBarItemTooltip(enabled);
-	statusBarItem.command = 'aide.inlineCompletion.toggleTabAutocompleteEnabled';
+	statusBarItem.command = 'aide.inlineCompletion.toggle';
 
 	// Swap out with old status bar
 	if (lastStatusBar) {
@@ -38,16 +34,35 @@ export function setupStatusBar(
 
 	vscode.workspace.onDidChangeConfiguration((event) => {
 		if (event.affectsConfiguration('aide')) {
-			const config = vscode.workspace.getConfiguration('aide.inlineCompletion');
-			const enabled = config.get<boolean>('enableTabAutocomplete');
+			const config = vscode.workspace.getConfiguration('aide');
+			const enabled = config.get<boolean>('inlineCompletion.enableTabAutocomplete');
 			statusBarItem.dispose();
 			setupStatusBar(enabled);
 		}
 	});
 }
 
-export function statusBarFromConfig() {
-	const config = vscode.workspace.getConfiguration('aide.inlineCompletion');
-	const enabled = config.get<boolean>('enableTabAutocomplete');
-	setupStatusBar(enabled);
+export function startupStatusBar() {
+	const config = vscode.workspace.getConfiguration('aide');
+	const enabled = config.get<boolean>('inlineCompletion.enableTabAutocomplete');
+	if (enabled) {
+		setupStatusBar(enabled);
+	}
+}
+
+function checkInlineCompletionsEnabled(): boolean {
+	const config = vscode.workspace.getConfiguration('aide');
+	return config.get<boolean>('inlineCompletion.enableTabAutocomplete') ?? false;
+}
+
+export function setLoadingStatus() {
+	if (checkInlineCompletionsEnabled()) {
+		setupStatusBar(true, true);
+	}
+}
+
+export function disableLoadingStatus() {
+	if (checkInlineCompletionsEnabled()) {
+		setupStatusBar(true, false);
+	}
 }

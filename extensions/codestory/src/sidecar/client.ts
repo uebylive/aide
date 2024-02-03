@@ -344,13 +344,14 @@ export class SideCarClient {
 		}
 	}
 
-	async inlineCompletion(
+	async *inlineCompletion(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,
-	): Promise<CompletionResponse> {
+	): AsyncIterable<CompletionResponse> {
 		const baseUrl = new URL(this._url);
-		console.log("are we over here in inline completions");
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(
+			await vscode.modelSelection.getConfiguration()
+		);
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
 
 		const body = {
@@ -365,58 +366,28 @@ export class SideCarClient {
 			},
 			model_config: sideCarModelConfiguration,
 		};
-		console.log("json string message");
-		console.log("" + JSON.stringify(body));
-		console.log(body);
-		// ssssssssss
 		const url = baseUrl.toString();
-		console.log(url);
 
-		// Create an instance of AbortController
-		const controller = new AbortController();
-		const { signal: abortSignal } = controller;
-
-		// Combine the provided signal with the abortSignal
-		// const combinedSignal = AbortSignal.abort([signal, abortSignal]);
-
-		// log the body here
-		let response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-			// signal: combinedSignal, // Use the combined signal
-		});
-
-		// response = await fetch(url, {
-		// 	method: 'POST',
-		// 	headers: {
-		// 		'Content-Type': 'application/json',
-		// 	},
-		// 	body: JSON.stringify(body),
-		// });
-
-		// Check if the request was aborted
-		//
-		if (signal.aborted) {
-			// Send termination notification to the server
-			await fetch(url, {
-				method: 'DELETE',
-			});
-			return {
-				completions: [],
+		// Set the combinedSignal as the signal option in the fetch request
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:"{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const finalString = '{' + lineSinglePartTrimmed.slice(0, -1);
+				const editFileResponse = JSON.parse(JSON.parse(`"${finalString}"`)) as CompletionResponse;
+				yield editFileResponse;
 			}
 		}
-
-		const responseJson = await response.json();
-		console.log(responseJson);
-		return responseJson;
 	}
 
 
 	async indexRepositoryIfNotInvoked(repoRef: RepoRef): Promise<boolean> {
 		// First get the list of indexed repositories
+		// log repo ref
 		await this.waitForGreenHC();
 		console.log('fetching the status of the various repositories');
 		const response = await fetch(this.getRepoListUrl());
