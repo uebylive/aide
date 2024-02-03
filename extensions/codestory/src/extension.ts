@@ -157,7 +157,6 @@ export async function activate(context: ExtensionContext) {
 	// set the status bar as well
 	startupStatusBar();
 
-
 	// Ts-morph project management
 	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
 	const extensionSet = getExtensionsInDirectory(rootPath);

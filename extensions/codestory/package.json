@@ -126,6 +126,11 @@
           "type": "boolean",
           "default": true,
           "description": "Enable tab autocomplete for inline completions"
+        },
+        "aide.inlineCompletion.toggleTabAutoCompleteEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Toggle tab autocomplete for inline completions"
         }
       }
     }
