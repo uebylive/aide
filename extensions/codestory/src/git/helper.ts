@@ -58,8 +58,6 @@ export const getGitCurrentHash = async (workingDirectory: string): Promise<strin
 export const getFilesTrackedInWorkingDirectory = async (workingDirectory: string): Promise<string[]> => {
 	try {
 		const { stdout } = await runCommandAsync(workingDirectory, 'git', ['ls-files']);
-		logger.info('Whats the stdout');
-		logger.info(stdout);
 		const fileList = stdout.trim().split('\n').filter((x) => x.length > 0);
 		// now we join the working directory with the file name
 		const filesWithWorkingDirectory = fileList.map((file) => {
