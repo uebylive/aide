@@ -194,6 +194,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: {
 				type: 'ollama'
 			}
+		},
+		'DeepSeekCoder1.3BInstruct': {
+			name: 'DeepSeekCoder 1.3B Instruct',
+			contextLength: 16384,
+			temperature: 0.2,
+			provider: {
+				type: 'ollama'
+			}
 		}
 	},
 	providers: {
@@ -224,7 +232,7 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct']
+	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct']
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
