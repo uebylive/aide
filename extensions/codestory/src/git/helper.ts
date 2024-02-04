@@ -71,7 +71,6 @@ export const getFilesTrackedInWorkingDirectory = async (workingDirectory: string
 	}
 };
 
-
 // Returns the files which were touched in the last 2 weeks
 export const getFilesInLastCommit = async (workingDirectory: string): Promise<string[]> => {
 	// command we have to run is the following:
@@ -100,13 +99,3 @@ export const getFilesInLastCommit = async (workingDirectory: string): Promise<st
 	}
 	return finalFileList;
 };
-
-// Example usage:
-// (async () => {
-//     const remoteUrl = await getGitRemoteUrl();
-//     console.log(remoteUrl);
-//     const repoHash = await getGitCurrentHash();
-//     console.log(repoHash);
-//     const repoName = await getGitRepoName();
-//     console.log(repoName);
-// })();
