@@ -151,7 +151,7 @@ export class RequestManager {
 			} finally {
 				this.inflightRequests.delete(request);
 			}
-		}
+		};
 
 		this.cancelIrrelevantRequests();
 
@@ -276,28 +276,28 @@ class InflightRequest {
 }
 
 interface RequestCacheItem {
-	completions: InlineCompletionItemWithAnalytics[]
-	source: InlineCompletionsResultSource
+	completions: InlineCompletionItemWithAnalytics[];
+	source: InlineCompletionsResultSource;
 }
 class RequestCache {
 	private cache = new LRUCache<string, RequestCacheItem>({
 		max: 50,
-	})
+	});
 
 	private toCacheKey(key: Pick<RequestParams, 'docContext'>): string {
-		return `${key.docContext.prefix}█${key.docContext.nextNonEmptyLine}`
+		return `${key.docContext.prefix}█${key.docContext.nextNonEmptyLine}`;
 	}
 
 	public get(key: RequestParams): RequestCacheItem | undefined {
-		return this.cache.get(this.toCacheKey(key))
+		return this.cache.get(this.toCacheKey(key));
 	}
 
 	public set(key: Pick<RequestParams, 'docContext'>, item: RequestCacheItem): void {
-		this.cache.set(this.toCacheKey(key), item)
+		this.cache.set(this.toCacheKey(key), item);
 	}
 
 	public delete(key: RequestParams): void {
-		this.cache.delete(this.toCacheKey(key))
+		this.cache.delete(this.toCacheKey(key));
 	}
 }
 
@@ -312,61 +312,61 @@ export function computeIfRequestStillRelevant(
 	completions: InlineCompletionItemWithAnalytics[] | null
 ): boolean {
 	if (currentRequest.document.uri.toString() !== previousRequest.document.uri.toString()) {
-		return false
+		return false;
 	}
 
 	const currentPrefixStartLine =
-		currentRequest.docContext.position.line - (lines(currentRequest.docContext.prefix).length - 1)
+		currentRequest.docContext.position.line - (lines(currentRequest.docContext.prefix).length - 1);
 	const previousPrefixStartLine =
-		previousRequest.docContext.position.line - (lines(previousRequest.docContext.prefix).length - 1)
+		previousRequest.docContext.position.line - (lines(previousRequest.docContext.prefix).length - 1);
 
-	const sharedStartLine = Math.max(currentPrefixStartLine, previousPrefixStartLine)
+	const sharedStartLine = Math.max(currentPrefixStartLine, previousPrefixStartLine);
 
 	// Truncate both prefixes to ensure they start at the same line
-	const currentPrefixDiff = sharedStartLine - currentPrefixStartLine
-	const previousPrefixDiff = sharedStartLine - previousPrefixStartLine
+	const currentPrefixDiff = sharedStartLine - currentPrefixStartLine;
+	const previousPrefixDiff = sharedStartLine - previousPrefixStartLine;
 	if (currentPrefixDiff < 0 || previousPrefixDiff < 0) {
 		// There is no overlap in prefixes, the completions are not relevant
-		return false
+		return false;
 	}
 	const currentPrefix = currentRequest.docContext.prefix
 		.split('\n')
 		.slice(currentPrefixDiff)
-		.join('\n')
+		.join('\n');
 
 	const previousPrefix = previousRequest.docContext.prefix
 		.split('\n')
 		.slice(previousPrefixDiff)
-		.join('\n')
+		.join('\n');
 
 	// Require some overlap in the prefixes
 	if (currentPrefix === '' || previousPrefix === '') {
-		return false
+		return false;
 	}
 
-	const current = removeIndentation(currentPrefix)
+	const current = removeIndentation(currentPrefix);
 	for (const completion of completions ?? [{ insertText: '' }]) {
-		const inserted = removeIndentation(previousPrefix + completion.insertText)
+		const inserted = removeIndentation(previousPrefix + completion.insertText);
 
-		const isFullContinuation = inserted.startsWith(current) || current.startsWith(inserted)
+		const isFullContinuation = inserted.startsWith(current) || current.startsWith(inserted);
 		// We consider a completion still relevant if the prefixes and the continuation diverge up
 		// to three characters. For this, we only consider typos in the last line (= the line at the
 		// cursor position)
-		const [insertedLines, insertedLastLine] = splitLastLine(inserted)
-		const [currentLines, currentLastLine] = splitLastLine(current)
+		const [insertedLines, insertedLastLine] = splitLastLine(inserted);
+		const [currentLines, currentLastLine] = splitLastLine(current);
 		const isTypo =
-			insertedLines === currentLines && insertedLastLine.startsWith(currentLastLine.slice(0, -3))
+			insertedLines === currentLines && insertedLastLine.startsWith(currentLastLine.slice(0, -3));
 
 		if (isFullContinuation || isTypo) {
-			return true
+			return true;
 		}
 	}
 
-	return false
+	return false;
 }
 
 function splitLastLine(text: string): [string, string] {
-	const lines = text.split('\n')
-	const lastLine = lines.pop()!
-	return [lines.join('\n'), lastLine]
+	const lines = text.split('\n');
+	const lastLine = lines.pop()!;
+	return [lines.join('\n'), lastLine];
 }

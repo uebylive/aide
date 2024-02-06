@@ -2,10 +2,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import type * as vscode from 'vscode'
+import type * as vscode from 'vscode';
 
-import type { DocumentContext } from './get-current-doc-context'
-import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions'
+import type { DocumentContext } from './get-current-doc-context';
+import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
 
 export function isCompletionVisible(
     completion: InlineCompletionItemWithAnalytics,
@@ -36,14 +36,14 @@ export function isCompletionVisible(
     //   suffix that would be overwritten, will need to be part of the inserted
     //   completion (the VS Code UI does not allow character deletion). To test
     //   for this, we have to do a per-character diff.
-    const isAborted = abortSignal ? abortSignal.aborted : false
+    const isAborted = abortSignal ? abortSignal.aborted : false;
     const isMatchingPopupItem = completeSuggestWidgetSelection
         ? true
-        : completionMatchesPopupItem(completion, document, context)
-    const isMatchingSuffix = completionMatchesSuffix(completion, docContext.currentLineSuffix)
-    const isVisible = !isAborted && isMatchingPopupItem && isMatchingSuffix
+        : completionMatchesPopupItem(completion, document, context);
+    const isMatchingSuffix = completionMatchesSuffix(completion, docContext.currentLineSuffix);
+    const isVisible = !isAborted && isMatchingPopupItem && isMatchingSuffix;
 
-    return isVisible
+    return isVisible;
 }
 
 // Checks if the currently selected completion widget item overlaps with the
@@ -56,19 +56,19 @@ function completionMatchesPopupItem(
     context: vscode.InlineCompletionContext
 ): boolean {
     if (context.selectedCompletionInfo) {
-        const currentText = document.getText(context.selectedCompletionInfo.range)
-        const selectedText = context.selectedCompletionInfo.text
+        const currentText = document.getText(context.selectedCompletionInfo.range);
+        const selectedText = context.selectedCompletionInfo.text;
 
-        const insertText = completion.insertText
+        const insertText = completion.insertText;
         if (typeof insertText !== 'string') {
-            return true
+            return true;
         }
 
         if (!(currentText + insertText).startsWith(selectedText)) {
-            return false
+            return false;
         }
     }
-    return true
+    return true;
 }
 
 export function completionMatchesSuffix(
@@ -76,19 +76,19 @@ export function completionMatchesSuffix(
     currentLineSuffix: string
 ): boolean {
     if (typeof completion.insertText !== 'string') {
-        return false
+        return false;
     }
 
-    const insertion = completion.insertText
-    let j = 0
+    const insertion = completion.insertText;
+    let j = 0;
     for (let i = 0; i < insertion.length; i++) {
         if (insertion[i] === currentLineSuffix[j]) {
-            j++
+            j++;
         }
     }
     if (j === currentLineSuffix.length) {
-        return true
+        return true;
     }
 
-    return false
+    return false;
 }

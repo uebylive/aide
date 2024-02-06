@@ -2,34 +2,34 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
 
-import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay'
-import { getCompletionIntent } from './doc-context-getters'
-import { FirstCompletionDecorationHandler } from './first-completion-decoration-handler'
-import { formatCompletion } from './format-completion'
-import { getCurrentDocContext } from './get-current-doc-context'
+import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
+import { getCompletionIntent } from './doc-context-getters';
+import { FirstCompletionDecorationHandler } from './first-completion-decoration-handler';
+import { formatCompletion } from './format-completion';
+import { getCurrentDocContext } from './get-current-doc-context';
 import {
 	getInlineCompletions,
 	InlineCompletionsResultSource,
 	TriggerKind,
 	type LastInlineCompletionCandidate,
-} from './get-inline-completions'
-import { isCompletionVisible } from './is-completion-visible'
-import type { CompletionBookkeepingEvent, CompletionItemID, CompletionLogID } from './logger'
-import * as CompletionLogger from './logger'
-import { RequestManager, type RequestParams } from './request-manager'
-import { getRequestParamsFromLastCandidate } from './reuse-last-candidate'
+} from './get-inline-completions';
+import { isCompletionVisible } from './is-completion-visible';
+import type { CompletionBookkeepingEvent, CompletionItemID, CompletionLogID } from './logger';
+import * as CompletionLogger from './logger';
+import { RequestManager, type RequestParams } from './request-manager';
+import { getRequestParamsFromLastCandidate } from './reuse-last-candidate';
 import {
 	analyticsItemToAutocompleteItem,
 	suggestedAutocompleteItemsCache,
 	updateInsertRangeForVSCode,
 	type AutocompleteInlineAcceptedCommandArgs,
 	type AutocompleteItem,
-} from './suggested-autocomplete-items-cache'
-import { completionProviderConfig } from './completion-provider-config'
-import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar'
-import { SideCarClient } from '../sidecar/client'
+} from './suggested-autocomplete-items-cache';
+import { completionProviderConfig } from './completion-provider-config';
+import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
+import { SideCarClient } from '../sidecar/client';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: CompletionLogID;
@@ -66,7 +66,7 @@ export class InlineCompletionItemProvider
 	private lastManualCompletionTimestamp: number | null = null;
 	// private reportedErrorMessages: Map<string, number> = new Map()
 
-	private readonly config: Omit<Required<CodeStoryCompletionItemProviderConfig>, 'createBfgRetriever'>;
+	private readonly config: Required<CodeStoryCompletionItemProviderConfig>;
 
 	private requestManager: RequestManager;
 
@@ -127,7 +127,7 @@ export class InlineCompletionItemProvider
 			vscode.commands.registerCommand(
 				'codestory.autocomplete.inline.accepted',
 				({ codyCompletion }: AutocompleteInlineAcceptedCommandArgs) => {
-					void this.handleDidAcceptCompletionItem(codyCompletion)
+					void this.handleDidAcceptCompletionItem(codyCompletion);
 				}
 			)
 		);
@@ -143,23 +143,23 @@ export class InlineCompletionItemProvider
 		token?: vscode.CancellationToken
 	): Promise<AutocompleteResult | null> {
 		// Update the last request
-		const lastCompletionRequest = this.lastCompletionRequest
+		const lastCompletionRequest = this.lastCompletionRequest;
 		const completionRequest: CompletionRequest = {
 			document,
 			position,
 			context,
-		}
-		this.lastCompletionRequest = completionRequest
+		};
+		this.lastCompletionRequest = completionRequest;
 
 		try {
 		} catch (error) {
-			this.onError(error as Error)
-			throw error
+			this.onError(error as Error);
+			throw error;
 		}
-		const start = performance.now()
+		const start = performance.now();
 
 		if (!this.lastCompletionRequestTimestamp) {
-			this.lastCompletionRequestTimestamp = start
+			this.lastCompletionRequestTimestamp = start;
 		}
 
 		const setIsLoading = (isLoading: boolean): void => {
@@ -172,23 +172,23 @@ export class InlineCompletionItemProvider
 			} else {
 				disableLoadingStatus();
 			}
-		}
+		};
 
-		const abortController = new AbortController()
+		const abortController = new AbortController();
 		if (token) {
 			if (token.isCancellationRequested) {
-				abortController.abort()
+				abortController.abort();
 			}
-			token.onCancellationRequested(() => abortController.abort())
+			token.onCancellationRequested(() => abortController.abort());
 		}
 
 		// When the user has the completions popup open and an item is selected that does not match
 		// the text that is already in the editor, VS Code will never render the completion.
 		if (!currentEditorContentMatchesPopupItem(document, context)) {
-			return null
+			return null;
 		}
 
-		let takeSuggestWidgetSelectionIntoAccount = false
+		let takeSuggestWidgetSelectionIntoAccount = false;
 		// Only take the completion widget selection into account if the selection was actively changed
 		// by the user
 		if (
@@ -196,7 +196,7 @@ export class InlineCompletionItemProvider
 			lastCompletionRequest &&
 			onlyCompletionWidgetSelectionChanged(lastCompletionRequest, completionRequest)
 		) {
-			takeSuggestWidgetSelectionIntoAccount = true
+			takeSuggestWidgetSelectionIntoAccount = true;
 		}
 
 		const triggerKind =
@@ -207,8 +207,8 @@ export class InlineCompletionItemProvider
 					? TriggerKind.Automatic
 					: takeSuggestWidgetSelectionIntoAccount
 						? TriggerKind.SuggestWidget
-						: TriggerKind.Hover
-		this.lastManualCompletionTimestamp = null
+						: TriggerKind.Hover;
+		this.lastManualCompletionTimestamp = null;
 
 		const docContext = getCurrentDocContext({
 			document,
@@ -218,7 +218,7 @@ export class InlineCompletionItemProvider
 			// We ignore the current context selection if completeSuggestWidgetSelection is not enabled
 			context: takeSuggestWidgetSelectionIntoAccount ? context : undefined,
 			dynamicMultilineCompletions: completionProviderConfig.dynamicMultilineCompletions,
-		})
+		});
 
 		const completionIntent = getCompletionIntent({
 			document,
@@ -264,26 +264,26 @@ export class InlineCompletionItemProvider
 				artificialDelay,
 				completionIntent,
 				lastAcceptedCompletionItem: this.lastAcceptedCompletionItem,
-			})
+			});
 
 			// Avoid any further work if the completion is invalidated already.
 			if (abortController.signal.aborted) {
-				return null
+				return null;
 			}
 
 			if (!result) {
 				// Returning null will clear any existing suggestions, thus we need to reset the
 				// last candidate.
-				this.lastCandidate = undefined
-				return null
+				this.lastCandidate = undefined;
+				return null;
 			}
 
 			// Checks if the current line prefix length is less than or equal to the last triggered prefix length
 			// If true, that means user has backspaced/deleted characters to trigger a new completion request,
 			// meaning the previous result is unwanted/rejected.
 			// In that case, we mark the last candidate as "unwanted", remove it from cache, and clear the last candidate
-			const currentPrefix = docContext.currentLinePrefix
-			const lastTriggeredPrefix = this.lastCandidate?.lastTriggerDocContext.currentLinePrefix
+			const currentPrefix = docContext.currentLinePrefix;
+			const lastTriggeredPrefix = this.lastCandidate?.lastTriggerDocContext.currentLinePrefix;
 			if (
 				this.lastCandidate &&
 				lastTriggeredPrefix !== undefined &&
@@ -291,7 +291,7 @@ export class InlineCompletionItemProvider
 			) {
 				this.handleUnwantedCompletionItem(
 					getRequestParamsFromLastCandidate(document, this.lastCandidate)
-				)
+				);
 			}
 
 			const visibleItems = result.items.filter(item =>
@@ -304,15 +304,15 @@ export class InlineCompletionItemProvider
 					takeSuggestWidgetSelectionIntoAccount,
 					abortController.signal
 				)
-			)
+			);
 
 			// A completion that won't be visible in VS Code will not be returned and not be logged.
 			if (visibleItems.length === 0) {
 				// Returning null will clear any existing suggestions, thus we need to reset the
 				// last candidate.
-				this.lastCandidate = undefined
-				CompletionLogger.noResponse(result.logId)
-				return null
+				this.lastCandidate = undefined;
+				CompletionLogger.noResponse(result.logId);
+				return null;
 			}
 
 			// Since we now know that the completion is going to be visible in the UI, we save the
@@ -326,7 +326,7 @@ export class InlineCompletionItemProvider
 					lastTriggerDocContext: docContext,
 					lastTriggerSelectedCompletionInfo: context?.selectedCompletionInfo,
 					result,
-				}
+				};
 			}
 
 			const autocompleteItems = analyticsItemToAutocompleteItem(
@@ -336,12 +336,12 @@ export class InlineCompletionItemProvider
 				position,
 				visibleItems,
 				context
-			)
+			);
 
 			// Store the log ID for each completion item so that we can later map to the selected
 			// item from the ID alone
 			for (const item of autocompleteItems) {
-				suggestedAutocompleteItemsCache.add(item)
+				suggestedAutocompleteItemsCache.add(item);
 			}
 
 			// return `CompletionEvent` telemetry data to the agent command `autocomplete/execute`.
@@ -349,17 +349,17 @@ export class InlineCompletionItemProvider
 				logId: result.logId,
 				items: updateInsertRangeForVSCode(autocompleteItems),
 				completionEvent: CompletionLogger.getCompletionEvent(result.logId),
-			}
+			};
 
 			// Since VS Code has no callback as to when a completion is shown, we assume
 			// that if we pass the above visibility tests, the completion is going to be
 			// rendered in the UI
-			this.unstable_handleDidShowCompletionItem(autocompleteItems[0])
+			this.unstable_handleDidShowCompletionItem(autocompleteItems[0]);
 
-			return autocompleteResult
+			return autocompleteResult;
 		} catch (error) {
-			this.onError(error as Error)
-			throw error
+			this.onError(error as Error);
+			throw error;
 		}
 	}
 
@@ -375,63 +375,63 @@ export class InlineCompletionItemProvider
 			>
 			| CompletionItemID
 	): Promise<void> {
-		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId)
+		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 
 		if (!completion) {
-			return
+			return;
 		}
 
 		if (this.config.formatOnAccept) {
-			await formatCompletion(completion as AutocompleteItem)
+			await formatCompletion(completion as AutocompleteItem);
 		}
 
-		resetArtificialDelay()
+		resetArtificialDelay();
 
 		// When a completion is accepted, the lastCandidate should be cleared. This makes sure the
 		// log id is never reused if the completion is accepted.
-		this.clearLastCandidate()
+		this.clearLastCandidate();
 
 		// Remove the completion from the network cache
-		this.requestManager.removeFromCache(completion.requestParams)
+		this.requestManager.removeFromCache(completion.requestParams);
 
-		this.handleFirstCompletionOnboardingNotices(completion.requestParams)
+		this.handleFirstCompletionOnboardingNotices(completion.requestParams);
 
-		this.lastAcceptedCompletionItem = completion
+		this.lastAcceptedCompletionItem = completion;
 
 		CompletionLogger.accepted(
 			completion.logId,
 			completion.requestParams.document,
 			completion.analyticsItem,
 			completion.trackedRange,
-		)
+		);
 	}
 
 	/**
 	 * Handles showing a notification on the first completion acceptance.
 	 */
 	private handleFirstCompletionOnboardingNotices(request: RequestParams): void {
-		const key = 'completion.hasAcceptedFirstCompletion'
+		const key = 'completion.hasAcceptedFirstCompletion';
 		if (localStorage.get(key)) {
-			return // Already seen notice.
+			return; // Already seen notice.
 		}
 
 		// Mark as seen, so we don't show again after this.
-		void localStorage.set(key, 'true')
+		void localStorage.set(key, 'true');
 
 		if (!this.isProbablyNewInstall) {
 			// Only trigger for new installs for now, to avoid existing users from
 			// seeing this. Consider removing this check in future, because existing
 			// users would have had the key set above.
-			return
+			return;
 		}
 
 		// Trigger external notice (chat sidebar)
 		if (this.config.triggerNotice) {
-			this.config.triggerNotice({ key: 'onboarding-autocomplete' })
+			this.config.triggerNotice({ key: 'onboarding-autocomplete' });
 		}
 
 		// Show inline decoration.
-		this.firstCompletionDecoration.show(request)
+		this.firstCompletionDecoration.show(request);
 	}
 
 	/**
@@ -441,12 +441,12 @@ export class InlineCompletionItemProvider
 	public unstable_handleDidShowCompletionItem(
 		completionOrItemId: Pick<AutocompleteItem, 'logId' | 'analyticsItem'> | CompletionItemID
 	): void {
-		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId)
+		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 		if (!completion) {
-			return
+			return;
 		}
 
-		CompletionLogger.suggested(completion.logId)
+		CompletionLogger.suggested(completion.logId);
 	}
 
 	/**
@@ -462,13 +462,13 @@ export class InlineCompletionItemProvider
 			completion.logId,
 			completion.analyticsItem,
 			acceptedLength,
-		)
+		);
 	}
 
 	public async manuallyTriggerCompletion(): Promise<void> {
-		await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
-		this.lastManualCompletionTimestamp = Date.now()
-		await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger')
+		await vscode.commands.executeCommand('editor.action.inlineSuggest.hide');
+		this.lastManualCompletionTimestamp = Date.now();
+		await vscode.commands.executeCommand('editor.action.inlineSuggest.trigger');
 	}
 
 	/**
@@ -478,14 +478,14 @@ export class InlineCompletionItemProvider
 	 * - pressing backspace on a visible suggestion
 	 */
 	private handleUnwantedCompletionItem(reqContext: RequestParams): void {
-		const completionItem = this.lastCandidate?.result.items[0]
+		const completionItem = this.lastCandidate?.result.items[0];
 		if (!completionItem) {
-			return
+			return;
 		}
 
-		this.clearLastCandidate()
+		this.clearLastCandidate();
 
-		this.requestManager.removeFromCache(reqContext)
+		this.requestManager.removeFromCache(reqContext);
 	}
 
 	/**
@@ -494,7 +494,7 @@ export class InlineCompletionItemProvider
 	 * rejected as a result of that.
 	 */
 	public clearLastCandidate(): void {
-		this.lastCandidate = undefined
+		this.lastCandidate = undefined;
 	}
 
 	/**
@@ -526,12 +526,12 @@ export class InlineCompletionItemProvider
 
 	public dispose(): void {
 		for (const disposable of this.disposables) {
-			disposable.dispose()
+			disposable.dispose();
 		}
 	}
 }
 
-let globalInvocationSequenceForTracer = 0
+const globalInvocationSequenceForTracer = 0;
 
 
 // Check if the current text in the editor overlaps with the currently selected
@@ -551,14 +551,14 @@ function currentEditorContentMatchesPopupItem(
 	context: vscode.InlineCompletionContext
 ): boolean {
 	if (context.selectedCompletionInfo) {
-		const currentText = document.getText(context.selectedCompletionInfo.range)
-		const selectedText = context.selectedCompletionInfo.text
+		const currentText = document.getText(context.selectedCompletionInfo.range);
+		const selectedText = context.selectedCompletionInfo.text;
 
 		if (!selectedText.startsWith(currentText)) {
-			return false
+			return false;
 		}
 	}
-	return true
+	return true;
 }
 
 /**
@@ -570,27 +570,27 @@ function onlyCompletionWidgetSelectionChanged(
 	next: CompletionRequest
 ): boolean {
 	if (prev.document.uri.toString() !== next.document.uri.toString()) {
-		return false
+		return false;
 	}
 
 	if (!prev.position.isEqual(next.position)) {
-		return false
+		return false;
 	}
 
 	if (prev.context.triggerKind !== next.context.triggerKind) {
-		return false
+		return false;
 	}
 
-	const prevSelectedCompletionInfo = prev.context.selectedCompletionInfo
-	const nextSelectedCompletionInfo = next.context.selectedCompletionInfo
+	const prevSelectedCompletionInfo = prev.context.selectedCompletionInfo;
+	const nextSelectedCompletionInfo = next.context.selectedCompletionInfo;
 
 	if (!prevSelectedCompletionInfo || !nextSelectedCompletionInfo) {
-		return false
+		return false;
 	}
 
 	if (!prevSelectedCompletionInfo.range.isEqual(nextSelectedCompletionInfo.range)) {
-		return false
+		return false;
 	}
 
-	return prevSelectedCompletionInfo.text !== nextSelectedCompletionInfo.text
+	return prevSelectedCompletionInfo.text !== nextSelectedCompletionInfo.text;
 }

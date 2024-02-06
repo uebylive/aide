@@ -40,4 +40,4 @@ export type ContextStrategy =
  * params waterfall. Ideally, we rely on this singleton as a source of truth for config values
  * and collapse function calls nested in `InlineCompletionItemProvider.generateCompletions()`.
  */
-export const completionProviderConfig = new CompletionProviderConfig()
+export const completionProviderConfig = new CompletionProviderConfig();

@@ -2,17 +2,17 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import type { TextDocument } from 'vscode'
+import type { TextDocument } from 'vscode';
 
-import type { DocumentContext } from './get-current-doc-context'
-import { hasCompleteFirstLine } from './text-processing'
-import { parseAndTruncateCompletion } from './text-processing/parse-and-truncate-completion'
-import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions'
+import type { DocumentContext } from './get-current-doc-context';
+import { hasCompleteFirstLine } from './text-processing';
+import { parseAndTruncateCompletion } from './text-processing/parse-and-truncate-completion';
+import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
 
 interface CanUsePartialCompletionParams {
-    document: TextDocument
-    docContext: DocumentContext
-    isDynamicMultilineCompletion: boolean
+    document: TextDocument;
+    docContext: DocumentContext;
+    isDynamicMultilineCompletion: boolean;
 }
 
 /**
@@ -30,17 +30,17 @@ export function canUsePartialCompletion(
     partialResponse: string,
     params: CanUsePartialCompletionParams
 ): InlineCompletionItemWithAnalytics | null {
-    const { docContext } = params
+    const { docContext } = params;
 
     if (!hasCompleteFirstLine(partialResponse)) {
-        return null
+        return null;
     }
 
-    const item = parseAndTruncateCompletion(partialResponse, params)
+    const item = parseAndTruncateCompletion(partialResponse, params);
 
     if (docContext.multilineTrigger) {
-        return (item.lineTruncatedCount || 0) > 0 ? item : null
+        return (item.lineTruncatedCount || 0) > 0 ? item : null;
     }
 
-    return item.insertText.trim() === '' ? null : item
+    return item.insertText.trim() === '' ? null : item;
 }

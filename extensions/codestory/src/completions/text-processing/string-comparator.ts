@@ -16,15 +16,15 @@ import levenshtein from 'js-levenshtein';
  * For more details see https://en.wikipedia.org/wiki/Levenshtein_distance
  */
 export const isAlmostTheSameString = (stringA: string, stringB: string, percentage = 0.15): boolean => {
-    const maxLength = Math.max(stringA.length, stringB.length)
-    const editOperations = levenshtein(stringA, stringB)
+    const maxLength = Math.max(stringA.length, stringB.length);
+    const editOperations = levenshtein(stringA, stringB);
 
     // Strings are the same
     if (editOperations === 0) {
-        return true
+        return true;
     }
 
-    const operationToLength = editOperations / maxLength
+    const operationToLength = editOperations / maxLength;
 
-    return percentage > operationToLength
-}
+    return percentage > operationToLength;
+};

@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 export interface LanguageConfig {
-    blockStart: string
-    blockElseTest: RegExp
-    blockEnd: string | null
-    commentStart: string
+    blockStart: string;
+    blockElseTest: RegExp;
+    blockEnd: string | null;
+    commentStart: string;
 }
 
 export function getLanguageConfig(languageId: string): LanguageConfig | null {
@@ -29,16 +29,16 @@ export function getLanguageConfig(languageId: string): LanguageConfig | null {
                 blockElseTest: /^[\t ]*} else/,
                 blockEnd: '}',
                 commentStart: '// ',
-            }
+            };
         case 'python': {
             return {
                 blockStart: ':',
                 blockElseTest: /^[\t ]*(elif |else:)/,
                 blockEnd: null,
                 commentStart: '# ',
-            }
+            };
         }
         default:
-            return null
+            return null;
     }
 }

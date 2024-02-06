@@ -296,7 +296,7 @@ async function doGetInlineCompletions(
 
 	const provider = new SidecarProvider(
 		{
-			id: 'sidecar',
+			id: logId,
 			position: requestParams.position,
 			document: requestParams.document,
 			docContext: requestParams.docContext,

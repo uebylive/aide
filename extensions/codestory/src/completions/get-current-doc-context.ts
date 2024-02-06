@@ -2,9 +2,9 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import * as vscode from 'vscode'
+import * as vscode from 'vscode';
 
-import { detectMultiline } from './detect-multiline'
+import { detectMultiline } from './detect-multiline';
 import {
     getFirstLine,
     getLastLine,
@@ -12,13 +12,13 @@ import {
     getPositionAfterTextInsertion,
     getPrevNonEmptyLine,
     lines,
-} from './text-processing'
-import { getMatchingSuffixLength } from './text-processing/process-inline-completions'
+} from './text-processing';
+import { getMatchingSuffixLength } from './text-processing/process-inline-completions';
 
 export interface DocumentContext extends DocumentDependentContext, LinesContext {
-    position: vscode.Position
-    multilineTrigger: string | null
-    multilineTriggerPosition: vscode.Position | null
+    position: vscode.Position;
+    multilineTrigger: string | null;
+    multilineTriggerPosition: vscode.Position | null;
     /**
      * A temporary workaround for the fact that we cannot modify `TextDocument` text.
      * Having these fields set on a `DocumentContext` means we can still get the full
@@ -30,29 +30,29 @@ export interface DocumentContext extends DocumentDependentContext, LinesContext 
      * and that would not require copy-pasting and modifying the whole document text
      * on every completion update or new virtual completion creation.
      */
-    injectedCompletionText?: string
-    positionWithoutInjectedCompletionText?: vscode.Position
+    injectedCompletionText?: string;
+    positionWithoutInjectedCompletionText?: vscode.Position;
 }
 
 export interface DocumentDependentContext {
-    prefix: string
-    suffix: string
+    prefix: string;
+    suffix: string;
     /**
      * This is set when the document context is looking at the selected item in the
      * suggestion widget and injects the item into the prefix.
      */
-    injectedPrefix: string | null
+    injectedPrefix: string | null;
 }
 
 interface GetCurrentDocContextParams {
-    document: vscode.TextDocument
-    position: vscode.Position
+    document: vscode.TextDocument;
+    position: vscode.Position;
     /* A number representing the maximum length of the prefix to get from the document. */
-    maxPrefixLength: number
+    maxPrefixLength: number;
     /* A number representing the maximum length of the suffix to get from the document. */
-    maxSuffixLength: number
-    context?: vscode.InlineCompletionContext
-    dynamicMultilineCompletions: boolean
+    maxSuffixLength: number;
+    context?: vscode.InlineCompletionContext;
+    dynamicMultilineCompletions: boolean;
 }
 
 /**
@@ -66,68 +66,68 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
         maxSuffixLength,
         context,
         dynamicMultilineCompletions,
-    } = params
-    const offset = document.offsetAt(position)
+    } = params;
+    const offset = document.offsetAt(position);
 
     // TODO(philipp-spiess): This requires us to read the whole document. Can we limit our ranges
     // instead?
-    const completePrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position))
+    const completePrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
     const completeSuffix = document.getText(
         new vscode.Range(position, document.positionAt(document.getText().length))
-    )
+    );
 
     // Patch the document to contain the selected completion from the popup dialog already
-    let completePrefixWithContextCompletion = completePrefix
-    let injectedPrefix = null
+    let completePrefixWithContextCompletion = completePrefix;
+    let injectedPrefix = null;
     if (context?.selectedCompletionInfo) {
-        const { range, text } = context.selectedCompletionInfo
+        const { range, text } = context.selectedCompletionInfo;
         // A selected completion info attempts to replace the specified range with the inserted text
         //
         // We assume that the end of the range equals the current position, otherwise this would not
         // inject a prefix
         if (range.end.character === position.character && range.end.line === position.line) {
-            const lastLine = lines(completePrefix).at(-1)!
-            const beforeLastLine = completePrefix.slice(0, -lastLine.length)
+            const lastLine = lines(completePrefix).at(-1)!;
+            const beforeLastLine = completePrefix.slice(0, -lastLine.length);
             completePrefixWithContextCompletion =
-                beforeLastLine + lastLine.slice(0, range.start.character) + text
-            injectedPrefix = completePrefixWithContextCompletion.slice(completePrefix.length)
+                beforeLastLine + lastLine.slice(0, range.start.character) + text;
+            injectedPrefix = completePrefixWithContextCompletion.slice(completePrefix.length);
             if (injectedPrefix === '') {
-                injectedPrefix = null
+                injectedPrefix = null;
             }
         } else {
-            console.warn('The selected completion info does not match the current position')
+            console.warn('The selected completion info does not match the current position');
         }
     }
 
-    const prefixLines = lines(completePrefixWithContextCompletion)
-    const suffixLines = lines(completeSuffix)
+    const prefixLines = lines(completePrefixWithContextCompletion);
+    const suffixLines = lines(completeSuffix);
 
-    let prefix: string
+    let prefix: string;
     if (offset > maxPrefixLength) {
-        let total = 0
-        let startLine = prefixLines.length
+        let total = 0;
+        let startLine = prefixLines.length;
         for (let i = prefixLines.length - 1; i >= 0; i--) {
             if (total + prefixLines[i].length > maxPrefixLength) {
-                break
+                break;
             }
-            startLine = i
-            total += prefixLines[i].length
+            startLine = i;
+            total += prefixLines[i].length;
         }
-        prefix = prefixLines.slice(startLine).join('\n')
+        prefix = prefixLines.slice(startLine).join('\n');
     } else {
-        prefix = prefixLines.join('\n')
+        prefix = prefixLines.join('\n');
     }
 
-    let totalSuffix = 0
-    let endLine = 0
+    let totalSuffix = 0;
+    let endLine = 0;
     for (let i = 0; i < suffixLines.length; i++) {
         if (totalSuffix + suffixLines[i].length > maxSuffixLength) {
-            break
+            break;
         }
-        endLine = i + 1
-        totalSuffix += suffixLines[i].length
+        endLine = i + 1;
+        totalSuffix += suffixLines[i].length;
     }
-    const suffix = suffixLines.slice(0, endLine).join('\n')
+    const suffix = suffixLines.slice(0, endLine).join('\n');
 
     return getDerivedDocContext({
         position,
@@ -138,14 +138,14 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
             suffix,
             injectedPrefix,
         },
-    })
+    });
 }
 
 interface GetDerivedDocContextParams {
-    languageId: string
-    position: vscode.Position
-    documentDependentContext: DocumentDependentContext
-    dynamicMultilineCompletions: boolean
+    languageId: string;
+    position: vscode.Position;
+    documentDependentContext: DocumentDependentContext;
+    dynamicMultilineCompletions: boolean;
 }
 
 /**
@@ -153,15 +153,15 @@ interface GetDerivedDocContextParams {
  * Used if the document context needs to be calculated for the updated text but there's no `document` instance for that.
  */
 export function getDerivedDocContext(params: GetDerivedDocContextParams): DocumentContext {
-    const { position, documentDependentContext, languageId, dynamicMultilineCompletions } = params
-    const linesContext = getLinesContext(documentDependentContext)
+    const { position, documentDependentContext, languageId, dynamicMultilineCompletions } = params;
+    const linesContext = getLinesContext(documentDependentContext);
 
     const { multilineTrigger, multilineTriggerPosition } = detectMultiline({
         docContext: { ...linesContext, ...documentDependentContext },
         languageId,
         dynamicMultilineCompletions,
         position,
-    })
+    });
 
     return {
         ...documentDependentContext,
@@ -169,7 +169,7 @@ export function getDerivedDocContext(params: GetDerivedDocContextParams): Docume
         position,
         multilineTrigger,
         multilineTriggerPosition,
-    }
+    };
 }
 
 /**
@@ -186,10 +186,10 @@ export function getDerivedDocContext(params: GetDerivedDocContextParams): Docume
  *       When inserting `2` into: `f(1, █);`, the document context will look like this `f(1, 2);█`
  */
 interface InsertIntoDocContextParams {
-    docContext: DocumentContext
-    insertText: string
-    languageId: string
-    dynamicMultilineCompletions: boolean
+    docContext: DocumentContext;
+    insertText: string;
+    languageId: string;
+    dynamicMultilineCompletions: boolean;
 }
 
 export function insertIntoDocContext(params: InsertIntoDocContextParams): DocumentContext {
@@ -199,9 +199,9 @@ export function insertIntoDocContext(params: InsertIntoDocContextParams): Docume
         dynamicMultilineCompletions,
         docContext,
         docContext: { position, prefix, suffix, currentLineSuffix },
-    } = params
+    } = params;
 
-    const updatedPosition = getPositionAfterTextInsertion(position, insertText)
+    const updatedPosition = getPositionAfterTextInsertion(position, insertText);
 
     const updatedDocContext = getDerivedDocContext({
         languageId,
@@ -214,43 +214,43 @@ export function insertIntoDocContext(params: InsertIntoDocContextParams): Docume
             suffix: suffix.slice(getMatchingSuffixLength(insertText, currentLineSuffix)),
             injectedPrefix: null,
         },
-    })
+    });
 
     updatedDocContext.positionWithoutInjectedCompletionText =
-        updatedDocContext.positionWithoutInjectedCompletionText || docContext.position
-    updatedDocContext.injectedCompletionText = (docContext.injectedCompletionText || '') + insertText
+        updatedDocContext.positionWithoutInjectedCompletionText || docContext.position;
+    updatedDocContext.injectedCompletionText = (docContext.injectedCompletionText || '') + insertText;
 
-    return updatedDocContext
+    return updatedDocContext;
 }
 
 export interface LinesContext {
     /** Text before the cursor on the same line. */
-    currentLinePrefix: string
+    currentLinePrefix: string;
     /** Text after the cursor on the same line. */
-    currentLineSuffix: string
+    currentLineSuffix: string;
 
-    prevNonEmptyLine: string
-    nextNonEmptyLine: string
+    prevNonEmptyLine: string;
+    nextNonEmptyLine: string;
 }
 
 interface GetLinesContextParams {
-    prefix: string
-    suffix: string
+    prefix: string;
+    suffix: string;
 }
 
 function getLinesContext(params: GetLinesContextParams): LinesContext {
-    const { prefix, suffix } = params
+    const { prefix, suffix } = params;
 
-    const currentLinePrefix = getLastLine(prefix)
-    const currentLineSuffix = getFirstLine(suffix)
+    const currentLinePrefix = getLastLine(prefix);
+    const currentLineSuffix = getFirstLine(suffix);
 
-    const prevNonEmptyLine = getPrevNonEmptyLine(prefix)
-    const nextNonEmptyLine = getNextNonEmptyLine(suffix)
+    const prevNonEmptyLine = getPrevNonEmptyLine(prefix);
+    const nextNonEmptyLine = getNextNonEmptyLine(suffix);
 
     return {
         currentLinePrefix,
         currentLineSuffix,
         prevNonEmptyLine,
         nextNonEmptyLine,
-    }
+    };
 }

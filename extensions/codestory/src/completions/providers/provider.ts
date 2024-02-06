@@ -2,11 +2,11 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import type { Position, TextDocument } from 'vscode'
+import type { Position, TextDocument } from 'vscode';
 
-import type { DocumentContext } from '../get-current-doc-context'
+import type { DocumentContext } from '../get-current-doc-context';
 
-import type { FetchCompletionResult } from './fetch-and-process-completions'
+import type { FetchCompletionResult } from './fetch-and-process-completions';
 
 export interface ProviderConfig {
 	/**
@@ -14,24 +14,24 @@ export interface ProviderConfig {
 	 * inject provider specific parameters outside of the callers of the
 	 * factory.
 	 */
-	create(options: Omit<ProviderOptions, 'id'>): Provider
+	create(options: Omit<ProviderOptions, 'id'>): Provider;
 
 	/**
 	 * Hints about the optimal context size (and length of the document prefix and suffix). It is
 	 * intended to (or possible to) be precise here because the truncation of the document
 	 * prefix/suffix uses characters, not the LLM's tokenizer.
 	 */
-	contextSizeHints: ProviderContextSizeHints
+	contextSizeHints: ProviderContextSizeHints;
 
 	/**
 	 * A string identifier for the provider config used in event logs.
 	 */
-	identifier: string
+	identifier: string;
 
 	/**
 	 * Defines which model is used with the respective provider.
 	 */
-	model: string
+	model: string;
 }
 
 interface ProviderContextSizeHints {
@@ -75,5 +75,5 @@ export abstract class Provider {
 
 	public abstract generateCompletions(
 		abortSignal: AbortSignal,
-	): AsyncGenerator<FetchCompletionResult[]>
+	): AsyncGenerator<FetchCompletionResult[]>;
 }

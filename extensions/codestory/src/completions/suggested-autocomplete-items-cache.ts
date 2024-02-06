@@ -2,23 +2,23 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { LRUCache } from 'lru-cache'
-import * as uuid from 'uuid'
-import * as vscode from 'vscode'
+import { LRUCache } from 'lru-cache';
+import * as uuid from 'uuid';
+import * as vscode from 'vscode';
 
-import type { DocumentContext } from './get-current-doc-context'
-import type { CompletionItemID, CompletionLogID } from './logger'
-import type { RequestParams } from './request-manager'
-import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions'
+import type { DocumentContext } from './get-current-doc-context';
+import type { CompletionItemID, CompletionLogID } from './logger';
+import type { RequestParams } from './request-manager';
+import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
 
 interface AutocompleteItemParams {
-    insertText: string | vscode.SnippetString
-    logId: CompletionLogID
-    range: vscode.Range
-    trackedRange: vscode.Range
-    requestParams: RequestParams
-    completionItem: InlineCompletionItemWithAnalytics
-    command?: vscode.Command
+    insertText: string | vscode.SnippetString;
+    logId: CompletionLogID;
+    range: vscode.Range;
+    trackedRange: vscode.Range;
+    requestParams: RequestParams;
+    completionItem: InlineCompletionItemWithAnalytics;
+    command?: vscode.Command;
 }
 
 export class AutocompleteItem extends vscode.InlineCompletionItem {
@@ -28,13 +28,13 @@ export class AutocompleteItem extends vscode.InlineCompletionItem {
      * rely on the object reference like the VS Code API can. This allows us to simplify external
      * API's that require the completion item to only have an ID.
      */
-    public id: CompletionItemID
+    public id: CompletionItemID;
 
     /**
      * An ID used to track the completion request lifecycle. This is used for completion analytics
      * bookkeeping.
      */
-    public logId: CompletionLogID
+    public logId: CompletionLogID;
 
     /**
      * The range needed for tracking the completion after inserting. This is needed because the
@@ -43,34 +43,34 @@ export class AutocompleteItem extends vscode.InlineCompletionItem {
      *
      * TODO: Remove the need for making having this typed as undefined.
      */
-    public trackedRange: vscode.Range | undefined
+    public trackedRange: vscode.Range | undefined;
 
     /**
      * The request params used to fetch the completion item.
      */
-    public requestParams: RequestParams
+    public requestParams: RequestParams;
 
     /**
      * The completion item used for analytics perspectives. This one is the raw completion without
      * the VS Code specific changes applied via processInlineCompletionsForVSCode.
      */
-    public analyticsItem: InlineCompletionItemWithAnalytics
+    public analyticsItem: InlineCompletionItemWithAnalytics;
 
     constructor(params: AutocompleteItemParams) {
-        const { insertText, logId, range, trackedRange, requestParams, completionItem, command } = params
+        const { insertText, logId, range, trackedRange, requestParams, completionItem, command } = params;
 
-        super(insertText, range, command)
+        super(insertText, range, command);
 
-        this.id = uuid.v4() as CompletionItemID
-        this.logId = logId
-        this.trackedRange = trackedRange
-        this.requestParams = requestParams
-        this.analyticsItem = completionItem
+        this.id = uuid.v4() as CompletionItemID;
+        this.logId = logId;
+        this.trackedRange = trackedRange;
+        this.requestParams = requestParams;
+        this.analyticsItem = completionItem;
     }
 }
 
 export interface AutocompleteInlineAcceptedCommandArgs {
-    codyCompletion: AutocompleteItem
+    codyCompletion: AutocompleteItem;
 }
 
 // Maintain a cache of recommended VS Code completion items. This allows us to find the suggestion
@@ -80,22 +80,22 @@ export interface AutocompleteInlineAcceptedCommandArgs {
 class SuggestedAutocompleteItemsCache {
     private cache = new LRUCache<CompletionItemID, AutocompleteItem>({
         max: 60,
-    })
+    });
 
     public get<T extends object>(
         completionOrItemId: CompletionItemID | T
     ): AutocompleteItem | T | undefined {
         return typeof completionOrItemId === 'string'
             ? this.cache.get(completionOrItemId)
-            : completionOrItemId
+            : completionOrItemId;
     }
 
     public add(item: AutocompleteItem): void {
-        this.cache.set(item.id, item)
+        this.cache.set(item.id, item);
     }
 }
 
-export const suggestedAutocompleteItemsCache = new SuggestedAutocompleteItemsCache()
+export const suggestedAutocompleteItemsCache = new SuggestedAutocompleteItemsCache();
 
 /**
  * Convert `InlineCompletionItemWithAnalytics` to `AutocompleteItem` suitable for bookkeeping
@@ -110,17 +110,17 @@ export function analyticsItemToAutocompleteItem(
     context: vscode.InlineCompletionContext
 ): AutocompleteItem[] {
     return items.map(item => {
-        const { insertText, range } = item
-        const currentLine = document.lineAt(position)
+        const { insertText, range } = item;
+        const currentLine = document.lineAt(position);
 
-        const start = range?.start || position
+        const start = range?.start || position;
 
         // If the completion does not have a range set it will always exclude the same line suffix,
         // so it has to overwrite the current same line suffix and reach to the end of the line.
-        const end = range?.end || currentLine.range.end
+        const end = range?.end || currentLine.range.end;
 
-        const vscodeInsertRange = new vscode.Range(start, end)
-        const trackedRange = new vscode.Range(start.line, start.character, end.line, end.character)
+        const vscodeInsertRange = new vscode.Range(start, end);
+        const trackedRange = new vscode.Range(start.line, start.character, end.line, end.character);
 
         const command = {
             title: 'Completion accepted',
@@ -131,14 +131,14 @@ export function analyticsItemToAutocompleteItem(
                     codyCompletion: undefined as any as AutocompleteItem,
                 } satisfies AutocompleteInlineAcceptedCommandArgs,
             ],
-        } satisfies vscode.Command
+        } satisfies vscode.Command;
 
         const requestParams = {
             document,
             docContext,
             selectedCompletionInfo: context.selectedCompletionInfo,
             position,
-        } satisfies RequestParams
+        } satisfies RequestParams;
 
         const autocompleteItem = new AutocompleteItem({
             insertText,
@@ -148,12 +148,12 @@ export function analyticsItemToAutocompleteItem(
             requestParams,
             completionItem: item,
             command,
-        })
+        });
 
-        command.arguments[0].codyCompletion = autocompleteItem
+        command.arguments[0].codyCompletion = autocompleteItem;
 
-        return autocompleteItem
-    })
+        return autocompleteItem;
+    });
 }
 
 /**
@@ -168,21 +168,21 @@ export function updateInsertRangeForVSCode(items: AutocompleteItem[]): Autocompl
             insertText,
             range,
             requestParams: { position, document },
-        } = item
+        } = item;
 
-        const currentLine = document.lineAt(position)
-        const currentLinePrefix = document.getText(currentLine.range.with({ end: position }))
+        const currentLine = document.lineAt(position);
+        const currentLinePrefix = document.getText(currentLine.range.with({ end: position }));
 
-        const start = currentLine.range.start
+        const start = currentLine.range.start;
         // If the completion does not have a range set it will always exclude the same line suffix,
         // so it has to overwrite the current same line suffix and reach to the end of the line.
-        const end = range?.end || currentLine.range.end
+        const end = range?.end || currentLine.range.end;
 
-        const vscodeInsertRange = new vscode.Range(start, end)
+        const vscodeInsertRange = new vscode.Range(start, end);
 
-        item.range = vscodeInsertRange
-        item.insertText = currentLinePrefix + (insertText as string)
+        item.range = vscodeInsertRange;
+        item.insertText = currentLinePrefix + (insertText as string);
 
-        return item
-    })
+        return item;
+    });
 }
