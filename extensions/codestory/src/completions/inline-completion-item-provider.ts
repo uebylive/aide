@@ -126,8 +126,8 @@ export class InlineCompletionItemProvider
 		this.disposables.push(
 			vscode.commands.registerCommand(
 				'codestory.autocomplete.inline.accepted',
-				({ codyCompletion }: AutocompleteInlineAcceptedCommandArgs) => {
-					void this.handleDidAcceptCompletionItem(codyCompletion);
+				({ aideCompletion }: AutocompleteInlineAcceptedCommandArgs) => {
+					void this.handleDidAcceptCompletionItem(aideCompletion);
 				}
 			)
 		);

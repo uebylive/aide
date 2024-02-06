@@ -32,7 +32,7 @@ export class FirstCompletionDecorationHandler {
     private readonly decorationType = vscode.window.createTextEditorDecorationType({
         after: {
             margin: '0 0 0 40px',
-            contentText: '    🎉 You just accepted your first Cody autocomplete!',
+            contentText: '  🎉 You just accepted your first Aide tab-autocomplete!',
             color: new vscode.ThemeColor('editorGhostText.foreground'),
         },
         isWholeLine: true,

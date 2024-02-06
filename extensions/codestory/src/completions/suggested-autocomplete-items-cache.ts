@@ -70,7 +70,7 @@ export class AutocompleteItem extends vscode.InlineCompletionItem {
 }
 
 export interface AutocompleteInlineAcceptedCommandArgs {
-    codyCompletion: AutocompleteItem;
+    aideCompletion: AutocompleteItem;
 }
 
 // Maintain a cache of recommended VS Code completion items. This allows us to find the suggestion
@@ -128,7 +128,7 @@ export function analyticsItemToAutocompleteItem(
             arguments: [
                 {
                     // This is going to be set to the AutocompleteItem after initialization
-                    codyCompletion: undefined as any as AutocompleteItem,
+                    aideCompletion: undefined as any as AutocompleteItem,
                 } satisfies AutocompleteInlineAcceptedCommandArgs,
             ],
         } satisfies vscode.Command;
@@ -150,7 +150,7 @@ export function analyticsItemToAutocompleteItem(
             command,
         });
 
-        command.arguments[0].codyCompletion = autocompleteItem;
+        command.arguments[0].aideCompletion = autocompleteItem;
 
         return autocompleteItem;
     });
