@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import OpenAI from 'openai';
 import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatContentReference } from '../providers/chatprovider';
+import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatContentReference } from '../completions/providers/chatprovider';
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
 import * as math from 'mathjs';

@@ -18,6 +18,7 @@ import {
 import { v4 as uuidV4 } from 'uuid';
 import { SideCarClient } from '../sidecar/client';
 import { disableLoadingStatus, setLoadingStatus } from './statusBar';
+import { currentEditorContentMatchesPopupItem } from './helpers/completionContextCheck';
 
 
 export type CancelCompletionRequest = {
@@ -140,13 +141,21 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		console.log('called to provide an inline completion here');
 		const requestId = await this.checkRequestPossible();
 		if (!requestId) {
-			console.log('request was rejected');
+			console.log('request was rejected by debounce');
 			return null;
 		}
 		// at this point we have the request id
 		if (token?.isCancellationRequested) {
 			return null;
 		}
+
+		// When the user has the completions popup open and an item is selected that does not match
+		// the text that is already in the editor, VS Code will never render the completion.
+		// this saves some request which we will be sending to the editor
+		if (!currentEditorContentMatchesPopupItem(document, context)) {
+			return null
+		}
+
 		const request: CompletionRequest = {
 			filepath: document.uri.fsPath,
 			language: document.languageId, // https://code.visualstudio.com/docs/languages/identifiers
@@ -178,12 +187,18 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				return null;
 			}
 
+			// add condition here to check if the request id is still the same
+			if (requestId !== SidecarCompletionProvider.lastRequestId) {
+				return null;
+			}
+
 			// Now that we have the completions we can do some each checks here
 			// and return when we have a new line and call it a day
 			for await (const completion of response) {
 				// while polling we can check if the cancellation has been requested
 				// and if so we return null here
 				if (token.isCancellationRequested) {
+					console.log('cancellation requested');
 					return null;
 				}
 				if (completion.completions.length === 0) {

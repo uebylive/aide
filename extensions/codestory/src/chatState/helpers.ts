@@ -5,7 +5,7 @@
 
 import * as path from 'path';
 import { Uri } from 'vscode';
-import { CSChatFileTreeData, CSChatProgressFileTree } from '../providers/chatprovider';
+import { CSChatFileTreeData, CSChatProgressFileTree } from '../completions/providers/chatprovider';
 
 
 export const createFileTreeFromPaths = (

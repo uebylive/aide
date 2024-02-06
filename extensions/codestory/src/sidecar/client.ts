@@ -13,6 +13,18 @@ import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { getUserId } from '../utilities/uniqueId';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
+import { StreamCompletionResponse } from '../completions/providers/fetch-and-process-completions';
+
+export enum CompletionStopReason {
+	/**
+	 * Used to signal to the completion processing code that we're still streaming.
+	 * Can be removed if we make `CompletionResponse.stopReason` optional. Then
+	 * `{ stopReason: undefined }` can be used instead.
+	 */
+	StreamingChunk = 'aide-streaming-chunk',
+	RequestAborted = 'aide-request-aborted',
+	RequestFinished = 'aide-request-finished',
+}
 
 export enum RepoRefBackend {
 	local = 'local',
@@ -361,6 +373,60 @@ export class SideCarClient {
 			body: JSON.stringify(body),
 		});
 		return null;
+	}
+
+	async *inlineCompletionText(
+		completionRequest: CompletionRequest,
+		signal: AbortSignal,
+	): AsyncIterable<StreamCompletionResponse> {
+		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(
+			await vscode.modelSelection.getConfiguration()
+		);
+		baseUrl.pathname = '/api/inline_completion/inline_completion';
+
+		const body = {
+			filepath: completionRequest.filepath,
+			language: completionRequest.language,
+			text: completionRequest.text,
+			// The cursor position in the editor
+			position: {
+				line: completionRequest.position.line,
+				character: completionRequest.position.character,
+				byteOffset: completionRequest.position.byteOffset,
+			},
+			model_config: sideCarModelConfiguration,
+			id: completionRequest.id,
+		};
+		const url = baseUrl.toString();
+		let finalAnswer = '';
+
+		// Set the combinedSignal as the signal option in the fetch request
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:"{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const finalString = '{' + lineSinglePartTrimmed.slice(0, -1);
+				const editFileResponse = JSON.parse(JSON.parse(`"${finalString}"`)) as CompletionResponse;
+				// take the first provided completion here
+				if (editFileResponse.completions.length > 0) {
+					finalAnswer = editFileResponse.completions[0].insertText;
+					yield {
+						completion: finalAnswer,
+						stopReason: CompletionStopReason.StreamingChunk,
+					};
+				}
+			}
+		}
+
+		return {
+			completion: finalAnswer,
+			stopReason: CompletionStopReason.RequestFinished,
+		};
 	}
 
 	async *inlineCompletion(

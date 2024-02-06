@@ -26,15 +26,16 @@ import { getUniqueId, getUserId } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
-import { CSInteractiveEditorSessionProvider } from './providers/editorSessionProvider';
+import { CSInteractiveEditorSessionProvider } from './completions/providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
-import { CSChatAgentProvider, CSChatSessionProvider } from './providers/chatprovider';
+import { CSChatAgentProvider, CSChatSessionProvider } from './completions/providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
 import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
+import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 
 
 class ProgressiveTrackSymbols {
@@ -149,17 +150,24 @@ export async function activate(context: ExtensionContext) {
 
 	// register the inline code completion provider
 	const completionProvider = new SidecarCompletionProvider(sidecarClient);
-	context.subscriptions.push(
-		languages.registerInlineCompletionItemProvider({ pattern: '**' }, completionProvider),
+	await createInlineCompletionItemProvider(
+		{
+			triggerNotice: notice => {
+				console.log(notice);
+			},
+			sidecarClient,
+		}
 	);
+	// context.subscriptions.push(
+	// 	languages.registerInlineCompletionItemProvider({ pattern: '**' }, completionProvider),
+	// );
 	// register the commands here
 	aideCommands(completionProvider);
 	// set the status bar as well
 	startupStatusBar();
 
-	// Ts-morph project management
-	const activeDirectories = readActiveDirectoriesConfiguration(rootPath);
-	const extensionSet = getExtensionsInDirectory(rootPath);
+
+
 
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();

@@ -9,8 +9,8 @@
  */
 
 import * as vscode from 'vscode';
-import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../sidecar/types';
-import { RepoRef, SideCarClient } from '../sidecar/client';
+import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper, IndentationUtils } from './editorSessionProvider';
 
 export interface EditMessage {

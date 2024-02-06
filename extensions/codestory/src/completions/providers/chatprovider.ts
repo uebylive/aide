@@ -5,23 +5,23 @@
 import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
 
-import logger from '../logger';
-import { CSChatState } from '../chatState/state';
-import { getSelectedCodeContextForExplain } from '../utilities/getSelectionContext';
-import { logChatPrompt, logSearchPrompt } from '../posthog/logChatPrompt';
-import { reportFromStreamToSearchProgress } from '../chatState/convertStreamToMessage';
-import { CodeGraph } from '../codeGraph/graph';
-import { debuggingFlow } from '../llm/recipe/debugging';
-import { ToolingEventCollection } from '../timeline/events/collection';
-import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
-import { UserMessageType, deterministicClassifier } from '../chatState/promptClassifier';
-import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
-import { RepoRef, SideCarClient } from '../sidecar/client';
-import { ProjectContext } from '../utilities/workspaceContext';
+import logger from '../../logger';
+import { CSChatState } from '../../chatState/state';
+import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
+import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
+import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
+import { CodeGraph } from '../../codeGraph/graph';
+import { debuggingFlow } from '../../llm/recipe/debugging';
+import { ToolingEventCollection } from '../../timeline/events/collection';
+import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
+import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
+import { ProjectContext } from '../../utilities/workspaceContext';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
-import { InLineAgentContextSelection } from '../sidecar/types';
-import { getUserId } from '../utilities/uniqueId';
+import { InLineAgentContextSelection } from '../../sidecar/types';
+import { getUserId } from '../../utilities/uniqueId';
 
 class CSChatParticipant implements vscode.CSChatSessionParticipantInformation {
 	name: string;

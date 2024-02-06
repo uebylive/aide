@@ -12,7 +12,7 @@ import {
 } from '../../llm/recipe/prompts';
 import { EventType } from './type';
 import { writeFileContents } from '../../llm/recipe/helpers';
-import { CSChatCancellationToken, CSChatFileTreeData, CSChatProgress, CSChatProgressContent, CSChatProgressFileTree, CSChatProgressTask } from '../../providers/chatprovider';
+import { CSChatCancellationToken, CSChatFileTreeData, CSChatProgress, CSChatProgressContent, CSChatProgressFileTree, CSChatProgressTask } from '../../completions/providers/chatprovider';
 
 interface TestExecutionHarness {
 	testScript: string;

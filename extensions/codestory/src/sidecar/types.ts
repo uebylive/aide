@@ -501,9 +501,6 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 		};
 		// @ts-ignore
 		modelRecord[key] = modelConfiguration;
-		console.log("modelRecord");
-		console.log(modelConfiguration);
-		console.log(modelRecord);
 	}
 	const providers = modelSelection.providers;
 	const finalProviders = [];
