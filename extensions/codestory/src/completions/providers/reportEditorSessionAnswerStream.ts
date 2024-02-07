@@ -206,101 +206,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 		}
 	}
 
-
-	// if (skillUsed === 'Doc' && generatedAnswer !== null) {
-	// 	// Here we will send over the updates
-	// 	const cleanedUpAnswer = extractCodeFromDocumentation(generatedAnswer.answer_up_until_now);
-	// 	if (cleanedUpAnswer === null) {
-	// 		progress.report(CSInteractiveEditorProgressItem.normalMessage('Failed to parse the output'));
-	// 		return {
-	// 			message: cleanedUpAnswer,
-	// 		};
-	// 	}
-	// 	const parsedComments = await sidecarClient.getParsedComments({
-	// 		language,
-	// 		source: cleanedUpAnswer,
-	// 	});
-	// 	const textEdits: vscode.TextEdit[] = [];
-	// 	if (parsedComments.documentation.length === 1) {
-	// 		// we can just show this snippet on top of the current expanded
-	// 		// block which has been selected
-	// 		// If this is the case, then we just have to check the indentation
-	// 		// style and apply the edits accordingly
-	// 		// 1. get the first line in the selection
-	// 		const selectionText = textDocument.getText(new vscode.Range(
-	// 			new vscode.Position(generatedAnswer.document_symbol?.start_position.line ?? 0, 0),
-	// 			new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, generatedAnswer.document_symbol?.end_position.character ?? 0),
-	// 		));
-	// 		const lines = selectionText.split(/\r\n|\r|\n/g);
-	// 		const originalDocIndentationStyle = IndentationHelper.getDocumentIndentStyle(lines, undefined);
-	// 		let originalDocIndentationLevel = ['', 0];
-	// 		if (lines.length > 0) {
-	// 			// get the style from the first line
-	// 			const firstLine = lines[0];
-	// 			originalDocIndentationLevel = IndentationHelper.guessIndentLevel(firstLine, originalDocIndentationStyle);
-	// 		}
-	// 		// Now that we have the indentation level, we can apply the edits accordingly
-	// 		const edits: vscode.TextEdit[] = [];
-	// 		const documentation = parsedComments.documentation[0];
-	// 		const documentationLines = documentation.split(/\r\n|\r|\n/g);
-	// 		const documentationIndentStyle = IndentationHelper.getDocumentIndentStyle(documentationLines, undefined);
-	// 		// Now we trim all the whitespace at the start of this line
-	// 		const fixedDocumentationLines = documentationLines.map((documentationLine) => {
-	// 			const generatedDocIndentation = IndentationHelper.guessIndentLevel(documentationLine, documentationIndentStyle);
-	// 			// Now I have to replace the indentation on the generated documentation with the one I have from the original text
-	// 			// - first I trim it
-	// 			const trimmedDocumentationLine = documentationLine.trim();
-	// 			// This is the indentation from the original document
-	// 			// @ts-ignore
-	// 			const indentationString = originalDocIndentationStyle.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(originalDocIndentationStyle.indentSize).repeat(originalDocIndentationLevel[1]);
-	// 			// original document whitespace + original document indentation for the line we are going to put it above + comments if they have any indentation
-	// 			const fixedDocumentationLine = indentationString + trimmedDocumentationLine;
-	// 			return fixedDocumentationLine;
-	// 		});
-	// 		// Now I have the start position for this answer
-	// 		const startPosition = generatedAnswer.document_symbol?.start_position.line ?? 0;
-	// 		let finalDocumentationString = fixedDocumentationLines.join('\n');
-	// 		// It needs one more \n at the end of the input
-	// 		finalDocumentationString = finalDocumentationString + '\n';
-	// 		textEdits.push(vscode.TextEdit.insert(new vscode.Position(startPosition, 0), finalDocumentationString));
-	// 		// we report back the edits
-	// 	} else {
-	// 		// we have to show the whole block as an edit
-	// 		const selectionTextRange = new vscode.Range(
-	// 			new vscode.Position(generatedAnswer.document_symbol?.start_position.line ?? 0, 0),
-	// 			new vscode.Position(generatedAnswer.document_symbol?.end_position.line ?? 0, generatedAnswer.document_symbol?.end_position.character ?? 0),
-	// 		);
-	// 		const startPositionLine = generatedAnswer.document_symbol?.start_position.line ?? 0;
-	// 		const selectionText = textDocument.getText(selectionTextRange);
-	// 		const selectionTextLines = selectionText.split(/\r\n|\r|\n/g);
-	// 		const originalDocIndentationStyle = IndentationHelper.getDocumentIndentStyle(selectionTextLines, undefined);
-	// 		let originalDocIndentationLevel = ['', 0];
-	// 		if (selectionTextLines.length > 0) {
-	// 			// get the style from the first line
-	// 			const firstLine = selectionTextLines[0];
-	// 			originalDocIndentationLevel = IndentationHelper.guessIndentLevel(firstLine, originalDocIndentationStyle);
-	// 		}
-	// 		// we are going to replace the whole block with the generated text
-	// 		const codeBlockReplacement = cleanedUpAnswer;
-	// 		const codeblockReplacementLines = codeBlockReplacement.split(/\r\n|\r|\n/g);
-	// 		// get the indent style for the code block replacement
-	// 		const codeBlockReplacementIndentStyle = IndentationHelper.getDocumentIndentStyle(codeblockReplacementLines, undefined);
-	// 		let codeBlockReplacementIndentLevel = ['', 0];
-	// 		if (codeBlockReplacement.length > 0) {
-	// 			// get the style from the first line
-	// 			const firstLine = codeBlockReplacement.split(/\r\n|\r|\n/g)[0];
-	// 			codeBlockReplacementIndentLevel = IndentationHelper.guessIndentLevel(firstLine, codeBlockReplacementIndentStyle);
-	// 		}
-	// 		const newContent = IndentationHelper.changeIndentStyle(codeblockReplacementLines, codeBlockReplacementIndentStyle, originalDocIndentationStyle).join('\n');
-	// 		textEdits.push(vscode.TextEdit.replace(selectionTextRange, newContent));
-	// 		// now we have the original doc, indent style and the new text indent style
-	// 		// we want to make sure the generated doc has the same indent level as the original doc
-	// 		// and then we want to fix the indent style on the generated doc
-	// 	}
-	// 	progress.report({
-	// 		edits: textEdits,
-	// 	});
-	// }
 	return {
 		message: null,
 	};
@@ -436,7 +341,14 @@ class StreamProcessor {
 			this.currentState = StateEnum.InitialAfterFilePath;
 			return;
 		}
-		if (line.startsWith(this.beginMarker) || line.startsWith(this.endMarker)) {
+		if (
+			line.startsWith(this.beginMarker) ||
+			line.startsWith(this.endMarker) ||
+			line.endsWith(this.endMarker) ||
+			line.endsWith(this.beginMarker) ||
+			(line.indexOf("// END:") != -1) ||
+			(line.indexOf("// BEGIN:") != -1)
+		) {
 			this.endDetected = true;
 			return;
 		}
@@ -867,7 +779,7 @@ export const convertVSCodeDiagnostic = (
 export const shouldAddLeadingStrings = (
 	model: InLineAgentLLMType | undefined,
 ): boolean => {
-	if (model == 'MistralInstruct' || model == 'Mixtral') {
+	if (model == 'MistralInstruct' || model == 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct') {
 		return true;
 	}
 	return false;
