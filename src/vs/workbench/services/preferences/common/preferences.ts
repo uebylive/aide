@@ -370,8 +370,6 @@ export const isProviderItemConfigComplete = (providerItem: IProviderItem): boole
 		}
 		case 'azure-openai': {
 			const { name, apiKey, apiBase } = providerItem as AzureOpenAIProviderConfig;
-			// If both API key and API base are absent, we'll consider it complete because the backend has defaults.
-			// If only one is absent, we'll consider it incomplete.
 			return !!name && !!apiKey && !!apiBase;
 		}
 		case 'openai-default': {
@@ -382,12 +380,11 @@ export const isProviderItemConfigComplete = (providerItem: IProviderItem): boole
 			const { name, apiKey } = providerItem as OpenAIProviderConfig;
 			return !!name && !!apiKey;
 		}
-		case 'ollama':
-			return true;
 		case 'openai-compatible': {
 			const { name, apiKey, apiBase } = providerItem as OpenAICompatibleProviderConfig;
-			// If both API key and API base are absent, then we consider it as broken.
 			return !!name && !!apiKey && !!apiBase;
 		}
+		case 'ollama':
+			return true;
 	}
 };

@@ -16,7 +16,7 @@ import { dirname } from 'vs/base/common/resources';
 import { Mutable } from 'vs/base/common/types';
 
 // platform
-import { IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, defaultModelSelectionSettings, isDefaultProviderConfig, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
+import { IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, defaultModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
 import { FileOperation, IFileService } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
@@ -69,13 +69,11 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
-			if (provider.name === 'Azure OpenAI' && (isDefaultProviderConfig(key, provider) || (provider.apiBase.length > 0 && provider.apiKey.length > 0))) {
+			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
-				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI Compatible') && ((provider.apiKey?.length ?? 0) > 0 && (provider.apiBase?.length ?? 0) > 0)) {
 				acc[key] = provider;
 			}
 			return acc as IModelProviders;
@@ -94,9 +92,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 				} else if (model.provider.type === 'codestory'
 					|| model.provider.type === 'openai-default'
 					|| model.provider.type === 'togetherai'
+					|| model.provider.type === 'openai-compatible'
 					|| model.provider.type === 'ollama') {
-					acc[key] = model;
-				} else if (model.provider.type === 'openai-compatible') {
 					acc[key] = model;
 				}
 			}
@@ -344,7 +341,7 @@ class ModelSelectionJsonSchema {
 						'type': 'object',
 						'properties': {
 							'name': {
-								'enum': ['OpenAICompatible'],
+								'enum': ['OpenAI Compatible'],
 								'description': nls.localize('modelSelection.json.openAICompatibleProvider.name', 'Name of the provider')
 							},
 							'apiKey': {
@@ -366,8 +363,8 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/openaiProvider' },
 					{ '$ref': '#/definitions/azureOpenAIProvider' },
 					{ '$ref': '#/definitions/togetherAIProvider' },
-					{ '$ref': '#/definitions/ollamaProvider' },
-					{ '$ref': '#/definitions/openAICompatibleProvider' }
+					{ '$ref': '#/definitions/openAICompatibleProvider' },
+					{ '$ref': '#/definitions/ollamaProvider' }
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -388,26 +385,16 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['codestory', 'openai-default', 'togetherai', 'ollama'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},
 				'required': ['type']
 			},
-			'openAICompatibleModelProviderConfig': {
-				'type': 'object',
-				'properties': {
-					'type': {
-						'enum': ['openai-compatible'],
-						'description': nls.localize('modelSelection.json.openAIModelProviderConfig.type', 'Type of the provider')
-					},
-				}
-			},
 			'modelProviderConfig': {
 				'oneOf': [
 					{ '$ref': '#/definitions/azureOpenAIModelProviderConfig' },
-					{ '$ref': '#/definitions/genericModelProviderConfig' },
-					{ '$ref': '#/definitions/openAICompatibleModelProviderConfig' }
+					{ '$ref': '#/definitions/genericModelProviderConfig' }
 				]
 			},
 			'model': {
