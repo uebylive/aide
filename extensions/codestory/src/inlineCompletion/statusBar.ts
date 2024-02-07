@@ -17,7 +17,7 @@ export function setupStatusBar(
 	loading?: boolean
 ) {
 	const statusBarItem = vscode.window.createStatusBarItem(
-		vscode.StatusBarAlignment.Right
+		vscode.StatusBarAlignment.Right,
 	);
 	statusBarItem.text = loading
 		? '$(loading~spin) Aide'

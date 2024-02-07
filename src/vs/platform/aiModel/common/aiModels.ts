@@ -180,7 +180,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			}
 		},
 		'CodeLlama13BInstruct': {
-			name: 'CodeLlama Instruct 13B',
+			name: 'CodeLlama 13B Instruct',
 			contextLength: 16384,
 			temperature: 0.2,
 			provider: {
@@ -203,6 +203,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'ollama'
 			}
 		},
+		'DeepSeekCoder33BInstruct': {
+			name: 'DeepSeekCoder 33B Instruct',
+			contextLength: 16384,
+			temperature: 0.2,
+			provider: {
+				type: 'togetherai'
+			}
+		},
 		'DeepSeekCoder1.3BInstruct': {
 			name: 'DeepSeekCoder 1.3B Instruct',
 			contextLength: 16384,
@@ -212,7 +220,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			}
 		},
 		'DeepSeekCoder6BInstruct': {
-			name: 'DeepSeekCoder6BInstruct',
+			name: 'DeepSeekCoder 6B Instruct',
 			contextLength: 16384,
 			temperature: 0.2,
 			provider: {
@@ -247,8 +255,8 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'codestory': ['Gpt4', 'GPT3_5_16k'],
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
-	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct']
+	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
+	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct']
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
