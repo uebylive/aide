@@ -554,6 +554,14 @@ function getProviderconfiguration(type: string, value: ModelProviderConfiguratio
 			"Ollama": {}
 		};
 	}
+	if (type === "openai-compatible") {
+		return {
+			"OpenAICompatible": {
+				"api_key": value.apiKey,
+				"api_base": value.apiBase,
+			}
+		}
+	}
 	return null;
 }
 
@@ -580,5 +588,8 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 				"llm_type": llmType,
 			}
 		};
+	}
+	if (providerConfiguration.type === 'openai-compatible') {
+		return "OpenAICompatible";
 	}
 }

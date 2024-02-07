@@ -393,8 +393,8 @@ class ModelSelectionJsonSchema {
 			},
 			'modelProviderConfig': {
 				'oneOf': [
-					{ '$ref': '#/definitions/azureOpenAIModelProviderConfig' },
-					{ '$ref': '#/definitions/genericModelProviderConfig' }
+					{ '$ref': '#/definitions/genericModelProviderConfig' },
+					{ '$ref': '#/definitions/azureOpenAIModelProviderConfig' }
 				]
 			},
 			'model': {
