@@ -18,6 +18,11 @@ import {
 import { v4 as uuidV4 } from 'uuid';
 import { SideCarClient } from '../sidecar/client';
 import { disableLoadingStatus, setLoadingStatus } from './statusBar';
+import { currentEditorContentMatchesPopupItem } from './helpers/completionContextCheck';
+import { isMiddleOfLine } from './helpers/middleOfLine';
+import { getPromptHelper, trimLastLine } from './helpers/promptWrapper';
+import { isMultiline } from './helpers/multiLine';
+import { getCachedCompletions } from './helpers/cachedCompletions';
 
 
 export type CancelCompletionRequest = {
@@ -140,13 +145,72 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		console.log('called to provide an inline completion here');
 		const requestId = await this.checkRequestPossible();
 		if (!requestId) {
-			console.log('request was rejected');
+			console.log('request was rejected by debounce');
 			return null;
 		}
 		// at this point we have the request id
 		if (token?.isCancellationRequested) {
 			return null;
 		}
+
+		const isCyclingRequest = context.triggerKind === InlineCompletionTriggerKind.Invoke;
+
+		// gets the prompt helpers
+		const promptData = await getPromptHelper(
+			document.getText(),
+			document.offsetAt(position),
+			document.uri.fsPath,
+			document.uri,
+			document.languageId,
+		);
+
+		// check if the token has been cancelled
+		if (token.isCancellationRequested) {
+			console.log('sidecar.cancellation.requested');
+			return null;
+		}
+
+		// here we check if the user is in the middle of the line
+		const middleOfLine = isMiddleOfLine(document, position);
+		if (!middleOfLine) {
+			console.log('sidecar.middleOfLine', 'ignored');
+			return null;
+		}
+
+		// we also check here if we can generate multiline completion, based on certain
+		// conditions which we need to port over, for now we assume yes by default
+		// but we can toggle this back later on
+		const isMultilineCompletionPossible = await isMultiline(
+			document,
+			position,
+			middleOfLine,
+		);
+
+		const [docTillCursor] = trimLastLine(document.getText(new Range(new Position(0, 0), position)));
+
+		// we do cache lookups right here to understand the state of the editor and if we can
+		// reuse completions from before
+		let choices = await getCachedCompletions(
+			promptData,
+			docTillCursor,
+			isMultilineCompletionPossible,
+		);
+
+		// When the user has the completions popup open and an item is selected that does not match
+		// the text that is already in the editor, VS Code will never render the completion.
+		// this saves some request which we will be sending to the editor
+		if (!currentEditorContentMatchesPopupItem(document, context)) {
+			return null;
+		}
+
+		// Simplify the check for the second condition: Are there any choices when not in cycling request mode?
+		const hasChoicesInNonCycling = !isCyclingRequest && choices !== undefined;
+
+		// Log the message if either condition is met
+		if (hasChoicesInNonCycling) {
+			console.log('codestory.foundInlineCompletions.local');
+		}
+
 		const request: CompletionRequest = {
 			filepath: document.uri.fsPath,
 			language: document.languageId, // https://code.visualstudio.com/docs/languages/identifiers
@@ -178,12 +242,18 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				return null;
 			}
 
+			// add condition here to check if the request id is still the same
+			if (requestId !== SidecarCompletionProvider.lastRequestId) {
+				return null;
+			}
+
 			// Now that we have the completions we can do some each checks here
 			// and return when we have a new line and call it a day
 			for await (const completion of response) {
 				// while polling we can check if the cancellation has been requested
 				// and if so we return null here
 				if (token.isCancellationRequested) {
+					console.log('cancellation requested');
 					return null;
 				}
 				if (completion.completions.length === 0) {

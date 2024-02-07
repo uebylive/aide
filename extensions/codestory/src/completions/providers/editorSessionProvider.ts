@@ -4,10 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { RepoRef, SideCarClient } from '../sidecar/client';
+import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { v4 as uuidv4 } from 'uuid';
-import { getCodeSelection } from '../editor/codeSelection';
-import { InEditorRequest, InLineAgentContextSelection } from '../sidecar/types';
+import { getCodeSelection } from '../../editor/codeSelection';
+import { InEditorRequest, InLineAgentContextSelection } from '../../sidecar/types';
 import { parseDiagnosticsInformation, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
 
 export enum IndentStyle {
