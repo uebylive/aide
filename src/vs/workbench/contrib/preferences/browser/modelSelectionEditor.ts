@@ -139,8 +139,8 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createModelsTable(parent: HTMLElement): void {
+		DOM.append(parent, $('h2', { class: 'table-header' }, 'Models'));
 		this.modelsTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
-		DOM.append(this.modelsTableContainer, $('h2', undefined, 'Models'));
 		this.modelsTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
 			this.modelsTableContainer,
@@ -222,8 +222,8 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createProvidersTable(parent: HTMLElement): void {
+		this.providersTableTitle = DOM.append(parent, $('h2', { class: 'table-header' }, 'Providers'));
 		this.providersTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
-		this.providersTableTitle = DOM.append(this.providersTableContainer, $('h2', undefined, 'Providers'));
 		this.providersTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
 			this.providersTableContainer,
@@ -323,13 +323,19 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
-		const heightAdjustedForProvidersTable = 560;
-		const modelsTableContainerHeight = this.dimension.height - (DOM.getDomNodePagePosition(this.headerContainer).height + heightAdjustedForProvidersTable);
-		this.modelsTableContainer.style.height = `${modelsTableContainerHeight}px`;
-		this.modelsTable.layout(modelsTableContainerHeight);
+		// I have no idea how I came up with these numbers and I won't be able to explain it to you (or myself).
+		const marginHeight = 44;
+		const paddingTop = 36;
+		const paddingBottom = 64;
+		const spacing = 24;
 
-		this.providersTableTitle.style.paddingTop = '36px';
-		this.providersTable.layout();
+		const tableContainerHeight = (this.dimension.height - marginHeight - DOM.getDomNodePagePosition(this.headerContainer).height - paddingTop - paddingBottom - spacing) / 2;
+		this.modelsTable.layout(tableContainerHeight);
+		this.modelsTableContainer.style.height = `${tableContainerHeight}px`;
+
+		this.providersTableTitle.style.marginTop = `${spacing}px`;
+		this.providersTable.layout(tableContainerHeight);
+		this.providersTableContainer.style.height = `${tableContainerHeight}px`;
 	}
 
 	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
@@ -812,7 +818,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
-		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai') {
+		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible') {
 			return { message: 'Configuration incomplete', complete: false };
 		} else if (providerType === 'codestory' || providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };

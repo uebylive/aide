@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -61,10 +61,17 @@ export interface OpenAIProviderConfig {
 	readonly apiKey?: string;
 }
 
-export interface AzureOpenAIProviderConfig {
-	readonly name: 'Azure OpenAI';
-	readonly apiBase: string;
+export interface BaseOpenAICompatibleProviderConfig {
 	readonly apiKey: string;
+	readonly apiBase: string;
+}
+
+export interface OpenAICompatibleProviderConfig extends BaseOpenAICompatibleProviderConfig {
+	readonly name: 'OpenAI Compatible';
+}
+
+export interface AzureOpenAIProviderConfig extends BaseOpenAICompatibleProviderConfig {
+	readonly name: 'Azure OpenAI';
 }
 
 export interface TogetherAIProviderConfig {
@@ -76,7 +83,7 @@ export interface OllamaProviderConfig {
 	readonly name: 'Ollama';
 }
 
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig;
 export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
@@ -84,6 +91,7 @@ export type IModelProviders =
 	| { 'openai-default': OpenAIProviderConfig }
 	| { 'azure-openai': AzureOpenAIProviderConfig }
 	| { 'togetherai': TogetherAIProviderConfig }
+	| { 'openai-compatible': OpenAICompatibleProviderConfig }
 	| { 'ollama': OllamaProviderConfig };
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
@@ -195,14 +203,6 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'togetherai'
 			}
 		},
-		'codestory/export-to-codebase-openhermes-full': {
-			name: 'CodeStory Export To Codebase',
-			contextLength: 8192,
-			temperature: 0.2,
-			provider: {
-				type: 'ollama'
-			}
-		},
 		'DeepSeekCoder33BInstruct': {
 			name: 'DeepSeekCoder 33B Instruct',
 			contextLength: 16384,
@@ -245,6 +245,11 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			name: 'Together AI',
 			apiKey: '',
 		},
+		'openai-compatible': {
+			name: 'OpenAI Compatible',
+			apiBase: '',
+			apiKey: '',
+		},
 		'ollama': {
 			name: 'Ollama'
 		}
@@ -256,24 +261,13 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct']
+	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
+	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
 	return Object.keys(supportedModels)
 		.filter(provider => supportedModels[provider as ProviderType].includes(model)) as ProviderType[];
-};
-
-export const isDefaultLanguageModelItem = (item: ILanguageModelItem) => {
-	const defaultItem = defaultModelSelectionSettings.models[item.name];
-	return defaultItem
-		&& defaultItem.contextLength === item.contextLength
-		&& defaultItem.temperature === item.temperature
-		&& defaultItem.provider.type === item.provider.type
-		&& (defaultItem.provider.type === 'azure-openai'
-			? defaultItem.provider.deploymentID === (item.provider as AzureOpenAIModelProviderConfig).deploymentID
-			: true
-		);
 };
 
 export const areLanguageModelItemsEqual = (a: ILanguageModelItem, b: ILanguageModelItem) => {
@@ -292,12 +286,12 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig
 		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI'
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible'
 			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (defaultConfig.name === 'Azure OpenAI'
-			? defaultConfig.apiBase === (config as AzureOpenAIProviderConfig).apiBase
+		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible'
+			? defaultConfig.apiBase === (config as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);
 };
@@ -308,8 +302,8 @@ export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) =>
 			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (a.name === 'Azure OpenAI'
-			? (a as AzureOpenAIProviderConfig).apiBase === (b as AzureOpenAIProviderConfig).apiBase
+		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible'
+			? (a as BaseOpenAICompatibleProviderConfig).apiBase === (b as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);
 };

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 .model-selection-editor {
-	padding: 11px 0px 0px 27px;
+	padding: 12px 0px 0px 27px;
 }
 
 /* header styling */
@@ -49,11 +49,18 @@
 
 /** Table styling **/
 
+.model-selection-editor > .model-selection-body {
+	padding-top: 36px;
+}
+
+.model-selection-editor > .model-selection-body .table-header {
+	margin-block-start: 0px;
+}
+
 .model-selection-editor > .model-selection-body .table-container {
 	width: 100%;
 	border-spacing: 0;
 	border-collapse: separate;
-	padding-top: 36px;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-tr {
@@ -222,6 +229,18 @@
 	background-size: contain;
 	background-repeat: no-repeat;
 	background-position: center;
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.openai-compatible {
+	mask-image: url('logos/openai-default.svg');
+	-webkit-mask-image: url('logos/openai-default.svg');
+	mask-size: contain;
+	-webkit-mask-size: contain;
+	mask-repeat: no-repeat;
+	-webkit-mask-repeat: no-repeat;
+	mask-position: center;
+	-webkit-mask-position: center;
+	background-color: currentColor;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.ollama {

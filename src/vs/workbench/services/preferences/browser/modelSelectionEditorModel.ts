@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from 'vs/platform/aiModel/common/aiModels';
+import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, OpenAICompatibleProviderConfig, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from 'vs/platform/aiModel/common/aiModels';
 import { EditorModel } from 'vs/workbench/common/editor/editorModel';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
 
@@ -53,7 +53,8 @@ export class ModelSelectionEditorModel extends EditorModel {
 		return {
 			name: providerItem.providerItem.name,
 			...(providerItem.providerItem.type !== 'ollama' && providerItem.providerItem.type !== 'codestory' ? { apiKey: (providerItem.providerItem as ProviderConfigsWithAPIKey).apiKey } : {}),
-			...(providerItem.providerItem.type === 'azure-openai' ? { apiBase: (providerItem.providerItem as AzureOpenAIProviderConfig).apiBase } : {})
+			...(providerItem.providerItem.type === 'azure-openai' ? { apiBase: (providerItem.providerItem as AzureOpenAIProviderConfig).apiBase } : {}),
+			...(providerItem.providerItem.type === 'openai-compatible' ? { apiBase: (providerItem.providerItem as OpenAICompatibleProviderConfig).apiBase } : {}),
 		} as ProviderConfig;
 	}
 

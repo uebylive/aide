@@ -287,7 +287,10 @@ export type InLineAgentLLMType =
 	| 'Gpt4'
 	| 'GPT3_5_16k'
 	| 'Gpt4_32k'
-	| 'Gpt4Turbo';
+	| 'Gpt4Turbo'
+	| 'DeepSeekCoder33BInstruct'
+	| 'DeepSeekCoder6BInstruct'
+	| 'DeepSeekCoder1_3BInstruct';
 
 export interface InLineAgentDocumentSymbol {
 	name: string | null;
