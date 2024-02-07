@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -61,6 +61,12 @@ export interface OpenAIProviderConfig {
 	readonly apiKey?: string;
 }
 
+export interface OpenAICompatibleProviderConfig {
+	readonly name: 'OpenAI Compatible';
+	readonly apiKey?: string;
+	readonly apiBase?: string;
+}
+
 export interface AzureOpenAIProviderConfig {
 	readonly name: 'Azure OpenAI';
 	readonly apiBase: string;
@@ -76,7 +82,7 @@ export interface OllamaProviderConfig {
 	readonly name: 'Ollama';
 }
 
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig;
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OllamaProviderConfig | OpenAICompatibleProviderConfig;
 export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
@@ -84,7 +90,8 @@ export type IModelProviders =
 	| { 'openai-default': OpenAIProviderConfig }
 	| { 'azure-openai': AzureOpenAIProviderConfig }
 	| { 'togetherai': TogetherAIProviderConfig }
-	| { 'ollama': OllamaProviderConfig };
+	| { 'ollama': OllamaProviderConfig }
+	| { 'openai-compatible': OpenAICompatibleProviderConfig };
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
@@ -256,7 +263,8 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct']
+	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
+	'openai-compatible': ['DeepSeekCoder33BInstruct'],
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {

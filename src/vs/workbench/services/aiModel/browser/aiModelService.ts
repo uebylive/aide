@@ -75,6 +75,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
+			} else if ((provider.name === 'OpenAI Compatible') && ((provider.apiKey?.length ?? 0) > 0 && (provider.apiBase?.length ?? 0) > 0)) {
+				acc[key] = provider;
 			}
 			return acc as IModelProviders;
 		}, {} as IModelProviders);
@@ -93,6 +95,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					|| model.provider.type === 'openai-default'
 					|| model.provider.type === 'togetherai'
 					|| model.provider.type === 'ollama') {
+					acc[key] = model;
+				} else if (model.provider.type === 'openai-compatible') {
 					acc[key] = model;
 				}
 			}
@@ -333,13 +337,37 @@ class ModelSelectionJsonSchema {
 					}
 				}
 			},
+			'openAICompatibleProvider': {
+				'type': 'object',
+				'properties': {
+					'openai-compatible': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['OpenAICompatible'],
+								'description': nls.localize('modelSelection.json.openAICompatibleProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.openAICompatibleProvider.apiKey', 'API key for the provider')
+							},
+							'apiBase': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.openAICompatibleProvider.apiBase', 'Base URL of the provider\'s API')
+							}
+						},
+						'required': ['name', 'apiKey', 'apiBase']
+					}
+				}
+			},
 			'providers': {
 				'oneOf': [
 					{ '$ref': '#/definitions/codestoryProvider' },
 					{ '$ref': '#/definitions/openaiProvider' },
 					{ '$ref': '#/definitions/azureOpenAIProvider' },
 					{ '$ref': '#/definitions/togetherAIProvider' },
-					{ '$ref': '#/definitions/ollamaProvider' }
+					{ '$ref': '#/definitions/ollamaProvider' },
+					{ '$ref': '#/definitions/openAICompatibleProvider' }
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -366,10 +394,20 @@ class ModelSelectionJsonSchema {
 				},
 				'required': ['type']
 			},
+			'openAICompatibleModelProviderConfig': {
+				'type': 'object',
+				'properties': {
+					'type': {
+						'enum': ['openai-compatible'],
+						'description': nls.localize('modelSelection.json.openAIModelProviderConfig.type', 'Type of the provider')
+					},
+				}
+			},
 			'modelProviderConfig': {
 				'oneOf': [
 					{ '$ref': '#/definitions/azureOpenAIModelProviderConfig' },
-					{ '$ref': '#/definitions/genericModelProviderConfig' }
+					{ '$ref': '#/definitions/genericModelProviderConfig' },
+					{ '$ref': '#/definitions/openAICompatibleModelProviderConfig' }
 				]
 			},
 			'model': {
