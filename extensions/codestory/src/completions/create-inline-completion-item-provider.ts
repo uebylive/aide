@@ -27,9 +27,6 @@ export async function createInlineCompletionItemProvider({
 	});
 
 	disposables.push(
-		// vscode.commands.registerCommand('cody.autocomplete.manual-trigger', () =>
-		// 	completionsProvider.manuallyTriggerCompletion()
-		// ),
 		vscode.languages.registerInlineCompletionItemProvider(
 			{ pattern: '**' },
 			completionsProvider
@@ -44,27 +41,4 @@ export async function createInlineCompletionItemProvider({
 			}
 		},
 	};
-}
-
-// Languages which should be disabled, but they are not present in
-// https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers
-// But they exist in the `vscode.languages.getLanguages()` return value.
-//
-// To avoid confusing users with unknown language IDs, we disable them here programmatically.
-const DISABLED_LANGUAGES = new Set(['scminput']);
-
-export async function getInlineCompletionItemProviderFilters(
-	autocompleteLanguages: Record<string, boolean>
-): Promise<vscode.DocumentFilter[]> {
-	const { '*': isEnabledForAll, ...perLanguageConfig } = autocompleteLanguages;
-	const languageIds = await vscode.languages.getLanguages();
-
-	return languageIds.flatMap(language => {
-		const enabled =
-			!DISABLED_LANGUAGES.has(language) && language in perLanguageConfig
-				? perLanguageConfig[language]
-				: isEnabledForAll;
-
-		return enabled ? [{ language, scheme: 'file' }] : [];
-	});
 }

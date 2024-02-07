@@ -107,9 +107,18 @@ export class RequestManager {
 					if (currentCompletions.length > 0) {
 						// Process regular completions that will shown to the user.
 						const completions = currentCompletions.map(result => result.completion);
+						// log the completions here
+						for (const completion of completions) {
+							console.log('sidecarprovider.preprocess.inserttext', completion.insertText);
+						}
+
 
 						// Shared post-processing logic
 						const processedCompletions = processInlineCompletions(completions, requestParams);
+						// log the processed completions here
+						for (const completion of processedCompletions) {
+							console.log('sidecarprovider.inserttext', completion.insertText);
+						}
 
 						// Cache even if the request was aborted or already fulfilled.
 						this.cache.set(requestParams, {

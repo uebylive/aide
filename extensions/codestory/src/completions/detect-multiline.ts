@@ -49,13 +49,14 @@ export function detectMultiline(params: DetectMultilineParams): DetectMultilineR
 		currentLineText.match(FUNCTION_OR_METHOD_INVOCATION_REGEX);
 
 	// Don't fire multiline completion for method or function invocations
-	if (!dynamicMultilineCompletions && isMethodOrFunctionInvocation) {
+	// TODO(skcd): We want to fire for method and function invocations as well
+	// if (!dynamicMultilineCompletions && isMethodOrFunctionInvocation) {
 
-		return {
-			multilineTrigger: null,
-			multilineTriggerPosition: null,
-		};
-	}
+	// 	return {
+	// 		multilineTrigger: null,
+	// 		multilineTriggerPosition: null,
+	// 	};
+	// }
 
 	const openingBracketMatch = getLastLine(prefix.trimEnd()).match(OPENING_BRACKET_REGEX);
 

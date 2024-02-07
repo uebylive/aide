@@ -6,9 +6,9 @@ import { insertIntoDocContext, type DocumentContext } from '../get-current-doc-c
 import { getFirstLine } from '../text-processing'
 
 interface GetUpdatedDocumentContextParams {
-    insertText: string
-    languageId: string
-    docContext: DocumentContext
+	insertText: string
+	languageId: string
+	docContext: DocumentContext
 }
 
 /**
@@ -17,26 +17,25 @@ interface GetUpdatedDocumentContextParams {
  * 3. Otherwise, returns an empty object.
  */
 export function getDynamicMultilineDocContext(
-    params: GetUpdatedDocumentContextParams
+	params: GetUpdatedDocumentContextParams
 ): Pick<DocumentContext, 'multilineTrigger' | 'multilineTriggerPosition'> | undefined {
-    const { insertText, languageId, docContext } = params;
+	const { insertText, languageId, docContext } = params;
 
-    const updatedDocContext = insertIntoDocContext({
-        languageId,
-        insertText: getFirstLine(insertText),
-        dynamicMultilineCompletions: true,
-        docContext,
-    });
+	const updatedDocContext = insertIntoDocContext({
+		languageId,
+		insertText: getFirstLine(insertText),
+		dynamicMultilineCompletions: true,
+		docContext,
+	});
 
-    const isMultilineBasedOnFirstLine = Boolean(updatedDocContext.multilineTrigger);
+	const isMultilineBasedOnFirstLine = Boolean(updatedDocContext.multilineTrigger);
 
-    if (isMultilineBasedOnFirstLine) {
+	if (isMultilineBasedOnFirstLine) {
+		return {
+			multilineTrigger: updatedDocContext.multilineTrigger,
+			multilineTriggerPosition: updatedDocContext.multilineTriggerPosition,
+		};
+	}
 
-        return {
-            multilineTrigger: updatedDocContext.multilineTrigger,
-            multilineTriggerPosition: updatedDocContext.multilineTriggerPosition,
-        };
-    }
-
-    return undefined;
+	return undefined;
 }

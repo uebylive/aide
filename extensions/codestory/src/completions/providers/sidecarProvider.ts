@@ -19,6 +19,7 @@ export class SidecarProvider extends Provider {
 	public generateCompletions(abortSignal: AbortSignal): AsyncGenerator<FetchCompletionResult[]> {
 		const { languageId, uri } = this.options.document;
 		const isDynamicMultiline = Boolean(this.options.dynamicMultilineCompletions);
+		console.log('sidecar.completion', isDynamicMultiline);
 		const fetchAndProcessCompletionsImpl = isDynamicMultiline
 			? fetchAndProcessDynamicMultilineCompletions
 			: fetchAndProcessCompletions;

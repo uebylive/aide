@@ -109,16 +109,13 @@ export class InlineCompletionItemProvider
 			// provider override this on a per-completion basis. Because that API is proposed, we
 			// can't use it and must instead resort to writing to the user's VS Code settings.
 			//
-			// The cody.autocomplete.experimental.completeSuggestWidgetSelection setting is
-			// experimental and off by default. Before turning it on by default, we need to try to
-			// find a workaround that is not silently updating the user's VS Code settings.
-			// void vscode.workspace
-			// 	.getConfiguration()
-			// 	.update(
-			// 		'editor.inlineSuggest.suppressSuggestions',
-			// 		true,
-			// 		vscode.ConfigurationTarget.Global
-			// 	)
+			void vscode.workspace
+				.getConfiguration()
+				.update(
+					'editor.inlineSuggest.suppressSuggestions',
+					true,
+					vscode.ConfigurationTarget.Global
+				)
 		}
 
 		this.requestManager = new RequestManager(sidecarClient);
@@ -139,7 +136,6 @@ export class InlineCompletionItemProvider
 		document: vscode.TextDocument,
 		position: vscode.Position,
 		context: vscode.InlineCompletionContext,
-		// Making it optional here to execute multiple suggestion in parallel from the CLI script.
 		token?: vscode.CancellationToken
 	): Promise<AutocompleteResult | null> {
 		// Update the last request
@@ -151,11 +147,6 @@ export class InlineCompletionItemProvider
 		};
 		this.lastCompletionRequest = completionRequest;
 
-		try {
-		} catch (error) {
-			this.onError(error as Error);
-			throw error;
-		}
 		const start = performance.now();
 
 		if (!this.lastCompletionRequestTimestamp) {
@@ -394,8 +385,6 @@ export class InlineCompletionItemProvider
 		// Remove the completion from the network cache
 		this.requestManager.removeFromCache(completion.requestParams);
 
-		this.handleFirstCompletionOnboardingNotices(completion.requestParams);
-
 		this.lastAcceptedCompletionItem = completion;
 
 		CompletionLogger.accepted(
@@ -404,34 +393,6 @@ export class InlineCompletionItemProvider
 			completion.analyticsItem,
 			completion.trackedRange,
 		);
-	}
-
-	/**
-	 * Handles showing a notification on the first completion acceptance.
-	 */
-	private handleFirstCompletionOnboardingNotices(request: RequestParams): void {
-		const key = 'completion.hasAcceptedFirstCompletion';
-		if (localStorage.get(key)) {
-			return; // Already seen notice.
-		}
-
-		// Mark as seen, so we don't show again after this.
-		void localStorage.set(key, 'true');
-
-		if (!this.isProbablyNewInstall) {
-			// Only trigger for new installs for now, to avoid existing users from
-			// seeing this. Consider removing this check in future, because existing
-			// users would have had the key set above.
-			return;
-		}
-
-		// Trigger external notice (chat sidebar)
-		if (this.config.triggerNotice) {
-			this.config.triggerNotice({ key: 'onboarding-autocomplete' });
-		}
-
-		// Show inline decoration.
-		this.firstCompletionDecoration.show(request);
 	}
 
 	/**

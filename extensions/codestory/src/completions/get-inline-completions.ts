@@ -183,6 +183,7 @@ async function doGetInlineCompletions(
 		lastAcceptedCompletionItem,
 		sidecarClient,
 	} = params;
+	console.log('sidecar.callingInlineCompletions', position.line, position.character);
 
 
 	// If we have a suffix in the same line as the cursor and the suffix contains any word
@@ -192,13 +193,15 @@ async function doGetInlineCompletions(
 	// VS Code will attempt to merge the remainder of the current line by characters but for
 	// words this will easily get very confusing.
 	if (triggerKind !== TriggerKind.Manual && /\w/.test(currentLineSuffix)) {
+		console.log('getInlineCompletions:abort', 'suffixContainsWordCharacters', triggerKind, currentLineSuffix);
 		return null;
-	};
+	}
 
 	// Do not trigger when the last character is a closing symbol
 	if (triggerKind !== TriggerKind.Manual && /[);\]}]$/.test(currentLinePrefix.trim())) {
+		console.log('getInlineCompletions:abort', 'lastCharacterIsClosingSymbol', triggerKind, currentLinePrefix);
 		return null;
-	};
+	}
 
 	// Do not trigger when cursor is at the start of the file ending line and the line above is empty
 	if (
@@ -249,6 +252,11 @@ async function doGetInlineCompletions(
 			})
 			: null;
 	if (resultToReuse) {
+		console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
+		// log the resuleToReuse here
+		for (const candidate of resultToReuse.items) {
+			console.log('sidecar.reuseResult', candidate.insertText);
+		}
 		return resultToReuse;
 	}
 
@@ -283,6 +291,7 @@ async function doGetInlineCompletions(
 	CompletionLogger.start(logId);
 
 	if (abortSignal?.aborted) {
+		setIsLoading?.(false);
 		return null;
 	}
 
@@ -302,8 +311,13 @@ async function doGetInlineCompletions(
 			docContext: requestParams.docContext,
 			multiline: true,
 			n: 1,
-			firstCompletionTimeout: 400,
+			// we give it a big timeout here, we are going to check
+			// if this will still work as we want it to
+			firstCompletionTimeout: 5000,
+			// we want to enable the hot streak
 			hotStreak: true,
+			// we want to generate multiline completions
+			dynamicMultilineCompletions: true,
 		},
 		sidecarClient,
 	);
@@ -314,6 +328,14 @@ async function doGetInlineCompletions(
 		isCacheEnabled: triggerKind !== TriggerKind.Manual,
 		provider,
 	});
+
+	setIsLoading?.(false);
+
+	// log the final completions which are coming from the request manager
+	for (const completion of completions) {
+		console.log('sidecar.request.manager.completion', completion.insertText);
+	}
+	console.log('sidecar.request.manager.length', logId, completions.length);
 
 	CompletionLogger.loaded(logId, requestParams, completions, source);
 

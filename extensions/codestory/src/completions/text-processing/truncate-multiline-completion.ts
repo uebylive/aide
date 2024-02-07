@@ -34,54 +34,62 @@ export function truncateMultilineCompletion(
 	suffix: string,
 	languageId: string
 ): string {
-	const config = getLanguageConfig(languageId);
+	// we are going to do an early return here
+	return completion;
+	// const config = getLanguageConfig(languageId);
+	// // console.log('sidecar.truncateMultilineCompletion', completion, prefix, suffix, languageId);
+	// console.log('sidecar.truncateMultilineCompletion.prefix', prefix);
+	// console.log('sidecar.truncateMultilineCompletion.suffix', suffix);
+	// console.log('sidecar.truncateMultilineCompletion.completion', completion);
 
-	if (!config) {
-		return completion;
-	}
+	// if (!config) {
+	// 	console.log('sidecar.truncateMultileCompletion.noconfig');
+	// 	return completion;
+	// }
 
-	// Ensure that the completion has the same or larger indentation
-	// because we rely on the indentation size to cut off the completion.
-	// TODO: add unit tests for this case. We need to update the indentation logic
-	// used in unit tests for code samples.
-	const indentedCompletion = ensureSameOrLargerIndentation(completion)
-	const lines = indentedCompletion.split('\n')
+	// // Ensure that the completion has the same or larger indentation
+	// // because we rely on the indentation size to cut off the completion.
+	// // TODO: add unit tests for this case. We need to update the indentation logic
+	// // used in unit tests for code samples.
+	// const indentedCompletion = ensureSameOrLargerIndentation(completion)
+	// const lines = indentedCompletion.split('\n')
 
-	// We use a whitespace counting approach to finding the end of the
-	// completion. To find an end, we look for the first line that is below the
-	// start scope of the completion ( calculated by the number of leading
-	// spaces or tabs)
-	const prefixLastNewline = prefix.lastIndexOf('\n')
-	const prefixIndentationWithFirstCompletionLine = prefix.slice(prefixLastNewline + 1)
-	const startIndent = indentation(prefixIndentationWithFirstCompletionLine)
-	const hasEmptyCompletionLine = prefixIndentationWithFirstCompletionLine.trim() === ''
+	// // We use a whitespace counting approach to finding the end of the
+	// // completion. To find an end, we look for the first line that is below the
+	// // start scope of the completion ( calculated by the number of leading
+	// // spaces or tabs)
+	// const prefixLastNewline = prefix.lastIndexOf('\n')
+	// const prefixIndentationWithFirstCompletionLine = prefix.slice(prefixLastNewline + 1)
+	// const startIndent = indentation(prefixIndentationWithFirstCompletionLine)
+	// const hasEmptyCompletionLine = prefixIndentationWithFirstCompletionLine.trim() === ''
 
-	const includeClosingLine = shouldIncludeClosingLine(prefixIndentationWithFirstCompletionLine, suffix)
+	// const includeClosingLine = true;
+	// // const includeClosingLine = shouldIncludeClosingLine(prefixIndentationWithFirstCompletionLine, suffix)
 
-	let cutOffIndex = lines.length
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]
+	// let cutOffIndex = lines.length
+	// for (let i = 0; i < lines.length; i++) {
+	// 	const line = lines[i]
 
-		if (i === 0 || line === '' || config.blockElseTest.test(line)) {
-			continue
-		}
+	// 	if (i === 0 || line === '' || config.blockElseTest.test(line)) {
+	// 		continue
+	// 	}
 
-		if (
-			(indentation(line) <= startIndent && !hasEmptyCompletionLine) ||
-			(indentation(line) < startIndent && hasEmptyCompletionLine)
-		) {
-			// When we find the first block below the start indentation, only
-			// include it if it is an end block
-			if (includeClosingLine && config.blockEnd && line.trim().startsWith(config.blockEnd)) {
-				cutOffIndex = i + 1
-			} else {
-				cutOffIndex = i
-			}
-			break
-		}
-	}
+	// 	if (
+	// 		(indentation(line) <= startIndent && !hasEmptyCompletionLine) ||
+	// 		(indentation(line) < startIndent && hasEmptyCompletionLine)
+	// 	) {
+	// 		// When we find the first block below the start indentation, only
+	// 		// include it if it is an end block
+	// 		if (includeClosingLine && config.blockEnd && line.trim().startsWith(config.blockEnd)) {
+	// 			cutOffIndex = i + 1
+	// 		} else {
+	// 			cutOffIndex = i
+	// 		}
+	// 		break
+	// 	}
+	// }
 
-	return lines.slice(0, cutOffIndex).join('\n')
+	// return lines.slice(0, cutOffIndex).join('\n')
 }
 
 /**

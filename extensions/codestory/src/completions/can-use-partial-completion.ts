@@ -10,9 +10,9 @@ import { parseAndTruncateCompletion } from './text-processing/parse-and-truncate
 import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
 
 interface CanUsePartialCompletionParams {
-    document: TextDocument;
-    docContext: DocumentContext;
-    isDynamicMultilineCompletion: boolean;
+	document: TextDocument;
+	docContext: DocumentContext;
+	isDynamicMultilineCompletion: boolean;
 }
 
 /**
@@ -27,20 +27,21 @@ interface CanUsePartialCompletionParams {
  *     multi-line indentation logic.
  */
 export function canUsePartialCompletion(
-    partialResponse: string,
-    params: CanUsePartialCompletionParams
+	partialResponse: string,
+	params: CanUsePartialCompletionParams
 ): InlineCompletionItemWithAnalytics | null {
-    const { docContext } = params;
+	const { docContext } = params;
 
-    if (!hasCompleteFirstLine(partialResponse)) {
-        return null;
-    }
+	if (!hasCompleteFirstLine(partialResponse)) {
+		// console.log('canUsePartialCompletion: no complete first line');
+		return null;
+	}
 
-    const item = parseAndTruncateCompletion(partialResponse, params);
+	const item = parseAndTruncateCompletion(partialResponse, params);
 
-    if (docContext.multilineTrigger) {
-        return (item.lineTruncatedCount || 0) > 0 ? item : null;
-    }
+	if (docContext.multilineTrigger) {
+		return (item.lineTruncatedCount || 0) > 0 ? item : null;
+	}
 
-    return item.insertText.trim() === '' ? null : item;
+	return item.insertText.trim() === '' ? null : item;
 }

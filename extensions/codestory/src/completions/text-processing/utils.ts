@@ -27,26 +27,26 @@ export const MULTILINE_STOP_SEQUENCE = '\n\n';
  * @returns the extracted code block
  */
 export function extractFromCodeBlock(completion: string): string {
-    if (completion.includes(OPENING_CODE_TAG)) {
-        logCompletionBookkeepingEvent('containsOpeningTag');
-        return '';
-    }
+	if (completion.includes(OPENING_CODE_TAG)) {
+		logCompletionBookkeepingEvent('containsOpeningTag');
+		return '';
+	}
 
-    const index = completion.indexOf(CLOSING_CODE_TAG);
-    if (index === -1) {
-        return completion;
-    }
+	const index = completion.indexOf(CLOSING_CODE_TAG);
+	if (index === -1) {
+		return completion;
+	}
 
-    return completion.slice(0, index);
+	return completion.slice(0, index);
 }
 
 const BAD_COMPLETION_START = /^(\p{Emoji_Presentation}|\u{200B}|\+ |- |\. )+(\s)+/u;
 export function fixBadCompletionStart(completion: string): string {
-    if (BAD_COMPLETION_START.test(completion)) {
-        return completion.replace(BAD_COMPLETION_START, '');
-    }
+	if (BAD_COMPLETION_START.test(completion)) {
+		return completion.replace(BAD_COMPLETION_START, '');
+	}
 
-    return completion;
+	return completion;
 }
 
 /**
@@ -56,10 +56,10 @@ export function fixBadCompletionStart(completion: string): string {
  * is no trailing whitespace in its input.
  */
 interface TrimmedString {
-    trimmed: string;
-    leadSpace: string;
-    rearSpace: string;
-    raw?: string;
+	trimmed: string;
+	leadSpace: string;
+	rearSpace: string;
+	raw?: string;
 }
 
 /**
@@ -80,68 +80,68 @@ interface TrimmedString {
  * will be very short or empty. In practice, a good length for tail is 1-2 lines.
  */
 export interface PrefixComponents {
-    head: TrimmedString;
-    tail: TrimmedString;
-    overlap?: string;
+	head: TrimmedString;
+	tail: TrimmedString;
+	overlap?: string;
 }
 
 // Split string into head and tail. The tail is at most the last 2 non-empty lines of the snippet
 export function getHeadAndTail(s: string): PrefixComponents {
-    const lines = s.split('\n');
-    const tailThreshold = 2;
+	const lines = s.split('\n');
+	const tailThreshold = 2;
 
-    let nonEmptyCount = 0;
-    let tailStart = -1;
-    for (let i = lines.length - 1; i >= 0; i--) {
-        if (lines[i].trim().length > 0) {
-            nonEmptyCount++;
-        }
-        if (nonEmptyCount >= tailThreshold) {
-            tailStart = i;
-            break;
-        }
-    }
+	let nonEmptyCount = 0;
+	let tailStart = -1;
+	for (let i = lines.length - 1; i >= 0; i--) {
+		if (lines[i].trim().length > 0) {
+			nonEmptyCount++;
+		}
+		if (nonEmptyCount >= tailThreshold) {
+			tailStart = i;
+			break;
+		}
+	}
 
-    let headAndTail: PrefixComponents;
-    if (tailStart === -1) {
-        headAndTail = { head: trimSpace(s), tail: trimSpace(s), overlap: s };
-    } else {
-        headAndTail = {
-            head: trimSpace(`${lines.slice(0, tailStart).join('\n')}\n`),
-            tail: trimSpace(lines.slice(tailStart).join('\n')),
-        };
-    }
+	let headAndTail: PrefixComponents;
+	if (tailStart === -1) {
+		headAndTail = { head: trimSpace(s), tail: trimSpace(s), overlap: s };
+	} else {
+		headAndTail = {
+			head: trimSpace(`${lines.slice(0, tailStart).join('\n')}\n`),
+			tail: trimSpace(lines.slice(tailStart).join('\n')),
+		};
+	}
 
-    // We learned that Anthropic is giving us worse results with trailing whitespace in the prompt.
-    // To fix this, we started to trim the prompt.
-    //
-    // However, when the prefix includes a line break, the LLM needs to know that we do not want the
-    // current line to complete and instead start a new one. For this specific case, we're injecting
-    // a line break in the trimmed prefix.
-    //
-    // This will only be added if the existing line is otherwise empty and will help especially with
-    // cases like users typing a comment and asking the LLM to provide a suggestion for the next
-    // line of code:
-    //
-    //     // Write some code
-    //     █
-    //
-    if (headAndTail.tail.rearSpace.includes('\n')) {
-        headAndTail.tail.trimmed += '\n';
-    }
+	// We learned that Anthropic is giving us worse results with trailing whitespace in the prompt.
+	// To fix this, we started to trim the prompt.
+	//
+	// However, when the prefix includes a line break, the LLM needs to know that we do not want the
+	// current line to complete and instead start a new one. For this specific case, we're injecting
+	// a line break in the trimmed prefix.
+	//
+	// This will only be added if the existing line is otherwise empty and will help especially with
+	// cases like users typing a comment and asking the LLM to provide a suggestion for the next
+	// line of code:
+	//
+	//     // Write some code
+	//     █
+	//
+	if (headAndTail.tail.rearSpace.includes('\n')) {
+		headAndTail.tail.trimmed += '\n';
+	}
 
-    return headAndTail;
+	return headAndTail;
 }
 
 function trimSpace(s: string): TrimmedString {
-    const trimmed = s.trim();
-    const headEnd = s.indexOf(trimmed);
-    return {
-        raw: s,
-        trimmed,
-        leadSpace: s.slice(0, headEnd),
-        rearSpace: s.slice(headEnd + trimmed.length),
-    };
+	const trimmed = s.trim();
+	const headEnd = s.indexOf(trimmed);
+	return {
+		raw: s,
+		trimmed,
+		leadSpace: s.slice(0, headEnd),
+		rearSpace: s.slice(headEnd + trimmed.length),
+	};
 }
 
 /*
@@ -152,81 +152,81 @@ function trimSpace(s: string): TrimmedString {
  * (the code following the cursor).
  */
 export function trimUntilSuffix(
-    insertion: string,
-    prefix: string,
-    suffix: string,
-    languageId: string
+	insertion: string,
+	prefix: string,
+	suffix: string,
+	languageId: string
 ): string {
-    const config = getLanguageConfig(languageId);
+	const config = getLanguageConfig(languageId);
 
-    insertion = insertion.trimEnd();
+	insertion = insertion.trimEnd();
 
-    const firstNonEmptySuffixLine = getFirstNonEmptyLine(suffix);
+	const firstNonEmptySuffixLine = getFirstNonEmptyLine(suffix);
 
-    // TODO: Handle case for inline suffix - remove same trailing sequence from insertion
-    // if we already have the same sequence in suffix
+	// TODO: Handle case for inline suffix - remove same trailing sequence from insertion
+	// if we already have the same sequence in suffix
 
-    if (firstNonEmptySuffixLine.length === 0) {
-        return insertion;
-    }
+	if (firstNonEmptySuffixLine.length === 0) {
+		return insertion;
+	}
 
-    const prefixLastNewLine = prefix.lastIndexOf('\n');
-    const prefixIndentationWithFirstCompletionLine = prefix.slice(prefixLastNewLine + 1);
-    const suffixIndent = indentation(firstNonEmptySuffixLine);
-    const startIndent = indentation(prefixIndentationWithFirstCompletionLine);
-    const hasEmptyCompletionLine = prefixIndentationWithFirstCompletionLine.trim() === '';
+	const prefixLastNewLine = prefix.lastIndexOf('\n');
+	const prefixIndentationWithFirstCompletionLine = prefix.slice(prefixLastNewLine + 1);
+	const suffixIndent = indentation(firstNonEmptySuffixLine);
+	const startIndent = indentation(prefixIndentationWithFirstCompletionLine);
+	const hasEmptyCompletionLine = prefixIndentationWithFirstCompletionLine.trim() === '';
 
-    const insertionLines = insertion.split('\n');
-    let cutOffIndex = insertionLines.length;
+	const insertionLines = insertion.split('\n');
+	let cutOffIndex = insertionLines.length;
 
-    for (let i = insertionLines.length - 1; i >= 0; i--) {
-        let line = insertionLines[i];
+	for (let i = insertionLines.length - 1; i >= 0; i--) {
+		let line = insertionLines[i];
 
-        // Include the current indentation of the prefix in the first line
-        if (i === 0) {
-            line = prefixIndentationWithFirstCompletionLine + line;
-        }
+		// Include the current indentation of the prefix in the first line
+		if (i === 0) {
+			line = prefixIndentationWithFirstCompletionLine + line;
+		}
 
-        const lineIndentation = indentation(line);
-        const isSameIndentation = lineIndentation <= suffixIndent;
+		const lineIndentation = indentation(line);
+		const isSameIndentation = lineIndentation <= suffixIndent;
 
-        if (
-            hasEmptyCompletionLine &&
-            config?.blockEnd &&
-            line.trim().startsWith(config.blockEnd) &&
-            startIndent === lineIndentation &&
-            insertionLines.length === 1
-        ) {
-            cutOffIndex = i;
-            break;
-        }
+		if (
+			hasEmptyCompletionLine &&
+			config?.blockEnd &&
+			line.trim().startsWith(config.blockEnd) &&
+			startIndent === lineIndentation &&
+			insertionLines.length === 1
+		) {
+			cutOffIndex = i;
+			break;
+		}
 
-        if (isSameIndentation && isAlmostTheSameString(line, firstNonEmptySuffixLine)) {
-            cutOffIndex = i;
-            break;
-        }
-    }
+		if (isSameIndentation && isAlmostTheSameString(line, firstNonEmptySuffixLine)) {
+			cutOffIndex = i;
+			break;
+		}
+	}
 
-    return insertionLines.slice(0, cutOffIndex).join('\n');
+	return insertionLines.slice(0, cutOffIndex).join('\n');
 }
 
 function getFirstNonEmptyLine(suffix: string): string {
-    const nextLineSuffix = suffix.slice(suffix.indexOf('\n'));
+	const nextLineSuffix = suffix.slice(suffix.indexOf('\n'));
 
-    for (const line of nextLineSuffix.split('\n')) {
-        if (line.trim().length > 0) {
-            return line;
-        }
-    }
+	for (const line of nextLineSuffix.split('\n')) {
+		if (line.trim().length > 0) {
+			return line;
+		}
+	}
 
-    return '';
+	return '';
 }
 
 /**
  * Trims whitespace before the first newline (if it exists).
  */
 export function trimLeadingWhitespaceUntilNewline(str: string): string {
-    return str.replace(/^\s+?(\r?\n)/, '$1');
+	return str.replace(/^\s+?(\r?\n)/, '$1');
 }
 
 /**
@@ -238,17 +238,17 @@ export function trimLeadingWhitespaceUntilNewline(str: string): string {
  * Language-specific customizations are needed here to get greater accuracy.
  */
 export function collapseDuplicativeWhitespace(prefix: string, completion: string): string {
-    if (prefix.endsWith(' ') || prefix.endsWith('\t')) {
-        completion = completion.replace(/^[\t ]+/, '');
-    }
-    return completion;
+	if (prefix.endsWith(' ') || prefix.endsWith('\t')) {
+		completion = completion.replace(/^[\t ]+/, '');
+	}
+	return completion;
 }
 
 export function removeTrailingWhitespace(text: string): string {
-    return text
-        .split('\n')
-        .map(l => l.trimEnd())
-        .join('\n');
+	return text
+		.split('\n')
+		.map(l => l.trimEnd())
+		.join('\n');
 }
 
 const INDENTATION_REGEX = /^[\t ]*/;
@@ -257,17 +257,17 @@ export const FUNCTION_OR_METHOD_INVOCATION_REGEX = /\b[^()]+\((.*)\)$/g;
 export const FUNCTION_KEYWORDS = /^(function|def|fn)/g;
 
 export const BRACKET_PAIR = {
-    '(': ')',
-    '[': ']',
-    '{': '}',
-    '<': '>',
+	'(': ')',
+	'[': ']',
+	'{': '}',
+	'<': '>',
 } as const;
 export type OpeningBracket = keyof typeof BRACKET_PAIR;
 
 export function getEditorTabSize(): number {
-    return vscode.window.activeTextEditor
-        ? (vscode.window.activeTextEditor.options.tabSize as number)
-        : 2;
+	return vscode.window.activeTextEditor
+		? (vscode.window.activeTextEditor.options.tabSize as number)
+		: 2;
 }
 
 /**
@@ -277,15 +277,15 @@ export function getEditorTabSize(): number {
  * normalizes the whitespace first using the currently enabled tabSize option.
  */
 export function indentation(line: string): number {
-    const tabSize = getEditorTabSize();
+	const tabSize = getEditorTabSize();
 
-    const regex = line.match(INDENTATION_REGEX);
-    if (regex) {
-        const whitespace = regex[0];
-        return [...whitespace].reduce((p, c) => p + (c === '\t' ? tabSize : 1), 0);
-    }
+	const regex = line.match(INDENTATION_REGEX);
+	if (regex) {
+		const whitespace = regex[0];
+		return [...whitespace].reduce((p, c) => p + (c === '\t' ? tabSize : 1), 0);
+	}
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -298,19 +298,19 @@ export function indentation(line: string): number {
  * E.g. function foo() { console.log('hello') }
  */
 function shouldIncludeClosingLineBasedOnBrackets(
-    prefixIndentationWithFirstCompletionLine: string,
-    suffix: string
+	prefixIndentationWithFirstCompletionLine: string,
+	suffix: string
 ): boolean {
-    const matches = prefixIndentationWithFirstCompletionLine.match(OPENING_BRACKET_REGEX);
+	const matches = prefixIndentationWithFirstCompletionLine.match(OPENING_BRACKET_REGEX);
 
-    if (matches && matches.length > 0) {
-        const openingBracket = matches[0] as keyof typeof BRACKET_PAIR;
-        const closingBracket = BRACKET_PAIR[openingBracket];
+	if (matches && matches.length > 0) {
+		const openingBracket = matches[0] as keyof typeof BRACKET_PAIR;
+		const closingBracket = BRACKET_PAIR[openingBracket];
 
-        return Boolean(openingBracket) && suffix.startsWith(closingBracket);
-    }
+		return Boolean(openingBracket) && suffix.startsWith(closingBracket);
+	}
 
-    return false;
+	return false;
 }
 
 /**
@@ -318,102 +318,111 @@ function shouldIncludeClosingLineBasedOnBrackets(
  * We detect this by looking at the indentation of the next non-empty line.
  */
 export function shouldIncludeClosingLine(
-    prefixIndentationWithFirstCompletionLine: string,
-    suffix: string
+	prefixIndentationWithFirstCompletionLine: string,
+	suffix: string
 ): boolean {
-    const includeClosingLineBasedOnBrackets = shouldIncludeClosingLineBasedOnBrackets(
-        prefixIndentationWithFirstCompletionLine,
-        suffix
-    );
+	const includeClosingLineBasedOnBrackets = shouldIncludeClosingLineBasedOnBrackets(
+		prefixIndentationWithFirstCompletionLine,
+		suffix
+	);
 
-    const startIndent = indentation(prefixIndentationWithFirstCompletionLine);
+	const startIndent = indentation(prefixIndentationWithFirstCompletionLine);
 
-    const nextNonEmptyLine = getNextNonEmptyLine(suffix);
+	const nextNonEmptyLine = getNextNonEmptyLine(suffix);
 
-    return indentation(nextNonEmptyLine) < startIndent || includeClosingLineBasedOnBrackets;
+	return indentation(nextNonEmptyLine) < startIndent || includeClosingLineBasedOnBrackets;
 }
 
 export function getFirstLine(text: string): string {
-    const firstLf = text.indexOf('\n');
-    const firstCrLf = text.indexOf('\r\n');
-    // There are no line breaks
-    if (firstLf === -1 && firstCrLf === -1) {
-        return text;
-    }
+	const firstLf = text.indexOf('\n');
+	const firstCrLf = text.indexOf('\r\n');
+	// There are no line breaks
+	if (firstLf === -1 && firstCrLf === -1) {
+		return text;
+	}
 
-    return text.slice(0, firstCrLf >= 0 ? firstCrLf : firstLf);
+	return text.slice(0, firstCrLf >= 0 ? firstCrLf : firstLf);
 }
 
 export function getLastLine(text: string): string {
-    const lastLf = text.lastIndexOf('\n');
-    const lastCrLf = text.lastIndexOf('\r\n');
-    // There are no line breaks
-    if (lastLf === -1 && lastCrLf === -1) {
-        return text;
-    }
+	const lastLf = text.lastIndexOf('\n');
+	const lastCrLf = text.lastIndexOf('\r\n');
+	// There are no line breaks
+	if (lastLf === -1 && lastCrLf === -1) {
+		return text;
+	}
 
-    return text.slice(lastCrLf >= 0 ? lastCrLf + 2 : lastLf + 1);
+	return text.slice(lastCrLf >= 0 ? lastCrLf + 2 : lastLf + 1);
 }
 
 export function getNextNonEmptyLine(suffix: string): string {
-    const nextLf = suffix.indexOf('\n');
-    const nextCrLf = suffix.indexOf('\r\n');
-    // There is no next line
-    if (nextLf === -1 && nextCrLf === -1) {
-        return '';
-    }
-    return (
-        lines(suffix.slice(nextCrLf >= 0 ? nextCrLf + 2 : nextLf + 1)).find(
-            line => line.trim().length > 0
-        ) ?? ''
-    );
+	const nextLf = suffix.indexOf('\n');
+	const nextCrLf = suffix.indexOf('\r\n');
+	// There is no next line
+	if (nextLf === -1 && nextCrLf === -1) {
+		return '';
+	}
+	return (
+		lines(suffix.slice(nextCrLf >= 0 ? nextCrLf + 2 : nextLf + 1)).find(
+			line => line.trim().length > 0
+		) ?? ''
+	);
 }
 
 export function getPrevNonEmptyLine(prefix: string): string {
-    const prevLf = prefix.lastIndexOf('\n');
-    const prevCrLf = prefix.lastIndexOf('\r\n');
-    // There is no prev line
-    if (prevLf === -1 && prevCrLf === -1) {
-        return '';
-    }
-    return (
-        findLast(
-            lines(prefix.slice(0, prevCrLf >= 0 ? prevCrLf : prevLf)),
-            line => line.trim().length > 0
-        ) ?? ''
-    );
+	const prevLf = prefix.lastIndexOf('\n');
+	const prevCrLf = prefix.lastIndexOf('\r\n');
+	// There is no prev line
+	if (prevLf === -1 && prevCrLf === -1) {
+		return '';
+	}
+	return (
+		findLast(
+			lines(prefix.slice(0, prevCrLf >= 0 ? prevCrLf : prevLf)),
+			line => line.trim().length > 0
+		) ?? ''
+	);
 }
 
 export function lines(text: string): string[] {
-    return text.split(/\r?\n/);
+	return text.split(/\r?\n/);
 }
 
 export function hasCompleteFirstLine(text: string): boolean {
-    const lastNewlineIndex = text.indexOf('\n');
-    return lastNewlineIndex !== -1;
+	const lastNewlineIndex = text.indexOf('\n');
+	const isNewLine = lastNewlineIndex !== -1;
+	if (isNewLine) {
+		return true;
+	}
+	const lastSemicolonIndex = text.lastIndexOf(';');
+	const isSemicolon = lastSemicolonIndex !== -1;
+	if (isSemicolon) {
+		return true;
+	}
+	return false;
 }
 
 export function lastNLines(text: string, n: number): string {
-    const lines = text.split('\n');
-    return lines.slice(Math.max(0, lines.length - n)).join('\n');
+	const lines = text.split('\n');
+	return lines.slice(Math.max(0, lines.length - n)).join('\n');
 }
 
 export function removeIndentation(text: string): string {
-    const lines = text.split('\n');
-    return lines.map(line => line.replace(INDENTATION_REGEX, '')).join('\n');
+	const lines = text.split('\n');
+	return lines.map(line => line.replace(INDENTATION_REGEX, '')).join('\n');
 }
 
 export function getPositionAfterTextInsertion(position: Position, text?: string): Position {
-    if (!text || text.length === 0) {
-        return position;
-    }
+	if (!text || text.length === 0) {
+		return position;
+	}
 
-    const insertedLines = lines(text);
+	const insertedLines = lines(text);
 
-    const updatedPosition =
-        insertedLines.length <= 1
-            ? position.translate(0, Math.max(getFirstLine(text).length, 0))
-            : new vscode.Position(position.line + insertedLines.length - 1, insertedLines.at(-1)!.length);
+	const updatedPosition =
+		insertedLines.length <= 1
+			? position.translate(0, Math.max(getFirstLine(text).length, 0))
+			: new vscode.Position(position.line + insertedLines.length - 1, insertedLines.at(-1)!.length);
 
-    return updatedPosition;
+	return updatedPosition;
 }
