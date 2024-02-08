@@ -115,7 +115,7 @@ export class InlineCompletionItemProvider
 					'editor.inlineSuggest.suppressSuggestions',
 					true,
 					vscode.ConfigurationTarget.Global
-				)
+				);
 		}
 
 		this.requestManager = new RequestManager(sidecarClient);
@@ -179,6 +179,7 @@ export class InlineCompletionItemProvider
 			return null;
 		}
 
+
 		let takeSuggestWidgetSelectionIntoAccount = false;
 		// Only take the completion widget selection into account if the selection was actively changed
 		// by the user
@@ -233,6 +234,7 @@ export class InlineCompletionItemProvider
 		// const isLocalProvider = isLocalCompletionsProvider(this.config.providerConfig.identifier)
 
 		try {
+			// we get the results from making a call first, do we even hit the cache here?
 			const result = await this.getInlineCompletions({
 				document,
 				position,

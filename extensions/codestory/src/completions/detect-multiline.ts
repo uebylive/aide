@@ -23,6 +23,11 @@ interface DetectMultilineParams {
 	position: Position;
 }
 
+/**
+ * We return the trigger point for multine, which in this case is the start of a new block
+ * generally denoted by { or [ or : etc
+ * The position of the multiline trigger is the position of the above element in the current line
+ */
 interface DetectMultilineResult {
 	multilineTrigger: string | null;
 	multilineTriggerPosition: Position | null;
@@ -60,6 +65,11 @@ export function detectMultiline(params: DetectMultilineParams): DetectMultilineR
 
 	const openingBracketMatch = getLastLine(prefix.trimEnd()).match(OPENING_BRACKET_REGEX);
 
+	// TODO(skcd): I do not understand this condition properly
+	// we are restricting the condition based on the fact that we might not have a match over
+	// here based on indentation but I think that's not exactly correct.
+	// one example of this case is:
+	// if (something) {[cursor here]}
 	const isSameLineOpeningBracketMatch =
 		currentLinePrefix.trim() !== '' &&
 		openingBracketMatch &&
@@ -118,6 +128,10 @@ export function detectMultiline(params: DetectMultilineParams): DetectMultilineR
 /**
  * Precalculate the multiline trigger position based on `prefix` and `cursorPosition` to be
  * able to change it during streaming to the end of the first line of the completion.
+ * So whats happening here is that say we have the prefix like this `if (something) {\n`
+ * and we are at the cursor position where the `\n` is, we want to move the cursor to the end of the line
+ * and not to the beginning of the line.
+ * This function will return the position of the last non-empty character in the prefix.
  */
 function getPrefixLastNonEmptyCharPosition(prefix: string, cursorPosition: Position): Position {
 	const trimmedPrefix = prefix.trimEnd();

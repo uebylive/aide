@@ -31,17 +31,24 @@ export function canUsePartialCompletion(
 	params: CanUsePartialCompletionParams
 ): InlineCompletionItemWithAnalytics | null {
 	const { docContext } = params;
+	console.log('sidecar.docContext.multilineTrigger', params.docContext.multilineTrigger);
 
 	if (!hasCompleteFirstLine(partialResponse)) {
-		// console.log('canUsePartialCompletion: no complete first line');
+		console.log('sidecar.hasCompleteFirstLine', false);
 		return null;
 	}
 
 	const item = parseAndTruncateCompletion(partialResponse, params);
+	console.log('sidecar.canUsePartialCompletion', item.insertText);
+	console.log('sidecar.item.lineTruncatedCount', item.lineTruncatedCount);
 
-	if (docContext.multilineTrigger) {
-		return (item.lineTruncatedCount || 0) > 0 ? item : null;
-	}
+	// TODO(skcd): This condition is weird, what if we are getting the whole string back
+	// then we do not have any line truncated count, so do we always end up returning null?
+	// always???
+	// SKETCHY AF condition
+	// if (docContext.multilineTrigger) {
+	// 	return (item.lineTruncatedCount || 0) > 0 ? item : null;
+	// }
 
 	return item.insertText.trim() === '' ? null : item;
 }

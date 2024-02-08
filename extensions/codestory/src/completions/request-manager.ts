@@ -95,6 +95,7 @@ export class RequestManager {
 
 		const generateCompletions = async (): Promise<void> => {
 			try {
+				// here we are waiting for the sidecar to return the completions
 				for await (const fetchCompletionResults of provider.generateCompletions(
 					request.abortController.signal,
 				)) {
