@@ -144,6 +144,7 @@ export async function getInlineCompletions(
 ): Promise<InlineCompletionsResult | null> {
 	try {
 		const result = await doGetInlineCompletions(params);
+		params.setIsLoading?.(false);
 		return result;
 	} catch (unknownError: unknown) {
 		const error = unknownError instanceof Error ? unknownError : new Error(unknownError as any);

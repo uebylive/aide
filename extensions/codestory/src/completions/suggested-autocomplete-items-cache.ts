@@ -124,7 +124,7 @@ export function analyticsItemToAutocompleteItem(
 
 		const command = {
 			title: 'Completion accepted',
-			command: 'aide.autocomplete.inline.accepted',
+			command: 'codestory.autocomplete.inline.accepted',
 			arguments: [
 				{
 					// This is going to be set to the AutocompleteItem after initialization
