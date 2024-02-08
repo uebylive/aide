@@ -6,7 +6,6 @@ import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { CodeSnippetInformation, CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
 import { CodeModificationContextAndDiff, CodeSymbolModificationInstruction, NewFileContentAndDiffResponse, TextExecutionHarness, generateModifyCodeHallucinationPrompt, generateNewFileContentAndDiffResponseParser, generateTestExecutionPrompt, generateTestScriptGenerationPrompt, modifyCodeSnippetPrompt, newFileContentAndDiffPrompt, parseCodeModificationResponse, parseTestExecutionFinalSetupResponse, parseTestPlanResponseForHarness } from './prompts';
-import { CodeGraph } from '../../codeGraph/graph';
 
 import * as fs from 'fs';
 import { generateChatCompletion } from './debugging';

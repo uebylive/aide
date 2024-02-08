@@ -11,7 +11,6 @@ import * as vscode from 'vscode';
 import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
-import { CodeGraph } from '../../codeGraph/graph';
 import { executeTestHarness, formatFileInformationListForPrompt, generateCodeSymbolsForQueries, generateModificationInputForCodeSymbol, generateModifiedFileContentAfterDiff, generateTestScriptForChange, getCodeNodeForName, readFileContents, shouldExecuteTestHarness, stripPrefix, writeFileContents } from './helpers';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { getOpenAIApiKey } from '../../utilities/getOpenAIKey';

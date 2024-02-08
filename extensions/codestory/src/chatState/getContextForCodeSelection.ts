@@ -9,7 +9,6 @@
 // level context which is required when generating explanation
 
 import * as vscode from 'vscode';
-import { CodeGraph } from '../codeGraph/graph';
 import { CodeSymbolInformation } from '../utilities/types';
 import * as math from 'mathjs';
 
@@ -20,39 +19,6 @@ export interface SelectionReferenceData {
 	currentCodeSymbol: CodeSymbolInformation;
 	symbolUsedInReferences: CodeSymbolInformation[];
 }
-
-
-export const getRelevantContextForCodeSelection = (
-	codeGraph: CodeGraph,
-): SelectionReferenceData | null => {
-	const editor = vscode.window.activeTextEditor;
-
-	if (!editor) {
-		return null;
-	}
-	const document = editor.document;
-	const selection = editor.selection;
-
-	if (selection.start.line === selection.end.line && selection.start.character === selection.end.character) {
-		return null;
-	}
-	const fsFilePath = document.uri.fsPath;
-	const possibleSymbol = codeGraph.getNodeFromLineRangeAndFile(
-		fsFilePath,
-		selection.start.line + 1,
-	);
-	if (possibleSymbol === null) {
-		return null;
-	}
-	// Now we want to get the symbols where this is referenced
-	const references = codeGraph.getReferenceLocationsForCodeSymbol(possibleSymbol);
-	return {
-		documentFilePath: fsFilePath,
-		currentSelection: document.getText(selection),
-		currentCodeSymbol: possibleSymbol,
-		symbolUsedInReferences: references,
-	};
-};
 
 
 export const getContextForPromptFromUserContext = (
