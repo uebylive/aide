@@ -248,6 +248,8 @@ async function doGetInlineCompletions(
 
 	// Check if the user is typing as suggested by the last candidate completion (that is shown as
 	// ghost text in the editor), and reuse it if it is still valid.
+	// TODO(skcd): We are not returning the last candidate properly for some reason, we should
+	// debug whats going wrong here
 	const resultToReuse =
 		triggerKind !== TriggerKind.Manual && lastCandidate
 			? reuseLastCandidate({
@@ -262,6 +264,7 @@ async function doGetInlineCompletions(
 			: null;
 	if (resultToReuse) {
 		console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
+		console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
 		// log the resuleToReuse here
 		for (const candidate of resultToReuse.items) {
 			console.log('sidecar.reuseResult', candidate.insertText);
