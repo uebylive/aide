@@ -141,6 +141,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			continue;
 		}
 
+		// we are not going below this at all, cause we enabled multiline by default
+		console.log('sidecar.DO_NOT_LOG');
 		/**
 		 * This completion was started without the multiline trigger at the end of current line.
 		 * Check if the the first completion line ends with the multiline trigger. If that's the case
