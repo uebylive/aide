@@ -8,7 +8,6 @@ import winston from 'winston';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
-import { CodeGraph } from './codeGraph/graph';
 import postHogClient from './posthog/client';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
@@ -17,7 +16,7 @@ import { gitCommit } from './subscriptions/gitCommit';
 import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
-import { readActiveDirectoriesConfiguration, readTestSuiteRunCommand } from './utilities/activeDirectories';
+import { readTestSuiteRunCommand } from './utilities/activeDirectories';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
@@ -206,15 +205,6 @@ export async function activate(context: ExtensionContext) {
 		return results;
 	});
 
-	const codeGraph = new CodeGraph(
-		activeFilesTracker,
-		codeSymbolsLanguageCollection,
-		context.globalStorageUri.fsPath,
-		repoName,
-		rootPath ?? '',
-	);
-	codeGraph.loadGraph(filesToTrack);
-
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
@@ -223,7 +213,7 @@ export async function activate(context: ExtensionContext) {
 	// Register chat provider
 	const chatSessionProvider = new CSChatSessionProvider();
 	const chatAgentProvider = new CSChatAgentProvider(
-		rootPath, codeGraph, repoName, repoHash,
+		rootPath, repoName, repoHash,
 		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo, projectContext,

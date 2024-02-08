@@ -10,7 +10,6 @@ import { CSChatState } from '../../chatState/state';
 import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
 import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
 import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
-import { CodeGraph } from '../../codeGraph/graph';
 import { debuggingFlow } from '../../llm/recipe/debugging';
 import { ToolingEventCollection } from '../../timeline/events/collection';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
@@ -267,7 +266,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	private chatAgent: vscode.ChatAgent2;
 
 	private _chatSessionState: CSChatState;
-	private _codeGraph: CodeGraph;
 	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _workingDirectory: string;
 	private _testSuiteRunCommand: string;
@@ -282,7 +280,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 	constructor(
 		workingDirectory: string,
-		codeGraph: CodeGraph,
 		repoName: string,
 		repoHash: string,
 		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
@@ -295,7 +292,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		projectContext: ProjectContext,
 	) {
 		this._workingDirectory = workingDirectory;
-		this._codeGraph = codeGraph;
 		this._repoHash = repoHash;
 		this._repoName = repoName;
 		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
