@@ -93,10 +93,17 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		console.log('sidecar.rawCompletion', rawCompletion);
 
 		// this is terminating cases where we have completions like \n console.log('something')
-		if (!getFirstLine(rawCompletion) && !shouldYieldFirstCompletion) {
-			console.log('sidecar.getFirstLine', 'empty-string');
-			continue;
-		}
+		// the condition here is that the first line is empty and we didn't reach the first completion timeout
+		// but this is wrong because we might have completions like \n console.log('something')
+		// and we do want to yield it.
+		// TODO(skcd): we might have an issue here with the end of line treatement, if we are
+		// towards the end of the line and we have a completion like \n console.log('something')
+		// we will terminate here in the case that the timeout for the file line is pretty large
+		// and because it starts with a \n, so lets remove it for now.
+		// if (!getFirstLine(rawCompletion) && !shouldYieldFirstCompletion) {
+		// 	console.log('sidecar.getFirstLine', 'empty-string');
+		// 	continue;
+		// }
 
 		if (hotStreakExtractor) {
 			yield* hotStreakExtractor.extract(rawCompletion, isFullResponse);
@@ -112,11 +119,14 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		 */
 		if (multiline) {
 			console.log('sidecar.streaming.multiline', true);
+			// extractCompletion here is always canUsePartialCompletion
 			const completion = extractCompletion(rawCompletion, {
 				document: providerOptions.document,
 				docContext,
 				isDynamicMultilineCompletion: false,
 			});
+
+			console.log('sidecar.streaming.multiline.completion.is_null', completion !== null);
 
 			if (completion) {
 				const completedCompletion = processCompletion(completion, providerOptions);

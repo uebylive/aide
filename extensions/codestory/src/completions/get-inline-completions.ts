@@ -184,6 +184,7 @@ async function doGetInlineCompletions(
 		sidecarClient,
 	} = params;
 	console.log('sidecar.callingInlineCompletions', position.line, position.character);
+	console.log('sidecar.multilineTrigger', multilineTrigger);
 
 
 	// If we have a suffix in the same line as the cursor and the suffix contains any word
@@ -192,50 +193,58 @@ async function doGetInlineCompletions(
 	//
 	// VS Code will attempt to merge the remainder of the current line by characters but for
 	// words this will easily get very confusing.
-	if (triggerKind !== TriggerKind.Manual && /\w/.test(currentLineSuffix)) {
-		console.log('getInlineCompletions:abort', 'suffixContainsWordCharacters', triggerKind, currentLineSuffix);
-		return null;
-	}
+	// TODO(skcd): Let's enable this feature for now, no point removing completions
+	// when our show rate is so freaking low
+	// if (triggerKind !== TriggerKind.Manual && /\w/.test(currentLineSuffix)) {
+	// 	console.log('getInlineCompletions:abort', 'suffixContainsWordCharacters', triggerKind, currentLineSuffix);
+	// 	return null;
+	// }
 
 	// Do not trigger when the last character is a closing symbol
-	if (triggerKind !== TriggerKind.Manual && /[);\]}]$/.test(currentLinePrefix.trim())) {
-		console.log('getInlineCompletions:abort', 'lastCharacterIsClosingSymbol', triggerKind, currentLinePrefix);
-		return null;
-	}
+	// TODO(skcd): We still want to trigger even if the last character is a closing symbol
+	// if (triggerKind !== TriggerKind.Manual && /[);\]}]$/.test(currentLinePrefix.trim())) {
+	// 	console.log('getInlineCompletions:abort', 'lastCharacterIsClosingSymbol', triggerKind, currentLinePrefix);
+	// 	return null;
+	// }
 
 	// Do not trigger when cursor is at the start of the file ending line and the line above is empty
-	if (
-		triggerKind !== TriggerKind.Manual &&
-		position.line !== 0 &&
-		position.line === document.lineCount - 1
-	) {
-		const lineAbove = Math.max(position.line - 1, 0);
-		if (document.lineAt(lineAbove).isEmptyOrWhitespace && !position.character) {
-			return null;
-		}
-	}
+	// TODO(skcd): We still want to trigger even if the last line is empty
+	// I do not see a good reason to not trigger it, so lets allow it
+	// if (
+	// 	triggerKind !== TriggerKind.Manual &&
+	// 	position.line !== 0 &&
+	// 	position.line === document.lineCount - 1
+	// ) {
+	// 	const lineAbove = Math.max(position.line - 1, 0);
+	// 	if (document.lineAt(lineAbove).isEmptyOrWhitespace && !position.character) {
+	// 		return null;
+	// 	}
+	// }
 
-	// Do not trigger when the user just accepted a single-line completion
-	if (
-		triggerKind !== TriggerKind.Manual &&
-		lastAcceptedCompletionItem &&
-		lastAcceptedCompletionItem.requestParams.document.uri.toString() === document.uri.toString() &&
-		lastAcceptedCompletionItem.requestParams.docContext.multilineTrigger === null
-	) {
-		const docContextOfLastAcceptedAndInsertedCompletionItem = insertIntoDocContext({
-			docContext: lastAcceptedCompletionItem.requestParams.docContext,
-			insertText: lastAcceptedCompletionItem.analyticsItem.insertText,
-			languageId: lastAcceptedCompletionItem.requestParams.document.languageId,
-			dynamicMultilineCompletions: false,
-		});
-		if (
-			docContext.prefix === docContextOfLastAcceptedAndInsertedCompletionItem.prefix &&
-			docContext.suffix === docContextOfLastAcceptedAndInsertedCompletionItem.suffix &&
-			docContext.position.isEqual(docContextOfLastAcceptedAndInsertedCompletionItem.position)
-		) {
-			return null;
-		}
-	}
+	// Do not trigger when the user just accepted a single-line completion, and its not a
+	// multiline trigger
+	// TODO(skcd): Verify this, but I do not see a reason to not trigger the completion
+	// even if the user has accepted a single-line completion
+	// if (
+	// 	triggerKind !== TriggerKind.Manual &&
+	// 	lastAcceptedCompletionItem &&
+	// 	lastAcceptedCompletionItem.requestParams.document.uri.toString() === document.uri.toString() &&
+	// 	lastAcceptedCompletionItem.requestParams.docContext.multilineTrigger === null
+	// ) {
+	// 	const docContextOfLastAcceptedAndInsertedCompletionItem = insertIntoDocContext({
+	// 		docContext: lastAcceptedCompletionItem.requestParams.docContext,
+	// 		insertText: lastAcceptedCompletionItem.analyticsItem.insertText,
+	// 		languageId: lastAcceptedCompletionItem.requestParams.document.languageId,
+	// 		dynamicMultilineCompletions: false,
+	// 	});
+	// 	if (
+	// 		docContext.prefix === docContextOfLastAcceptedAndInsertedCompletionItem.prefix &&
+	// 		docContext.suffix === docContextOfLastAcceptedAndInsertedCompletionItem.suffix &&
+	// 		docContext.position.isEqual(docContextOfLastAcceptedAndInsertedCompletionItem.position)
+	// 	) {
+	// 		return null;
+	// 	}
+	// }
 
 	// Check if the user is typing as suggested by the last candidate completion (that is shown as
 	// ghost text in the editor), and reuse it if it is still valid.

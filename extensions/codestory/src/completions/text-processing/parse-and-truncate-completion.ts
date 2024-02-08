@@ -24,13 +24,17 @@ export function parseAndTruncateCompletion(
 		docContext,
 		docContext: { multilineTrigger, prefix },
 		isDynamicMultilineCompletion,
-	} = params
+	} = params;
+	// TODO(skcd): Multiline trigger generally happens only when we are at the end of { or equivalent thing
+	// not on newline, should we just make it work always regardless?
+	console.log('sidecar.parseAndTruncateCompletion.multiline', multilineTrigger);
 
-	const multiline = Boolean(multilineTrigger)
+	const multiline = Boolean(multilineTrigger);
 	const insertTextBeforeTruncation = (
 		multiline ? normalizeStartLine(completion, prefix) : completion
-	).trimEnd()
+	).trimEnd();
 
+	// This is always true for now and returns whatever we have
 	const parsed = parseCompletion({
 		completion: { insertText: insertTextBeforeTruncation },
 		document,
@@ -42,12 +46,12 @@ export function parseAndTruncateCompletion(
 	}
 
 	if (multiline) {
+		// This just returns the string as it is with no changes done
 		const truncationResult = truncateMultilineBlock({
 			parsed,
 			document,
 			docContext,
 		});
-
 
 		// TODO(skcd): Bring this back later on
 		// what we are doing here is using tree sitter to check if we should stop streaming
@@ -67,6 +71,8 @@ export function parseAndTruncateCompletion(
 		parsed.insertText = truncationResult.insertText
 		parsed.truncatedWith = truncationResult.truncatedWith
 	}
+
+	console.log('sidecar.parseAndTruncateCompletion.parsed', parsed.insertText);
 
 	return parsed
 }

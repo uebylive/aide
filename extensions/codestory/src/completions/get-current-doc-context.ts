@@ -69,8 +69,6 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
 	} = params;
 	const offset = document.offsetAt(position);
 
-	// TODO(philipp-spiess): This requires us to read the whole document. Can we limit our ranges
-	// instead?
 	const completePrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
 	const completeSuffix = document.getText(
 		new vscode.Range(position, document.positionAt(document.getText().length))
