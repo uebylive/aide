@@ -257,7 +257,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 };
 
 export const supportedModels: Record<ProviderType, string[]> = {
-	'codestory': ['Gpt4', 'GPT3_5_16k'],
+	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],

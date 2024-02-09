@@ -560,7 +560,10 @@ function getProviderconfiguration(type: string, value: ModelProviderConfiguratio
 				"api_key": value.apiKey,
 				"api_base": value.apiBase,
 			}
-		}
+		};
+	}
+	if (type === 'codestory') {
+		return "CodeStory";
 	}
 	return null;
 }
@@ -585,8 +588,8 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	if (providerConfiguration.type == "codestory") {
 		return {
 			"CodeStory": {
-				"llm_type": llmType,
-			}
+				"llm_type": null,
+			},
 		};
 	}
 	if (providerConfiguration.type === 'openai-compatible') {
