@@ -157,16 +157,10 @@ export async function activate(context: ExtensionContext) {
 			sidecarClient,
 		}
 	);
-	// context.subscriptions.push(
-	// 	languages.registerInlineCompletionItemProvider({ pattern: '**' }, completionProvider),
-	// );
 	// register the commands here
 	aideCommands(completionProvider);
 	// set the status bar as well
 	startupStatusBar();
-
-
-
 
 	// Now setup the indexer collection
 	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
@@ -180,8 +174,6 @@ export async function activate(context: ExtensionContext) {
 	// Get the test-suite command
 	const testSuiteRunCommand = readTestSuiteRunCommand();
 
-
-	const filesToTrack = await getFilesTrackedInWorkingDirectory(rootPath ?? '');
 
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
