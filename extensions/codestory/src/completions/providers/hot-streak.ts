@@ -96,8 +96,8 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 			'event_name': 'hotstreak_extract',
 			'raw_completion': rawCompletion,
 			'is_request_ended': isRequestEnd,
+			id: spanId,
 		});
-		// console.log('hotstreak.completion', isRequestEnd, rawCompletion);
 		while (true) {
 			const unprocessedCompletion = rawCompletion.slice(
 				updatedDocContext.injectedCompletionText?.length || 0
@@ -155,6 +155,12 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 			} else {
 				// ... otherwise we don't have enough in the remaining completion text to generate a full
 				// hot-streak completion and yield to wait for the next chunk (or abort).
+				logger.logInfo("sidecar.hotstreak.no_completion", {
+					"event_name": "sidecar.hotstreak.no_completion",
+					"id": spanId,
+					"raw_completion": rawCompletion,
+					"unprocessed_completion": unprocessedCompletion,
+				});
 				return undefined;
 			}
 		}
