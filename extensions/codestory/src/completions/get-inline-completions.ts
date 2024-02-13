@@ -335,9 +335,8 @@ async function doGetInlineCompletions(
 			docContext: requestParams.docContext,
 			multiline: true,
 			n: 1,
-			// we give it a big timeout here, we are going to check
-			// if this will still work as we want it to
-			firstCompletionTimeout: 5000,
+			// we are setting it to 500ms here so its lower
+			firstCompletionTimeout: 500,
 			// we want to enable the hot streak
 			hotStreak: true,
 			// we want to generate multiline completions
@@ -352,6 +351,8 @@ async function doGetInlineCompletions(
 		requestParams,
 		isCacheEnabled: triggerKind !== TriggerKind.Manual,
 		provider,
+		logger,
+		spanId,
 	});
 
 	setIsLoading?.(false);

@@ -185,8 +185,8 @@ export class InlineCompletionItemProvider
 					'event_name': 'aborting',
 					'id': id,
 				});
-				// console.log('sidecar.onCancellationRequested', 'aborting');
-				// console.log('Cancellation requested!!!!!!!');
+				// send this in the background
+				this.sidecarClient.cancelInlineCompletion(id);
 				abortController.abort()
 			});
 		}
