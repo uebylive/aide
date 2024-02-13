@@ -404,6 +404,12 @@ export class SideCarClient {
 		// Set the combinedSignal as the signal option in the fetch request
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
+			if (signal.aborted) {
+				return {
+					completion: finalAnswer,
+					stopReason: CompletionStopReason.RequestAborted,
+				};
+			}
 			const lineParts = line.split('data:"{');
 			for (const lineSinglePart of lineParts) {
 				const lineSinglePartTrimmed = lineSinglePart.trim();

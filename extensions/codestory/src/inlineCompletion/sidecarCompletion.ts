@@ -142,7 +142,8 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		context: InlineCompletionContext,
 		token: CancellationToken,
 	): Promise<InlineCompletionItem[] | null> {
-		console.log('called to provide an inline completion here');
+		console.log('sidecar.provideInlineCompletionItems', 'start');
+		// console.log('called to provide an inline completion here');
 		const requestId = await this.checkRequestPossible();
 		if (!requestId) {
 			console.log('request was rejected by debounce');
@@ -173,7 +174,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		// here we check if the user is in the middle of the line
 		const middleOfLine = isMiddleOfLine(document, position);
 		if (!middleOfLine) {
-			console.log('sidecar.middleOfLine', 'ignored');
+			// console.log('sidecar.middleOfLine', 'ignored');
 			return null;
 		}
 

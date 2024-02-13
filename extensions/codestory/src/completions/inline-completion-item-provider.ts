@@ -30,6 +30,7 @@ import {
 import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
+import { uniqueId } from 'lodash';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: CompletionLogID;
@@ -88,12 +89,15 @@ export class InlineCompletionItemProvider
 
 	private sidecarClient: SideCarClient;
 
+	private logger: CompletionLogger.LoggingService;
+
 	constructor({
 		completeSuggestWidgetSelection = true,
 		formatOnAccept = true,
 		sidecarClient,
 		...config
 	}: CodeStoryCompletionItemProviderConfig) {
+		this.logger = new CompletionLogger.LoggingService();
 		this.config = {
 			...config,
 			sidecarClient,
@@ -138,6 +142,12 @@ export class InlineCompletionItemProvider
 		context: vscode.InlineCompletionContext,
 		token?: vscode.CancellationToken
 	): Promise<AutocompleteResult | null> {
+		let id = uniqueId("completions-");
+		this.logger.logInfo('sidecar.providerInlineCompletionItems', {
+			'event_name': 'start',
+			'id': id,
+		});
+		// console.log('sidecar.providerInlineCompletionItems', 'start');
 		// Update the last request
 		const lastCompletionRequest = this.lastCompletionRequest;
 		const completionRequest: CompletionRequest = {
@@ -170,7 +180,15 @@ export class InlineCompletionItemProvider
 			if (token.isCancellationRequested) {
 				abortController.abort();
 			}
-			token.onCancellationRequested(() => abortController.abort());
+			token.onCancellationRequested(() => {
+				this.logger.logInfo('sidecar.providerOnCancellationRequested', {
+					'event_name': 'aborting',
+					'id': id,
+				});
+				// console.log('sidecar.onCancellationRequested', 'aborting');
+				// console.log('Cancellation requested!!!!!!!');
+				abortController.abort()
+			});
 		}
 
 		// When the user has the completions popup open and an item is selected that does not match
@@ -257,6 +275,8 @@ export class InlineCompletionItemProvider
 				artificialDelay,
 				completionIntent,
 				lastAcceptedCompletionItem: this.lastAcceptedCompletionItem,
+				logger: this.logger,
+				spanId: id,
 			});
 
 			// Avoid any further work if the completion is invalidated already.
