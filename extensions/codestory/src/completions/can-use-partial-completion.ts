@@ -8,11 +8,14 @@ import type { DocumentContext } from './get-current-doc-context';
 import { hasCompleteFirstLine } from './text-processing';
 import { parseAndTruncateCompletion } from './text-processing/parse-and-truncate-completion';
 import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
+import { LoggingService } from './logger';
 
 interface CanUsePartialCompletionParams {
 	document: TextDocument;
 	docContext: DocumentContext;
 	isDynamicMultilineCompletion: boolean;
+	logger: LoggingService;
+	spanId: string;
 }
 
 /**
@@ -34,11 +37,22 @@ export function canUsePartialCompletion(
 	// console.log('sidecar.docContext.multilineTrigger', params.docContext.multilineTrigger);
 
 	if (!hasCompleteFirstLine(partialResponse)) {
+		params.logger.logInfo('sidecar.canUsePartialCompletion', {
+			event_name: 'sidecar.canUsePartialCompletion.has_complete_first_line',
+			event_value: 'false',
+			id: params.spanId,
+			partial_response: partialResponse,
+		});
 		// console.log('sidecar.hasCompleteFirstLine', false);
 		return null;
 	}
 
 	const item = parseAndTruncateCompletion(partialResponse, params);
+	params.logger.logInfo('sidecar.canUsePartialCompletion.parse', {
+		event_name: 'sidecar.can_use_partial_completion.parse_truncate_completion',
+		id: params.spanId,
+		partial_response: partialResponse,
+	});
 	// console.log('sidecar.canUsePartialCompletion', item.insertText);
 	// console.log('sidecar.item.lineTruncatedCount', item.lineTruncatedCount);
 

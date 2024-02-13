@@ -83,13 +83,15 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 
 	const generatorStartTime = performance.now();
 
+	logger.logInfo('sidecar.completion_request.generator', {
+		event_name: 'sidecar.completion_request.generator',
+		id: spanId,
+	});
 	for await (const { completion, stopReason } of completionResponseGenerator) {
 		const isFirstCompletionTimeoutElapsed =
 			performance.now() - generatorStartTime >= firstCompletionTimeout;
-		// console.log('sidecar.isFirstCompletionTimeoutElapsed', isFirstCompletionTimeoutElapsed);
 		const isFullResponse = stopReason !== CompletionStopReason.StreamingChunk;
 		const shouldYieldFirstCompletion = isFullResponse || isFirstCompletionTimeoutElapsed;
-		// console.log('sidecar.shouldYieldFirstCompletion', shouldYieldFirstCompletion);
 		logger.logInfo('sidecar.shouldYieldFirstCompletion', {
 			'event_name': 'should_yield_first_completion',
 			'should_yield_first_completion': shouldYieldFirstCompletion,
@@ -134,6 +136,13 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				document: providerOptions.document,
 				docContext,
 				isDynamicMultilineCompletion: false,
+				logger,
+				spanId,
+			});
+			logger.logInfo('sidecar.multiline.completion_extract', {
+				event_name: 'sidecar.multiline.completion_extract',
+				completion: completion,
+				raw_completion: rawCompletion,
 			});
 
 			// console.log('sidecar.streaming.multiline.completion.is_null', completion !== null);
@@ -180,6 +189,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				document: providerOptions.document,
 				docContext: dynamicMultilineDocContext,
 				isDynamicMultilineCompletion: true,
+				logger,
+				spanId,
 			});
 
 			if (completion) {
@@ -207,6 +218,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				document: providerOptions.document,
 				docContext,
 				isDynamicMultilineCompletion: false,
+				logger,
+				spanId,
 			});
 
 			if (completion) {
@@ -248,6 +261,8 @@ export async function* fetchAndProcessCompletions(
 		abortController,
 		providerOptions,
 		providerSpecificPostProcess,
+		logger,
+		spanId,
 	} = params;
 	const { hotStreak, docContext } = providerOptions;
 
@@ -267,6 +282,8 @@ export async function* fetchAndProcessCompletions(
 			document: providerOptions.document,
 			docContext,
 			isDynamicMultilineCompletion: false,
+			logger,
+			spanId,
 		});
 
 		if (parsedCompletion) {

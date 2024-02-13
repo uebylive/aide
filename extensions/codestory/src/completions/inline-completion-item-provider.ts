@@ -197,7 +197,6 @@ export class InlineCompletionItemProvider
 			return null;
 		}
 
-
 		let takeSuggestWidgetSelectionIntoAccount = false;
 		// Only take the completion widget selection into account if the selection was actively changed
 		// by the user
@@ -228,6 +227,10 @@ export class InlineCompletionItemProvider
 			// We ignore the current context selection if completeSuggestWidgetSelection is not enabled
 			context: takeSuggestWidgetSelectionIntoAccount ? context : undefined,
 			dynamicMultilineCompletions: completionProviderConfig.dynamicMultilineCompletions,
+		});
+		this.logger.logInfo('sidecar.initialRequest.docContext', {
+			event_name: 'sidecar.initialRequest.docContext',
+			id: id,
 		});
 
 		const completionIntent = getCompletionIntent({

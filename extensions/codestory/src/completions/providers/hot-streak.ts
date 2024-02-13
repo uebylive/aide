@@ -104,6 +104,10 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 			);
 
 			if (unprocessedCompletion.length === 0) {
+				logger.logInfo('sidecar.hotstreak.unprocessedCompletion', {
+					event_name: 'sidecar.hotstreak.unprocessedCompletion.empty',
+					id: spanId,
+				});
 				return undefined;
 			}
 
@@ -124,6 +128,16 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 				document,
 				docContext: maybeDynamicMultilineDocContext,
 				isDynamicMultilineCompletion: Boolean(dynamicMultilineCompletions),
+				logger: logger,
+				spanId: spanId,
+			});
+
+			logger.logInfo('sidecar.hotstreak.completionExtract', {
+				'event_name': 'sidecar.hotstreak.extractCompletion',
+				'completion': completion,
+				'id': spanId,
+				'is_request_ended': isRequestEnd,
+				'unprocessedCompletion': unprocessedCompletion,
 			});
 
 			if (completion && completion.insertText.trim().length > 0) {

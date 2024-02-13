@@ -43,9 +43,25 @@ export class SidecarProvider extends Provider {
 			id: this.options.spanId,
 			requestId: this.options.spanId,
 		};
+		const now = performance.now();
+		this._logger.logInfo(
+			'sidecar.inlineProvider.send_completion_request',
+			{
+				'event_name': 'send_completion_request',
+				'id': this.options.spanId,
+			}
+		);
 		const responseStream = this._sidecarClient.inlineCompletionText(
 			completionRequest,
 			abortSignal,
+		);
+		this._logger.logInfo(
+			'sidecar.inlineProvider.responseStream',
+			{
+				'event_name': 'response_stream',
+				'id': this.options.spanId,
+				'time_taken': performance.now() - now,
+			}
 		);
 		const abortController = forkSignal(abortSignal);
 		const stream = fetchAndProcessCompletionsImpl({
