@@ -75,7 +75,7 @@ function insertCompletionAndPressEnter(
 }
 
 export function createHotStreakExtractor(params: HotStreakExtractorParams): HotStreakExtractor {
-	const { completedCompletion, providerOptions } = params;
+	const { completedCompletion, providerOptions, logger, spanId } = params;
 	const {
 		docContext,
 		document,
@@ -92,7 +92,12 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 
 	function* extract(rawCompletion: string, isRequestEnd: boolean): Generator<FetchCompletionResult> {
 		// log the hot streak raw completion
-		console.log('hotstreak.completion', isRequestEnd, rawCompletion);
+		logger.logInfo('sidecar.hotstreak.completion', {
+			'event_name': 'hotstreak_extract',
+			'raw_completion': rawCompletion,
+			'is_request_ended': isRequestEnd,
+		});
+		// console.log('hotstreak.completion', isRequestEnd, rawCompletion);
 		while (true) {
 			const unprocessedCompletion = rawCompletion.slice(
 				updatedDocContext.injectedCompletionText?.length || 0

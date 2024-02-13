@@ -95,6 +95,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			'should_yield_first_completion': shouldYieldFirstCompletion,
 			'multiline': multiline,
 			'completion': completion,
+			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
 		});
 
 		const extractCompletion = shouldYieldFirstCompletion
@@ -149,6 +150,11 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 
 			continue;
 		}
+
+		logger.logInfo('sidecar.DO_NOT_LOG', {
+			event_name: 'DO_NOT_LOG_EVER',
+			id: spanId,
+		});
 
 		// we are not going below this at all, cause we enabled multiline by default
 		// console.log('sidecar.DO_NOT_LOG');
