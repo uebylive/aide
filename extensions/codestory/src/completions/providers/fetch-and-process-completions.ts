@@ -93,6 +93,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		logger.logInfo('sidecar.shouldYieldFirstCompletion', {
 			'event_name': 'should_yield_first_completion',
 			'should_yield_first_completion': shouldYieldFirstCompletion,
+			'multiline': multiline,
+			'completion': completion,
 		});
 
 		const extractCompletion = shouldYieldFirstCompletion
@@ -117,8 +119,6 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		if (hotStreakExtractor) {
 			yield* hotStreakExtractor.extract(rawCompletion, isFullResponse);
 			continue;
-		} else {
-			// console.log('sidecar.hotStreakExtractor.presence', false);
 		}
 
 		/**

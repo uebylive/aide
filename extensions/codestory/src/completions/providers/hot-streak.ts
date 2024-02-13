@@ -60,8 +60,8 @@ function insertCompletionAndPressEnter(
 	const { insertText } = completion;
 
 	const indentString = pressEnterAndGetIndentString(insertText, docContext.currentLinePrefix, document);
-	console.log('insertCompletionAndPressEnter.indentString', indentString);
-	console.log('insertCompletionAndPressEnter.insertText', insertText);
+	// console.log('insertCompletionAndPressEnter.indentString', indentString);
+	// console.log('insertCompletionAndPressEnter.insertText', insertText);
 	const insertTextWithPressedEnter = insertText + indentString;
 
 	const updatedDocContext = insertIntoDocContext({

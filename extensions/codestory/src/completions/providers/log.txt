@@ -1,0 +1,792 @@
+["INFO" - 13:16:54] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-1"
+}
+["INFO" - 13:16:54] sidecar.inlineProvider
+{
+  "event_name": "generate_completions",
+  "id": "completions-1"
+}
+["INFO" - 13:16:54] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-1"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-2"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-2"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-3"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-3"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-4"
+}
+["INFO" - 13:16:55] sidecar.inlineProvider
+{
+  "event_name": "generate_completions",
+  "id": "completions-4"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-4"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-5"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-5"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-6"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-6"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-7"
+}
+["INFO" - 13:16:55] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-7"
+}
+["INFO" - 13:16:55] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-8"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-8"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-9"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-9"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-10"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-10"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-11"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-11"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-12"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-12"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-13"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-13"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console."
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-14"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('side"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-14"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar."
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.stream"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming."
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hot"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotSt"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-15"
+}
+["INFO" - 13:16:56] sidecar.providerOnCancellationRequested
+{
+  "event_name": "aborting",
+  "id": "completions-15"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStre"
+}
+["INFO" - 13:16:56] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStreak"
+}
+["INFO" - 13:16:56] sidecar.providerInlineCompletionItems
+{
+  "event_name": "start",
+  "id": "completions-16"
+}
+["INFO" - 13:16:57] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStreakExt"
+}
+["INFO" - 13:16:57] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStreakExtractor"
+}
+["INFO" - 13:16:57] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStreakExtractor',"
+}
+["INFO" - 13:16:57] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "console.log('sidecar.streaming.hotStreakExtractor', true"
+}
+["INFO" - 13:16:57] sidecar.cancelIrrelevantRequests
+{
+  "event_name": "cancel_irrelevant_requests",
+  "request_id_reason": "completions-16",
+  "request_id_broken_do_not_trust": "completions-16"
+}
+["INFO" - 13:16:57] sidecar.inlineProvider
+{
+  "event_name": "generate_completions",
+  "id": "completions-16"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot stre"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extract"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\t"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger."
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.log"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('side"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar"
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar."
+}
+["INFO" - 13:16:58] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_st"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_stre"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_ext"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor',"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name':"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': '"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_st"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_stre"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_ext"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_st"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_stre"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_"
+}
+["INFO" - 13:16:59] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_ext"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor':"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hot"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotSt"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStre"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreak"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExt"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !=="
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined,"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined,\n"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined,\n\t\t"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined,\n\t\t\t});"
+}
+["INFO" - 13:17:00] sidecar.shouldYieldFirstCompletion
+{
+  "event_name": "should_yield_first_completion",
+  "should_yield_first_completion": true,
+  "multiline": true,
+  "completion": "a hot streak extractor\n\t\t\tlogger.logInfo('sidecar.hot_streak_extractor', {\n\t\t\t\t'event_name': 'hot_streak_extractor',\n\t\t\t\t'hot_streak_extractor': hotStreakExtractor !== undefined,\n\t\t\t});"
+}
