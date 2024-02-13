@@ -794,7 +794,8 @@ export class LoggingService {
 	 * @param message The message to append to the output channel
 	 */
 	private logMessage(message: string, logLevel: LogLevel): void {
-		const title = new Date().toLocaleTimeString();
+		const now = new Date();
+		const title = `${now.toLocaleTimeString()}:${now.getMilliseconds()}`;
 		this.outputChannel.appendLine(`["${logLevel}" - ${title}] ${message}`);
 	}
 }
