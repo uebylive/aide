@@ -7,6 +7,7 @@ import { CompletionStopReason } from '../../sidecar/client';
 import { canUsePartialCompletion } from '../can-use-partial-completion';
 import type { DocumentContext } from '../get-current-doc-context';
 import { getFirstLine } from '../text-processing';
+import * as CompletionLogger from '../logger';
 import { parseAndTruncateCompletion } from '../text-processing/parse-and-truncate-completion';
 import {
 	processCompletion,
@@ -27,6 +28,8 @@ export interface FetchAndProcessCompletionsParams {
 	completionResponseGenerator: AsyncIterable<StreamCompletionResponse>;
 	providerSpecificPostProcess: (insertText: string) => string;
 	providerOptions: Readonly<ProviderOptions>;
+	logger: CompletionLogger.LoggingService,
+	spanId: string;
 }
 
 /**
@@ -41,6 +44,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		abortController,
 		providerOptions,
 		providerSpecificPostProcess,
+		logger,
+		spanId,
 	} = params;
 	const { hotStreak, docContext, multiline, firstCompletionTimeout } = providerOptions;
 
@@ -81,16 +86,16 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 	for await (const { completion, stopReason } of completionResponseGenerator) {
 		const isFirstCompletionTimeoutElapsed =
 			performance.now() - generatorStartTime >= firstCompletionTimeout;
-		console.log('sidecar.isFirstCompletionTimeoutElapsed', isFirstCompletionTimeoutElapsed);
+		// console.log('sidecar.isFirstCompletionTimeoutElapsed', isFirstCompletionTimeoutElapsed);
 		const isFullResponse = stopReason !== CompletionStopReason.StreamingChunk;
 		const shouldYieldFirstCompletion = isFullResponse || isFirstCompletionTimeoutElapsed;
-		console.log('sidecar.shouldYieldFirstCompletion', shouldYieldFirstCompletion);
+		// console.log('sidecar.shouldYieldFirstCompletion', shouldYieldFirstCompletion);
 
 		const extractCompletion = shouldYieldFirstCompletion
 			? parseAndTruncateCompletion
 			: canUsePartialCompletion;
 		const rawCompletion = providerSpecificPostProcess(completion);
-		console.log('sidecar.rawCompletion', rawCompletion);
+		// console.log('sidecar.rawCompletion', rawCompletion);
 
 		// this is terminating cases where we have completions like \n console.log('something')
 		// the condition here is that the first line is empty and we didn't reach the first completion timeout
@@ -109,7 +114,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			yield* hotStreakExtractor.extract(rawCompletion, isFullResponse);
 			continue;
 		} else {
-			console.log('sidecar.hotStreakExtractor.presence', false);
+			// console.log('sidecar.hotStreakExtractor.presence', false);
 		}
 
 		/**
@@ -118,7 +123,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		 * Note: This is always true for now, but we might want to change that in the future.
 		 */
 		if (multiline) {
-			console.log('sidecar.streaming.multiline', true);
+			// console.log('sidecar.streaming.multiline', true);
 			// extractCompletion here is always canUsePartialCompletion
 			const completion = extractCompletion(rawCompletion, {
 				document: providerOptions.document,
@@ -126,11 +131,11 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				isDynamicMultilineCompletion: false,
 			});
 
-			console.log('sidecar.streaming.multiline.completion.is_null', completion !== null);
+			// console.log('sidecar.streaming.multiline.completion.is_null', completion !== null);
 
 			if (completion) {
 				const completedCompletion = processCompletion(completion, providerOptions);
-				console.log('sidecarCompletion.completion.multiline.completion', completedCompletion.insertText);
+				// console.log('sidecarCompletion.completion.multiline.completion', completedCompletion.insertText);
 				yield* stopStreamingAndUsePartialResponse({
 					completedCompletion,
 					isFullResponse,
@@ -142,7 +147,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		}
 
 		// we are not going below this at all, cause we enabled multiline by default
-		console.log('sidecar.DO_NOT_LOG');
+		// console.log('sidecar.DO_NOT_LOG');
 		/**
 		 * This completion was started without the multiline trigger at the end of current line.
 		 * Check if the the first completion line ends with the multiline trigger. If that's the case

@@ -51,6 +51,11 @@ export interface ProviderOptions {
 	 */
 	id: string;
 
+	/**
+	 * The span id of the current completion request.
+	 */
+	spanId: string;
+
 	position: Position;
 	document: TextDocument;
 	docContext: DocumentContext;

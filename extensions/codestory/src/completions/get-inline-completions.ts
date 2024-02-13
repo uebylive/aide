@@ -66,6 +66,10 @@ export interface InlineCompletionsParams {
 
 	// sidecar client
 	sidecarClient: SideCarClient;
+
+	// Loggers
+	logger: CompletionLogger.LoggingService;
+	spanId: string;
 }
 
 /**
@@ -183,9 +187,11 @@ async function doGetInlineCompletions(
 		completionIntent,
 		lastAcceptedCompletionItem,
 		sidecarClient,
+		logger,
+		spanId,
 	} = params;
-	console.log('sidecar.callingInlineCompletions', position.line, position.character);
-	console.log('sidecar.multilineTrigger', multilineTrigger);
+	// console.log('sidecar.callingInlineCompletions', position.line, position.character);
+	// console.log('sidecar.multilineTrigger', multilineTrigger);
 
 
 	// If we have a suffix in the same line as the cursor and the suffix contains any word
@@ -264,12 +270,16 @@ async function doGetInlineCompletions(
 			})
 			: null;
 	if (resultToReuse) {
-		console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
-		console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
+		// console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
+		// console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
 		// log the resuleToReuse here
-		for (const candidate of resultToReuse.items) {
-			console.log('sidecar.reuseResult', candidate.insertText);
-		}
+		// for (const candidate of resultToReuse.items) {
+		// 	console.log('sidecar.reuseResult', candidate.insertText);
+		// }
+		logger.logInfo('sidecar.reuseLastCandidate', {
+			'reuse': true,
+			'id': spanId,
+		});
 		return resultToReuse;
 	}
 
@@ -319,6 +329,7 @@ async function doGetInlineCompletions(
 	const provider = new SidecarProvider(
 		{
 			id: logId,
+			spanId: spanId,
 			position: requestParams.position,
 			document: requestParams.document,
 			docContext: requestParams.docContext,
@@ -333,6 +344,7 @@ async function doGetInlineCompletions(
 			dynamicMultilineCompletions: true,
 		},
 		sidecarClient,
+		logger,
 	);
 
 	// Get the processed completions from providers
@@ -345,10 +357,10 @@ async function doGetInlineCompletions(
 	setIsLoading?.(false);
 
 	// log the final completions which are coming from the request manager
-	for (const completion of completions) {
-		console.log('sidecar.request.manager.completion', completion.insertText);
-	}
-	console.log('sidecar.request.manager.length', logId, completions.length);
+	// for (const completion of completions) {
+	// 	console.log('sidecar.request.manager.completion', completion.insertText);
+	// }
+	// console.log('sidecar.request.manager.length', logId, completions.length);
 
 	CompletionLogger.loaded(logId, requestParams, completions, source);
 

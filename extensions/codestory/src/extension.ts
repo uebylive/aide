@@ -158,7 +158,7 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	// register the commands here
-	aideCommands(completionProvider);
+	// aideCommands(completionProvider);
 	// set the status bar as well
 	startupStatusBar();
 

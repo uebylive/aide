@@ -27,7 +27,7 @@ export function parseAndTruncateCompletion(
 	} = params;
 	// TODO(skcd): Multiline trigger generally happens only when we are at the end of { or equivalent thing
 	// not on newline, should we just make it work always regardless?
-	console.log('sidecar.parseAndTruncateCompletion.multiline', multilineTrigger);
+	// console.log('sidecar.parseAndTruncateCompletion.multiline', multilineTrigger);
 
 	const multiline = Boolean(multilineTrigger);
 	const insertTextBeforeTruncation = (
@@ -72,7 +72,7 @@ export function parseAndTruncateCompletion(
 		parsed.truncatedWith = truncationResult.truncatedWith
 	}
 
-	console.log('sidecar.parseAndTruncateCompletion.parsed', parsed.insertText);
+	// console.log('sidecar.parseAndTruncateCompletion.parsed', parsed.insertText);
 
 	return parsed
 }
