@@ -335,8 +335,8 @@ async function doGetInlineCompletions(
 			docContext: requestParams.docContext,
 			multiline: true,
 			n: 1,
-			// we are setting it to 500ms here so its lower
-			firstCompletionTimeout: 500,
+			// we are setting it to 600ms here so its lower
+			firstCompletionTimeout: 600,
 			// we want to enable the hot streak
 			hotStreak: true,
 			// we want to generate multiline completions
