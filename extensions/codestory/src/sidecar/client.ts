@@ -435,7 +435,7 @@ export class SideCarClient {
 		};
 	}
 
-	async *inlineCompletion(
+	async * inlineCompletion(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,
 	): AsyncIterable<CompletionResponse> {

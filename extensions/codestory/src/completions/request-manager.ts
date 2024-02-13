@@ -8,6 +8,7 @@ import type * as vscode from 'vscode';
 
 
 import type { DocumentContext } from './get-current-doc-context';
+import * as CompletionLogger from './logger';
 import {
 	InlineCompletionsResultSource,
 	type LastInlineCompletionCandidate,
@@ -51,6 +52,8 @@ interface RequestsManagerParams {
 	requestParams: RequestParams;
 	isCacheEnabled: boolean;
 	provider: Provider;
+	logger: CompletionLogger.LoggingService,
+	spanId: string,
 }
 
 /**
@@ -78,7 +81,7 @@ export class RequestManager {
 	public async request(params: RequestsManagerParams): Promise<RequestManagerResult> {
 		this.latestRequestParams = params;
 
-		const { requestParams, isCacheEnabled, provider } = params;
+		const { requestParams, isCacheEnabled, provider, logger, spanId } = params;
 
 		const cachedCompletions = this.cache.get(requestParams);
 		if (isCacheEnabled && cachedCompletions) {
@@ -154,7 +157,7 @@ export class RequestManager {
 						);
 					}
 
-					this.cancelIrrelevantRequests();
+					this.cancelIrrelevantRequests(logger, spanId);
 				}
 			} catch (error) {
 				request.reject(error as Error);
@@ -163,7 +166,7 @@ export class RequestManager {
 			}
 		};
 
-		this.cancelIrrelevantRequests();
+		this.cancelIrrelevantRequests(logger, spanId);
 
 		generateCompletions();
 		return request.promise;
@@ -225,7 +228,7 @@ export class RequestManager {
 		}
 	}
 
-	private cancelIrrelevantRequests(): void {
+	private cancelIrrelevantRequests(logger: CompletionLogger.LoggingService, spanId: string): void {
 		if (!this.latestRequestParams) {
 			return;
 		}
@@ -248,7 +251,12 @@ export class RequestManager {
 			}
 
 			if (shouldAbort) {
-				console.log('Aide', 'Irrelevant request aborted');
+				logger.logInfo('sidecar.cancelIrrelevantRequests', {
+					'event_name': 'cancel_irrelevant_requests',
+					'request_id_reason': spanId,
+					// TODO(skcd): We do not trust this, but lets keep it for now
+					'request_id_broken_do_not_trust': spanId,
+				});
 				request.abortController.abort();
 				this.inflightRequests.delete(request);
 			}

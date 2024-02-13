@@ -41,7 +41,7 @@ export class SidecarProvider extends Provider {
 				byteOffset: this.options.document.offsetAt(this.options.position),
 			},
 			id: this.options.spanId,
-			requestId: this.options.id,
+			requestId: this.options.spanId,
 		};
 		const responseStream = this._sidecarClient.inlineCompletionText(
 			completionRequest,

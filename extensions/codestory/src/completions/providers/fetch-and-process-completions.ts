@@ -90,6 +90,10 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		const isFullResponse = stopReason !== CompletionStopReason.StreamingChunk;
 		const shouldYieldFirstCompletion = isFullResponse || isFirstCompletionTimeoutElapsed;
 		// console.log('sidecar.shouldYieldFirstCompletion', shouldYieldFirstCompletion);
+		logger.logInfo('sidecar.shouldYieldFirstCompletion', {
+			'event_name': 'should_yield_first_completion',
+			'should_yield_first_completion': shouldYieldFirstCompletion,
+		});
 
 		const extractCompletion = shouldYieldFirstCompletion
 			? parseAndTruncateCompletion
