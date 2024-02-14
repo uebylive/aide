@@ -101,12 +101,6 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
 		});
 
-		if (completion.endsWith('\n')) {
-			// yield {
-
-			// }
-		}
-
 		const extractCompletion = shouldYieldFirstCompletion
 			? parseAndTruncateCompletion
 			: canUsePartialCompletion;
@@ -121,10 +115,10 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		// towards the end of the line and we have a completion like \n console.log('something')
 		// we will terminate here in the case that the timeout for the file line is pretty large
 		// and because it starts with a \n, so lets remove it for now.
-		// if (!getFirstLine(rawCompletion) && !shouldYieldFirstCompletion) {
-		// 	console.log('sidecar.getFirstLine', 'empty-string');
-		// 	continue;
-		// }
+		if (!getFirstLine(rawCompletion) && !shouldYieldFirstCompletion) {
+			// console.log('sidecar.getFirstLine', 'empty-string');
+			continue;
+		}
 
 		if (hotStreakExtractor) {
 			yield* hotStreakExtractor.extract(rawCompletion, isFullResponse);

@@ -46,23 +46,18 @@ export function parseAndTruncateCompletion(
 	}
 
 	if (multiline) {
-		// This just returns the string as it is with no changes done
 		const truncationResult = truncateMultilineBlock({
 			parsed,
 			document,
 			docContext,
 		});
 
-		// TODO(skcd): Bring this back later on
-		// what we are doing here is using tree sitter to check if we should stop streaming
-		// because we do not have the tree-sitter implementation working right now
-		// Stop streaming _some_ unhelpful dynamic multiline completions by truncating the insert text early.
-		// if (
-		//     isDynamicMultilineCompletion &&
-		//     isDynamicMultilineCompletionToStopStreaming(truncationResult.nodeToInsert)
-		// ) {
-		//     truncationResult.insertText = getFirstLine(truncationResult.insertText)
-		// }
+		if (
+			isDynamicMultilineCompletion &&
+			isDynamicMultilineCompletionToStopStreaming(truncationResult.nodeToInsert)
+		) {
+			truncationResult.insertText = getFirstLine(truncationResult.insertText)
+		}
 
 		const initialLineCount = insertTextBeforeTruncation.split('\n').length
 		const truncatedLineCount = truncationResult.insertText.split('\n').length
