@@ -26,7 +26,6 @@ export class SidecarProvider extends Provider {
 			'event_name': 'generate_completions',
 			'id': this.options.spanId,
 		});
-		// console.log('sidecar.completion.isDynamicMultiline', isDynamicMultiline);
 		const fetchAndProcessCompletionsImpl = isDynamicMultiline
 			? fetchAndProcessDynamicMultilineCompletions
 			: fetchAndProcessCompletions;

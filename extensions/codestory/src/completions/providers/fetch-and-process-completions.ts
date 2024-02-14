@@ -24,11 +24,15 @@ export interface StreamCompletionResponse {
 }
 
 export interface FetchAndProcessCompletionsParams {
+	// the abort controller that should be used to cancel the request
 	abortController: AbortController;
+	// the generator that will yield the completions
 	completionResponseGenerator: AsyncIterable<StreamCompletionResponse>;
 	providerSpecificPostProcess: (insertText: string) => string;
 	providerOptions: Readonly<ProviderOptions>;
+	// the logger to use
 	logger: CompletionLogger.LoggingService,
+	// the span id to use for logging
 	spanId: string;
 }
 
@@ -106,11 +110,11 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
 		});
 
-		// const extractCompletion = shouldYieldFirstCompletion
-		// 	? parseAndTruncateCompletion
-		// 	: canUsePartialCompletion;
+		const extractCompletion = shouldYieldFirstCompletion
+			? parseAndTruncateCompletion
+			: canUsePartialCompletion;
 		// TODO(skcd): We always want to have a single complete line as completion
-		const extractCompletion = canUsePartialCompletion;
+		// const extractCompletion = canUsePartialCompletion;
 		const rawCompletion = providerSpecificPostProcess(completion);
 		// console.log('sidecar.rawCompletion', rawCompletion);
 
@@ -133,11 +137,8 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		/**
 		 * This completion was triggered with the multiline trigger at the end of current line.
 		 * Process it as the usual multiline completion: continue streaming until it's truncated.
-		 * Note: This is always true for now, but we might want to change that in the future.
 		 */
 		if (multiline) {
-			// console.log('sidecar.streaming.multiline', true);
-			// extractCompletion here is always canUsePartialCompletion
 			const completion = extractCompletion(rawCompletion, {
 				document: providerOptions.document,
 				docContext,
@@ -151,11 +152,9 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				raw_completion: rawCompletion,
 			});
 
-			// console.log('sidecar.streaming.multiline.completion.is_null', completion !== null);
 
 			if (completion) {
 				const completedCompletion = processCompletion(completion, providerOptions);
-				// console.log('sidecarCompletion.completion.multiline.completion', completedCompletion.insertText);
 				yield* stopStreamingAndUsePartialResponse({
 					completedCompletion,
 					isFullResponse,
@@ -171,8 +170,6 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			id: spanId,
 		});
 
-		// we are not going below this at all, cause we enabled multiline by default
-		// console.log('sidecar.DO_NOT_LOG');
 		/**
 		 * This completion was started without the multiline trigger at the end of current line.
 		 * Check if the the first completion line ends with the multiline trigger. If that's the case

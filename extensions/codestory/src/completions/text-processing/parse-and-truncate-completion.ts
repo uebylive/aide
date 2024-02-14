@@ -27,6 +27,8 @@ export function parseAndTruncateCompletion(
 		docContext,
 		docContext: { multilineTrigger, prefix },
 		isDynamicMultilineCompletion,
+		logger,
+		spanId,
 	} = params;
 
 	const multiline = Boolean(multilineTrigger);
@@ -71,7 +73,12 @@ export function parseAndTruncateCompletion(
 	}
 
 	// console.log('sidecar.parseAndTruncateCompletion.parsed', parsed.insertText);
-
+	logger.logInfo('sidecar.parseAndTruncateCompletion.parsed', {
+		'event_name': 'sidecar.parseAndTruncateCompletion.parsed',
+		'id': spanId,
+		'insert_text': parsed.insertText,
+		'completion': completion,
+	});
 	return parsed
 }
 
