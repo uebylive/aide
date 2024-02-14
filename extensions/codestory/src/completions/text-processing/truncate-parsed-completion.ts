@@ -20,7 +20,7 @@ interface CompletionContext {
  * Inserts missing closing brackets in the completion text.
  * This handles cases where a missing bracket breaks the incomplete parse-tree.
  */
-export function insertMissingBrackets(text: string): string {
+export function insertMissingBrackets(text: string, logger: LoggingService, spanId: string): string {
 	const openingStack: OpeningBracket[] = []
 	const bracketPairs = Object.entries(BRACKET_PAIR)
 
@@ -36,13 +36,20 @@ export function insertMissingBrackets(text: string): string {
 		}
 	}
 
-	return (
+	const fixedString = (
 		text +
 		openingStack
 			.reverse()
 			.map(openBracket => BRACKET_PAIR[openBracket])
 			.join('')
-	)
+	);
+	logger.logInfo('sidecar.insert_missing_brackets', {
+		'event_name': 'sidecar.insert_missing_brackets',
+		'inital_string': text,
+		'fixed_string': fixedString,
+		'id': spanId,
+	});
+	return fixedString;
 }
 
 interface TruncateParsedCompletionResult {
@@ -55,8 +62,7 @@ interface TruncateParsedCompletionResult {
  * Uses tree-sitter to walk the parse-tree with the inserted completion and truncate it.
  */
 export function truncateParsedCompletion(context: CompletionContext): TruncateParsedCompletionResult {
-	const { completion, document, docContext } = context
-	// TODO(skcd): Fix this part of the logic
+	const { completion, document, docContext, logger, spanId } = context
 	const parseTreeCache = getCachedParseTreeForDocument(document)
 
 	if (!completion.tree || !completion.points || !parseTreeCache) {
@@ -68,7 +74,9 @@ export function truncateParsedCompletion(context: CompletionContext): TruncatePa
 	let fixedCompletion = completion
 
 	const insertTextWithMissingBrackets = insertMissingBrackets(
-		docContext.currentLinePrefix + insertText
+		docContext.currentLinePrefix + insertText,
+		logger,
+		spanId,
 	).slice(docContext.currentLinePrefix.length)
 
 	if (insertTextWithMissingBrackets.length !== insertText.length) {
@@ -101,6 +109,12 @@ export function truncateParsedCompletion(context: CompletionContext): TruncatePa
 		const overlap = findLargestSuffixPrefixOverlap(nodeToInsert.text, insertText)
 
 		if (overlap) {
+			logger.logInfo('sidecar.truncate_parsed_completion.overlap', {
+				'event_name': 'sidecar.truncate_parsed_completion.overlap',
+				'completion': completion.insertText,
+				'overlap': overlap,
+				'final_completion': overlap,
+			});
 			return {
 				insertText: overlap,
 				nodeToInsert,
@@ -108,6 +122,11 @@ export function truncateParsedCompletion(context: CompletionContext): TruncatePa
 		}
 	}
 
+	logger.logInfo('sidecar.truncate_parsed_completion.no_overlap', {
+		'event_name': 'sidecar.truncate_parsed_completion.no_overlap',
+		'completion': completion.insertText,
+		'final_completion': insertText,
+	});
 	return { insertText, nodeToInsert: nodeToInsert || undefined }
 }
 

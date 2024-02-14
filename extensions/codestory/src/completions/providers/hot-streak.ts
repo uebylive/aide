@@ -103,6 +103,7 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 			'raw_completion': rawCompletion,
 			'raw_completion_len': rawCompletion.length,
 			'is_request_ended': isRequestEnd,
+			'updated_document_context': updatedDocContext.injectedCompletionText,
 			id: spanId,
 		});
 		while (true) {
