@@ -351,7 +351,8 @@ async function doGetInlineCompletions(
 			position: requestParams.position,
 			document: requestParams.document,
 			docContext: requestParams.docContext,
-			multiline: true,
+			// only do multline completions if the trigger is set
+			multiline: docContext.multilineTrigger ? true : false,
 			n: 1,
 			// we are setting it to 1000ms here so its lower
 			firstCompletionTimeout: 1000,

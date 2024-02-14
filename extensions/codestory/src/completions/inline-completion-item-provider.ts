@@ -233,6 +233,7 @@ export class InlineCompletionItemProvider
 		this.logger.logInfo('sidecar.initialRequest.docContext', {
 			event_name: 'sidecar.initialRequest.docContext',
 			id: id,
+			multiline_trigger: docContext.multilineTrigger ?? "no_multiline_trigger",
 		});
 
 		const completionIntent = getCompletionIntent({
