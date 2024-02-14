@@ -714,7 +714,7 @@ export class LoggingService {
 		}
 		this.logMessage(message, "DEBUG");
 		if (data) {
-			this.logObject(data);
+			this.logObject(message, data);
 		}
 	}
 
@@ -731,9 +731,9 @@ export class LoggingService {
 		) {
 			return;
 		}
-		this.logMessage(message, "INFO");
+		// this.logMessage(message, "INFO");
 		if (data) {
-			this.logObject(data);
+			this.logObject(message, data);
 		}
 	}
 
@@ -748,7 +748,7 @@ export class LoggingService {
 		}
 		this.logMessage(message, "WARN");
 		if (data) {
-			this.logObject(data);
+			this.logObject(message, data);
 		}
 	}
 
@@ -769,7 +769,7 @@ export class LoggingService {
 				this.outputChannel.appendLine(error.stack);
 			}
 		} else if (error) {
-			this.logObject(error);
+			this.logObject(message, error);
 		}
 	}
 
@@ -777,15 +777,21 @@ export class LoggingService {
 		this.outputChannel.show();
 	}
 
-	private logObject(data: unknown): void {
+	private logObject(message: string, data: any): void {
 		// const message = JSON.parser
 		//   .format(JSON.stringify(data, null, 2), {
 		//     parser: "json",
 		//   })
 		//   .trim();
-		const message = JSON.stringify(data, null, 2); // dont use prettier to keep it simple
+		const now = new Date();
+		const finalJson = {
+			message,
+			...data,
+			timestamp: now,
+		};
+		const finalJsonStr = JSON.stringify(finalJson, null, 2); // dont use prettier to keep it simple
 
-		this.outputChannel.appendLine(message);
+		this.outputChannel.appendLine(finalJsonStr);
 	}
 
 	/**

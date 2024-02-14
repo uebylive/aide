@@ -83,6 +83,12 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 		dynamicMultilineCompletions = false,
 	} = providerOptions;
 
+	logger.logInfo('sidecar.hotstreak.create', {
+		'event_name': 'hotstreak.create',
+		'raw_completion': completedCompletion,
+		'raw_completion_len': completedCompletion.insertText.length,
+	});
+
 	let updatedDocContext = insertCompletionAndPressEnter(
 		docContext,
 		completedCompletion,
@@ -95,6 +101,7 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 		logger.logInfo('sidecar.hotstreak.completion', {
 			'event_name': 'hotstreak_extract',
 			'raw_completion': rawCompletion,
+			'raw_completion_len': rawCompletion.length,
 			'is_request_ended': isRequestEnd,
 			id: spanId,
 		});

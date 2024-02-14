@@ -97,8 +97,15 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			'should_yield_first_completion': shouldYieldFirstCompletion,
 			'multiline': multiline,
 			'completion': completion,
+			'completion_len': completion.length,
 			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
 		});
+
+		if (completion.endsWith('\n')) {
+			// yield {
+
+			// }
+		}
 
 		const extractCompletion = shouldYieldFirstCompletion
 			? parseAndTruncateCompletion
