@@ -297,6 +297,30 @@ async function doGetInlineCompletions(
 		artificialDelay,
 	});
 
+	const requestParams: RequestParams = {
+		document,
+		docContext,
+		position,
+		selectedCompletionInfo,
+		abortSignal,
+	};
+
+	const cachedResult = requestManager.checkCache({
+		requestParams,
+		isCacheEnabled: triggerKind !== TriggerKind.Manual,
+		logger,
+		spanId,
+	})
+	if (cachedResult) {
+		const { completions, source } = cachedResult
+
+		return {
+			logId,
+			items: completions,
+			source,
+		}
+	}
+
 	// Debounce to avoid firing off too many network requests as the user is still typing.
 	const interval =
 		((multiline ? debounceInterval?.multiLine : debounceInterval?.singleLine) ?? 0) +
@@ -318,13 +342,7 @@ async function doGetInlineCompletions(
 		return null;
 	}
 
-	const requestParams: RequestParams = {
-		document,
-		docContext,
-		position,
-		selectedCompletionInfo,
-		abortSignal,
-	};
+	// if the abort signal is not aborted, log here
 
 	const provider = new SidecarProvider(
 		{

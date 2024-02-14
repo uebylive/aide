@@ -28,16 +28,12 @@ export function parseAndTruncateCompletion(
 		docContext: { multilineTrigger, prefix },
 		isDynamicMultilineCompletion,
 	} = params;
-	// TODO(skcd): Multiline trigger generally happens only when we are at the end of { or equivalent thing
-	// not on newline, should we just make it work always regardless?
-	// console.log('sidecar.parseAndTruncateCompletion.multiline', multilineTrigger);
 
 	const multiline = Boolean(multilineTrigger);
 	const insertTextBeforeTruncation = (
 		multiline ? normalizeStartLine(completion, prefix) : completion
 	).trimEnd();
 
-	// This is always true for now and returns whatever we have
 	const parsed = parseCompletion({
 		completion: { insertText: insertTextBeforeTruncation },
 		document,

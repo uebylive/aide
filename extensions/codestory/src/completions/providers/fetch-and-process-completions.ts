@@ -61,6 +61,11 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		stopParams: StopParams
 	): Generator<FetchCompletionResult> {
 		const { completedCompletion, rawCompletion, isFullResponse } = stopParams;
+		logger.logInfo('sidecar.stop_streamind_and_use_partial_response', {
+			'event_name': 'sidecar.stop_streaming_and_use_partial_response_first',
+			'completion': completedCompletion.insertText,
+			'id': spanId,
+		});
 		yield {
 			docContext,
 			completion: {
@@ -101,14 +106,22 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
 		});
 
-		const extractCompletion = shouldYieldFirstCompletion
-			? parseAndTruncateCompletion
-			: canUsePartialCompletion;
+		// const extractCompletion = shouldYieldFirstCompletion
+		// 	? parseAndTruncateCompletion
+		// 	: canUsePartialCompletion;
+		// TODO(skcd): We always want to have a single complete line as completion
+		const extractCompletion = canUsePartialCompletion;
 		const rawCompletion = providerSpecificPostProcess(completion);
 		// console.log('sidecar.rawCompletion', rawCompletion);
 
 		if (!getFirstLine(rawCompletion) && !shouldYieldFirstCompletion) {
 			// console.log('sidecar.getFirstLine', 'empty-string');
+			logger.logDebug('sidecar.stream_response.get_first_line', {
+				'event_name': 'sidecar.stream_response.get_first_line',
+				'first_line': getFirstLine(rawCompletion),
+				'completion': rawCompletion,
+				'id': spanId,
+			});
 			continue;
 		}
 
@@ -134,7 +147,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			});
 			logger.logInfo('sidecar.multiline.completion_extract', {
 				event_name: 'sidecar.multiline.completion_extract',
-				completion: completion,
+				completion: completion?.insertText,
 				raw_completion: rawCompletion,
 			});
 

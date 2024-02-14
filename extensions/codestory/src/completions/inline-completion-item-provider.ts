@@ -208,6 +208,8 @@ export class InlineCompletionItemProvider
 			takeSuggestWidgetSelectionIntoAccount = true;
 		}
 
+		// check if the [user]
+
 		const triggerKind =
 			this.lastManualCompletionTimestamp &&
 				this.lastManualCompletionTimestamp > Date.now() - 500
@@ -293,6 +295,12 @@ export class InlineCompletionItemProvider
 				this.lastCandidate = undefined;
 				return null;
 			}
+
+			this.logger.logInfo('sidecar.providerInlineCompletionItems.COMPLETE', {
+				'event_name': 'sidecar.provide_inline_completions.COMPLETE',
+				'inline_completions': result.items.map((item) => item.insertText),
+				'id': id,
+			});
 
 			// Checks if the current line prefix length is less than or equal to the last triggered prefix length
 			// If true, that means user has backspaced/deleted characters to trigger a new completion request,

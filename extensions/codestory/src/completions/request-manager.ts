@@ -78,6 +78,25 @@ export class RequestManager {
 		this.sidecarClient = sidecarClient;
 	}
 
+	public checkCache(
+		params: Pick<RequestsManagerParams, 'requestParams' | 'isCacheEnabled' | 'logger' | 'spanId'>
+	): RequestManagerResult | null {
+		const { requestParams, isCacheEnabled, logger, spanId } = params
+		const cachedCompletions = this.cache.get(requestParams)
+
+		if (isCacheEnabled && cachedCompletions) {
+			logger.logInfo('sidecar.request_manager.cache_hit', {
+				'event_name': 'sidecar.request_manager.cache_hit',
+				'id': spanId,
+			});
+			// addAutocompleteDebugEvent('RequestManager.checkCache', { cachedCompletions })
+			return cachedCompletions
+		}
+		return null
+	}
+
+	// We are internally caching the results here with the hotstreak etc
+	// we should carefully check why the hotstreak is not getting hits
 	public async request(params: RequestsManagerParams): Promise<RequestManagerResult> {
 		this.latestRequestParams = params;
 
@@ -107,22 +126,19 @@ export class RequestManager {
 						result => result.completion.stopReason === STOP_REASON_HOT_STREAK
 					);
 
+					logger.logInfo('sidecar.request_manager.hotstreak.completions', {
+						event_name: 'sidecar.request_manager.hotstreak.completions',
+						'id': spanId,
+						'completions': hotStreakCompletions.length,
+					});
+
 
 					if (currentCompletions.length > 0) {
 						// Process regular completions that will shown to the user.
 						const completions = currentCompletions.map(result => result.completion);
-						// log the completions here
-						for (const completion of completions) {
-							console.log('sidecarprovider.preprocess.inserttext', completion.insertText);
-						}
-
 
 						// Shared post-processing logic
 						const processedCompletions = processInlineCompletions(completions, requestParams);
-						// log the processed completions here
-						for (const completion of processedCompletions) {
-							console.log('sidecarprovider.inserttext', completion.insertText);
-						}
 
 						// Cache even if the request was aborted or already fulfilled.
 						this.cache.set(requestParams, {
