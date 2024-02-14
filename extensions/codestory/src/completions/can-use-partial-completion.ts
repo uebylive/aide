@@ -60,9 +60,9 @@ export function canUsePartialCompletion(
 	// then we do not have any line truncated count, so do we always end up returning null?
 	// always???
 	// SKETCHY AF condition
-	// if (docContext.multilineTrigger) {
-	// 	return (item.lineTruncatedCount || 0) > 0 ? item : null;
-	// }
+	if (docContext.multilineTrigger) {
+		return (item.lineTruncatedCount || 0) > 0 ? item : null;
+	}
 
 	return item.insertText.trim() === '' ? null : item;
 }

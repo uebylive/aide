@@ -11,11 +11,14 @@ import {
 } from './process-inline-completions'
 import { getLastLine, lines } from './utils'
 import { getCachedParseTreeForDocument } from './treeSitter/parseTree'
+import { LoggingService } from '../logger'
 
 interface CompletionContext {
-	completion: InlineCompletionItem
-	document: TextDocument
-	docContext: DocumentContext
+	completion: InlineCompletionItem;
+	document: TextDocument;
+	docContext: DocumentContext;
+	logger: LoggingService;
+	spanId: string;
 }
 
 export interface ParsedCompletion extends InlineCompletionItemWithAnalytics {
@@ -100,6 +103,8 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 		document,
 		docContext,
 		docContext: { position, multilineTriggerPosition },
+		logger,
+		spanId,
 	} = context
 	const parseTreeCache = getCachedParseTreeForDocument(document)
 
@@ -146,7 +151,14 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 		treeWithCompletion.rootNode,
 		points?.trigger || points.start,
 		points.end
-	)
+	);
+
+	logger.logInfo('sidecar.tree_sitter.errors', {
+		'event_name': 'sidecar.tree_sitter.errors',
+		'id': spanId,
+		'parse_error_count': captures.length,
+		'completion': completion.insertText,
+	});
 
 	return {
 		...completion,

@@ -35,7 +35,8 @@ export function getParser(language: SupportedLanguage): Parser | undefined {
 const getParseLanguage = (languageId: string): SupportedLanguage | null => {
 	const matchedLang = Object.entries(SupportedLanguage).find(
 		([key, value]) => value === (languageId as SupportedLanguage)
-	)
+	);
+	console.log('sidecar.tree-sitter.parse-tree-cache.check-language', languageId, matchedLang);
 
 	return matchedLang ? (languageId as SupportedLanguage) : null
 }
@@ -56,8 +57,9 @@ export async function createParser(language: SupportedLanguage): Promise<Parser 
 		return cachedParser
 	}
 
-	const wasmPath = path.resolve('./wasm', SUPPORTED_LANGUAGES[language])
+	const wasmPath = path.resolve('./extensions/codestory/src/completions/text-processing/treeSitter/wasm', SUPPORTED_LANGUAGES[language])
 	if (!(await isRegularFile(vscode.Uri.file(wasmPath)))) {
+		console.log('sidecar.tree-sitter.parse-tree-cache.missing-wasm', wasmPath, 'for', language);
 		return undefined;
 	}
 
@@ -83,10 +85,11 @@ interface ParseTreeCache {
 }
 
 export function getCachedParseTreeForDocument(document: TextDocument): ParseTreeCache | null {
-	const parseLanguage = getLanguageIfTreeSitterEnabled(document)
+	const parseLanguage = getLanguageIfTreeSitterEnabled(document);
 
 	if (!parseLanguage) {
-		return null
+		console.log('sidecar.tree-sitter.parse-tree-cache.miss', document.uri.toString());
+		return null;
 	}
 
 	const parser = getParser(parseLanguage)
@@ -97,6 +100,8 @@ export function getCachedParseTreeForDocument(document: TextDocument): ParseTree
 		return null
 	}
 
+	console.log('sidecar.tree-sitter.parse-tree-cache.hit', cacheKey);
+
 	return { tree, parser, cacheKey }
 }
 
@@ -104,13 +109,17 @@ async function parseDocument(document: TextDocument): Promise<void> {
 	const parseLanguage = getLanguageIfTreeSitterEnabled(document)
 
 	if (!parseLanguage) {
+		console.log('sidecar.tree-sitter.parse_document.not_present_language', document.uri.toString());
 		return
 	}
 
 	const parser = await createParser(parseLanguage);
 	if (!parser) {
+		console.log('sidecar.tree-sitter.parse_document.missing_parser', document.uri.toString());
 		return
 	}
+
+	console.log('sidecar.tree-sitter.parse_document.parse', document.uri.toString());
 
 	updateParseTreeCache(document, parser)
 }
@@ -121,7 +130,7 @@ export function updateParseTreeCache(document: TextDocument, parser: Parser): vo
 }
 
 function getLanguageIfTreeSitterEnabled(document: TextDocument): SupportedLanguage | null {
-	const parseLanguage = getParseLanguage(document.languageId)
+	const parseLanguage = getParseLanguage(document.languageId);
 
 	/**
 	 * 1. Do not use tree-sitter for unsupported languages.
@@ -188,6 +197,7 @@ export function asPoint(position: Pick<vscode.Position, 'line' | 'character'>): 
 
 export function parseAllVisibleDocuments(): void {
 	for (const editor of vscode.window.visibleTextEditors) {
+		console.log('sidecar.parse_all_visialbe_documents', editor.document.uri.toString());
 		void parseDocument(editor.document)
 	}
 }

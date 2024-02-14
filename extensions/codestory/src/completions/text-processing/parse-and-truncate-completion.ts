@@ -8,11 +8,14 @@ import type { InlineCompletionItemWithAnalytics } from './process-inline-complet
 import { normalizeStartLine, truncateMultilineCompletion } from './truncate-multiline-completion'
 import { truncateParsedCompletion } from './truncate-parsed-completion'
 import { getFirstLine } from './utils'
+import { LoggingService } from '../logger'
 
 interface ParseAndTruncateParams {
 	document: TextDocument
 	docContext: DocumentContext
-	isDynamicMultilineCompletion: boolean
+	isDynamicMultilineCompletion: boolean;
+	logger: LoggingService;
+	spanId: string;
 }
 
 export function parseAndTruncateCompletion(
@@ -39,6 +42,8 @@ export function parseAndTruncateCompletion(
 		completion: { insertText: insertTextBeforeTruncation },
 		document,
 		docContext,
+		logger: params.logger,
+		spanId: params.spanId,
 	})
 
 	if (parsed.insertText === '') {
@@ -50,6 +55,8 @@ export function parseAndTruncateCompletion(
 			parsed,
 			document,
 			docContext,
+			logger: params.logger,
+			spanId: params.spanId,
 		});
 
 		if (
@@ -75,7 +82,9 @@ export function parseAndTruncateCompletion(
 interface TruncateMultilineBlockParams {
 	parsed: ParsedCompletion
 	docContext: DocumentContext
-	document: TextDocument
+	document: TextDocument;
+	logger: LoggingService;
+	spanId: string;
 }
 
 interface TruncateMultilineBlockResult {
@@ -94,6 +103,8 @@ function truncateMultilineBlock(params: TruncateMultilineBlockParams): TruncateM
 				completion: parsed,
 				docContext,
 				document,
+				logger: params.logger,
+				spanId: params.spanId,
 			}),
 		}
 	}

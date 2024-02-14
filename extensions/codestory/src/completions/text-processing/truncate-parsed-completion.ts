@@ -6,11 +6,14 @@ import type { DocumentContext } from '../get-current-doc-context'
 import { parseCompletion, type ParsedCompletion } from './parse-completion'
 import { BRACKET_PAIR, type OpeningBracket } from './utils'
 import { getCachedParseTreeForDocument } from './treeSitter/parseTree'
+import { LoggingService } from '../logger'
 
 interface CompletionContext {
-	completion: ParsedCompletion
-	document: TextDocument
-	docContext: DocumentContext
+	completion: ParsedCompletion;
+	document: TextDocument;
+	docContext: DocumentContext;
+	logger: LoggingService;
+	spanId: string;
 }
 
 /**
@@ -73,6 +76,8 @@ export function truncateParsedCompletion(context: CompletionContext): TruncatePa
 			completion: { insertText: insertTextWithMissingBrackets },
 			document,
 			docContext,
+			logger: context.logger,
+			spanId: context.spanId,
 		})
 
 		if (fixedCompletion?.tree) {
