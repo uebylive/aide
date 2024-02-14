@@ -35,6 +35,7 @@ import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion'
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
+import { updateParseTreeOnEdit } from './completions/text-processing/treeSitter/parseTree';
 
 
 class ProgressiveTrackSymbols {
@@ -305,4 +306,9 @@ export async function activate(context: ExtensionContext) {
 			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
 		})
 	);
+
+	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
+	workspace.onDidChangeTextDocument((event) => {
+		updateParseTreeOnEdit(event);
+	});
 }
