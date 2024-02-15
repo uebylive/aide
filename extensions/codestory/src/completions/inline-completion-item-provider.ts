@@ -225,8 +225,8 @@ export class InlineCompletionItemProvider
 		const docContext = getCurrentDocContext({
 			document,
 			position,
-			maxPrefixLength: 0.6 * 2048,
-			maxSuffixLength: 0.1 * 2048,
+			maxPrefixLength: 100000,
+			maxSuffixLength: 100000,
 			// We ignore the current context selection if completeSuggestWidgetSelection is not enabled
 			context: takeSuggestWidgetSelectionIntoAccount ? context : undefined,
 			dynamicMultilineCompletions: completionProviderConfig.dynamicMultilineCompletions,
@@ -297,6 +297,8 @@ export class InlineCompletionItemProvider
 			this.logger.logInfo('sidecar.providerInlineCompletionItems.COMPLETE', {
 				'event_name': 'sidecar.provide_inline_completions.COMPLETE',
 				'inline_completions': result.items.map((item) => item.insertText),
+				'inline_completions_ranges': result.items.map((item) => item.range),
+				'current_position': position,
 				'id': id,
 			});
 
@@ -334,6 +336,10 @@ export class InlineCompletionItemProvider
 				// last candidate.
 				this.lastCandidate = undefined;
 				CompletionLogger.noResponse(result.logId);
+				this.logger.logInfo('sidecar.visible.items.not_present', {
+					'event_name': 'sidecar.visible.items.not_present',
+					'id': id,
+				});
 				return null;
 			}
 

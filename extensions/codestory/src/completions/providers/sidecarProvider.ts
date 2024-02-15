@@ -9,7 +9,6 @@ import { forkSignal, zipGenerators } from '../utils';
 import * as CompletionLogger from '../logger';
 import { FetchCompletionResult, StreamCompletionResponse, fetchAndProcessCompletions, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
 import { Provider, ProviderOptions } from './provider';
-import { abort } from 'process';
 
 export class SidecarProvider extends Provider {
 	private _sidecarClient: SideCarClient;
@@ -35,13 +34,15 @@ export class SidecarProvider extends Provider {
 			requestId: this.options.spanId,
 		};
 		const now = performance.now();
-		this._logger.logInfo('sidecar.inlineProvider..generate_completions_plain.send_completion_request', {
+		this._logger.logInfo('sidecar.inlineProvider.generate_completions_plain.send_completion_request', {
 			'event_name': 'send_completion_request',
 			'id': this.options.spanId,
 		});
-		const responseStream = this._sidecarClient.inlineCompletionText(
+		const responseStream = this._sidecarClient.inlineCompletionTextNewLine(
 			completionRequest,
 			abortSignal,
+			this._logger,
+			this.options.spanId,
 		);
 		return responseStream;
 	}

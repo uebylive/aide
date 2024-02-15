@@ -277,31 +277,31 @@ async function doGetInlineCompletions(
 	// ghost text in the editor), and reuse it if it is still valid.
 	// TODO(skcd): We are not returning the last candidate properly for some reason, we should
 	// debug whats going wrong here
-	const resultToReuse =
-		triggerKind !== TriggerKind.Manual && lastCandidate
-			? reuseLastCandidate({
-				document,
-				position,
-				lastCandidate,
-				docContext,
-				selectedCompletionInfo,
-				handleDidAcceptCompletionItem,
-				handleDidPartiallyAcceptCompletionItem,
-			})
-			: null;
-	if (resultToReuse) {
-		// console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
-		// console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
-		// log the resuleToReuse here
-		// for (const candidate of resultToReuse.items) {
-		// 	console.log('sidecar.reuseResult', candidate.insertText);
-		// }
-		logger.logInfo('sidecar.reuseLastCandidate', {
-			'reuse': true,
-			'id': spanId,
-		});
-		return resultToReuse;
-	}
+	// const resultToReuse =
+	// 	triggerKind !== TriggerKind.Manual && lastCandidate
+	// 		? reuseLastCandidate({
+	// 			document,
+	// 			position,
+	// 			lastCandidate,
+	// 			docContext,
+	// 			selectedCompletionInfo,
+	// 			handleDidAcceptCompletionItem,
+	// 			handleDidPartiallyAcceptCompletionItem,
+	// 		})
+	// 		: null;
+	// if (resultToReuse) {
+	// 	// console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
+	// 	// console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
+	// 	// log the resuleToReuse here
+	// 	// for (const candidate of resultToReuse.items) {
+	// 	// 	console.log('sidecar.reuseResult', candidate.insertText);
+	// 	// }
+	// 	logger.logInfo('sidecar.reuseLastCandidate', {
+	// 		'reuse': true,
+	// 		'id': spanId,
+	// 	});
+	// 	return resultToReuse;
+	// }
 
 	// Only log a completion as started if it's either served from cache _or_ the debounce interval
 	// has passed to ensure we don't log too many start events where we end up not doing any work at
@@ -384,7 +384,7 @@ async function doGetInlineCompletions(
 	);
 
 	// Get the processed completions from providers
-	const { completions, source } = await requestManager.request({
+	const { completions, source } = await requestManager.requestPlain({
 		requestParams,
 		isCacheEnabled: triggerKind !== TriggerKind.Manual,
 		provider,

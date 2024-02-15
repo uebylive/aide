@@ -426,3 +426,10 @@ export function getPositionAfterTextInsertion(position: Position, text?: string)
 
 	return updatedPosition;
 }
+
+export function getPositionAfterTextInsertionSameLine(position: Position, text?: string): Position {
+	if (!text || text.length === 0) {
+		return position;
+	}
+	return new vscode.Position(position.line, position.character + text.length);
+}

@@ -491,14 +491,14 @@ export class SideCarClient {
 							bufferedAnswer = bufferedAnswer.substring(indexOfNewLine + 1);
 						}
 					}
-					yield {
-						completion: finalAnswer,
-						delta: delta,
-						stopReason: CompletionStopReason.StreamingChunk,
-					};
 				}
 			}
 		}
+		yield {
+			completion: finalAnswer,
+			delta: null,
+			stopReason: CompletionStopReason.StreamingChunk,
+		};
 	}
 
 	async *inlineCompletionText(
