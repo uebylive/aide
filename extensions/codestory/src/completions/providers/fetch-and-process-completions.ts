@@ -23,6 +23,12 @@ export interface StreamCompletionResponse {
 	stopReason: string;
 }
 
+export interface StreamCompletionResponseUpdates {
+	completion: string;
+	stopReason: string;
+	delta: string | null;
+}
+
 export interface FetchAndProcessCompletionsParams {
 	// the abort controller that should be used to cancel the request
 	abortController: AbortController;
@@ -65,7 +71,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 		stopParams: StopParams
 	): Generator<FetchCompletionResult> {
 		const { completedCompletion, rawCompletion, isFullResponse } = stopParams;
-		logger.logInfo('sidecar.stop_streamind_and_use_partial_response', {
+		logger.logInfo('sidecar.stop_streaming_and_use_partial_response', {
 			'event_name': 'sidecar.stop_streaming_and_use_partial_response_first',
 			'completion': completedCompletion.insertText,
 			'id': spanId,
@@ -184,7 +190,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 				docContext,
 				languageId: providerOptions.document.languageId,
 				insertText: rawCompletion,
-			}),
+			}, logger, spanId),
 		};
 
 		if (dynamicMultilineDocContext.multilineTrigger && !isFirstCompletionTimeoutElapsed) {

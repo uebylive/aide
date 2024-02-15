@@ -95,6 +95,12 @@ export class RequestManager {
 		return null
 	}
 
+	// public async requestPlain(params: RequestsManagerParams): Promise<RequestManagerResult> {
+	// 	const { requestParams, isCacheEnabled, provider, logger, spanId } = params;
+	// 	// now we need to check if we have prefix overlap with the other completions which are running around
+	// 	const prefix = requestParams.docContext.prefix;
+	// }
+
 	// We are internally caching the results here with the hotstreak etc
 	// we should carefully check why the hotstreak is not getting hits
 	public async request(params: RequestsManagerParams): Promise<RequestManagerResult> {
@@ -102,6 +108,11 @@ export class RequestManager {
 
 		const { requestParams, isCacheEnabled, provider, logger, spanId } = params;
 
+		// The cache is checked incorrectly over here, we should check it here
+		// if we can keep the cache updated along with the characters and the completion
+		// for some reason we are not returning the correct thing here as we might have
+		// swiped and updated.
+		// but in other cases it does not work properly
 		const cachedCompletions = this.cache.get(requestParams);
 		if (isCacheEnabled && cachedCompletions) {
 			return cachedCompletions;
@@ -117,7 +128,8 @@ export class RequestManager {
 
 		const generateCompletions = async (): Promise<void> => {
 			try {
-				// here we are waiting for the sidecar to return the completions
+				// here we are waiting for the sidecar to return the completions, not really
+				// we do some parsing and generate more completions
 				for await (const fetchCompletionResults of provider.generateCompletions(
 					request.abortController.signal,
 				)) {
@@ -125,6 +137,12 @@ export class RequestManager {
 						fetchCompletionResults.filter(isDefined),
 						result => result.completion.stopReason === STOP_REASON_HOT_STREAK
 					);
+
+					logger.logInfo('sidecar.request_manager.current.completions', {
+						event_name: 'sidecar.request_manager.current.completions',
+						'id': spanId,
+						'completion': currentCompletions.length,
+					});
 
 					logger.logInfo('sidecar.request_manager.hotstreak.completions', {
 						event_name: 'sidecar.request_manager.hotstreak.completions',

@@ -7,8 +7,9 @@ import { CompletionRequest } from '../../inlineCompletion/sidecarCompletion';
 import { SideCarClient } from '../../sidecar/client';
 import { forkSignal, zipGenerators } from '../utils';
 import * as CompletionLogger from '../logger';
-import { FetchCompletionResult, fetchAndProcessCompletions, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
+import { FetchCompletionResult, StreamCompletionResponse, fetchAndProcessCompletions, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
 import { Provider, ProviderOptions } from './provider';
+import { abort } from 'process';
 
 export class SidecarProvider extends Provider {
 	private _sidecarClient: SideCarClient;
@@ -17,6 +18,32 @@ export class SidecarProvider extends Provider {
 		super(options);
 		this._sidecarClient = sidecarClient;
 		this._logger = logger;
+	}
+
+	public generateCompletionsPlain(abortSignal: AbortSignal): AsyncIterable<StreamCompletionResponse> {
+		const { languageId, uri } = this.options.document;
+		const completionRequest: CompletionRequest = {
+			filepath: uri.fsPath,
+			language: languageId,
+			text: this.options.document.getText(),
+			position: {
+				line: this.options.position.line,
+				character: this.options.position.character,
+				byteOffset: this.options.document.offsetAt(this.options.position),
+			},
+			id: this.options.spanId,
+			requestId: this.options.spanId,
+		};
+		const now = performance.now();
+		this._logger.logInfo('sidecar.inlineProvider..generate_completions_plain.send_completion_request', {
+			'event_name': 'send_completion_request',
+			'id': this.options.spanId,
+		});
+		const responseStream = this._sidecarClient.inlineCompletionText(
+			completionRequest,
+			abortSignal,
+		);
+		return responseStream;
 	}
 
 	public generateCompletions(abortSignal: AbortSignal): AsyncGenerator<FetchCompletionResult[]> {
@@ -50,9 +77,11 @@ export class SidecarProvider extends Provider {
 				'id': this.options.spanId,
 			}
 		);
-		const responseStream = this._sidecarClient.inlineCompletionText(
+		const responseStream = this._sidecarClient.inlineCompletionTextNewLine(
 			completionRequest,
 			abortSignal,
+			this._logger,
+			this.options.spanId,
 		);
 		this._logger.logInfo(
 			'sidecar.inlineProvider.responseStream',

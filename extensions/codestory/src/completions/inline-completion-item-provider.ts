@@ -221,6 +221,7 @@ export class InlineCompletionItemProvider
 						: TriggerKind.Hover;
 		this.lastManualCompletionTimestamp = null;
 
+		// my question: how is multiline defined here? that's one of the questions we want to figure out
 		const docContext = getCurrentDocContext({
 			document,
 			position,
@@ -229,17 +230,11 @@ export class InlineCompletionItemProvider
 			// We ignore the current context selection if completeSuggestWidgetSelection is not enabled
 			context: takeSuggestWidgetSelectionIntoAccount ? context : undefined,
 			dynamicMultilineCompletions: completionProviderConfig.dynamicMultilineCompletions,
-		});
+		}, this.logger, id);
 		this.logger.logInfo('sidecar.initialRequest.docContext', {
 			event_name: 'sidecar.initialRequest.docContext',
 			id: id,
 			multiline_trigger: docContext.multilineTrigger ?? "no_multiline_trigger",
-		});
-
-		const completionIntent = getCompletionIntent({
-			document,
-			position,
-			prefix: docContext.prefix,
 		});
 
 		const latencyFeatureFlags: LatencyFeatureFlags = {
@@ -250,7 +245,7 @@ export class InlineCompletionItemProvider
 			latencyFeatureFlags,
 			document.uri.toString(),
 			document.languageId,
-			completionIntent
+			undefined,
 		);
 
 		const isLocalProvider = false;
@@ -259,6 +254,8 @@ export class InlineCompletionItemProvider
 
 		try {
 			// we get the results from making a call first, do we even hit the cache here?
+			// The important trick here is not that we can send back just a single result
+			// we also check the cache etc all here, so this is the entry point
 			const result = await this.getInlineCompletions({
 				document,
 				position,
@@ -279,7 +276,7 @@ export class InlineCompletionItemProvider
 					this.unstable_handleDidPartiallyAcceptCompletionItem.bind(this),
 				completeSuggestWidgetSelection: takeSuggestWidgetSelectionIntoAccount,
 				artificialDelay,
-				completionIntent,
+				completionIntent: undefined,
 				lastAcceptedCompletionItem: this.lastAcceptedCompletionItem,
 				logger: this.logger,
 				spanId: id,

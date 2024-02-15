@@ -48,18 +48,7 @@ export type CompletionRequest = {
 
 export type CompletionResponseChoice = {
 	insertText: string;
-	insertRange: {
-		startPosition: {
-			line: number;
-			character: number;
-			byteOffset: number;
-		};
-		endPosition: {
-			line: number;
-			character: number;
-			byteOffset: number;
-		};
-	};
+	delta: string | null | undefined;
 };
 
 export type CompletionResponse = {
@@ -264,33 +253,33 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 				if (inlineCompletionItem.insertText === '') {
 					continue;
 				}
-				// First we check if we are at the end of a line or something, so we can
-				// just send the first line and call it a day, but taking care of the fact
-				// that it might also be our first line range so being careful with that
-				if (inlineCompletionItem.insertText.endsWith('\n') && inlineCompletionItem.insertText.length > 1) {
-					// we want to remove the \n over here
-					const insertText = inlineCompletionItem.insertText.slice(0, -1);
-					// now we change the range end position as well
-					const insertRange = new Range(
-						inlineCompletionItem.insertRange.startPosition.line,
-						inlineCompletionItem.insertRange.startPosition.character,
-						inlineCompletionItem.insertRange.endPosition.line,
-						inlineCompletionItem.insertRange.endPosition.character - 1,
-					);
-					const inlineCompletion: InlineCompletionItem = {
-						insertText: insertText,
-						range: insertRange,
-					};
-					// disable the status bar loading status
-					disableLoadingStatus();
-					// explicitly not putting the cancel request here so we do not
-					// block the main thread
-					this._sidecarClient.cancelInlineCompletion(requestId);
+				// // First we check if we are at the end of a line or something, so we can
+				// // just send the first line and call it a day, but taking care of the fact
+				// // that it might also be our first line range so being careful with that
+				// if (inlineCompletionItem.insertText.endsWith('\n') && inlineCompletionItem.insertText.length > 1) {
+				// 	// we want to remove the \n over here
+				// 	const insertText = inlineCompletionItem.insertText.slice(0, -1);
+				// 	// now we change the range end position as well
+				// 	const insertRange = new Range(
+				// 		inlineCompletionItem.insertRange.startPosition.line,
+				// 		inlineCompletionItem.insertRange.startPosition.character,
+				// 		inlineCompletionItem.insertRange.endPosition.line,
+				// 		inlineCompletionItem.insertRange.endPosition.character - 1,
+				// 	);
+				// 	const inlineCompletion: InlineCompletionItem = {
+				// 		insertText: insertText,
+				// 		range: insertRange,
+				// 	};
+				// 	// disable the status bar loading status
+				// 	disableLoadingStatus();
+				// 	// explicitly not putting the cancel request here so we do not
+				// 	// block the main thread
+				// 	this._sidecarClient.cancelInlineCompletion(requestId);
 
-					// the stream might still be open, so we want to send
-					// a request to the server here asking it to stop streaming
-					return [inlineCompletion];
-				}
+				// 	// the stream might still be open, so we want to send
+				// 	// a request to the server here asking it to stop streaming
+				// 	return [inlineCompletion];
+				// }
 			}
 		} catch (error: any) {
 			// in case of errors disable the loading as well

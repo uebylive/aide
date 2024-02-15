@@ -15,6 +15,7 @@ import {
 	OPENING_BRACKET_REGEX,
 } from './text-processing';
 import { getLanguageConfig } from './language_config';
+import { LoggingService } from './logger';
 
 interface DetectMultilineParams {
 	docContext: LinesContext & DocumentDependentContext;
@@ -38,7 +39,9 @@ export function endsWithBlockStart(text: string, languageId: string): string | n
 	return blockStart && text.trimEnd().endsWith(blockStart) ? blockStart : null;
 }
 
-export function detectMultiline(params: DetectMultilineParams): DetectMultilineResult {
+export function detectMultiline(params: DetectMultilineParams, logger: LoggingService, spanId: string): DetectMultilineResult {
+	// dynamicMultilineCompletions is a flag that determines whether we should trigger multiline
+	// its always set to true
 	const { docContext, languageId, dynamicMultilineCompletions, position } = params;
 	const { prefix, prevNonEmptyLine, nextNonEmptyLine, currentLinePrefix, currentLineSuffix } =
 		docContext;
@@ -46,12 +49,13 @@ export function detectMultiline(params: DetectMultilineParams): DetectMultilineR
 	const blockStart = endsWithBlockStart(prefix, languageId);
 	const isBlockStartActive = Boolean(blockStart);
 
-	const currentLineText =
-		currentLineSuffix.trim().length > 0 ? currentLinePrefix + currentLineSuffix : currentLinePrefix;
+	// why do we here change it to current like prefix + suffix or just the prefix
+	// const currentLineText =
+	// 	currentLineSuffix.trim().length > 0 ? currentLinePrefix + currentLineSuffix : currentLinePrefix;
 
-	const isMethodOrFunctionInvocation =
-		!currentLinePrefix.trim().match(FUNCTION_KEYWORDS) &&
-		currentLineText.match(FUNCTION_OR_METHOD_INVOCATION_REGEX);
+	// const isMethodOrFunctionInvocation =
+	// 	!currentLinePrefix.trim().match(FUNCTION_KEYWORDS) &&
+	// 	currentLineText.match(FUNCTION_OR_METHOD_INVOCATION_REGEX);
 
 	// Don't fire multiline completion for method or function invocations
 	// TODO(skcd): We want to fire for method and function invocations as well
@@ -76,19 +80,47 @@ export function detectMultiline(params: DetectMultilineParams): DetectMultilineR
 		// Only trigger multiline suggestions when the next non-empty line is indented less
 		// than the block start line (the newly created block is empty).
 		indentation(currentLinePrefix) >= indentation(nextNonEmptyLine);
+	// we handle cases like this
+	// ```typescript
+	// class A {
+	// 		function a() {
+	// 			if a() {
+	// 				[cursor here]
+	// 			}
+	// 		}
+	// 	}
+	// ```
+	// in this case we still want it to trigger and show some value
+	// the point is inner indentation is not the same as the indentation of the block
 
+	// if
 	const isNewLineOpeningBracketMatch =
 		currentLinePrefix.trim() === '' &&
 		currentLineSuffix.trim() === '' &&
 		openingBracketMatch &&
 		// Only trigger multiline suggestions when the next non-empty line is indented the same or less
+		// examples like this
+		// ```typescript
+		// if a() {
+		// 		[cursor_here]
+		// } <- next non empty line
+		// what about cases like this
+		// if a() {[cursor_here]}
+		// we still want to trigger it in this case
 		indentation(prevNonEmptyLine) < indentation(currentLinePrefix) &&
 		// Only trigger multiline suggestions when the next non-empty line is indented less
 		// than the block start line (the newly created block is empty).
 		indentation(prevNonEmptyLine) >= indentation(nextNonEmptyLine);
 
+	// basically we detect blocks of code which are contained or in a scoope here from the bracket
+	// start position, const a = {[cursor]} <- an example
 	if ((dynamicMultilineCompletions && isNewLineOpeningBracketMatch) || isSameLineOpeningBracketMatch) {
 
+		logger.logInfo('sidecar.multiline.trigger', {
+			event_name: 'sidecar.multiline.trigger',
+			current_line_prefix: currentLinePrefix,
+			current_line_suffix: currentLineSuffix,
+		});
 		return {
 			multilineTrigger: openingBracketMatch[0],
 			multilineTriggerPosition: getPrefixLastNonEmptyCharPosition(prefix, position),

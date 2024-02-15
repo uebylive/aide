@@ -369,6 +369,10 @@ export function getNextNonEmptyLine(suffix: string): string {
 	);
 }
 
+export function lines(text: string): string[] {
+	return text.split(/\r?\n/);
+}
+
 export function getPrevNonEmptyLine(prefix: string): string {
 	const prevLf = prefix.lastIndexOf('\n');
 	const prevCrLf = prefix.lastIndexOf('\r\n');
@@ -382,10 +386,6 @@ export function getPrevNonEmptyLine(prefix: string): string {
 			line => line.trim().length > 0
 		) ?? ''
 	);
-}
-
-export function lines(text: string): string[] {
-	return text.split(/\r?\n/);
 }
 
 export function hasCompleteFirstLine(text: string): boolean {
