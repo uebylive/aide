@@ -5,6 +5,7 @@
 import { partition } from 'lodash';
 import { LRUCache } from 'lru-cache';
 import type * as vscode from 'vscode';
+import { Range } from 'vscode';
 
 
 import type { DocumentContext } from './get-current-doc-context';
@@ -19,7 +20,7 @@ import {
 	processInlineCompletions,
 	type InlineCompletionItemWithAnalytics,
 } from './text-processing/process-inline-completions';
-import { lines, removeIndentation } from './text-processing';
+import { getPositionAfterTextInsertion, getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
 import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
 import { STOP_REASON_HOT_STREAK } from './providers/hot-streak';
@@ -68,6 +69,8 @@ interface RequestsManagerParams {
  */
 export class RequestManager {
 	private cache = new RequestCache();
+	private completionCache: string | undefined = undefined;
+	private previousRequest: AbortController | undefined = undefined;
 	private sidecarClient: SideCarClient;
 	private readonly inflightRequests: Set<InflightRequest> = new Set();
 	// Tracks the last request that the request manager is called with. We use this to evaluate
@@ -95,11 +98,87 @@ export class RequestManager {
 		return null
 	}
 
-	// public async requestPlain(params: RequestsManagerParams): Promise<RequestManagerResult> {
-	// 	const { requestParams, isCacheEnabled, provider, logger, spanId } = params;
-	// 	// now we need to check if we have prefix overlap with the other completions which are running around
-	// 	const prefix = requestParams.docContext.prefix;
-	// }
+	public async requestPlain(params: RequestsManagerParams): Promise<RequestManagerResult> {
+		// logic here is the following:
+		// we want to resolve the promise for the user properly and keep stremaing it back
+		// but since we are yielding it line by line, it could happen that the user has
+		// typed a bit forward or something, so we can lookup our cache here and check
+		// if what the user has typed matches with the cache
+		// the other thing to keep in mind is that the user always wants to accept one
+		// line and then move to the next, partial one liners make no sense, at the very
+		// least the user will get the experience that its streaming back properly
+		const { requestParams, provider, logger, spanId } = params;
+		// now we need to check if we have prefix overlap with the other completion which are running around
+		const prefix = requestParams.docContext.prefix;
+		const completionCacheString = this.completionCache;
+		const currentPosition = requestParams.position;
+		if (completionCacheString) {
+			const equalStart = completionCacheString.startsWith(prefix);
+			if (equalStart) {
+				// we have a prefix overlap, find the index of this and then return it
+				const remainingCompletion = completionCacheString.substring(prefix.length);
+				logger.logInfo('sidecar.request.plain.cached', {
+					'event_name': 'sidecar.request.plain.cached.hit',
+					'completion': remainingCompletion,
+					'completion_cache': completionCacheString,
+					'prefix': prefix,
+					'id': spanId,
+				});
+				return {
+					completions: [{
+						insertText: remainingCompletion,
+						range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, remainingCompletion)),
+					}],
+					source: InlineCompletionsResultSource.Cache,
+				}
+			} else {
+				// we should terminate the running request in the background as its not useful anymore
+				// and set our cache to empty right here and then start a new request
+				if (this.previousRequest) {
+					// we are aborting the previous running request here
+					this.previousRequest.abort();
+					this.completionCache = undefined;
+				}
+			}
+		}
+		const abortController = new AbortController();
+		this.previousRequest = abortController;
+		this.completionCache = '';
+		let request = new InflightRequest(requestParams, abortController);
+		// lets assume that there is no cache for now, we will add it back later
+		const generateCompletions = async (): Promise<void> => {
+			try {
+				for await (const fetchCompletionResults of provider.generateCompletionsPlain(
+					request.abortController.signal,
+				)) {
+					// we are going to get the generations back, here we will keep adding them to the cache
+					// one per line
+					const stopReason = fetchCompletionResults.stopReason;
+					const currentCompletion = fetchCompletionResults.completion;
+					// First add it to the cache so we can look it up later
+					this.completionCache = prefix + currentCompletion;
+					logger.logInfo('sidecar.request.plain.generate_completions', {
+						'event_name': 'sidecar.request.plain.generate_completions',
+						'completion': currentCompletion,
+						'id': spanId,
+					});
+					request.resolve({
+						completions: [{
+							insertText: currentCompletion,
+							range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, currentCompletion))
+						}],
+						source: InlineCompletionsResultSource.Network,
+					});
+				}
+			} catch (error) {
+				request.reject(error as Error);
+			} finally {
+				this.inflightRequests.delete(request);
+			}
+		};
+		generateCompletions();
+		return request.promise;
+	}
 
 	// We are internally caching the results here with the hotstreak etc
 	// we should carefully check why the hotstreak is not getting hits
