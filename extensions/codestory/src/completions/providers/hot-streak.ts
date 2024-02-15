@@ -21,6 +21,7 @@ import type {
 } from './fetch-and-process-completions';
 import { getEditorIndentString } from '../format-completion';
 import detectIndent from '../detectIndent';
+import { LoggingService } from '../logger';
 
 interface HotStreakExtractorParams extends FetchAndProcessCompletionsParams {
 	completedCompletion: InlineCompletionItemWithAnalytics;
@@ -48,6 +49,24 @@ export function pressEnterAndGetIndentString(
 
 /**
  * For a hot streak, we require the completion to be inserted followed by an enter key
+ * We do not want to insert a enter over here, can we control it instead and figure out
+ * when we want to send it.. that should help with the current issue of having to figure
+ * out how we can make the stream of requests work properly, cause it feels very bad today
+ */
+// function insertCompletionAndWait(
+// 	docContext: DocumentContext,
+// 	completion: InlineCompletionItemWithAnalytics,
+// 	document: TextDocument,
+// 	dynamicMultilineCompletions: boolean,
+// ): DocumentContext {
+// 	const { insertText } = completion;
+
+// 	// do we have a new line in the insert text?
+
+// }
+
+/**
+ * For a hot streak, we require the completion to be inserted followed by an enter key
  * Enter will usually insert a line break followed by the same indentation that the
  * current line has.
  */
@@ -55,7 +74,9 @@ function insertCompletionAndPressEnter(
 	docContext: DocumentContext,
 	completion: InlineCompletionItemWithAnalytics,
 	document: TextDocument,
-	dynamicMultilineCompletions: boolean
+	dynamicMultilineCompletions: boolean,
+	logger: LoggingService,
+	spanId: string,
 ): DocumentContext {
 	const { insertText } = completion;
 
@@ -69,7 +90,7 @@ function insertCompletionAndPressEnter(
 		languageId: document.languageId,
 		insertText: insertTextWithPressedEnter,
 		dynamicMultilineCompletions,
-	});
+	}, logger, spanId);
 
 	return updatedDocContext;
 }
@@ -85,15 +106,21 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 
 	logger.logInfo('sidecar.hotstreak.create', {
 		'event_name': 'hotstreak.create',
-		'raw_completion': completedCompletion,
+		'raw_completion_insert_text': completedCompletion.insertText,
+		'raw_completion_parse_error_count': completedCompletion.parseErrorCount,
 		'raw_completion_len': completedCompletion.insertText.length,
 	});
 
+	// This is the global statae of the document context which we are using
+	// we need to keep this in mind how we are updating the document context when we are creating the extractor
+	// for the hot streak
 	let updatedDocContext = insertCompletionAndPressEnter(
 		docContext,
 		completedCompletion,
 		document,
-		dynamicMultilineCompletions
+		dynamicMultilineCompletions,
+		logger,
+		spanId,
 	);
 
 	function* extract(rawCompletion: string, isRequestEnd: boolean): Generator<FetchCompletionResult> {
@@ -119,16 +146,20 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 				return undefined;
 			}
 
+			// we extract the completion using either the parsing or the partial completion logic
+			// one of the things to note here is that the logic for them is similar
+			// in canUserPart logic we truncate the completion if it is a partial completion
+			// in parseAndTruncateCompletion
 			const extractCompletion = isRequestEnd ? parseAndTruncateCompletion : canUsePartialCompletion;
 
-			const maybeDynamicMultilineDocContext = {
+			const maybeDynamicMultilineDocContext: DocumentContext = {
 				...updatedDocContext,
 				...(dynamicMultilineCompletions && !updatedDocContext.multilineTrigger
 					? getDynamicMultilineDocContext({
 						languageId,
 						docContext: updatedDocContext,
 						insertText: unprocessedCompletion,
-					})
+					}, logger, spanId)
 					: {}),
 			};
 
@@ -142,7 +173,8 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 
 			logger.logInfo('sidecar.hotstreak.completionExtract', {
 				'event_name': 'sidecar.hotstreak.extractCompletion',
-				'completion': completion,
+				'completion': completion?.insertText,
+				'completion_range': completion?.range,
 				'id': spanId,
 				'is_request_ended': isRequestEnd,
 				'unprocessedCompletion': unprocessedCompletion,
@@ -172,7 +204,9 @@ export function createHotStreakExtractor(params: HotStreakExtractorParams): HotS
 					updatedDocContext,
 					processedCompletion,
 					document,
-					dynamicMultilineCompletions
+					dynamicMultilineCompletions,
+					logger,
+					spanId,
 				);
 			} else {
 				// ... otherwise we don't have enough in the remaining completion text to generate a full

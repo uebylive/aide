@@ -6,7 +6,7 @@ import type { Position, TextDocument } from 'vscode';
 
 import type { DocumentContext } from '../get-current-doc-context';
 
-import type { FetchCompletionResult } from './fetch-and-process-completions';
+import type { FetchCompletionResult, StreamCompletionResponse } from './fetch-and-process-completions';
 
 export interface ProviderConfig {
 	/**
@@ -81,4 +81,8 @@ export abstract class Provider {
 	public abstract generateCompletions(
 		abortSignal: AbortSignal,
 	): AsyncGenerator<FetchCompletionResult[]>;
+
+	public abstract generateCompletionsPlain(
+		abortSignal: AbortSignal,
+	): AsyncIterable<StreamCompletionResponse>;
 }

@@ -14,6 +14,7 @@ import {
 	lines,
 } from './text-processing';
 import { getMatchingSuffixLength } from './text-processing/process-inline-completions';
+import { LoggingService } from './logger';
 
 export interface DocumentContext extends DocumentDependentContext, LinesContext {
 	position: vscode.Position;
@@ -58,17 +59,19 @@ interface GetCurrentDocContextParams {
 /**
  * Get the current document context based on the cursor position in the current document.
  */
-export function getCurrentDocContext(params: GetCurrentDocContextParams): DocumentContext {
+export function getCurrentDocContext(params: GetCurrentDocContextParams, logger: LoggingService, spanId: string): DocumentContext {
 	const {
 		document,
 		position,
 		maxPrefixLength,
 		maxSuffixLength,
 		context,
+		// this is always set to true for now, but we might want to change that in the future
 		dynamicMultilineCompletions,
 	} = params;
 	const offset = document.offsetAt(position);
 
+	// we get the complete prefix and the complete suffix
 	const completePrefix = document.getText(new vscode.Range(new vscode.Position(0, 0), position));
 	const completeSuffix = document.getText(
 		new vscode.Range(position, document.positionAt(document.getText().length))
@@ -101,6 +104,7 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
 	const suffixLines = lines(completeSuffix);
 
 	let prefix: string;
+	// we are deriving the prefix from the complete prefix
 	if (offset > maxPrefixLength) {
 		let total = 0;
 		let startLine = prefixLines.length;
@@ -116,6 +120,7 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
 		prefix = prefixLines.join('\n');
 	}
 
+	// we are deriving the suffix from the complete suffix
 	let totalSuffix = 0;
 	let endLine = 0;
 	for (let i = 0; i < suffixLines.length; i++) {
@@ -136,7 +141,7 @@ export function getCurrentDocContext(params: GetCurrentDocContextParams): Docume
 			suffix,
 			injectedPrefix,
 		},
-	});
+	}, logger, spanId);
 }
 
 interface GetDerivedDocContextParams {
@@ -150,7 +155,7 @@ interface GetDerivedDocContextParams {
  * Calculates `DocumentContext` based on the existing prefix and suffix.
  * Used if the document context needs to be calculated for the updated text but there's no `document` instance for that.
  */
-export function getDerivedDocContext(params: GetDerivedDocContextParams): DocumentContext {
+export function getDerivedDocContext(params: GetDerivedDocContextParams, logger: LoggingService, spanId: string): DocumentContext {
 	const { position, documentDependentContext, languageId, dynamicMultilineCompletions } = params;
 	const linesContext = getLinesContext(documentDependentContext);
 
@@ -159,7 +164,7 @@ export function getDerivedDocContext(params: GetDerivedDocContextParams): Docume
 		languageId,
 		dynamicMultilineCompletions,
 		position,
-	});
+	}, logger, spanId);
 
 	return {
 		...documentDependentContext,
@@ -190,7 +195,7 @@ interface InsertIntoDocContextParams {
 	dynamicMultilineCompletions: boolean;
 }
 
-export function insertIntoDocContext(params: InsertIntoDocContextParams): DocumentContext {
+export function insertIntoDocContext(params: InsertIntoDocContextParams, logger: LoggingService, spanId: string): DocumentContext {
 	const {
 		insertText,
 		languageId,
@@ -210,9 +215,11 @@ export function insertIntoDocContext(params: InsertIntoDocContextParams): Docume
 			// Remove the characters that are being replaced by the completion
 			// to reduce the chances of breaking the parse tree with redundant symbols.
 			suffix: suffix.slice(getMatchingSuffixLength(insertText, currentLineSuffix)),
+			// we do not inject anything here because its not required yet, we are at the start
+			// of the completion
 			injectedPrefix: null,
 		},
-	});
+	}, logger, spanId);
 
 	updatedDocContext.positionWithoutInjectedCompletionText =
 		updatedDocContext.positionWithoutInjectedCompletionText || docContext.position;

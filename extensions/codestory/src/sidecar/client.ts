@@ -13,7 +13,8 @@ import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { getUserId } from '../utilities/uniqueId';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { StreamCompletionResponse } from '../completions/providers/fetch-and-process-completions';
+import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
+import { LoggingService } from '../completions/logger';
 
 export enum CompletionStopReason {
 	/**
@@ -375,6 +376,131 @@ export class SideCarClient {
 		return null;
 	}
 
+	async *inlineCompletionTextNewLine(
+		completionRequest: CompletionRequest,
+		signal: AbortSignal,
+		logger: LoggingService,
+		spanId: string,
+	): AsyncIterable<StreamCompletionResponseUpdates> {
+		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(
+			await vscode.modelSelection.getConfiguration()
+		);
+		baseUrl.pathname = '/api/inline_completion/inline_completion';
+
+		const body = {
+			filepath: completionRequest.filepath,
+			language: completionRequest.language,
+			text: completionRequest.text,
+			// The cursor position in the editor
+			position: {
+				line: completionRequest.position.line,
+				character: completionRequest.position.character,
+				byteOffset: completionRequest.position.byteOffset,
+			},
+			model_config: sideCarModelConfiguration,
+			id: completionRequest.id,
+		};
+		const url = baseUrl.toString();
+		let finalAnswer = '';
+
+		// Set the combinedSignal as the signal option in the fetch request
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		let bufferedAnswer = '';
+		let runningPreviousLines = '';
+		let isNewLineStart = false;
+		for await (const line of asyncIterableResponse) {
+			if (signal.aborted) {
+				return {
+					completion: finalAnswer,
+					stopReason: CompletionStopReason.RequestAborted,
+				};
+			}
+			const lineParts = line.split('data:"{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const finalString = '{' + lineSinglePartTrimmed.slice(0, -1);
+				const editFileResponse = JSON.parse(JSON.parse(`"${finalString}"`)) as CompletionResponse;
+				// take the first provided completion here
+				if (editFileResponse.completions.length > 0) {
+					finalAnswer = editFileResponse.completions[0].insertText;
+					// there are some terminating conditions here cause we only want to yield on new lines
+					// the completion might start with \n if its at the end of a line
+					// or it might start with blah ... \n
+					// we have to yield only when we have a new complete line which will be useful
+					const delta = editFileResponse.completions[0].delta;
+					if (delta === null || delta === undefined) {
+						// if its empty then we should always return it ASAP, since its the end of this completion
+						logger.logInfo('sidecar.inline_completion.streaming', {
+							'event_name': 'sidecar.inline_completion.streaming.no_delta',
+							'completion': finalAnswer,
+							'id': spanId,
+							'stop_reason': CompletionStopReason.RequestFinished,
+						});
+						return {
+							completion: finalAnswer,
+							stopReason: CompletionStopReason.RequestFinished,
+							delta: null,
+						};
+					}
+
+					// we want to keep the following things in order
+					// - what new lines have we sent before
+					// - merge the current line with the previously sent new lines
+					// - send the whole answer when we finish streaming
+					if (delta && delta === '\n' && finalAnswer === '') {
+						// start of an empty line, so we handle it here
+						isNewLineStart = true;
+						continue;
+					} else {
+						bufferedAnswer = bufferedAnswer + delta;
+						// find the index of \n here
+						// else we have a new line! so we can split the string at that position and keep the rest and keep repeating
+						while (true) {
+							const indexOfNewLine = bufferedAnswer.indexOf('\n');
+							if (indexOfNewLine === -1) {
+								break;
+							}
+							const completeLine = bufferedAnswer.substring(0, indexOfNewLine);
+							// if we are going to start with a new line, then we need to have \n as the prefix
+							const prefix = isNewLineStart ? "\n" : '';
+							// if the previous lines are there then we join it with \n else we just join with ''
+							const joinString = runningPreviousLines === '' ? '' : '\n';
+							const finalCompletion = prefix + runningPreviousLines + joinString + completeLine;
+							logger.logInfo('sidecar.inline_completion.streaming', {
+								'event_name': 'sidecar.inline_completion.streaming',
+								'completion': finalCompletion,
+								'id': spanId,
+								'stop_reason': CompletionStopReason.StreamingChunk,
+							});
+							yield {
+								completion: finalCompletion,
+								stopReason: CompletionStopReason.StreamingChunk,
+								delta: null,
+							};
+							// here we update our previous running lines
+							if (runningPreviousLines === '') {
+								runningPreviousLines = completeLine;
+							} else {
+								runningPreviousLines = runningPreviousLines + "\n" + completeLine;
+							}
+							// now move the buffered answer to after the position of the newline
+							bufferedAnswer = bufferedAnswer.substring(indexOfNewLine + 1);
+						}
+					}
+					yield {
+						completion: finalAnswer,
+						delta: delta,
+						stopReason: CompletionStopReason.StreamingChunk,
+					};
+				}
+			}
+		}
+	}
+
 	async *inlineCompletionText(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,
@@ -429,7 +555,7 @@ export class SideCarClient {
 			}
 		}
 
-		return {
+		yield {
 			completion: finalAnswer,
 			stopReason: CompletionStopReason.RequestFinished,
 		};

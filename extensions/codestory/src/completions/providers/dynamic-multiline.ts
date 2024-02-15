@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { insertIntoDocContext, type DocumentContext } from '../get-current-doc-context'
+import { LoggingService } from '../logger'
 import { getFirstLine } from '../text-processing'
 
 interface GetUpdatedDocumentContextParams {
@@ -17,7 +18,9 @@ interface GetUpdatedDocumentContextParams {
  * 3. Otherwise, returns an empty object.
  */
 export function getDynamicMultilineDocContext(
-	params: GetUpdatedDocumentContextParams
+	params: GetUpdatedDocumentContextParams,
+	logger: LoggingService,
+	spanId: string,
 ): Pick<DocumentContext, 'multilineTrigger' | 'multilineTriggerPosition'> | undefined {
 	const { insertText, languageId, docContext } = params;
 
@@ -26,7 +29,7 @@ export function getDynamicMultilineDocContext(
 		insertText: getFirstLine(insertText),
 		dynamicMultilineCompletions: true,
 		docContext,
-	});
+	}, logger, spanId);
 
 	const isMultilineBasedOnFirstLine = Boolean(updatedDocContext.multilineTrigger);
 

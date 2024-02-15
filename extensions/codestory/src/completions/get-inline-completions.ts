@@ -147,8 +147,28 @@ export async function getInlineCompletions(
 	params: InlineCompletionsParams
 ): Promise<InlineCompletionsResult | null> {
 	try {
+		params.logger.logInfo('sidecar.get_inline_completions.request', {
+			event_name: 'sidecar.get_inline_completions.request',
+			id: params.spanId,
+			doc_context_multiline: params.docContext.multilineTrigger ?? 'not_present',
+			prefix: params.docContext.currentLinePrefix,
+			suffix: params.docContext.currentLineSuffix,
+			prev_non_empty_line: params.docContext.prevNonEmptyLine,
+			next_non_empty_line: params.docContext.nextNonEmptyLine,
+			previous_accepted_completion: params.lastAcceptedCompletionItem?.analyticsItem.insertText,
+		});
 		const result = await doGetInlineCompletions(params);
 		params.setIsLoading?.(false);
+		params.logger.logInfo('sidecar.get_inline_completion_results', {
+			event_name: 'sidecar.get_inline_completion_results',
+			id: params.spanId,
+			prefix: params.docContext.currentLinePrefix,
+			suffix: params.docContext.currentLineSuffix,
+			prev_non_empty_line: params.docContext.prevNonEmptyLine,
+			next_non_empty_line: params.docContext.nextNonEmptyLine,
+			result: result?.items[0].insertText,
+			previous_accepted_completion: params.lastAcceptedCompletionItem?.analyticsItem.insertText,
+		});
 		return result;
 	} catch (unknownError: unknown) {
 		const error = unknownError instanceof Error ? unknownError : new Error(unknownError as any);
@@ -342,8 +362,6 @@ async function doGetInlineCompletions(
 		return null;
 	}
 
-	// if the abort signal is not aborted, log here
-
 	const provider = new SidecarProvider(
 		{
 			id: logId,
@@ -354,8 +372,8 @@ async function doGetInlineCompletions(
 			// only do multline completions if the trigger is set
 			multiline: docContext.multilineTrigger ? true : false,
 			n: 1,
-			// we are setting it to 1000ms here so its lower
-			firstCompletionTimeout: 1000,
+			// we are setting it to 1200ms here so its lower
+			firstCompletionTimeout: 1200,
 			// we want to enable the hot streak
 			hotStreak: true,
 			// we want to generate multiline completions
