@@ -97,7 +97,7 @@ export interface LastInlineCompletionCandidate {
  */
 export interface InlineCompletionsResult {
 	/** The unique identifier for logging this result. */
-	logId: CompletionLogID;
+	logId: string;
 
 	/** Where this result was generated from. */
 	source: InlineCompletionsResultSource;
@@ -210,112 +210,7 @@ async function doGetInlineCompletions(
 		logger,
 		spanId,
 	} = params;
-	// console.log('sidecar.callingInlineCompletions', position.line, position.character);
-	// console.log('sidecar.multilineTrigger', multilineTrigger);
-
-
-	// If we have a suffix in the same line as the cursor and the suffix contains any word
-	// characters, do not attempt to make a completion. This means we only make completions if
-	// we have a suffix in the same line for special characters like `)]}` etc.
-	//
-	// VS Code will attempt to merge the remainder of the current line by characters but for
-	// words this will easily get very confusing.
-	// TODO(skcd): Let's enable this feature for now, no point removing completions
-	// when our show rate is so freaking low
-	// if (triggerKind !== TriggerKind.Manual && /\w/.test(currentLineSuffix)) {
-	// 	console.log('getInlineCompletions:abort', 'suffixContainsWordCharacters', triggerKind, currentLineSuffix);
-	// 	return null;
-	// }
-
-	// Do not trigger when the last character is a closing symbol
-	// TODO(skcd): We still want to trigger even if the last character is a closing symbol
-	// if (triggerKind !== TriggerKind.Manual && /[);\]}]$/.test(currentLinePrefix.trim())) {
-	// 	console.log('getInlineCompletions:abort', 'lastCharacterIsClosingSymbol', triggerKind, currentLinePrefix);
-	// 	return null;
-	// }
-
-	// Do not trigger when cursor is at the start of the file ending line and the line above is empty
-	// TODO(skcd): We still want to trigger even if the last line is empty
-	// I do not see a good reason to not trigger it, so lets allow it
-	// if (
-	// 	triggerKind !== TriggerKind.Manual &&
-	// 	position.line !== 0 &&
-	// 	position.line === document.lineCount - 1
-	// ) {
-	// 	const lineAbove = Math.max(position.line - 1, 0);
-	// 	if (document.lineAt(lineAbove).isEmptyOrWhitespace && !position.character) {
-	// 		return null;
-	// 	}
-	// }
-
-	// Do not trigger when the user just accepted a single-line completion, and its not a
-	// multiline trigger
-	// TODO(skcd): Verify this, but I do not see a reason to not trigger the completion
-	// even if the user has accepted a single-line completion
-	// if (
-	// 	triggerKind !== TriggerKind.Manual &&
-	// 	lastAcceptedCompletionItem &&
-	// 	lastAcceptedCompletionItem.requestParams.document.uri.toString() === document.uri.toString() &&
-	// 	lastAcceptedCompletionItem.requestParams.docContext.multilineTrigger === null
-	// ) {
-	// 	const docContextOfLastAcceptedAndInsertedCompletionItem = insertIntoDocContext({
-	// 		docContext: lastAcceptedCompletionItem.requestParams.docContext,
-	// 		insertText: lastAcceptedCompletionItem.analyticsItem.insertText,
-	// 		languageId: lastAcceptedCompletionItem.requestParams.document.languageId,
-	// 		dynamicMultilineCompletions: false,
-	// 	});
-	// 	if (
-	// 		docContext.prefix === docContextOfLastAcceptedAndInsertedCompletionItem.prefix &&
-	// 		docContext.suffix === docContextOfLastAcceptedAndInsertedCompletionItem.suffix &&
-	// 		docContext.position.isEqual(docContextOfLastAcceptedAndInsertedCompletionItem.position)
-	// 	) {
-	// 		return null;
-	// 	}
-	// }
-
-	// Check if the user is typing as suggested by the last candidate completion (that is shown as
-	// ghost text in the editor), and reuse it if it is still valid.
-	// TODO(skcd): We are not returning the last candidate properly for some reason, we should
-	// debug whats going wrong here
-	// const resultToReuse =
-	// 	triggerKind !== TriggerKind.Manual && lastCandidate
-	// 		? reuseLastCandidate({
-	// 			document,
-	// 			position,
-	// 			lastCandidate,
-	// 			docContext,
-	// 			selectedCompletionInfo,
-	// 			handleDidAcceptCompletionItem,
-	// 			handleDidPartiallyAcceptCompletionItem,
-	// 		})
-	// 		: null;
-	// if (resultToReuse) {
-	// 	// console.log('sidecar.typingAsSuggested', 'reusingLastCandidate');
-	// 	// console.log('sidecar.resultToReuse', lastCandidate?.lastTriggerSelectedCompletionInfo?.text);
-	// 	// log the resuleToReuse here
-	// 	// for (const candidate of resultToReuse.items) {
-	// 	// 	console.log('sidecar.reuseResult', candidate.insertText);
-	// 	// }
-	// 	logger.logInfo('sidecar.reuseLastCandidate', {
-	// 		'reuse': true,
-	// 		'id': spanId,
-	// 	});
-	// 	return resultToReuse;
-	// }
-
-	// Only log a completion as started if it's either served from cache _or_ the debounce interval
-	// has passed to ensure we don't log too many start events where we end up not doing any work at
-	// all.
-	CompletionLogger.flushActiveSuggestionRequests();
 	const multiline = Boolean(multilineTrigger);
-	const logId = CompletionLogger.create({
-		multiline,
-		triggerKind,
-		languageId: document.languageId,
-		testFile: isValidTestFile(document.uri),
-		completionIntent,
-		artificialDelay,
-	});
 
 	const requestParams: RequestParams = {
 		document,
@@ -335,12 +230,19 @@ async function doGetInlineCompletions(
 		const { completions, source } = cachedResult
 
 		return {
-			logId,
+			logId: spanId,
 			items: completions,
 			source,
 		}
 	}
 
+	// TODO(skcd): How do we handle the case where the user has backspaced, cause then we
+	// do not want to show the completion suggestions., one easy way to do it is to check
+	// the current prefix and the previous prefix, if both of them are matching then we can
+	// understand that this is a generation which was backspaced, so we need to clean up
+	// the previous requests, lets just check the positions of the current prefix and the
+	// previous prefix, if both of them are close by (character difference but same line)
+	// we should start a new request.
 	// Debounce to avoid firing off too many network requests as the user is still typing.
 	const interval =
 		((multiline ? debounceInterval?.multiLine : debounceInterval?.singleLine) ?? 0) +
@@ -355,7 +257,6 @@ async function doGetInlineCompletions(
 	}
 
 	setIsLoading?.(true);
-	CompletionLogger.start(logId);
 
 	if (abortSignal?.aborted) {
 		setIsLoading?.(false);
@@ -364,7 +265,7 @@ async function doGetInlineCompletions(
 
 	const provider = new SidecarProvider(
 		{
-			id: logId,
+			id: spanId,
 			spanId: spanId,
 			position: requestParams.position,
 			document: requestParams.document,
@@ -400,10 +301,10 @@ async function doGetInlineCompletions(
 	// }
 	// console.log('sidecar.request.manager.length', logId, completions.length);
 
-	CompletionLogger.loaded(logId, requestParams, completions, source);
+	// CompletionLogger.loaded(logId, requestParams, completions, source);
 
 	return {
-		logId,
+		logId: spanId,
 		items: completions,
 		source,
 	};

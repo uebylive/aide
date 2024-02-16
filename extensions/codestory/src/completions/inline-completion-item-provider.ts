@@ -33,7 +33,7 @@ import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
-	logId: CompletionLogID;
+	logId: string;
 	items: AutocompleteItem[];
 	/** @deprecated */
 	completionEvent?: CompletionBookkeepingEvent;
@@ -208,7 +208,7 @@ export class InlineCompletionItemProvider
 			takeSuggestWidgetSelectionIntoAccount = true;
 		}
 
-		// check if the [user]
+		// check if we should reset our current request
 
 		const triggerKind =
 			this.lastManualCompletionTimestamp &&
@@ -335,13 +335,25 @@ export class InlineCompletionItemProvider
 				// Returning null will clear any existing suggestions, thus we need to reset the
 				// last candidate.
 				this.lastCandidate = undefined;
-				CompletionLogger.noResponse(result.logId);
+				// CompletionLogger.noResponse(result.logId);
 				this.logger.logInfo('sidecar.visible.items.not_present', {
 					'event_name': 'sidecar.visible.items.not_present',
 					'id': id,
 				});
 				return null;
 			}
+
+			// log if the visible items are present
+			// CompletionLogger.response(result.logId);
+			this.logger.logInfo('sidecar.visible.items.present', {
+				'event_name': 'sidecar.visible.items.present',
+				'id': id,
+				'inline_completions': visibleItems.map((item) => item.insertText),
+				'inline_completions_ranges': visibleItems.map((item) => item.range),
+				'current_position': position,
+				'inline_completions_length': visibleItems.length,
+				'inline_completions_ranges_length': visibleItems.map((item) => item.range).length,
+			});
 
 			// Since we now know that the completion is going to be visible in the UI, we save the
 			// completion as the last candidate (that is shown as ghost text in the editor) so that
@@ -374,15 +386,14 @@ export class InlineCompletionItemProvider
 
 			// return `CompletionEvent` telemetry data to the agent command `autocomplete/execute`.
 			const autocompleteResult: AutocompleteResult = {
-				logId: result.logId,
+				logId: id,
 				items: updateInsertRangeForVSCode(autocompleteItems),
-				completionEvent: CompletionLogger.getCompletionEvent(result.logId),
 			};
 
 			// Since VS Code has no callback as to when a completion is shown, we assume
 			// that if we pass the above visibility tests, the completion is going to be
 			// rendered in the UI
-			this.unstable_handleDidShowCompletionItem(autocompleteItems[0]);
+			// this.unstable_handleDidShowCompletionItem(autocompleteItems[0]);
 
 			return autocompleteResult;
 		} catch (error) {
@@ -424,12 +435,6 @@ export class InlineCompletionItemProvider
 
 		this.lastAcceptedCompletionItem = completion;
 
-		CompletionLogger.accepted(
-			completion.logId,
-			completion.requestParams.document,
-			completion.analyticsItem,
-			completion.trackedRange,
-		);
 	}
 
 	/**
@@ -443,8 +448,6 @@ export class InlineCompletionItemProvider
 		if (!completion) {
 			return;
 		}
-
-		CompletionLogger.suggested(completion.logId);
 	}
 
 	/**
@@ -456,11 +459,11 @@ export class InlineCompletionItemProvider
 		completion: Pick<AutocompleteItem, 'logId' | 'analyticsItem'>,
 		acceptedLength: number
 	): void {
-		CompletionLogger.partiallyAccept(
-			completion.logId,
-			completion.analyticsItem,
-			acceptedLength,
-		);
+		// CompletionLogger.partiallyAccept(
+		// 	completion.logId,
+		// 	completion.analyticsItem,
+		// 	acceptedLength,
+		// );
 	}
 
 	public async manuallyTriggerCompletion(): Promise<void> {
@@ -591,4 +594,24 @@ function onlyCompletionWidgetSelectionChanged(
 	}
 
 	return prevSelectedCompletionInfo.text !== nextSelectedCompletionInfo.text;
+}
+
+
+function closeByPositions(
+	prev: CompletionRequest,
+	next: CompletionRequest,
+): boolean {
+	if (prev.document.uri.toString() !== next.document.uri.toString()) {
+		return false;
+	}
+	if (prev.context.triggerKind !== next.context.triggerKind) {
+		return false;
+	}
+	if (prev.position.isEqual(next.position)) {
+		return true;
+	}
+	if (next.position.character <= prev.position.character && next.position.line && prev.position.character) {
+		return true;
+	}
+	return false;
 }
