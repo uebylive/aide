@@ -13,7 +13,7 @@ import type { InlineCompletionItemWithAnalytics } from './text-processing/proces
 
 interface AutocompleteItemParams {
 	insertText: string | vscode.SnippetString;
-	logId: CompletionLogID;
+	logId: string;
 	range: vscode.Range;
 	trackedRange: vscode.Range;
 	requestParams: RequestParams;
@@ -34,7 +34,7 @@ export class AutocompleteItem extends vscode.InlineCompletionItem {
 	 * An ID used to track the completion request lifecycle. This is used for completion analytics
 	 * bookkeeping.
 	 */
-	public logId: CompletionLogID;
+	public logId: string;
 
 	/**
 	 * The range needed for tracking the completion after inserting. This is needed because the
@@ -102,7 +102,7 @@ export const suggestedAutocompleteItemsCache = new SuggestedAutocompleteItemsCac
  * in completion provider callbacks like `show` and `accept`.
  */
 export function analyticsItemToAutocompleteItem(
-	logId: CompletionLogID,
+	logId: string,
 	document: vscode.TextDocument,
 	docContext: DocumentContext,
 	position: vscode.Position,

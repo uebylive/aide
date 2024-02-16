@@ -286,7 +286,13 @@ export class RequestManager {
 	}
 
 	public removeFromCache(params: RequestParams): void {
+		// clear the cache here completely, and also stop the previous request
+		// and clear the previous request as well
+		// this will be called when we are done with the current request
+		// and we want to clear the cache and the previous request
 		this.cache.delete(params);
+		// this.previousRequest?.abort();
+		// this.completionCache = undefined;
 	}
 
 	/**
