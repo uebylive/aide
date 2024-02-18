@@ -149,7 +149,6 @@ export async function activate(context: ExtensionContext) {
 	await reportIndexingPercentage(sidecarClient, currentRepo);
 
 	// register the inline code completion provider
-	const completionProvider = new SidecarCompletionProvider(sidecarClient);
 	await createInlineCompletionItemProvider(
 		{
 			triggerNotice: notice => {

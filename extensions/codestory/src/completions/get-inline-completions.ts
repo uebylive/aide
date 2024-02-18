@@ -70,6 +70,7 @@ export interface InlineCompletionsParams {
 	// Loggers
 	logger: CompletionLogger.LoggingService;
 	spanId: string;
+	startTime: number;
 }
 
 /**
@@ -155,6 +156,7 @@ export async function getInlineCompletions(
 			suffix: params.docContext.currentLineSuffix,
 			prev_non_empty_line: params.docContext.prevNonEmptyLine,
 			next_non_empty_line: params.docContext.nextNonEmptyLine,
+			'time_taken': performance.now() - params.startTime,
 			previous_accepted_completion: params.lastAcceptedCompletionItem?.analyticsItem.insertText,
 		});
 		const result = await doGetInlineCompletions(params);
@@ -167,6 +169,7 @@ export async function getInlineCompletions(
 			prev_non_empty_line: params.docContext.prevNonEmptyLine,
 			next_non_empty_line: params.docContext.nextNonEmptyLine,
 			result: result?.items[0].insertText,
+			'time_taken': performance.now() - params.startTime,
 			previous_accepted_completion: params.lastAcceptedCompletionItem?.analyticsItem.insertText,
 		});
 		return result;
@@ -209,6 +212,7 @@ async function doGetInlineCompletions(
 		sidecarClient,
 		logger,
 		spanId,
+		startTime,
 	} = params;
 	const multiline = Boolean(multilineTrigger);
 
@@ -291,6 +295,7 @@ async function doGetInlineCompletions(
 		provider,
 		logger,
 		spanId,
+		startTime,
 	});
 
 	setIsLoading?.(false);
