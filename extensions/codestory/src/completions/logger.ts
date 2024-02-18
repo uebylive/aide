@@ -686,6 +686,8 @@ function getOtherCompletionProvider(): string[] {
 
 
 import { window } from "vscode";
+import postHogClient from '../posthog/client'
+import { getUniqueId } from '../utilities/uniqueId'
 
 type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE";
 
@@ -731,6 +733,14 @@ export class LoggingService {
 		) {
 			return;
 		}
+		postHogClient.capture({
+			distinctId: getUniqueId(),
+			event: message,
+			properties: {
+				message,
+				...(data as object),
+			},
+		});
 		// this.logMessage(message, "INFO");
 		if (data) {
 			this.logObject(message, data);
