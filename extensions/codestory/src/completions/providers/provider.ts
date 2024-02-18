@@ -80,9 +80,11 @@ export abstract class Provider {
 
 	public abstract generateCompletions(
 		abortSignal: AbortSignal,
+		startTime: number,
 	): AsyncGenerator<FetchCompletionResult[]>;
 
 	public abstract generateCompletionsPlain(
 		abortSignal: AbortSignal,
+		startTime: number,
 	): AsyncIterable<StreamCompletionResponse>;
 }

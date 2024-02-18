@@ -143,9 +143,11 @@ export class InlineCompletionItemProvider
 		token?: vscode.CancellationToken
 	): Promise<AutocompleteResult | null> {
 		let id = uniqueId("completions-");
+		const startTime = performance.now();
 		this.logger.logInfo('sidecar.providerInlineCompletionItems', {
 			'event_name': 'start',
 			'id': id,
+			'start_time': startTime,
 		});
 		// console.log('sidecar.providerInlineCompletionItems', 'start');
 		// Update the last request
@@ -157,10 +159,8 @@ export class InlineCompletionItemProvider
 		};
 		this.lastCompletionRequest = completionRequest;
 
-		const start = performance.now();
-
 		if (!this.lastCompletionRequestTimestamp) {
-			this.lastCompletionRequestTimestamp = start;
+			this.lastCompletionRequestTimestamp = startTime;
 		}
 
 		const setIsLoading = (isLoading: boolean): void => {
@@ -233,6 +233,8 @@ export class InlineCompletionItemProvider
 		}, this.logger, id);
 		this.logger.logInfo('sidecar.initialRequest.docContext', {
 			event_name: 'sidecar.initialRequest.docContext',
+			now: performance.now(),
+			time_taken: performance.now() - startTime,
 			id: id,
 			multiline_trigger: docContext.multilineTrigger ?? "no_multiline_trigger",
 		});
@@ -280,6 +282,7 @@ export class InlineCompletionItemProvider
 				lastAcceptedCompletionItem: this.lastAcceptedCompletionItem,
 				logger: this.logger,
 				spanId: id,
+				startTime,
 			});
 
 			// Avoid any further work if the completion is invalidated already.
@@ -299,6 +302,8 @@ export class InlineCompletionItemProvider
 				'inline_completions': result.items.map((item) => item.insertText),
 				'inline_completions_ranges': result.items.map((item) => item.range),
 				'current_position': position,
+				'now': performance.now(),
+				'time_taken': performance.now() - startTime,
 				'id': id,
 			});
 

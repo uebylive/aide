@@ -381,6 +381,7 @@ export class SideCarClient {
 		signal: AbortSignal,
 		logger: LoggingService,
 		spanId: string,
+		startTime: number,
 	): AsyncIterable<StreamCompletionResponseUpdates> {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
@@ -437,6 +438,7 @@ export class SideCarClient {
 						logger.logInfo('sidecar.inline_completion.streaming', {
 							'event_name': 'sidecar.inline_completion.streaming.no_delta',
 							'completion': finalAnswer,
+							'time_taken': performance.now() - startTime,
 							'id': spanId,
 							'stop_reason': CompletionStopReason.RequestFinished,
 						});
@@ -473,6 +475,9 @@ export class SideCarClient {
 							logger.logInfo('sidecar.inline_completion.streaming', {
 								'event_name': 'sidecar.inline_completion.streaming',
 								'completion': finalCompletion,
+								'startTime': startTime,
+								'now': performance.now(),
+								'time_taken': performance.now() - startTime,
 								'id': spanId,
 								'stop_reason': CompletionStopReason.StreamingChunk,
 							});

@@ -55,6 +55,7 @@ interface RequestsManagerParams {
 	provider: Provider;
 	logger: CompletionLogger.LoggingService,
 	spanId: string,
+	startTime: number;
 }
 
 /**
@@ -107,7 +108,7 @@ export class RequestManager {
 		// the other thing to keep in mind is that the user always wants to accept one
 		// line and then move to the next, partial one liners make no sense, at the very
 		// least the user will get the experience that its streaming back properly
-		const { requestParams, provider, logger, spanId } = params;
+		const { requestParams, provider, logger, spanId, startTime } = params;
 		// now we need to check if we have prefix overlap with the other completion which are running around
 		const prefix = requestParams.docContext.prefix;
 		const completionCacheString = this.completionCache;
@@ -122,6 +123,7 @@ export class RequestManager {
 					'completion': remainingCompletion,
 					'completion_cache': completionCacheString,
 					'prefix': prefix,
+					'time_taken': performance.now() - startTime,
 					'id': spanId,
 				});
 				return {
@@ -150,6 +152,7 @@ export class RequestManager {
 			try {
 				for await (const fetchCompletionResults of provider.generateCompletionsPlain(
 					request.abortController.signal,
+					startTime,
 				)) {
 					// we are going to get the generations back, here we will keep adding them to the cache
 					// one per line
@@ -185,7 +188,7 @@ export class RequestManager {
 	public async request(params: RequestsManagerParams): Promise<RequestManagerResult> {
 		this.latestRequestParams = params;
 
-		const { requestParams, isCacheEnabled, provider, logger, spanId } = params;
+		const { requestParams, isCacheEnabled, provider, logger, spanId, startTime } = params;
 
 		// The cache is checked incorrectly over here, we should check it here
 		// if we can keep the cache updated along with the characters and the completion
@@ -211,6 +214,7 @@ export class RequestManager {
 				// we do some parsing and generate more completions
 				for await (const fetchCompletionResults of provider.generateCompletions(
 					request.abortController.signal,
+					startTime,
 				)) {
 					const [hotStreakCompletions, currentCompletions] = partition(
 						fetchCompletionResults.filter(isDefined),

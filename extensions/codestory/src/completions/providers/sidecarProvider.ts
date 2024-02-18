@@ -19,7 +19,7 @@ export class SidecarProvider extends Provider {
 		this._logger = logger;
 	}
 
-	public generateCompletionsPlain(abortSignal: AbortSignal): AsyncIterable<StreamCompletionResponse> {
+	public generateCompletionsPlain(abortSignal: AbortSignal, startTime: number): AsyncIterable<StreamCompletionResponse> {
 		const { languageId, uri } = this.options.document;
 		const completionRequest: CompletionRequest = {
 			filepath: uri.fsPath,
@@ -43,11 +43,12 @@ export class SidecarProvider extends Provider {
 			abortSignal,
 			this._logger,
 			this.options.spanId,
+			startTime,
 		);
 		return responseStream;
 	}
 
-	public generateCompletions(abortSignal: AbortSignal): AsyncGenerator<FetchCompletionResult[]> {
+	public generateCompletions(abortSignal: AbortSignal, startTime: number): AsyncGenerator<FetchCompletionResult[]> {
 		const { languageId, uri } = this.options.document;
 		const isDynamicMultiline = Boolean(this.options.dynamicMultilineCompletions);
 		this._logger.logInfo('sidecar.inlineProvider', {
@@ -83,6 +84,7 @@ export class SidecarProvider extends Provider {
 			abortSignal,
 			this._logger,
 			this.options.spanId,
+			startTime,
 		);
 		this._logger.logInfo(
 			'sidecar.inlineProvider.responseStream',
