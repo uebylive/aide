@@ -157,8 +157,8 @@ export async function activate(context: ExtensionContext) {
 			sidecarClient,
 		}
 	);
-	// register the commands here
-	// aideCommands(completionProvider);
+	// register the commands here for inline completion
+	aideCommands();
 	// set the status bar as well
 	startupStatusBar();
 
