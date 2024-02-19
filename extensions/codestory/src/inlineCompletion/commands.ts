@@ -102,15 +102,15 @@ const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider):
 };
 
 export const aideCommands = (
-	completionProvider: SidecarCompletionProvider,
+	// completionProvider: SidecarCompletionProvider,
 ) =>
 	[
-		toggleInlineCompletionTriggerMode,
-		applyCallback,
-		triggerInlineCompletion,
-		acceptInlineCompletion,
+		// toggleInlineCompletionTriggerMode,
+		// applyCallback,
+		// triggerInlineCompletion,
+		// acceptInlineCompletion,
 		toggleInlineCompletion,
-		acceptInlineCompletionNextWord(completionProvider),
-		acceptInlineCompletionNextLine(completionProvider),
-		dismissInlineCompletion(completionProvider),
+		// acceptInlineCompletionNextWord(completionProvider),
+		// acceptInlineCompletionNextLine(completionProvider),
+		// dismissInlineCompletion(completionProvider),
 	].map((command) => commands.registerCommand(command.command, command.callback, command.thisArg));

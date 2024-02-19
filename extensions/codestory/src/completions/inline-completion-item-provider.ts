@@ -149,6 +149,11 @@ export class InlineCompletionItemProvider
 			'id': id,
 			'start_time': startTime,
 		});
+		const configuration = vscode.workspace.getConfiguration('aide');
+		const isEnabled = configuration.get<boolean>("inlineCompletion.enableTabAutocomplete") || false;
+		if (!isEnabled) {
+			return null;
+		}
 		// console.log('sidecar.providerInlineCompletionItems', 'start');
 		// Update the last request
 		const lastCompletionRequest = this.lastCompletionRequest;
