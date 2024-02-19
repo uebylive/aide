@@ -142,7 +142,7 @@ export class InlineCompletionItemProvider
 		context: vscode.InlineCompletionContext,
 		token?: vscode.CancellationToken
 	): Promise<AutocompleteResult | null> {
-		let id = uniqueId("completions-");
+		const id = uniqueId('completions-');
 		const startTime = performance.now();
 		this.logger.logInfo('sidecar.providerInlineCompletionItems', {
 			'event_name': 'start',
@@ -150,7 +150,12 @@ export class InlineCompletionItemProvider
 			'start_time': startTime,
 		});
 		const configuration = vscode.workspace.getConfiguration('aide');
-		const isEnabled = configuration.get<boolean>("inlineCompletion.enableTabAutocomplete") || false;
+		const shouldCopy = configuration.get<boolean>('inlineCompletion.copyClipBoardContent') || false;
+		let clipBoardContent: string | null = null;
+		if (shouldCopy) {
+			clipBoardContent = await vscode.env.clipboard.readText();
+		}
+		const isEnabled = configuration.get<boolean>('inlineCompletion.enableTabAutocomplete') || false;
 		if (!isEnabled) {
 			return null;
 		}
@@ -288,6 +293,7 @@ export class InlineCompletionItemProvider
 				logger: this.logger,
 				spanId: id,
 				startTime,
+				clipBoardContent,
 			});
 
 			// Avoid any further work if the completion is invalidated already.

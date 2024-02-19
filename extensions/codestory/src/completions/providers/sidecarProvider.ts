@@ -19,7 +19,7 @@ export class SidecarProvider extends Provider {
 		this._logger = logger;
 	}
 
-	public generateCompletionsPlain(abortSignal: AbortSignal, startTime: number): AsyncIterable<StreamCompletionResponse> {
+	public generateCompletionsPlain(abortSignal: AbortSignal, startTime: number, clipBoardContext: string | null): AsyncIterable<StreamCompletionResponse> {
 		const { languageId, uri } = this.options.document;
 		const completionRequest: CompletionRequest = {
 			filepath: uri.fsPath,
@@ -30,6 +30,7 @@ export class SidecarProvider extends Provider {
 				character: this.options.position.character,
 				byteOffset: this.options.document.offsetAt(this.options.position),
 			},
+			clipboard: clipBoardContext ?? undefined,
 			id: this.options.spanId,
 			requestId: this.options.spanId,
 		};
