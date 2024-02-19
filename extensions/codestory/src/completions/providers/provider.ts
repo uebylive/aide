@@ -86,5 +86,6 @@ export abstract class Provider {
 	public abstract generateCompletionsPlain(
 		abortSignal: AbortSignal,
 		startTime: number,
+		clipBoardContext: string | null,
 	): AsyncIterable<StreamCompletionResponse>;
 }

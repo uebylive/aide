@@ -240,5 +240,6 @@ export function getRequestParamsFromLastCandidate(
 		position: lastCandidate.lastTriggerPosition,
 		docContext: lastCandidate.lastTriggerDocContext,
 		selectedCompletionInfo: lastCandidate.lastTriggerSelectedCompletionInfo,
+		clipBoardContent: null,
 	};
 }

@@ -137,6 +137,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Toggle tab autocomplete for inline completions"
+				},
+				"aide.inlineCompletion.copyClipBoardContent": {
+					"type": "boolean",
+					"default": true,
+					"description": "Should we allow clip board content to be sent over"
 				}
 			}
 		}

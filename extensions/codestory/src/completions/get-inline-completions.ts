@@ -71,6 +71,9 @@ export interface InlineCompletionsParams {
 	logger: CompletionLogger.LoggingService;
 	spanId: string;
 	startTime: number;
+
+	// clipboard content
+	clipBoardContent: string | null;
 }
 
 /**
@@ -213,6 +216,7 @@ async function doGetInlineCompletions(
 		logger,
 		spanId,
 		startTime,
+		clipBoardContent,
 	} = params;
 	const multiline = Boolean(multilineTrigger);
 
@@ -222,6 +226,7 @@ async function doGetInlineCompletions(
 		position,
 		selectedCompletionInfo,
 		abortSignal,
+		clipBoardContent,
 	};
 
 	const cachedResult = requestManager.checkCache({

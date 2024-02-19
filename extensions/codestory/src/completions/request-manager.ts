@@ -42,6 +42,9 @@ export interface RequestParams {
 
 	/** The abort signal for the request. */
 	abortSignal?: AbortSignal;
+
+	/** Pass the clipboard content */
+	clipBoardContent: string | null;
 }
 
 export interface RequestManagerResult {
@@ -153,6 +156,7 @@ export class RequestManager {
 				for await (const fetchCompletionResults of provider.generateCompletionsPlain(
 					request.abortController.signal,
 					startTime,
+					requestParams.clipBoardContent,
 				)) {
 					// we are going to get the generations back, here we will keep adding them to the cache
 					// one per line
