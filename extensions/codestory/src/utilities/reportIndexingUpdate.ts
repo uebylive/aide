@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../sidecar/client';
+import { sidecarNotIndexRepository } from './sidecarUrl';
 
 
 export function reportIndexingPercentage(sidecarClient: SideCarClient, currentRepo: RepoRef) {
@@ -13,6 +14,10 @@ export function reportIndexingPercentage(sidecarClient: SideCarClient, currentRe
 	// there is just 1 repository
 	// We should check if we have already indexed the repository, if that's the
 	// case then we don't try to re-index again
+	const shouldNotIndexRepository = sidecarNotIndexRepository();
+	if (shouldNotIndexRepository) {
+		return;
+	}
 	const title = 'Indexing progress';
 	vscode.window.withProgress(
 		{
