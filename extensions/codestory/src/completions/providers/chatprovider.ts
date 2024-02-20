@@ -402,22 +402,21 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	slashCommandProvider: vscode.ChatAgentSlashCommandProvider = {
 		provideSlashCommands: (token: vscode.CancellationToken): vscode.ProviderResult<vscode.ChatAgentSlashCommand[]> => {
 			return [
-				{
-					name: 'explain',
-					description: 'Describe or refer to code you\'d like to understand',
-				},
-				{
-					name: 'search',
-					description: 'Describe a workflow to find',
-				},
+				// TODO: Removing slash commands
+				// {
+				// 	name: 'explain',
+				// 	description: 'Describe or refer to code you\'d like to understand',
+				// },
+				// {
+				// 	name: 'search',
+				// 	description: 'Describe a workflow to find',
+				// },
 			];
 		}
 	};
 
 	editsProvider: vscode.CSChatEditProvider = {
 		provideEdits: async (request, progress, token) => {
-			console.log('we are providing edits');
-			logger.info('provideEditsWithProgress', request, progress, token);
 			// Notes to @theskcd: This API currently applies the edits without any decoration.
 			//
 			// WIP items on editor side, in order of priority:
@@ -466,8 +465,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 								startOfEdit = true;
 								const codeBlockIndex = textEditStreaming.Start.code_block_index;
 								const agentContext = textEditStreaming.Start.context_selection;
-								console.log('agentContext');
-								console.log(agentContext);
 								streamProcessor = new StreamProcessor(
 									progress,
 									activeDocument,
