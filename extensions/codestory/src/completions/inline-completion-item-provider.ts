@@ -310,13 +310,20 @@ export class InlineCompletionItemProvider
 
 			// we need to check the results here to make sure they are not all whitespaces (which are just annoying)
 			let isNonWhitespaceCompletion = false;
+			let multilineCompletion = false;
 			result.items.forEach((item) => {
 				if (item.insertText.trim() !== '') {
 					isNonWhitespaceCompletion = true;
 				}
 			});
+			result.items.forEach((item) => {
+				if (item.insertText.split('\n').length >= 1) {
+					multilineCompletion = true;
+				}
+			})
 
-			if (!isNonWhitespaceCompletion) {
+			// we only block when we have whitespace and its multiline
+			if (!isNonWhitespaceCompletion && multilineCompletion) {
 				this.logger.logInfo('sidecar.providerInlineCompletionItems.WHITESPACE', {
 					'event_name': 'sidecar.providerInlineCompletionItems.WHITESPACE',
 					'id': id,

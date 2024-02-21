@@ -121,9 +121,10 @@ export class RequestManager {
 			if (equalStart) {
 				// we have a prefix overlap, find the index of this and then return it
 				const remainingCompletion = completionCacheString.substring(prefix.length);
+				const completionToShow = remainingCompletion.trimRight();
 				logger.logInfo('sidecar.request.plain.cached', {
 					'event_name': 'sidecar.request.plain.cached.hit',
-					'completion': remainingCompletion,
+					'completion': completionToShow,
 					'completion_cache': completionCacheString,
 					'prefix': prefix,
 					'time_taken': performance.now() - startTime,
@@ -131,8 +132,8 @@ export class RequestManager {
 				});
 				return {
 					completions: [{
-						insertText: remainingCompletion,
-						range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, remainingCompletion)),
+						insertText: completionToShow,
+						range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow)),
 					}],
 					source: InlineCompletionsResultSource.Cache,
 				}
@@ -162,17 +163,18 @@ export class RequestManager {
 					// one per line
 					const stopReason = fetchCompletionResults.stopReason;
 					const currentCompletion = fetchCompletionResults.completion;
+					const completionToShow = currentCompletion.trimRight();
 					// First add it to the cache so we can look it up later
 					this.completionCache = prefix + currentCompletion;
 					logger.logInfo('sidecar.request.plain.generate_completions', {
 						'event_name': 'sidecar.request.plain.generate_completions',
-						'completion': currentCompletion,
+						'completion': completionToShow,
 						'id': spanId,
 					});
 					request.resolve({
 						completions: [{
-							insertText: currentCompletion,
-							range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, currentCompletion))
+							insertText: completionToShow,
+							range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow))
 						}],
 						source: InlineCompletionsResultSource.Network,
 					});
