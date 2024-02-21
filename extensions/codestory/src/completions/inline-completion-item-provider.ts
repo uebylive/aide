@@ -308,6 +308,22 @@ export class InlineCompletionItemProvider
 				return null;
 			}
 
+			// we need to check the results here to make sure they are not all whitespaces (which are just annoying)
+			let isNonWhitespaceCompletion = false;
+			result.items.forEach((item) => {
+				if (item.insertText.trim() !== '') {
+					isNonWhitespaceCompletion = true;
+				}
+			});
+
+			if (!isNonWhitespaceCompletion) {
+				this.logger.logInfo('sidecar.providerInlineCompletionItems.WHITESPACE', {
+					'event_name': 'sidecar.providerInlineCompletionItems.WHITESPACE',
+					'id': id,
+				});
+				return null;
+			}
+
 			this.logger.logInfo('sidecar.providerInlineCompletionItems.COMPLETE', {
 				'event_name': 'sidecar.provide_inline_completions.COMPLETE',
 				'inline_completions': result.items.map((item) => item.insertText),
