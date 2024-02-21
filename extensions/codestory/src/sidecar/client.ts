@@ -443,11 +443,12 @@ export class SideCarClient {
 							'id': spanId,
 							'stop_reason': CompletionStopReason.RequestFinished,
 						});
-						return {
+						yield {
 							completion: finalAnswer,
 							stopReason: CompletionStopReason.RequestFinished,
 							delta: null,
 						};
+						return;
 					}
 
 					// we want to keep the following things in order
