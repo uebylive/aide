@@ -406,6 +406,15 @@ export class InlineCompletionItemProvider
 				items: updateInsertRangeForVSCode(autocompleteItems),
 			};
 
+			this.logger.logInfo('sidecar.autocomplet.result', {
+				'event_name': 'sidecar.autocomplet.result',
+				'id': id,
+				'autocomplete_items': autocompleteItems.map((item) => item.insertText),
+				'inline_completions_ranges': autocompleteItems.map((item) => item.range),
+				'current_position': position,
+				'inline_completions_length': autocompleteItems.length,
+			});
+
 			// Since VS Code has no callback as to when a completion is shown, we assume
 			// that if we pass the above visibility tests, the completion is going to be
 			// rendered in the UI
