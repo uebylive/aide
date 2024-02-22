@@ -83,10 +83,6 @@ export class InlineCompletionItemProvider
 
 	private disposables: vscode.Disposable[] = [];
 
-	private isProbablyNewInstall = true;
-
-	private firstCompletionDecoration = new FirstCompletionDecorationHandler();
-
 	private sidecarClient: SideCarClient;
 
 	private logger: CompletionLogger.LoggingService;
@@ -167,6 +163,13 @@ export class InlineCompletionItemProvider
 			position,
 			context,
 		};
+		// We are going to check if the user has backspaced at all, if that's the case then we should
+		// clear the cache and the already running requests
+		if (lastCompletionRequest?.document.uri === document.uri) {
+			if (lastCompletionRequest.position.isAfter(position)) {
+				this.requestManager.removeCompletionCache();
+			}
+		}
 		this.lastCompletionRequest = completionRequest;
 
 		if (!this.lastCompletionRequestTimestamp) {
@@ -473,6 +476,10 @@ export class InlineCompletionItemProvider
 		}
 
 		resetArtificialDelay();
+
+		this.logger.logInfo('sidecar.inlinecompletion.accepted', {
+			'event_name': 'sidecar.inlinecompletion.accepted',
+		});
 
 		// When a completion is accepted, the lastCandidate should be cleared. This makes sure the
 		// log id is never reused if the completion is accepted.
