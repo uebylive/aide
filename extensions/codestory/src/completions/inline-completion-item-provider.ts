@@ -441,11 +441,6 @@ export class InlineCompletionItemProvider
 				'inline_completions_length': autocompleteItems.length,
 			});
 
-			// Since VS Code has no callback as to when a completion is shown, we assume
-			// that if we pass the above visibility tests, the completion is going to be
-			// rendered in the UI
-			// this.unstable_handleDidShowCompletionItem(autocompleteItems[0]);
-
 			return autocompleteResult;
 		} catch (error) {
 			this.onError(error as Error);
@@ -649,24 +644,4 @@ function onlyCompletionWidgetSelectionChanged(
 	}
 
 	return prevSelectedCompletionInfo.text !== nextSelectedCompletionInfo.text;
-}
-
-
-function closeByPositions(
-	prev: CompletionRequest,
-	next: CompletionRequest,
-): boolean {
-	if (prev.document.uri.toString() !== next.document.uri.toString()) {
-		return false;
-	}
-	if (prev.context.triggerKind !== next.context.triggerKind) {
-		return false;
-	}
-	if (prev.position.isEqual(next.position)) {
-		return true;
-	}
-	if (next.position.character <= prev.position.character && next.position.line && prev.position.character) {
-		return true;
-	}
-	return false;
 }
