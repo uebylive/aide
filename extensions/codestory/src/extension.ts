@@ -31,7 +31,6 @@ import { CSChatAgentProvider, CSChatSessionProvider } from './completions/provid
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
-import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
