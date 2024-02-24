@@ -125,6 +125,8 @@ export async function activate(context: ExtensionContext) {
 
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
+	const execPath = process.execPath;
+	console.log('Exec path:' + execPath);
 	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
