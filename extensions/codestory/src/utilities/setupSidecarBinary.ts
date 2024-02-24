@@ -139,18 +139,18 @@ async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 }
 
 export async function startSidecarBinaryWithLocal(
-	extensionBasePath: string,
+	installLocation: string,
 ): Promise<boolean> {
 	// Fixing the variable name here from sserverUrl -> serverUrl
 	// should be automatig, or can we really do it with lsp
 	const serverUrl = getSidecarBinaryURL();
 	const shouldUseSelfRun = sidecarUseSelfRun();
 	if (shouldUseSelfRun) {
-		// return true;
+		return true;
 	}
 	// check here if the binary is downloaded locally and if thats the case
 	// try to run it from there
-	const sidecarBinPath = path.join(extensionBasePath, 'sidecar_bin');
+	const sidecarBinPath = path.join(installLocation, 'extensions', 'codestory', 'sidecar_bin');
 	console.log('startSidecarBinaryWithLocation', sidecarBinPath);
 	if (fs.existsSync(sidecarBinPath)) {
 		const sidecarBinPathExists = fs.existsSync(path.join(sidecarBinPath, 'sidecar'));
@@ -167,15 +167,15 @@ export async function startSidecarBinaryWithLocal(
 
 export async function startSidecarBinary(
 	extensionBasePath: string,
-	installLocatoin: string,
+	installLocation: string,
 ): Promise<string> {
 	// We want to check where the sidecar binary is stored
 	// extension_path: /Users/skcd/.vscode-oss-dev/User/globalStorage/codestory-ghost.codestoryai/sidecar_bin
 	// installation location: /Users/skcd/Downloads/Aide.app/Contents/Resources/app/extensions/codestory/sidecar_bin
 	// we have to figure out how to copy them together
 	console.log('starting sidecar binary');
-	console.log('installLocation', installLocatoin);
-	const selfStart = await startSidecarBinaryWithLocal(extensionBasePath);
+	console.log('installLocation', installLocation);
+	const selfStart = await startSidecarBinaryWithLocal(installLocation);
 	if (selfStart) {
 		return 'http://127.0.0.1:42424';
 	}
