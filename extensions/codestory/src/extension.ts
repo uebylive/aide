@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages, modelSelection } from 'vscode';
+import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -126,9 +126,8 @@ export async function activate(context: ExtensionContext) {
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
 	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
-
 	// Setup the sidecar client here
-	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
+	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
