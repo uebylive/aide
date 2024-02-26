@@ -23,7 +23,7 @@ export const gitCommit = (
 	return commands.registerCommand(
 		'codestory.gitCommit',
 		async ({ payload, ...message }: MessageHandlerData<GitCommitRequest>) => {
-			postHogClient.capture({
+			postHogClient?.capture({
 				distinctId: uniqueUserId,
 				event: 'git_commit',
 				properties: {

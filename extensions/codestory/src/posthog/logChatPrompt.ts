@@ -13,7 +13,7 @@ export const logChatPrompt = (
 	githubRepoHash: string,
 	uniqueId: string,
 ) => {
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: uniqueId,
 		event: 'chat_message',
 		properties: {
@@ -31,7 +31,7 @@ export const logSearchPrompt = (
 	githubRepoHash: string,
 	uniqueId: string,
 ) => {
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: uniqueId,
 		event: 'search_prompt',
 		properties: {

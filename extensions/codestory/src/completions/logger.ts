@@ -733,7 +733,7 @@ export class LoggingService {
 		) {
 			return;
 		}
-		postHogClient.capture({
+		postHogClient?.capture({
 			distinctId: getUniqueId(),
 			event: message,
 			properties: {

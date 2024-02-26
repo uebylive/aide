@@ -76,7 +76,7 @@ export async function activate(context: ExtensionContext) {
 	const userId = getUserId();
 	console.log('User id:' + userId);
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: getUniqueId(),
 		event: 'extension_activated',
 	});
@@ -114,7 +114,7 @@ export async function activate(context: ExtensionContext) {
 	// TODO(codestory): Download the rust binary here appropriate for the platform
 	// we are on. Similar to how we were doing for Aide binary
 
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: await getUniqueId(),
 		event: 'activated_lsp',
 		properties: {
@@ -178,7 +178,7 @@ export async function activate(context: ExtensionContext) {
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
-		postHogClient.capture({
+		postHogClient?.capture({
 			distinctId: await getUniqueId(),
 			event: 'search',
 			properties: {
