@@ -50,7 +50,7 @@ export const generateChatCompletion = async (
 		max_tokens: 8000,
 	});
 	if (completions.choices.length !== 0) {
-		posthogClient.capture({
+		posthogClient?.capture({
 			distinctId: uniqueId,
 			event: `[gpt4]${context}`,
 			properties: {
@@ -191,7 +191,7 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'File path not found',
 			);
-			posthogClient.capture({
+			posthogClient?.capture({
 				distinctId: uniqueId,
 				event: '[error]file_path_not_found',
 				properties: {
@@ -226,7 +226,7 @@ export const debuggingFlow = async (
 				codeSymbolModificationInstructions.codeSymbolModificationInstructionList[index].codeSymbolName,
 				'Code modification generation failure',
 			);
-			posthogClient.capture({
+			posthogClient?.capture({
 				distinctId: uniqueId,
 				event: '[error]code_modification_generation_failure',
 				properties: {
