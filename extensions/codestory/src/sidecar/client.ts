@@ -568,6 +568,64 @@ export class SideCarClient {
 		};
 	}
 
+	async documentContentChange(
+		filePath: string,
+		events: readonly vscode.TextDocumentContentChangeEvent[],
+		language: string,
+	): Promise<void> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion/document_content_changed';
+		const mappedEvents = events.map((event) => {
+			return {
+				range: {
+					start_line: event.range.start.line,
+					start_column: event.range.start.character,
+					end_line: event.range.end.line,
+					end_column: event.range.end.character,
+				},
+				text: event.text,
+			};
+		});
+		const body = {
+			file_path: filePath,
+			language,
+			events: mappedEvents,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+	}
+
+	async documentOpen(
+		filePath: string,
+		fileContent: string,
+		language: string,
+	): Promise<void> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion/document_open';
+		const body = {
+			file_path: filePath,
+			file_content: fileContent,
+			language,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		if (!response.ok) {
+			throw new Error(`Error while opening file: ${response.statusText}`);
+		}
+	}
+
 	async * inlineCompletion(
 		completionRequest: CompletionRequest,
 		signal: AbortSignal,

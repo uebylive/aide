@@ -13,6 +13,8 @@ import { downloadFromGCPBucket, downloadUsingURL } from './gcpBucket';
 import { sidecarUseSelfRun } from './sidecarUrl';
 
 
+// Here I want to ask a question about what value does the extracDir take
+// it should be pretty easy to do that
 function unzipSidecarZipFolder(source: string, extractDir: string) {
 	if (source.endsWith('.zip')) {
 		if (process.platform === 'win32') {
@@ -45,7 +47,7 @@ export function getSidecarBinaryURL() {
 // if the version we are looking at is okay, or we need to download a new binary
 // for now, lets keep it as it is and figure out a way to update the hash on
 // important updates
-export const SIDECAR_VERSION = 'c45d2c6231959cb555c26421e69c085e838ecbdb7d1e89a4031ddd693641ff8b';
+export const SIDECAR_VERSION = '6fec958ad9121b071c604a992d4b700649f97c4480359af608aa3e203e77272d';
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
@@ -136,10 +138,47 @@ async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 	return false;
 }
 
+export async function startSidecarBinaryWithLocal(
+	installLocation: string,
+): Promise<boolean> {
+	// Fixing the variable name here from sserverUrl -> serverUrl
+	// should be automatig, or can we really do it with lsp
+	const serverUrl = getSidecarBinaryURL();
+	const shouldUseSelfRun = sidecarUseSelfRun();
+	if (shouldUseSelfRun) {
+		return true;
+	}
+	// check here if the binary is downloaded locally and if thats the case
+	// try to run it from there
+	const sidecarBinPath = path.join(installLocation, 'extensions', 'codestory', 'sidecar_bin');
+	console.log('startSidecarBinaryWithLocation', sidecarBinPath);
+	if (fs.existsSync(sidecarBinPath)) {
+		const sidecarBinPathExists = fs.existsSync(path.join(sidecarBinPath, 'sidecar'));
+		if (sidecarBinPathExists) {
+			const sidecarValue = await runSideCarBinary(sidecarBinPath, serverUrl);
+			console.log('Sidecar binary exists locally, running it', sidecarValue);
+			return sidecarValue;
+		}
+	}
+
+	return false;
+}
+
+
 export async function startSidecarBinary(
 	extensionBasePath: string,
+	installLocation: string,
 ): Promise<string> {
+	// We want to check where the sidecar binary is stored
+	// extension_path: /Users/skcd/.vscode-oss-dev/User/globalStorage/codestory-ghost.codestoryai/sidecar_bin
+	// installation location: /Users/skcd/Downloads/Aide.app/Contents/Resources/app/extensions/codestory/sidecar_bin
+	// we have to figure out how to copy them together
 	console.log('starting sidecar binary');
+	console.log('installLocation', installLocation);
+	const selfStart = await startSidecarBinaryWithLocal(installLocation);
+	if (selfStart) {
+		return 'http://127.0.0.1:42424';
+	}
 	// Check vscode settings
 	const serverUrl = getSidecarBinaryURL();
 	const shouldUseSelfRun = sidecarUseSelfRun();
@@ -212,7 +251,11 @@ export async function startSidecarBinary(
 	// now delete the zip file
 	fs.unlinkSync(zipDestination);
 	// Get name of the corresponding executable for platform
+	await runSideCarBinary(sidecarDestination, serverUrl);
+	return 'http://127.0.0.1:42424';
+}
 
+async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 	let webserverPath = null;
 	if (os.platform() === 'win32') {
 		webserverPath = path.join(sidecarDestination, 'target', 'release', 'webserver.exe');
@@ -338,7 +381,7 @@ export async function startSidecarBinary(
 			if (response.status === 200) {
 				// allow-any-unicode-next-line
 				console.log('HC finished! We are green 🛳️');
-				return;
+				return true;
 			} else {
 				console.log('HC failed, trying again');
 				retry();
@@ -348,14 +391,17 @@ export async function startSidecarBinary(
 				console.log('HC failed, trying again', e);
 				retry();
 			} else {
-				throw e;
+				return false;
 			}
 		}
 	};
 
 	console.log('we are returning from HC check');
-	await waitForGreenHC();
-	console.log('we are in the HC check');
-
-	return 'http://127.0.0.1:42424';
+	const hcGreen = await waitForGreenHC();
+	console.log('HC value: ', hcGreen);
+	if (!hcGreen) {
+		console.log('Failed to start sidecar');
+		return false;
+	}
+	return true;
 }

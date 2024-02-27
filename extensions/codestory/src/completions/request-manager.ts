@@ -2,28 +2,20 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { partition } from 'lodash';
 import { LRUCache } from 'lru-cache';
-import type * as vscode from 'vscode';
-import { Range } from 'vscode';
-
+import * as vscode from 'vscode';
 
 import type { DocumentContext } from './get-current-doc-context';
 import * as CompletionLogger from './logger';
 import {
 	InlineCompletionsResultSource,
-	type LastInlineCompletionCandidate,
 } from './get-inline-completions';
-import { logCompletionBookkeepingEvent, type CompletionLogID } from './logger';
-import { reuseLastCandidate } from './reuse-last-candidate';
 import {
-	processInlineCompletions,
 	type InlineCompletionItemWithAnalytics,
 } from './text-processing/process-inline-completions';
-import { getPositionAfterTextInsertion, getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
+import { getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
 import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
-import { STOP_REASON_HOT_STREAK } from './providers/hot-streak';
 
 export const isDefined = <T>(value: T): value is NonNullable<T> => value !== undefined && value !== null;
 
@@ -56,8 +48,8 @@ interface RequestsManagerParams {
 	requestParams: RequestParams;
 	isCacheEnabled: boolean;
 	provider: Provider;
-	logger: CompletionLogger.LoggingService,
-	spanId: string,
+	logger: CompletionLogger.LoggingService;
+	spanId: string;
 	startTime: number;
 }
 
@@ -88,8 +80,8 @@ export class RequestManager {
 	public checkCache(
 		params: Pick<RequestsManagerParams, 'requestParams' | 'isCacheEnabled' | 'logger' | 'spanId'>
 	): RequestManagerResult | null {
-		const { requestParams, isCacheEnabled, logger, spanId } = params
-		const cachedCompletions = this.cache.get(requestParams)
+		const { requestParams, isCacheEnabled, logger, spanId } = params;
+		const cachedCompletions = this.cache.get(requestParams);
 
 		if (isCacheEnabled && cachedCompletions) {
 			logger.logInfo('sidecar.request_manager.cache_hit', {
@@ -97,9 +89,9 @@ export class RequestManager {
 				'id': spanId,
 			});
 			// addAutocompleteDebugEvent('RequestManager.checkCache', { cachedCompletions })
-			return cachedCompletions
+			return cachedCompletions;
 		}
-		return null
+		return null;
 	}
 
 	public async requestPlain(params: RequestsManagerParams): Promise<RequestManagerResult> {
@@ -121,9 +113,10 @@ export class RequestManager {
 			if (equalStart) {
 				// we have a prefix overlap, find the index of this and then return it
 				const remainingCompletion = completionCacheString.substring(prefix.length);
+				const completionToShow = remainingCompletion.trimRight();
 				logger.logInfo('sidecar.request.plain.cached', {
 					'event_name': 'sidecar.request.plain.cached.hit',
-					'completion': remainingCompletion,
+					'completion': completionToShow,
 					'completion_cache': completionCacheString,
 					'prefix': prefix,
 					'time_taken': performance.now() - startTime,
@@ -131,11 +124,11 @@ export class RequestManager {
 				});
 				return {
 					completions: [{
-						insertText: remainingCompletion,
-						range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, remainingCompletion)),
+						insertText: completionToShow,
+						range: new vscode.Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow)),
 					}],
 					source: InlineCompletionsResultSource.Cache,
-				}
+				};
 			} else {
 				// we should terminate the running request in the background as its not useful anymore
 				// and set our cache to empty right here and then start a new request
@@ -149,7 +142,7 @@ export class RequestManager {
 		const abortController = new AbortController();
 		this.previousRequest = abortController;
 		this.completionCache = '';
-		let request = new InflightRequest(requestParams, abortController);
+		const request = new InflightRequest(requestParams, abortController);
 		// lets assume that there is no cache for now, we will add it back later
 		const generateCompletions = async (): Promise<void> => {
 			try {
@@ -162,17 +155,18 @@ export class RequestManager {
 					// one per line
 					const stopReason = fetchCompletionResults.stopReason;
 					const currentCompletion = fetchCompletionResults.completion;
+					const completionToShow = currentCompletion.trimRight();
 					// First add it to the cache so we can look it up later
 					this.completionCache = prefix + currentCompletion;
 					logger.logInfo('sidecar.request.plain.generate_completions', {
 						'event_name': 'sidecar.request.plain.generate_completions',
-						'completion': currentCompletion,
+						'completion': completionToShow,
 						'id': spanId,
 					});
 					request.resolve({
 						completions: [{
-							insertText: currentCompletion,
-							range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, currentCompletion))
+							insertText: completionToShow,
+							range: new vscode.Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow))
 						}],
 						source: InlineCompletionsResultSource.Network,
 					});
@@ -187,112 +181,6 @@ export class RequestManager {
 		return request.promise;
 	}
 
-	// We are internally caching the results here with the hotstreak etc
-	// we should carefully check why the hotstreak is not getting hits
-	public async request(params: RequestsManagerParams): Promise<RequestManagerResult> {
-		this.latestRequestParams = params;
-
-		const { requestParams, isCacheEnabled, provider, logger, spanId, startTime } = params;
-
-		// The cache is checked incorrectly over here, we should check it here
-		// if we can keep the cache updated along with the characters and the completion
-		// for some reason we are not returning the correct thing here as we might have
-		// swiped and updated.
-		// but in other cases it does not work properly
-		const cachedCompletions = this.cache.get(requestParams);
-		if (isCacheEnabled && cachedCompletions) {
-			return cachedCompletions;
-		}
-
-		// When request recycling is enabled, we do not pass the original abort signal forward as to
-		// not interrupt requests that are no longer relevant. Instead, we let all previous requests
-		// complete and try to see if their results can be reused for other inflight requests.
-		const abortController: AbortController = new AbortController();
-
-		const request = new InflightRequest(requestParams, abortController);
-		this.inflightRequests.add(request);
-
-		const generateCompletions = async (): Promise<void> => {
-			try {
-				// here we are waiting for the sidecar to return the completions, not really
-				// we do some parsing and generate more completions
-				for await (const fetchCompletionResults of provider.generateCompletions(
-					request.abortController.signal,
-					startTime,
-				)) {
-					const [hotStreakCompletions, currentCompletions] = partition(
-						fetchCompletionResults.filter(isDefined),
-						result => result.completion.stopReason === STOP_REASON_HOT_STREAK
-					);
-
-					logger.logInfo('sidecar.request_manager.current.completions', {
-						event_name: 'sidecar.request_manager.current.completions',
-						'id': spanId,
-						'completion': currentCompletions.length,
-					});
-
-					logger.logInfo('sidecar.request_manager.hotstreak.completions', {
-						event_name: 'sidecar.request_manager.hotstreak.completions',
-						'id': spanId,
-						'completions': hotStreakCompletions.length,
-					});
-
-
-					if (currentCompletions.length > 0) {
-						// Process regular completions that will shown to the user.
-						const completions = currentCompletions.map(result => result.completion);
-
-						// Shared post-processing logic
-						const processedCompletions = processInlineCompletions(completions, requestParams);
-
-						// Cache even if the request was aborted or already fulfilled.
-						this.cache.set(requestParams, {
-							completions: processedCompletions,
-							source: InlineCompletionsResultSource.Cache,
-						});
-
-						// A promise will never resolve twice, so we do not need to
-						// check if the request was already fulfilled.
-						request.resolve({
-							completions: processedCompletions,
-							source: InlineCompletionsResultSource.Network,
-						});
-
-						request.lastCompletions = processedCompletions;
-						this.testIfResultCanBeRecycledForInflightRequests(request, processedCompletions);
-					}
-
-					// Save hot streak completions for later use.
-					for (const result of hotStreakCompletions) {
-						request.lastRequestParams = {
-							...request.lastRequestParams,
-							docContext: result.docContext,
-						};
-						request.lastCompletions = [result.completion];
-						this.cache.set(
-							{ docContext: result.docContext },
-							{
-								completions: [result.completion],
-								source: InlineCompletionsResultSource.HotStreak,
-							}
-						);
-					}
-
-					this.cancelIrrelevantRequests(logger, spanId);
-				}
-			} catch (error) {
-				request.reject(error as Error);
-			} finally {
-				this.inflightRequests.delete(request);
-			}
-		};
-
-		this.cancelIrrelevantRequests(logger, spanId);
-
-		generateCompletions();
-		return request.promise;
-	}
-
 	public removeFromCache(params: RequestParams): void {
 		// clear the cache here completely, and also stop the previous request
 		// and clear the previous request as well
@@ -303,91 +191,10 @@ export class RequestManager {
 		// this.completionCache = undefined;
 	}
 
-	/**
-	 * Test if the result can be used for inflight requests. This only works
-	 * if a completion is a forward-typed version of a previous completion.
-	 */
-	private testIfResultCanBeRecycledForInflightRequests(
-		resolvedRequest: InflightRequest,
-		items: InlineCompletionItemWithAnalytics[]
-	): void {
-		const { document, position, docContext, selectedCompletionInfo } = resolvedRequest.params;
-		const lastCandidate: LastInlineCompletionCandidate = {
-			uri: document.uri,
-			lastTriggerPosition: position,
-			lastTriggerDocContext: docContext,
-			lastTriggerSelectedCompletionInfo: selectedCompletionInfo,
-			result: {
-				logId: '' as CompletionLogID,
-				source: InlineCompletionsResultSource.Network,
-				items,
-			},
-		};
-
-		for (const request of this.inflightRequests) {
-			if (request === resolvedRequest) {
-				continue;
-			}
-
-			if (request.params.document.uri.toString() !== document.uri.toString()) {
-				continue;
-			}
-
-			const synthesizedCandidate = reuseLastCandidate({
-				document: request.params.document,
-				position: request.params.position,
-				lastCandidate,
-				docContext: request.params.docContext,
-				selectedCompletionInfo: request.params.selectedCompletionInfo,
-			});
-
-			if (synthesizedCandidate) {
-				const synthesizedItems = synthesizedCandidate.items;
-
-				logCompletionBookkeepingEvent('synthesizedFromParallelRequest');
-				request.resolve({
-					completions: synthesizedItems,
-					source: InlineCompletionsResultSource.CacheAfterRequestStart,
-				});
-				request.abortController.abort();
-				this.inflightRequests.delete(request);
-			}
-		}
-	}
-
-	private cancelIrrelevantRequests(logger: CompletionLogger.LoggingService, spanId: string): void {
-		if (!this.latestRequestParams) {
-			return;
-		}
-
-		// Here we need to call the sidecar instead and abort the inflight request
-		const isLocalProvider = true;
-		// const isLocalProvider = isLocalCompletionsProvider(this.latestRequestParams.provider.options.id)
-
-		for (const request of this.inflightRequests) {
-			let shouldAbort = !computeIfRequestStillRelevant(
-				this.latestRequestParams.requestParams,
-				request.lastRequestParams,
-				request.lastCompletions
-			);
-
-			if (isLocalProvider) {
-				shouldAbort =
-					this.latestRequestParams.requestParams.docContext.currentLinePrefix !==
-					request.params.docContext.currentLinePrefix;
-			}
-
-			if (shouldAbort) {
-				logger.logInfo('sidecar.cancelIrrelevantRequests', {
-					'event_name': 'cancel_irrelevant_requests',
-					'request_id_reason': spanId,
-					// TODO(skcd): We do not trust this, but lets keep it for now
-					'request_id_broken_do_not_trust': spanId,
-				});
-				request.abortController.abort();
-				this.inflightRequests.delete(request);
-			}
-		}
+	public removeCompletionCache(): void {
+		// abort the previous request and clear the completion cache
+		this.previousRequest?.abort();
+		this.completionCache = undefined;
 	}
 }
 
@@ -430,6 +237,7 @@ class RequestCache {
 	});
 
 	private toCacheKey(key: Pick<RequestParams, 'docContext'>): string {
+		// allow-any-unicode-next-line
 		return `${key.docContext.prefix}█${key.docContext.nextNonEmptyLine}`;
 	}
 

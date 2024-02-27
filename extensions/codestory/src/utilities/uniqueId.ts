@@ -8,7 +8,6 @@
 // we won't capture a unique-id.
 
 
-import { networkInterfaces } from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import * as os from 'os';
@@ -25,7 +24,7 @@ function validateMacAddress(candidate: string): boolean {
 }
 
 export function getMac(): string {
-	const ifaces = networkInterfaces();
+	const ifaces = os.networkInterfaces();
 	for (const name in ifaces) {
 		const networkInterface = ifaces[name];
 		if (networkInterface) {
@@ -83,7 +82,6 @@ export function getUserId(): string {
 	try {
 		const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
 		const disableUseNameLookup = codestoryConfiguration.get('disableUseNameLookup');
-		console.log('disableUseNameLookup', disableUseNameLookup);
 		if (disableUseNameLookup) {
 			return 'You';
 		} else {

@@ -39,7 +39,7 @@ export const debug = (
 				message.command,
 			);
 			try {
-				postHogClient.capture({
+				postHogClient?.capture({
 					distinctId: uniqueUserId,
 					event: 'debug_prompt_received',
 					properties: {

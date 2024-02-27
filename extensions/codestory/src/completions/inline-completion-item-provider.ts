@@ -5,8 +5,6 @@
 import * as vscode from 'vscode';
 
 import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
-import { getCompletionIntent } from './doc-context-getters';
-import { FirstCompletionDecorationHandler } from './first-completion-decoration-handler';
 import { formatCompletion } from './format-completion';
 import { getCurrentDocContext } from './get-current-doc-context';
 import {
@@ -16,7 +14,6 @@ import {
 	type LastInlineCompletionCandidate,
 } from './get-inline-completions';
 import { isCompletionVisible } from './is-completion-visible';
-import type { CompletionBookkeepingEvent, CompletionItemID, CompletionLogID } from './logger';
 import * as CompletionLogger from './logger';
 import { RequestManager, type RequestParams } from './request-manager';
 import { getRequestParamsFromLastCandidate } from './reuse-last-candidate';
@@ -36,7 +33,7 @@ interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
 	items: AutocompleteItem[];
 	/** @deprecated */
-	completionEvent?: CompletionBookkeepingEvent;
+	completionEvent?: CompletionLogger.CompletionBookkeepingEvent;
 }
 
 export interface CodeStoryCompletionItemProviderConfig {
@@ -82,10 +79,6 @@ export class InlineCompletionItemProvider
 		| undefined;
 
 	private disposables: vscode.Disposable[] = [];
-
-	private isProbablyNewInstall = true;
-
-	private firstCompletionDecoration = new FirstCompletionDecorationHandler();
 
 	private sidecarClient: SideCarClient;
 
@@ -167,6 +160,13 @@ export class InlineCompletionItemProvider
 			position,
 			context,
 		};
+		// We are going to check if the user has backspaced at all, if that's the case then we should
+		// clear the cache and the already running requests
+		if (lastCompletionRequest?.document.uri === document.uri) {
+			if (lastCompletionRequest.position.isAfter(position)) {
+				this.requestManager.removeCompletionCache();
+			}
+		}
 		this.lastCompletionRequest = completionRequest;
 
 		if (!this.lastCompletionRequestTimestamp) {
@@ -197,7 +197,7 @@ export class InlineCompletionItemProvider
 				});
 				// send this in the background
 				this.sidecarClient.cancelInlineCompletion(id);
-				abortController.abort()
+				abortController.abort();
 			});
 		}
 
@@ -246,7 +246,7 @@ export class InlineCompletionItemProvider
 			now: performance.now(),
 			time_taken: performance.now() - startTime,
 			id: id,
-			multiline_trigger: docContext.multilineTrigger ?? "no_multiline_trigger",
+			multiline_trigger: docContext.multilineTrigger ?? 'no_multiline_trigger',
 		});
 
 		const latencyFeatureFlags: LatencyFeatureFlags = {
@@ -305,6 +305,29 @@ export class InlineCompletionItemProvider
 				// Returning null will clear any existing suggestions, thus we need to reset the
 				// last candidate.
 				this.lastCandidate = undefined;
+				return null;
+			}
+
+			// we need to check the results here to make sure they are not all whitespaces (which are just annoying)
+			let isNonWhitespaceCompletion = false;
+			let multilineCompletion = false;
+			result.items.forEach((item) => {
+				if (item.insertText.trim() !== '') {
+					isNonWhitespaceCompletion = true;
+				}
+			});
+			result.items.forEach((item) => {
+				if (item.insertText.split('\n').length >= 1) {
+					multilineCompletion = true;
+				}
+			});
+
+			// we only block when we have whitespace and its multiline
+			if (!isNonWhitespaceCompletion && multilineCompletion) {
+				this.logger.logInfo('sidecar.providerInlineCompletionItems.WHITESPACE', {
+					'event_name': 'sidecar.providerInlineCompletionItems.WHITESPACE',
+					'id': id,
+				});
 				return null;
 			}
 
@@ -415,11 +438,6 @@ export class InlineCompletionItemProvider
 				'inline_completions_length': autocompleteItems.length,
 			});
 
-			// Since VS Code has no callback as to when a completion is shown, we assume
-			// that if we pass the above visibility tests, the completion is going to be
-			// rendered in the UI
-			// this.unstable_handleDidShowCompletionItem(autocompleteItems[0]);
-
 			return autocompleteResult;
 		} catch (error) {
 			this.onError(error as Error);
@@ -437,7 +455,7 @@ export class InlineCompletionItemProvider
 				AutocompleteItem,
 				'range' | 'requestParams' | 'logId' | 'analyticsItem' | 'trackedRange'
 			>
-			| CompletionItemID
+			| CompletionLogger.CompletionItemID
 	): Promise<void> {
 		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 
@@ -450,6 +468,10 @@ export class InlineCompletionItemProvider
 		}
 
 		resetArtificialDelay();
+
+		this.logger.logInfo('sidecar.inlinecompletion.accepted', {
+			'event_name': 'sidecar.inlinecompletion.accepted',
+		});
 
 		// When a completion is accepted, the lastCandidate should be cleared. This makes sure the
 		// log id is never reused if the completion is accepted.
@@ -467,7 +489,7 @@ export class InlineCompletionItemProvider
 	 * same name, it's prefixed with `unstable_` to avoid a clash when the new API goes GA.
 	 */
 	public unstable_handleDidShowCompletionItem(
-		completionOrItemId: Pick<AutocompleteItem, 'logId' | 'analyticsItem'> | CompletionItemID
+		completionOrItemId: Pick<AutocompleteItem, 'logId' | 'analyticsItem'> | CompletionLogger.CompletionItemID
 	): void {
 		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 		if (!completion) {
@@ -619,24 +641,4 @@ function onlyCompletionWidgetSelectionChanged(
 	}
 
 	return prevSelectedCompletionInfo.text !== nextSelectedCompletionInfo.text;
-}
-
-
-function closeByPositions(
-	prev: CompletionRequest,
-	next: CompletionRequest,
-): boolean {
-	if (prev.document.uri.toString() !== next.document.uri.toString()) {
-		return false;
-	}
-	if (prev.context.triggerKind !== next.context.triggerKind) {
-		return false;
-	}
-	if (prev.position.isEqual(next.position)) {
-		return true;
-	}
-	if (next.position.character <= prev.position.character && next.position.line && prev.position.character) {
-		return true;
-	}
-	return false;
 }

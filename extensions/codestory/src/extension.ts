@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, InteractiveSessionProvider, CancellationToken, ProviderResult, InteractiveSession } from 'vscode';
+import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -13,7 +13,7 @@ import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
 import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
 import { gitCommit } from './subscriptions/gitCommit';
-import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from './git/helper';
+import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
 import { readTestSuiteRunCommand } from './utilities/activeDirectories';
@@ -31,11 +31,11 @@ import { CSChatAgentProvider, CSChatSessionProvider } from './completions/provid
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
-import { SidecarCompletionProvider } from './inlineCompletion/sidecarCompletion';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
-import { parseAllVisibleDocuments, updateParseTreeOnEdit } from './completions/text-processing/treeSitter/parseTree';
+import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
+import { getRelevantFiles } from './utilities/openTabs';
 
 
 class ProgressiveTrackSymbols {
@@ -77,7 +77,7 @@ export async function activate(context: ExtensionContext) {
 	const userId = getUserId();
 	console.log('User id:' + userId);
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: getUniqueId(),
 		event: 'extension_activated',
 	});
@@ -115,7 +115,7 @@ export async function activate(context: ExtensionContext) {
 	// TODO(codestory): Download the rust binary here appropriate for the platform
 	// we are on. Similar to how we were doing for Aide binary
 
-	postHogClient.capture({
+	postHogClient?.capture({
 		distinctId: await getUniqueId(),
 		event: 'activated_lsp',
 		properties: {
@@ -124,12 +124,20 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
+	// we want to send the open tabs here to the sidecar
+	const openTextDocuments = await getRelevantFiles();
+	openTextDocuments.forEach((openTextDocument) => {
+		// not awaiting here so we can keep loading the extension in the background
+		sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
+	});
+
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
+	const execPath = process.execPath;
+	console.log('Exec path:' + execPath);
 	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
-
 	// Setup the sidecar client here
-	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath);
+	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
@@ -178,7 +186,7 @@ export async function activate(context: ExtensionContext) {
 	// Register the semantic search command here
 	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
-		postHogClient.capture({
+		postHogClient?.capture({
 			distinctId: await getUniqueId(),
 			event: 'search',
 			properties: {
@@ -275,6 +283,8 @@ export async function activate(context: ExtensionContext) {
 	workspace.onDidOpenTextDocument(async (doc) => {
 		const uri = doc.uri;
 		await trackCodeSymbolChanges.fileOpened(uri, logger);
+		// TODO(skcd): we want to send the file open event to the sidecar client
+		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 	});
 
 	// Add git commit to the subscriptions here
@@ -309,7 +319,15 @@ export async function activate(context: ExtensionContext) {
 	window.onDidChangeVisibleTextEditors(parseAllVisibleDocuments);
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
-	workspace.onDidChangeTextDocument((event) => {
-		updateParseTreeOnEdit(event);
+	workspace.onDidChangeTextDocument(async (event) => {
+		event.contentChanges.forEach((contentChange) => {
+			console.log('[extension] onDidChangeTextDocument event::', contentChange.text);
+		});
+		// TODO(skcd): we want to send the file change event to the sidecar over here
+		await sidecarClient.documentContentChange(
+			event.document.uri.fsPath,
+			event.contentChanges,
+			event.document.languageId,
+		);
 	});
 }

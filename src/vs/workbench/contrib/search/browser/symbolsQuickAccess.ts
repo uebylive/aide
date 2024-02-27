@@ -34,7 +34,7 @@ export class SymbolsQuickAccessProvider extends PickerQuickAccessProvider<ISymbo
 
 	static PREFIX = '#';
 
-	private static readonly TYPING_SEARCH_DELAY = 200; // this delay accommodates for the user typing a word and then stops typing to start searching
+	private static readonly CHAT_SYMBOL_PICKER_DELAY = 0; // this delay accommodates for the user typing a word and then stops typing to start searching
 
 	private static TREAT_AS_GLOBAL_SYMBOL_TYPES = new Set<SymbolKind>([
 		SymbolKind.Class,
@@ -46,7 +46,7 @@ export class SymbolsQuickAccessProvider extends PickerQuickAccessProvider<ISymbo
 		SymbolKind.Module
 	]);
 
-	private delayer = this._register(new ThrottledDelayer<ISymbolQuickPickItem[]>(SymbolsQuickAccessProvider.TYPING_SEARCH_DELAY));
+	private chatDelayer = this._register(new ThrottledDelayer<ISymbolQuickPickItem[]>(SymbolsQuickAccessProvider.CHAT_SYMBOL_PICKER_DELAY));
 
 	get defaultFilterValue(): string | undefined {
 
@@ -88,7 +88,7 @@ export class SymbolsQuickAccessProvider extends PickerQuickAccessProvider<ISymbo
 	}
 
 	async getSymbolPicks(filter: string, options: { skipLocal?: boolean; skipSorting?: boolean; delay?: number } | undefined, token: CancellationToken): Promise<Array<ISymbolQuickPickItem>> {
-		return this.delayer.trigger(async () => {
+		return this.chatDelayer.trigger(async () => {
 			if (token.isCancellationRequested) {
 				return [];
 			}
