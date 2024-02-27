@@ -71,9 +71,10 @@ export namespace Schemas {
 
 	export const vscodeTerminal = 'vscode-terminal';
 
+	/** Scheme used for code blocks in chat. */
+	export const vscodeChatCodeBlock = 'vscode-chat-code-block';
+	/** Scheme used for the chat input editor. */
 	export const vscodeChatSesssion = 'vscode-chat-editor';
-
-	export const vscodeCSChatSession = 'vscode-cs-chat-editor';
 
 	/**
 	 * Scheme used internally for webviews that aren't linked to a resource (i.e. not custom editors)
@@ -110,6 +111,16 @@ export namespace Schemas {
 	 * Scheme used for the Source Control commit input's text document
 	 */
 	export const vscodeSourceControl = 'vscode-scm';
+
+	/**
+	 * Scheme used for special rendering of settings in the release notes
+	 */
+	export const codeSetting = 'code-setting';
+
+	/**
+	 * Scheme used for special rendering of features in the release notes
+	 */
+	export const codeFeature = 'code-feature';
 }
 
 export function matchesScheme(target: URI | string, scheme: string): boolean {

@@ -11,16 +11,15 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
-import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { IWorkbenchContribution, WorkbenchPhase, registerWorkbenchContribution2 } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { getHistoryAction, getOpenChatEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
-import { getClearAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
+import { getNewChatAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
 import { getMoveToEditorAction, getMoveToNewWindowAction } from 'vs/workbench/contrib/chat/browser/actions/chatMoveActions';
 import { getQuickChatActionForProvider } from 'vs/workbench/contrib/chat/browser/actions/chatQuickInputActions';
-import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
+import { CHAT_SIDEBAR_PANEL_ID, CSCHAT_SIDEBAR_PANEL_ID, ChatViewPane, IChatViewOptions } from 'vs/workbench/contrib/chat/browser/chatViewPane';
 import { IChatContributionService, IChatProviderContribution, IRawChatProviderContribution } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 
 const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatProviderContribution[]>({
@@ -62,13 +61,17 @@ const chatExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensi
 
 export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
+	static readonly ID = 'workbench.contrib.chatExtensionPointHandler';
+
 	private _viewContainer: ViewContainer;
+	private _csViewContainer: ViewContainer;
 	private _registrationDisposables = new Map<string, IDisposable>();
 
 	constructor(
 		@IChatContributionService readonly _chatContributionService: IChatContributionService
 	) {
 		this._viewContainer = this.registerViewContainer();
+		this._csViewContainer = this.registerCSViewContainer();
 		this.handleAndRegisterChatExtensions();
 	}
 
@@ -115,27 +118,60 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		return viewContainer;
 	}
 
+	private registerCSViewContainer(): ViewContainer {
+		// Register View Container
+		const title = localize2('chat.csViewContainer.label', "Aide");
+		const icon = Codicon.commentDiscussion;
+		const viewContainerId = CSCHAT_SIDEBAR_PANEL_ID;
+		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
+			id: viewContainerId,
+			title,
+			icon,
+			ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [viewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
+			storageId: viewContainerId,
+			hideIfEmpty: true,
+			order: 100,
+		}, ViewContainerLocation.AuxiliaryBar);
+
+		return viewContainer;
+	}
+
 	private registerChatProvider(providerDescriptor: IRawChatProviderContribution): IDisposable {
 		// Register View
 		const viewId = this._chatContributionService.getViewIdForProvider(providerDescriptor.id);
-		const viewDescriptor: IViewDescriptor[] = [{
-			id: viewId,
-			containerIcon: this._viewContainer.icon,
-			containerTitle: this._viewContainer.title.value,
-			name: { value: providerDescriptor.label, original: providerDescriptor.label },
-			canToggleVisibility: false,
-			canMoveView: true,
-			ctorDescriptor: new SyncDescriptor(ChatViewPane, [<IChatViewOptions>{ providerId: providerDescriptor.id }]),
-			when: ContextKeyExpr.deserialize(providerDescriptor.when)
-		}];
-		Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, this._viewContainer);
+		const viewDescriptor: IViewDescriptor[] = [];
+		if (providerDescriptor.id === 'cs-chat') {
+			viewDescriptor.push({
+				id: viewId,
+				containerIcon: this._csViewContainer.icon,
+				containerTitle: this._csViewContainer.title.value,
+				name: { value: providerDescriptor.label, original: providerDescriptor.label },
+				canToggleVisibility: false,
+				canMoveView: true,
+				ctorDescriptor: new SyncDescriptor(ChatViewPane, [<IChatViewOptions>{ providerId: providerDescriptor.id }]),
+				when: ContextKeyExpr.deserialize(providerDescriptor.when)
+			});
+			Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, this._csViewContainer);
+		} else {
+			viewDescriptor.push({
+				id: viewId,
+				containerIcon: this._viewContainer.icon,
+				containerTitle: this._viewContainer.title.value,
+				name: { value: providerDescriptor.label, original: providerDescriptor.label },
+				canToggleVisibility: false,
+				canMoveView: true,
+				ctorDescriptor: new SyncDescriptor(ChatViewPane, [<IChatViewOptions>{ providerId: providerDescriptor.id }]),
+				when: ContextKeyExpr.deserialize(providerDescriptor.when)
+			});
+			Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, this._viewContainer);
+		}
 
 		// Per-provider actions
 
 		// Actions in view title
 		const disposables = new DisposableStore();
 		disposables.add(registerAction2(getHistoryAction(viewId, providerDescriptor.id)));
-		disposables.add(registerAction2(getClearAction(viewId, providerDescriptor.id)));
+		disposables.add(registerAction2(getNewChatAction(viewId, providerDescriptor.id)));
 		disposables.add(registerAction2(getMoveToEditorAction(viewId, providerDescriptor.id)));
 		disposables.add(registerAction2(getMoveToNewWindowAction(viewId, providerDescriptor.id)));
 
@@ -146,16 +182,16 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		return {
 			dispose: () => {
 				Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).deregisterViews(viewDescriptor, this._viewContainer);
+				Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).deregisterViews(viewDescriptor, this._csViewContainer);
 				Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).deregisterViewContainer(this._viewContainer);
+				Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).deregisterViewContainer(this._csViewContainer);
 				disposables.dispose();
 			}
 		};
 	}
 }
 
-const workbenchRegistry = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
-workbenchRegistry.registerWorkbenchContribution(ChatExtensionPointHandler, LifecyclePhase.Starting);
-
+registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointHandler, WorkbenchPhase.BlockStartup);
 
 export class ChatContributionService implements IChatContributionService {
 	declare _serviceBrand: undefined;

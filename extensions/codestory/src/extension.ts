@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages, modelSelection } from 'vscode';
+import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, InteractiveSessionProvider, CancellationToken, ProviderResult, InteractiveSession } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -201,30 +201,29 @@ export async function activate(context: ExtensionContext) {
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
-
 	// Register chat provider
 	const chatSessionProvider = new CSChatSessionProvider();
+	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
+		sidecarClient,
+		currentRepo,
+		rootPath ?? '',
+	);
+	const interactiveSession = interactive.registerInteractiveSessionProvider(
+		'cs-chat', chatSessionProvider
+	);
+	const interactiveEditorSession = interactive.registerInteractiveEditorSessionProvider(
+		interactiveEditorSessionProvider,
+	);
+	context.subscriptions.push(interactiveEditorSession);
+	context.subscriptions.push(interactiveSession);
+
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo, projectContext,
 	);
-	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
-		sidecarClient,
-		currentRepo,
-		rootPath ?? '',
-	);
-	const interactiveSession = csChat.registerCSChatSessionProvider(
-		'cs-chat', chatSessionProvider
-	);
-	const interactiveEditorSession = csChat.registerCSChatEditorSessionProvider(
-		interactiveEditorSessionProvider,
-	);
-	context.subscriptions.push(interactiveEditorSession);
-	context.subscriptions.push(interactiveSession);
 	context.subscriptions.push(chatAgentProvider);
-	await commands.executeCommand('workbench.action.chat.clear');
 
 	context.subscriptions.push(
 		debug(

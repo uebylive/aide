@@ -48,7 +48,6 @@
           "launch.json",
           "tasks.json",
           "keybindings.json",
-          "modelSelection.json",
           "extensions.json",
           "argv.json",
           "profiles.json",

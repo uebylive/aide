@@ -8,7 +8,6 @@ import { URI } from 'vs/base/common/uri';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { ILinkDescriptor } from 'vs/platform/opener/browser/link';
 import { ThemeIcon } from 'vs/base/common/themables';
-import { INeverShowAgainOptions } from 'vs/platform/notification/common/notification';
 
 export interface IBannerItem {
 	readonly id: string;
@@ -17,7 +16,7 @@ export interface IBannerItem {
 	readonly actions?: ILinkDescriptor[];
 	readonly ariaLabel?: string;
 	readonly onClose?: () => void;
-	readonly neverShowAgain?: INeverShowAgainOptions;
+	readonly disableCloseAction?: boolean;
 }
 
 export const IBannerService = createDecorator<IBannerService>('bannerService');

@@ -63,8 +63,6 @@ async function tryBuild(options, didBuild) {
  * @param {(outDir: string) => unknown} [didBuild]
  */
 module.exports.run = async function (config, args, didBuild) {
-	console.log('Running esbuild...');
-
 	let outdir = config.outdir;
 	const outputRootIndex = args.indexOf('--outputRoot');
 	if (outputRootIndex >= 0) {

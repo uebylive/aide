@@ -13,12 +13,15 @@
 		"onSearch:text"
 	],
 	"enabledApiProposals": [
-		"csChat",
-		"csChatVariables",
-		"defaultChatAgent",
-		"chatAgents2Additions",
-		"modelSelection",
-		"inlineCompletionsAdditions"
+		"inlineCompletionsAdditions",
+    "interactive",
+    "chatProvider",
+    "chatParticipant",
+    "chatParticipantAdditions",
+    "defaultChatParticipant",
+    "chatVariableResolver",
+    "languageModels",
+		"modelSelection"
 	],
 	"files": [
 		"src/llm/embeddings/models/**/*",
@@ -58,7 +61,7 @@
 				}
 			]
 		},
-		"csChatSession": [
+		"interactiveSession": [
 			{
 				"id": "cs-chat",
 				"label": "CodeStory Agent",

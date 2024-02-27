@@ -21,9 +21,12 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { listErrorForeground, listWarningForeground } from 'vs/platform/theme/common/colorRegistry';
 import { ITextResourceConfigurationService } from 'vs/editor/common/services/textResourceConfiguration';
 import { IListAccessibilityProvider } from 'vs/base/browser/ui/list/listWidget';
-import { IOutlineComparator, OutlineConfigKeys } from 'vs/workbench/services/outline/browser/outline';
+import { IOutlineComparator, OutlineConfigKeys, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { mainWindow } from 'vs/base/browser/window';
+import { IHoverDelegate } from 'vs/base/browser/ui/iconLabel/iconHoverDelegate';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegate';
+import { nativeHoverDelegate } from 'vs/platform/hover/browser/hover';
 
 export type DocumentSymbolItem = OutlineGroup | OutlineElement;
 
@@ -115,15 +118,20 @@ export class DocumentSymbolRenderer implements ITreeRenderer<OutlineElement, Fuz
 
 	readonly templateId: string = DocumentSymbolTemplate.id;
 
+	private _hoverDelegate: IHoverDelegate;
+
 	constructor(
 		private _renderMarker: boolean,
+		target: OutlineTarget,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IThemeService private readonly _themeService: IThemeService,
-	) { }
+	) {
+		this._hoverDelegate = target === OutlineTarget.OutlinePane ? getDefaultHoverDelegate('mouse') : nativeHoverDelegate;
+	}
 
 	renderTemplate(container: HTMLElement): DocumentSymbolTemplate {
 		container.classList.add('outline-element');
-		const iconLabel = new IconLabel(container, { supportHighlights: true });
+		const iconLabel = new IconLabel(container, { supportHighlights: true, hoverDelegate: this._hoverDelegate });
 		const iconClass = dom.$('.outline-element-icon');
 		const decoration = dom.$('.outline-element-decoration');
 		container.prepend(iconClass);
@@ -169,16 +177,23 @@ export class DocumentSymbolRenderer implements ITreeRenderer<OutlineElement, Fuz
 		const cssColor = color ? color.toString() : 'inherit';
 
 		// color of the label
-		if (this._configurationService.getValue(OutlineConfigKeys.problemsColors)) {
-			template.container.style.setProperty('--outline-element-color', cssColor);
-		} else {
+		const problem = this._configurationService.getValue('problems.visibility');
+		const configProblems = this._configurationService.getValue(OutlineConfigKeys.problemsColors);
+
+		if (!problem || !configProblems) {
 			template.container.style.removeProperty('--outline-element-color');
+		} else {
+			template.container.style.setProperty('--outline-element-color', cssColor);
 		}
 
 		// badge with color/rollup
-		if (!this._configurationService.getValue(OutlineConfigKeys.problemsBadges)) {
-			dom.hide(template.decoration);
+		if (problem === undefined) {
+			return;
+		}
 
+		const configBadges = this._configurationService.getValue(OutlineConfigKeys.problemsBadges);
+		if (!configBadges || !problem) {
+			dom.hide(template.decoration);
 		} else if (count > 0) {
 			dom.show(template.decoration);
 			template.decoration.classList.remove('bubble');
@@ -194,8 +209,6 @@ export class DocumentSymbolRenderer implements ITreeRenderer<OutlineElement, Fuz
 			template.decoration.style.setProperty('--outline-element-color', cssColor);
 		}
 	}
-
-
 
 	disposeTemplate(_template: DocumentSymbolTemplate): void {
 		_template.iconLabel.dispose();

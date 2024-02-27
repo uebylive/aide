@@ -11,8 +11,8 @@ export default () => `
 <checklist>
 	<div class="theme-picker-row">
 		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_DARK}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_DARK}'">
-			<img width="200" src="./aide-green.png"/>
-			${escape(localize('dark', "Aide Green"))}
+			<img width="200" src="./dark.png"/>
+			${escape(localize('dark', "Dark Modern"))}
 		</checkbox>
 		<checkbox when-checked="setTheme:${ThemeSettingDefaults.COLOR_THEME_LIGHT}" checked-on="config.workbench.colorTheme == '${ThemeSettingDefaults.COLOR_THEME_LIGHT}'">
 			<img width="200" src="./light.png"/>
@@ -31,6 +31,6 @@ export default () => `
 	</div>
 </checklist>
 <checkbox class="theme-picker-link" when-checked="command:workbench.action.selectTheme" checked-on="false">
-	${escape(localize('seeMore', "See more themes..."))}
+	${escape(localize('seeMore', "See More Themes..."))}
 </checkbox>
 `;

@@ -256,7 +256,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: Record<string, vscode.CSChatVariableValue[]>,
+		variables: readonly vscode.ChatResolvedVariable[],
 		projectLabels: string[],
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
@@ -470,7 +470,7 @@ export class SideCarClient {
 							}
 							const completeLine = bufferedAnswer.substring(0, indexOfNewLine);
 							// if we are going to start with a new line, then we need to have \n as the prefix
-							const prefix = isNewLineStart ? "\n" : '';
+							const prefix = isNewLineStart ? '\n' : '';
 							// if the previous lines are there then we join it with \n else we just join with ''
 							const joinString = runningPreviousLines === '' ? '' : '\n';
 							const finalCompletion = prefix + runningPreviousLines + joinString + completeLine;
@@ -492,7 +492,7 @@ export class SideCarClient {
 							if (runningPreviousLines === '') {
 								runningPreviousLines = completeLine;
 							} else {
-								runningPreviousLines = runningPreviousLines + "\n" + completeLine;
+								runningPreviousLines = runningPreviousLines + '\n' + completeLine;
 							}
 							// now move the buffered answer to after the position of the newline
 							bufferedAnswer = bufferedAnswer.substring(indexOfNewLine + 1);
@@ -738,8 +738,9 @@ interface CodeSelectionUriRange {
 	};
 }
 
+// TODO(ghostwriternr): FIX THIS!
 async function convertVSCodeVariableToSidecar(
-	variables: Record<string, vscode.CSChatVariableValue[]>,
+	variables: readonly any[],
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
@@ -877,7 +878,7 @@ function getCurrentActiveWindow(): {
 	if (activeWindow === undefined) {
 		return undefined;
 	}
-	if (activeWindow.visibleRanges.length == 0) {
+	if (activeWindow.visibleRanges.length === 0) {
 		// Then we return the full length of the file here or otherwise
 		// we return whats present in the range
 		return undefined;
@@ -886,7 +887,7 @@ function getCurrentActiveWindow(): {
 	const startPosition = activeWindow.visibleRanges[0].start;
 	const endPosition = activeWindow.visibleRanges[visibleRanges.length - 1].end;
 	const fsFilePath = activeWindow.document.uri.fsPath;
-	let range = new vscode.Range(
+	const range = new vscode.Range(
 		startPosition.line,
 		0,
 		endPosition.line,

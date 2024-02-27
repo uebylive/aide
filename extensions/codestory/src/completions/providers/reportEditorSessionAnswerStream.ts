@@ -19,7 +19,7 @@ export interface EditMessage {
 
 export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
-	progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
+	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
 	cancellationToken: vscode.CancellationToken,
 	currentRepoRef: RepoRef,
 	workingDirectory: string,
@@ -90,7 +90,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 						progress.report(CSInteractiveEditorProgressItem.documentationGeneration());
 						continue;
 					}
-					if (lastStep === 'Edit' || lastStep == 'Code') {
+					if (lastStep === 'Edit' || lastStep === 'Code') {
 						skillUsed = 'Edit';
 						progress.report(CSInteractiveEditorProgressItem.editGeneration());
 						continue;
@@ -134,7 +134,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// one and then apply it to the editor
 				generatedAnswer = inlineAgentMessage.answer;
 			}
-			if (skillUsed === 'Edit' || skillUsed == 'Doc') {
+			if (skillUsed === 'Edit' || skillUsed === 'Doc') {
 				// we first add the delta
 				answerSplitOnNewLineAccumulator.addDelta(inlineAgentMessage.answer?.delta);
 				// lets check if we have the context ranges
@@ -311,7 +311,7 @@ class StreamProcessor {
 	previousLine: LineIndentManager | null;
 	documentLineIndex: number;
 	sentEdits: boolean;
-	constructor(progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
+	constructor(progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
 		document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
@@ -346,8 +346,8 @@ class StreamProcessor {
 			line.startsWith(this.endMarker) ||
 			line.endsWith(this.endMarker) ||
 			line.endsWith(this.beginMarker) ||
-			(line.indexOf("// END:") != -1) ||
-			(line.indexOf("// BEGIN:") != -1)
+			(line.indexOf('// END:') !== -1) ||
+			(line.indexOf('// BEGIN:') !== -1)
 		) {
 			this.endDetected = true;
 			return;
@@ -414,13 +414,13 @@ class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.Progress<vscode.CSChatEditorProgressItem>;
+	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 
 	constructor(
-		progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
+		progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
 		document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
@@ -779,8 +779,8 @@ export const convertVSCodeDiagnostic = (
 export const shouldAddLeadingStrings = (
 	model: InLineAgentLLMType | undefined,
 ): boolean => {
-	if (model == 'MistralInstruct' || model == 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct') {
+	if (model === 'MistralInstruct' || model === 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct') {
 		return true;
 	}
 	return false;
-}
+};

@@ -20,7 +20,3 @@ vscode.db
 product.overrides.json
 *.snap.actual
 .vscode-test
-
-# CodeStory
-.codestory.json
-.aider*

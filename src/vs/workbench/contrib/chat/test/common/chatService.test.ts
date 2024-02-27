@@ -20,16 +20,16 @@ import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { NullTelemetryService } from 'vs/platform/telemetry/common/telemetryUtils';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { IViewsService } from 'vs/workbench/common/views';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { ChatAgentService, IChatAgent, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { ISerializableChatData } from 'vs/workbench/contrib/chat/common/chatModel';
-import { IChat, IChatProgress, IChatProvider, IChatRequest } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatFollowup, IChatProgress, IChatProvider, IChatRequest } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatService } from 'vs/workbench/contrib/chat/common/chatServiceImpl';
 import { ChatSlashCommandService, IChatSlashCommandService } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { MockChatVariablesService } from 'vs/workbench/contrib/chat/test/common/mockChatVariables';
-import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { IExtensionService, nullExtensionDescription } from 'vs/workbench/services/extensions/common/extensions';
 import { TestContextService, TestExtensionService, TestStorageService } from 'vs/workbench/test/common/workbenchTestServices';
 
 class SimpleTestProvider extends Disposable implements IChatProvider {
@@ -37,7 +37,7 @@ class SimpleTestProvider extends Disposable implements IChatProvider {
 
 	readonly displayName = 'Test';
 
-	constructor(readonly id: string) {
+	constructor(readonly id: string, readonly extensionId: string) {
 		super();
 	}
 
@@ -57,6 +57,8 @@ class SimpleTestProvider extends Disposable implements IChatProvider {
 const chatAgentWithUsedContextId = 'ChatProviderWithUsedContext';
 const chatAgentWithUsedContext: IChatAgent = {
 	id: chatAgentWithUsedContextId,
+	providerId: undefined,
+	extensionId: nullExtensionDescription.identifier,
 	metadata: {},
 	async provideSlashCommands(token) {
 		return [];
@@ -75,7 +77,10 @@ const chatAgentWithUsedContext: IChatAgent = {
 			kind: 'usedContext'
 		});
 
-		return {};
+		return { metadata: { metadataKey: 'value' } };
+	},
+	async provideFollowups(sessionId, token) {
+		return [{ kind: 'reply', message: 'Something else', agentId: '', tooltip: 'a tooltip' } satisfies IChatFollowup];
 	},
 };
 
@@ -106,9 +111,14 @@ suite('Chat', () => {
 
 		const agent = {
 			id: 'testAgent',
+			providerId: undefined,
+			extensionId: nullExtensionDescription.identifier,
 			metadata: { isDefault: true },
 			async invoke(request, progress, history, token) {
 				return {};
+			},
+			async provideSlashCommands(token) {
+				return [];
 			},
 		} as IChatAgent;
 		testDisposables.add(chatAgentService.registerAgent(agent));
@@ -116,27 +126,27 @@ suite('Chat', () => {
 
 	test('retrieveSession', async () => {
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
-		const provider1 = testDisposables.add(new SimpleTestProvider('provider1'));
-		const provider2 = testDisposables.add(new SimpleTestProvider('provider2'));
+		const provider1 = testDisposables.add(new SimpleTestProvider('provider1', 'testExtension'));
+		const provider2 = testDisposables.add(new SimpleTestProvider('provider2', 'testExtension'));
 		testDisposables.add(testService.registerProvider(provider1));
 		testDisposables.add(testService.registerProvider(provider2));
 
 		const session1 = testDisposables.add(testService.startSession('provider1', CancellationToken.None));
 		await session1.waitForInitialization();
-		session1!.addRequest({ parts: [], text: 'request 1' });
+		session1.addRequest({ parts: [], text: 'request 1' }, { variables: [] });
 
 		const session2 = testDisposables.add(testService.startSession('provider2', CancellationToken.None));
 		await session2.waitForInitialization();
-		session2!.addRequest({ parts: [], text: 'request 2' });
+		session2.addRequest({ parts: [], text: 'request 2' }, { variables: [] });
 
 		storageService.flush();
 		const testService2 = testDisposables.add(instantiationService.createInstance(ChatService));
 		testDisposables.add(testService2.registerProvider(provider1));
 		testDisposables.add(testService2.registerProvider(provider2));
 		const retrieved1 = testDisposables.add(testService2.getOrRestoreSession(session1.sessionId)!);
-		await retrieved1!.waitForInitialization();
+		await retrieved1.waitForInitialization();
 		const retrieved2 = testDisposables.add(testService2.getOrRestoreSession(session2.sessionId)!);
-		await retrieved2!.waitForInitialization();
+		await retrieved2.waitForInitialization();
 		assert.deepStrictEqual(retrieved1.getRequests()[0]?.message.text, 'request 1');
 		assert.deepStrictEqual(retrieved2.getRequests()[0]?.message.text, 'request 2');
 	});
@@ -145,6 +155,7 @@ suite('Chat', () => {
 		function getFailProvider(providerId: string) {
 			return new class implements IChatProvider {
 				readonly id = providerId;
+				readonly extensionId = 'testExtension';
 				readonly displayName = 'Test';
 
 				lastInitialState = undefined;
@@ -170,9 +181,10 @@ suite('Chat', () => {
 	test('Can\'t register same provider id twice', async () => {
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
 		const id = 'testProvider';
+		const extensionId = 'testExtension';
 		testDisposables.add(testService.registerProvider({
 			id,
-			displayName: 'Test',
+			extensionId,
 			prepareSession: function (token: CancellationToken): ProviderResult<IChat | undefined> {
 				throw new Error('Function not implemented.');
 			}
@@ -181,7 +193,7 @@ suite('Chat', () => {
 		assert.throws(() => {
 			testDisposables.add(testService.registerProvider({
 				id,
-				displayName: 'Test',
+				extensionId,
 				prepareSession: function (token: CancellationToken): ProviderResult<IChat | undefined> {
 					throw new Error('Function not implemented.');
 				}
@@ -191,7 +203,7 @@ suite('Chat', () => {
 
 	test('sendRequestToProvider', async () => {
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
-		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider'))));
+		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider', 'testExtension'))));
 
 		const model = testDisposables.add(testService.startSession('testProvider', CancellationToken.None));
 		assert.strictEqual(model.getRequests().length, 0);
@@ -203,12 +215,12 @@ suite('Chat', () => {
 
 	test('addCompleteRequest', async () => {
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
-		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider'))));
+		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider', 'testExtension'))));
 
 		const model = testDisposables.add(testService.startSession('testProvider', CancellationToken.None));
 		assert.strictEqual(model.getRequests().length, 0);
 
-		await testService.addCompleteRequest(model.sessionId, 'test request', { message: 'test response' });
+		await testService.addCompleteRequest(model.sessionId, 'test request', undefined, { message: 'test response' });
 		assert.strictEqual(model.getRequests().length, 1);
 		assert.ok(model.getRequests()[0].response);
 		assert.strictEqual(model.getRequests()[0].response?.response.asString(), 'test response');
@@ -217,7 +229,7 @@ suite('Chat', () => {
 	test('can serialize', async () => {
 		testDisposables.add(chatAgentService.registerAgent(chatAgentWithUsedContext));
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
-		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider'))));
+		testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider', 'testExtension'))));
 
 		const model = testDisposables.add(testService.startSession('testProvider', CancellationToken.None));
 		assert.strictEqual(model.getRequests().length, 0);
@@ -226,7 +238,6 @@ suite('Chat', () => {
 
 		const response = await testService.sendRequest(model.sessionId, `@${chatAgentWithUsedContextId} test request`);
 		assert(response);
-
 		await response.responseCompletePromise;
 
 		assert.strictEqual(model.getRequests().length, 1);
@@ -241,7 +252,7 @@ suite('Chat', () => {
 		// create the first service, send request, get response, and serialize the state
 		{  // serapate block to not leak variables in outer scope
 			const testService = testDisposables.add(instantiationService.createInstance(ChatService));
-			testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider'))));
+			testDisposables.add(testService.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider', 'testExtension'))));
 
 			const chatModel1 = testDisposables.add(testService.startSession('testProvider', CancellationToken.None));
 			assert.strictEqual(chatModel1.getRequests().length, 0);
@@ -257,7 +268,7 @@ suite('Chat', () => {
 		// try deserializing the state into a new service
 
 		const testService2 = testDisposables.add(instantiationService.createInstance(ChatService));
-		testDisposables.add(testService2.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider'))));
+		testDisposables.add(testService2.registerProvider(testDisposables.add(new SimpleTestProvider('testProvider', 'testExtension'))));
 
 		const chatModel2 = testService2.loadSessionFromContent(serializedChatData);
 		assert(chatModel2);

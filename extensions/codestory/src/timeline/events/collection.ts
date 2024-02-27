@@ -12,7 +12,6 @@ import {
 } from '../../llm/recipe/prompts';
 import { EventType } from './type';
 import { writeFileContents } from '../../llm/recipe/helpers';
-import { CSChatCancellationToken, CSChatFileTreeData, CSChatProgress, CSChatProgressContent, CSChatProgressFileTree, CSChatProgressTask } from '../../completions/providers/chatprovider';
 
 interface TestExecutionHarness {
 	testScript: string;
@@ -501,8 +500,8 @@ export const taskComplete = (): ToolingEvent => {
 };
 
 type ChatProgress = {
-	progress: vscode.Progress<CSChatProgress>;
-	cancellationToken: CSChatCancellationToken;
+	response: vscode.ChatResponseStream;
+	cancellationToken: vscode.CancellationToken;
 };
 
 export class ToolingEventCollection {
@@ -525,12 +524,7 @@ export class ToolingEventCollection {
 	public async addThinkingEvent(userQuery: string, thinkingContext: string) {
 		const event = thinkingEvent(userQuery, thinkingContext, []);
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Initializing',
-				Promise.resolve(new CSChatProgressContent(`${event.eventContext ?? ''}\n\n---\n`))
-			)
-		);
+		this.chatProgress?.response.progress(`${event.eventContext ?? ''}\n\n---\n`);
 		await this.save();
 	}
 
@@ -543,55 +537,8 @@ export class ToolingEventCollection {
 	public async addSearchEvent(queries: string[]) {
 		const event = searchForQuery(queries.join('\n'));
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Searching the codebase',
-				Promise.resolve(new CSChatProgressContent(
-					`## Searching the codebase\n\n\`\`\`\n${event.eventInput ?? ''}\`\`\``
-				))
-			)
-		);
+		this.chatProgress?.response.markdown(`## Searching the codebase\n\n\`\`\`\n${event.eventInput ?? ''}\`\`\``);
 		await this.save();
-	}
-
-	createFileTreeFromCodeSymbols(
-		codeSnippets: CodeSnippetInformation[],
-		workingDirectory: string,
-	): CSChatProgressFileTree {
-		// Create a root CSChatFileTreeData object with an empty label and URI
-		const rootTreeData = new CSChatFileTreeData('', vscode.Uri.file(''));
-
-		// Iterate through codeSnippets and build the file tree
-		for (const codeSnippet of codeSnippets) {
-			const filePathSegments = codeSnippet.filePath.split('/');
-			let currentNode = rootTreeData;
-
-			// Traverse the tree, creating any missing nodes
-			for (const segment of filePathSegments) {
-				if (!currentNode.children) {
-					currentNode.children = [];
-				}
-
-				// Check if a node with the same label already exists
-				let childNode = currentNode.children.find((node) => node.label === segment);
-
-				if (!childNode) {
-					// Create a new node for the segment
-					const uri = vscode.Uri.file(codeSnippet.filePath);
-					childNode = new CSChatFileTreeData(segment, uri);
-					currentNode.children.push(childNode);
-				}
-
-				// Update the currentNode to the child node for the next iteration
-				currentNode = childNode;
-			}
-		}
-
-		// Remove working directory from the label of root node
-		rootTreeData.label = rootTreeData.label.replace(workingDirectory, '');
-
-		// Create and return the CSChatProgressFileTree
-		return new CSChatProgressFileTree(rootTreeData);
 	}
 
 	public async addRelevantSearchResults(
@@ -601,23 +548,10 @@ export class ToolingEventCollection {
 	) {
 		const event = relevantSearchResults(queries, codeSymbolInformationList);
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Generating search results',
-				Promise.resolve(
-					this.createFileTreeFromCodeSymbols(
-						(event.codeSnippetInformationList ?? []).slice(0, 5),
-						workingDirectory
-					),
-				)
-			)
-		);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Generating search results',
-				Promise.resolve(new CSChatProgressContent(`\n---\n`))
-			)
-		);
+		for (const codeSnippet of event.codeSnippetInformationList?.slice(0, 5) ?? []) {
+			this.chatProgress?.response.progress(`${codeSnippet.filePath}\n`);
+		}
+		this.chatProgress?.response.progress(`\n---\n`);
 		await this.save();
 	}
 
@@ -652,14 +586,7 @@ export class ToolingEventCollection {
 		const codeModificationEvent = event.codeModificationContextAndDiff;
 		const codeModification = codeModificationEvent?.codeModification ?? '';
 		const codeModificationPlan = codeModification.split('Detailed plan of modifications:')[1];
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Modifications',
-				Promise.resolve(new CSChatProgressContent(
-					`## Modification #${Number(executionEventId) + 1}\n${codeModificationPlan}\n`
-				))
-			)
-		);
+		this.chatProgress?.response.markdown(`## Modification #${Number(executionEventId) + 1}\n${codeModificationPlan}\n`);
 		await this.save();
 	}
 
@@ -677,16 +604,10 @@ export class ToolingEventCollection {
 	) {
 		const event = testExecutionEvent(codeSymbolName, fileLocation, testPlan, executionEventId);
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Testing',
-				Promise.resolve(new CSChatProgressContent(
-					`${event.testExecutionHarness?.planForTestScriptGeneration ?? ''}
+		this.chatProgress?.response.progress(`${event.testExecutionHarness?.planForTestScriptGeneration ?? ''}
 \`\`\`\n\n${event.testExecutionHarness?.testScript ?? ''}\n\`\`\`
 \n---\n
-					`))
-			)
-		);
+					`);
 		await this.save();
 	}
 
@@ -701,14 +622,7 @@ export class ToolingEventCollection {
 	) {
 		const event = terminalEvent(codeSymbolName, fileLocation, stdout, stderr, exitCode, args, executionEventId);
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Running commands',
-				Promise.resolve(new CSChatProgressContent(
-					`## Running commands\n\`\`\`sh\n\n> ${event.args?.join(' ')}\n\n${event.stdout}\n\`\`\``
-				))
-			)
-		);
+		this.chatProgress?.response.markdown(`## Running commands\n\`\`\`sh\n\n> ${event.args?.join(' ')}\n\n${event.stdout}\n\`\`\``);
 		await this.save();
 	}
 
@@ -719,26 +633,14 @@ export class ToolingEventCollection {
 	) {
 		const event = executionBranchFinishEvent(executionEventId, codeSymbolName, executionBranchFinishReason);
 		this.events.push(event);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Completed exploration',
-				Promise.resolve(new CSChatProgressContent(event.executionBranchFinishReason ?? ''))
-			)
-		);
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask(
-				'Completed exploration',
-				Promise.resolve(new CSChatProgressContent(`\n---\n`))
-			)
-		);
+		this.chatProgress?.response.progress(event.executionBranchFinishReason ?? '');
+		this.chatProgress?.response.progress(`\n---\n`);
 		await this.save();
 	}
 
 	public async taskComplete() {
 		this.events.push(taskComplete());
-		this.chatProgress?.progress.report(
-			new CSChatProgressTask('## Finished my work, please review and let me know!', Promise.resolve(new CSChatProgressContent('## Task complete!')))
-		);
+		this.chatProgress?.response.markdown(`## Task complete!`);
 		await this.save();
 	}
 

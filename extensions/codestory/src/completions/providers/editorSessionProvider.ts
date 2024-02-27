@@ -6,7 +6,6 @@
 import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { v4 as uuidv4 } from 'uuid';
-import { getCodeSelection } from '../../editor/codeSelection';
 import { InEditorRequest, InLineAgentContextSelection } from '../../sidecar/types';
 import { parseDiagnosticsInformation, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
 
@@ -179,11 +178,13 @@ export class IndentationHelper {
 }
 
 
-export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
+export class CSInteractiveEditorSession implements vscode.InteractiveEditorSession {
 	placeholder?: string;
-	slashCommands?: vscode.CSChatEditorSlashCommand[];
+	input?: string;
+	slashCommands?: vscode.InteractiveEditorSlashCommand[];
 	wholeRange?: vscode.Range;
 	message?: string;
+
 	textDocument: vscode.TextDocument;
 	range: vscode.Range;
 	threadId: string;
@@ -203,17 +204,11 @@ export class CSInteractiveEditorSession implements vscode.CSChatEditorSession {
 	}
 }
 
-// export interface InteractiveEditorMessageResponse {
-// 	contents: MarkdownString;
-// 	placeholder?: string;
-// 	wholeRange?: Range;
-// }
-
-export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgressItem {
+export class CSInteractiveEditorProgressItem implements vscode.InteractiveEditorProgressItem {
 	message?: string;
 	edits?: vscode.TextEdit[];
 	editsShouldBeInstant?: boolean;
-	slashCommand?: vscode.CSChatEditorSlashCommand;
+	slashCommand?: vscode.InteractiveEditorSlashCommand;
 	content?: string | vscode.MarkdownString;
 
 	static normalMessage(message: string): CSInteractiveEditorProgressItem {
@@ -263,7 +258,7 @@ export class CSInteractiveEditorProgressItem implements vscode.CSChatEditorProgr
 	}
 }
 
-export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMessageResponse {
+export class CSInteractiveEditorMessageResponse implements vscode.InteractiveEditorMessageResponse {
 	contents: vscode.MarkdownString;
 	placeholder?: string;
 	wholeRange?: vscode.Range;
@@ -276,13 +271,15 @@ export class CSInteractiveEditorMessageResponse implements vscode.CSChatEditorMe
 }
 
 
-export class CSInteractiveEditorResponse implements vscode.CSChatEditorResponse {
+export class CSInteractiveEditorResponse implements vscode.InteractiveEditorResponse {
 	edits: vscode.TextEdit[] | vscode.WorkspaceEdit;
+	contents?: vscode.MarkdownString | undefined;
 	placeholder?: string;
 	wholeRange?: vscode.Range | undefined;
 
-	constructor(edits: vscode.TextEdit[] | vscode.WorkspaceEdit, placeholder: string | undefined, wholeRange: vscode.Range) {
+	constructor(edits: vscode.TextEdit[] | vscode.WorkspaceEdit, contents: vscode.MarkdownString | undefined, placeholder: string | undefined, wholeRange: vscode.Range) {
 		this.edits = edits;
+		this.contents = contents;
 		this.placeholder = placeholder;
 		this.wholeRange = wholeRange;
 	}
@@ -290,7 +287,7 @@ export class CSInteractiveEditorResponse implements vscode.CSChatEditorResponse 
 
 export type CSInteractiveEditorResponseMessage = CSInteractiveEditorResponse | CSInteractiveEditorMessageResponse;
 
-export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSessionProvider {
+export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEditorSessionProvider<CSInteractiveEditorSession> {
 	label: 'cs-chat-editor';
 	sidecarClient: SideCarClient;
 	repoRef: RepoRef;
@@ -306,10 +303,10 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 		this.workingDirectory = workingDirectory;
 	}
 
-	prepareCSChatEditorSession(
+	prepareInteractiveEditorSession(
 		context: vscode.TextDocumentContext,
 		token: vscode.CancellationToken,
-	): vscode.ProviderResult<vscode.CSChatEditorSession> {
+	): vscode.ProviderResult<CSInteractiveEditorSession> {
 		const start = context.selection.active;
 		const anchor = context.selection.anchor;
 		if (vscode.window.activeTextEditor === undefined) {
@@ -327,10 +324,10 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 		return new CSInteractiveEditorSession(context.document, context.selection);
 	}
 
-	provideCSChatEditorResponse(
+	provideInteractiveEditorResponse(
 		session: CSInteractiveEditorSession,
-		request: vscode.CSChatEditorRequest,
-		progress: vscode.Progress<vscode.CSChatEditorProgressItem>,
+		request: vscode.InteractiveEditorRequest,
+		progress: vscode.Progress<CSInteractiveEditorProgressItem>,
 		token: vscode.CancellationToken,
 	): vscode.ProviderResult<CSInteractiveEditorResponseMessage> {
 		return (async () => {
@@ -398,6 +395,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 			} else {
 				return new CSInteractiveEditorResponse(
 					[],
+					undefined,
 					'skcd waiting for something',
 					session.range,
 				);
@@ -405,7 +403,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.CSChatEditorSe
 		})();
 	}
 
-	handleCSChatEditorResponseFeedback?(session: CSInteractiveEditorSession, response: CSInteractiveEditorResponseMessage, kind: vscode.CSChatEditorResponseFeedbackKind): void {
+	handleInteractiveEditorResponseFeedback(session: CSInteractiveEditorSession, response: CSInteractiveEditorResponseMessage, kind: vscode.InteractiveEditorResponseFeedbackKind): void {
 		console.log('We are good');
 	}
 }

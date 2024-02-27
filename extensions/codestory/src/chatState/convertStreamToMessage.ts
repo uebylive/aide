@@ -6,66 +6,15 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 
-import OpenAI from 'openai';
-import { Stream } from 'openai/streaming';
-import { CSChatProgress, CSChatProgressTask, CSChatProgressContent, CSChatCancellationToken, CSChatContentReference } from '../completions/providers/chatprovider';
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
 import * as math from 'mathjs';
 
-// Here we are going to convert the stream of messages to progress messages
-// which we can report back on to the chat
-export const reportFromStreamToProgress = async (
-	streamPromise: Promise<Stream<OpenAI.Chat.Completions.ChatCompletionChunk> | null>,
-	progress: vscode.Progress<CSChatProgress>,
-	cancellationToken: CSChatCancellationToken,
-): Promise<string> => {
-	let finalMessage = '';
-	const stream = await streamPromise;
-	if (!stream) {
-		// allow-any-unicode-next-line
-		return 'No reply from the LLM 🥲';
-	}
-
-	const streamIterator = stream[Symbol.asyncIterator]();
-
-	if (cancellationToken.isCancellationRequested) {
-		return finalMessage;
-	}
-
-	const firstPartOfMessage = async () => {
-		const firstPart = await streamIterator.next();
-		if (firstPart.done) {
-			return new CSChatProgressContent(''); // Handle when iterator is done
-		}
-		finalMessage += firstPart.value.choices[0]?.delta?.content ?? '';
-		return new CSChatProgressContent(firstPart.value.choices[0]?.delta?.content ?? '');
-	};
-
-	if (cancellationToken.isCancellationRequested) {
-		return finalMessage;
-	}
-
-	const asyncIterable = {
-		[Symbol.asyncIterator]: () => streamIterator
-	};
-
-	for await (const part of asyncIterable) {
-		finalMessage += part.choices[0]?.delta?.content ?? '';
-		if (cancellationToken.isCancellationRequested) {
-			return finalMessage;
-		}
-		progress.report(new CSChatProgressContent(part.choices[0]?.delta?.content ?? ''));
-	}
-
-	return finalMessage;
-};
-
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	progress: vscode.Progress<CSChatProgress>,
-	cancellationToken: CSChatCancellationToken,
+	response: vscode.ChatResponseStream,
+	cancellationToken: vscode.CancellationToken,
 	currentRepoRef: RepoRef,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -76,7 +25,7 @@ export const reportFromStreamToSearchProgress = async (
 	const firstPartOfMessage = async () => {
 		const firstPart = await stream.next();
 		if (firstPart.done) {
-			return new CSChatProgressContent(''); // Handle when iterator is done
+			return ''; // Handle when iterator is done
 		}
 		// TODO(skcd): Lets not log the session-id here
 		// if we don't have the message id here that means this is an ack request so
@@ -85,14 +34,11 @@ export const reportFromStreamToSearchProgress = async (
 		// @ts-ignore
 		// const sessionId = firstPart.value['session_id'];
 		// return new CSChatProgressContent('Your session id is: ' + sessionId);
-		return new CSChatProgressContent('');
+		return '';
 	};
 
-	progress.report(new CSChatProgressTask(
-		// allow-any-unicode-next-line
-		'Thinking... 🤔',
-		firstPartOfMessage(),
-	));
+	const progress = await firstPartOfMessage();
+	response.markdown(progress);
 
 	// Now we are in the good state, we can start reporting the progress by looking
 	// at the last step the agent has taken and reporting that to the chat
@@ -130,13 +76,13 @@ export const reportFromStreamToSearchProgress = async (
 			// the reporef location to the message and that would solve a lot of
 			// problems.
 			if (!enteredAnswerGenerationLoop) {
-				progress.report(new CSChatProgressContent('\n'));
+				response.markdown('\n');
 				// progress.report(new CSChatProgressContent('\n## Answer\n\n' + conversationMessage.answer.delta));
 				enteredAnswerGenerationLoop = true;
 			} else {
 				// type-safety here, altho it its better to do it this way
 				if (conversationMessage.answer.delta !== null) {
-					progress.report(new CSChatProgressContent(conversationMessage.answer.delta));
+					response.markdown(conversationMessage.answer.delta);
 				}
 			}
 		} else if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'Finished') {
@@ -150,12 +96,12 @@ export const reportFromStreamToSearchProgress = async (
 			console.log(lastStep);
 			if ('Code' in lastStep) {
 				reportCodeReferencesToChat(
-					progress,
+					response,
 					lastStep.Code.code_snippets,
 					workingDirectory,
 				);
 			} else if ('Proc' in lastStep) {
-				reportProcUpdateToChat(progress, lastStep, workingDirectory);
+				reportProcUpdateToChat(response, lastStep, workingDirectory);
 			}
 		}
 	}
@@ -246,7 +192,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (progress: vscode.Progress<CSChatProgress>, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -266,23 +212,19 @@ export const reportCodeReferencesToChat = (progress: vscode.Progress<CSChatProgr
 		if (!currentCodeSpan.file_path.startsWith(workingDirectory)) {
 			fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
 		}
-		progress.report(
-			new CSChatContentReference(
-				new vscode.Location(
-					vscode.Uri.file(fullFilePath),
-					new vscode.Range(
-						new vscode.Position(currentCodeSpan.start_line, 0),
-						new vscode.Position(currentCodeSpan.end_line, 0),
-					),
-				),
-			)
-		);
+		response.reference(new vscode.Location(
+			vscode.Uri.file(fullFilePath),
+			new vscode.Range(
+				new vscode.Position(currentCodeSpan.start_line, 0),
+				new vscode.Position(currentCodeSpan.end_line, 0),
+			),
+		));
 	}
 };
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.Progress<CSChatProgress>,
+	progress: vscode.ChatResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {
@@ -291,11 +233,7 @@ export const reportProcUpdateToChat = (
 		for (let index = 0; index < math.min(5, paths.length); index++) {
 			const currentPath = paths[index];
 			const fullFilePath = path.join(workingDirectory, currentPath);
-			progress.report(
-				new CSChatContentReference(
-					vscode.Uri.file(fullFilePath),
-				)
-			);
+			progress.reference(vscode.Uri.file(fullFilePath));
 		}
 	}
 };

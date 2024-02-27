@@ -5,7 +5,7 @@
 
 import { EditorContributionInstantiation, registerEditorAction, registerEditorCommand, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
 import { editorConfigurationBaseNode } from 'vs/editor/common/config/editorConfigurationSchema';
-import { AutoFixAction, CodeActionCommand, FixAllAction, OrganizeImportsAction, QuickFixAction, AideFixAction, RefactorAction, SourceAction } from 'vs/editor/contrib/codeAction/browser/codeActionCommands';
+import { AideFixAction, AutoFixAction, CodeActionCommand, FixAllAction, OrganizeImportsAction, QuickFixAction, RefactorAction, SourceAction } from 'vs/editor/contrib/codeAction/browser/codeActionCommands';
 import { CodeActionController } from 'vs/editor/contrib/codeAction/browser/codeActionController';
 import { LightBulbWidget } from 'vs/editor/contrib/codeAction/browser/lightBulbWidget';
 import * as nls from 'vs/nls';
