@@ -568,6 +568,28 @@ export class SideCarClient {
 		};
 	}
 
+	async documentContentChange(
+		filePath: string,
+		events: readonly vscode.TextDocumentContentChangeEvent[],
+		language: string,
+	): Promise<void> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion/document_content_changed';
+		const body = {
+			file_path: filePath,
+			events,
+			language,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+	}
+
 	async documentOpen(
 		filePath: string,
 		fileContent: string,
