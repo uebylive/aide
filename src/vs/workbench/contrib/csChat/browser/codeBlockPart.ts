@@ -33,19 +33,14 @@ import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
-import { ChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatOptions';
+import { IMarkdownVulnerability } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
+import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
+import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { MenuPreventer } from 'vs/workbench/contrib/codeEditor/browser/menuPreventer';
 import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEditor/browser/selectionClipboard';
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IMarkdownVulnerability } from 'vs/workbench/contrib/csChat/browser/csChatMarkdownDecorationsRenderer';
-import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { IChatEditSummary } from 'vs/workbench/contrib/csChat/common/csChatModel';
-import { ICSChatEditSessionService } from 'vs/workbench/contrib/csChat/browser/csChatEdits';
-import { basename } from 'vs/base/common/path';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 
 const $ = dom.$;
-
 
 export interface ICodeBlockData {
 	text: string;
@@ -55,7 +50,6 @@ export interface ICodeBlockData {
 	parentContextKeyService?: IContextKeyService;
 	hideToolbar?: boolean;
 	vulns?: IMarkdownVulnerability[];
-	edits?: IChatEditSummary | undefined;
 }
 
 export interface ICodeBlockActionContext {
@@ -91,9 +85,6 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 
 	public readonly textModel: ITextModel;
 	public readonly element: HTMLElement;
-	public readonly childWrapper: HTMLElement;
-
-	private readonly exportedLocationRibbon: HTMLElement;
 
 	private currentCodeBlockData: ICodeBlockData | undefined;
 	private currentScrollWidth = 0;
@@ -106,17 +97,14 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 		@ILanguageService private readonly languageService: ILanguageService,
 		@IModelService private readonly modelService: IModelService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
-		@ICodeEditorService private readonly editorService: ICodeEditorService,
-		@ICSChatEditSessionService private readonly editSessionService: ICSChatEditSessionService
+		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
 	) {
 		super();
-		this.element = $('.cschat-result-code-block');
-		this.childWrapper = dom.append(this.element, $('.cschat-result-code-block-wrapper'));
+		this.element = $('.interactive-result-code-block');
 
-		this.contextKeyService = this._register(contextKeyService.createScoped(this.childWrapper));
+		this.contextKeyService = this._register(contextKeyService.createScoped(this.element));
 		const scopedInstantiationService = instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
-		const editorElement = dom.append(this.childWrapper, $('.interactive-result-editor'));
+		const editorElement = dom.append(this.element, $('.interactive-result-editor'));
 		this.editor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, {
 			...getSimpleEditorOptions(this.configurationService),
 			readOnly: true,
@@ -146,8 +134,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			])
 		}));
 
-		this.exportedLocationRibbon = dom.append(this.childWrapper, $('.interactive-result-editor-location-ribbon'));
-		const toolbarElement = dom.append(this.childWrapper, $('.cschat-result-code-block-toolbar'));
+		const toolbarElement = dom.append(this.element, $('.interactive-result-code-block-toolbar'));
 		const editorScopedService = this.editor.contextKeyService.createScoped(toolbarElement);
 		const editorScopedInstantiationService = scopedInstantiationService.createChild(new ServiceCollection([IContextKeyService, editorScopedService]));
 		this.toolbar = this._register(editorScopedInstantiationService.createInstance(MenuWorkbenchToolBar, toolbarElement, menuId, {
@@ -156,7 +143,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			}
 		}));
 
-		const vulnsContainer = dom.append(this.childWrapper, $('.interactive-result-vulns'));
+		const vulnsContainer = dom.append(this.element, $('.interactive-result-vulns'));
 		const vulnsHeaderElement = dom.append(vulnsContainer, $('.interactive-result-vulns-header', undefined));
 		this.vulnsButton = new Button(vulnsHeaderElement, {
 			buttonBackground: undefined,
@@ -176,7 +163,7 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			const element = this.currentCodeBlockData!.element as IChatResponseViewModel;
 			element.vulnerabilitiesListExpanded = !element.vulnerabilitiesListExpanded;
 			this.vulnsButton.label = this.getVulnerabilitiesLabel();
-			this.childWrapper.classList.toggle('chat-vulnerabilities-collapsed', !element.vulnerabilitiesListExpanded);
+			this.element.classList.toggle('chat-vulnerabilities-collapsed', !element.vulnerabilitiesListExpanded);
 			this._onDidChangeContentHeight.fire();
 			// this.updateAriaLabel(collapseButton.element, referencesLabel, element.usedReferencesExpanded);
 		});
@@ -206,11 +193,11 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			}
 		}));
 		this._register(this.editor.onDidBlurEditorWidget(() => {
-			this.childWrapper.classList.remove('focused');
+			this.element.classList.remove('focused');
 			WordHighlighterContribution.get(this.editor)?.stopHighlighting();
 		}));
 		this._register(this.editor.onDidFocusEditorWidget(() => {
-			this.childWrapper.classList.add('focused');
+			this.element.classList.add('focused');
 			WordHighlighterContribution.get(this.editor)?.restoreViewState(true);
 		}));
 
@@ -299,51 +286,14 @@ export class CodeBlockPart extends Disposable implements ICodeBlockPart {
 			dom.show(this.toolbar.getElement());
 		}
 
-		dom.clearNode(this.exportedLocationRibbon);
-		const isApplyingEdits = isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0;
-		if (isApplyingEdits) {
-			if (!this.element.classList.contains('applying-edits')) {
-				this.element.classList.add('applying-edits');
-			}
-		} else {
-			this.element.classList.remove('applying-edits');
-		}
-		if (isResponseVM(data.element) && data.edits && data.element.appliedEdits.get(data.codeBlockIndex)) {
-			const summary = this.exportedLocationRibbon.appendChild($('div.edit-summary', undefined));
-			const rangeText = basename(data.edits.location.uri.toString()) + ':' + data.edits.location.range.startLineNumber + ':' + data.edits.location.range.endLineNumber;
-			dom.append(summary, $('span.editor-location-text', undefined, rangeText));
-			if (rangeText.length <= 30) {
-				dom.append(summary, $('span.edit-summary-text', undefined, data.edits.summary));
-			}
-		}
-		if (isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) < 0 && data.element.appliedEdits.get(data.codeBlockIndex)) {
-			this.element.classList.toggle('approved-edits', true);
-		} else {
-			this.element.classList.toggle('approved-edits', false);
-		}
-
-		this.exportedLocationRibbon.onclick = () => {
-			if (isResponseVM(data.element) && data.edits) {
-				this.editorService.openCodeEditor({
-					resource: data.edits.location.uri,
-					options: {
-						selection: data.edits.location.range,
-						preserveFocus: true,
-						pinned: true,
-						revealIfVisible: true,
-					}
-				}, this.editor);
-			}
-		};
-
 		if (data.vulns?.length && isResponseVM(data.element)) {
 			dom.clearNode(this.vulnsListElement);
-			this.childWrapper.classList.remove('no-vulns');
-			this.childWrapper.classList.toggle('chat-vulnerabilities-collapsed', !data.element.vulnerabilitiesListExpanded);
+			this.element.classList.remove('no-vulns');
+			this.element.classList.toggle('chat-vulnerabilities-collapsed', !data.element.vulnerabilitiesListExpanded);
 			dom.append(this.vulnsListElement, ...data.vulns.map(v => $('li', undefined, $('span.chat-vuln-title', undefined, v.title), ' ' + v.description)));
 			this.vulnsButton.label = this.getVulnerabilitiesLabel();
 		} else {
-			this.childWrapper.classList.add('no-vulns');
+			this.element.classList.add('no-vulns');
 		}
 	}
 
