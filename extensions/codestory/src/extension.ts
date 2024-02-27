@@ -312,11 +312,15 @@ export async function activate(context: ExtensionContext) {
 	window.onDidChangeVisibleTextEditors(parseAllVisibleDocuments);
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
-	workspace.onDidChangeTextDocument((event) => {
+	workspace.onDidChangeTextDocument(async (event) => {
 		event.contentChanges.forEach((contentChange) => {
 			console.log('[extension] onDidChangeTextDocument event::', contentChange.text);
 		});
 		// TODO(skcd): we want to send the file change event to the sidecar over here
-		updateParseTreeOnEdit(event);
+		await sidecarClient.documentContentChange(
+			event.document.uri.fsPath,
+			event.contentChanges,
+			event.document.languageId,
+		);
 	});
 }
