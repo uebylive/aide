@@ -575,10 +575,21 @@ export class SideCarClient {
 	): Promise<void> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/inline_completion/document_content_changed';
+		const mappedEvents = events.map((event) => {
+			return {
+				range: {
+					start_line: event.range.start.line,
+					start_column: event.range.start.character,
+					end_line: event.range.end.line,
+					end_column: event.range.end.character,
+				},
+				text: event.text,
+			};
+		});
 		const body = {
 			file_path: filePath,
-			events,
 			language,
+			events: mappedEvents,
 		};
 		const url = baseUrl.toString();
 		const response = await fetch(url, {
