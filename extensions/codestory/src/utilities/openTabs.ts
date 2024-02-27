@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { SideCarClient } from '../sidecar/client';
 
 export function baseLanguageId(languageId: string): string {
 	switch (languageId) {
@@ -114,4 +115,18 @@ export async function getRelevantFiles(): Promise<FileContents[]> {
 	// 	})
 	// )
 	return files
+}
+
+export async function changedActiveDocument(document: vscode.TextEditor | undefined, sidecarClient: SideCarClient) {
+	if (document === undefined) {
+		return
+	}
+	if (document.document.uri.scheme === 'codegen') {
+		return
+	}
+	await sidecarClient.documentOpen(
+		document.document.uri.fsPath,
+		document.document.getText(),
+		document.document.languageId,
+	);
 }

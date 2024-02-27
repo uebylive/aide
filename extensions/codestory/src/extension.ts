@@ -35,7 +35,7 @@ import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { parseAllVisibleDocuments, updateParseTreeOnEdit } from './completions/text-processing/treeSitter/parseTree';
-import { getRelevantFiles } from './utilities/openTabs';
+import { changedActiveDocument, getRelevantFiles } from './utilities/openTabs';
 
 
 class ProgressiveTrackSymbols {
@@ -124,13 +124,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	// we want to send the open tabs here to the sidecar
-	const openTextDocuments = await getRelevantFiles();
-	openTextDocuments.forEach((openTextDocument) => {
-		// not awaiting here so we can keep loading the extension in the background
-		sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
-	})
-
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
 	const execPath = process.execPath;
@@ -141,6 +134,13 @@ export async function activate(context: ExtensionContext) {
 	// allow-any-unicode-next-line
 	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
+
+	// we want to send the open tabs here to the sidecar
+	const openTextDocuments = await getRelevantFiles();
+	openTextDocuments.forEach((openTextDocument) => {
+		// not awaiting here so we can keep loading the extension in the background
+		sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
+	});
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
 		// We assume the root-path is the one we are interested in
@@ -304,8 +304,11 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	// Listen for active editor change events (user navigating between files)
-	window.onDidChangeActiveTextEditor((editor) => {
+	window.onDidChangeActiveTextEditor(async (editor) => {
 		activeFilesTracker.onDidChangeActiveTextEditor(editor);
+		// if we are going to change the active text editor, then we should tell
+		// the sidecar about it
+		await changedActiveDocument(editor, sidecarClient);
 	});
 
 	// Register feedback commands
