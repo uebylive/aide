@@ -35,6 +35,7 @@ import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { parseAllVisibleDocuments, updateParseTreeOnEdit } from './completions/text-processing/treeSitter/parseTree';
+import { getRelevantFiles } from './utilities/openTabs';
 
 
 class ProgressiveTrackSymbols {
@@ -122,6 +123,13 @@ export async function activate(context: ExtensionContext) {
 			repoHash,
 		}
 	});
+
+	// we want to send the open tabs here to the sidecar
+	const openTextDocuments = await getRelevantFiles();
+	openTextDocuments.forEach((openTextDocument) => {
+		// not awaiting here so we can keep loading the extension in the background
+		sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
+	})
 
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
