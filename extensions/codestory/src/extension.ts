@@ -276,6 +276,8 @@ export async function activate(context: ExtensionContext) {
 	workspace.onDidOpenTextDocument(async (doc) => {
 		const uri = doc.uri;
 		await trackCodeSymbolChanges.fileOpened(uri, logger);
+		// TODO(skcd): we want to send the file open event to the sidecar client
+		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 	});
 
 	// Add git commit to the subscriptions here
@@ -311,6 +313,10 @@ export async function activate(context: ExtensionContext) {
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
 	workspace.onDidChangeTextDocument((event) => {
+		event.contentChanges.forEach((contentChange) => {
+			console.log('[extension] onDidChangeTextDocument event::', contentChange.text);
+		});
+		// TODO(skcd): we want to send the file change event to the sidecar over here
 		updateParseTreeOnEdit(event);
 	});
 }
