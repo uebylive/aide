@@ -132,7 +132,7 @@ export async function activate(context: ExtensionContext) {
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
-	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
+	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
 
 	// we want to send the open tabs here to the sidecar
