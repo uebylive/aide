@@ -608,6 +608,11 @@ export class SideCarClient {
 		fileContent: string,
 		language: string,
 	): Promise<void> {
+		// There might be files which have a .git extension we should not be sending
+		// those to the sidecar
+		if (filePath.endsWith('.git')) {
+			return;
+		}
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/inline_completion/document_open';
 		const body = {
