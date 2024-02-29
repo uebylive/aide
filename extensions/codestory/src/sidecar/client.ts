@@ -571,6 +571,7 @@ export class SideCarClient {
 	async documentContentChange(
 		filePath: string,
 		events: readonly vscode.TextDocumentContentChangeEvent[],
+		fileContent: string,
 		language: string,
 	): Promise<void> {
 		const baseUrl = new URL(this._url);
@@ -588,6 +589,7 @@ export class SideCarClient {
 		});
 		const body = {
 			file_path: filePath,
+			file_content: fileContent,
 			language,
 			events: mappedEvents,
 		};
