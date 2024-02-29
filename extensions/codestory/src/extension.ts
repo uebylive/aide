@@ -331,6 +331,7 @@ export async function activate(context: ExtensionContext) {
 		await sidecarClient.documentContentChange(
 			event.document.uri.fsPath,
 			event.contentChanges,
+			event.document.getText(),
 			event.document.languageId,
 		);
 	});
