@@ -58,7 +58,8 @@ import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo } from 'vs/workbenc
 import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
 import { ChatMarkdownDecorationsRenderer, annotateSpecialMarkdownContent, extractVulnerabilitiesFromText } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, LocalFileCodeBlockPart, SimpleCodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, LocalFileCodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { CSSimpleCodeBlockPart } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
 import { IChatAgentMetadata } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
@@ -1071,7 +1072,7 @@ interface IDisposableReference<T> extends IDisposable {
 
 class EditorPool extends Disposable {
 
-	private readonly _simpleEditorPool: ResourcePool<SimpleCodeBlockPart>;
+	private readonly _simpleEditorPool: ResourcePool<CSSimpleCodeBlockPart>;
 	private readonly _localFileEditorPool: ResourcePool<LocalFileCodeBlockPart>;
 
 	public *inUse(): Iterable<ICodeBlockPart> {
@@ -1087,7 +1088,7 @@ class EditorPool extends Disposable {
 	) {
 		super();
 		this._simpleEditorPool = this._register(new ResourcePool(() => {
-			return this.instantiationService.createInstance(SimpleCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
+			return this.instantiationService.createInstance(CSSimpleCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
 		}));
 		this._localFileEditorPool = this._register(new ResourcePool(() => {
 			return this.instantiationService.createInstance(LocalFileCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
@@ -1098,7 +1099,7 @@ class EditorPool extends Disposable {
 		return this.getFromPool(data.type === 'localFile' ? this._localFileEditorPool : this._simpleEditorPool);
 	}
 
-	find(resource: URI): SimpleCodeBlockPart | undefined {
+	find(resource: URI): CSSimpleCodeBlockPart | undefined {
 		return Array.from(this._simpleEditorPool.inUse).find(part => part.uri?.toString() === resource.toString());
 	}
 

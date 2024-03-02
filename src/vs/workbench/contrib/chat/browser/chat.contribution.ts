@@ -30,6 +30,7 @@ import { ChatWidgetService } from 'vs/workbench/contrib/chat/browser/chatWidget'
 import 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
 import 'vs/workbench/contrib/chat/browser/contrib/csChatInputEditorContrib';
 import 'vs/workbench/contrib/chat/browser/contrib/chatHistoryVariables';
+import 'vs/workbench/contrib/chat/browser/contrib/csChatEditReviewContrib';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatService } from 'vs/workbench/contrib/chat/common/chatServiceImpl';
@@ -61,8 +62,10 @@ import { chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/wo
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChat';
 import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
+import { ChatEditSessionService, ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
 import { KeybindingPillContribution } from 'vs/workbench/contrib/chat/browser/contrib/csChatKeybindingPillContrib';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/chat/browser/csKeybindingPill';
+import { CSChatAgentService, ICSChatAgentService } from 'vs/workbench/contrib/chat/common/csChatAgents';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -341,5 +344,7 @@ registerSingleton(IChatWidgetHistoryService, ChatWidgetHistoryService, Instantia
 registerSingleton(IChatProviderService, ChatProviderService, InstantiationType.Delayed);
 registerSingleton(IChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
 registerSingleton(IChatAgentService, ChatAgentService, InstantiationType.Delayed);
+registerSingleton(ICSChatAgentService, CSChatAgentService, InstantiationType.Delayed);
 registerSingleton(IChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
 registerSingleton(IVoiceChatService, VoiceChatService, InstantiationType.Delayed);
+registerSingleton(ICSChatEditSessionService, ChatEditSessionService, InstantiationType.Delayed);

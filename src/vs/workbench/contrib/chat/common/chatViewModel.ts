@@ -270,7 +270,7 @@ export class ChatRequestViewModel implements IChatRequestViewModel {
 }
 
 export class ChatResponseViewModel extends Disposable implements IChatResponseViewModel {
-	private _modelChangeCount = 0;
+	protected _modelChangeCount = 0;
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
@@ -387,8 +387,8 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	}
 
 	constructor(
-		private readonly _model: IChatResponseModel,
-		@ILogService private readonly logService: ILogService
+		protected readonly _model: IChatResponseModel,
+		@ILogService protected readonly logService: ILogService
 	) {
 		super();
 

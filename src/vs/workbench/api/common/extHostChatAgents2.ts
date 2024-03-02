@@ -17,12 +17,14 @@ import { URI } from 'vs/base/common/uri';
 import { localize } from 'vs/nls';
 import { ExtensionIdentifier, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ExtHostChatAgentsShape2, IChatAgentCompletionItem, IChatAgentHistoryEntryDto, IMainContext, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { Progress } from 'vs/platform/progress/common/progress';
+import { ExtHostChatAgentsShape2, ICSChatAgentEditResponseDto, IChatAgentCompletionItem, IChatAgentHistoryEntryDto, IMainContext, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { CommandsConverter, ExtHostCommands } from 'vs/workbench/api/common/extHostCommands';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
 import { IChatAgentCommand, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatFollowup, IChatProgress, IChatUserActionEvent, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
@@ -254,6 +256,42 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 		return agent.provideSlashCommands(token);
 	}
 
+	async $provideEdits(handle: number, sessionId: string, request: IChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined> {
+		const agent = this._agents.get(handle);
+		if (!agent) {
+			return undefined;
+		}
+
+		const requestObj: vscode.CSChatAgentEditRequest = {
+			threadId: sessionId,
+			response: request.response,
+			context: request.context
+		};
+
+		try {
+			const task = agent.provideEdits(
+				requestObj,
+				new Progress<vscode.CSChatAgentEditResponse>(progress => {
+					if (!progress.edits) {
+						this._logService.error('Unknown progress type: ' + JSON.stringify(progress));
+						return;
+					}
+					const edits = typeConvert.WorkspaceEdit.from(progress.edits);
+					this._proxy.$handleEditProgressChunk(request.responseId, { ...progress, edits });
+				}),
+				token
+			);
+
+			return await raceCancellation(Promise.resolve(task).then(() => {
+				return undefined;
+			}), token);
+		} catch (e) {
+			this._logService.error(e, agent.extension);
+		}
+
+		return undefined;
+	}
+
 	async $provideFollowups(request: IChatAgentRequest, handle: number, result: IChatAgentResult, token: CancellationToken): Promise<IChatFollowup[]> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
@@ -346,6 +384,7 @@ class ExtHostChatAgent {
 
 	private _commandProvider: vscode.ChatCommandProvider | undefined;
 	private _followupProvider: vscode.ChatFollowupProvider | undefined;
+	private _editsProvider: vscode.ChatEditsProvider | undefined;
 	private _description: string | undefined;
 	private _fullName: string | undefined;
 	private _iconPath: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined;
@@ -539,6 +578,13 @@ class ExtHostChatAgent {
 				that._followupProvider = v;
 				updateMetadataSoon();
 			},
+			get editsProvider() {
+				return that._editsProvider;
+			},
+			set editsProvider(v) {
+				that._editsProvider = v;
+				updateMetadataSoon();
+			},
 			get isDefault() {
 				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
 				return that._isDefault;
@@ -664,5 +710,12 @@ class ExtHostChatAgent {
 
 	invoke(request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatExtendedResponseStream, token: CancellationToken): vscode.ProviderResult<vscode.ChatResult> {
 		return this._requestHandler(request, context, response, token);
+	}
+
+	provideEdits(request: vscode.CSChatAgentEditRequest, progress: vscode.Progress<vscode.CSChatAgentEditResponse>, token: CancellationToken): vscode.ProviderResult<vscode.CSChatAgentEditResponse> {
+		if (!this._editsProvider) {
+			return Promise.resolve(undefined);
+		}
+		return this._editsProvider.provideEdits(request, progress, token);
 	}
 }

@@ -493,6 +493,10 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
+				if (widget.viewModel?.providerId === 'cs-chat') {
+					return null;
+				}
+
 				const range = computeCompletionRanges(model, position, BuiltinDynamicCompletions.VariableNameDef);
 				if (!range) {
 					return null;

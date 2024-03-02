@@ -136,7 +136,7 @@ abstract class BaseCodeBlockPart<Data extends ICodeBlockData> extends Disposable
 
 	public readonly editor: CodeEditorWidget;
 	protected readonly toolbar: MenuWorkbenchToolBar;
-	private readonly contextKeyService: IContextKeyService;
+	protected contextKeyService: IContextKeyService;
 
 	abstract readonly uri: URI;
 	public readonly element: HTMLElement;
@@ -338,7 +338,7 @@ export class SimpleCodeBlockPart extends BaseCodeBlockPart<ISimpleCodeBlockData>
 		@ITextModelService textModelService: ITextModelService,
 		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService,
-		@ILanguageService private readonly languageService: ILanguageService,
+		@ILanguageService protected readonly languageService: ILanguageService,
 	) {
 		super(options, menuId, delegate, overflowWidgetsDomNode, instantiationService, contextKeyService, modelService, configurationService, accessibilityService);
 

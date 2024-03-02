@@ -779,35 +779,25 @@ export class SideCarClient {
 }
 
 interface CodeSelectionUriRange {
-	uri: string;
+	uri: vscode.Uri;
 	range: {
-		selection: {
-			startLineNumber: number;
-			startColumn: number;
-			endLineNumber: number;
-			endColumn: number;
-		};
-		decoration: {
-			startLineNumber: number;
-			startColumn: number;
-			endLineNumber: number;
-			endColumn: number;
-		};
+		startLineNumber: number;
+		startColumn: number;
+		endLineNumber: number;
+		endColumn: number;
 	};
 }
 
-// TODO(ghostwriternr): FIX THIS!
 async function convertVSCodeVariableToSidecar(
-	variables: readonly any[],
+	variables: readonly vscode.ChatResolvedVariable[],
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
-	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
-	for (let index = 0; index < variablesArr.length; index++) {
-		const keyValue = variablesArr[index];
-		const name = keyValue[0];
-		const value = keyValue[1];
+	for (let index = 0; index < variables.length; index++) {
+		const variable = variables[index];
+		const name = variable.name;
+		const value = variable.values;
 		if (value.length === 0) {
 			continue;
 		}
@@ -815,7 +805,7 @@ async function convertVSCodeVariableToSidecar(
 		if (typeof variableValue.value === 'string') {
 			// TODO write code from here for the selection logic
 			const parsedJson = JSON.parse(variableValue.value) as CodeSelectionUriRange;
-			const filePath = vscode.Uri.parse(parsedJson.uri);
+			const filePath = vscode.Uri.parse(parsedJson.uri.path);
 			const cachedFile = fileCache.get(filePath.fsPath);
 			if (cachedFile === undefined) {
 				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
@@ -823,12 +813,12 @@ async function convertVSCodeVariableToSidecar(
 			}
 			const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
 			const startRange = {
-				line: parsedJson.range.selection.startLineNumber,
-				character: parsedJson.range.selection.startColumn,
+				line: parsedJson.range.startLineNumber,
+				character: parsedJson.range.startColumn,
 			};
 			const endRange = {
-				line: parsedJson.range.selection.endLineNumber,
-				character: parsedJson.range.selection.endColumn,
+				line: parsedJson.range.endLineNumber,
+				character: parsedJson.range.endColumn,
 			};
 			const variableType = getVariableType(
 				name,

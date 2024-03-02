@@ -15,6 +15,7 @@ import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IChatProgressResponseContent, IChatRequestVariableData } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails } from 'vs/workbench/contrib/chat/common/chatService';
+import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 
 //#region agent service, commands etc
 
@@ -38,6 +39,7 @@ export interface IChatAgent extends IChatAgentData {
 	provideSlashCommands(token: CancellationToken): Promise<IChatAgentCommand[]>;
 	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
 	provideSampleQuestions?(token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
+	provideEdits?(request: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
 }
 
 export interface IChatAgentCommand {
@@ -127,7 +129,7 @@ export class ChatAgentService extends Disposable implements IChatAgentService {
 
 	declare _serviceBrand: undefined;
 
-	private readonly _agents = new Map<string, { agent: IChatAgent }>();
+	protected readonly _agents = new Map<string, { agent: IChatAgent }>();
 
 	private readonly _onDidChangeAgents = this._register(new Emitter<void>());
 	readonly onDidChangeAgents: Event<void> = this._onDidChangeAgents.event;

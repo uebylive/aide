@@ -56,6 +56,7 @@ import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/c
 import { IChatMessage, IChatResponseFragment, IChatResponseProviderMetadata } from 'vs/workbench/contrib/chat/common/chatProvider';
 import { IChatDynamicRequest, IChatProgress, IChatResponseErrorDetails, IChatUserActionEvent, InteractiveSessionVoteDirection, IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from 'vs/workbench/contrib/chat/common/chatVariables';
+import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { DebugConfigurationProviderTriggerKind, MainThreadDebugVisualization, IAdapterDescriptor, IConfig, IDebugSessionReplMode, IDebugVisualization, IDebugVisualizationContext, IDebugVisualizationTreeItem } from 'vs/workbench/contrib/debug/common/debug';
 import { IInlineChatBulkEditResponse, IInlineChatEditResponse, IInlineChatFollowup, IInlineChatProgressItem, IInlineChatRequest, IInlineChatSession, InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import * as notebookCommon from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -1204,6 +1205,11 @@ export interface IExtensionChatAgentMetadata extends Dto<IChatAgentMetadata> {
 	hasFollowups?: boolean;
 }
 
+export interface ICSChatAgentEditResponseDto {
+	edits: IWorkspaceEditDto;
+	codeBlockIndex: number;
+}
+
 export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$registerAgent(handle: number, extension: ExtensionIdentifier, name: string, metadata: IExtensionChatAgentMetadata): void;
 	$registerAgentCompletionsProvider(handle: number, triggerCharacters: string[]): void;
@@ -1211,6 +1217,7 @@ export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void;
 	$unregisterAgent(handle: number): void;
 	$handleProgressChunk(requestId: string, chunk: IChatProgressDto): Promise<number | void>;
+	$handleEditProgressChunk(responseId: string, chunk: ICSChatAgentEditResponseDto): Promise<number | void>;
 }
 
 export interface IChatAgentCompletionItem {
@@ -1233,6 +1240,7 @@ export type IChatAgentHistoryEntryDto = {
 export interface ExtHostChatAgentsShape2 {
 	$invokeAgent(handle: number, request: IChatAgentRequest, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
 	$provideSlashCommands(handle: number, token: CancellationToken): Promise<IChatAgentCommand[]>;
+	$provideEdits(handle: number, sessionId: string, request: IChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined>;
 	$provideFollowups(request: IChatAgentRequest, handle: number, result: IChatAgentResult, token: CancellationToken): Promise<IChatFollowup[]>;
 	$acceptFeedback(handle: number, result: IChatAgentResult, vote: InteractiveSessionVoteDirection, reportIssue?: boolean): void;
 	$acceptAction(handle: number, result: IChatAgentResult, action: IChatUserActionEvent): void;

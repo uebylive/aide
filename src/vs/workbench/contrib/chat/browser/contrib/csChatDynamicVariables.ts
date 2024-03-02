@@ -5,11 +5,13 @@
 
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { basename } from 'vs/base/common/resources';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
 import { IRange } from 'vs/editor/common/core/range';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { SuggestController } from 'vs/editor/contrib/suggest/browser/suggestController';
 import { localize2 } from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
@@ -23,15 +25,17 @@ import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserT
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 
+export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
 interface MultiLevelCodeTriggerActionContext {
 	widget: IChatWidget;
 	range: IRange;
+	pick: 'file' | 'code';
 }
 
 function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
-	return 'widget' in context && 'range' in context;
+	return 'widget' in context && 'range' in context && 'pick' in context;
 }
 
 export class MultiLevelCodeTriggerAction extends Action2 {
@@ -54,7 +58,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 
 		const inputEditor = context.widget.inputEditor;
 		const doCleanup = () => {
-			// Failed, remove the dangling `code`
+			// Failed, remove the dangling prefix
 			inputEditor.executeEdits('chatMultiLevelCodeTrigger', [{ range: context.range, text: `` }]);
 		};
 
@@ -65,7 +69,10 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const codeSymbolCompletionProvider = completionProviders.find(provider => provider._debugDisplayName === CodeSymbolCompletionProviderName);
+		const codeSymbolCompletionProvider = completionProviders.find(
+			provider => provider._debugDisplayName === (
+				context.pick === 'code' ? CodeSymbolCompletionProviderName : FileReferenceCompletionProviderName
+			));
 		if (!codeSymbolCompletionProvider) {
 			doCleanup();
 			return;
@@ -76,13 +83,79 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 }
 registerAction2(MultiLevelCodeTriggerAction);
 
+interface SelectAndInsertFileActionContext {
+	widget: IChatWidget;
+	range: IRange;
+	uri: URI;
+}
+
+function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
+	return 'widget' in context && 'range' in context && 'uri' in context;
+}
+
+export class SelectAndInsertFileAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.csSelectAndInsertFile';
+
+	constructor() {
+		super({
+			id: SelectAndInsertFileAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isSelectAndInsertFileActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `file`
+			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
+		};
+
+		const resource = context.uri;
+		if (!resource) {
+			logService.trace('SelectAndInsertFileAction: no resource selected');
+			doCleanup();
+			return;
+		}
+
+		const model = await textModelService.createModelReference(resource);
+		const fileRange = model.object.textEditorModel.getFullModelRange();
+		model.dispose();
+
+		const fileName = basename(resource);
+		const editor = context.widget.inputEditor;
+		const text = `${chatVariableLeader}file:${fileName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		const valueObj = { uri: resource, range: fileRange };
+		const value = JSON.stringify(valueObj);
+		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: [{ level: 'full', value, kind: 'file' }]
+		});
+	}
+}
+registerAction2(SelectAndInsertFileAction);
+
 interface SelectAndInsertCodeActionContext {
 	widget: IChatWidget;
 	range: IRange;
 	pick: ISymbolQuickPickItem;
 }
 
-function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertCodeActionContext {
+function isSelectAndInsertCodeActionContext(context: any): context is SelectAndInsertCodeActionContext {
 	return 'widget' in context && 'range' in context && 'pick' in context;
 }
 
@@ -100,13 +173,13 @@ export class SelectAndInsertCodeAction extends Action2 {
 		const logService = accessor.get(ILogService);
 
 		const context = args[0];
-		if (!isSelectAndInsertFileActionContext(context)) {
+		if (!isSelectAndInsertCodeActionContext(context)) {
 			return;
 		}
 
 		const doCleanup = () => {
-			// Failed, remove the dangling `file`
-			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
+			// Failed, remove the dangling `code`
+			context.widget.inputEditor.executeEdits('chatInsertCode', [{ range: context.range, text: `` }]);
 		};
 
 		const pick = context.pick;
@@ -130,14 +203,16 @@ export class SelectAndInsertCodeAction extends Action2 {
 		const range = context.range;
 		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
 		if (!success) {
-			logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
+			logService.trace(`SelectAndInsertCodeAction: failed to insert "${text}"`);
 			doCleanup();
 			return;
 		}
 
+		const valueObj = { uri: pick.resource, range: selectionRange };
+		const value = JSON.stringify(valueObj);
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: [{ level: 'full', value: text }]
+			data: [{ level: 'full', value, kind: 'code' }]
 		});
 	}
 }
@@ -226,12 +301,11 @@ class ChatAddContext extends EditorAction2 {
 				return;
 			}
 
+			const valueObj = { uri: editorUri, range: selectedRange };
+			const value = JSON.stringify(valueObj);
 			chatWidget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 				range: { ...range, endColumn: range.endColumn + text.length },
-				data: [{
-					level: 'full',
-					value: editorUri
-				}]
+				data: [{ level: 'full', value, kind: 'selection' }]
 			});
 
 			chatWidget.focusInput();

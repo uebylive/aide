@@ -46,7 +46,7 @@ export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockAct
 	return typeof thing === 'object' && thing !== null && 'code' in thing && 'element' in thing;
 }
 
-function isResponseFiltered(context: ICodeBlockActionContext) {
+export function isResponseFiltered(context: ICodeBlockActionContext) {
 	return isResponseVM(context.element) && context.element.errorDetails?.responseIsFiltered;
 }
 
@@ -54,7 +54,7 @@ function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] 
 	return isResponseVM(context.element) ? context.element.usedContext?.documents : undefined;
 }
 
-abstract class ChatCodeBlockAction extends Action2 {
+export abstract class ChatCodeBlockAction extends Action2 {
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		let context = args[0];
 		if (!isCodeBlockActionContext(context)) {

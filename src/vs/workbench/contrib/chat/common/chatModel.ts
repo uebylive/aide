@@ -191,7 +191,7 @@ export class Response implements IResponse {
 }
 
 export class ChatResponseModel extends Disposable implements IChatResponseModel {
-	private readonly _onDidChange = this._register(new Emitter<void>());
+	protected readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
 	private static nextId = 0;
@@ -462,7 +462,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _onDidChange = this._register(new Emitter<IChatChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private _requests: ChatRequestModel[];
+	protected _requests: ChatRequestModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
 

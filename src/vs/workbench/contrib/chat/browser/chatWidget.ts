@@ -13,6 +13,7 @@ import { isEqual } from 'vs/base/common/resources';
 import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
+import 'vs/css!./media/cschat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -189,12 +190,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const renderInputOnTop = this.viewOptions.renderInputOnTop ?? false;
 		const renderStyle = this.viewOptions.renderStyle;
 
-		if (viewId === 'workbench.panel.chat.view.cs-chat') {
-			this.container = dom.append(parent, $('.cschat-session'));
-		} else {
-			this.container = dom.append(parent, $('.interactive-session'));
-		}
-
+		this.container = dom.append(parent, $('.interactive-session'));
 		if (renderInputOnTop) {
 			this.createInput(this.container, { renderFollowups: false, renderStyle });
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));

@@ -68,9 +68,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	readonly onDidAcceptFollowup = this._onDidAcceptFollowup.event;
 
 	private inputEditorHeight = 0;
-	private container!: HTMLElement;
+	protected container!: HTMLElement;
 
-	private followupsContainer!: HTMLElement;
+	protected followupsContainer!: HTMLElement;
 	private followupsDisposables = this._register(new DisposableStore());
 
 	private _inputEditor!: CodeEditorWidget;
@@ -98,14 +98,14 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	constructor(
 		// private readonly editorOptions: ChatEditorOptions, // TODO this should be used
-		private readonly options: { renderFollowups: boolean; renderStyle?: 'default' | 'compact' },
-		@IChatWidgetHistoryService private readonly historyService: IChatWidgetHistoryService,
-		@IModelService private readonly modelService: IModelService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
+		protected readonly options: { renderFollowups: boolean; renderStyle?: 'default' | 'compact' },
+		@IChatWidgetHistoryService protected readonly historyService: IChatWidgetHistoryService,
+		@IModelService protected readonly modelService: IModelService,
+		@IInstantiationService protected readonly instantiationService: IInstantiationService,
+		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
+		@IConfigurationService protected readonly configurationService: IConfigurationService,
+		@IKeybindingService protected readonly keybindingService: IKeybindingService,
+		@IAccessibilityService protected readonly accessibilityService: IAccessibilityService
 	) {
 		super();
 
@@ -121,7 +121,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}));
 	}
 
-	private _getAriaLabel(): string {
+	protected _getAriaLabel(): string {
 		const verbose = this.configurationService.getValue<boolean>(AccessibilityVerbositySettingId.Chat);
 		if (verbose) {
 			const kbLabel = this.keybindingService.lookupKeybinding(AccessibilityCommandId.OpenAccessibilityHelp)?.getLabel();
