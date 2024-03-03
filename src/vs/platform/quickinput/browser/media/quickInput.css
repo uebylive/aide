@@ -8,6 +8,7 @@
 	width: 600px;
 	z-index: 2550;
 	left: 50%;
+	top: 25% !important;
 	margin-left: -300px;
 	-webkit-app-region: no-drag;
 	border-radius: 6px;
