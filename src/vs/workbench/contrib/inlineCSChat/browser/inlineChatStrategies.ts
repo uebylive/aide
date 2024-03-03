@@ -28,11 +28,11 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { SaveReason } from 'vs/workbench/common/editor';
-import { countWords, getNWords } from 'vs/workbench/contrib/csChat/common/csChatWordCounter';
-import { InlineChatFileCreatePreviewWidget, InlineChatLivePreviewWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatLivePreviewWidget';
-import { ReplyResponse, Session } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
-import { InlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
-import { CTX_INLINE_CHAT_DOCUMENT_CHANGED } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { countWords, getNWords } from 'vs/workbench/contrib/chat/common/chatWordCounter';
+import { InlineChatFileCreatePreviewWidget, InlineChatLivePreviewWidget } from 'vs/workbench/contrib/inlineChat/browser/inlineChatLivePreviewWidget';
+import { ReplyResponse, Session } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { InlineChatWidget } from 'vs/workbench/contrib/inlineChat/browser/inlineChatWidget';
+import { CTX_INLINE_CHAT_DOCUMENT_CHANGED } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 
 export abstract class EditModeStrategy {
 
@@ -142,7 +142,7 @@ export class PreviewStrategy extends EditModeStrategy {
 	}
 }
 
-export class InlineDiffDecorations {
+class InlineDiffDecorations {
 
 	private readonly _collection: IEditorDecorationsCollection;
 
@@ -301,6 +301,7 @@ export class LiveStrategy extends EditModeStrategy {
 	}
 
 	override async makeProgressiveChanges(edits: ISingleEditOperation[], opts: ProgressingEditsOptions): Promise<void> {
+
 		// push undo stop before first edit
 		if (++this._editCount === 1) {
 			this._editor.pushUndoStop();
@@ -311,6 +312,7 @@ export class LiveStrategy extends EditModeStrategy {
 			console.log(edit.range.startLineNumber, edit.range.endLineNumber, edit.range.startColumn, edit.range.endColumn, edit.text);
 			const wordCount = countWords(edit.text ?? '');
 			const speed = wordCount / durationInSec;
+			// console.log({ durationInSec, wordCount, speed: wordCount / durationInSec });
 			await performAsyncTextEdit(this._session.textModelN, asProgressiveEdit(edit, speed, opts.token));
 		}
 	}
@@ -503,7 +505,7 @@ export interface AsyncTextEdit {
 	readonly newText: AsyncIterable<string>;
 }
 
-export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdit, cursorStateComputer: ICursorStateComputer = () => null) {
+export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdit) {
 
 	const [id] = model.deltaDecorations([], [{
 		range: edit.range,
@@ -529,7 +531,7 @@ export async function performAsyncTextEdit(model: ITextModel, edit: AsyncTextEdi
 			? EditOperation.replace(range, part) // first edit needs to override the "anchor"
 			: EditOperation.insert(range.getEndPosition(), part);
 
-		model.pushEditOperations(null, [edit], cursorStateComputer);
+		model.pushEditOperations(null, [edit], () => null);
 		first = false;
 	}
 }

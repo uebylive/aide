@@ -8,7 +8,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { ResourceEdit, ResourceFileEdit, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
-import { EditMode, IInlineCSChatSessionProvider, IInlineCSChatSession, IInlineCSChatResponse, IInlineCSChatService, InlineChateResponseTypes, InlineChatResponseType, IInlineCSChatBulkEditResponse, IInlineCSChatEditResponse, IInlineCSChatMessageResponse } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { EditMode, IInlineChatSessionProvider, IInlineChatSession, IInlineChatBulkEditResponse, IInlineChatEditResponse, IInlineChatMessageResponse, IInlineChatResponse, IInlineChatService, InlineChatResponseType, InlineChateResponseTypes } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IActiveCodeEditor, ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -35,8 +35,8 @@ import { isEqual } from 'vs/base/common/resources';
 
 export type Recording = {
 	when: Date;
-	session: IInlineCSChatSession;
-	exchanges: { prompt: string; res: IInlineCSChatResponse }[];
+	session: IInlineChatSession;
+	exchanges: { prompt: string; res: IInlineChatResponse }[];
 };
 
 type TelemetryData = {
@@ -131,8 +131,8 @@ export class Session {
 		readonly editor: ICodeEditor,
 		readonly textModel0: ITextModel,
 		readonly textModelN: ITextModel,
-		readonly provider: IInlineCSChatSessionProvider,
-		readonly session: IInlineCSChatSession,
+		readonly provider: IInlineChatSessionProvider,
+		readonly session: IInlineChatSession,
 		readonly wholeRange: SessionWholeRange
 	) {
 		this.textModelNAltVersion = textModelN.getAlternativeVersionId();
@@ -293,7 +293,7 @@ export class ReplyResponse {
 	readonly responseType: InlineChateResponseTypes;
 
 	constructor(
-		readonly raw: IInlineCSChatBulkEditResponse | IInlineCSChatEditResponse | IInlineCSChatMessageResponse,
+		readonly raw: IInlineChatBulkEditResponse | IInlineChatEditResponse | IInlineChatMessageResponse,
 		readonly mdContent: IMarkdownString,
 		localUri: URI,
 		readonly modelAltVersionId: number,
@@ -310,6 +310,7 @@ export class ReplyResponse {
 		if (raw.type === InlineChatResponseType.EditorEdit) {
 			//
 			editsMap.get(localUri)!.push(raw.edits);
+
 
 		} else if (raw.type === InlineChatResponseType.BulkEdit) {
 			//
@@ -382,7 +383,7 @@ export interface ISessionKeyComputer {
 	getComparisonKey(editor: ICodeEditor, uri: URI): string;
 }
 
-export const IInlineChatSessionService = createDecorator<IInlineChatSessionService>('IInlineCSChatSessionService');
+export const IInlineChatSessionService = createDecorator<IInlineChatSessionService>('IInlineChatSessionService');
 
 export interface IInlineChatSessionService {
 	_serviceBrand: undefined;
@@ -426,7 +427,7 @@ export class InlineChatSessionService implements IInlineChatSessionService {
 	private _recordings: Recording[] = [];
 
 	constructor(
-		@IInlineCSChatService private readonly _inlineChatService: IInlineCSChatService,
+		@IInlineChatService private readonly _inlineChatService: IInlineChatService,
 		@ITelemetryService private readonly _telemetryService: ITelemetryService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
@@ -452,7 +453,7 @@ export class InlineChatSessionService implements IInlineChatSessionService {
 
 		const textModel = editor.getModel();
 		const selection = editor.getSelection();
-		let raw: IInlineCSChatSession | undefined | null;
+		let raw: IInlineChatSession | undefined | null;
 		try {
 			raw = await raceCancellation(
 				Promise.resolve(provider.prepareInlineChatSession(textModel, selection, token)),

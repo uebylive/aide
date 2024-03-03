@@ -24,12 +24,12 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { IDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { EmptyResponse, ErrorResponse, ExpansionState, IInlineChatSessionService, ReplyResponse, Session, SessionExchange, SessionPrompt } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
-import { EditModeStrategy, LivePreviewStrategy, LiveStrategy, PreviewStrategy, ProgressingEditsOptions } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatStrategies';
-import { IInlineChatMessageAppender, InlineChatWidget, InlineChatZoneWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatWidget';
-import { CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_LAST_FEEDBACK, IInlineCSChatRequest, IInlineCSChatResponse, INLINE_CHAT_ID, EditMode, InlineCSChatResponseFeedbackKind, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, InlineChatResponseType, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, InlineChateResponseTypes, CTX_INLINE_CHAT_RESPONSE_TYPES, CTX_INLINE_CHAT_USER_DID_EDIT, IInlineCSChatProgressItem, CTX_INLINE_CHAT_SUPPORT_ISSUE_REPORTING } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
-import { ICSChatAccessibilityService, ICSChatWidgetService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { ICSChatService } from 'vs/workbench/contrib/csChat/common/csChatService';
+import { ReplyResponse, EmptyResponse, ErrorResponse, ExpansionState, IInlineChatSessionService, Session, SessionExchange, SessionPrompt } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { EditModeStrategy, LivePreviewStrategy, LiveStrategy, PreviewStrategy, ProgressingEditsOptions } from 'vs/workbench/contrib/inlineChat/browser/inlineChatStrategies';
+import { IInlineChatMessageAppender, InlineChatZoneWidget } from 'vs/workbench/contrib/inlineChat/browser/inlineChatWidget';
+import { CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_LAST_FEEDBACK, IInlineChatRequest, IInlineChatResponse, INLINE_CHAT_ID, EditMode, InlineChatResponseFeedbackKind, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, InlineChatResponseType, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, InlineChateResponseTypes, CTX_INLINE_CHAT_RESPONSE_TYPES, CTX_INLINE_CHAT_USER_DID_EDIT, IInlineChatProgressItem, CTX_INLINE_CHAT_SUPPORT_ISSUE_REPORTING } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { IChatAccessibilityService, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
+import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { Lazy } from 'vs/base/common/lazy';
 import { Progress } from 'vs/platform/progress/common/progress';
@@ -41,11 +41,9 @@ import { MarkdownString } from 'vs/base/common/htmlContent';
 import { MovingAverage } from 'vs/base/common/numbers';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IModelDeltaDecoration } from 'vs/editor/common/model';
-import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/csChat/common/csChatParserTypes';
+import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { renderMarkdownAsPlaintext } from 'vs/base/browser/markdownRenderer';
-import { IInlineCSChatVariablesService } from 'vs/workbench/contrib/csChat/common/csChatVariables';
-import { InlineCSChatRequestParser } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChatRequestParser';
 import { IBulkEditService } from 'vs/editor/browser/services/bulkEditService';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 
@@ -148,11 +146,10 @@ export class InlineChatController implements IEditorContribution {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IAccessibilityService private readonly _accessibilityService: IAccessibilityService,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
-		@ICSChatAccessibilityService private readonly _chatAccessibilityService: ICSChatAccessibilityService,
-		@ICSChatAgentService private readonly _chatAgentService: ICSChatAgentService,
+		@IChatAccessibilityService private readonly _chatAccessibilityService: IChatAccessibilityService,
+		@IChatAgentService private readonly _chatAgentService: IChatAgentService,
 		@IBulkEditService private readonly _bulkEditService: IBulkEditService,
 		@IStorageService private readonly _storageService: IStorageService,
-		@IInlineCSChatVariablesService private readonly chatVariablesService: IInlineCSChatVariablesService,
 	) {
 		this._ctxHasActiveRequest = CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST.bindTo(contextKeyService);
 		this._ctxDidEdit = CTX_INLINE_CHAT_DID_EDIT.bindTo(contextKeyService);
@@ -225,10 +222,6 @@ export class InlineChatController implements IEditorContribution {
 			editModeValue = EditMode.Preview;
 		}
 		return editModeValue!;
-	}
-
-	getWidget(): InlineChatWidget {
-		return this._zone.value.widget;
 	}
 
 	getWidgetPosition(): Position | undefined {
@@ -564,6 +557,7 @@ export class InlineChatController implements IEditorContribution {
 
 		const input = this.getInput();
 
+
 		this._historyUpdate(input);
 
 		const refer = this._activeSession.session.slashCommands?.some(value => value.refer && input!.startsWith(`/${value.command}`));
@@ -603,9 +597,6 @@ export class InlineChatController implements IEditorContribution {
 		assertType(this._strategy);
 		assertType(this._activeSession.lastInput);
 
-		const inlineCSChatWidget = this._zone.value.widget;
-		const slashCommands = inlineCSChatWidget.getSlashCommands();
-
 		const requestCts = new CancellationTokenSource();
 
 		let message = Message.NONE;
@@ -618,22 +609,14 @@ export class InlineChatController implements IEditorContribution {
 		const typeListener = this._zone.value.widget.onDidChangeInput(() => requestCts.cancel());
 
 		const requestClock = StopWatch.create();
-		const request: IInlineCSChatRequest = {
+		const request: IInlineChatRequest = {
 			requestId: generateUuid(),
 			prompt: this._activeSession.lastInput.value,
 			attempt: this._activeSession.lastInput.attempt,
 			selection: this._editor.getSelection(),
 			wholeRange: this._activeSession.wholeRange.value,
-			live: this._activeSession.editMode !== EditMode.Preview, // TODO@jrieken let extension know what document is used for previewing
-			variables: {}
+			live: this._activeSession.editMode !== EditMode.Preview // TODO@jrieken let extension know what document is used for previewing
 		};
-
-		const parsedRequest = await this._instaService.createInstance(InlineCSChatRequestParser).parseChatRequest('', this._activeSession.lastInput.value, slashCommands);
-		if ('parts' in parsedRequest) {
-			const varResult = await this.chatVariablesService.resolveVariables(parsedRequest, requestCts.token);
-			request.variables = varResult.variables;
-			request.prompt = varResult.prompt;
-		}
 
 		const modelAltVersionIdNow = this._activeSession.textModelN.getAlternativeVersionId();
 		const progressEdits: TextEdit[][] = [];
@@ -645,7 +628,7 @@ export class InlineChatController implements IEditorContribution {
 
 		let progressiveChatResponse: IInlineChatMessageAppender | undefined;
 
-		const progress = new Progress<IInlineCSChatProgressItem>(data => {
+		const progress = new Progress<IInlineChatProgressItem>(data => {
 			this._log('received chunk', data, request);
 
 			if (requestCts.token.isCancellationRequested) {
@@ -711,7 +694,7 @@ export class InlineChatController implements IEditorContribution {
 		this._log('request started', this._activeSession.provider.debugName, this._activeSession.session, request);
 
 		let response: ReplyResponse | ErrorResponse | EmptyResponse;
-		let reply: IInlineCSChatResponse | null | undefined;
+		let reply: IInlineChatResponse | null | undefined;
 		try {
 			this._zone.value.widget.updateChatMessage(undefined);
 			this._zone.value.widget.updateMarkdownMessage(undefined);
@@ -1034,14 +1017,14 @@ export class InlineChatController implements IEditorContribution {
 		}
 	}
 
-	feedbackLast(kind: InlineCSChatResponseFeedbackKind) {
+	feedbackLast(kind: InlineChatResponseFeedbackKind) {
 		if (this._activeSession?.lastExchange && this._activeSession.lastExchange.response instanceof ReplyResponse) {
 			this._activeSession.provider.handleInlineChatResponseFeedback?.(this._activeSession.session, this._activeSession.lastExchange.response.raw, kind);
 			switch (kind) {
-				case InlineCSChatResponseFeedbackKind.Helpful:
+				case InlineChatResponseFeedbackKind.Helpful:
 					this._ctxLastFeedbackKind.set('helpful');
 					break;
-				case InlineCSChatResponseFeedbackKind.Unhelpful:
+				case InlineChatResponseFeedbackKind.Unhelpful:
 					this._ctxLastFeedbackKind.set('unhelpful');
 					break;
 				default:
@@ -1059,7 +1042,7 @@ export class InlineChatController implements IEditorContribution {
 
 	acceptSession(): void {
 		if (this._activeSession?.lastExchange && this._activeSession.lastExchange.response instanceof ReplyResponse) {
-			this._activeSession.provider.handleInlineChatResponseFeedback?.(this._activeSession.session, this._activeSession.lastExchange.response.raw, InlineCSChatResponseFeedbackKind.Accepted);
+			this._activeSession.provider.handleInlineChatResponseFeedback?.(this._activeSession.session, this._activeSession.lastExchange.response.raw, InlineChatResponseFeedbackKind.Accepted);
 		}
 		this._messages.fire(Message.ACCEPT_SESSION);
 	}
@@ -1073,7 +1056,7 @@ export class InlineChatController implements IEditorContribution {
 			result = this._activeSession.asChangedText(diff?.changes ?? []);
 
 			if (this._activeSession.lastExchange && this._activeSession.lastExchange.response instanceof ReplyResponse) {
-				this._activeSession.provider.handleInlineChatResponseFeedback?.(this._activeSession.session, this._activeSession.lastExchange.response.raw, InlineCSChatResponseFeedbackKind.Undone);
+				this._activeSession.provider.handleInlineChatResponseFeedback?.(this._activeSession.session, this._activeSession.lastExchange.response.raw, InlineChatResponseFeedbackKind.Undone);
 			}
 		}
 
@@ -1147,10 +1130,10 @@ class StashedSession {
 }
 
 async function showMessageResponse(accessor: ServicesAccessor, query: string, response: string) {
-	const chatService = accessor.get(ICSChatService);
+	const chatService = accessor.get(IChatService);
 	const providerId = chatService.getProviderInfos()[0]?.id;
 
-	const chatWidgetService = accessor.get(ICSChatWidgetService);
+	const chatWidgetService = accessor.get(IChatWidgetService);
 	const widget = await chatWidgetService.revealViewForProvider(providerId);
 	if (widget && widget.viewModel) {
 		chatService.addCompleteRequest(widget.viewModel.sessionId, query, { message: response });
@@ -1159,8 +1142,8 @@ async function showMessageResponse(accessor: ServicesAccessor, query: string, re
 }
 
 async function sendRequest(accessor: ServicesAccessor, query: string) {
-	const chatService = accessor.get(ICSChatService);
-	const widgetService = accessor.get(ICSChatWidgetService);
+	const chatService = accessor.get(IChatService);
+	const widgetService = accessor.get(IChatWidgetService);
 
 	const providerId = chatService.getProviderInfos()[0]?.id;
 	const widget = await widgetService.revealViewForProvider(providerId);

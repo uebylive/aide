@@ -4,13 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Codicon } from 'vs/base/common/codicons';
-import { KeyChord, KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
 import { EmbeddedCodeEditorWidget, EmbeddedDiffEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import { InlineChatController, InlineChatRunOptions } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
-import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_HAS_PROVIDER, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_DISCARD, MENU_INLINE_CHAT_WIDGET_STATUS, CTX_INLINE_CHAT_LAST_FEEDBACK, CTX_INLINE_CHAT_EDIT_MODE, EditMode, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, CTX_INLINE_CHAT_DOCUMENT_CHANGED, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_ACCEPT_CHANGES, ACTION_REGENERATE_RESPONSE, InlineChatResponseType, CTX_INLINE_CHAT_RESPONSE_TYPES, InlineChateResponseTypes, ACTION_VIEW_IN_CHAT, CTX_INLINE_CHAT_USER_DID_EDIT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END, CTX_INLINE_CHAT_RESPONSE_FOCUSED, InlineCSChatResponseFeedbackKind, CTX_INLINE_CHAT_SUPPORT_ISSUE_REPORTING, CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { InlineChatController, InlineChatRunOptions } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
+import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST, CTX_INLINE_CHAT_HAS_PROVIDER, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_DISCARD, MENU_INLINE_CHAT_WIDGET_STATUS, CTX_INLINE_CHAT_LAST_FEEDBACK, CTX_INLINE_CHAT_EDIT_MODE, EditMode, CTX_INLINE_CHAT_LAST_RESPONSE_TYPE, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, CTX_INLINE_CHAT_DOCUMENT_CHANGED, CTX_INLINE_CHAT_DID_EDIT, CTX_INLINE_CHAT_HAS_STASHED_SESSION, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_ACCEPT_CHANGES, ACTION_REGENERATE_RESPONSE, InlineChatResponseType, CTX_INLINE_CHAT_RESPONSE_TYPES, InlineChateResponseTypes, ACTION_VIEW_IN_CHAT, CTX_INLINE_CHAT_USER_DID_EDIT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END, CTX_INLINE_CHAT_RESPONSE_FOCUSED, CTX_INLINE_CHAT_SUPPORT_ISSUE_REPORTING, InlineChatResponseFeedbackKind, CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { localize } from 'vs/nls';
 import { IAction2Options, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
@@ -22,8 +22,8 @@ import { IEditorService, SIDE_GROUP } from 'vs/workbench/services/editor/common/
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { fromNow } from 'vs/base/common/date';
-import { IInlineChatSessionService, Recording } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
-import { runAccessibilityHelpAction } from 'vs/workbench/contrib/csChat/browser/actions/csChatAccessibilityHelp';
+import { IInlineChatSessionService, Recording } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { runAccessibilityHelpAction } from 'vs/workbench/contrib/chat/browser/actions/chatAccessibilityHelp';
 import { CONTEXT_ACCESSIBILITY_MODE_ENABLED } from 'vs/platform/accessibility/common/accessibility';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
@@ -31,7 +31,7 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 import { AccessibilityHelpAction } from 'vs/workbench/contrib/accessibility/browser/accessibleViewActions';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 
-CommandsRegistry.registerCommandAlias('csChatEditor.start', 'inlineCSChat.start');
+CommandsRegistry.registerCommandAlias('interactiveEditor.start', 'inlineChat.start');
 export const LOCALIZED_START_INLINE_CHAT_STRING = localize('run', 'Start Inline Chat');
 const START_INLINE_CHAT = registerIcon('start-inline-chat', Codicon.sparkle, localize('startInlineChat', 'Icon which spawns the inline chat from the editor toolbar.'));
 
@@ -39,16 +39,11 @@ export class StartSessionAction extends EditorAction2 {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.start',
+			id: 'inlineChat.start',
 			title: { value: LOCALIZED_START_INLINE_CHAT_STRING, original: 'Start Inline Chat' },
 			category: AbstractInlineChatAction.category,
 			f1: true,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_HAS_PROVIDER, CTX_INLINE_CHAT_VISIBLE.toNegated(), EditorContextKeys.focus),
-			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
-				secondary: [KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyCode.KeyI)],
-			},
 			icon: START_INLINE_CHAT,
 			menu: [{
 				id: MenuId.EditorTitle,
@@ -61,7 +56,7 @@ export class StartSessionAction extends EditorAction2 {
 
 
 	override runEditorCommand(_accessor: ServicesAccessor, editor: ICodeEditor, ..._args: any[]) {
-		console.log('Run inline csChat');
+		console.log('Run inline chat');
 		let options: InlineChatRunOptions | undefined;
 		const arg = _args[0];
 		if (arg && InlineChatRunOptions.isInteractiveEditorOptions(arg)) {
@@ -137,7 +132,7 @@ export class MakeRequestAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.accept',
+			id: 'inlineChat.accept',
 			title: localize('accept', 'Make Request'),
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_EMPTY.negate()),
@@ -187,7 +182,7 @@ export class StopRequestAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.stop',
+			id: 'inlineChat.stop',
 			title: localize('stop', 'Stop Request'),
 			icon: Codicon.debugStop,
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_EMPTY.negate(), CTX_INLINE_CHAT_HAS_ACTIVE_REQUEST),
@@ -212,7 +207,7 @@ export class StopRequestAction extends AbstractInlineChatAction {
 export class ArrowOutUpAction extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineCSChat.arrowOutUp',
+			id: 'inlineChat.arrowOutUp',
 			title: localize('arrowUp', 'Cursor Up'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
@@ -230,7 +225,7 @@ export class ArrowOutUpAction extends AbstractInlineChatAction {
 export class ArrowOutDownAction extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineCSChat.arrowOutDown',
+			id: 'inlineChat.arrowOutDown',
 			title: localize('arrowDown', 'Cursor Down'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_LAST, EditorContextKeys.isEmbeddedDiffEditor.negate(), CONTEXT_ACCESSIBILITY_MODE_ENABLED.negate()),
 			keybinding: {
@@ -249,7 +244,7 @@ export class FocusInlineChat extends EditorAction2 {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.focus',
+			id: 'inlineChat.focus',
 			title: { value: localize('focus', 'Focus Input'), original: 'Focus Input' },
 			f1: true,
 			category: AbstractInlineChatAction.category,
@@ -275,7 +270,7 @@ export class PreviousFromHistory extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.previousFromHistory',
+			id: 'inlineChat.previousFromHistory',
 			title: localize('previousFromHistory', 'Previous From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_START),
 			keybinding: {
@@ -294,7 +289,7 @@ export class NextFromHistory extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.nextFromHistory',
+			id: 'inlineChat.nextFromHistory',
 			title: localize('nextFromHistory', 'Next From History'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_INNER_CURSOR_END),
 			keybinding: {
@@ -324,7 +319,7 @@ export class DiscardAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.discard',
+			id: 'inlineChat.discard',
 			title: localize('discard', 'Discard'),
 			icon: Codicon.discard,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -350,7 +345,7 @@ export class DiscardToClipboardAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.discardToClipboard',
+			id: 'inlineChat.discardToClipboard',
 			title: localize('undo.clipboard', 'Discard to Clipboard'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_DID_EDIT),
 			// keybinding: {
@@ -379,7 +374,7 @@ export class DiscardUndoToNewFileAction extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.discardToFile',
+			id: 'inlineChat.discardToFile',
 			title: localize('undo.newfile', 'Discard to New File'),
 			precondition: ContextKeyExpr.and(CTX_INLINE_CHAT_VISIBLE, CTX_INLINE_CHAT_DID_EDIT),
 			menu: {
@@ -403,7 +398,7 @@ export class DiscardUndoToNewFileAction extends AbstractInlineChatAction {
 export class FeebackHelpfulCommand extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineCSChat.feedbackHelpful',
+			id: 'inlineChat.feedbackHelpful',
 			title: localize('feedback.helpful', 'Helpful'),
 			icon: Codicon.thumbsup,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -418,14 +413,14 @@ export class FeebackHelpfulCommand extends AbstractInlineChatAction {
 	}
 
 	override runInlineChatCommand(_accessor: ServicesAccessor, ctrl: InlineChatController): void {
-		ctrl.feedbackLast(InlineCSChatResponseFeedbackKind.Helpful);
+		ctrl.feedbackLast(InlineChatResponseFeedbackKind.Helpful);
 	}
 }
 
 export class FeebackUnhelpfulCommand extends AbstractInlineChatAction {
 	constructor() {
 		super({
-			id: 'inlineCSChat.feedbackunhelpful',
+			id: 'inlineChat.feedbackunhelpful',
 			title: localize('feedback.unhelpful', 'Unhelpful'),
 			icon: Codicon.thumbsdown,
 			precondition: CTX_INLINE_CHAT_VISIBLE,
@@ -440,7 +435,7 @@ export class FeebackUnhelpfulCommand extends AbstractInlineChatAction {
 	}
 
 	override runInlineChatCommand(_accessor: ServicesAccessor, ctrl: InlineChatController): void {
-		ctrl.feedbackLast(InlineCSChatResponseFeedbackKind.Unhelpful);
+		ctrl.feedbackLast(InlineChatResponseFeedbackKind.Unhelpful);
 	}
 }
 
@@ -461,7 +456,7 @@ export class ReportIssueForBugCommand extends AbstractInlineChatAction {
 	}
 
 	override runInlineChatCommand(_accessor: ServicesAccessor, ctrl: InlineChatController): void {
-		ctrl.feedbackLast(InlineCSChatResponseFeedbackKind.Bug);
+		ctrl.feedbackLast(InlineChatResponseFeedbackKind.Bug);
 	}
 }
 
@@ -469,7 +464,7 @@ export class ToggleInlineDiff extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineCSChat.toggleDiff',
+			id: 'inlineChat.toggleDiff',
 			title: {
 				original: 'Show Diff',
 				value: localize('showDiff', 'Show Diff'),

@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./inlineCSChat';
-import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import 'vs/css!./inlineChat';
+import { DisposableStore, MutableDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IActiveCodeEditor, ICodeEditor, IDiffEditorConstructionOptions } from 'vs/editor/browser/editorBrowser';
 import { EditorLayoutInfo, EditorOption } from 'vs/editor/common/config/editorOptions';
 import { IRange, Range } from 'vs/editor/common/core/range';
@@ -12,7 +12,7 @@ import { localize } from 'vs/nls';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ZoneWidget } from 'vs/editor/contrib/zoneWidget/browser/zoneWidget';
-import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_STATUS, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, IInlineCSChatSlashCommand, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_REGENERATE_RESPONSE, ACTION_VIEW_IN_CHAT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END, CTX_INLINE_CHAT_RESPONSE_FOCUSED } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { CTX_INLINE_CHAT_FOCUSED, CTX_INLINE_CHAT_EMPTY, CTX_INLINE_CHAT_OUTER_CURSOR_POSITION, CTX_INLINE_CHAT_VISIBLE, MENU_INLINE_CHAT_WIDGET, MENU_INLINE_CHAT_WIDGET_STATUS, MENU_INLINE_CHAT_WIDGET_MARKDOWN_MESSAGE, CTX_INLINE_CHAT_MESSAGE_CROP_STATE, IInlineChatSlashCommand, MENU_INLINE_CHAT_WIDGET_FEEDBACK, ACTION_REGENERATE_RESPONSE, ACTION_VIEW_IN_CHAT, MENU_INLINE_CHAT_WIDGET_TOGGLE, CTX_INLINE_CHAT_INNER_CURSOR_FIRST, CTX_INLINE_CHAT_INNER_CURSOR_LAST, CTX_INLINE_CHAT_INNER_CURSOR_START, CTX_INLINE_CHAT_INNER_CURSOR_END, CTX_INLINE_CHAT_RESPONSE_FOCUSED } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { EventType, Dimension, addDisposableListener, getActiveElement, getTotalHeight, getTotalWidth, h, reset, getWindow } from 'vs/base/browser/dom';
 import { Emitter, Event, MicrotaskEmitter } from 'vs/base/common/event';
@@ -36,7 +36,7 @@ import { FileKind } from 'vs/platform/files/common/files';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { LanguageSelector } from 'vs/editor/common/languageSelector';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
-import { invertLineRange, lineRangeAsRange } from 'vs/workbench/contrib/inlineCSChat/browser/utils';
+import { invertLineRange, lineRangeAsRange } from 'vs/workbench/contrib/inlineChat/browser/utils';
 import { ICodeEditorViewState, ScrollType } from 'vs/editor/common/editorCommon';
 import { LineRange } from 'vs/editor/common/core/lineRange';
 import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
@@ -44,35 +44,32 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { renderLabelWithIcons } from 'vs/base/browser/ui/iconLabel/iconLabels';
-import { ExpansionState } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
+import { ExpansionState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import * as aria from 'vs/base/browser/ui/aria/aria';
 import { IMenuWorkbenchButtonBarOptions, MenuWorkbenchButtonBar } from 'vs/platform/actions/browser/buttonbar';
-import { SlashCommandContentWidget } from 'vs/workbench/contrib/csChat/browser/csChatSlashCommandContentWidget';
+import { SlashCommandContentWidget } from 'vs/workbench/contrib/chat/browser/chatSlashCommandContentWidget';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IAccessibleViewService } from 'vs/workbench/contrib/accessibility/browser/accessibleView';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { assertType, isDefined } from 'vs/base/common/types';
+import { assertType } from 'vs/base/common/types';
 import { renderFormattedText } from 'vs/base/browser/formattedTextRenderer';
 import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
 import { MarkdownRenderer } from 'vs/editor/contrib/markdownRenderer/browser/markdownRenderer';
-import { ChatEditorOptions } from 'vs/workbench/contrib/csChat/browser/csChatOptions';
+import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { editorForeground, inputBackground, editorBackground } from 'vs/platform/theme/common/colorRegistry';
-import { CodeBlockPart } from 'vs/workbench/contrib/csChat/browser/codeBlockPart';
+import { CodeBlockPart } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { Lazy } from 'vs/base/common/lazy';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
-import { IInlineChatWidget } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChat';
-import { ChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { ChatModel, ChatResponseModel } from 'vs/workbench/contrib/csChat/common/csChatModel';
+import { ChatResponseViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ChatModel, ChatResponseModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/csChat/browser/csChatListRenderer';
+import { ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer'; import { IUntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IUntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
-import { ICSChatReplyFollowup } from 'vs/workbench/contrib/csChat/common/csChatService';
-import { ICSChatAgentService } from 'vs/workbench/contrib/csChat/common/csChatAgents';
-import { ChatFollowups } from 'vs/workbench/contrib/csChat/browser/csChatFollowups';
-import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
+import { IChatReplyFollowup } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
 
 const defaultAriaLabel = localize('aria-label', "Inline Chat Input");
 
@@ -158,20 +155,13 @@ export interface IInlineChatMessageAppender {
 	complete(): void;
 }
 
-export interface IInlineChatWidgetContrib extends IDisposable {
-	readonly id: string;
-}
+export class InlineChatWidget {
 
-export class InlineChatWidget implements IInlineChatWidget {
-	public static readonly CONTRIBS: { new(...args: [IInlineChatWidget, ...any]): IInlineChatWidgetContrib }[] = [];
-
-	static readonly INPUT_SCHEME = 'inlineCSChatSessionInput';
 	private static _modelPool: number = 1;
 
 	private readonly _elements = h(
-		'div.inline-cschat@root',
+		'div.inline-chat@root',
 		[
-			h('span.header@modelHeader'),
 			h('div.body', [
 				h('div.content@content', [
 					h('div.input@input', [
@@ -225,8 +215,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 	private readonly _previewCreateEditor: Lazy<ICodeEditor>;
 	private readonly _previewCreateDispoable = this._store.add(new MutableDisposable());
 
-	private readonly _onDidFocus = this._store.add(new Emitter<void>());
-	readonly onDidFocus: Event<void> = this._onDidFocus.event;
 
 	private readonly _onDidChangeHeight = this._store.add(new MicrotaskEmitter<void>());
 	readonly onDidChangeHeight: Event<void> = Event.filter(this._onDidChangeHeight.event, _ => !this._isLayouting);
@@ -249,8 +237,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 	private _chatMessageDisposables = this._store.add(new DisposableStore());
 	private _followUpDisposables = this._store.add(new DisposableStore());
 
-	private contribs: IInlineChatWidgetContrib[] = [];
-
 	constructor(
 		private readonly parentEditor: ICodeEditor,
 		_options: IInlineChatWidgetConstructionOptions,
@@ -266,8 +252,7 @@ export class InlineChatWidget implements IInlineChatWidget {
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@ILogService private readonly _logService: ILogService,
 		@ITextModelService private readonly _textModelResolverService: ITextModelService,
-		@ICSChatAgentService private readonly _chatAgentService: ICSChatAgentService,
-		@IAIModelSelectionService private readonly _aiModelSelectionService: IAIModelSelectionService,
+		@IChatAgentService private readonly _chatAgentService: IChatAgentService,
 	) {
 
 		// input editor logic
@@ -294,20 +279,13 @@ export class InlineChatWidget implements IInlineChatWidget {
 			}
 		}));
 
-		const uri = URI.from({ scheme: InlineChatWidget.INPUT_SCHEME, authority: 'inline-cschat', path: `/inline-cschat/model${InlineChatWidget._modelPool++}.txt` });
+		const uri = URI.from({ scheme: 'vscode', authority: 'inline-chat', path: `/inline-chat/model${InlineChatWidget._modelPool++}.txt` });
 		this._inputModel = this._store.add(this._modelService.getModel(uri) ?? this._modelService.createModel('', null, uri));
 		this._inputEditor.setModel(this._inputModel);
 
 		this._markdownRenderer = this._store.add(_instantiationService.createInstance(MarkdownRenderer, {}));
 		this._editorOptions = this._store.add(_instantiationService.createInstance(ChatEditorOptions, undefined, editorForeground, inputBackground, editorBackground));
 
-		this.contribs = InlineChatWidget.CONTRIBS.map(contrib => {
-			try {
-				return this._store.add(this._instantiationService.createInstance(contrib, this));
-			} catch (err) {
-				return undefined;
-			}
-		}).filter(isDefined);
 
 		// --- context keys
 
@@ -320,9 +298,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 		this._ctxInnerCursorEnd = CTX_INLINE_CHAT_INNER_CURSOR_END.bindTo(this._contextKeyService);
 		this._ctxInputEditorFocused = CTX_INLINE_CHAT_FOCUSED.bindTo(this._contextKeyService);
 		this._ctxResponseFocused = CTX_INLINE_CHAT_RESPONSE_FOCUSED.bindTo(this._contextKeyService);
-
-		this._elements.modelHeader.style.display = 'none';
-		this._store.add(this._aiModelSelectionService.onDidChangeModelSelection(() => this.renderModelName()));
 
 		// (1) inner cursor position (last/first line selected)
 		const updateInnerCursorFirstLast = () => {
@@ -356,7 +331,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 			this._ctxInputEditorFocused.set(hasFocus);
 			this._elements.content.classList.toggle('synthetic-focus', hasFocus);
 			this.readPlaceholder();
-			this._onDidFocus.fire();
 		};
 		this._store.add(this._inputEditor.onDidFocusEditorWidget(updateFocused));
 		this._store.add(this._inputEditor.onDidBlurEditorWidget(updateFocused));
@@ -499,14 +473,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 
 	get domNode(): HTMLElement {
 		return this._elements.root;
-	}
-
-	get inputEditor(): ICodeEditor {
-		return this._inputEditor;
-	}
-
-	getContrib<T extends IInlineChatWidgetContrib>(id: string): T | undefined {
-		return this.contribs.find(c => c.id === id) as T;
 	}
 
 	layout(dim: Dimension) {
@@ -653,9 +619,9 @@ export class InlineChatWidget implements IInlineChatWidget {
 		}
 	}
 
-	updateFollowUps(items: ICSChatReplyFollowup[], onFollowup: (followup: ICSChatReplyFollowup) => void): void;
+	updateFollowUps(items: IChatReplyFollowup[], onFollowup: (followup: IChatReplyFollowup) => void): void;
 	updateFollowUps(items: undefined): void;
-	updateFollowUps(items: ICSChatReplyFollowup[] | undefined, onFollowup?: ((followup: ICSChatReplyFollowup) => void)) {
+	updateFollowUps(items: IChatReplyFollowup[] | undefined, onFollowup?: ((followup: IChatReplyFollowup) => void)) {
 		this._followUpDisposables.clear();
 		this._elements.followUps.classList.toggle('hidden', !items || items.length === 0);
 		reset(this._elements.followUps);
@@ -729,7 +695,7 @@ export class InlineChatWidget implements IInlineChatWidget {
 		}
 
 		this._elements.infoLabel.classList.toggle('hidden', false);
-		const label = localize('slashCommandUsed', "Using {0} skill ...", `\`\`/${details.command}\`\``);
+		const label = localize('slashCommandUsed', "Using {0} to generate response...", `\`\`/${details.command}\`\``);
 
 		const e = renderFormattedText(label, { inline: true, renderCodeSegments: true, className: 'slash-command-pill' });
 		reset(this._elements.infoLabel, e);
@@ -876,11 +842,7 @@ export class InlineChatWidget implements IInlineChatWidget {
 
 	// --- slash commands
 
-	getSlashCommands(): IInlineCSChatSlashCommand[] {
-		return this._slashCommandDetails.map(c => { return { command: c.command, detail: c.detail }; });
-	}
-
-	updateSlashCommands(commands: IInlineCSChatSlashCommand[]) {
+	updateSlashCommands(commands: IInlineChatSlashCommand[]) {
 
 		this._slashCommands.clear();
 
@@ -911,7 +873,7 @@ export class InlineChatWidget implements IInlineChatWidget {
 						insertTextRules: CompletionItemInsertTextRule.InsertAsSnippet,
 						kind: CompletionItemKind.Text,
 						range: new Range(1, 1, 1, 1),
-						command: command.executeImmediately ? { id: 'inlineCSChat.accept', title: withSlash } : undefined
+						command: command.executeImmediately ? { id: 'inlineChat.accept', title: withSlash } : undefined
 					};
 				});
 
@@ -966,16 +928,6 @@ export class InlineChatWidget implements IInlineChatWidget {
 		this._slashCommands.add(this._inputEditor.onDidChangeModelContent(updateSlashDecorations));
 		updateSlashDecorations();
 	}
-
-	async renderModelName(): Promise<void> {
-		const modelSelectionSettings = await this._aiModelSelectionService.getValidatedModelSelectionSettings();
-		if (modelSelectionSettings) {
-			this._elements.modelHeader.innerText = modelSelectionSettings.models[modelSelectionSettings.fastModel].name;
-			this._elements.modelHeader.style.display = 'block';
-		} else {
-			this._elements.modelHeader.style.display = 'none';
-		}
-	}
 }
 
 export class InlineChatZoneWidget extends ZoneWidget {
@@ -987,15 +939,12 @@ export class InlineChatZoneWidget extends ZoneWidget {
 	private _dimension?: Dimension;
 	private _indentationWidth: number | undefined;
 
-	private readonly _onDidFocus = this._disposables.add(new Emitter<void>());
-	readonly onDidFocus: Event<void> = this._onDidFocus.event;
-
 	constructor(
 		editor: ICodeEditor,
 		@IInstantiationService private readonly _instaService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
-		super(editor, { showFrame: false, showArrow: false, isAccessible: true, className: 'inline-cschat-widget', keepEditorSelection: true, showInHiddenAreas: true, ordinal: 10000 });
+		super(editor, { showFrame: false, showArrow: false, isAccessible: true, className: 'inline-chat-widget', keepEditorSelection: true, showInHiddenAreas: true, ordinal: 10000 });
 
 		this._ctxVisible = CTX_INLINE_CHAT_VISIBLE.bindTo(contextKeyService);
 		this._ctxCursorPosition = CTX_INLINE_CHAT_OUTER_CURSOR_POSITION.bindTo(contextKeyService);
@@ -1011,7 +960,6 @@ export class InlineChatZoneWidget extends ZoneWidget {
 			feedbackMenuId: MENU_INLINE_CHAT_WIDGET_FEEDBACK
 		});
 		this._disposables.add(this.widget.onDidChangeHeight(() => this._relayout()));
-		this._disposables.add(this.widget.onDidFocus(() => this._onDidFocus.fire()));
 		this._disposables.add(this.widget);
 		this.create();
 
@@ -1073,7 +1021,6 @@ export class InlineChatZoneWidget extends ZoneWidget {
 	override show(position: Position): void {
 		super.show(position, this._computeHeightInLines());
 		this.widget.focus();
-		this.widget.renderModelName();
 		this._ctxVisible.set(true);
 	}
 

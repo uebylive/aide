@@ -11,19 +11,19 @@ import { GlyphMarginLane, IModelDecorationOptions, IModelDecorationsChangeAccess
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { localize } from 'vs/nls';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
-import { InlineChatController } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
+import { InlineChatController } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
 import { IConfigurationService, IConfigurationChangeEvent } from 'vs/platform/configuration/common/configuration';
 import { DisposableStore, Disposable } from 'vs/base/common/lifecycle';
 import { GutterActionsRegistry } from 'vs/workbench/contrib/codeEditor/browser/editorLineNumberMenu';
 import { Action } from 'vs/base/common/actions';
-import { CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED, IInlineCSChatService, ShowGutterIcon } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
+import { CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED, IInlineChatService, ShowGutterIcon } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { RunOnceScheduler } from 'vs/base/common/async';
 import { Iterable } from 'vs/base/common/iterator';
 import { Range } from 'vs/editor/common/core/range';
-import { IInlineChatSessionService } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
+import { IInlineChatSessionService } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { LOCALIZED_START_INLINE_CHAT_STRING } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatActions';
+import { LOCALIZED_START_INLINE_CHAT_STRING } from 'vs/workbench/contrib/inlineChat/browser/inlineChatActions';
 import { IBreakpoint, IDebugService, IDebugSession } from 'vs/workbench/contrib/debug/common/debug';
 import { IPreferencesService } from 'vs/workbench/services/preferences/common/preferences';
 import { URI } from 'vs/base/common/uri';
@@ -53,7 +53,7 @@ export class InlineChatDecorationsContribution extends Disposable implements IEd
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IContextKeyService _contextKeyService: IContextKeyService,
-		@IInlineCSChatService private readonly _inlineChatService: IInlineCSChatService,
+		@IInlineChatService private readonly _inlineChatService: IInlineChatService,
 		@IInlineChatSessionService private readonly _inlineChatSessionService: IInlineChatSessionService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@IKeybindingService private readonly _keybindingService: IKeybindingService,
@@ -61,9 +61,9 @@ export class InlineChatDecorationsContribution extends Disposable implements IEd
 	) {
 		super();
 		this._gutterDecorationTransparent = this._registerGutterDecoration(true);
+		this._gutterDecorationOpaque = this._registerGutterDecoration(false);
 		this._ctxToolbarIconEnabled = CTX_INLINE_CHAT_TOOLBAR_ICON_ENABLED.bindTo(_contextKeyService);
 		this._setToolbarIconEnablementToSetting();
-		this._gutterDecorationOpaque = this._registerGutterDecoration(false);
 		this._register(this._configurationService.onDidChangeConfiguration((e: IConfigurationChangeEvent) => {
 			if (e.affectsConfiguration(InlineChatDecorationsContribution.TOOLBAR_SETTING_ID)) {
 				this._setToolbarIconEnablementToSetting();
@@ -251,7 +251,7 @@ export class InlineChatDecorationsContribution extends Disposable implements IEd
 }
 
 GutterActionsRegistry.registerGutterActionsGenerator(({ lineNumber, editor, accessor }, result) => {
-	const inlineChatService = accessor.get(IInlineCSChatService);
+	const inlineChatService = accessor.get(IInlineChatService);
 	const noProviders = Iterable.isEmpty(inlineChatService.getAllProvider());
 	if (noProviders) {
 		return;

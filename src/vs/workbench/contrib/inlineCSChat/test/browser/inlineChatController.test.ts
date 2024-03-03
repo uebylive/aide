@@ -27,12 +27,12 @@ import { IEditorProgressService, IProgressRunner } from 'vs/platform/progress/co
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { IAccessibleViewService } from 'vs/workbench/contrib/accessibility/browser/accessibleView';
-import { ICSChatAccessibilityService } from 'vs/workbench/contrib/csChat/browser/csChat';
-import { IChatResponseViewModel } from 'vs/workbench/contrib/csChat/common/csChatViewModel';
-import { InlineChatController, InlineChatRunOptions, State } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatController';
-import { IInlineChatSessionService, InlineChatSessionService } from 'vs/workbench/contrib/inlineCSChat/browser/inlineCSChatSession';
-import { IInlineCSChatService, InlineChatResponseType } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
-import { InlineCSChatServiceImpl } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChatServiceImpl';
+import { IChatAccessibilityService } from 'vs/workbench/contrib/chat/browser/chat';
+import { IChatResponseViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { InlineChatController, InlineChatRunOptions, State } from 'vs/workbench/contrib/inlineChat/browser/inlineChatController';
+import { IInlineChatSessionService, InlineChatSessionService } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { IInlineChatService, InlineChatResponseType } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { InlineChatServiceImpl } from 'vs/workbench/contrib/inlineChat/common/inlineChatServiceImpl';
 import { workbenchInstantiationService } from 'vs/workbench/test/browser/workbenchTestServices';
 
 suite('InteractiveChatController', function () {
@@ -85,14 +85,14 @@ suite('InteractiveChatController', function () {
 	let model: ITextModel;
 	let ctrl: TestController;
 	// let contextKeys: MockContextKeyService;
-	let inlineChatService: InlineCSChatServiceImpl;
+	let inlineChatService: InlineChatServiceImpl;
 	let inlineChatSessionService: IInlineChatSessionService;
 	let instaService: TestInstantiationService;
 
 	setup(function () {
 
 		const contextKeyService = new MockContextKeyService();
-		inlineChatService = new InlineCSChatServiceImpl(contextKeyService);
+		inlineChatService = new InlineChatServiceImpl(contextKeyService);
 
 		const configurationService = new TestConfigurationService();
 		configurationService.setUserConfiguration('chat', { editor: { fontSize: 14, fontFamily: 'default' } });
@@ -100,7 +100,7 @@ suite('InteractiveChatController', function () {
 
 		const serviceCollection = new ServiceCollection(
 			[IContextKeyService, contextKeyService],
-			[IInlineCSChatService, inlineChatService],
+			[IInlineChatService, inlineChatService],
 			[IDiffProviderFactoryService, new SyncDescriptor(TestDiffProviderFactoryService)],
 			[IInlineChatSessionService, new SyncDescriptor(InlineChatSessionService)],
 			[IEditorProgressService, new class extends mock<IEditorProgressService>() {
@@ -112,8 +112,8 @@ suite('InteractiveChatController', function () {
 					};
 				}
 			}],
-			[ICSChatAccessibilityService, new class extends mock<ICSChatAccessibilityService>() {
-				override acceptResponse(response?: IChatResponseViewModel): void { }
+			[IChatAccessibilityService, new class extends mock<IChatAccessibilityService>() {
+				override acceptResponse(response: IChatResponseViewModel | undefined, requestId: number): void { }
 				override acceptRequest(): number { return -1; }
 			}],
 			[IAccessibleViewService, new class extends mock<IAccessibleViewService>() {
