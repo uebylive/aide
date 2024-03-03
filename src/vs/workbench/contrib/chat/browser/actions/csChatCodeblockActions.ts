@@ -11,7 +11,7 @@ import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/act
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
-import { ChatCodeBlockAction } from 'vs/workbench/contrib/chat/browser/actions/chatCodeblockActions';
+import { ChatCodeBlockAction, IChatCodeBlockActionContext } from 'vs/workbench/contrib/chat/browser/actions/chatCodeblockActions';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
@@ -22,6 +22,10 @@ import { CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS } from 'vs/workbench/contrib/c
 import { ICSChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+
+export interface ICSChatCodeBlockActionContext extends IChatCodeBlockActionContext {
+	element: ICSChatResponseViewModel;
+}
 
 export interface IChatEditConfirmationContext {
 	responseId: string;

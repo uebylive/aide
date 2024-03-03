@@ -50,7 +50,7 @@ export class CSSimpleCodeBlockPart extends SimpleCodeBlockPart {
 		super(options, menuId, delegate, overflowWidgetsDomNode, instantiationService, contextKeyService, modelService, textModelService, configurationService, accessibilityService, languageService);
 
 		const parent = this.element.parentElement;
-		this.wrapperElement = $('.interactive-result-editor-wrapper');
+		this.wrapperElement = $('.interactive-result-code-block-wrapper');
 		this.wrapperElement.appendChild(this.element);
 		parent?.replaceChildren(this.wrapperElement);
 

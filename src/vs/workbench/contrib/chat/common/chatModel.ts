@@ -18,6 +18,7 @@ import { IChatAgentCommand, IChatAgentData, IChatAgentResult, IChatAgentService 
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChat, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatContent, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatTreeData, IChatUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
+import type { ICSChatModel, ICSChatResponseModel, IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 
 export interface IChatRequestVariableData {
 	variables: { name: string; range: IOffsetRange; values: IChatRequestVariableValue[] }[];
@@ -75,7 +76,7 @@ export interface IChatResponseModel {
 export class ChatRequestModel implements IChatRequestModel {
 	private static nextId = 0;
 
-	public response: ChatResponseModel | undefined;
+	public response: CSChatResponseModel | undefined;
 
 	private _id: string;
 	public get id(): string {
@@ -347,6 +348,22 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 }
 
+export class CSChatResponseModel extends ChatResponseModel implements ICSChatResponseModel {
+	private readonly _appliedEdits: Map<number, IChatEditSummary> = new Map();
+	public get appliedEdits(): Map<number, IChatEditSummary> {
+		return this._appliedEdits;
+	}
+
+	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
+		if (edits) {
+			this._appliedEdits.set(codeblockIndex, edits);
+		} else {
+			this._appliedEdits.delete(codeblockIndex);
+		}
+		this._onDidChange.fire();
+	}
+}
+
 export interface IChatModel {
 	readonly onDidDispose: Event<void>;
 	readonly onDidChange: Event<IChatChangeEvent>;
@@ -576,7 +593,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					// Port entries from old format
 					const result = 'responseErrorDetails' in raw ?
 						{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
-					request.response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, request.id, true, raw.isCanceled, raw.vote, result, raw.followups);
+					request.response = new CSChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, request.id, true, raw.isCanceled, raw.vote, result, raw.followups);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
 						request.response.applyReference(revive(raw.usedContext));
 					}
@@ -656,7 +673,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		const request = new ChatRequestModel(this, message, variableData);
-		request.response = new ChatResponseModel([], this, chatAgent, slashCommand, request.id);
+		request.response = new CSChatResponseModel([], this, chatAgent, slashCommand, request.id);
 
 		this._requests.push(request);
 		this._onDidChange.fire({ kind: 'addRequest', request });
@@ -669,7 +686,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		if (!request.response) {
-			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
+			request.response = new CSChatResponseModel([], this, undefined, undefined, request.id);
 		}
 
 		if (request.response.isComplete) {
@@ -715,7 +732,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		if (!request.response) {
-			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
+			request.response = new CSChatResponseModel([], this, undefined, undefined, request.id);
 		}
 
 		request.response.setResult(result);
@@ -738,7 +755,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		request.response.setFollowups(followups);
 	}
 
-	setResponseModel(request: ChatRequestModel, response: ChatResponseModel): void {
+	setResponseModel(request: ChatRequestModel, response: CSChatResponseModel): void {
 		request.response = response;
 		this._onDidChange.fire({ kind: 'addResponse', response });
 	}
@@ -805,6 +822,13 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidDispose.fire();
 
 		super.dispose();
+	}
+}
+
+
+export class CSChatModel extends ChatModel implements ICSChatModel {
+	getRequest(requestId: string): IChatRequestModel | undefined {
+		return this._requests.find(request => request.id === requestId);
 	}
 }
 

@@ -65,8 +65,10 @@ import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT
 import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatCommandButton, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
-import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatWelcomeMessageViewModel, isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/chat/common/chatWordCounter';
+import { IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
 
@@ -887,7 +889,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				} else {
 					const vulns = extractVulnerabilitiesFromText(text);
 					const hideToolbar = isResponseVM(element) && element.errorDetails?.responseIsFiltered;
-					data = { type: 'code', languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities };
+					const edits: IChatEditSummary | undefined = isResponseVM(element) ? element.appliedEdits.get(codeBlockIndex) ?? undefined : undefined;
+					data = { type: 'code', languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities, edits };
 				}
 
 				const ref = this.renderCodeBlock(data);

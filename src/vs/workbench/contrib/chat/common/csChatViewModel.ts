@@ -4,16 +4,33 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ILogService } from 'vs/platform/log/common/log';
-import { ChatResponseViewModel, IChatResponseViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ChatResponseViewModel, ChatViewModel, IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { ICSChatResponseModel, IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 
 export function isResponseVM(item: unknown): item is ICSChatResponseViewModel {
 	return !!item && typeof (item as ICSChatResponseViewModel).setVote !== 'undefined';
 }
 
+export interface ICSChatViewModel extends IChatViewModel {
+	getItems(): (IChatRequestViewModel | ICSChatResponseViewModel | IChatWelcomeMessageViewModel)[];
+}
+
 export interface ICSChatResponseViewModel extends IChatResponseViewModel {
 	readonly appliedEdits: Map<number, IChatEditSummary>;
 	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void;
+}
+
+export class CSChatViewModel extends ChatViewModel implements ICSChatViewModel {
+	protected override onAddResponse(responseModel: ICSChatResponseModel) {
+		const response = this.instantiationService.createInstance(CSChatResponseViewModel, responseModel);
+		this._register(response.onDidChange(() => this._onDidChange.fire(null)));
+		this._items.push(response);
+	}
+
+	override getItems(): (IChatRequestViewModel | ICSChatResponseViewModel | IChatWelcomeMessageViewModel)[] {
+		const items = super.getItems();
+		return items as (IChatRequestViewModel | ICSChatResponseViewModel | IChatWelcomeMessageViewModel)[];
+	}
 }
 
 export class CSChatResponseViewModel extends ChatResponseViewModel implements ICSChatResponseViewModel {

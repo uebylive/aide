@@ -12,7 +12,8 @@ import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/uti
 import { ProviderResult } from 'vs/editor/common/languages';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IChatAgent, IChatAgentCommand, IChatAgentHistoryEntry, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { IChatProgress, IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatFollowup, IChatProgress } from 'vs/workbench/contrib/chat/common/chatService';
+import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IVoiceChatSessionOptions, IVoiceChatTextEvent, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChat';
 import { ISpeechProvider, ISpeechService, ISpeechToTextEvent, ISpeechToTextSession, KeywordRecognitionStatus, SpeechToTextStatus } from 'vs/workbench/contrib/speech/common/speechService';
 import { nullExtensionDescription } from 'vs/workbench/services/extensions/common/extensions';
@@ -58,6 +59,7 @@ suite('VoiceChat', () => {
 		getSecondaryAgent(): IChatAgent | undefined { throw new Error(); }
 		hasAgent(id: string): boolean { throw new Error(); }
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error(); }
+		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }
 	}
 
 	class TestSpeechService implements ISpeechService {

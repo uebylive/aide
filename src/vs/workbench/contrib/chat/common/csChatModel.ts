@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Location } from 'vs/editor/common/languages';
-import { ChatModel, ChatResponseModel, IChatModel, IChatRequestModel, IChatResponseModel } from 'vs/workbench/contrib/chat/common/chatModel';
+import type { IChatModel, IChatRequestModel, IChatResponseModel } from 'vs/workbench/contrib/chat/common/chatModel';
 
 export interface IChatEditSummary {
 	summary: string;
@@ -18,26 +18,4 @@ export interface ICSChatResponseModel extends IChatResponseModel {
 
 export interface ICSChatModel extends IChatModel {
 	getRequest(requestId: string): IChatRequestModel | undefined;
-}
-
-export class CSChatResponseModel extends ChatResponseModel implements ICSChatResponseModel {
-	private readonly _appliedEdits: Map<number, IChatEditSummary> = new Map();
-	public get appliedEdits(): Map<number, IChatEditSummary> {
-		return this._appliedEdits;
-	}
-
-	recordEdits(codeblockIndex: number, edits: IChatEditSummary | undefined): void {
-		if (edits) {
-			this._appliedEdits.set(codeblockIndex, edits);
-		} else {
-			this._appliedEdits.delete(codeblockIndex);
-		}
-		this._onDidChange.fire();
-	}
-}
-
-export class CSChatModel extends ChatModel implements ICSChatModel {
-	getRequest(requestId: string): IChatRequestModel | undefined {
-		return this._requests.find(request => request.id === requestId);
-	}
 }

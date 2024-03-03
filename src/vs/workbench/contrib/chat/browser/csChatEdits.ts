@@ -31,8 +31,9 @@ import { IInstantiationService, createDecorator } from 'vs/platform/instantiatio
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IStorageService } from 'vs/platform/storage/common/storage';
+import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { countWords } from 'vs/workbench/contrib/chat/common/chatWordCounter';
-import { ICSChatAgentEditResponse, ICSChatAgentService, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
+import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { CONTEXT_CHAT_EDIT_CODEBLOCK_NUMBER_IN_PROGRESS, CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS } from 'vs/workbench/contrib/chat/common/csChatContextKeys';
 import { IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 import { ICSChatResponseViewModel } from 'vs/workbench/contrib/chat/common/csChatViewModel';
@@ -92,7 +93,7 @@ export class ChatEditSessionService extends Disposable implements ICSChatEditSes
 		@IInstantiationService private readonly instaService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@ICSChatAgentService protected readonly csChatAgentService: ICSChatAgentService,
+		@IChatAgentService protected readonly csChatAgentService: IChatAgentService,
 	) {
 		super();
 		this.editResponseIdInProgress = CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.bindTo(contextKeyService);

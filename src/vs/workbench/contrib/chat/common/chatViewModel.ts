@@ -136,10 +136,10 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	private readonly _onDidDisposeModel = this._register(new Emitter<void>());
 	readonly onDidDisposeModel = this._onDidDisposeModel.event;
 
-	private readonly _onDidChange = this._register(new Emitter<IChatViewModelChangeEvent>());
+	protected readonly _onDidChange = this._register(new Emitter<IChatViewModelChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
+	protected readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
 
 	private _inputPlaceholder: string | undefined = undefined;
 	get inputPlaceholder(): string | undefined {
@@ -174,7 +174,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 
 	constructor(
 		private readonly _model: IChatModel,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
@@ -217,7 +217,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		}));
 	}
 
-	private onAddResponse(responseModel: IChatResponseModel) {
+	protected onAddResponse(responseModel: IChatResponseModel) {
 		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel);
 		this._register(response.onDidChange(() => this._onDidChange.fire(null)));
 		this._items.push(response);

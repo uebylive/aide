@@ -43,7 +43,8 @@ import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibil
 import { IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { IMarkdownVulnerability } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSSimpleCodeBlockData } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { MenuPreventer } from 'vs/workbench/contrib/codeEditor/browser/menuPreventer';
 import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEditor/browser/selectionClipboard';
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
@@ -70,7 +71,7 @@ export interface ILocalFileCodeBlockData extends ICodeBlockDataCommon {
 	range?: Range;
 }
 
-export type ICodeBlockData = ISimpleCodeBlockData | ILocalFileCodeBlockData;
+export type ICodeBlockData = ICSSimpleCodeBlockData | ILocalFileCodeBlockData;
 
 /**
  * Special markdown code block language id used to render a local file.

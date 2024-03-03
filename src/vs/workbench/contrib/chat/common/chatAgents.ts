@@ -108,7 +108,7 @@ export interface IChatAgentResult {
 
 export const IChatAgentService = createDecorator<IChatAgentService>('chatAgentService');
 
-export interface IChatAgentService {
+export interface IBaseChatAgentService {
 	_serviceBrand: undefined;
 	readonly onDidChangeAgents: Event<void>;
 	registerAgent(agent: IChatAgent): IDisposable;
@@ -123,7 +123,11 @@ export interface IChatAgentService {
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
 
-export class ChatAgentService extends Disposable implements IChatAgentService {
+export interface IChatAgentService extends IBaseChatAgentService {
+	makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
+}
+
+export class ChatAgentService extends Disposable implements IBaseChatAgentService {
 
 	public static readonly AGENT_LEADER = '@';
 

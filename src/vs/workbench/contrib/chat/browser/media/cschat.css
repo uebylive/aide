@@ -382,6 +382,66 @@
 	background-color: var(--vscode-interactive-result-editor-background-color) !important;
 }
 
+.interactive-response .interactive-result-code-block .interactive-result-editor {
+	border-radius: 4px 4px 0px 0px;
+}
+
+.interactive-response .interactive-result-code-block {
+	position: relative;
+	padding: 2px;
+	overflow: hidden;
+	border-radius: 5px;
+	border: 2px solid var(--vscode-input-border, transparent);
+}
+
+.interactive-response .interactive-result-code-block::after {
+	content: '';
+	display: block;
+	position: absolute;
+}
+
+.interactive-response .applying-edits.interactive-result-code-block {
+	border: unset;
+	padding: 4px;
+}
+
+.interactive-response .interactive-result-code-block.approved-edits {
+	border: 2px solid rgba(156,204,44, 0.8);
+}
+
+.interactive-response .applying-edits.interactive-result-code-block::after {
+	height: 800%;
+	width: 800%;
+	top: -350%;
+	left: -350%;
+	background-size: 100% 100%;
+	background-position: 0px 0px;
+	background-image: linear-gradient(0deg, var(--vscode-foreground, transparent) 0%, #00000000 50%, #00000000 100%);
+	animation: rotateBorder 2s linear infinite;
+}
+
+@keyframes rotateBorder {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+.interactive-result-editor-location-ribbon {
+	cursor: pointer;
+	color: var(--vscode-statusBar-foreground);
+	background-color: var(--vscode-statusBar-background);
+	border-radius: 0 0 4px 4px;
+	white-space: pre;
+	font-size: 12;
+}
+
+.interactive-result-editor-location-ribbon .editor-location-uri {
+	padding: 2px 8px;
+}
+
 .interactive-item-compact .interactive-result-code-block {
 	margin: 0 0 8px 0;
 }

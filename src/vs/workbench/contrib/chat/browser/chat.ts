@@ -11,7 +11,8 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { IChatWidgetContrib } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { IChatRequestViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, ICSChatViewModel as IChatViewModel } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
 export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');

@@ -5,8 +5,7 @@
 
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { WorkspaceEdit } from 'vs/editor/common/languages';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { ChatAgentService, IChatAgent, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentService, IChatAgentService, IChatAgent } from 'vs/workbench/contrib/chat/common/chatAgents';
 
 export interface ICSChatAgent extends IChatAgent {
 	provideEdits?(request: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
@@ -31,14 +30,7 @@ export interface ICSChatAgentEditResponse {
 	codeBlockIndex: number;
 }
 
-export const ICSChatAgentService = createDecorator<ICSChatAgentService>('csChatAgentService');
-export interface ICSChatAgentService extends IChatAgentService {
-	makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
-}
-
-export class CSChatAgentService extends ChatAgentService implements ICSChatAgentService {
-	protected override readonly _agents = new Map<string, { agent: ICSChatAgent }>();
-
+export class CSChatAgentService extends ChatAgentService implements IChatAgentService {
 	async makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> {
 		const agentId = context.agentId;
 		const data = this._agents.get(agentId);
