@@ -258,6 +258,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	private onDidChangeItems(skipDynamicLayout?: boolean) {
+		if (this.viewModel?.providerId === 'cs-chat') {
+			this.renderer.rowContainer?.classList.replace('.interactive-item-container', '.cschat-item-container');
+		}
+
 		if (this.tree && this._visible) {
 			const treeItems = (this.viewModel?.getItems() ?? [])
 				.map(item => {
@@ -492,6 +496,17 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
+		const providerId = model.providerId;
+		if (providerId === 'cs-chat') {
+			this.container.classList.replace('interactive-session', 'cschat-session');
+		}
+
+		this._register(model.onDidChange(e => {
+			if (e.kind === 'initialize') {
+				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+				this.inputPart.setState(model.providerId, viewState.inputValue ?? '', requester);
+			}
+		}));
 		this.container.setAttribute('data-session-id', model.sessionId);
 		this.viewModel = this.instantiationService.createInstance(ChatViewModel, model);
 		this.viewModelDisposables.add(this.viewModel.onDidChange(e => {
@@ -510,7 +525,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
-		this.inputPart.setState(model.providerId, viewState.inputValue);
+		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+		this.inputPart.setState(model.providerId, viewState.inputValue, requester);
 		this.contribs.forEach(c => {
 			if (c.setInputState && viewState.inputState?.[c.id]) {
 				c.setInputState(viewState.inputState?.[c.id]);

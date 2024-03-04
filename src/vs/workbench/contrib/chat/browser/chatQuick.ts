@@ -226,7 +226,7 @@ class QuickChat extends Disposable {
 			scopedInstantiationService.createInstance(
 				ChatWidget,
 				{ resource: true },
-				{ renderInputOnTop: true, renderStyle: 'compact' },
+				{ renderInputOnTop: false, renderStyle: 'compact' },
 				{
 					listForeground: quickInputForeground,
 					listBackground: quickInputBackground,

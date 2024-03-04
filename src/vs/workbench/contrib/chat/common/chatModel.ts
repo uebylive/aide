@@ -374,6 +374,8 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
+	readonly requesterUsername: string;
+	readonly requesterAvatarIconUri: URI | undefined;
 	getRequests(): IChatRequestModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;

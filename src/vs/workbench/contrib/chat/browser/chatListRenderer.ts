@@ -135,6 +135,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private _usedReferencesEnabled = false;
 
+	private _rowContainer!: HTMLElement;
+	get rowContainer(): HTMLElement {
+		return this._rowContainer;
+	}
+
 	constructor(
 		private readonly editorOptions: ChatEditorOptions,
 		private readonly rendererOptions: IChatListItemRendererOptions,
@@ -255,7 +260,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	renderTemplate(container: HTMLElement): IChatListItemTemplate {
 		const templateDisposables = new DisposableStore();
-		// const rowContainerClass = this.editorOptions.viewId === 'workbench.panel.chat.view.cs-chat' ? '.cschat-item-container' : '.interactive-item-container';
 		const rowContainer = dom.append(container, $('.interactive-item-container'));
 		if (this.rendererOptions.renderStyle === 'compact') {
 			rowContainer.classList.add('interactive-item-compact');
@@ -294,6 +298,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}));
 		}
+		this._rowContainer = rowContainer;
 		const template: IChatListItemTemplate = { avatarContainer, agentAvatarContainer, username, detail, referencesListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
 		return template;
 	}
