@@ -24,6 +24,7 @@ import { ContiguousMultilineTokens } from 'vs/editor/common/tokens/contiguousMul
 import { localize } from 'vs/nls';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IMarkerData } from 'vs/platform/markers/common/markers';
+import { LanguageFilter } from 'vs/editor/common/languageSelector';
 
 /**
  * @internal
@@ -758,6 +759,7 @@ export interface CodeAction {
 	isPreferred?: boolean;
 	isAI?: boolean;
 	disabled?: string;
+	ranges?: IRange[];
 }
 
 export const enum CodeActionTriggerType {
@@ -824,6 +826,14 @@ export interface DocumentPasteEdit {
 /**
  * @internal
  */
+export interface DocumentPasteContext {
+	readonly only?: string;
+	readonly trigger: 'explicit' | 'implicit';
+}
+
+/**
+ * @internal
+ */
 export interface DocumentPasteEditProvider {
 
 	readonly id: string;
@@ -833,7 +843,7 @@ export interface DocumentPasteEditProvider {
 
 	prepareDocumentPaste?(model: model.ITextModel, ranges: readonly IRange[], dataTransfer: IReadonlyVSDataTransfer, token: CancellationToken): Promise<undefined | IReadonlyVSDataTransfer>;
 
-	provideDocumentPasteEdits?(model: model.ITextModel, ranges: readonly IRange[], dataTransfer: IReadonlyVSDataTransfer, token: CancellationToken): Promise<DocumentPasteEdit | undefined>;
+	provideDocumentPasteEdits?(model: model.ITextModel, ranges: readonly IRange[], dataTransfer: IReadonlyVSDataTransfer, context: DocumentPasteContext, token: CancellationToken): Promise<DocumentPasteEdit | undefined>;
 }
 
 /**
@@ -963,6 +973,22 @@ export interface DocumentHighlight {
 	 */
 	kind?: DocumentHighlightKind;
 }
+
+/**
+ * Represents a set of document highlights for a specific URI.
+ */
+export interface MultiDocumentHighlight {
+	/**
+	 * The URI of the document that the highlights belong to.
+	 */
+	uri: URI;
+
+	/**
+	 * The set of highlights for the document.
+	 */
+	highlights: DocumentHighlight[];
+}
+
 /**
  * The document highlight provider interface defines the contract between extensions and
  * the word-highlight-feature.
@@ -975,13 +1001,24 @@ export interface DocumentHighlightProvider {
 	provideDocumentHighlights(model: model.ITextModel, position: Position, token: CancellationToken): ProviderResult<DocumentHighlight[]>;
 }
 
+/**
+ * A provider that can provide document highlights across multiple documents.
+ */
 export interface MultiDocumentHighlightProvider {
+	selector: LanguageFilter;
+
 	/**
 	 * Provide a Map of URI --> document highlights, like all occurrences of a variable or
 	 * all exit-points of a function.
 	 *
 	 * Used in cases such as split view, notebooks, etc. where there can be multiple documents
 	 * with shared symbols.
+	 *
+	 * @param primaryModel The primary text model.
+	 * @param position The position at which to provide document highlights.
+	 * @param otherModels The other text models to search for document highlights.
+	 * @param token A cancellation token.
+	 * @returns A map of URI to document highlights.
 	 */
 	provideMultiDocumentHighlights(primaryModel: model.ITextModel, position: Position, otherModels: model.ITextModel[], token: CancellationToken): ProviderResult<Map<URI, DocumentHighlight[]>>;
 }
@@ -1625,6 +1662,19 @@ export interface RenameProvider {
 	resolveRenameLocation?(model: model.ITextModel, position: Position, token: CancellationToken): ProviderResult<RenameLocation & Rejection>;
 }
 
+export enum NewSymbolNameTag {
+	AIGenerated = 1
+}
+
+export interface NewSymbolName {
+	readonly newSymbolName: string;
+	readonly tags?: readonly NewSymbolNameTag[];
+}
+
+export interface NewSymbolNamesProvider {
+	provideNewSymbolNames(model: model.ITextModel, range: IRange, token: CancellationToken): ProviderResult<NewSymbolName[]>;
+}
+
 export interface Command {
 	id: string;
 	title: string;
@@ -1751,6 +1801,12 @@ export interface CommentingRanges {
 	fileComments: boolean;
 }
 
+export interface CommentAuthorInformation {
+	name: string;
+	iconPath?: UriComponents;
+
+}
+
 /**
  * @internal
  */
@@ -1760,6 +1816,7 @@ export interface CommentReaction {
 	readonly count?: number;
 	readonly hasReacted?: boolean;
 	readonly canEdit?: boolean;
+	readonly reactors?: readonly string[];
 }
 
 /**
@@ -2095,4 +2152,25 @@ export interface MappedEditsProvider {
 		context: MappedEditsContext,
 		token: CancellationToken
 	): Promise<WorkspaceEdit | null>;
+}
+
+export interface IInlineEdit {
+	text: string;
+	range: IRange;
+	accepted?: Command;
+	rejected?: Command;
+}
+
+export interface IInlineEditContext {
+	triggerKind: InlineEditTriggerKind;
+}
+
+export enum InlineEditTriggerKind {
+	Invoke = 0,
+	Automatic = 1,
+}
+
+export interface InlineEditProvider<T extends IInlineEdit = IInlineEdit> {
+	provideInlineEdit(model: model.ITextModel, context: IInlineEditContext, token: CancellationToken): ProviderResult<T>;
+	freeInlineEdit(edit: T): void;
 }

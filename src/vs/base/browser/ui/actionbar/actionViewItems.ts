@@ -9,6 +9,7 @@ import { addDisposableListener, EventHelper, EventLike, EventType } from 'vs/bas
 import { EventType as TouchEventType, Gesture } from 'vs/base/browser/touch';
 import { IActionViewItem } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IContextViewProvider } from 'vs/base/browser/ui/contextview/contextview';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegate';
 import { IHoverDelegate } from 'vs/base/browser/ui/iconLabel/iconHoverDelegate';
 import { ICustomHover, setupCustomHover } from 'vs/base/browser/ui/iconLabel/iconLabelHover';
 import { ISelectBoxOptions, ISelectBoxStyles, ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
@@ -210,6 +211,10 @@ export class BaseActionViewItem extends Disposable implements IActionViewItem {
 		// implement in subclass
 	}
 
+	protected getClass(): string | undefined {
+		return this.action.class;
+	}
+
 	protected getTooltip(): string | undefined {
 		return this.action.tooltip;
 	}
@@ -220,12 +225,14 @@ export class BaseActionViewItem extends Disposable implements IActionViewItem {
 		}
 		const title = this.getTooltip() ?? '';
 		this.updateAriaLabel();
-		if (!this.options.hoverDelegate) {
+
+		if (this.options.hoverDelegate?.showNativeHover) {
+			/* While custom hover is not supported with context view */
 			this.element.title = title;
 		} else {
-			this.element.title = '';
 			if (!this.customHover) {
-				this.customHover = setupCustomHover(this.options.hoverDelegate, this.element, title);
+				const hoverDelegate = this.options.hoverDelegate ?? getDefaultHoverDelegate('element');
+				this.customHover = setupCustomHover(hoverDelegate, this.element, title);
 				this._store.add(this.customHover);
 			} else {
 				this.customHover.update(title);
@@ -369,9 +376,8 @@ export class ActionViewItem extends BaseActionViewItem {
 		if (this.cssClass && this.label) {
 			this.label.classList.remove(...this.cssClass.split(' '));
 		}
-
 		if (this.options.icon) {
-			this.cssClass = this.action.class;
+			this.cssClass = this.getClass();
 
 			if (this.label) {
 				this.label.classList.add('codicon');

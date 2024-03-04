@@ -20,7 +20,7 @@ import { ITextResourceConfigurationChangeEvent, ITextResourceConfigurationServic
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { TextFileOperationError, TextFileOperationResult } from 'vs/workbench/services/textfile/common/textfiles';
-import { ScrollType, IDiffEditorViewState, IDiffEditorModel } from 'vs/editor/common/editorCommon';
+import { ScrollType, IDiffEditorViewState, IDiffEditorModel, IDiffEditorViewModel } from 'vs/editor/common/editorCommon';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { URI } from 'vs/base/common/uri';
 import { IEditorGroup, IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
@@ -91,7 +91,13 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		return this.diffEditorControl?.getModifiedEditor();
 	}
 
+	private _previousViewModel: IDiffEditorViewModel | null = null;
+
 	override async setInput(input: DiffEditorInput, options: ITextEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+		if (this._previousViewModel) {
+			this._previousViewModel.dispose();
+			this._previousViewModel = null;
+		}
 
 		// Cleanup previous things associated with the input
 		this.inputLifecycleStopWatch = undefined;
@@ -100,7 +106,7 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		await super.setInput(input, options, context, token);
 
 		try {
-			const resolvedModel = await input.resolve(options);
+			const resolvedModel = await input.resolve();
 
 			// Check for cancellation
 			if (token.isCancellationRequested) {
@@ -118,6 +124,7 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 			const resolvedDiffEditorModel = resolvedModel as TextDiffEditorModel;
 
 			const vm = resolvedDiffEditorModel.textDiffEditorModel ? control.createViewModel(resolvedDiffEditorModel.textDiffEditorModel) : null;
+			this._previousViewModel = vm;
 			await vm?.waitForDiff();
 			control.setModel(vm);
 
@@ -187,6 +194,10 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 			}
 
 			control.restoreViewState(editorViewState);
+
+			if (options?.revealIfVisible) {
+				control.revealFirstDiff();
+			}
 
 			return true;
 		}
@@ -267,9 +278,9 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 		return editorConfiguration;
 	}
 
-	protected override getConfigurationOverrides(): IDiffEditorOptions {
+	protected override getConfigurationOverrides(configuration: IEditorConfiguration): IDiffEditorOptions {
 		return {
-			...super.getConfigurationOverrides(),
+			...super.getConfigurationOverrides(configuration),
 			...this.getReadonlyConfiguration(this.input?.isReadonly()),
 			originalEditable: this.input instanceof DiffEditorInput && !this.input.original.isReadonly(),
 			lineDecorationsWidth: '2ch'
@@ -300,6 +311,11 @@ export class TextDiffEditor extends AbstractTextEditor<IDiffEditorViewState> imp
 	}
 
 	override clearInput(): void {
+		if (this._previousViewModel) {
+			this._previousViewModel.dispose();
+			this._previousViewModel = null;
+		}
+
 		super.clearInput();
 
 		// Log input lifecycle telemetry
