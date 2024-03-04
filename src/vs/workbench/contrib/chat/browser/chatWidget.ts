@@ -258,10 +258,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	private onDidChangeItems(skipDynamicLayout?: boolean) {
-		if (this.viewModel?.providerId === 'cs-chat') {
-			this.renderer.rowContainer?.classList.replace('.interactive-item-container', '.cschat-item-container');
-		}
-
 		if (this.tree && this._visible) {
 			const treeItems = (this.viewModel?.getItems() ?? [])
 				.map(item => {

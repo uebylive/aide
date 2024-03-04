@@ -59,6 +59,7 @@ import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
 import { ChatMarkdownDecorationsRenderer, annotateSpecialMarkdownContent, extractVulnerabilitiesFromText } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, LocalFileCodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { getChatTreeItemProviderId } from 'vs/workbench/contrib/chat/browser/csChatListRenderer';
 import { CSSimpleCodeBlockPart } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
 import { IChatAgentMetadata } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/chat/common/chatContextKeys';
@@ -304,6 +305,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	renderElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IChatListItemTemplate): void {
+		const providerId = getChatTreeItemProviderId(node.element);
+		if (providerId === 'cs-chat') {
+			this.rowContainer?.classList.replace('interactive-item-container', 'cschat-item-container');
+		}
+
 		this.renderChatTreeItem(node.element, index, templateData);
 	}
 

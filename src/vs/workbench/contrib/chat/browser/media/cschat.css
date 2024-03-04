@@ -559,6 +559,10 @@
 
 /* #region Quick Chat */
 
+.quick-input-widget .cschat-session .monaco-list-rows {
+	background: unset !important;
+}
+
 .quick-input-widget .cschat-session .cschat-input-part {
 	padding: 8px;
 }
@@ -571,6 +575,7 @@
 	margin: 0;
 	border-radius: 2px;
 	padding: 0 4px 0 6px;
+	border: 0;
 }
 
 .quick-input-widget .interactive-list {
@@ -580,6 +585,12 @@
 
 .quick-input-widget .interactive-response {
 	min-height: 86px;
+}
+
+.quick-input-widget .cschat-session .interactive-input-and-execute-toolbar,
+.quick-input-widget .cschat-session .interactive-input-and-execute-toolbar .monaco-editor,
+.quick-input-widget .cschat-session .interactive-input-and-execute-toolbar .monaco-editor .monaco-editor-background {
+	background-color: unset !important;
 }
 
 /* #endregion */
