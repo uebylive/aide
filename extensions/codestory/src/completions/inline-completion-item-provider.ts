@@ -105,7 +105,6 @@ export class InlineCompletionItemProvider
 			// an InlineCompletionList#suppressSuggestions field that lets an inline completion
 			// provider override this on a per-completion basis. Because that API is proposed, we
 			// can't use it and must instead resort to writing to the user's VS Code settings.
-			//
 			void vscode.workspace
 				.getConfiguration()
 				.update(
@@ -246,7 +245,7 @@ export class InlineCompletionItemProvider
 			now: performance.now(),
 			time_taken: performance.now() - startTime,
 			id: id,
-			multiline_trigger: docContext.multilineTrigger ?? 'no_multiline_trigger',
+			multiline_trigger: docContext.multilineTrigger ?? 'no_multiline_trigger'
 		});
 
 		const latencyFeatureFlags: LatencyFeatureFlags = {

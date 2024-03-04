@@ -401,7 +401,7 @@ export class SideCarClient {
 			},
 			model_config: sideCarModelConfiguration,
 			id: completionRequest.id,
-			cliboard_content: completionRequest.clipboard,
+			clipboard_content: completionRequest.clipboard,
 		};
 		const url = baseUrl.toString();
 		let finalAnswer = '';
@@ -571,6 +571,7 @@ export class SideCarClient {
 	async documentContentChange(
 		filePath: string,
 		events: readonly vscode.TextDocumentContentChangeEvent[],
+		fileContent: string,
 		language: string,
 	): Promise<void> {
 		const baseUrl = new URL(this._url);
@@ -588,6 +589,7 @@ export class SideCarClient {
 		});
 		const body = {
 			file_path: filePath,
+			file_content: fileContent,
 			language,
 			events: mappedEvents,
 		};
@@ -606,6 +608,11 @@ export class SideCarClient {
 		fileContent: string,
 		language: string,
 	): Promise<void> {
+		// There might be files which have a .git extension we should not be sending
+		// those to the sidecar
+		if (filePath.endsWith('.git')) {
+			return;
+		}
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/inline_completion/document_open';
 		const body = {

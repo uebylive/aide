@@ -287,6 +287,17 @@ export async function activate(context: ExtensionContext) {
 		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 	});
 
+	// workspace.onDidSaveTextDocument(async (doc) => {
+	// 	const uri = doc.uri;
+	// 	await trackCodeSymbolChanges.fileSaved(uri, logger);
+	// 	// // We should also update the model configuration here
+	// 	// const modelConfig = modelSelection.getModelConfiguration();
+	// 	// await sidecarClient.updateModelConfiguration(modelConfig);
+	// 	// // We should also update the model configuration here
+	// 	// const modelConfig2 = modelSelection.getModelConfiguration();
+	// 	// await sidecarClient.updateModelConfiguration(modelConfig2);
+	// });
+
 	// Add git commit to the subscriptions here
 	// Git commit
 	context.subscriptions.push(gitCommit(logger, repoName, repoHash, uniqueUserId));
@@ -330,6 +341,7 @@ export async function activate(context: ExtensionContext) {
 		await sidecarClient.documentContentChange(
 			event.document.uri.fsPath,
 			event.contentChanges,
+			event.document.getText(),
 			event.document.languageId,
 		);
 	});
