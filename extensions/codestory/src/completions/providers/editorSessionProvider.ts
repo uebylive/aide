@@ -190,7 +190,7 @@ export class CSInteractiveEditorSession implements vscode.InteractiveEditorSessi
 	threadId: string;
 
 	constructor(textDocument: vscode.TextDocument, range: vscode.Range) {
-		this.placeholder = 'Ask Aide or type \'/\' for commands';
+		this.placeholder = 'What would you like to change?';
 		this.slashCommands = [];
 		this.threadId = uuidv4();
 		this.textDocument = textDocument;

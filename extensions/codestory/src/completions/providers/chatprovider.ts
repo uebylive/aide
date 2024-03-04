@@ -105,7 +105,7 @@ export class CSChatSessionProvider implements vscode.InteractiveSessionProvider<
 		return new CSChatSession(
 			new CSChatParticipant(getUserId(), userUri),
 			new CSChatParticipant('Aide', agentUri),
-			'Try using /, # or @ to find specific commands',
+			'What can I help you with today?',
 		);
 	}
 }
