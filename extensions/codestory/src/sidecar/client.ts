@@ -401,7 +401,7 @@ export class SideCarClient {
 			},
 			model_config: sideCarModelConfiguration,
 			id: completionRequest.id,
-			cliboard_content: completionRequest.clipboard,
+			clipboard_content: completionRequest.clipboard,
 		};
 		const url = baseUrl.toString();
 		let finalAnswer = '';
