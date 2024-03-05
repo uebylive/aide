@@ -25,11 +25,12 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
+import { ICSChatCodeBlockActionContext } from 'vs/workbench/contrib/chat/browser/actions/csChatCodeblockActions';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { ChatCopyKind, IChatService, IDocumentContext } from 'vs/workbench/contrib/chat/common/chatService';
-import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { CTX_INLINE_CHAT_VISIBLE } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -46,7 +47,7 @@ export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockAct
 	return typeof thing === 'object' && thing !== null && 'code' in thing && 'element' in thing;
 }
 
-function isResponseFiltered(context: ICodeBlockActionContext) {
+export function isResponseFiltered(context: ICodeBlockActionContext) {
 	return isResponseVM(context.element) && context.element.errorDetails?.responseIsFiltered;
 }
 
@@ -54,7 +55,7 @@ function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] 
 	return isResponseVM(context.element) ? context.element.usedContext?.documents : undefined;
 }
 
-abstract class ChatCodeBlockAction extends Action2 {
+export abstract class ChatCodeBlockAction extends Action2 {
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		let context = args[0];
 		if (!isCodeBlockActionContext(context)) {
@@ -557,7 +558,7 @@ export function registerChatCodeBlockActions() {
 	});
 }
 
-function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): IChatCodeBlockActionContext | undefined {
+function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): ICSChatCodeBlockActionContext | undefined {
 	const chatWidgetService = accessor.get(IChatWidgetService);
 	const model = editor.getModel();
 	if (!model) {

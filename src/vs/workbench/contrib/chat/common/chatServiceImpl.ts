@@ -382,7 +382,7 @@ export class ChatService extends Disposable implements IChatService {
 
 			this.trace('startSession', `Provider returned session`);
 
-			const defaultAgent = this.chatAgentService.getDefaultAgent();
+			const defaultAgent = this.chatAgentService.getDefaultAgent(model.providerId);
 			if (!defaultAgent) {
 				throw new Error('No default agent');
 			}
@@ -458,7 +458,7 @@ export class ChatService extends Disposable implements IChatService {
 		}
 
 		const parsedRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(sessionId, request);
-		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? this.chatAgentService.getDefaultAgent()!;
+		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? this.chatAgentService.getDefaultAgent(model.providerId)!;
 		const agentSlashCommandPart = parsedRequest.parts.find((r): r is ChatRequestAgentSubcommandPart => r instanceof ChatRequestAgentSubcommandPart);
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
@@ -528,7 +528,7 @@ export class ChatService extends Disposable implements IChatService {
 				let rawResult: IChatAgentResult | null | undefined;
 				let agentOrCommandFollowups: Promise<IChatFollowup[] | undefined> | undefined = undefined;
 
-				const defaultAgent = this.chatAgentService.getDefaultAgent();
+				const defaultAgent = this.chatAgentService.getDefaultAgent(model.providerId);
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
 					const history: IChatAgentHistoryEntry[] = [];
@@ -742,6 +742,7 @@ export class ChatService extends Disposable implements IChatService {
 		return Array.from(this._providers.values()).map(provider => {
 			return {
 				id: provider.id,
+				extensionId: provider.extensionId,
 			};
 		});
 	}

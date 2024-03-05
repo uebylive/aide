@@ -62,7 +62,7 @@ else {
 			nameShort: 'Code - OSS Dev',
 			nameLong: 'Code - OSS Dev',
 			applicationName: 'code-oss',
-			dataFolderName: '.aide',
+			dataFolderName: '.vscode-oss',
 			urlProtocol: 'code-oss',
 			reportIssueUrl: 'https://github.com/microsoft/vscode/issues/new',
 			licenseName: 'MIT',

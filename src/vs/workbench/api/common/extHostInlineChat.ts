@@ -112,8 +112,6 @@ export class ExtHostInteractiveEditor implements ExtHostInlineChatShape {
 
 		const document = this._documents.getDocument(URI.revive(uri));
 		const selection = typeConvert.Selection.to(range);
-		console.log('[prepareSession] whats the selection');
-		console.log(selection);
 		const session = await entry.provider.prepareInteractiveEditorSession({ document, selection }, token);
 		if (!session) {
 			return undefined;

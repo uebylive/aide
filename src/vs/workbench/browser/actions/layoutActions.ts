@@ -375,8 +375,7 @@ MenuRegistry.appendMenuItems([
 			when: ContextKeyExpr.and(SideBarVisibleContext, ContextKeyExpr.equals('viewLocation', ViewContainerLocationToString(ViewContainerLocation.Sidebar))),
 			order: 2
 		}
-	},
-	{
+	}, {
 		id: MenuId.LayoutControlMenu,
 		item: {
 			group: '0_workbench_toggles',

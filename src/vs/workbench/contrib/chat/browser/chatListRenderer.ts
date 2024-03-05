@@ -58,14 +58,18 @@ import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo } from 'vs/workbenc
 import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
 import { ChatMarkdownDecorationsRenderer, annotateSpecialMarkdownContent, extractVulnerabilitiesFromText } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, LocalFileCodeBlockPart, SimpleCodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, LocalFileCodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { getChatTreeItemProviderId } from 'vs/workbench/contrib/chat/browser/csChatListRenderer';
+import { CSSimpleCodeBlockPart } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
 import { IChatAgentMetadata } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatCommandButton, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseProgressFileTreeData, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
-import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatWelcomeMessageViewModel, isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/chat/common/chatWordCounter';
+import { IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
 
@@ -131,6 +135,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	private _usedReferencesEnabled = false;
+
+	private _rowContainer!: HTMLElement;
+	get rowContainer(): HTMLElement {
+		return this._rowContainer;
+	}
 
 	constructor(
 		private readonly editorOptions: ChatEditorOptions,
@@ -290,11 +299,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}));
 		}
+		this._rowContainer = rowContainer;
 		const template: IChatListItemTemplate = { avatarContainer, agentAvatarContainer, username, detail, referencesListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
 		return template;
 	}
 
 	renderElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IChatListItemTemplate): void {
+		const providerId = getChatTreeItemProviderId(node.element);
+		if (providerId === 'cs-chat') {
+			this.rowContainer?.classList.replace('interactive-item-container', 'cschat-item-container');
+		}
+
 		this.renderChatTreeItem(node.element, index, templateData);
 	}
 
@@ -885,7 +900,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				} else {
 					const vulns = extractVulnerabilitiesFromText(text);
 					const hideToolbar = isResponseVM(element) && element.errorDetails?.responseIsFiltered;
-					data = { type: 'code', languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities };
+					const edits: IChatEditSummary | undefined = isResponseVM(element) ? element.appliedEdits.get(codeBlockIndex) ?? undefined : undefined;
+					data = { type: 'code', languageId, text: vulns.newText, codeBlockIndex: codeBlockIndex++, element, hideToolbar, parentContextKeyService: templateData.contextKeyService, vulns: vulns.vulnerabilities, edits };
 				}
 
 				const ref = this.renderCodeBlock(data);
@@ -1070,7 +1086,7 @@ interface IDisposableReference<T> extends IDisposable {
 
 class EditorPool extends Disposable {
 
-	private readonly _simpleEditorPool: ResourcePool<SimpleCodeBlockPart>;
+	private readonly _simpleEditorPool: ResourcePool<CSSimpleCodeBlockPart>;
 	private readonly _localFileEditorPool: ResourcePool<LocalFileCodeBlockPart>;
 
 	public *inUse(): Iterable<ICodeBlockPart> {
@@ -1086,7 +1102,7 @@ class EditorPool extends Disposable {
 	) {
 		super();
 		this._simpleEditorPool = this._register(new ResourcePool(() => {
-			return this.instantiationService.createInstance(SimpleCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
+			return this.instantiationService.createInstance(CSSimpleCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
 		}));
 		this._localFileEditorPool = this._register(new ResourcePool(() => {
 			return this.instantiationService.createInstance(LocalFileCodeBlockPart, this.options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
@@ -1097,7 +1113,7 @@ class EditorPool extends Disposable {
 		return this.getFromPool(data.type === 'localFile' ? this._localFileEditorPool : this._simpleEditorPool);
 	}
 
-	find(resource: URI): SimpleCodeBlockPart | undefined {
+	find(resource: URI): CSSimpleCodeBlockPart | undefined {
 		return Array.from(this._simpleEditorPool.inUse).find(part => part.uri?.toString() === resource.toString());
 	}
 

@@ -25,7 +25,6 @@ interface WatermarkEntry {
 	readonly when?: ContextKeyExpression;
 }
 
-const focusAgent: WatermarkEntry = { text: localize('watermark.focusAgent', "Invoke AI agent"), id: 'workbench.action.toggleAuxiliaryBar' };
 const showCommands: WatermarkEntry = { text: localize('watermark.showCommands', "Show All Commands"), id: 'workbench.action.showCommands' };
 const quickAccess: WatermarkEntry = { text: localize('watermark.quickAccess', "Go to File"), id: 'workbench.action.quickOpen' };
 const openFileNonMacOnly: WatermarkEntry = { text: localize('watermark.openFile', "Open File"), id: 'workbench.action.files.openFile', mac: false };
@@ -49,7 +48,6 @@ const noFolderEntries = [
 ];
 
 const folderEntries = [
-	focusAgent,
 	showCommands,
 	quickAccess,
 	findInFiles,

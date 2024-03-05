@@ -45,8 +45,8 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { basename, extname } from 'vs/base/common/resources';
 import { hash } from 'vs/base/common/hash';
 import { WindowIdleValue, getWindow } from 'vs/base/browser/dom';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 
 // sticky suggest widget which doesn't disappear on focus out and such
 const _sticky = false

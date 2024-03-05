@@ -329,12 +329,9 @@ export function getHistoryAction(viewId: string, providerId: string) {
 				});
 			if (selection) {
 				const sessionId = selection.chat.sessionId;
-				const provider = chatContribService.registeredProviders[0]?.id;
-				if (provider) {
-					const viewId = chatContribService.getViewIdForProvider(provider);
-					const view = await viewsService.openView(viewId) as ChatViewPane;
-					view.loadSession(sessionId);
-				}
+				const viewId = chatContribService.getViewIdForProvider(providerId);
+				const view = await viewsService.openView(viewId) as ChatViewPane;
+				view.loadSession(sessionId);
 			}
 		}
 	};

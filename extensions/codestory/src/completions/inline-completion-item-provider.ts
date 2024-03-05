@@ -5,8 +5,6 @@
 import * as vscode from 'vscode';
 
 import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
-import { getCompletionIntent } from './doc-context-getters';
-import { FirstCompletionDecorationHandler } from './first-completion-decoration-handler';
 import { formatCompletion } from './format-completion';
 import { getCurrentDocContext } from './get-current-doc-context';
 import {
@@ -16,7 +14,6 @@ import {
 	type LastInlineCompletionCandidate,
 } from './get-inline-completions';
 import { isCompletionVisible } from './is-completion-visible';
-import type { CompletionBookkeepingEvent, CompletionItemID, CompletionLogID } from './logger';
 import * as CompletionLogger from './logger';
 import { RequestManager, type RequestParams } from './request-manager';
 import { getRequestParamsFromLastCandidate } from './reuse-last-candidate';
@@ -36,7 +33,7 @@ interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
 	items: AutocompleteItem[];
 	/** @deprecated */
-	completionEvent?: CompletionBookkeepingEvent;
+	completionEvent?: CompletionLogger.CompletionBookkeepingEvent;
 }
 
 export interface CodeStoryCompletionItemProviderConfig {
@@ -199,7 +196,7 @@ export class InlineCompletionItemProvider
 				});
 				// send this in the background
 				this.sidecarClient.cancelInlineCompletion(id);
-				abortController.abort()
+				abortController.abort();
 			});
 		}
 
@@ -322,7 +319,7 @@ export class InlineCompletionItemProvider
 				if (item.insertText.split('\n').length >= 1) {
 					multilineCompletion = true;
 				}
-			})
+			});
 
 			// we only block when we have whitespace and its multiline
 			if (!isNonWhitespaceCompletion && multilineCompletion) {
@@ -457,7 +454,7 @@ export class InlineCompletionItemProvider
 				AutocompleteItem,
 				'range' | 'requestParams' | 'logId' | 'analyticsItem' | 'trackedRange'
 			>
-			| CompletionItemID
+			| CompletionLogger.CompletionItemID
 	): Promise<void> {
 		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 
@@ -491,7 +488,7 @@ export class InlineCompletionItemProvider
 	 * same name, it's prefixed with `unstable_` to avoid a clash when the new API goes GA.
 	 */
 	public unstable_handleDidShowCompletionItem(
-		completionOrItemId: Pick<AutocompleteItem, 'logId' | 'analyticsItem'> | CompletionItemID
+		completionOrItemId: Pick<AutocompleteItem, 'logId' | 'analyticsItem'> | CompletionLogger.CompletionItemID
 	): void {
 		const completion = suggestedAutocompleteItemsCache.get(completionOrItemId);
 		if (!completion) {

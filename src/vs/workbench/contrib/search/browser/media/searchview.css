@@ -28,6 +28,11 @@
 	align-items: center;
 }
 
+.search-view .search-widgets-container .search-explainer .icon {
+	font-size: 11px;
+	padding-left: 4px;
+}
+
 .search-view .search-widgets-container .search-explainer h4 {
 	font-size: 11px;
 	text-overflow: ellipsis;

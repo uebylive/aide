@@ -10,9 +10,10 @@ import { TestInstantiationService } from 'vs/platform/instantiation/test/common/
 import { ILogService, NullLogService } from 'vs/platform/log/common/log';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { ChatVariablesService } from 'vs/workbench/contrib/chat/browser/chatVariables';
-import { ChatAgentService, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
+import { CSChatAgentService as ChatAgentService } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { MockChatWidgetService } from 'vs/workbench/contrib/chat/test/browser/mockChatWidget';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 import { TestExtensionService, TestStorageService } from 'vs/workbench/test/common/workbenchTestServices';

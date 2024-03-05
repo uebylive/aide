@@ -30,10 +30,7 @@ export class BoundModelReferenceCollection {
 
 	constructor(
 		private readonly _extUri: IExtUri,
-		// TODO(codestory): We are reducing the timeout here to be instant.
-		// This is a hack because of the dirty files we create while loading
-		// the delta from the last commit
-		private readonly _maxAge: number = 1000, // auto-dispose by age
+		private readonly _maxAge: number = 1000 * 60 * 3, // auto-dispse by age
 		private readonly _maxLength: number = 1024 * 1024 * 80, // auto-dispose by total length
 		private readonly _maxSize: number = 50 // auto-dispose by number of references
 	) {

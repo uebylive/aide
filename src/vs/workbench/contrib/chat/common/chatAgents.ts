@@ -15,6 +15,7 @@ import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IChatProgressResponseContent, IChatRequestVariableData } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails } from 'vs/workbench/contrib/chat/common/chatService';
+import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 
 //#region agent service, commands etc
 
@@ -26,6 +27,7 @@ export interface IChatAgentHistoryEntry {
 
 export interface IChatAgentData {
 	id: string;
+	providerId: string | undefined;
 	extensionId: ExtensionIdentifier;
 	metadata: IChatAgentMetadata;
 }
@@ -37,6 +39,7 @@ export interface IChatAgent extends IChatAgentData {
 	provideSlashCommands(token: CancellationToken): Promise<IChatAgentCommand[]>;
 	provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
 	provideSampleQuestions?(token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
+	provideEdits?(request: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
 }
 
 export interface IChatAgentCommand {
@@ -105,7 +108,7 @@ export interface IChatAgentResult {
 
 export const IChatAgentService = createDecorator<IChatAgentService>('chatAgentService');
 
-export interface IChatAgentService {
+export interface IBaseChatAgentService {
 	_serviceBrand: undefined;
 	readonly onDidChangeAgents: Event<void>;
 	registerAgent(agent: IChatAgent): IDisposable;
@@ -113,19 +116,24 @@ export interface IChatAgentService {
 	getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, token: CancellationToken): Promise<IChatFollowup[]>;
 	getAgents(): Array<IChatAgent>;
 	getAgent(id: string): IChatAgent | undefined;
-	getDefaultAgent(): IChatAgent | undefined;
+	getDefaultAgent(providerId: string): IChatAgent | undefined;
+	getDefaultAgents(): Array<IChatAgent>;
 	getSecondaryAgent(): IChatAgent | undefined;
 	hasAgent(id: string): boolean;
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
 
-export class ChatAgentService extends Disposable implements IChatAgentService {
+export interface IChatAgentService extends IBaseChatAgentService {
+	makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
+}
+
+export class ChatAgentService extends Disposable implements IBaseChatAgentService {
 
 	public static readonly AGENT_LEADER = '@';
 
 	declare _serviceBrand: undefined;
 
-	private readonly _agents = new Map<string, { agent: IChatAgent }>();
+	protected readonly _agents = new Map<string, { agent: IChatAgent }>();
 
 	private readonly _onDidChangeAgents = this._register(new Emitter<void>());
 	readonly onDidChangeAgents: Event<void> = this._onDidChangeAgents.event;
@@ -159,8 +167,12 @@ export class ChatAgentService extends Disposable implements IChatAgentService {
 		this._onDidChangeAgents.fire();
 	}
 
-	getDefaultAgent(): IChatAgent | undefined {
-		return Iterable.find(this._agents.values(), a => !!a.agent.metadata.isDefault)?.agent;
+	getDefaultAgent(providerId: string): IChatAgent | undefined {
+		return Iterable.find(this._agents.values(), a => !!a.agent.metadata.isDefault && a.agent.providerId === providerId)?.agent;
+	}
+
+	getDefaultAgents(): IChatAgent[] {
+		return Array.from(this._agents.values(), v => v.agent).filter(a => !!a.metadata.isDefault);
 	}
 
 	getSecondaryAgent(): IChatAgent | undefined {

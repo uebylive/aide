@@ -9,7 +9,7 @@ import { IActivity } from 'vs/workbench/services/activity/common/activity';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ActionBar, ActionsOrientation } from 'vs/base/browser/ui/actionbar/actionbar';
 import { CompositeActionViewItem, CompositeOverflowActivityAction, CompositeOverflowActivityActionViewItem, CompositeBarAction, ICompositeBar, ICompositeBarColors, IActivityHoverOptions } from 'vs/workbench/browser/parts/compositeBarActions';
-import { Dimension, $, addDisposableListener, EventType, EventHelper, getWindow } from 'vs/base/browser/dom';
+import { Dimension, $, addDisposableListener, EventType, EventHelper, isAncestor, getWindow } from 'vs/base/browser/dom';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { Widget } from 'vs/base/browser/ui/widget';
@@ -19,7 +19,7 @@ import { Emitter } from 'vs/base/common/event';
 import { ViewContainerLocation, IViewDescriptorService } from 'vs/workbench/common/views';
 import { IPaneComposite } from 'vs/workbench/common/panecomposite';
 import { IComposite } from 'vs/workbench/common/composite';
-import { CompositeDragAndDropData, ICompositeDragAndDrop, Before2D } from 'vs/workbench/browser/dnd';
+import { CompositeDragAndDropData, CompositeDragAndDropObserver, IDraggedCompositeData, ICompositeDragAndDrop, Before2D, toggleDropEffect } from 'vs/workbench/browser/dnd';
 import { Gesture, EventType as TouchEventType, GestureEvent } from 'vs/base/browser/touch';
 
 export interface ICompositeBarItem {
@@ -230,7 +230,6 @@ export class CompositeBar extends Widget implements ICompositeBar {
 		this._register(Gesture.addTarget(parent));
 		this._register(addDisposableListener(parent, TouchEventType.Contextmenu, e => this.showContextMenu(getWindow(parent), e)));
 
-		/*
 		// Register a drop target on the whole bar to prevent forbidden feedback
 		let insertDropBefore: Before2D | undefined = undefined;
 		this._register(CompositeDragAndDropObserver.INSTANCE.registerTarget(parent, {
@@ -264,12 +263,10 @@ export class CompositeBar extends Widget implements ICompositeBar {
 				insertDropBefore = this.updateFromDragging(parent, false, false, false);
 			}
 		}));
-		*/
 
 		return actionBarDiv;
 	}
 
-	// @ts-ignore
 	private insertAtFront(element: HTMLElement, event: DragEvent): boolean {
 		const rect = element.getBoundingClientRect();
 		const posX = event.clientX;
@@ -283,7 +280,6 @@ export class CompositeBar extends Widget implements ICompositeBar {
 		}
 	}
 
-	// @ts-ignore
 	private updateFromDragging(element: HTMLElement, showFeedback: boolean, front: boolean, isDragging: boolean): Before2D | undefined {
 		element.classList.toggle('dragged-over', isDragging);
 		element.classList.toggle('dragged-over-head', showFeedback && front);

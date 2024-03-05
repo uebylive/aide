@@ -11,13 +11,13 @@ import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/use
 import { IUserDataAutoSyncService } from 'vs/platform/userDataSync/common/userDataSync';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { VIEWLET_ID } from 'vs/workbench/contrib/extensions/common/extensions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { KeybindingsEditorInput } from 'vs/workbench/services/preferences/browser/keybindingsEditorInput';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { SettingsEditor2Input } from 'vs/workbench/services/preferences/common/preferencesEditorInput';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export class UserDataSyncTrigger extends Disposable implements IWorkbenchContribution {
 

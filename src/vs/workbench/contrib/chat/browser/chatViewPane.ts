@@ -22,7 +22,7 @@ import { Memento } from 'vs/workbench/common/memento';
 import { SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IChatViewPane } from 'vs/workbench/contrib/chat/browser/chat';
-import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
+import { ChatWidget, IChatViewState } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 
@@ -35,6 +35,8 @@ interface IViewPaneState extends IChatViewState {
 }
 
 export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.chatSidebar';
+export const CSCHAT_SIDEBAR_PANEL_ID = 'workbench.panel.csChatSidebar';
+
 export class ChatViewPane extends ViewPane implements IChatViewPane {
 	static ID = 'workbench.panel.chat.view';
 

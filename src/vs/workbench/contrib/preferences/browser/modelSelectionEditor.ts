@@ -503,7 +503,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 
 	renderTemplate(container: HTMLElement): IModelActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
-		const actionBar = new ActionBar(element, { animated: false });
+		const actionBar = new ActionBar(element);
 		return { actionBar };
 	}
 
@@ -701,7 +701,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 
 	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
-		const actionBar = new ActionBar(element, { animated: false });
+		const actionBar = new ActionBar(element);
 		return { actionBar };
 	}
 

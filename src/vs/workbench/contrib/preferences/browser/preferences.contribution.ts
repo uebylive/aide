@@ -46,9 +46,9 @@ import { SettingsEditor2Input } from 'vs/workbench/services/preferences/common/p
 import { IUserDataProfileService, CURRENT_PROFILE_CONTEXT } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import { IUserDataProfilesService } from 'vs/platform/userDataProfile/common/userDataProfile';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ModelSelectionIndicator } from 'vs/workbench/contrib/preferences/browser/modelSelectionIndicator';
 import { ModelSelectionEditor } from 'vs/workbench/contrib/preferences/browser/modelSelectionEditor';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
-import { ModelSelectionIndicator } from 'vs/workbench/contrib/preferences/browser/modelSelectionIndicator';
 
 const SETTINGS_EDITOR_COMMAND_SEARCH = 'settings.action.search';
 
@@ -1371,7 +1371,7 @@ const workbenchContributionsRegistry = Registry.as<IWorkbenchContributionsRegist
 registerWorkbenchContribution2(PreferencesActionsContribution.ID, PreferencesActionsContribution, WorkbenchPhase.BlockStartup);
 registerWorkbenchContribution2(PreferencesContribution.ID, PreferencesContribution, WorkbenchPhase.BlockStartup);
 workbenchContributionsRegistry.registerWorkbenchContribution(SettingsEditorTitleContribution, LifecyclePhase.Restored);
-workbenchContributionsRegistry.registerWorkbenchContribution(ModelSelectionIndicator, LifecyclePhase.Starting);
+workbenchContributionsRegistry.registerWorkbenchContribution(ModelSelectionIndicator, LifecyclePhase.Restored);
 
 registerEditorContribution(SettingsEditorContribution.ID, SettingsEditorContribution, EditorContributionInstantiation.AfterFirstRender);
 

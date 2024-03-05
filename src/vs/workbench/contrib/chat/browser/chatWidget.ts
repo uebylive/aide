@@ -13,6 +13,7 @@ import { isEqual } from 'vs/base/common/resources';
 import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
+import 'vs/css!./media/cschat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -31,7 +32,8 @@ import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_RESP
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
-import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, CSChatViewModel as ChatViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
@@ -147,18 +149,18 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	constructor(
 		readonly viewContext: IChatWidgetViewContext,
-		private readonly viewOptions: IChatWidgetViewOptions,
-		private readonly styles: IChatWidgetStyles,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		protected readonly viewOptions: IChatWidgetViewOptions,
+		protected readonly styles: IChatWidgetStyles,
+		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
+		@IInstantiationService protected readonly instantiationService: IInstantiationService,
+		@IChatService protected readonly chatService: IChatService,
+		@IChatAgentService protected readonly chatAgentService: IChatAgentService,
 		@IChatWidgetService chatWidgetService: IChatWidgetService,
-		@IContextMenuService private readonly contextMenuService: IContextMenuService,
-		@IChatAccessibilityService private readonly _chatAccessibilityService: IChatAccessibilityService,
-		@IInstantiationService private readonly _instantiationService: IInstantiationService,
-		@ILogService private readonly _logService: ILogService,
-		@IThemeService private readonly _themeService: IThemeService
+		@IContextMenuService protected readonly contextMenuService: IContextMenuService,
+		@IChatAccessibilityService protected readonly _chatAccessibilityService: IChatAccessibilityService,
+		@IInstantiationService protected readonly _instantiationService: IInstantiationService,
+		@ILogService protected readonly _logService: ILogService,
+		@IThemeService protected readonly _themeService: IThemeService
 	) {
 		super();
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
@@ -447,7 +449,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			let msg = '';
-			if (e.followup.agentId !== this.chatAgentService.getDefaultAgent()?.id) {
+			if (e.followup.agentId !== this.chatAgentService.getDefaultAgent(this.viewModel.providerId)?.id) {
 				msg = `${chatAgentLeader}${e.followup.agentId} `;
 				if (e.followup.subCommand) {
 					msg += `${chatSubcommandLeader}${e.followup.subCommand} `;
@@ -490,6 +492,17 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
+		const providerId = model.providerId;
+		if (providerId === 'cs-chat') {
+			this.container.classList.replace('interactive-session', 'cschat-session');
+		}
+
+		this._register(model.onDidChange(e => {
+			if (e.kind === 'initialize') {
+				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+				this.inputPart.setState(model.providerId, viewState.inputValue ?? '', requester);
+			}
+		}));
 		this.container.setAttribute('data-session-id', model.sessionId);
 		this.viewModel = this.instantiationService.createInstance(ChatViewModel, model);
 		this.viewModelDisposables.add(this.viewModel.onDidChange(e => {
@@ -508,7 +521,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
-		this.inputPart.setState(model.providerId, viewState.inputValue);
+		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
+		this.inputPart.setState(model.providerId, viewState.inputValue, requester);
 		this.contribs.forEach(c => {
 			if (c.setInputState && viewState.inputState?.[c.id]) {
 				c.setInputState(viewState.inputState?.[c.id]);

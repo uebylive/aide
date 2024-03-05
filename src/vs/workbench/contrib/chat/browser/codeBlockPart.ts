@@ -43,7 +43,8 @@ import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibil
 import { IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { IMarkdownVulnerability } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSSimpleCodeBlockData } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { MenuPreventer } from 'vs/workbench/contrib/codeEditor/browser/menuPreventer';
 import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEditor/browser/selectionClipboard';
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
@@ -70,7 +71,7 @@ export interface ILocalFileCodeBlockData extends ICodeBlockDataCommon {
 	range?: Range;
 }
 
-export type ICodeBlockData = ISimpleCodeBlockData | ILocalFileCodeBlockData;
+export type ICodeBlockData = ICSSimpleCodeBlockData | ILocalFileCodeBlockData;
 
 /**
  * Special markdown code block language id used to render a local file.
@@ -136,7 +137,7 @@ abstract class BaseCodeBlockPart<Data extends ICodeBlockData> extends Disposable
 
 	public readonly editor: CodeEditorWidget;
 	protected readonly toolbar: MenuWorkbenchToolBar;
-	private readonly contextKeyService: IContextKeyService;
+	protected contextKeyService: IContextKeyService;
 
 	abstract readonly uri: URI;
 	public readonly element: HTMLElement;
@@ -338,7 +339,7 @@ export class SimpleCodeBlockPart extends BaseCodeBlockPart<ISimpleCodeBlockData>
 		@ITextModelService textModelService: ITextModelService,
 		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService,
-		@ILanguageService private readonly languageService: ILanguageService,
+		@ILanguageService protected readonly languageService: ILanguageService,
 	) {
 		super(options, menuId, delegate, overflowWidgetsDomNode, instantiationService, contextKeyService, modelService, configurationService, accessibilityService);
 

@@ -142,8 +142,7 @@ export class ExtHostDocumentData extends MirrorTextModel {
 	private _offsetAt(position: vscode.Position): number {
 		position = this._validatePosition(position);
 		this._ensureLineStarts();
-		const returnValue = this._lineStarts!.getPrefixSum(position.line - 1) + position.character;
-		return returnValue;
+		return this._lineStarts!.getPrefixSum(position.line - 1) + position.character;
 	}
 
 	private _positionAt(offset: number): vscode.Position {

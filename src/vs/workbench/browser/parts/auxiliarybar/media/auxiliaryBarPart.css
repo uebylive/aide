@@ -14,10 +14,6 @@
 	background-color: var(--vscode-sideBar-background);
 }
 
-.monaco-workbench .part.auxiliarybar > .title > .panel-switcher-container {
-	display: none !important;
-}
-
 .monaco-workbench .part.auxiliarybar > .title > .composite-bar-container {
 	flex: 1;
 }

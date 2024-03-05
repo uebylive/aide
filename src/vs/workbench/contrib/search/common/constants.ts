@@ -41,6 +41,7 @@ export const enum SearchCommandIds {
 	ClearSearchResultsActionId = 'search.action.clearSearchResults',
 	ViewAsTreeActionId = 'search.action.viewAsTree',
 	ViewAsListActionId = 'search.action.viewAsList',
+	ToggleSearchTypeActionId = 'search.action.toggleSearchType',
 	ToggleQueryDetailsActionId = 'workbench.action.search.toggleQueryDetails',
 	ExcludeFolderFromSearchId = 'search.action.excludeFromSearch',
 	FocusNextInputActionId = 'search.focus.nextInputBox',
@@ -74,4 +75,5 @@ export const SearchContext = {
 	ViewHasFilePatternKey: new RawContextKey<boolean>('viewHasFilePattern', false),
 	ViewHasSomeCollapsibleKey: new RawContextKey<boolean>('viewHasSomeCollapsibleResult', false),
 	InTreeViewKey: new RawContextKey<boolean>('inTreeView', false),
+	IsSemanticSearchKey: new RawContextKey<boolean>('isSemanticSearch', false)
 };

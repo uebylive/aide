@@ -8,7 +8,7 @@ import { ICommandHandler } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchListFocusContextKey } from 'vs/platform/list/browser/listService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchStopIcon } from 'vs/workbench/contrib/search/browser/searchIcons';
+import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchStopIcon, searchToggleSearchType } from 'vs/workbench/contrib/search/browser/searchIcons';
 import * as Constants from 'vs/workbench/contrib/search/common/constants';
 import { ISearchHistoryService } from 'vs/workbench/contrib/search/common/searchHistoryService';
 import { FileMatch, FolderMatch, FolderMatchNoRoot, FolderMatchWorkspaceRoot, Match, SearchResult } from 'vs/workbench/contrib/search/browser/searchModel';
@@ -209,7 +209,7 @@ registerAction2(class ViewAsListAction extends Action2 {
 registerAction2(class ToggleSearchTypeCommandAction extends Action2 {
 	constructor() {
 		super({
-			id: Constants.ToggleSearchTypeActionId,
+			id: Constants.SearchCommandIds.ToggleSearchTypeActionId,
 			title: {
 				value: nls.localize('ToggleSearchTypeAction.label', "Toggle Search Type"),
 				original: 'Toggle Search Type'
@@ -225,7 +225,7 @@ registerAction2(class ToggleSearchTypeCommandAction extends Action2 {
 			}],
 			keybinding: Object.assign({
 				weight: KeybindingWeight.WorkbenchContrib,
-				when: Constants.SearchViewVisibleKey, WorkbenchListFocusContextKey,
+				when: Constants.SearchContext.SearchViewVisibleKey, WorkbenchListFocusContextKey,
 			}, ToggleSearchTypeKeybinding),
 		});
 	}

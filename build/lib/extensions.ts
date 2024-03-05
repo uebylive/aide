@@ -5,7 +5,6 @@
 
 import * as es from 'event-stream';
 import * as fs from 'fs';
-import * as os from 'os';
 import * as cp from 'child_process';
 import * as glob from 'glob';
 import * as gulp from 'gulp';
@@ -22,8 +21,6 @@ import * as ansiColors from 'ansi-colors';
 const buffer = require('gulp-buffer');
 import * as jsoncParser from 'jsonc-parser';
 import webpack = require('webpack');
-// const pLimit = require('p-limit');
-// const os = require('os');
 import { getProductionDependencies } from './dependencies';
 import { IExtensionDefinition, getExtensionStream } from './builtInExtensions';
 import { getVersion } from './getVersion';
@@ -33,28 +30,19 @@ const root = path.dirname(path.dirname(__dirname));
 const commit = getVersion(root);
 const sourceMappingURLBase = `https://ticino.blob.core.windows.net/sourcemaps/${commit}`;
 
-// Determine the maximum number of file descriptors the system allows
-// const maxFileDescriptors = os.platform() === 'win32' ? 2048 : os.sysconf('SC_OPEN_MAX');
-
-// Calculate the limit based on available file descriptors
-// const limitValue = Math.min(100, 100); // You can adjust this as needed
-
-// Create the dynamic limit function
-// const limit = pLimit(limitValue);
-
 function minifyExtensionResources(input: Stream): Stream {
 	const jsonFilter = filter(['**/*.json', '**/*.code-snippets'], { restore: true });
 	return input
 		.pipe(jsonFilter)
 		.pipe(buffer())
-		.pipe(es.map((f: File, callback) => {
+		.pipe(es.mapSync((f: File) => {
 			const errors: jsoncParser.ParseError[] = [];
 			const value = jsoncParser.parse(f.contents.toString('utf8'), errors, { allowTrailingComma: true });
 			if (errors.length === 0) {
 				// file parsed OK => just stringify to drop whitespace and comments
 				f.contents = Buffer.from(JSON.stringify(value));
 			}
-			callback(undefined, f);
+			return f;
 		}))
 		.pipe(jsonFilter.restore);
 }
@@ -210,8 +198,6 @@ function fromLocalNormal(extensionPath: string): Stream {
 
 	vsce.listFiles({ cwd: extensionPath, packageManager: vsce.PackageManager.Yarn })
 		.then(fileNames => {
-			fancyLog(`Listing out files for extension: ${ansiColors.yellow(path.basename(extensionPath))}`);
-			fancyLog(`Files present: ${fileNames}`);
 			const files = fileNames
 				.map(fileName => path.join(extensionPath, fileName))
 				.map(filePath => new File({
@@ -347,31 +333,20 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 				const absoluteManifestPath = path.join(root, manifestPath);
 				const extensionPath = path.dirname(path.join(root, manifestPath));
 				const extensionName = path.basename(extensionPath);
-				fancyLog(`Manifest Path: ${ansiColors.yellow(absoluteManifestPath)} ${absoluteManifestPath} ${root}...`);
 				return { name: extensionName, path: extensionPath, manifestPath: absoluteManifestPath };
 			})
-			.filter(({ name }) => {
-				fancyLog(`Extension name which will be packaged: ${name}...`);
-				return excludedExtensions.indexOf(name) === -1;
-			})
+			.filter(({ name }) => excludedExtensions.indexOf(name) === -1)
 			.filter(({ name }) => builtInExtensions.every(b => b.name !== name))
 			.filter(({ manifestPath }) => (forWeb ? isWebExtension(require(manifestPath)) : true))
 	);
 	const localExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...localExtensionsDescriptions.map(extension => {
-				fancyLog(`Extension name to package: ${extension.name}...`);
 				return fromLocal(extension.path, forWeb, disableMangle)
-					.pipe(rename(p => {
-						const currentDirName = p.dirname;
-						const newDirName = `extensions/${extension.name}/${p.dirname}`;
-						p.dirname = `extensions/${extension.name}/${p.dirname}`;
-						fancyLog(`Extension directory name changed from ${currentDirName} to ${newDirName}`);
-					}));
+					.pipe(rename(p => p.dirname = `extensions/${extension.name}/${p.dirname}`));
 			})
 		)
 	);
-
 
 	let result: Stream;
 	if (forWeb) {
@@ -395,20 +370,10 @@ export function packageLocalExtensionsStream(forWeb: boolean, disableMangle: boo
 }
 
 export function packageMarketplaceExtensionsStream(forWeb: boolean): Stream {
-	const platform = os.platform();
-	fancyLog('platform', platform);
-	let marketplaceExtensionsDescriptions: any[] = [];
-	if (platform !== 'win32' && platform !== 'darwin') {
-		// If we are in any environment other than windows and mac, we should
-		// switch to not bundling the extensions here from the marketplace.
-		marketplaceExtensionsDescriptions = [];
-	} else {
-		marketplaceExtensionsDescriptions = [
-			...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
-			...(forWeb ? webBuiltInExtensions : [])
-		];
-	}
-	fancyLog('marketplaceExtensions: ', marketplaceExtensionsDescriptions.length);
+	const marketplaceExtensionsDescriptions = [
+		...builtInExtensions.filter(({ name }) => (forWeb ? !marketplaceWebExtensionsExclude.has(name) : true)),
+		...(forWeb ? webBuiltInExtensions : [])
+	];
 	const marketplaceExtensionsStream = minifyExtensionResources(
 		es.merge(
 			...marketplaceExtensionsDescriptions

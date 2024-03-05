@@ -153,6 +153,7 @@ export type IChatProgress =
 
 export interface IChatProvider {
 	readonly id: string;
+	readonly extensionId: string;
 	prepareSession(token: CancellationToken): ProviderResult<IChat | undefined>;
 }
 
@@ -255,6 +256,7 @@ export interface IChatDetail {
 
 export interface IChatProviderInfo {
 	id: string;
+	extensionId: string;
 }
 
 export interface IChatTransferredSessionData {

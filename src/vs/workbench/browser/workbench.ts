@@ -141,10 +141,7 @@ export class Workbench extends Layout {
 		try {
 
 			// Configure emitter leak warning threshold
-			// TODO(skcd): This is the global leak warning threshold, hard-coded
-			// to 175 and is not configurable, I wonder what happens if we change
-			// it to solve our current problems?
-			setGlobalLeakWarningThreshold(250);
+			setGlobalLeakWarningThreshold(175);
 
 			// Services
 			const instantiationService = this.initServices(this.serviceCollection);

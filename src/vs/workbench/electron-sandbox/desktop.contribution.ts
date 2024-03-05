@@ -385,11 +385,11 @@ import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from 'vs/platform/window/electron-sand
 			},
 			'disable-chromium-sandbox': {
 				type: 'boolean',
-				description: localize('argv.disableChromiumSandbox', "Disables the Chromium sandbox. This is useful when running Aide as elevated on Linux and running under Applocker on Windows.")
+				description: localize('argv.disableChromiumSandbox', "Disables the Chromium sandbox. This is useful when running VS Code as elevated on Linux and running under Applocker on Windows.")
 			},
 			'use-inmemory-secretstorage': {
 				type: 'boolean',
-				description: localize('argv.useInMemorySecretStorage', "Ensures that an in-memory store will be used for secret storage instead of using the OS's credential store. This is often used when running Aide extension tests or when you're experiencing difficulties with the credential store.")
+				description: localize('argv.useInMemorySecretStorage', "Ensures that an in-memory store will be used for secret storage instead of using the OS's credential store. This is often used when running VS Code extension tests or when you're experiencing difficulties with the credential store.")
 			}
 		}
 	};

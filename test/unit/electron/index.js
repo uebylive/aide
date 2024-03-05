@@ -205,7 +205,7 @@ app.on('ready', () => {
 				nameShort: 'Code - OSS Dev',
 				nameLong: 'Code - OSS Dev',
 				applicationName: 'code-oss',
-				dataFolderName: '.aide',
+				dataFolderName: '.vscode-oss',
 				urlProtocol: 'code-oss',
 			}
 		};

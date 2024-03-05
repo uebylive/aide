@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, csChat, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
+import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
 import { EventEmitter } from 'events';
 import winston from 'winston';
 
@@ -13,7 +13,7 @@ import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
 import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
 import { gitCommit } from './subscriptions/gitCommit';
-import { getFilesTrackedInWorkingDirectory, getGitCurrentHash, getGitRepoName } from './git/helper';
+import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
 import { readTestSuiteRunCommand } from './utilities/activeDirectories';
@@ -34,7 +34,7 @@ import { AideQuickFix } from './quickActions/fix';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
-import { parseAllVisibleDocuments, updateParseTreeOnEdit } from './completions/text-processing/treeSitter/parseTree';
+import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
 import { changedActiveDocument, getRelevantFiles } from './utilities/openTabs';
 
 
@@ -132,7 +132,7 @@ export async function activate(context: ExtensionContext) {
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
-	window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
+	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
 
 	// we want to send the open tabs here to the sidecar
@@ -209,30 +209,29 @@ export async function activate(context: ExtensionContext) {
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
-
 	// Register chat provider
 	const chatSessionProvider = new CSChatSessionProvider();
+	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
+		sidecarClient,
+		currentRepo,
+		rootPath ?? '',
+	);
+	const interactiveSession = interactive.registerInteractiveSessionProvider(
+		'cs-chat', chatSessionProvider
+	);
+	const interactiveEditorSession = interactive.registerInteractiveEditorSessionProvider(
+		interactiveEditorSessionProvider,
+	);
+	context.subscriptions.push(interactiveEditorSession);
+	context.subscriptions.push(interactiveSession);
+
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		codeSymbolsLanguageCollection,
 		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
 		agentSystemInstruction, sidecarClient, currentRepo, projectContext,
 	);
-	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
-		sidecarClient,
-		currentRepo,
-		rootPath ?? '',
-	);
-	const interactiveSession = csChat.registerCSChatSessionProvider(
-		'cs-chat', chatSessionProvider
-	);
-	const interactiveEditorSession = csChat.registerCSChatEditorSessionProvider(
-		interactiveEditorSessionProvider,
-	);
-	context.subscriptions.push(interactiveEditorSession);
-	context.subscriptions.push(interactiveSession);
 	context.subscriptions.push(chatAgentProvider);
-	await commands.executeCommand('workbench.action.chat.clear');
 
 	context.subscriptions.push(
 		debug(

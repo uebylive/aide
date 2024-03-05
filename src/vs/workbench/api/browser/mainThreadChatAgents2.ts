@@ -15,7 +15,9 @@ import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ExtHostChatAgentsShape2, ExtHostContext, IChatProgressDto, IExtensionChatAgentMetadata, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
+import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
+import { ExtHostChatAgentsShape2, ExtHostContext, ICSChatAgentEditResponseDto, IChatProgressDto, IExtensionChatAgentMetadata, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { AddDynamicVariableAction, IAddDynamicVariableContext } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
@@ -23,6 +25,7 @@ import { IChatAgentCommand, IChatAgentService } from 'vs/workbench/contrib/chat/
 import { ChatRequestAgentPart } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
 import { IChatFollowup, IChatProgress, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
+import { ICSChatAgentEditResponse } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 type AgentData = {
@@ -39,6 +42,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 	private readonly _agentCompletionProviders = this._register(new DisposableMap<number, IDisposable>());
 
 	private readonly _pendingProgress = new Map<string, (part: IChatProgress) => void>();
+	private readonly _pendingEdits = new Map<string, (part: ICSChatAgentEditResponse) => void>();
 	private readonly _proxy: ExtHostChatAgentsShape2;
 
 	constructor(
@@ -48,6 +52,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly _chatWidgetService: IChatWidgetService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService,
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChatAgents2);
@@ -77,8 +82,10 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 
 	$registerAgent(handle: number, extension: ExtensionIdentifier, name: string, metadata: IExtensionChatAgentMetadata): void {
 		let lastSlashCommands: IChatAgentCommand[] | undefined;
+		const chatSessionProvider = this._chatService.getProviderInfos().find(p => p.extensionId === extension.value);
 		const d = this._chatAgentService.registerAgent({
 			id: name,
+			providerId: chatSessionProvider?.id,
 			extensionId: extension,
 			metadata: revive(metadata),
 			invoke: async (request, progress, history, token) => {
@@ -111,6 +118,22 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 			},
 			provideSampleQuestions: (token: CancellationToken) => {
 				return this._proxy.$provideSampleQuestions(handle, token);
+			},
+			provideEdits: async (request, progress, token) => {
+				this._pendingEdits.set(request.responseId, progress);
+				let response: ICSChatAgentEditResponseDto | undefined;
+				try {
+					response = await this._proxy.$provideEdits(handle, request.sessionId, request, token);
+				} finally {
+					this._pendingEdits.delete(request.responseId);
+				}
+
+				const edits = reviveWorkspaceEditDto(response?.edits, this._uriIdentService);
+				if (!edits) {
+					return;
+				}
+
+				return { edits, codeBlockIndex: response?.codeBlockIndex ?? 0 };
 			}
 		});
 		this._agents.set(handle, {
@@ -134,6 +157,11 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 	async $handleProgressChunk(requestId: string, progress: IChatProgressDto): Promise<number | void> {
 		const revivedProgress = revive(progress);
 		this._pendingProgress.get(requestId)?.(revivedProgress as IChatProgress);
+	}
+
+	async $handleEditProgressChunk(responseId: string, chunk: ICSChatAgentEditResponseDto): Promise<number | void> {
+		const edits = reviveWorkspaceEditDto(chunk.edits, this._uriIdentService);
+		this._pendingEdits.get(responseId)?.({ edits, codeBlockIndex: chunk.codeBlockIndex });
 	}
 
 	$registerAgentCompletionsProvider(handle: number, triggerCharacters: string[]): void {

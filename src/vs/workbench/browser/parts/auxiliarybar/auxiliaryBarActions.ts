@@ -123,8 +123,7 @@ MenuRegistry.appendMenuItems([
 			when: ContextKeyExpr.and(ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')), ContextKeyExpr.equals('config.workbench.sideBar.location', 'left')),
 			order: 2
 		}
-	},
-	{
+	}, {
 		id: MenuId.ViewTitleContext,
 		item: {
 			group: '3_workbench_layout_move',

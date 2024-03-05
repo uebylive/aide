@@ -256,7 +256,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: Record<string, vscode.CSChatVariableValue[]>,
+		variables: readonly vscode.ChatResolvedVariable[],
 		projectLabels: string[],
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
@@ -470,7 +470,7 @@ export class SideCarClient {
 							}
 							const completeLine = bufferedAnswer.substring(0, indexOfNewLine);
 							// if we are going to start with a new line, then we need to have \n as the prefix
-							const prefix = isNewLineStart ? "\n" : '';
+							const prefix = isNewLineStart ? '\n' : '';
 							// if the previous lines are there then we join it with \n else we just join with ''
 							const joinString = runningPreviousLines === '' ? '' : '\n';
 							const finalCompletion = prefix + runningPreviousLines + joinString + completeLine;
@@ -492,7 +492,7 @@ export class SideCarClient {
 							if (runningPreviousLines === '') {
 								runningPreviousLines = completeLine;
 							} else {
-								runningPreviousLines = runningPreviousLines + "\n" + completeLine;
+								runningPreviousLines = runningPreviousLines + '\n' + completeLine;
 							}
 							// now move the buffered answer to after the position of the newline
 							bufferedAnswer = bufferedAnswer.substring(indexOfNewLine + 1);
@@ -786,34 +786,25 @@ export class SideCarClient {
 }
 
 interface CodeSelectionUriRange {
-	uri: string;
+	uri: vscode.Uri;
 	range: {
-		selection: {
-			startLineNumber: number;
-			startColumn: number;
-			endLineNumber: number;
-			endColumn: number;
-		};
-		decoration: {
-			startLineNumber: number;
-			startColumn: number;
-			endLineNumber: number;
-			endColumn: number;
-		};
+		startLineNumber: number;
+		startColumn: number;
+		endLineNumber: number;
+		endColumn: number;
 	};
 }
 
 async function convertVSCodeVariableToSidecar(
-	variables: Record<string, vscode.CSChatVariableValue[]>,
+	variables: readonly vscode.ChatResolvedVariable[],
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
-	const variablesArr = Array.from(new Map(Object.entries(variables)).entries());
-	for (let index = 0; index < variablesArr.length; index++) {
-		const keyValue = variablesArr[index];
-		const name = keyValue[0];
-		const value = keyValue[1];
+	for (let index = 0; index < variables.length; index++) {
+		const variable = variables[index];
+		const name = variable.name;
+		const value = variable.values;
 		if (value.length === 0) {
 			continue;
 		}
@@ -821,7 +812,7 @@ async function convertVSCodeVariableToSidecar(
 		if (typeof variableValue.value === 'string') {
 			// TODO write code from here for the selection logic
 			const parsedJson = JSON.parse(variableValue.value) as CodeSelectionUriRange;
-			const filePath = vscode.Uri.parse(parsedJson.uri);
+			const filePath = vscode.Uri.parse(parsedJson.uri.path);
 			const cachedFile = fileCache.get(filePath.fsPath);
 			if (cachedFile === undefined) {
 				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
@@ -829,12 +820,12 @@ async function convertVSCodeVariableToSidecar(
 			}
 			const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
 			const startRange = {
-				line: parsedJson.range.selection.startLineNumber,
-				character: parsedJson.range.selection.startColumn,
+				line: parsedJson.range.startLineNumber,
+				character: parsedJson.range.startColumn,
 			};
 			const endRange = {
-				line: parsedJson.range.selection.endLineNumber,
-				character: parsedJson.range.selection.endColumn,
+				line: parsedJson.range.endLineNumber,
+				character: parsedJson.range.endColumn,
 			};
 			const variableType = getVariableType(
 				name,
@@ -942,7 +933,7 @@ function getCurrentActiveWindow(): {
 	if (activeWindow === undefined) {
 		return undefined;
 	}
-	if (activeWindow.visibleRanges.length == 0) {
+	if (activeWindow.visibleRanges.length === 0) {
 		// Then we return the full length of the file here or otherwise
 		// we return whats present in the range
 		return undefined;
@@ -951,7 +942,7 @@ function getCurrentActiveWindow(): {
 	const startPosition = activeWindow.visibleRanges[0].start;
 	const endPosition = activeWindow.visibleRanges[visibleRanges.length - 1].end;
 	const fsFilePath = activeWindow.document.uri.fsPath;
-	let range = new vscode.Range(
+	const range = new vscode.Range(
 		startPosition.line,
 		0,
 		endPosition.line,

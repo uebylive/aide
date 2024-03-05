@@ -11,9 +11,10 @@ import * as htmlContent from 'vs/base/common/htmlContent';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { ResourceMap, ResourceSet } from 'vs/base/common/map';
 import { marked } from 'vs/base/common/marked/marked';
-import { parse } from 'vs/base/common/marshalling';
+import { parse, revive } from 'vs/base/common/marshalling';
 import { Mimes } from 'vs/base/common/mime';
 import { cloneAndChange } from 'vs/base/common/objects';
+import { basename } from 'vs/base/common/resources';
 import { isEmptyObject, isNumber, isString, isUndefinedOrNull } from 'vs/base/common/types';
 import { URI, UriComponents, isUriComponents } from 'vs/base/common/uri';
 import { IURITransformer } from 'vs/base/common/uriIpc';
@@ -38,11 +39,9 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from 'vs/workbench/common/edit
 import { IViewBadge } from 'vs/workbench/common/views';
 import { IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/chatProvider';
-import { IChatFollowup, IChatUserActionEvent } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChatCommandButton, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTreeData, IChatUserActionEvent } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
-import * as csChatProvider from 'vs/workbench/contrib/csChat/common/csChatProvider';
 import { DebugTreeItemCollapsibleState, IDebugVisualizationTreeItem } from 'vs/workbench/contrib/debug/common/debug';
-import { InlineCSChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineCSChat/common/inlineCSChat';
 import { IInlineChatCommandFollowup, IInlineChatFollowup, IInlineChatReplyFollowup, InlineChatResponseFeedbackKind } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import * as notebooks from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { ICellRange } from 'vs/workbench/contrib/notebook/common/notebookRange';
@@ -2239,41 +2238,12 @@ export namespace ChatInlineFollowup {
 }
 
 export namespace LanguageModelMessage {
-	export function from(message: vscode.ChatMessage): chatProvider.IChatMessage {
-		return {
-			role: ChatMessageRole.from(message.role),
-			content: message.content,
-			name: message.name
-		};
-	}
-}
 
-export namespace CSChatMessage {
-	export function to(message: csChatProvider.ICSChatMessage): vscode.ChatMessage {
-		const res = new types.ChatMessage(CSChatMessageRole.to(message.role), message.content);
-		res.name = message.name;
-		return res;
-	}
-
-
-	export function from(message: vscode.ChatMessage): csChatProvider.ICSChatMessage {
-		return {
-			role: CSChatMessageRole.from(message.role),
-			content: message.content,
-			name: message.name
-		};
-	}
-}
-
-
-export namespace ChatMessageRole {
-
-	export function to(role: chatProvider.ChatMessageRole): vscode.ChatMessageRole {
-		switch (role) {
-			case chatProvider.ChatMessageRole.System: return types.ChatMessageRole.System;
-			case chatProvider.ChatMessageRole.User: return types.ChatMessageRole.User;
-			case chatProvider.ChatMessageRole.Assistant: return types.ChatMessageRole.Assistant;
-			case chatProvider.ChatMessageRole.Function: return types.ChatMessageRole.Function;
+	export function to(message: chatProvider.IChatMessage): vscode.LanguageModelMessage {
+		switch (message.role) {
+			case chatProvider.ChatMessageRole.System: return new types.LanguageModelSystemMessage(message.content);
+			case chatProvider.ChatMessageRole.User: return new types.LanguageModelUserMessage(message.content);
+			case chatProvider.ChatMessageRole.Assistant: return new types.LanguageModelAssistantMessage(message.content);
 		}
 	}
 
@@ -2286,29 +2256,6 @@ export namespace ChatMessageRole {
 			return { role: chatProvider.ChatMessageRole.Assistant, content: message.content };
 		} else {
 			throw new Error('Invalid LanguageModelMessage');
-		}
-	}
-}
-
-export namespace CSChatMessageRole {
-
-	export function to(role: csChatProvider.ChatMessageRole): vscode.ChatMessageRole {
-		switch (role) {
-			case csChatProvider.ChatMessageRole.System: return types.ChatMessageRole.System;
-			case csChatProvider.ChatMessageRole.User: return types.ChatMessageRole.User;
-			case csChatProvider.ChatMessageRole.Assistant: return types.ChatMessageRole.Assistant;
-			case csChatProvider.ChatMessageRole.Function: return types.ChatMessageRole.Function;
-		}
-	}
-
-	export function from(role: vscode.ChatMessageRole): csChatProvider.ChatMessageRole {
-		switch (role) {
-			case types.ChatMessageRole.System: return csChatProvider.ChatMessageRole.System;
-			case types.ChatMessageRole.Assistant: return csChatProvider.ChatMessageRole.Assistant;
-			case types.ChatMessageRole.Function: return csChatProvider.ChatMessageRole.Function;
-			case types.ChatMessageRole.User:
-			default:
-				return csChatProvider.ChatMessageRole.User;
 		}
 	}
 }
@@ -2339,37 +2286,6 @@ export namespace ChatVariable {
 			value: variable.value,
 			description: variable.description
 		};
-	}
-}
-
-type IChatDynamicRequestVariable = { uri: string; range: editorRange.IRange };
-const isDynamicChatRequestVariable = (v: any): v is IChatDynamicRequestVariable => {
-	const value = JSON.parse(v);
-	return value && typeof value.uri === 'string' && editorRange.Range.isIRange(value.range);
-};
-
-export namespace CSChatVariable {
-	export function to(variable: IChatRequestVariableValue): vscode.CSChatVariableValue {
-		const value = variable.value;
-		if (isDynamicChatRequestVariable(value)) {
-			const parsedValue: IChatDynamicRequestVariable = JSON.parse(value);
-			const dynamicRequestVariable: vscode.CSChatDynamicVariableValue = {
-				uri: URI.parse(parsedValue.uri),
-				range: parsedValue.range
-			};
-
-			return {
-				level: ChatVariableLevel.to(variable.level),
-				value: dynamicRequestVariable,
-				description: variable.description
-			};
-		} else {
-			return {
-				level: ChatVariableLevel.to(variable.level),
-				value: value,
-				description: variable.description
-			};
-		}
 	}
 }
 
@@ -2685,6 +2601,7 @@ export namespace ChatResponseProgress {
 export namespace ChatAgentRequest {
 	export function to(request: IChatAgentRequest): vscode.ChatRequest {
 		return {
+			threadId: request.sessionId,
 			prompt: request.message,
 			command: request.command,
 			variables: request.variables.variables.map(ChatAgentResolvedVariable.to)

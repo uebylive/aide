@@ -12,7 +12,6 @@ const nodeUtil = require('util');
 const es = require('event-stream');
 const filter = require('gulp-filter');
 const util = require('./lib/util');
-const os = require('os');
 const { getVersion } = require('./lib/getVersion');
 const task = require('./lib/task');
 const watcher = require('./lib/watch');
@@ -32,9 +31,9 @@ const extensionsPath = path.join(path.dirname(__dirname), 'extensions');
 // });
 const compilations = [
 	'authentication-proxy/tsconfig.json',
+	'codestory/tsconfig.json',
 	'configuration-editing/build/tsconfig.json',
 	'configuration-editing/tsconfig.json',
-	'codestory/tsconfig.json',
 	'css-language-features/client/tsconfig.json',
 	'css-language-features/server/tsconfig.json',
 	'debug-auto-launch/tsconfig.json',

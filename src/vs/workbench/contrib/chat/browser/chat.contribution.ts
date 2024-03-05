@@ -28,7 +28,9 @@ import { ChatEditor, IChatEditorOptions } from 'vs/workbench/contrib/chat/browse
 import { ChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/chat/browser/chatEditorInput';
 import { ChatWidgetService } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
+import 'vs/workbench/contrib/chat/browser/contrib/csChatInputEditorContrib';
 import 'vs/workbench/contrib/chat/browser/contrib/chatHistoryVariables';
+import 'vs/workbench/contrib/chat/browser/contrib/csChatEditReviewContrib';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ChatService } from 'vs/workbench/contrib/chat/common/chatServiceImpl';
@@ -54,11 +56,16 @@ import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { registerChatFileTreeActions } from 'vs/workbench/contrib/chat/browser/actions/chatFileTreeActions';
 import { QuickChatService } from 'vs/workbench/contrib/chat/browser/chatQuick';
-import { ChatAgentService, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { CSChatAgentService as ChatAgentService } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { ChatVariablesService } from 'vs/workbench/contrib/chat/browser/chatVariables';
 import { chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChat';
+import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
+import { ChatEditSessionService, ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
+import { KeybindingPillContribution } from 'vs/workbench/contrib/chat/browser/contrib/csChatKeybindingPillContrib';
+import { KeybindingPillWidget } from 'vs/workbench/contrib/chat/browser/csKeybindingPill';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -227,6 +234,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 	constructor(
 		@IChatSlashCommandService slashCommandService: IChatSlashCommandService,
 		@ICommandService commandService: ICommandService,
+		@IChatWidgetService chatWidgetService: IChatWidgetService,
 		@IChatAgentService chatAgentService: IChatAgentService,
 		@IChatVariablesService chatVariablesService: IChatVariablesService,
 	) {
@@ -245,7 +253,9 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 			sortText: 'z1_help',
 			executeImmediately: true
 		}, async (prompt, progress) => {
-			const defaultAgent = chatAgentService.getDefaultAgent();
+			const lastFocusedWidget = chatWidgetService.lastFocusedWidget;
+			const providerId = lastFocusedWidget?.providerId!;
+			const defaultAgent = chatAgentService.getDefaultAgent(providerId);
 			const agents = chatAgentService.getAgents();
 
 			// Report prefix
@@ -311,6 +321,9 @@ workbenchContributionsRegistry.registerWorkbenchContribution(ChatAccessibleViewC
 workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlashCommandsContribution, LifecyclePhase.Eventually);
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(ChatEditorInput.TypeID, ChatEditorInputSerializer);
 
+registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
+registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
+
 registerChatActions();
 registerChatCopyActions();
 registerChatCodeBlockActions();
@@ -333,3 +346,4 @@ registerSingleton(IChatSlashCommandService, ChatSlashCommandService, Instantiati
 registerSingleton(IChatAgentService, ChatAgentService, InstantiationType.Delayed);
 registerSingleton(IChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
 registerSingleton(IVoiceChatService, VoiceChatService, InstantiationType.Delayed);
+registerSingleton(ICSChatEditSessionService, ChatEditSessionService, InstantiationType.Delayed);

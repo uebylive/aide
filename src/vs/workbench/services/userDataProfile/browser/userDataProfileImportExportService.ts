@@ -863,10 +863,6 @@ export class UserDataProfileImportExportService extends Disposable implements IU
 			progress(localize('progress extensions', "Applying Extensions..."));
 			await this.instantiationService.createInstance(ExtensionsResource).apply(profileTemplate.extensions, profile);
 		}
-		if (profileTemplate.extensions && !profile.useDefaultFlags?.modelSelection) {
-			progress(localize('progress model selection', "Applying Model Selection..."));
-			await this.instantiationService.createInstance(ModelSelectionResource).apply(profileTemplate.extensions, profile);
-		}
 
 		return profile;
 	}

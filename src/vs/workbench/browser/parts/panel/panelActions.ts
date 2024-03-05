@@ -372,8 +372,7 @@ MenuRegistry.appendMenuItems([
 			when: ContextKeyExpr.or(ContextKeyExpr.equals('config.workbench.layoutControl.type', 'toggles'), ContextKeyExpr.equals('config.workbench.layoutControl.type', 'both')),
 			order: 1
 		}
-	},
-	{
+	}, {
 		id: MenuId.ViewTitleContext,
 		item: {
 			group: '3_workbench_layout_move',

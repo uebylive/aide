@@ -215,11 +215,6 @@ export class MenuId {
 	static readonly ChatMessageTitle = new MenuId('ChatMessageTitle');
 	static readonly ChatExecute = new MenuId('ChatExecute');
 	static readonly ChatInputSide = new MenuId('ChatInputSide');
-	static readonly CSChatContext = new MenuId('CSChatContext');
-	static readonly CSChatCodeBlock = new MenuId('CSChatCodeblock');
-	static readonly CSChatMessageTitle = new MenuId('CSChatMessageTitle');
-	static readonly CSChatExecute = new MenuId('CSChatExecute');
-	static readonly CSChatInputSide = new MenuId('CSChatInputSide');
 	static readonly AccessibleView = new MenuId('AccessibleView');
 	static readonly MultiDiffEditorFileToolbar = new MenuId('MultiDiffEditorFileToolbar');
 

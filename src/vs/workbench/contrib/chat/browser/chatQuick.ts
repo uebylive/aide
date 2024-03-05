@@ -83,6 +83,10 @@ export class QuickChatService extends Disposable implements IQuickChatService {
 			return this.focus();
 		}
 
+		if (!providerId) {
+			providerId = 'cs-chat';
+		}
+
 		// Check if any providers are available. If not, show nothing
 		// This shouldn't be needed because of the precondition, but just in case
 		const providerInfo = providerId
@@ -103,7 +107,9 @@ export class QuickChatService extends Disposable implements IQuickChatService {
 		this._input.widget = this._container;
 
 		this._input.show();
-		if (!this._currentChat) {
+		if (!this._currentChat || this._currentChat.providerId !== providerInfo.id) {
+			this._container.replaceChildren();
+
 			this._currentChat = this.instantiationService.createInstance(QuickChat, {
 				providerId: providerInfo.id,
 			});
@@ -155,6 +161,8 @@ class QuickChat extends Disposable {
 	private maintainScrollTimer: MutableDisposable<IDisposable> = this._register(new MutableDisposable<IDisposable>());
 	private _deferUpdatingDynamicLayout: boolean = false;
 
+	readonly providerId: string;
+
 	constructor(
 		private readonly _options: IChatViewOptions,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -164,6 +172,7 @@ class QuickChat extends Disposable {
 		@ILayoutService private readonly layoutService: ILayoutService
 	) {
 		super();
+		this.providerId = _options.providerId;
 	}
 
 	clear() {
@@ -226,7 +235,7 @@ class QuickChat extends Disposable {
 			scopedInstantiationService.createInstance(
 				ChatWidget,
 				{ resource: true },
-				{ renderInputOnTop: true, renderStyle: 'compact' },
+				{ renderInputOnTop: false, renderStyle: 'compact' },
 				{
 					listForeground: quickInputForeground,
 					listBackground: quickInputBackground,

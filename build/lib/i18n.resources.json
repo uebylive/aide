@@ -187,6 +187,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/services/aiModel",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/contrib/quickaccess",
 			"project": "vscode-workbench"
 		},
@@ -428,10 +432,6 @@
 		},
 		{
 			"name": "vs/workbench/services/keybinding",
-			"project": "vscode-workbench"
-		},
-		{
-			"name": "vs/workbench/services/aiModel",
 			"project": "vscode-workbench"
 		},
 		{

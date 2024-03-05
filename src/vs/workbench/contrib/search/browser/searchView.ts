@@ -221,6 +221,7 @@ export class SearchView extends ViewPane {
 		this.hasFilePatternKey = Constants.SearchContext.ViewHasFilePatternKey.bindTo(this.contextKeyService);
 		this.hasSomeCollapsibleResultKey = Constants.SearchContext.ViewHasSomeCollapsibleKey.bindTo(this.contextKeyService);
 		this.treeViewKey = Constants.SearchContext.InTreeViewKey.bindTo(this.contextKeyService);
+		this.semanticSearchKey = Constants.SearchContext.IsSemanticSearchKey.bindTo(this.contextKeyService);
 
 		// scoped
 		this.contextKeyService = this._register(this.contextKeyService.createScoped(this.container));

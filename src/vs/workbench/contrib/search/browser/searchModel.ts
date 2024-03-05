@@ -1506,6 +1506,7 @@ export function searchMatchComparer(elementA: RenderableMatch, elementB: Rendera
 				const fileStatB = elementB.fileStat;
 				if (fileStatA && fileStatB) {
 					return fileStatB.mtime - fileStatA.mtime;
+
 				}
 			}
 			case SearchSortOrder.None:
