@@ -31,7 +31,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
-import { gotoDefinition } from './helpers/vscodeApi';
+import { forkSignal, typeDefinitionProvider } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -188,22 +188,6 @@ export class InlineCompletionItemProvider
 			}
 		};
 
-		const now = performance.now();
-		const response = await this.sidecarClient.getIdentifierNodes(
-			document.uri.fsPath,
-			document.getText(),
-			document.languageId,
-			position.line,
-			position.character,
-		);
-		console.log('Time taken for identifier nodes: ', performance.now() - now);
-		console.log('Identifier nodes interested', response);
-		// const responseStart = performance.now();
-		// const responses = await Promise.all(response.identifier_nodes.map((identifierNode) => {
-		// 	return gotoDefinition(document.uri, new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character));
-		// }));
-		// console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
-
 		const abortController = new AbortController();
 		if (token) {
 			if (token.isCancellationRequested) {
@@ -216,9 +200,38 @@ export class InlineCompletionItemProvider
 				});
 				// send this in the background
 				this.sidecarClient.cancelInlineCompletion(id);
-				abortController.abort()
+				abortController.abort();
 			});
 		}
+
+		const now = performance.now();
+		const response = await this.sidecarClient.getIdentifierNodes(
+			document.uri.fsPath,
+			document.getText(),
+			document.languageId,
+			position.line,
+			position.character,
+		);
+		console.log('Time taken for identifier nodes: ', performance.now() - now);
+		console.log('Identifier nodes interested', response);
+		const responseStart = performance.now();
+		const responses = await Promise.all(response.identifier_nodes.map(async (identifierNode) => {
+			// so here we have the file path and the range we are interested in
+			// we are going to send it to the sidecar.. but vscode.openTextDocument
+			// is pretty slow so what should we do?
+			const forkedSignal = forkSignal(abortController.signal);
+			const typeDefinitions = await typeDefinitionProvider(
+				document.uri,
+				new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character),
+				forkedSignal,
+			);
+			return {
+				identifierNode,
+				typeDefinitions,
+			};
+		}));
+		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
+
 
 		// When the user has the completions popup open and an item is selected that does not match
 		// the text that is already in the editor, VS Code will never render the completion.
