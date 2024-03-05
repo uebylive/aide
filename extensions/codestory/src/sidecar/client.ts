@@ -8,7 +8,7 @@ import * as path from 'path';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { getUserId } from '../utilities/uniqueId';
@@ -566,6 +566,34 @@ export class SideCarClient {
 			completion: finalAnswer,
 			stopReason: CompletionStopReason.RequestFinished,
 		};
+	}
+
+	async getIdentifierNodes(
+		filePath: string,
+		fileContent: string,
+		language: string,
+		cursorLine: number,
+		cursorColumn: number,
+	): Promise<IdentifierNodeType> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/inline_completion/get_identifier_nodes';
+		const body = {
+			file_path: filePath,
+			file_content: fileContent,
+			language,
+			cursor_line: cursorLine,
+			cursor_column: cursorColumn,
+		};
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		const finalResponse = await response.json() as IdentifierNodeType;
+		return finalResponse;
 	}
 
 	async documentContentChange(
