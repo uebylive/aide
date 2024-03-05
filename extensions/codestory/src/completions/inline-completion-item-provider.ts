@@ -31,6 +31,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
+import { gotoDefinition } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -197,6 +198,11 @@ export class InlineCompletionItemProvider
 		);
 		console.log('Time taken for identifier nodes: ', performance.now() - now);
 		console.log('Identifier nodes interested', response);
+		// const responseStart = performance.now();
+		// const responses = await Promise.all(response.identifier_nodes.map((identifierNode) => {
+		// 	return gotoDefinition(document.uri, new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character));
+		// }));
+		// console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 		const abortController = new AbortController();
 		if (token) {

@@ -466,13 +466,13 @@ export type LLMTypeVariant = LLMType | CustomLLMType;
 export type IdentifierNodeInformation = {
 	identifier: string;
 	range: {
-		start_position: {
+		startPosition: {
 			line: number;
-			column: number;
+			character: number;
 		};
-		end_position: {
+		endPosition: {
 			line: number;
-			column: number;
+			character: number;
 		};
 	};
 };
