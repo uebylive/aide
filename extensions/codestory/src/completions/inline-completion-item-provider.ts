@@ -187,6 +187,17 @@ export class InlineCompletionItemProvider
 			}
 		};
 
+		const now = performance.now();
+		const response = await this.sidecarClient.getIdentifierNodes(
+			document.uri.fsPath,
+			document.getText(),
+			document.languageId,
+			position.line,
+			position.character,
+		);
+		console.log('Time taken for identifier nodes: ', performance.now() - now);
+		console.log('Identifier nodes interested', response);
+
 		const abortController = new AbortController();
 		if (token) {
 			if (token.isCancellationRequested) {

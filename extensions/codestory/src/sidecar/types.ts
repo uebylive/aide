@@ -457,11 +457,29 @@ export enum LLMType {
 }
 
 export type CustomLLMType = {
-	kind: "Custom";
+	kind: 'Custom';
 	value: string;
 }
 
 export type LLMTypeVariant = LLMType | CustomLLMType;
+
+export type IdentifierNodeInformation = {
+	identifier: string;
+	range: {
+		start_position: {
+			line: number;
+			column: number;
+		};
+		end_position: {
+			line: number;
+			column: number;
+		};
+	};
+};
+
+export type IdentifierNodeType = {
+	identifier_nodes: IdentifierNodeInformation[];
+};
 
 
 // Helper function to convert the model configuration to the sidecar type
