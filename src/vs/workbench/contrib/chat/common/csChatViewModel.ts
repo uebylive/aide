@@ -23,8 +23,12 @@ export interface ICSChatResponseViewModel extends IChatResponseViewModel {
 export class CSChatViewModel extends ChatViewModel implements ICSChatViewModel {
 	protected override onAddResponse(responseModel: ICSChatResponseModel) {
 		const response = this.instantiationService.createInstance(CSChatResponseViewModel, responseModel);
-		this._register(response.onDidChange(() => this._onDidChange.fire(null)));
+		this._register(response.onDidChange(() => {
+			this.updateCodeBlockTextModels(response);
+			return this._onDidChange.fire(null);
+		}));
 		this._items.push(response);
+		this.updateCodeBlockTextModels(response);
 	}
 
 	override getItems(): (IChatRequestViewModel | ICSChatResponseViewModel | IChatWelcomeMessageViewModel)[] {

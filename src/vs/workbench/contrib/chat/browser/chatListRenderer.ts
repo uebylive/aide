@@ -56,7 +56,8 @@ import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo } from 'vs/workbenc
 import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
 import { ChatMarkdownDecorationsRenderer, IMarkdownVulnerability, annotateSpecialMarkdownContent, extractVulnerabilitiesFromText } from 'vs/workbench/contrib/chat/browser/chatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { ChatCodeBlockContentProvider, CodeBlockPart, ICodeBlockData, ICodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { ChatCodeBlockContentProvider, ICodeBlockData, ICodeBlockPart, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { CSCodeBlockPart as CodeBlockPart } from 'vs/workbench/contrib/chat/browser/csCodeBlockPart';
 import { IChatAgentMetadata } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
