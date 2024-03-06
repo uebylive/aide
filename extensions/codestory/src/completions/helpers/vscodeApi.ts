@@ -7,6 +7,7 @@
 // up for using while working with the inline autocomplete
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { IdentifierNodeInformation } from '../../sidecar/types';
 
 function windowsToPosix(windowsPath: string): string {
 	let posixPath = windowsPath.split('\\').join('/');
@@ -58,41 +59,33 @@ export type TypeDefinitionProvider = {
 	range: vscode.Range;
 };
 
+export async function typeDefinitionForIdentifierNodes(
+	nodes: IdentifierNodeInformation[],
+	documentUri: vscode.Uri,
+): Promise<TypeDefinitionProvider[][]> {
+	const response = await Promise.all(nodes.map(async (identifierNode) => {
+		const typeDefinition = await typeDefinitionProvider(
+			documentUri,
+			new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character),
+		);
+		return typeDefinition;
+	}));
+	return response;
+}
+
+
 export async function typeDefinitionProvider(
 	filepath: vscode.Uri,
 	position: vscode.Position,
-	// TODO(skcd): Fix the maxeventlistener bug here which we are exceeding
-	// the limit of 10
-	abortController: AbortController,
 ): Promise<TypeDefinitionProvider[]> {
 	console.log('invoking goToDefinition');
 	console.log(position);
-	const { signal } = abortController;
-	const forkedSignal = forkSignal(signal);
 	try {
-		const locations: vscode.LocationLink[] | undefined = await Promise.race<vscode.LocationLink[] | undefined>([
-			vscode.commands.executeCommand(
-				'vscode.executeTypeDefinitionProvider',
-				filepath,
-				position
-			),
-			new Promise((resolve, reject) => {
-				forkedSignal.signal.addEventListener('abort', () => {
-					reject(new Error('Aborted'));
-				});
-				const locationLinks: vscode.LocationLink[] = [];
-				resolve(locationLinks);
-				return [];
-			}),
-		]);
-
-		if (signal.aborted) {
-			return [];
-		}
-
-		if (locations === undefined) {
-			return [];
-		}
+		const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
+			'vscode.executeTypeDefinitionProvider',
+			filepath,
+			position
+		);
 
 		return Promise.all(locations.map(async (location) => {
 			const uri = location.targetUri;
