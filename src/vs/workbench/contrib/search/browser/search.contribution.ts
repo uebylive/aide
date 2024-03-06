@@ -308,6 +308,16 @@ configurationRegistry.registerConfiguration({
 			],
 			markdownDescription: nls.localize('search.searchEditor.doubleClickBehaviour', "Configure effect of double-clicking a result in a search editor.")
 		},
+		'search.searchEditor.singleClickBehaviour': {
+			type: 'string',
+			enum: ['default', 'peekDefinition',],
+			default: 'default',
+			enumDescriptions: [
+				nls.localize('search.searchEditor.singleClickBehaviour.default', "Single-clicking does nothing."),
+				nls.localize('search.searchEditor.singleClickBehaviour.peekDefinition', "Single-clicking opens a Peek Definition window."),
+			],
+			markdownDescription: nls.localize('search.searchEditor.singleClickBehaviour', "Configure effect of single-clicking a result in a search editor.")
+		},
 		'search.searchEditor.reusePriorSearchConfiguration': {
 			type: 'boolean',
 			default: false,
@@ -320,10 +330,9 @@ configurationRegistry.registerConfiguration({
 		},
 		'search.sortOrder': {
 			'type': 'string',
-			'enum': [SearchSortOrder.None, SearchSortOrder.Default, SearchSortOrder.FileNames, SearchSortOrder.Type, SearchSortOrder.Modified, SearchSortOrder.CountDescending, SearchSortOrder.CountAscending],
+			'enum': [SearchSortOrder.Default, SearchSortOrder.FileNames, SearchSortOrder.Type, SearchSortOrder.Modified, SearchSortOrder.CountDescending, SearchSortOrder.CountAscending],
 			'default': SearchSortOrder.Default,
 			'enumDescriptions': [
-				nls.localize('searchSortOrder.none', "Results are shown in the order returned by the search implementation provider."),
 				nls.localize('searchSortOrder.default', "Results are sorted by folder and file names, in alphabetical order."),
 				nls.localize('searchSortOrder.filesOnly', "Results are sorted by file names ignoring folder order, in alphabetical order."),
 				nls.localize('searchSortOrder.type', "Results are sorted by file extensions, in alphabetical order."),

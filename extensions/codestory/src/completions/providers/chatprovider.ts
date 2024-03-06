@@ -2,26 +2,26 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import * as vscode from 'vscode';
 import { v4 as uuidv4 } from 'uuid';
+import * as vscode from 'vscode';
 
-import logger from '../../logger';
-import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
-import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
-import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
-import { debuggingFlow } from '../../llm/recipe/debugging';
-import { ToolingEventCollection } from '../../timeline/events/collection';
 import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
+import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
+import { debuggingFlow } from '../../llm/recipe/debugging';
+import logger from '../../logger';
+import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
-import { ProjectContext } from '../../utilities/workspaceContext';
-import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
-import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 import { InLineAgentContextSelection } from '../../sidecar/types';
+import { ToolingEventCollection } from '../../timeline/events/collection';
+import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
 import { getUserId } from '../../utilities/uniqueId';
+import { ProjectContext } from '../../utilities/workspaceContext';
+import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
+import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 
-class CSChatParticipant implements vscode.InteractiveSessionParticipantInformation {
+class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
 	icon?: vscode.Uri | undefined;
 
@@ -36,23 +36,6 @@ class CSChatParticipant implements vscode.InteractiveSessionParticipantInformati
 }
 
 class CSChatSession implements vscode.InteractiveSession {
-	requester: CSChatParticipant;
-	responder: CSChatParticipant;
-	inputPlaceholder?: string | undefined;
-
-	constructor(
-		requester: CSChatParticipant,
-		responder: CSChatParticipant,
-		inputPlaceholder?: string | undefined,
-	) {
-		this.requester = requester;
-		this.responder = responder;
-		this.inputPlaceholder = inputPlaceholder;
-	}
-
-	toString(): string {
-		return `CSChatSession { requester: ${this.requester.toString()}, responder: ${this.responder.toString()}, inputPlaceholder: "${this.inputPlaceholder}" }`;
-	}
 }
 
 class CSChatResponseErrorDetails implements vscode.ChatErrorDetails {
@@ -91,22 +74,7 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 
 export class CSChatSessionProvider implements vscode.InteractiveSessionProvider<CSChatSession> {
 	prepareSession(token: vscode.CancellationToken): vscode.ProviderResult<CSChatSession> {
-		logger.info('prepareSession', token);
-		const userUri = vscode.Uri.joinPath(
-			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
-			'assets',
-			'aide-user.png'
-		);
-		const agentUri = vscode.Uri.joinPath(
-			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
-			'assets',
-			'aide-agent.png'
-		);
-		return new CSChatSession(
-			new CSChatParticipant(getUserId(), userUri),
-			new CSChatParticipant('Aide', agentUri),
-			'What can I help you with today?',
-		);
+		return new CSChatSession();
 	}
 }
 
@@ -152,14 +120,20 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 		this.chatAgent = vscode.chat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
-		this.chatAgent.supportIssueReporting = true;
-		this.chatAgent.description = 'Try using /, # or @ to find specific commands';
-		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
+		this.chatAgent.fullName = 'Aide';
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
-			'aide-white.svg'
+			'aide-agent.png'
 		);
+		this.chatAgent.requester = new CSChatParticipant(getUserId(), vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'assets',
+			'aide-user.png'
+		));
+		this.chatAgent.supportIssueReporting = true;
+		this.chatAgent.description = 'What can I help you with today?';
+		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
 		this.chatAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
 				return [

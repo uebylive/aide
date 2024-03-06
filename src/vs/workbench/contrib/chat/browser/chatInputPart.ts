@@ -17,7 +17,7 @@ import { isMacintosh } from 'vs/base/common/platform';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
-import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditorWidget';
+import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
 import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
 import { IPosition } from 'vs/editor/common/core/position';
 import { ITextModel } from 'vs/editor/common/model';
@@ -96,6 +96,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private historyNavigationBackwardsEnablement!: IContextKey<boolean>;
 	private historyNavigationForewardsEnablement!: IContextKey<boolean>;
 	private onHistoryEntry = false;
+	private inHistoryNavigation = false;
 	private inputModel: ITextModel | undefined;
 	private inputEditorHasText: IContextKey<boolean>;
 	private chatCursorAtTop: IContextKey<boolean>;
@@ -201,7 +202,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.onHistoryEntry = previous || this.history.current() !== null;
 
 		aria.status(historyEntry.text);
+
+		this.inHistoryNavigation = true;
 		this.setValue(historyEntry.text);
+		this.inHistoryNavigation = false;
+
 		this._onDidLoadInputState.fire(historyEntry.state);
 		if (previous) {
 			this._inputEditor.setPosition({ lineNumber: 1, column: 1 });
@@ -310,6 +315,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			const model = this._inputEditor.getModel();
 			const inputHasText = !!model && model.getValueLength() > 0;
 			this.inputEditorHasText.set(inputHasText);
+
+			// If the user is typing on a history entry, then reset the onHistoryEntry flag so that history navigation can be disabled
+			if (!this.inHistoryNavigation) {
+				this.onHistoryEntry = false;
+			}
+
 			if (!this.onHistoryEntry) {
 				this.historyNavigationForewardsEnablement.set(!inputHasText);
 				this.historyNavigationBackwardsEnablement.set(!inputHasText);

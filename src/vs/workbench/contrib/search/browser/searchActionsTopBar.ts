@@ -8,7 +8,7 @@ import { ICommandHandler } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchListFocusContextKey } from 'vs/platform/list/browser/listService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchStopIcon, searchToggleSearchType } from 'vs/workbench/contrib/search/browser/searchIcons';
+import { searchClearIcon, searchCollapseAllIcon, searchExpandAllIcon, searchRefreshIcon, searchShowAsList, searchShowAsTree, searchSparkleEmpty, searchSparkleFilled, searchStopIcon } from 'vs/workbench/contrib/search/browser/searchIcons';
 import * as Constants from 'vs/workbench/contrib/search/common/constants';
 import { ISearchHistoryService } from 'vs/workbench/contrib/search/common/searchHistoryService';
 import { FileMatch, FolderMatch, FolderMatchNoRoot, FolderMatchWorkspaceRoot, Match, SearchResult } from 'vs/workbench/contrib/search/browser/searchModel';
@@ -19,7 +19,6 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { SearchStateKey, SearchUIState } from 'vs/workbench/contrib/search/common/search';
 import { category, getSearchView } from 'vs/workbench/contrib/search/browser/searchActionsBase';
-import { ToggleSearchTypeKeybinding } from 'vs/editor/contrib/find/browser/findModel';
 
 //#region Actions
 registerAction2(class ClearSearchHistoryCommandAction extends Action2 {
@@ -101,7 +100,7 @@ registerAction2(class CollapseDeepestExpandedLevelAction extends Action2 {
 			menu: [{
 				id: MenuId.ViewTitle,
 				group: 'navigation',
-				order: 3,
+				order: 4,
 				when: ContextKeyExpr.and(ContextKeyExpr.equals('view', VIEW_ID), ContextKeyExpr.or(Constants.SearchContext.HasSearchResults.negate(), Constants.SearchContext.ViewHasSomeCollapsibleKey)),
 			}]
 		});
@@ -123,7 +122,7 @@ registerAction2(class ExpandAllAction extends Action2 {
 			menu: [{
 				id: MenuId.ViewTitle,
 				group: 'navigation',
-				order: 3,
+				order: 4,
 				when: ContextKeyExpr.and(ContextKeyExpr.equals('view', VIEW_ID), Constants.SearchContext.HasSearchResults, Constants.SearchContext.ViewHasSomeCollapsibleKey.toNegated()),
 			}]
 		});
@@ -206,34 +205,50 @@ registerAction2(class ViewAsListAction extends Action2 {
 	}
 });
 
-registerAction2(class ToggleSearchTypeCommandAction extends Action2 {
+registerAction2(class ViewAIResultsAction extends Action2 {
 	constructor() {
 		super({
-			id: Constants.SearchCommandIds.ToggleSearchTypeActionId,
-			title: {
-				value: nls.localize('ToggleSearchTypeAction.label', "Toggle Search Type"),
-				original: 'Toggle Search Type'
-			},
+			id: Constants.SearchCommandIds.ShowAIResultsActionId,
+			title: nls.localize2('ViewAIResultsAction.label', "Show AI Results"),
 			category,
-			icon: searchToggleSearchType,
-			f1: true,
+			icon: searchSparkleEmpty,
+			precondition: Constants.SearchContext.AIResultsVisibleKey.toNegated(),
 			menu: [{
 				id: MenuId.ViewTitle,
 				group: 'navigation',
-				order: -1,
-				when: ContextKeyExpr.equals('view', VIEW_ID),
-			}],
-			keybinding: Object.assign({
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: Constants.SearchContext.SearchViewVisibleKey, WorkbenchListFocusContextKey,
-			}, ToggleSearchTypeKeybinding),
+				order: 3,
+				when: ContextKeyExpr.false(), // disabled for now
+			}]
 		});
 	}
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const searchView = getSearchView(accessor.get(IViewsService));
 		if (searchView) {
-			const isSemantic = searchView.isSemanticSearch;
-			searchView.setUseSemanticSearch(!isSemantic);
+			searchView.setAIResultsVisible(true);
+		}
+	}
+});
+
+registerAction2(class HideAIResultsAction extends Action2 {
+	constructor() {
+		super({
+			id: Constants.SearchCommandIds.HideAIResultsActionId,
+			title: nls.localize2('HideAIResultsAction.label', "Hide AI Results"),
+			category,
+			icon: searchSparkleFilled,
+			precondition: Constants.SearchContext.AIResultsVisibleKey,
+			menu: [{
+				id: MenuId.ViewTitle,
+				group: 'navigation',
+				order: 3,
+				when: ContextKeyExpr.false(), // disabled for now
+			}]
+		});
+	}
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const searchView = getSearchView(accessor.get(IViewsService));
+		if (searchView) {
+			searchView.setAIResultsVisible(false);
 		}
 	}
 });

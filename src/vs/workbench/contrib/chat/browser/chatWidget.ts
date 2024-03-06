@@ -5,39 +5,43 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { ITreeContextMenuEvent, ITreeElement } from 'vs/base/browser/ui/tree/tree';
-import { disposableTimeout } from 'vs/base/common/async';
+import { disposableTimeout, timeout } from 'vs/base/common/async';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { Emitter } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, MutableDisposable, combinedDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
 import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
 import 'vs/css!./media/cschat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
+import { ITextResourceEditorInput } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ChatTreeItem, IChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetService, IChatWidgetViewContext, IChatWidgetViewOptions } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatAccessibilityProvider, ChatListDelegate, ChatListItemRenderer, IChatListItemRendererOptions, IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
+import { IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatContributionService } from 'vs/workbench/contrib/chat/common/chatContributionService';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
-import { IChatFollowup, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
-import { isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
-import { ICSChatResponseViewModel as IChatResponseViewModel, CSChatViewModel as ChatViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
-import { IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IChatFollowup, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
+import { isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { CodeBlockModelCollection } from 'vs/workbench/contrib/chat/common/codeBlockModelCollection';
+import { CSChatViewModel as ChatViewModel, ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const $ = dom.$;
 
@@ -100,6 +104,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private tree!: WorkbenchObjectTree<ChatTreeItem>;
 	private renderer!: ChatListItemRenderer;
+	private readonly _codeBlockModelCollection: CodeBlockModelCollection;
 
 	private inputPart!: ChatInputPart;
 	private editorOptions!: ChatEditorOptions;
@@ -151,6 +156,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		readonly viewContext: IChatWidgetViewContext,
 		protected readonly viewOptions: IChatWidgetViewOptions,
 		protected readonly styles: IChatWidgetStyles,
+		@ICodeEditorService codeEditorService: ICodeEditorService,
 		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IChatService protected readonly chatService: IChatService,
@@ -158,7 +164,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IChatWidgetService chatWidgetService: IChatWidgetService,
 		@IContextMenuService protected readonly contextMenuService: IContextMenuService,
 		@IChatAccessibilityService protected readonly _chatAccessibilityService: IChatAccessibilityService,
-		@IInstantiationService protected readonly _instantiationService: IInstantiationService,
 		@ILogService protected readonly _logService: ILogService,
 		@IThemeService protected readonly _themeService: IThemeService
 	) {
@@ -167,6 +172,44 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
+
+		this._codeBlockModelCollection = this._register(instantiationService.createInstance(CodeBlockModelCollection));
+
+		this._register(codeEditorService.registerCodeEditorOpenHandler(async (input: ITextResourceEditorInput, _source: ICodeEditor | null, _sideBySide?: boolean): Promise<ICodeEditor | null> => {
+			if (input.resource.scheme !== Schemas.vscodeChatCodeBlock) {
+				return null;
+			}
+
+			const responseId = input.resource.path.split('/').at(1);
+			if (!responseId) {
+				return null;
+			}
+
+			const item = this.viewModel?.getItems().find(item => item.id === responseId);
+			if (!item) {
+				return null;
+			}
+
+			this.reveal(item);
+
+			await timeout(0); // wait for list to actually render
+
+			for (const editor of this.renderer.editorsInUse() ?? []) {
+				if (editor.uri?.toString() === input.resource.toString()) {
+					const inner = editor.editor;
+					if (input.options?.selection) {
+						inner.setSelection({
+							startLineNumber: input.options.selection.startLineNumber,
+							startColumn: input.options.selection.startColumn,
+							endLineNumber: input.options.selection.startLineNumber ?? input.options.selection.endLineNumber,
+							endColumn: input.options.selection.startColumn ?? input.options.selection.endColumn
+						});
+					}
+					return inner;
+				}
+			}
+			return null;
+		}));
 	}
 
 	get supportsFileReferences(): boolean {
@@ -342,6 +385,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.editorOptions,
 			options,
 			rendererDelegate,
+			this._codeBlockModelCollection,
 			overflowWidgetsContainer,
 		));
 		this._register(this.renderer.onDidClickFollowup(item => {
@@ -360,7 +404,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				horizontalScrolling: false,
 				supportDynamicHeights: true,
 				hideTwistiesOfChildlessElements: true,
-				accessibilityProvider: this._instantiationService.createInstance(ChatAccessibilityProvider),
+				accessibilityProvider: this.instantiationService.createInstance(ChatAccessibilityProvider),
 				keyboardNavigationLabelProvider: { getKeyboardNavigationLabel: (e: ChatTreeItem) => isRequestVM(e) ? e.message : isResponseVM(e) ? e.response.value : '' }, // TODO
 				setRowLineHeight: false,
 				overrideStyles: {
@@ -449,7 +493,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			let msg = '';
-			if (e.followup.agentId !== this.chatAgentService.getDefaultAgent(this.viewModel.providerId)?.id) {
+			if (e.followup.agentId !== this.chatAgentService.getDefaultAgent()?.id) {
 				msg = `${chatAgentLeader}${e.followup.agentId} `;
 				if (e.followup.subCommand) {
 					msg += `${chatSubcommandLeader}${e.followup.subCommand} `;
@@ -503,8 +547,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.inputPart.setState(model.providerId, viewState.inputValue ?? '', requester);
 			}
 		}));
+
+		this._codeBlockModelCollection.clear();
+
 		this.container.setAttribute('data-session-id', model.sessionId);
-		this.viewModel = this.instantiationService.createInstance(ChatViewModel, model);
+		this.viewModel = this.instantiationService.createInstance(ChatViewModel, model, this._codeBlockModelCollection);
 		this.viewModelDisposables.add(this.viewModel.onDidChange(e => {
 			this.requestInProgress.set(this.viewModel!.requestInProgress);
 			this.onDidChangeItems();
@@ -771,6 +818,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.saveState();
 		return { inputValue: this.getInput(), inputState: this.collectInputState() };
 	}
+
+
 }
 
 export class ChatWidgetService implements IChatWidgetService {

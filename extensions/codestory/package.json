@@ -68,6 +68,12 @@
 				"icon": "assets/aide-white.svg"
 			}
 		],
+		"chatParticipants": [
+			{
+				"name": "aide",
+				"isDefault": true
+			}
+		],
 		"menus": {
 			"view/title": [
 				{

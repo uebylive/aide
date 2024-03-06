@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { mapFindFirst } from 'vs/base/common/arraysFind';
-import { BugIndicatingError, onUnexpectedExternalError } from 'vs/base/common/errors';
+import { BugIndicatingError, onUnexpectedError, onUnexpectedExternalError } from 'vs/base/common/errors';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IObservable, IReader, ITransaction, autorun, derived, derivedHandleChanges, derivedOpts, recomputeInitiallyAndOnChange, observableSignal, observableValue, subtransaction, transaction } from 'vs/base/common/observable';
 import { commonPrefixLength, splitLinesIncludeSeparators } from 'vs/base/common/strings';
@@ -14,7 +14,7 @@ import { EditOperation } from 'vs/editor/common/core/editOperation';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
-import { InlineCompletionContext, InlineCompletionTriggerKind } from 'vs/editor/common/languages';
+import { InlineCompletionContext, InlineCompletionTriggerKind, PartialAcceptTriggerKind } from 'vs/editor/common/languages';
 import { ILanguageConfigurationService } from 'vs/editor/common/languages/languageConfigurationRegistry';
 import { EndOfLinePreference, ITextModel } from 'vs/editor/common/model';
 import { IFeatureDebounceInformation } from 'vs/editor/common/services/languageFeatureDebounce';
@@ -379,7 +379,7 @@ export class InlineCompletionsModel extends Disposable {
 				}
 			}
 			return acceptUntilIndexExclusive;
-		});
+		}, PartialAcceptTriggerKind.Word);
 	}
 
 	public async acceptNextLine(editor: ICodeEditor): Promise<void> {
@@ -389,10 +389,10 @@ export class InlineCompletionsModel extends Disposable {
 				return m.index + 1;
 			}
 			return text.length;
-		});
+		}, PartialAcceptTriggerKind.Line);
 	}
 
-	private async _acceptNext(editor: ICodeEditor, getAcceptUntilIndex: (position: Position, text: string) => number): Promise<void> {
+	private async _acceptNext(editor: ICodeEditor, getAcceptUntilIndex: (position: Position, text: string) => number, kind: PartialAcceptTriggerKind): Promise<void> {
 		if (editor.getModel() !== this.textModel) {
 			throw new BugIndicatingError();
 		}
@@ -448,6 +448,9 @@ export class InlineCompletionsModel extends Disposable {
 					completion.source.inlineCompletions,
 					completion.sourceInlineCompletion,
 					text.length,
+					{
+						kind,
+					}
 				);
 			}
 		} finally {
@@ -465,11 +468,18 @@ export class InlineCompletionsModel extends Disposable {
 			inlineCompletion.source.inlineCompletions,
 			inlineCompletion.sourceInlineCompletion,
 			itemEdit.text.length,
+			{
+				kind: PartialAcceptTriggerKind.Suggest,
+			}
 		);
 	}
 }
 
 export function getSecondaryEdits(textModel: ITextModel, positions: readonly Position[], primaryEdit: SingleTextEdit): SingleTextEdit[] {
+	if (positions.length === 1) {
+		// No secondary cursor positions
+		return [];
+	}
 	const primaryPosition = positions[0];
 	const secondaryPositions = positions.slice(1);
 	const primaryEditStartPosition = primaryEdit.range.getStartPosition();
@@ -478,6 +488,13 @@ export function getSecondaryEdits(textModel: ITextModel, positions: readonly Pos
 		Range.fromPositions(primaryPosition, primaryEditEndPosition)
 	);
 	const positionWithinTextEdit = subtractPositions(primaryPosition, primaryEditStartPosition);
+	if (positionWithinTextEdit.lineNumber < 1) {
+		onUnexpectedError(new BugIndicatingError(
+			`positionWithinTextEdit line number should be bigger than 0.
+			Invalid subtraction between ${primaryPosition.toString()} and ${primaryEditStartPosition.toString()}`
+		));
+		return [];
+	}
 	const secondaryEditText = substringPos(primaryEdit.text, positionWithinTextEdit);
 	return secondaryPositions.map(pos => {
 		const posEnd = addPositions(subtractPositions(pos, primaryEditStartPosition), primaryEditEndPosition);

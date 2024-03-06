@@ -172,15 +172,13 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 			});
 		}
 
-		const defaultAgents = this.chatAgentService.getDefaultAgents();
-		if (defaultAgents) {
-			for (const defaultAgent of defaultAgents) {
-				additionalPicks.push({
-					label: localize('askXInChat', "Ask {0}: {1}", defaultAgent.metadata.fullName, filter),
-					commandId: this.configuration.experimental.askChatLocation === 'quickChat' ? ASK_QUICK_QUESTION_ACTION_ID : CHAT_OPEN_ACTION_ID,
-					args: [filter]
-				});
-			}
+		const defaultAgent = this.chatAgentService.getDefaultAgent();
+		if (defaultAgent) {
+			additionalPicks.push({
+				label: localize('askXInChat', "Ask {0}: {1}", defaultAgent.metadata.fullName, filter),
+				commandId: this.configuration.experimental.askChatLocation === 'quickChat' ? ASK_QUICK_QUESTION_ACTION_ID : CHAT_OPEN_ACTION_ID,
+				args: [filter]
+			});
 		}
 
 		return additionalPicks;

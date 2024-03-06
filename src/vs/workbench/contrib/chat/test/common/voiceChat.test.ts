@@ -11,7 +11,8 @@ import { DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifec
 import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/utils';
 import { ProviderResult } from 'vs/editor/common/languages';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { IChatAgent, IChatAgentCommand, IChatAgentHistoryEntry, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatProgress } from 'vs/workbench/contrib/chat/common/chatService';
 import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IVoiceChatSessionOptions, IVoiceChatTextEvent, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChat';
@@ -29,9 +30,8 @@ suite('VoiceChat', () => {
 		providerId: string | undefined = undefined;
 		extensionId: ExtensionIdentifier = nullExtensionDescription.identifier;
 
-		constructor(readonly id: string, readonly lastSlashCommands: IChatAgentCommand[]) { }
+		constructor(readonly id: string, readonly slashCommands: IChatAgentCommand[]) { }
 		invoke(request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> { throw new Error('Method not implemented.'); }
-		provideSlashCommands(token: CancellationToken): Promise<IChatAgentCommand[]> { throw new Error('Method not implemented.'); }
 		provideWelcomeMessage?(token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined> { throw new Error('Method not implemented.'); }
 		metadata = {};
 	}
@@ -49,15 +49,15 @@ suite('VoiceChat', () => {
 	class TestChatAgentService implements IChatAgentService {
 		_serviceBrand: undefined;
 		readonly onDidChangeAgents = Event.None;
-		registerAgent(agent: IChatAgent): IDisposable { throw new Error(); }
+		registerAgent(name: string, agent: IChatAgentImplementation): IDisposable { throw new Error(); }
+		registerDynamicAgent(data: IChatAgentData, agentImpl: IChatAgentImplementation): IDisposable { throw new Error('Method not implemented.'); }
 		invokeAgent(id: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> { throw new Error(); }
-		getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, token: CancellationToken): Promise<IChatFollowup[]> { throw new Error(); }
-		getAgents(): Array<IChatAgent> { return agents; }
-		getAgent(id: string): IChatAgent | undefined { throw new Error(); }
-		getDefaultAgent(providerId: string): IChatAgent | undefined { throw new Error(); }
-		getDefaultAgents(): IChatAgent[] { throw new Error(); }
+		getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]> { throw new Error(); }
+		getRegisteredAgents(): Array<IChatAgent> { return agents; }
+		getActivatedAgents(): IChatAgent[] { return agents; }
+		getRegisteredAgent(id: string): IChatAgent | undefined { throw new Error(); }
+		getDefaultAgent(): IChatAgent | undefined { throw new Error(); }
 		getSecondaryAgent(): IChatAgent | undefined { throw new Error(); }
-		hasAgent(id: string): boolean { throw new Error(); }
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error(); }
 		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }
 	}
@@ -112,11 +112,11 @@ suite('VoiceChat', () => {
 	});
 
 	test('Agent and slash command detection (useAgents: false)', async () => {
-		testAgentsAndSlashCommandsDetection({ usesAgents: false });
+		testAgentsAndSlashCommandsDetection({ usesAgents: false, model: {} as IChatModel });
 	});
 
 	test('Agent and slash command detection (useAgents: true)', async () => {
-		testAgentsAndSlashCommandsDetection({ usesAgents: true });
+		testAgentsAndSlashCommandsDetection({ usesAgents: true, model: {} as IChatModel });
 	});
 
 	function testAgentsAndSlashCommandsDetection(options: IVoiceChatSessionOptions) {
@@ -299,7 +299,7 @@ suite('VoiceChat', () => {
 	test('waiting for input', async () => {
 
 		// Agent
-		createSession({ usesAgents: true });
+		createSession({ usesAgents: true, model: {} as IChatModel });
 
 		emitter.fire({ status: SpeechToTextStatus.Recognizing, text: 'At workspace' });
 		assert.strictEqual(event?.status, SpeechToTextStatus.Recognizing);
@@ -312,7 +312,7 @@ suite('VoiceChat', () => {
 		assert.strictEqual(event.waitingForInput, true);
 
 		// Slash Command
-		createSession({ usesAgents: true });
+		createSession({ usesAgents: true, model: {} as IChatModel });
 
 		emitter.fire({ status: SpeechToTextStatus.Recognizing, text: 'At workspace slash explain' });
 		assert.strictEqual(event?.status, SpeechToTextStatus.Recognizing);

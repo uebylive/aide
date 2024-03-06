@@ -18,7 +18,7 @@ import { StatusBarItemsExtensionPoint } from 'vs/workbench/api/browser/statusBar
 import './mainThreadLocalization';
 import './mainThreadBulkEdits';
 import './mainThreadModelSelection';
-import './mainThreadChatProvider';
+import './mainThreadLanguageModels';
 import './mainThreadChatAgents2';
 import './mainThreadChatVariables';
 import './mainThreadCodeInsets';

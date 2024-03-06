@@ -23,7 +23,7 @@ import * as network from 'vs/base/common/network';
 import 'vs/css!./media/searchview';
 import { getCodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { EmbeddedCodeEditorWidget } from 'vs/editor/browser/widget/embeddedCodeEditorWidget';
+import { EmbeddedCodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/embeddedCodeEditorWidget';
 import { IEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { Selection } from 'vs/editor/common/core/selection';
 import { IEditor } from 'vs/editor/common/editorCommon';
@@ -81,6 +81,8 @@ import { ITextFileService } from 'vs/workbench/services/textfile/common/textfile
 import { INotebookService } from 'vs/workbench/contrib/notebook/common/notebookService';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AccessibilitySignal, IAccessibilitySignalService } from 'vs/platform/accessibilitySignal/browser/accessibilitySignalService';
+import { setupCustomHover } from 'vs/base/browser/ui/hover/updatableHoverWidget';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 
 const $ = dom.$;
 
@@ -91,10 +93,6 @@ export enum SearchViewPosition {
 
 const SEARCH_CANCELLED_MESSAGE = nls.localize('searchCanceled', "Search was canceled before any results could be found - ");
 const DEBOUNCE_DELAY = 75;
-
-const USING_SEMANTIC_SEARCH = nls.localize('usingSemanticSearch', "semantic search query");
-const USING_LEXICAL_SEARCH = nls.localize('usingLexicalSearch', "lexical search query");
-
 export class SearchView extends ViewPane {
 
 	private static readonly ACTIONS_RIGHT_CLASS_NAME = 'actions-right';
@@ -159,8 +157,8 @@ export class SearchView extends ViewPane {
 
 	private treeAccessibilityProvider: SearchAccessibilityProvider;
 
-	private semanticSearchKey: IContextKey<boolean>;
 	private treeViewKey: IContextKey<boolean>;
+	private aiResultsVisibleKey: IContextKey<boolean>;
 
 	private _visibleMatches: number = 0;
 
@@ -221,7 +219,7 @@ export class SearchView extends ViewPane {
 		this.hasFilePatternKey = Constants.SearchContext.ViewHasFilePatternKey.bindTo(this.contextKeyService);
 		this.hasSomeCollapsibleResultKey = Constants.SearchContext.ViewHasSomeCollapsibleKey.bindTo(this.contextKeyService);
 		this.treeViewKey = Constants.SearchContext.InTreeViewKey.bindTo(this.contextKeyService);
-		this.semanticSearchKey = Constants.SearchContext.IsSemanticSearchKey.bindTo(this.contextKeyService);
+		this.aiResultsVisibleKey = Constants.SearchContext.AIResultsVisibleKey.bindTo(this.contextKeyService);
 
 		// scoped
 		this.contextKeyService = this._register(this.contextKeyService.createScoped(this.container));
@@ -290,27 +288,6 @@ export class SearchView extends ViewPane {
 		}));
 	}
 
-	get isSemanticSearch(): boolean {
-		return this.semanticSearchKey.get() ?? false;
-	}
-
-	private set isSemanticSearch(value: boolean) {
-		this.semanticSearchKey.set(value);
-	}
-
-	setUseSemanticSearch(useSemanticSearch: boolean): void {
-		this.isSemanticSearch = useSemanticSearch;
-		this.searchWidget.setIsSemantic(this.isSemanticSearch);
-		this.triggerQueryChange();
-		const searchExplainer = this.searchWidgetsContainerElement.querySelector('.search-explainer');
-		if (searchExplainer) {
-			const explainerText = searchExplainer.querySelector('h4');
-			if (explainerText) {
-				explainerText.textContent = this.isSemanticSearch ? USING_SEMANTIC_SEARCH : USING_LEXICAL_SEARCH;
-			}
-		}
-	}
-
 	get isTreeLayoutViewVisible(): boolean {
 		return this.treeViewKey.get() ?? false;
 	}
@@ -319,12 +296,33 @@ export class SearchView extends ViewPane {
 		this.treeViewKey.set(visible);
 	}
 
+	get aiResultsVisible(): boolean {
+		return this.aiResultsVisibleKey.get() ?? false;
+	}
+
+	private set aiResultsVisible(visible: boolean) {
+		this.aiResultsVisibleKey.set(visible);
+	}
+
 	setTreeView(visible: boolean): void {
 		if (visible === this.isTreeLayoutViewVisible) {
 			return;
 		}
 		this.isTreeLayoutViewVisible = visible;
 		this.updateIndentStyles(this.themeService.getFileIconTheme());
+		this.refreshTree();
+	}
+
+	async setAIResultsVisible(visible: boolean): Promise<void> {
+		if (visible === this.aiResultsVisible) {
+			return;
+		}
+		this.aiResultsVisible = visible;
+		if (visible) {
+			this.model.addAIResults();
+		} else {
+			this.model.disableAIResults();
+		}
 		this.refreshTree();
 	}
 
@@ -414,11 +412,6 @@ export class SearchView extends ViewPane {
 		this.container = dom.append(parent, dom.$('.search-view'));
 
 		this.searchWidgetsContainerElement = dom.append(this.container, $('.search-widgets-container'));
-
-		const searchExplainer = dom.append(this.searchWidgetsContainerElement, dom.$('.search-explainer'));
-		const explainerText = dom.append(searchExplainer, dom.$('h4'));
-		explainerText.textContent = this.isSemanticSearch ? USING_SEMANTIC_SEARCH : USING_LEXICAL_SEARCH;
-
 		this.createSearchWidget(this.searchWidgetsContainerElement);
 
 		const history = this.searchHistoryService.load();
@@ -437,7 +430,8 @@ export class SearchView extends ViewPane {
 
 		// Toggle query details button
 		this.toggleQueryDetailsButton = dom.append(this.queryDetails,
-			$('.more' + ThemeIcon.asCSSSelector(searchDetailsIcon), { tabindex: 0, role: 'button', title: nls.localize('moreSearch', "Toggle Search Details") }));
+			$('.more' + ThemeIcon.asCSSSelector(searchDetailsIcon), { tabindex: 0, role: 'button' }));
+		this._register(setupCustomHover(getDefaultHoverDelegate('element'), this.toggleQueryDetailsButton, nls.localize('moreSearch', "Toggle Search Details")));
 
 		this._register(dom.addDisposableListener(this.toggleQueryDetailsButton, dom.EventType.CLICK, e => {
 			dom.EventHelper.stop(e);
@@ -578,7 +572,6 @@ export class SearchView extends ViewPane {
 		const replaceHistory = history.replace || this.viewletState['query.replaceHistory'] || [];
 		const showReplace = typeof this.viewletState['view.showReplace'] === 'boolean' ? this.viewletState['view.showReplace'] : true;
 		const preserveCase = this.viewletState['query.preserveCase'] === true;
-		const isSemanticSearch = typeof this.viewletState['view.isSemanticSearch'] === 'boolean' ? this.viewletState['view.isSemanticSearch'] : false;
 
 		const isInNotebookMarkdownInput = this.viewletState['query.isInNotebookMarkdownInput'] ?? true;
 		const isInNotebookMarkdownPreview = this.viewletState['query.isInNotebookMarkdownPreview'] ?? true;
@@ -589,7 +582,6 @@ export class SearchView extends ViewPane {
 		this.searchWidget = this._register(this.instantiationService.createInstance(SearchWidget, container, {
 			value: contentPattern,
 			replaceValue: replaceText,
-			isSemanticSearch: isSemanticSearch,
 			isRegex: isRegex,
 			isCaseSensitive: isCaseSensitive,
 			isWholeWords: isWholeWords,
@@ -603,8 +595,7 @@ export class SearchView extends ViewPane {
 				isInNotebookMarkdownPreview,
 				isInNotebookCellInput,
 				isInNotebookCellOutput,
-			},
-			_hideReplaceToggle: isSemanticSearch
+			}
 		}));
 
 		if (!this.searchWidget.searchInput || !this.searchWidget.replaceInput) {
@@ -725,7 +716,7 @@ export class SearchView extends ViewPane {
 
 	private createResultIterator(collapseResults: ISearchConfigurationProperties['collapseResults']): Iterable<ICompressedTreeElement<RenderableMatch>> {
 		const folderMatches = this.searchResult.folderMatches()
-			.filter(fm => !fm.isEmpty())
+			.filter(fm => !fm.isEmpty() && (this.aiResultsVisible || fm.hasDownstreamNonAIResults()))
 			.sort(searchMatchComparer);
 
 		if (folderMatches.length === 1) {
@@ -744,7 +735,11 @@ export class SearchView extends ViewPane {
 		const matchArray = this.isTreeLayoutViewVisible ? folderMatch.matches() : folderMatch.allDownstreamFileMatches();
 		const matches = matchArray.sort((a, b) => searchMatchComparer(a, b, sortOrder));
 
-		return Iterable.map(matches, match => {
+		return Iterable.filter(Iterable.map(matches, match => {
+
+			if (!this.aiResultsVisible && !match.hasDownstreamNonAIResults()) {
+				return undefined;
+			}
 			let children;
 			if (match instanceof FileMatch) {
 				children = this.createFileIterator(match);
@@ -755,11 +750,15 @@ export class SearchView extends ViewPane {
 			const collapsed = (collapseResults === 'alwaysCollapse' || (match.count() > 10 && collapseResults !== 'alwaysExpand')) ? ObjectTreeElementCollapseState.PreserveOrCollapsed : ObjectTreeElementCollapseState.PreserveOrExpanded;
 
 			return <ICompressedTreeElement<RenderableMatch>>{ element: match, children, collapsed, incompressible: (match instanceof FileMatch) ? true : childFolderIncompressible };
-		});
+		}), (item): item is ICompressedTreeElement<RenderableMatch> => !!item);
 	}
 
 	private createFileIterator(fileMatch: FileMatch): Iterable<ICompressedTreeElement<RenderableMatch>> {
-		const matches = fileMatch.matches().sort(searchMatchComparer);
+		let matches = fileMatch.matches().sort(searchMatchComparer);
+
+		if (!this.aiResultsVisible) {
+			matches = matches.filter(e => !e.aiContributed);
+		}
 		return Iterable.map(matches, r => (<ICompressedTreeElement<RenderableMatch>>{ element: r, incompressible: true }));
 	}
 
@@ -1497,8 +1496,6 @@ export class SearchView extends ViewPane {
 			return;
 		}
 
-		const isSemanticSearch = this.searchWidget.searchInput.getIsSemantic();
-
 		const isRegex = this.searchWidget.searchInput.getRegex();
 		const isInNotebookMarkdownInput = this.searchWidget.getNotebookFilters().markupInput;
 		const isInNotebookMarkdownPreview = this.searchWidget.getNotebookFilters().markupPreview;
@@ -1553,7 +1550,6 @@ export class SearchView extends ViewPane {
 				matchLines: 1,
 				charsPerLine
 			},
-			isSemantic: isSemanticSearch,
 			isSmartCase: this.searchConfig.smartCase,
 			expandPatterns: true
 		};
@@ -2051,12 +2047,7 @@ export class SearchView extends ViewPane {
 	}
 
 	private get searchConfig(): ISearchConfigurationProperties {
-		const config = this.configurationService.getValue<ISearchConfigurationProperties>('search');
-		if (this.isSemanticSearch) {
-			config.sortOrder = SearchSortOrder.None;
-		}
-
-		return config;
+		return this.configurationService.getValue<ISearchConfigurationProperties>('search');
 	}
 
 	private clearHistory(): void {
@@ -2077,9 +2068,6 @@ export class SearchView extends ViewPane {
 		const onlyOpenEditors = this.inputPatternIncludes?.onlySearchInOpenEditors() ?? false;
 		const useExcludesAndIgnoreFiles = this.inputPatternExcludes?.useExcludesAndIgnoreFiles() ?? true;
 		const preserveCase = this.viewModel.preserveCase;
-
-		const isSemanticSearch = this.searchWidget.searchInput?.getIsSemantic() ?? false;
-		this.viewletState['view.isSemanticSearch'] = isSemanticSearch;
 
 		if (this.searchWidget.searchInput) {
 			const isRegex = this.searchWidget.searchInput.getRegex();
@@ -2179,7 +2167,8 @@ class SearchLinkButton extends Disposable {
 
 	constructor(label: string, handler: (e: dom.EventLike) => unknown, tooltip?: string) {
 		super();
-		this.element = $('a.pointer', { tabindex: 0, title: tooltip }, label);
+		this.element = $('a.pointer', { tabindex: 0 }, label);
+		this._register(setupCustomHover(getDefaultHoverDelegate('mouse'), this.element, tooltip));
 		this.addEventHandlers(handler);
 	}
 

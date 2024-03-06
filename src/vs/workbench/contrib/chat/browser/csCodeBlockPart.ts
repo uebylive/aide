@@ -6,9 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { basename } from 'vs/base/common/path';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { ILanguageService } from 'vs/editor/common/languages/language';
 import { IModelService } from 'vs/editor/common/services/model';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 import { MenuId } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
@@ -16,18 +14,18 @@ import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { ISimpleCodeBlockData, SimpleCodeBlockPart } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
+import { CodeBlockPart, ICodeBlockData } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
 import { IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 import { isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 
 const $ = dom.$;
 
-export interface ICSSimpleCodeBlockData extends ISimpleCodeBlockData {
+export interface ICSSimpleCodeBlockData extends ICodeBlockData {
 	edits?: IChatEditSummary | undefined;
 }
 
-export class CSSimpleCodeBlockPart extends SimpleCodeBlockPart {
+export class CSSimpleCodeBlockPart extends CodeBlockPart {
 	public readonly wrapperElement: HTMLElement;
 
 	private readonly exportedLocationRibbon: HTMLElement;
@@ -40,14 +38,12 @@ export class CSSimpleCodeBlockPart extends SimpleCodeBlockPart {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IModelService modelService: IModelService,
-		@ITextModelService textModelService: ITextModelService,
 		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService,
-		@ILanguageService languageService: ILanguageService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
 		@ICSChatEditSessionService private readonly editSessionService: ICSChatEditSessionService,
 	) {
-		super(options, menuId, delegate, overflowWidgetsDomNode, instantiationService, contextKeyService, modelService, textModelService, configurationService, accessibilityService, languageService);
+		super(options, menuId, delegate, overflowWidgetsDomNode, instantiationService, contextKeyService, modelService, configurationService, accessibilityService);
 
 		const parent = this.element.parentElement;
 		this.wrapperElement = $('.interactive-result-code-block-wrapper');

@@ -38,10 +38,10 @@ export class CSChatAgentService extends ChatAgentService implements IChatAgentSe
 			throw new Error(`No agent with id ${agentId}`);
 		}
 
-		if (!data.agent.provideEdits) {
+		if (!data.impl?.provideEdits) {
 			return;
 		}
 
-		return data.agent.provideEdits(context, progress, token);
+		return data.impl.provideEdits(context, progress, token);
 	}
 }

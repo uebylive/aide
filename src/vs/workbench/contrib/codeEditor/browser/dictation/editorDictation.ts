@@ -16,7 +16,7 @@ import { Codicon } from 'vs/base/common/codicons';
 import { EditorOption } from 'vs/editor/common/config/editorOptions';
 import { EditorAction2, EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import { KeyCode } from 'vs/base/common/keyCodes';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
@@ -41,7 +41,11 @@ export class EditorDictationStartAction extends EditorAction2 {
 			title: localize2('startDictation', "Start Dictation in Editor"),
 			category: VOICE_CATEGORY,
 			precondition: ContextKeyExpr.and(HasSpeechProvider, EDITOR_DICTATION_IN_PROGRESS.toNegated(), EditorContextKeys.readOnly.toNegated()),
-			f1: true
+			f1: true,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyV,
+				weight: KeybindingWeight.WorkbenchContrib
+			}
 		});
 	}
 
@@ -202,6 +206,8 @@ export class EditorDictation extends Disposable implements IEditorContribution {
 		const collection = this.editor.createDecorationsCollection();
 		disposables.add(toDisposable(() => collection.clear()));
 
+		disposables.add(this.editor.onDidChangeCursorPosition(() => this.widget.layout()));
+
 		let previewStart: Position | undefined = undefined;
 
 		let lastReplaceTextLength = 0;
@@ -238,7 +244,6 @@ export class EditorDictation extends Disposable implements IEditorContribution {
 			}
 
 			this.editor.revealPositionInCenterIfOutsideViewport(endPosition);
-			this.widget.layout();
 		};
 
 		const cts = new CancellationTokenSource();
