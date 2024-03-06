@@ -854,7 +854,7 @@ export interface IChatWelcomeMessageModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IChatFollowup[];
 	readonly username: string;
-	readonly avatarIcon?: ThemeIcon;
+	readonly avatarIcon?: ThemeIcon | URI;
 
 }
 
@@ -879,7 +879,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.fullName ?? '';
 	}
 
-	public get avatarIcon(): ThemeIcon | undefined {
+	public get avatarIcon(): ThemeIcon | URI | undefined {
 		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.themeIcon;
 	}
 }

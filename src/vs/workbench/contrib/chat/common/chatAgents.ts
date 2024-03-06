@@ -92,7 +92,7 @@ export interface IChatAgentMetadata {
 	fullName?: string;
 	icon?: URI;
 	iconDark?: URI;
-	themeIcon?: ThemeIcon;
+	themeIcon?: ThemeIcon | URI;
 	sampleRequest?: string;
 	supportIssueReporting?: boolean;
 	followupPlaceholder?: string;
