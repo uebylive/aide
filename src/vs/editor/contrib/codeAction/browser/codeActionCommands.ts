@@ -84,7 +84,6 @@ export class QuickFixAction extends EditorAction {
 	}
 }
 
-
 export class AideFixAction extends EditorAction {
 	constructor() {
 		super({

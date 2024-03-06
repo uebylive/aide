@@ -22,7 +22,7 @@ import { Memento } from 'vs/workbench/common/memento';
 import { SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IChatViewPane } from 'vs/workbench/contrib/chat/browser/chat';
-import { IViewState, ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
+import { ChatWidget, IChatViewState } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 
@@ -30,11 +30,13 @@ export interface IChatViewOptions {
 	readonly providerId: string;
 }
 
-interface IViewPaneState extends IViewState {
+interface IViewPaneState extends IChatViewState {
 	sessionId?: string;
 }
 
 export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.chatSidebar';
+export const CSCHAT_SIDEBAR_PANEL_ID = 'workbench.panel.csChatSidebar';
+
 export class ChatViewPane extends ViewPane implements IChatViewPane {
 	static ID = 'workbench.panel.chat.view';
 
@@ -43,8 +45,9 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 
 	private modelDisposables = this._register(new DisposableStore());
 	private memento: Memento;
-	private viewState: IViewPaneState;
+	private readonly viewState: IViewPaneState;
 	private didProviderRegistrationFail = false;
+	private didUnregisterProvider = false;
 
 	constructor(
 		private readonly chatViewOptions: IChatViewOptions,
@@ -78,10 +81,18 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 				try {
 					this._widget.setVisible(false);
 					this.updateModel(model);
+					this.didProviderRegistrationFail = false;
+					this.didUnregisterProvider = false;
 					this._onDidChangeViewWelcomeState.fire();
 				} finally {
 					this.widget.setVisible(true);
 				}
+			}
+		}));
+		this._register(this.chatService.onDidUnregisterProvider(({ providerId }) => {
+			if (providerId === this.chatViewOptions.providerId) {
+				this.didUnregisterProvider = true;
+				this._onDidChangeViewWelcomeState.fire();
 			}
 		}));
 	}
@@ -102,7 +113,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 
 	override shouldShowWelcome(): boolean {
 		const noPersistedSessions = !this.chatService.hasSessions(this.chatViewOptions.providerId);
-		return !this._widget?.viewModel && (noPersistedSessions || this.didProviderRegistrationFail);
+		return this.didUnregisterProvider || !this._widget?.viewModel && (noPersistedSessions || this.didProviderRegistrationFail);
 	}
 
 	private getSessionId() {
@@ -199,6 +210,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 
 			const widgetViewState = this._widget.getViewState();
 			this.viewState.inputValue = widgetViewState.inputValue;
+			this.viewState.inputState = widgetViewState.inputState;
 			this.memento.saveMemento();
 		}
 

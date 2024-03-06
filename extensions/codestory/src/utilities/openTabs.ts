@@ -9,28 +9,28 @@ export function baseLanguageId(languageId: string): string {
 	switch (languageId) {
 		case 'typescript':
 		case 'typescriptreact':
-			return 'typescript'
+			return 'typescript';
 		case 'javascript':
 		case 'javascriptreact':
-			return 'javascript'
+			return 'javascript';
 		default:
-			return languageId
+			return languageId;
 	}
 }
 
 export interface FileContents {
-	uri: vscode.Uri,
-	language: string,
-	contents: string
+	uri: vscode.Uri;
+	language: string;
+	contents: string;
 }
 
 export async function getRelevantFiles(): Promise<FileContents[]> {
-	const files: FileContents[] = []
+	const files: FileContents[] = [];
 
 	function addDocument(document: vscode.TextDocument): void {
 		// Only add files and VSCode user settings.
 		if (!['file', 'vscode-userdata'].includes(document.uri.scheme)) {
-			return
+			return;
 		}
 
 		// if (baseLanguageId(document.languageId) !== baseLanguageId(curLang)) {
@@ -38,26 +38,26 @@ export async function getRelevantFiles(): Promise<FileContents[]> {
 		// }
 
 		// TODO(philipp-spiess): Find out if we have a better approach to truncate very large files.
-		const endLine = Math.min(document.lineCount, 10_000)
-		const range = new vscode.Range(0, 0, endLine, 0)
+		const endLine = Math.min(document.lineCount, 10_000);
+		const range = new vscode.Range(0, 0, endLine, 0);
 
 		files.push({
 			uri: document.uri,
 			language: document.languageId,
 			contents: document.getText(range),
-		})
+		});
 	}
 
 	const visibleUris = vscode.window.visibleTextEditors.flatMap(e =>
 		e.document.uri.scheme === 'file' ? [e.document.uri] : []
-	)
+	);
 
 	// Use tabs API to get current docs instead of `vscode.workspace.textDocuments`.
 	// See related discussion: https://github.com/microsoft/vscode/issues/15178
 	// See more info about the API: https://code.visualstudio.com/api/references/vscode-api#Tab
 	const allUris: vscode.Uri[] = vscode.window.tabGroups.all
 		.flatMap(({ tabs }) => tabs.map(tab => (tab.input as any)?.uri))
-		.filter(Boolean)
+		.filter(Boolean);
 
 	// To define an upper-bound for the number of files to take into consideration, we consider all
 	// active editor tabs and the 5 tabs (7 when there are no split views) that are open around it
@@ -65,21 +65,21 @@ export async function getRelevantFiles(): Promise<FileContents[]> {
 	//
 	// Consider files that are in the same directory or called similarly to be
 	// more relevant.
-	const uris: Map<string, vscode.Uri> = new Map()
-	const surroundingTabs = visibleUris.length <= 1 ? 3 : 2
+	const uris: Map<string, vscode.Uri> = new Map();
+	const surroundingTabs = visibleUris.length <= 1 ? 3 : 2;
 	for (const visibleUri of visibleUris) {
-		uris.set(visibleUri.toString(), visibleUri)
-		const index = allUris.findIndex(uri => uri.toString() === visibleUri.toString())
+		uris.set(visibleUri.toString(), visibleUri);
+		const index = allUris.findIndex(uri => uri.toString() === visibleUri.toString());
 
 		if (index === -1) {
-			continue
+			continue;
 		}
 
-		const start = Math.max(index - surroundingTabs, 0)
-		const end = Math.min(index + surroundingTabs, allUris.length - 1)
+		const start = Math.max(index - surroundingTabs, 0);
+		const end = Math.min(index + surroundingTabs, allUris.length - 1);
 
 		for (let j = start; j <= end; j++) {
-			uris.set(allUris[j].toString(), allUris[j])
+			uris.set(allUris[j].toString(), allUris[j]);
 		}
 	}
 
@@ -87,25 +87,25 @@ export async function getRelevantFiles(): Promise<FileContents[]> {
 		await Promise.all(
 			[...uris.values()].map(async uri => {
 				if (!uri) {
-					return []
+					return [];
 				}
 
 				try {
-					return [await vscode.workspace.openTextDocument(uri)]
+					return [await vscode.workspace.openTextDocument(uri)];
 				} catch (error) {
-					console.error(error)
-					return []
+					console.error(error);
+					return [];
 				}
 			})
 		)
-	).flat()
+	).flat();
 
 	for (const document of docs) {
 		if (document.fileName.endsWith('.git')) {
 			// The VS Code API returns fils with the .git suffix for every open file
-			continue
+			continue;
 		}
-		addDocument(document)
+		addDocument(document);
 	}
 
 	// await Promise.all(
@@ -118,15 +118,15 @@ export async function getRelevantFiles(): Promise<FileContents[]> {
 	// 		}
 	// 	})
 	// )
-	return files
+	return files;
 }
 
 export async function changedActiveDocument(document: vscode.TextEditor | undefined, sidecarClient: SideCarClient) {
 	if (document === undefined) {
-		return
+		return;
 	}
 	if (document.document.uri.scheme === 'codegen') {
-		return
+		return;
 	}
 	await sidecarClient.documentOpen(
 		document.document.uri.fsPath,

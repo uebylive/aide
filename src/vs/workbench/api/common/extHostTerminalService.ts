@@ -63,6 +63,7 @@ interface IEnvironmentVariableCollection extends vscode.EnvironmentVariableColle
 export interface ITerminalInternalOptions {
 	cwd?: string | URI;
 	isFeatureTerminal?: boolean;
+	forceShellIntegration?: boolean;
 	useShellEnvironment?: boolean;
 	resolvedExtHostIdentifier?: ExtHostTerminalIdentifier;
 	/**
@@ -165,6 +166,7 @@ export class ExtHostTerminal {
 			initialText: options.message ?? undefined,
 			strictEnv: options.strictEnv ?? undefined,
 			hideFromUser: options.hideFromUser ?? undefined,
+			forceShellIntegration: internalOptions?.forceShellIntegration ?? undefined,
 			isFeatureTerminal: internalOptions?.isFeatureTerminal ?? undefined,
 			isExtensionOwnedTerminal: true,
 			useShellEnvironment: internalOptions?.useShellEnvironment ?? undefined,
@@ -174,7 +176,7 @@ export class ExtHostTerminal {
 	}
 
 
-	public async createExtensionTerminal(location?: TerminalLocation | vscode.TerminalEditorLocationOptions | vscode.TerminalSplitLocationOptions, parentTerminal?: ExtHostTerminalIdentifier, iconPath?: TerminalIcon, color?: ThemeColor): Promise<number> {
+	public async createExtensionTerminal(location?: TerminalLocation | vscode.TerminalEditorLocationOptions | vscode.TerminalSplitLocationOptions, internalOptions?: ITerminalInternalOptions, parentTerminal?: ExtHostTerminalIdentifier, iconPath?: TerminalIcon, color?: ThemeColor): Promise<number> {
 		if (typeof this._id !== 'string') {
 			throw new Error('Terminal has already been created');
 		}
@@ -183,7 +185,7 @@ export class ExtHostTerminal {
 			isExtensionCustomPtyTerminal: true,
 			icon: iconPath,
 			color: ThemeColor.isThemeColor(color) ? color.id : undefined,
-			location: this._serializeParentTerminal(location, parentTerminal),
+			location: internalOptions?.location || this._serializeParentTerminal(location, parentTerminal),
 			isTransient: true
 		});
 		// At this point, the id has been set via `$acceptTerminalOpened`
@@ -469,7 +471,7 @@ export abstract class BaseExtHostTerminalService extends Disposable implements I
 	public createExtensionTerminal(options: vscode.ExtensionTerminalOptions, internalOptions?: ITerminalInternalOptions): vscode.Terminal {
 		const terminal = new ExtHostTerminal(this._proxy, generateUuid(), options, options.name);
 		const p = new ExtHostPseudoterminal(options.pty);
-		terminal.createExtensionTerminal(options.location, this._serializeParentTerminal(options, internalOptions).resolvedExtHostIdentifier, asTerminalIcon(options.iconPath), asTerminalColor(options.color)).then(id => {
+		terminal.createExtensionTerminal(options.location, internalOptions, this._serializeParentTerminal(options, internalOptions).resolvedExtHostIdentifier, asTerminalIcon(options.iconPath), asTerminalColor(options.color)).then(id => {
 			const disposable = this._setupExtHostProcessListeners(id, p);
 			this._terminalProcessDisposables[id] = disposable;
 		});
@@ -934,7 +936,7 @@ export abstract class BaseExtHostTerminalService extends Disposable implements I
 			// following calls to createTerminal will be created with the new environment. It will
 			// result in more noise by sending multiple updates when called but collections are
 			// expected to be small.
-			this._syncEnvironmentVariableCollection(extensionIdentifier, collection!);
+			this._syncEnvironmentVariableCollection(extensionIdentifier, collection);
 		});
 	}
 }

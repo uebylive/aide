@@ -28,8 +28,8 @@ import { CodeActionFilter, CodeActionItem, CodeActionKind, CodeActionSet, CodeAc
 
 export const codeActionCommandId = 'editor.action.codeAction';
 export const quickFixCommandId = 'editor.action.quickFix';
-export const aideFixCommandId = 'editor.action.aide.fix';
 export const autoFixCommandId = 'editor.action.autoFix';
+export const aideFixCommandId = 'editor.action.aide.fix';
 export const refactorCommandId = 'editor.action.refactor';
 export const refactorPreviewCommandId = 'editor.action.refactor.preview';
 export const sourceActionCommandId = 'editor.action.sourceAction';
@@ -246,7 +246,8 @@ function getDocumentationFromProvider(
 export enum ApplyCodeActionReason {
 	OnSave = 'onSave',
 	FromProblemsView = 'fromProblemsView',
-	FromCodeActions = 'fromCodeActions'
+	FromCodeActions = 'fromCodeActions',
+	FromAILightbulb = 'fromAILightbulb' // direct invocation when clicking on the AI lightbulb
 }
 
 export async function applyCodeAction(

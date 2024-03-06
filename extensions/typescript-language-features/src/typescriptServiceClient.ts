@@ -355,12 +355,12 @@ export default class TypeScriptServiceClient extends Disposable implements IType
 		return this._onReady!.promise.then(f);
 	}
 
-	private info(message: string, data?: any): void {
-		this.logger.info(message, data);
+	private info(message: string, ...data: any[]): void {
+		this.logger.info(message, ...data);
 	}
 
-	private error(message: string, data?: any): void {
-		this.logger.error(message, data);
+	private error(message: string, ...data: any[]): void {
+		this.logger.error(message, ...data);
 	}
 
 	private logTelemetry(eventName: string, properties?: TelemetryProperties) {
@@ -722,7 +722,7 @@ export default class TypeScriptServiceClient extends Disposable implements IType
 	public toOpenTsFilePath(document: vscode.TextDocument, options: { suppressAlertOnFailure?: boolean } = {}): string | undefined {
 		if (!this.bufferSyncSupport.ensureHasBuffer(document.uri)) {
 			if (!options.suppressAlertOnFailure && !fileSchemes.disabledSchemes.has(document.uri.scheme)) {
-				console.error(`Typescript LSP: Unexpected resource ${document.uri}`);
+				console.error(`Unexpected resource ${document.uri}`);
 			}
 			return undefined;
 		}

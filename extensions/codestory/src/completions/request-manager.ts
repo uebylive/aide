@@ -2,28 +2,20 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { partition } from 'lodash';
 import { LRUCache } from 'lru-cache';
-import type * as vscode from 'vscode';
-import { Range } from 'vscode';
-
+import * as vscode from 'vscode';
 
 import type { DocumentContext } from './get-current-doc-context';
 import * as CompletionLogger from './logger';
 import {
 	InlineCompletionsResultSource,
-	type LastInlineCompletionCandidate,
 } from './get-inline-completions';
-import { logCompletionBookkeepingEvent, type CompletionLogID } from './logger';
-import { reuseLastCandidate } from './reuse-last-candidate';
 import {
-	processInlineCompletions,
 	type InlineCompletionItemWithAnalytics,
 } from './text-processing/process-inline-completions';
-import { getPositionAfterTextInsertion, getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
+import { getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
 import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
-import { STOP_REASON_HOT_STREAK } from './providers/hot-streak';
 
 export const isDefined = <T>(value: T): value is NonNullable<T> => value !== undefined && value !== null;
 
@@ -56,8 +48,8 @@ interface RequestsManagerParams {
 	requestParams: RequestParams;
 	isCacheEnabled: boolean;
 	provider: Provider;
-	logger: CompletionLogger.LoggingService,
-	spanId: string,
+	logger: CompletionLogger.LoggingService;
+	spanId: string;
 	startTime: number;
 }
 
@@ -88,8 +80,8 @@ export class RequestManager {
 	public checkCache(
 		params: Pick<RequestsManagerParams, 'requestParams' | 'isCacheEnabled' | 'logger' | 'spanId'>
 	): RequestManagerResult | null {
-		const { requestParams, isCacheEnabled, logger, spanId } = params
-		const cachedCompletions = this.cache.get(requestParams)
+		const { requestParams, isCacheEnabled, logger, spanId } = params;
+		const cachedCompletions = this.cache.get(requestParams);
 
 		if (isCacheEnabled && cachedCompletions) {
 			logger.logInfo('sidecar.request_manager.cache_hit', {
@@ -97,9 +89,9 @@ export class RequestManager {
 				'id': spanId,
 			});
 			// addAutocompleteDebugEvent('RequestManager.checkCache', { cachedCompletions })
-			return cachedCompletions
+			return cachedCompletions;
 		}
-		return null
+		return null;
 	}
 
 	public async requestPlain(params: RequestsManagerParams): Promise<RequestManagerResult> {
@@ -133,10 +125,10 @@ export class RequestManager {
 				return {
 					completions: [{
 						insertText: completionToShow,
-						range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow)),
+						range: new vscode.Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow)),
 					}],
 					source: InlineCompletionsResultSource.Cache,
-				}
+				};
 			} else {
 				// we should terminate the running request in the background as its not useful anymore
 				// and set our cache to empty right here and then start a new request
@@ -150,7 +142,7 @@ export class RequestManager {
 		const abortController = new AbortController();
 		this.previousRequest = abortController;
 		this.completionCache = '';
-		let request = new InflightRequest(requestParams, abortController);
+		const request = new InflightRequest(requestParams, abortController);
 		// lets assume that there is no cache for now, we will add it back later
 		const generateCompletions = async (): Promise<void> => {
 			try {
@@ -174,7 +166,7 @@ export class RequestManager {
 					request.resolve({
 						completions: [{
 							insertText: completionToShow,
-							range: new Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow))
+							range: new vscode.Range(currentPosition, getPositionAfterTextInsertionSameLine(currentPosition, completionToShow))
 						}],
 						source: InlineCompletionsResultSource.Network,
 					});
@@ -245,6 +237,7 @@ class RequestCache {
 	});
 
 	private toCacheKey(key: Pick<RequestParams, 'docContext'>): string {
+		// allow-any-unicode-next-line
 		return `${key.docContext.prefix}█${key.docContext.nextNonEmptyLine}`;
 	}
 

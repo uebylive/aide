@@ -27,6 +27,7 @@ import { IEditorOpenContext } from 'vs/workbench/common/editor';
 import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon, invalidModelConfigIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
 import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
+import { IEditorGroup } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
 import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
 import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
@@ -59,6 +60,7 @@ export class ModelSelectionEditor extends EditorPane {
 	private dimension: DOM.Dimension | null = null;
 
 	constructor(
+		group: IEditorGroup,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
@@ -67,7 +69,7 @@ export class ModelSelectionEditor extends EditorPane {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
-		super(ModelSelectionEditor.ID, telemetryService, themeService, storageService);
+		super(ModelSelectionEditor.ID, group, telemetryService, themeService, storageService);
 
 		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
 			this.render();
@@ -503,7 +505,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 
 	renderTemplate(container: HTMLElement): IModelActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
-		const actionBar = new ActionBar(element, { animated: false });
+		const actionBar = new ActionBar(element);
 		return { actionBar };
 	}
 
@@ -701,7 +703,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 
 	renderTemplate(container: HTMLElement): IProviderActionsColumnTemplateData {
 		const element = DOM.append(container, $('.actions'));
-		const actionBar = new ActionBar(element, { animated: false });
+		const actionBar = new ActionBar(element);
 		return { actionBar };
 	}
 

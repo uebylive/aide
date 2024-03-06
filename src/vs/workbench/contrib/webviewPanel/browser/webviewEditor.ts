@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as DOM from 'vs/base/browser/dom';
-import { mainWindow } from 'vs/base/browser/window';
+import { $window } from 'vs/base/browser/window';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
@@ -53,6 +53,7 @@ export class WebviewEditor extends EditorPane {
 	private readonly _scopedContextKeyService = this._register(new MutableDisposable<IScopedContextKeyService>());
 
 	constructor(
+		group: IEditorGroup,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
@@ -62,7 +63,7 @@ export class WebviewEditor extends EditorPane {
 		@IHostService private readonly _hostService: IHostService,
 		@IContextKeyService private readonly _contextKeyService: IContextKeyService,
 	) {
-		super(WebviewEditor.ID, telemetryService, themeService, storageService);
+		super(WebviewEditor.ID, group, telemetryService, themeService, storageService);
 
 		this._register(Event.any(
 			_editorGroupsService.activePart.onDidScroll,
@@ -90,7 +91,7 @@ export class WebviewEditor extends EditorPane {
 		this._element.id = `webview-editor-element-${generateUuid()}`;
 		parent.appendChild(element);
 
-		this._scopedContextKeyService.value = this._contextKeyService.createScoped(element);
+		this._scopedContextKeyService.value = this._register(this._contextKeyService.createScoped(element));
 	}
 
 	public override dispose(): void {
@@ -122,7 +123,7 @@ export class WebviewEditor extends EditorPane {
 		this.webview?.focus();
 	}
 
-	protected override setEditorVisible(visible: boolean, group: IEditorGroup | undefined): void {
+	protected override setEditorVisible(visible: boolean): void {
 		this._visible = visible;
 		if (this.input instanceof WebviewInput && this.webview) {
 			if (visible) {
@@ -131,7 +132,7 @@ export class WebviewEditor extends EditorPane {
 				this.webview.release(this);
 			}
 		}
-		super.setEditorVisible(visible, group);
+		super.setEditorVisible(visible);
 	}
 
 	public override clearInput() {
@@ -154,16 +155,14 @@ export class WebviewEditor extends EditorPane {
 		}
 
 		await super.setInput(input, options, context, token);
-		await input.resolve(options);
+		await input.resolve();
 
 		if (token.isCancellationRequested || this._isDisposed) {
 			return;
 		}
 
 		if (input instanceof WebviewInput) {
-			if (this.group) {
-				input.updateGroup(this.group.id);
-			}
+			input.updateGroup(this.group.id);
 
 			if (!alreadyOwnsWebview) {
 				this.claimWebview(input);
@@ -186,7 +185,7 @@ export class WebviewEditor extends EditorPane {
 
 		// Webviews are not part of the normal editor dom, so we have to register our own drag and drop handler on them.
 		this._webviewVisibleDisposables.add(this._editorGroupsService.createEditorDropTarget(input.webview.container, {
-			containsGroup: (group) => this.group?.id === group.id
+			containsGroup: (group) => this.group.id === group.id
 		}));
 
 		this._webviewVisibleDisposables.add(new WebviewWindowDragMonitor(() => this.webview));
@@ -199,7 +198,7 @@ export class WebviewEditor extends EditorPane {
 		if (!this._element?.isConnected) {
 			return;
 		}
-		const rootContainer = this._workbenchLayoutService.getContainer(mainWindow, Parts.EDITOR_PART);
+		const rootContainer = this._workbenchLayoutService.getContainer($window, Parts.EDITOR_PART);
 		webview.layoutWebviewOverElement(this._element.parentElement!, dimension, rootContainer);
 	}
 

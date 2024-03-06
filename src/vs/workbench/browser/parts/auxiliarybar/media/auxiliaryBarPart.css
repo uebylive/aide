@@ -14,12 +14,13 @@
 	background-color: var(--vscode-sideBar-background);
 }
 
-.monaco-workbench .part.auxiliarybar > .title > .panel-switcher-container {
-	display: none !important;
-}
-
 .monaco-workbench .part.auxiliarybar > .title > .composite-bar-container {
 	flex: 1;
+}
+
+.monaco-workbench .part.auxiliarybar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked:not(:focus) .active-item-indicator:before,
+.monaco-workbench .part.auxiliarybar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked.clicked:focus .active-item-indicator:before {
+	border-top-color: var(--vscode-panelTitle-activeBorder) !important;
 }
 
 .monaco-workbench .part.auxiliarybar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item:hover .action-label,

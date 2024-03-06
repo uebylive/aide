@@ -4,23 +4,21 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize } from 'vs/nls';
+import { localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
-import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { IChatRequestViewModel, isRequestVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 
 export function registerChatCopyActions() {
 	registerAction2(class CopyAllAction extends Action2 {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.copyAll',
-				title: {
-					value: localize('interactive.copyAll.label', "Copy All"),
-					original: 'Copy All'
-				},
+				title: localize2('interactive.copyAll.label', "Copy All"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
@@ -52,10 +50,7 @@ export function registerChatCopyActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.copyItem',
-				title: {
-					value: localize('interactive.copyItem.label', "Copy"),
-					original: 'Copy'
-				},
+				title: localize2('interactive.copyItem.label', "Copy"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {

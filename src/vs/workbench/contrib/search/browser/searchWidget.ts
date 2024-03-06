@@ -31,7 +31,7 @@ import * as Constants from 'vs/workbench/contrib/search/common/constants';
 import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 import { isMacintosh } from 'vs/base/common/platform';
 import { IToggleStyles, Toggle } from 'vs/base/browser/ui/toggle/toggle';
-import { IViewsService } from 'vs/workbench/common/views';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { searchReplaceAllIcon, searchHideReplaceIcon, searchShowContextIcon, searchShowReplaceIcon } from 'vs/workbench/contrib/search/browser/searchIcons';
 import { ToggleSearchEditorContextLinesCommandId } from 'vs/workbench/contrib/searchEditor/browser/constants';
 import { showHistoryKeybindingHint } from 'vs/platform/history/browser/historyWidgetKeybindingHint';
@@ -42,6 +42,7 @@ import { IEditorService } from 'vs/workbench/services/editor/common/editorServic
 import { NotebookEditorInput } from 'vs/workbench/contrib/notebook/common/notebookEditorInput';
 import { GroupModelChangeKind } from 'vs/workbench/common/editor';
 import { SearchFindInput } from 'vs/workbench/contrib/search/browser/searchFindInput';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 
 /** Specified in searchview.css */
 const SingleLineInputHeight = 26;
@@ -49,7 +50,6 @@ const SingleLineInputHeight = 26;
 export interface ISearchWidgetOptions {
 	value?: string;
 	replaceValue?: string;
-	isSemanticSearch?: boolean;
 	isRegex?: boolean;
 	isCaseSensitive?: boolean;
 	isWholeWords?: boolean;
@@ -185,9 +185,9 @@ export class SearchWidget extends Widget {
 		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
-		this.replaceActive = Constants.ReplaceActiveKey.bindTo(this.contextKeyService);
-		this.searchInputBoxFocused = Constants.SearchInputBoxFocusedKey.bindTo(this.contextKeyService);
-		this.replaceInputBoxFocused = Constants.ReplaceInputBoxFocusedKey.bindTo(this.contextKeyService);
+		this.replaceActive = Constants.SearchContext.ReplaceActiveKey.bindTo(this.contextKeyService);
+		this.searchInputBoxFocused = Constants.SearchContext.SearchInputBoxFocusedKey.bindTo(this.contextKeyService);
+		this.replaceInputBoxFocused = Constants.SearchContext.ReplaceInputBoxFocusedKey.bindTo(this.contextKeyService);
 
 		const notebookOptions = options.notebookOptions ??
 		{
@@ -293,22 +293,6 @@ export class SearchWidget extends Widget {
 		}
 	}
 
-	setIsSemantic(isSemantic: boolean) {
-		this.searchInput?.setIsSemantic(isSemantic);
-		if (isSemantic) {
-			this.toggleReplaceButton?.dispose();
-		} else if (this.domNode) {
-			this.renderToggleReplaceButton(this.domNode);
-		}
-
-		if (this.isReplaceShown()) {
-			this.toggleReplace(false);
-			if (this.isReplaceActive()) {
-				this.updateReplaceActiveState();
-			}
-		}
-	}
-
 	getSearchHistory(): string[] {
 		return this.searchInput?.inputBox.getHistory() ?? [];
 	}
@@ -387,7 +371,9 @@ export class SearchWidget extends Widget {
 			buttonSecondaryBackground: undefined,
 			buttonSecondaryForeground: undefined,
 			buttonSecondaryHoverBackground: undefined,
-			buttonSeparator: undefined
+			buttonSeparator: undefined,
+			title: nls.localize('search.replace.toggle.button.title', "Toggle Replace"),
+			hoverDelegate: getDefaultHoverDelegate('element'),
 		};
 		this.toggleReplaceButton = this._register(new Button(parent, opts));
 		this.toggleReplaceButton.element.setAttribute('aria-expanded', 'false');
@@ -395,7 +381,6 @@ export class SearchWidget extends Widget {
 		this.toggleReplaceButton.icon = searchHideReplaceIcon;
 		// TODO@joao need to dispose this listener eventually
 		this.toggleReplaceButton.onDidClick(() => this.onToggleReplaceButton());
-		this.toggleReplaceButton.element.title = nls.localize('search.replace.toggle.button.title', "Toggle Replace");
 	}
 
 	private renderSearchInput(parent: HTMLElement, options: ISearchWidgetOptions): void {
@@ -403,14 +388,14 @@ export class SearchWidget extends Widget {
 			label: nls.localize('label.Search', 'Search: Type Search Term and press Enter to search'),
 			validation: (value: string) => this.validateSearchInput(value),
 			placeholder: nls.localize('search.placeHolder', "Search"),
-			appendCaseSensitiveLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.ToggleCaseSensitiveCommandId)),
-			appendWholeWordsLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.ToggleWholeWordCommandId)),
-			appendRegexLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.ToggleRegexCommandId)),
+			appendCaseSensitiveLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.SearchCommandIds.ToggleCaseSensitiveCommandId)),
+			appendWholeWordsLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.SearchCommandIds.ToggleWholeWordCommandId)),
+			appendRegexLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.SearchCommandIds.ToggleRegexCommandId)),
 			history: options.searchHistory,
 			showHistoryHint: () => showHistoryKeybindingHint(this.keybindingService),
 			flexibleHeight: true,
 			flexibleMaxHeight: SearchWidget.INPUT_MAX_HEIGHT,
-			showCommonFindToggles: !!!options.isSemanticSearch,
+			showCommonFindToggles: true,
 			inputBoxStyles: options.inputBoxStyles,
 			toggleStyles: options.toggleStyles
 		};
@@ -421,7 +406,6 @@ export class SearchWidget extends Widget {
 
 		this.searchInput.onKeyDown((keyboardEvent: IKeyboardEvent) => this.onSearchInputKeyDown(keyboardEvent));
 		this.searchInput.setValue(options.value || '');
-		this.searchInput.setIsSemantic(!!options.isSemanticSearch);
 		this.searchInput.setRegex(!!options.isRegex);
 		this.searchInput.setCaseSensitive(!!options.isCaseSensitive);
 		this.searchInput.setWholeWords(!!options.isWholeWords);
@@ -459,6 +443,7 @@ export class SearchWidget extends Widget {
 			isChecked: false,
 			title: appendKeyBindingLabel(nls.localize('showContext', "Toggle Context Lines"), this.keybindingService.lookupKeybinding(ToggleSearchEditorContextLinesCommandId)),
 			icon: searchShowContextIcon,
+			hoverDelegate: getDefaultHoverDelegate('element'),
 			...defaultToggleStyles
 		});
 		this._register(this.showContextToggle.onChange(() => this.onContextLinesChanged()));
@@ -504,7 +489,7 @@ export class SearchWidget extends Widget {
 		this.replaceInput = this._register(new ContextScopedReplaceInput(replaceBox, this.contextViewService, {
 			label: nls.localize('label.Replace', 'Replace: Type replace term and press Enter to preview'),
 			placeholder: nls.localize('search.replace.placeHolder', "Replace"),
-			appendPreserveCaseLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.TogglePreserveCaseId)),
+			appendPreserveCaseLabel: appendKeyBindingLabel('', this.keybindingService.lookupKeybinding(Constants.SearchCommandIds.TogglePreserveCaseId)),
 			history: options.replaceHistory,
 			showHistoryHint: () => showHistoryKeybindingHint(this.keybindingService),
 			flexibleHeight: true,
@@ -777,7 +762,7 @@ export function registerContributions() {
 	KeybindingsRegistry.registerCommandAndKeybindingRule({
 		id: ReplaceAllAction.ID,
 		weight: KeybindingWeight.WorkbenchContrib,
-		when: ContextKeyExpr.and(Constants.SearchViewVisibleKey, Constants.ReplaceActiveKey, CONTEXT_FIND_WIDGET_NOT_VISIBLE),
+		when: ContextKeyExpr.and(Constants.SearchContext.SearchViewVisibleKey, Constants.SearchContext.ReplaceActiveKey, CONTEXT_FIND_WIDGET_NOT_VISIBLE),
 		primary: KeyMod.Alt | KeyMod.CtrlCmd | KeyCode.Enter,
 		handler: accessor => {
 			const viewsService = accessor.get(IViewsService);

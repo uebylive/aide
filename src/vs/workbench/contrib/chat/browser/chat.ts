@@ -9,7 +9,10 @@ import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { Selection } from 'vs/editor/common/core/selection';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IChatWidgetContrib } from 'vs/workbench/contrib/chat/browser/chatWidget';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { IParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
+import { IChatRequestViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ICSChatResponseViewModel as IChatResponseViewModel, ICSChatViewModel as IChatViewModel } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
 export const IQuickChatService = createDecorator<IQuickChatService>('quickChatService');
@@ -100,18 +103,20 @@ export type IChatWidgetViewContext = IChatViewViewContext | IChatResourceViewCon
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
 	readonly onDidAcceptInput: Event<void>;
+	readonly onDidSubmitAgent: Event<{ agent: IChatAgentData; slashCommand?: IChatAgentCommand }>;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;
 	readonly providerId: string;
 	readonly supportsFileReferences: boolean;
+	readonly parsedInput: IParsedChatRequest;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
 	reveal(item: ChatTreeItem): void;
 	focus(item: ChatTreeItem): void;
 	moveFocus(item: ChatTreeItem, type: 'next' | 'previous'): void;
 	getFocus(): ChatTreeItem | undefined;
-	updateInput(query?: string): void;
+	setInput(query?: string): void;
 	getInput(): string;
 	acceptInput(query?: string): void;
 	acceptInputWithPrefix(prefix: string): void;

@@ -93,7 +93,7 @@
 }
 
 .monaco-workbench .part.statusbar > .items-container > .statusbar-item.right.last-visible-item span.codicon {
-	/* margin-right: 7px; /* Add margin to the most right status bar item */
+	/* margin-right: 7px; Add margin to the most right status bar item */
 	font-size: 18px;
 }
 
