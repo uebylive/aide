@@ -25,7 +25,7 @@ export interface ICSSimpleCodeBlockData extends ICodeBlockData {
 	edits?: IChatEditSummary | undefined;
 }
 
-export class CSSimpleCodeBlockPart extends CodeBlockPart {
+export class CSCodeBlockPart extends CodeBlockPart {
 	public readonly wrapperElement: HTMLElement;
 
 	private readonly exportedLocationRibbon: HTMLElement;
