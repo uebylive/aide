@@ -31,7 +31,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
-import { forkSignal, typeDefinitionProvider } from './helpers/vscodeApi';
+import { TypeDefinitionProvider, forkSignal, typeDefinitionForIdentifierNodes, typeDefinitionProvider } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -215,21 +215,18 @@ export class InlineCompletionItemProvider
 		console.log('Time taken for identifier nodes: ', performance.now() - now);
 		console.log('Identifier nodes interested', response);
 		const responseStart = performance.now();
-		const responses = await Promise.all(response.identifier_nodes.map(async (identifierNode) => {
-			// so here we have the file path and the range we are interested in
-			// we are going to send it to the sidecar.. but vscode.openTextDocument
-			// is pretty slow so what should we do?
-			const forkedSignal = forkSignal(abortController.signal);
-			const typeDefinitions = await typeDefinitionProvider(
-				document.uri,
-				new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character),
-				forkedSignal,
-			);
-			return {
-				identifierNode,
-				typeDefinitions,
-			};
-		}));
+		let responses: TypeDefinitionProvider[][] | unknown = [];
+		try {
+			responses = await Promise.race([typeDefinitionForIdentifierNodes(response.identifier_nodes, document.uri), new Promise((_, reject) => {
+				const { signal } = abortController;
+				signal.addEventListener('abort', () => {
+					reject(new Error('Aborted'));
+				});
+				// resolve([]);
+			})]);
+		} catch (exception) {
+			responses = [];
+		}
 		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 
