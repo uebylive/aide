@@ -13,7 +13,6 @@ import 'vs/css!./media/modelSelectionIndicator';
 import * as nls from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IAIModelSelectionService, IModelProviders, ProviderConfig } from 'vs/platform/aiModel/common/aiModels';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
@@ -30,7 +29,6 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	constructor(
 		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
-		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
 	) {
@@ -53,7 +51,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 				super({
 					id: ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID,
 					category,
-					title: { value: nls.localize('modelSelection.switch', "Switch Model"), original: 'Switch Model' },
+					title: nls.localize2('modelSelection.switch', "Switch Model"),
 					f1: true,
 					keybinding: {
 						weight: KeybindingWeight.WorkbenchContrib,
@@ -79,8 +77,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			kind = 'error';
 		}
 
-		const keybindinLabel = this.keybindingService.lookupKeybinding(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID)?.getLabel();
-		const tooltip = nls.localize('modelSelectionTooltipWithKeybinding', "Select language model ({0})", keybindinLabel);
+		const tooltip = nls.localize('modelSelectionTooltipWithKeybinding', "Select language model");
 
 		const properties: IStatusbarEntry = {
 			name: nls.localize('modelSelection', "Model Selection"),
