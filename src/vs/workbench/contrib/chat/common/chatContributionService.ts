@@ -50,4 +50,5 @@ export interface IRawChatParticipantContribution {
 export interface IChatParticipantContribution extends IRawChatParticipantContribution {
 	// Participant id is extensionId + name
 	extensionId: ExtensionIdentifier;
+	providerId?: string;
 }

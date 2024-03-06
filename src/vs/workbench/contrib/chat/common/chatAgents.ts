@@ -30,6 +30,7 @@ export interface IChatAgentHistoryEntry {
 export interface IChatAgentData {
 	id: string;
 	extensionId: ExtensionIdentifier;
+	providerId?: string;
 	/** The agent invoked when no agent is specified */
 	isDefault?: boolean;
 	metadata: IChatAgentMetadata;
@@ -134,7 +135,8 @@ export interface IBaseChatAgentService {
 	getRegisteredAgents(): Array<IChatAgentData>;
 	getActivatedAgents(): Array<IChatAgent>;
 	getRegisteredAgent(id: string): IChatAgentData | undefined;
-	getDefaultAgent(): IChatAgent | undefined;
+	getDefaultAgent(providerId: string): IChatAgent | undefined;
+	getDefaultAgents(): IChatAgent[];
 	getSecondaryAgent(): IChatAgentData | undefined;
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
@@ -209,8 +211,12 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		this._onDidChangeAgents.fire(new MergedChatAgent(agent.data, agent.impl));
 	}
 
-	getDefaultAgent(): IChatAgent | undefined {
-		return this.getActivatedAgents().find(a => !!a.isDefault);
+	getDefaultAgent(providerId: string): IChatAgent | undefined {
+		return this.getActivatedAgents().find(a => !!a.isDefault && a.providerId === providerId);
+	}
+
+	getDefaultAgents(): IChatAgent[] {
+		return this.getActivatedAgents().filter(a => !!a.isDefault);
 	}
 
 	getSecondaryAgent(): IChatAgentData | undefined {
@@ -223,6 +229,7 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		return this.chatContributionService.registeredParticipants.map(p => (
 			{
 				extensionId: p.extensionId,
+				providerId: p.providerId,
 				id: p.name,
 				metadata: { description: p.description },
 				isDefault: p.isDefault,
@@ -273,6 +280,7 @@ export class MergedChatAgent implements IChatAgent {
 	) { }
 
 	get id(): string { return this.data.id; }
+	get providerId(): string | undefined { return this.data.providerId; }
 	get extensionId(): ExtensionIdentifier { return this.data.extensionId; }
 	get isDefault(): boolean | undefined { return this.data.isDefault; }
 	get metadata(): IChatAgentMetadata { return this.data.metadata; }

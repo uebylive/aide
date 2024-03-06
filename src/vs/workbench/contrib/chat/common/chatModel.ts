@@ -514,7 +514,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	private get _defaultAgent() {
-		return this.chatAgentService.getDefaultAgent();
+		return this.chatAgentService.getDefaultAgent(this.providerId);
 	}
 
 	get requesterUsername(): string {
@@ -583,7 +583,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		if (obj.welcomeMessage) {
 			const content = obj.welcomeMessage.map(item => typeof item === 'string' ? new MarkdownString(item) : item);
-			this._welcomeMessage = this.instantiationService.createInstance(ChatWelcomeMessageModel, content, []);
+			this._welcomeMessage = this.instantiationService.createInstance(ChatWelcomeMessageModel, obj.providerId, content, []);
 		}
 
 		try {
@@ -811,7 +811,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					vote: r.response?.vote,
 					agent: r.response?.agent ?
 						// May actually be the full IChatAgent instance, just take the data props. slashCommands don't matter here.
-						{ id: r.response.agent.id, extensionId: r.response.agent.extensionId, metadata: r.response.agent.metadata, slashCommands: [], isDefault: r.response.agent.isDefault }
+						{ id: r.response.agent.id, providerId: r.response.providerId, extensionId: r.response.agent.extensionId, metadata: r.response.agent.metadata, slashCommands: [], isDefault: r.response.agent.isDefault }
 						: undefined,
 					slashCommand: r.response?.slashCommand,
 					usedContext: r.response?.usedContext,
@@ -867,6 +867,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	}
 
 	constructor(
+		private readonly providerId: string,
 		public readonly content: IChatWelcomeMessageContent[],
 		public readonly sampleQuestions: IChatFollowup[],
 		@IChatAgentService private readonly chatAgentService: IChatAgentService,
@@ -875,11 +876,11 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	}
 
 	public get username(): string {
-		return this.chatAgentService.getDefaultAgent()?.metadata.fullName ?? '';
+		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.fullName ?? '';
 	}
 
 	public get avatarIcon(): ThemeIcon | undefined {
-		return this.chatAgentService.getDefaultAgent()?.metadata.themeIcon;
+		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.themeIcon;
 	}
 }
 

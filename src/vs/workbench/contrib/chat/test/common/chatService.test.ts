@@ -58,6 +58,7 @@ class SimpleTestProvider extends Disposable implements IChatProvider {
 const chatAgentWithUsedContextId = 'ChatProviderWithUsedContext';
 const chatAgentWithUsedContext: IChatAgent = {
 	id: chatAgentWithUsedContextId,
+	providerId: 'testProvider',
 	extensionId: nullExtensionDescription.identifier,
 	metadata: {},
 	slashCommands: [],

@@ -27,7 +27,7 @@ suite('VoiceChat', () => {
 
 	class TestChatAgent implements IChatAgent {
 
-		providerId: string | undefined = undefined;
+		providerId: string = 'testProvider';
 		extensionId: ExtensionIdentifier = nullExtensionDescription.identifier;
 
 		constructor(readonly id: string, readonly slashCommands: IChatAgentCommand[]) { }
@@ -56,7 +56,8 @@ suite('VoiceChat', () => {
 		getRegisteredAgents(): Array<IChatAgent> { return agents; }
 		getActivatedAgents(): IChatAgent[] { return agents; }
 		getRegisteredAgent(id: string): IChatAgent | undefined { throw new Error(); }
-		getDefaultAgent(): IChatAgent | undefined { throw new Error(); }
+		getDefaultAgent(providerId: string): IChatAgent | undefined { throw new Error(); }
+		getDefaultAgents(): IChatAgent[] { throw new Error(); }
 		getSecondaryAgent(): IChatAgent | undefined { throw new Error(); }
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error(); }
 		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }

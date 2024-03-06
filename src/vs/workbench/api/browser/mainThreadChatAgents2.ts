@@ -82,6 +82,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 	}
 
 	$registerAgent(handle: number, extension: ExtensionIdentifier, name: string, metadata: IExtensionChatAgentMetadata, allowDynamic: boolean): void {
+		const chatSessionProvider = this._chatService.getProviderInfos().find(p => p.extensionId === extension.value);
+
 		const staticAgentRegistration = this._chatContributionService.registeredParticipants.find(p => p.extensionId.value === extension.value && p.name === name);
 		if (!staticAgentRegistration && !allowDynamic) {
 			throw new Error(`chatParticipant must be declared in package.json: ${name}`);
@@ -132,6 +134,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 			disposable = this._chatAgentService.registerDynamicAgent(
 				{
 					id: name,
+					providerId: chatSessionProvider?.id,
 					extensionId: extension,
 					metadata: revive(metadata),
 					slashCommands: [],

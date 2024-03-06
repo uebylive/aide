@@ -130,6 +130,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _viewContainer: ViewContainer;
 	private _csViewContainer: ViewContainer;
 	private _registrationDisposables = new Map<string, IDisposable>();
+	private _interactiveSessionProviders = new Map<string, string>();
 
 	constructor(
 		@IChatContributionService readonly _chatContributionService: IChatContributionService
@@ -146,6 +147,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 				for (const providerDescriptor of extension.value) {
 					this.registerChatProvider(providerDescriptor);
 					this._chatContributionService.registerChatProvider(providerDescriptor);
+					this._interactiveSessionProviders.set(extension.description.identifier.value, providerDescriptor.id);
 				}
 				this._registrationDisposables.set(extension.description.identifier.value, extensionDisposable);
 			}
@@ -159,6 +161,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 				for (const providerDescriptor of extension.value) {
 					this._chatContributionService.deregisterChatProvider(providerDescriptor.id);
+					this._registrationDisposables.delete(providerDescriptor.id);
 				}
 			}
 		});
@@ -166,13 +169,13 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		chatParticipantExtensionPoint.setHandler((extensions, delta) => {
 			for (const extension of delta.added) {
 				for (const providerDescriptor of extension.value) {
-					this._chatContributionService.registerChatParticipant({ ...providerDescriptor, extensionId: extension.description.identifier });
+					this._chatContributionService.registerChatParticipant({ ...providerDescriptor, extensionId: extension.description.identifier, providerId: this._interactiveSessionProviders.get(extension.description.identifier.value) });
 				}
 			}
 
 			for (const extension of delta.removed) {
 				for (const providerDescriptor of extension.value) {
-					this._chatContributionService.deregisterChatParticipant({ ...providerDescriptor, extensionId: extension.description.identifier });
+					this._chatContributionService.deregisterChatParticipant({ ...providerDescriptor, extensionId: extension.description.identifier, providerId: this._interactiveSessionProviders.get(extension.description.identifier.value) });
 				}
 			}
 		});

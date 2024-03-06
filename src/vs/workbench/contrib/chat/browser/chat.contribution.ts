@@ -252,7 +252,9 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 			sortText: 'z1_help',
 			executeImmediately: true
 		}, async (prompt, progress) => {
-			const defaultAgent = chatAgentService.getDefaultAgent();
+			const lastFocusedWidget = chatWidgetService.lastFocusedWidget;
+			const providerId = lastFocusedWidget?.providerId!;
+			const defaultAgent = chatAgentService.getDefaultAgent(providerId);
 			const agents = chatAgentService.getRegisteredAgents();
 
 			// Report prefix
