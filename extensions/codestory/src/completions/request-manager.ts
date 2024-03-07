@@ -16,6 +16,7 @@ import {
 import { getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
 import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
+import { TypeDefinitionProviderWithNode } from './helpers/vscodeApi';
 
 export const isDefined = <T>(value: T): value is NonNullable<T> => value !== undefined && value !== null;
 
@@ -37,6 +38,8 @@ export interface RequestParams {
 
 	/** Pass the clipboard content */
 	clipBoardContent: string | null;
+
+	identifierNodes: TypeDefinitionProviderWithNode[];
 }
 
 export interface RequestManagerResult {
@@ -51,6 +54,7 @@ interface RequestsManagerParams {
 	logger: CompletionLogger.LoggingService;
 	spanId: string;
 	startTime: number;
+	identifierNodes: TypeDefinitionProviderWithNode[];
 }
 
 /**
@@ -103,7 +107,7 @@ export class RequestManager {
 		// the other thing to keep in mind is that the user always wants to accept one
 		// line and then move to the next, partial one liners make no sense, at the very
 		// least the user will get the experience that its streaming back properly
-		const { requestParams, provider, logger, spanId, startTime } = params;
+		const { requestParams, provider, logger, spanId, startTime, identifierNodes } = params;
 		// now we need to check if we have prefix overlap with the other completion which are running around
 		const prefix = requestParams.docContext.prefix;
 		const completionCacheString = this.completionCache;
@@ -150,6 +154,7 @@ export class RequestManager {
 					request.abortController.signal,
 					startTime,
 					requestParams.clipBoardContent,
+					requestParams.identifierNodes,
 				)) {
 					// we are going to get the generations back, here we will keep adding them to the cache
 					// one per line

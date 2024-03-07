@@ -17,6 +17,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { CompletionIntent } from './artificial-delay';
 import { SideCarClient } from '../sidecar/client';
 import { SidecarProvider } from './providers/sidecarProvider';
+import { TypeDefinitionProviderWithNode } from './helpers/vscodeApi';
 
 /**
  * Checks if the given file uri has a valid test file name.
@@ -74,6 +75,9 @@ export interface InlineCompletionsParams {
 
 	// clipboard content
 	clipBoardContent: string | null;
+
+	// go-to-definition provider
+	identifierNodes: TypeDefinitionProviderWithNode[];
 }
 
 /**
@@ -217,6 +221,7 @@ async function doGetInlineCompletions(
 		spanId,
 		startTime,
 		clipBoardContent,
+		identifierNodes,
 	} = params;
 	const multiline = Boolean(multilineTrigger);
 
@@ -227,6 +232,7 @@ async function doGetInlineCompletions(
 		selectedCompletionInfo,
 		abortSignal,
 		clipBoardContent,
+		identifierNodes,
 	};
 
 	const cachedResult = requestManager.checkCache({
@@ -234,7 +240,7 @@ async function doGetInlineCompletions(
 		isCacheEnabled: triggerKind !== TriggerKind.Manual,
 		logger,
 		spanId,
-	})
+	});
 	if (cachedResult) {
 		const { completions, source } = cachedResult
 
@@ -242,7 +248,7 @@ async function doGetInlineCompletions(
 			logId: spanId,
 			items: completions,
 			source,
-		}
+		};
 	}
 
 	// TODO(skcd): How do we handle the case where the user has backspaced, cause then we
@@ -301,6 +307,7 @@ async function doGetInlineCompletions(
 		logger,
 		spanId,
 		startTime,
+		identifierNodes,
 	});
 
 	setIsLoading?.(false);

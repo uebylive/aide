@@ -7,6 +7,7 @@ import type { Position, TextDocument } from 'vscode';
 import type { DocumentContext } from '../get-current-doc-context';
 
 import type { FetchCompletionResult, StreamCompletionResponse } from './fetch-and-process-completions';
+import { TypeDefinitionProviderWithNode } from '../helpers/vscodeApi';
 
 export interface ProviderConfig {
 	/**
@@ -87,5 +88,6 @@ export abstract class Provider {
 		abortSignal: AbortSignal,
 		startTime: number,
 		clipBoardContext: string | null,
+		identifierNodes: TypeDefinitionProviderWithNode[],
 	): AsyncIterable<StreamCompletionResponse>;
 }

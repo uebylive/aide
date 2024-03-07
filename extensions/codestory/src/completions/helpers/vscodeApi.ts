@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { IdentifierNodeInformation } from '../../sidecar/types';
+import { SideCarClient } from '../../sidecar/client';
 
 function windowsToPosix(windowsPath: string): string {
 	let posixPath = windowsPath.split('\\').join('/');
@@ -55,28 +56,105 @@ export function forkSignal(signal: AbortSignal): AbortController {
 }
 
 export type TypeDefinitionProvider = {
-	uri: vscode.Uri;
+	filepath: String;
 	range: vscode.Range;
 };
+
+export type TypeDefinitionProviderWithNode = {
+	node: IdentifierNodeInformation;
+	typeDefinition: TypeDefinitionProvider[];
+};
+
+export type TypeDefinitionProviderWithNodeSidecar = {
+	node: {
+		identifier: String;
+		range: {
+			start: {
+				line: number;
+				character: number;
+			};
+			end: {
+				line: number;
+				character: number;
+			};
+		};
+	};
+	type_definitions: {
+		file_path: String;
+		range: {
+			start: {
+				line: number;
+				character: number;
+			};
+			end: {
+				line: number;
+				character: number;
+			};
+		};
+	}[];
+};
+
+export function sidecarTypeDefinitionsWithNode(typeDefinitionProviders: TypeDefinitionProviderWithNode[]): TypeDefinitionProviderWithNodeSidecar[] {
+	return typeDefinitionProviders.map((typeIdentifier) => {
+		return {
+			node: {
+				identifier: typeIdentifier.node.name,
+				range: {
+					start: {
+						line: typeIdentifier.node.range.startPosition.line,
+						character: typeIdentifier.node.range.startPosition.character,
+					},
+					end: {
+						line: typeIdentifier.node.range.endPosition.line,
+						character: typeIdentifier.node.range.endPosition.character,
+					}
+				}
+			},
+			type_definitions: typeIdentifier.typeDefinition.map((typeDefinition) => {
+				return {
+					file_path: typeDefinition.filepath,
+					range: {
+						start: {
+							line: typeDefinition.range.start.line,
+							character: typeDefinition.range.start.character,
+						},
+						end: {
+							line: typeDefinition.range.end.line,
+							character: typeDefinition.range.end.character,
+						}
+					}
+				};
+			})
+		};
+	});
+}
 
 export async function typeDefinitionForIdentifierNodes(
 	nodes: IdentifierNodeInformation[],
 	documentUri: vscode.Uri,
-): Promise<TypeDefinitionProvider[][]> {
+	sidecarClient: SideCarClient,
+): Promise<TypeDefinitionProviderWithNode[]> {
 	const response = await Promise.all(nodes.map(async (identifierNode) => {
 		const typeDefinition = await typeDefinitionProvider(
+			identifierNode,
 			documentUri,
 			new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character),
+			sidecarClient,
 		);
-		return typeDefinition;
+		return {
+			node: identifierNode,
+			typeDefinition,
+		};
 	}));
 	return response;
 }
 
 
 export async function typeDefinitionProvider(
+	identifierNode: IdentifierNodeInformation,
 	filepath: vscode.Uri,
 	position: vscode.Position,
+	sidecarClient: SideCarClient,
 ): Promise<TypeDefinitionProvider[]> {
 	console.log('invoking goToDefinition');
 	console.log(position);
@@ -92,12 +170,16 @@ export async function typeDefinitionProvider(
 			const range = location.targetRange;
 			// we have to always open the text document first, this ends up sending
 			// it over to the sidecar as a side-effect but that is fine
-			await vscode.workspace.openTextDocument(uri);
+			const textDocument = await vscode.workspace.openTextDocument(uri);
+
+			// No need to await on this
+			sidecarClient.documentOpen(textDocument.uri.fsPath, textDocument.getText(), textDocument.languageId);
 
 			// return the value as we would normally
 			return {
-				uri,
+				filepath: uri.fsPath,
 				range,
+				node: identifierNode,
 			};
 		}));
 	} catch (exception) {

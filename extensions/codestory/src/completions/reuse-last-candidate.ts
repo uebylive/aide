@@ -241,5 +241,6 @@ export function getRequestParamsFromLastCandidate(
 		docContext: lastCandidate.lastTriggerDocContext,
 		selectedCompletionInfo: lastCandidate.lastTriggerSelectedCompletionInfo,
 		clipBoardContent: null,
+		identifierNodes: [],
 	};
 }

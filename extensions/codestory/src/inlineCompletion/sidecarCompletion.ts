@@ -23,6 +23,7 @@ import { isMiddleOfLine } from './helpers/middleOfLine';
 import { getPromptHelper, trimLastLine } from './helpers/promptWrapper';
 import { isMultiline } from './helpers/multiLine';
 import { getCachedCompletions } from './helpers/cachedCompletions';
+import { TypeDefinitionProviderWithNode } from '../completions/helpers/vscodeApi';
 
 
 export type CancelCompletionRequest = {
@@ -44,6 +45,7 @@ export type CompletionRequest = {
 	clipboard?: string;
 	manually?: boolean;
 	id: string;
+	identifierNodes: TypeDefinitionProviderWithNode[];
 };
 
 export type CompletionResponseChoice = {
@@ -214,6 +216,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 			indentation: this.getEditorIndentation(),
 			manually: context.triggerKind === InlineCompletionTriggerKind.Invoke,
 			id: requestId,
+			identifierNodes: [],
 		};
 
 		const abortController = new AbortController();

@@ -820,7 +820,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
-		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible') {
+		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible' || providerType === 'anthropic') {
 			return { message: 'Configuration incomplete', complete: false };
 		} else if (providerType === 'codestory' || providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };

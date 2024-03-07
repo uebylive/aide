@@ -255,6 +255,18 @@
 	background-color: currentColor;
 }
 
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.anthropic {
+	mask-image: url('logos/anthropic.svg');
+	-webkit-mask-image: url('logos/anthropic.svg');
+	mask-size: contain;
+	-webkit-mask-size: contain;
+	mask-repeat: no-repeat;
+	-webkit-mask-repeat: no-repeat;
+	mask-position: center;
+	-webkit-mask-position: center;
+	background-color: currentColor;
+}
+
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo {
 	display: block;
 	width: 24px;

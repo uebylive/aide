@@ -28,7 +28,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
-import { TypeDefinitionProvider, forkSignal, typeDefinitionForIdentifierNodes, typeDefinitionProvider } from './helpers/vscodeApi';
+import { TypeDefinitionProviderWithNode, typeDefinitionForIdentifierNodes } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -212,9 +212,9 @@ export class InlineCompletionItemProvider
 		console.log('Time taken for identifier nodes: ', performance.now() - now);
 		console.log('Identifier nodes interested', response);
 		const responseStart = performance.now();
-		let responses: TypeDefinitionProvider[][] | unknown = [];
+		let responses: TypeDefinitionProviderWithNode[] | unknown = [];
 		try {
-			responses = await Promise.race([typeDefinitionForIdentifierNodes(response.identifier_nodes, document.uri), new Promise((_, reject) => {
+			responses = await Promise.race([typeDefinitionForIdentifierNodes(response.identifier_nodes, document.uri, this.sidecarClient), new Promise((_, reject) => {
 				const { signal } = abortController;
 				signal.addEventListener('abort', () => {
 					reject(new Error('Aborted'));
@@ -224,6 +224,8 @@ export class InlineCompletionItemProvider
 		} catch (exception) {
 			responses = [];
 		}
+		// @ts-ignore
+		const identifierNodes: TypeDefinitionProviderWithNode[] = responses;
 		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 
@@ -320,6 +322,7 @@ export class InlineCompletionItemProvider
 				spanId: id,
 				startTime,
 				clipBoardContent,
+				identifierNodes,
 			});
 
 			// Avoid any further work if the completion is invalidated already.
