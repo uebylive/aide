@@ -4,11 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import { Position } from 'vscode';
 
-
 import type { DocumentDependentContext, LinesContext } from './get-current-doc-context';
 import {
-	FUNCTION_KEYWORDS,
-	FUNCTION_OR_METHOD_INVOCATION_REGEX,
 	getLastLine,
 	indentation,
 	lines,
@@ -39,7 +36,7 @@ export function endsWithBlockStart(text: string, languageId: string): string | n
 	return blockStart && text.trimEnd().endsWith(blockStart) ? blockStart : null;
 }
 
-export function detectMultiline(params: DetectMultilineParams, logger: LoggingService, spanId: string): DetectMultilineResult {
+export function detectMultiline(params: DetectMultilineParams, logger: LoggingService, _spanId: string): DetectMultilineResult {
 	// dynamicMultilineCompletions is a flag that determines whether we should trigger multiline
 	// its always set to true
 	const { docContext, languageId, dynamicMultilineCompletions, position } = params;

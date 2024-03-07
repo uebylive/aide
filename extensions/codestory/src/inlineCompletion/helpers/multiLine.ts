@@ -1,9 +1,12 @@
-// We figure out here if a completion is multiline or not.
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
 export async function isMultiline(
 	document: vscode.TextDocument,
-	position: vscode.Position,
+	_position: vscode.Position,
 	isMiddleOfLine: boolean,
 ): Promise<boolean> {
 	// TODO(skcd): Implement this properly later on, there are certain conditions

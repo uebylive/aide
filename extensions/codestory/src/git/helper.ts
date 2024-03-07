@@ -5,18 +5,14 @@
 
 // Here I want to get the remote url of the current repo
 // and also the hash we are on
-import { spawn } from 'child_process';
-import { realpathSync } from 'fs';
-import { resolve } from 'path';
 // import logger from '../logger';
 import { execCommand, runCommandAsync } from '../utilities/commandRunner';
 import logger from '../logger';
-import { runCommand } from '../utilities/setupAntonBackend';
 
 export const getGitRepoName = async (workingDirectory: string): Promise<string> => {
 	// Log the pwd here
 	try {
-		const currentWorkingDirectory = realpathSync(resolve('.'));
+		// const currentWorkingDirectory = realpathSync(resolve('.'));
 		// logger.info('codestory');
 		// logger.info(currentWorkingDirectory);
 		const { stdout } = await runCommandAsync(workingDirectory, 'git', [

@@ -10,7 +10,7 @@ import type { InlineCompletionItemWithAnalytics } from './text-processing/proces
 export function isCompletionVisible(
 	completion: InlineCompletionItemWithAnalytics,
 	document: vscode.TextDocument,
-	position: vscode.Position,
+	_position: vscode.Position,
 	docContext: DocumentContext,
 	context: vscode.InlineCompletionContext,
 	completeSuggestWidgetSelection: boolean,

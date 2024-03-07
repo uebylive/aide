@@ -1,3 +1,7 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 // Use ES6 module syntax for exports and imports
 
 // Key generation function using template literals for clarity
@@ -54,6 +58,7 @@ export class LRUCache {
 			this.touchKeyInLRU(key);
 			return value;
 		}
+		return undefined;
 	}
 
 	public put(key: string, value: LRUCacheValue): void {

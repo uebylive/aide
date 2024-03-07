@@ -47,6 +47,7 @@ export interface AntonEvent {
 	codeModificationInstructionList: CodeSymbolModificationInstruction[] | null;
 }
 
+/*
 interface MarkdownReference {
 	parseFileToOutput?: ParseFileToOutput;
 }
@@ -60,6 +61,7 @@ interface ParseFileToOutput {
 	classInformation?: any;
 	functionInformation: FunctionInformation;
 }
+*/
 
 interface TestExecutionHarness {
 	testScript: string;
@@ -86,6 +88,7 @@ interface CodeSymbolModificationInstruction {
 	instructions: string;
 }
 
+/*
 interface CodeSymbolReference {
 	id: string;
 	name: string;
@@ -140,3 +143,4 @@ interface LineStart {
 	line: number;
 	column: number;
 }
+*/

@@ -11,10 +11,10 @@ import * as vscode from 'vscode';
 
 export class AideQuickFix implements vscode.CodeActionProvider {
 	provideCodeActions(
-		document: vscode.TextDocument,
-		range: vscode.Range | vscode.Selection,
+		_document: vscode.TextDocument,
+		_range: vscode.Range | vscode.Selection,
 		context: vscode.CodeActionContext,
-		token: vscode.CancellationToken,
+		_token: vscode.CancellationToken,
 	): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
 		const codeActions: (vscode.CodeAction | vscode.Command)[] = [];
 		if (!vscode.window.activeTextEditor) {
@@ -30,11 +30,11 @@ export class AideQuickFix implements vscode.CodeActionProvider {
 		const selection = new vscode.Selection(diagnosticRange.start, diagnosticRange.end);
 		const diagnosticsAsText = AideQuickFix.getDiagnosticsAsText(severeDiagnostics);
 
-		const fixCodeAction = new vscode.CodeAction("Fix using Aide", vscode.CodeActionKind.QuickFix);
+		const fixCodeAction = new vscode.CodeAction('Fix using Aide', vscode.CodeActionKind.QuickFix);
 		fixCodeAction.diagnostics = severeDiagnostics;
 		fixCodeAction.command = {
 			title: '$(sparkle) ' + fixCodeAction.title,
-			command: "vscode.editorCSChat.start",
+			command: 'vscode.editorCSChat.start',
 			arguments: [
 				{
 					autoSend: true,
@@ -56,6 +56,6 @@ export class AideQuickFix implements vscode.CodeActionProvider {
 	}
 
 	private static getDiagnosticsAsText(diagnostics: vscode.Diagnostic[]): string {
-		return diagnostics.map((diagnostic) => diagnostic.message).join(", ");
+		return diagnostics.map((diagnostic) => diagnostic.message).join(', ');
 	}
 }

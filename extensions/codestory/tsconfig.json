@@ -1,25 +1,27 @@
 {
+	"extends": "../tsconfig.base.json",
 	"compilerOptions": {
-		"module": "CommonJS",
-		"skipLibCheck": true,
-		"target": "es6",
-		"outDir": "out",
-		"lib": ["es6", "dom", "ESNext"],
-		"sourceMap": true,
-		"rootDir": "src",
-		"strict": true,
+		"outDir": "./out",
 		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"allowJs": true,
-		"checkJs": false,
-		"typeRoots": ["node_modules/@types"]
+		"typeRoots": [
+			"./node_modules/@types"
+		],
+		"lib": [
+			"ES2022",
+			"DOM"
+		]
 	},
-	"exclude": [
-		"node_modules",
-		".vscode-test",
-		"jest.config.js",
-		"../../node_modules/@types/mocha",
-		"out",
-		"vsce_output"
-	],
+	"include": [
+		"src/**/*",
+		"../../src/vscode-dts/vscode.d.ts",
+		"../../src/vscode-dts/vscode.proposed.chatParticipant.d.ts",
+		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
+		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.chatVariableResolver.d.ts",
+		"../../src/vscode-dts/vscode.proposed.defaultChatParticipant.d.ts",
+		"../../src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts",
+		"../../src/vscode-dts/vscode.proposed.interactive.d.ts",
+		"../../src/vscode-dts/vscode.proposed.languageModels.d.ts",
+		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts"
+	]
 }

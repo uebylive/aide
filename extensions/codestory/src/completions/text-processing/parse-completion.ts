@@ -1,17 +1,21 @@
-import { Position, Range, type TextDocument } from 'vscode'
-import type { default as Parser, Point, Tree } from 'web-tree-sitter'
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { Position, Range, type TextDocument } from 'vscode';
+import type { default as Parser, Point, Tree } from 'web-tree-sitter';
 
-import type { DocumentContext } from '../get-current-doc-context'
-import type { InlineCompletionItem } from '../types'
+import type { DocumentContext } from '../get-current-doc-context';
+import type { InlineCompletionItem } from '../types';
 
 import {
 	asPoint,
 	getMatchingSuffixLength,
 	type InlineCompletionItemWithAnalytics,
-} from './process-inline-completions'
-import { getLastLine, lines } from './utils'
-import { getCachedParseTreeForDocument } from './treeSitter/parseTree'
-import { LoggingService } from '../logger'
+} from './process-inline-completions';
+import { getLastLine, lines } from './utils';
+import { getCachedParseTreeForDocument } from './treeSitter/parseTree';
+import { LoggingService } from '../logger';
 
 interface CompletionContext {
 	completion: InlineCompletionItem;
@@ -22,25 +26,25 @@ interface CompletionContext {
 }
 
 export interface ParsedCompletion extends InlineCompletionItemWithAnalytics {
-	tree?: Tree
-	parseErrorCount?: number
+	tree?: Tree;
+	parseErrorCount?: number;
 	// Points for parse-tree queries.
 	points?: {
 		// Start of completion.insertText in the parse-tree.
-		start: Point
+		start: Point;
 		// End of completion.insertText in the parse-tree
-		end: Point
+		end: Point;
 		// Start of the multi-line completion trigger if applicable
-		trigger?: Point
-	}
+		trigger?: Point;
+	};
 }
 
 interface PasteCompletionParams {
-	completion: InlineCompletionItem
-	document: TextDocument
-	docContext: DocumentContext
-	tree: Tree
-	parser: Parser
+	completion: InlineCompletionItem;
+	document: TextDocument;
+	docContext: DocumentContext;
+	tree: Tree;
+	parser: Parser;
 	completionEndPosition: Position;
 	logger: LoggingService;
 	spanId: string;
@@ -50,7 +54,6 @@ function pasteCompletion(params: PasteCompletionParams): Tree {
 	const {
 		completion: { insertText },
 		document,
-		tree,
 		parser,
 		docContext: {
 			position,
@@ -62,24 +65,24 @@ function pasteCompletion(params: PasteCompletionParams): Tree {
 		completionEndPosition,
 		logger,
 		spanId,
-	} = params
+	} = params;
 
-	const matchingSuffixLength = getMatchingSuffixLength(insertText, currentLineSuffix)
+	const matchingSuffixLength = getMatchingSuffixLength(insertText, currentLineSuffix);
 
 	// Adjust suffix and prefix based on completion insert range.
 	const prefix =
 		document.getText(new Range(new Position(0, 0), positionWithoutInjectedCompletionText)) +
-		injectedCompletionText
+		injectedCompletionText;
 	const suffix = document.getText(
 		new Range(positionWithoutInjectedCompletionText, document.positionAt(document.getText().length))
-	)
+	);
 
-	const offset = document.offsetAt(positionWithoutInjectedCompletionText)
+	// const offset = document.offsetAt(positionWithoutInjectedCompletionText);
 
 	// Remove the characters that are being replaced by the completion to avoid having
 	// them in the parse tree. It breaks the multiline truncation logic which looks for
 	// the increased number of children in the tree.
-	const textWithCompletion = prefix + insertText + suffix.slice(matchingSuffixLength)
+	const textWithCompletion = prefix + insertText + suffix.slice(matchingSuffixLength);
 
 	logger.logInfo('sidecar.paseCompletion', {
 		event_name: 'sidecar.parse_completion',
@@ -121,15 +124,15 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 		docContext: { position, multilineTriggerPosition },
 		logger,
 		spanId,
-	} = context
-	const parseTreeCache = getCachedParseTreeForDocument(document)
+	} = context;
+	const parseTreeCache = getCachedParseTreeForDocument(document);
 
 	// // Do nothing if the syntactic post-processing is not enabled.
 	if (!parseTreeCache) {
-		return completion
+		return completion;
 	}
 
-	const { parser, tree } = parseTreeCache
+	const { parser, tree } = parseTreeCache;
 
 	const completionEndPosition = position.translate(
 		// TODO(skcd): We are subtracting 1 from the line count because the translate
@@ -154,7 +157,7 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 		completionEndPosition,
 		logger,
 		spanId,
-	})
+	});
 
 	const points: ParsedCompletion['points'] = {
 		start: {
@@ -165,10 +168,10 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 			row: completionEndPosition.line,
 			column: completionEndPosition.character,
 		},
-	}
+	};
 
 	if (multilineTriggerPosition) {
-		points.trigger = asPoint(multilineTriggerPosition)
+		points.trigger = asPoint(multilineTriggerPosition);
 	}
 
 	// Search for ERROR nodes in the completion range.
@@ -196,20 +199,20 @@ export function parseCompletion(context: CompletionContext): ParsedCompletion {
 		points,
 		tree: treeWithCompletion,
 		parseErrorCount: captures.length,
-	}
+	};
 }
 
 interface PasteCompletionParams {
-	completion: InlineCompletionItem
-	document: TextDocument
-	docContext: DocumentContext
-	tree: Tree
-	parser: Parser
-	completionEndPosition: Position
+	completion: InlineCompletionItem;
+	document: TextDocument;
+	docContext: DocumentContext;
+	tree: Tree;
+	parser: Parser;
+	completionEndPosition: Position;
 }
 
 export function dropParserFields(completion: ParsedCompletion): InlineCompletionItemWithAnalytics {
-	const { points, tree, ...rest } = completion
+	const { points, tree, ...rest } = completion;
 
-	return rest
+	return rest;
 }

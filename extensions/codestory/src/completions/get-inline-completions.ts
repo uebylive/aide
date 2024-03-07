@@ -3,30 +3,25 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import type * as vscode from 'vscode';
-import type { URI } from 'vscode-uri';
 
-
-import { insertIntoDocContext, type DocumentContext } from './get-current-doc-context';
+import { type DocumentContext } from './get-current-doc-context';
 import * as CompletionLogger from './logger';
-import type { CompletionLogID } from './logger';
 import type { RequestManager, RequestParams } from './request-manager';
-import { reuseLastCandidate } from './reuse-last-candidate';
 import type { AutocompleteItem } from './suggested-autocomplete-items-cache';
 import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
-import { completionProviderConfig } from './completion-provider-config';
 import { CompletionIntent } from './artificial-delay';
 import { SideCarClient } from '../sidecar/client';
 import { SidecarProvider } from './providers/sidecarProvider';
 
 /**
  * Checks if the given file uri has a valid test file name.
- * @param uri - The file uri to check
+ * @param _uri - The file uri to check
  *
  * Removes file extension and checks if file name starts with 'test' or
  * ends with 'test', excluding files starting with 'test-'.
  * Also returns false for any files in node_modules directory.
  */
-export function isValidTestFile(uri: URI): boolean {
+export function isValidTestFile(_uri: vscode.Uri): boolean {
 	return false;
 }
 
@@ -81,7 +76,7 @@ export interface InlineCompletionsParams {
  */
 export interface LastInlineCompletionCandidate {
 	/** The document URI for which this candidate was generated. */
-	uri: URI;
+	uri: vscode.Uri;
 
 	/** The doc context item */
 	lastTriggerDocContext: DocumentContext;
@@ -201,17 +196,12 @@ async function doGetInlineCompletions(
 		triggerKind,
 		selectedCompletionInfo,
 		docContext,
-		docContext: { multilineTrigger, currentLineSuffix, currentLinePrefix },
+		docContext: { multilineTrigger },
 		requestManager,
-		lastCandidate,
 		debounceInterval,
 		setIsLoading,
 		abortSignal,
-		handleDidAcceptCompletionItem,
-		handleDidPartiallyAcceptCompletionItem,
 		artificialDelay,
-		completionIntent,
-		lastAcceptedCompletionItem,
 		sidecarClient,
 		logger,
 		spanId,
@@ -234,15 +224,15 @@ async function doGetInlineCompletions(
 		isCacheEnabled: triggerKind !== TriggerKind.Manual,
 		logger,
 		spanId,
-	})
+	});
 	if (cachedResult) {
-		const { completions, source } = cachedResult
+		const { completions, source } = cachedResult;
 
 		return {
 			logId: spanId,
 			items: completions,
 			source,
-		}
+		};
 	}
 
 	// TODO(skcd): How do we handle the case where the user has backspaced, cause then we

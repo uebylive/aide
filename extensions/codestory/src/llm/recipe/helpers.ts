@@ -5,7 +5,7 @@
 import * as vscode from 'vscode';
 import { OpenAI } from 'openai';
 import { CodeSnippetInformation, CodeSymbolInformation, FileCodeSymbolInformation } from '../../utilities/types';
-import { CodeModificationContextAndDiff, CodeSymbolModificationInstruction, NewFileContentAndDiffResponse, TextExecutionHarness, generateModifyCodeHallucinationPrompt, generateNewFileContentAndDiffResponseParser, generateTestExecutionPrompt, generateTestScriptGenerationPrompt, modifyCodeSnippetPrompt, newFileContentAndDiffPrompt, parseCodeModificationResponse, parseTestExecutionFinalSetupResponse, parseTestPlanResponseForHarness } from './prompts';
+import { CodeModificationContextAndDiff, CodeSymbolModificationInstruction, NewFileContentAndDiffResponse, TextExecutionHarness, generateModifyCodeHallucinationPrompt, generateNewFileContentAndDiffResponseParser, generateTestScriptGenerationPrompt, modifyCodeSnippetPrompt, newFileContentAndDiffPrompt, parseCodeModificationResponse, parseTestPlanResponseForHarness } from './prompts';
 
 import * as fs from 'fs';
 import { generateChatCompletion } from './debugging';
@@ -17,8 +17,8 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 
 export const generateCodeSymbolsForQueries = async (
 	queries: string[],
-	sidecarClient: SideCarClient,
-	reporef: RepoRef,
+	_sidecarClient: SideCarClient,
+	_reporef: RepoRef,
 ): Promise<CodeSnippetInformation[]> => {
 	// we will ping the sidecar binary to get the code snippets which are relevant
 	// for the search
@@ -270,7 +270,7 @@ export const generateTestScriptForChange = async (
 	codeModificationContext: CodeModificationContextAndDiff,
 	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
 	moduleName: string,
-	previousFileContent: string,
+	_previousFileContent: string,
 	uniqueId: string,
 ): Promise<TextExecutionHarness | null> => {
 	const codeNode = getCodeNodeForName(
@@ -315,15 +315,15 @@ export const stripPrefix = (input: string, prefix: string): string => {
 
 
 export const executeTestHarness = async (
-	testPlan: TextExecutionHarness,
-	previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
-	toolingEventCollection: ToolingEventCollection,
-	executionEventId: string,
+	_testPlan: TextExecutionHarness,
+	_previousMessages: OpenAI.Chat.CreateChatCompletionRequestMessage[],
+	_toolingEventCollection: ToolingEventCollection,
+	_executionEventId: string,
 	codeSymbolNameMaybe: string,
 	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
-	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-	workingDirectory: string,
-	uniqueId: string,
+	_codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
+	_workingDirectory: string,
+	_uniqueId: string,
 ): Promise<number> => {
 	const codeNode = getCodeNodeForName(
 		codeSymbolNameMaybe,

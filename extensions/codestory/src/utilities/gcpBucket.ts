@@ -5,7 +5,6 @@
 import { Storage } from '@google-cloud/storage';
 import * as path from 'path';
 import * as fs from 'fs';
-import fetch from 'node-fetch';
 import axios from 'axios';
 
 // https://storage.googleapis.com/aide-binary/run

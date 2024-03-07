@@ -34,7 +34,7 @@ export class SidecarProvider extends Provider {
 			id: this.options.spanId,
 			requestId: this.options.spanId,
 		};
-		const now = performance.now();
+		// const now = performance.now();
 		this._logger.logInfo('sidecar.inlineProvider.generate_completions_plain.send_completion_request', {
 			'event_name': 'send_completion_request',
 			'id': this.options.spanId,

@@ -73,7 +73,7 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 }
 
 export class CSChatSessionProvider implements vscode.InteractiveSessionProvider<CSChatSession> {
-	prepareSession(token: vscode.CancellationToken): vscode.ProviderResult<CSChatSession> {
+	prepareSession(_token: vscode.CancellationToken): vscode.ProviderResult<CSChatSession> {
 		return new CSChatSession();
 	}
 }
@@ -191,7 +191,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				return new CSChatResponseForProgress();
 			} else {
 				const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
-				await reportFromStreamToSearchProgress(explainResponse, response, token, this._currentRepoRef, this._workingDirectory);
+				await reportFromStreamToSearchProgress(explainResponse, response, token, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
 		} else if (requestType === 'search') {
@@ -203,7 +203,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			);
 			const searchString = request.prompt.toString().slice('/search'.length).trim();
 			const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
-			await reportFromStreamToSearchProgress(searchResponse, response, token, this._currentRepoRef, this._workingDirectory);
+			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
 		} else {
@@ -216,13 +216,13 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			);
 			const projectLabels = this._projectContext.labels;
 			const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.variables, projectLabels);
-			await reportFromStreamToSearchProgress(followupResponse, response, token, this._currentRepoRef, this._workingDirectory);
+			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}
 	};
 
 	editsProvider: vscode.ChatEditsProvider = {
-		provideEdits: async (request, progress, token) => {
+		provideEdits: async (request, progress, _token) => {
 			// Notes to @theskcd: This API currently applies the edits without any decoration.
 			//
 			// WIP items on editor side, in order of priority:
@@ -269,6 +269,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							const textEditStreaming = editResponse.TextEditStreaming.data;
 							if ('Start' in textEditStreaming) {
 								startOfEdit = true;
+								console.log('Start of edit', startOfEdit);
 								const codeBlockIndex = textEditStreaming.Start.code_block_index;
 								const agentContext = textEditStreaming.Start.context_selection;
 								streamProcessor = new StreamProcessor(
@@ -285,7 +286,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 								continue;
 							}
 							if ('EditStreaming' in textEditStreaming) {
-								const codeBlockIndex = textEditStreaming.EditStreaming.code_block_index;
+								// const codeBlockIndex = textEditStreaming.EditStreaming.code_block_index;
 								answerSplitOnNewLineAccumulator.addDelta(textEditStreaming.EditStreaming.content_delta);
 								// check if we can get any lines back here
 								while (true) {
@@ -302,7 +303,9 @@ export class CSChatAgentProvider implements vscode.Disposable {
 							}
 							if ('End' in textEditStreaming) {
 								startOfEdit = false;
+								console.log('End of edit', startOfEdit);
 								enteredTextEdit = false;
+								console.log('Entered text edit', enteredTextEdit);
 								streamProcessor = null;
 								answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 								finalAnswer = '';

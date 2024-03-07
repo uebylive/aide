@@ -180,7 +180,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 
 		// we do cache lookups right here to understand the state of the editor and if we can
 		// reuse completions from before
-		let choices = await getCachedCompletions(
+		const choices = await getCachedCompletions(
 			promptData,
 			docTillCursor,
 			isMultilineCompletionPossible,
@@ -223,10 +223,12 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 
 		try {
 			this.loading = true;
+			console.log('sidecar.inlineCompletion', 'loading', this.loading);
 			// update the status bar to show that we are loading the response
 			setLoadingStatus();
 			const response = await this._sidecarClient.inlineCompletion(request, abortController.signal);
 			this.loading = false;
+			console.log('sidecar.inlineCompletion', 'loading', this.loading);
 
 			if (token?.isCancellationRequested) {
 				return null;
@@ -302,6 +304,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 	private updateConfiguration() {
 		if (!workspace.getConfiguration('editor').get('inlineSuggest.enabled', true)) {
 			this.triggerMode = 'disabled';
+			console.log('sidecar.inlineSuggest', this.triggerMode);
 		}
 	}
 
@@ -328,7 +331,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		event: 'show' | 'accept' | 'dismiss' | 'accept_word' | 'accept_line',
 		displayedCompletion: DisplayedCompletion,
 	) {
-		const { id, completion, displayedAt } = displayedCompletion;
+		const { displayedAt } = displayedCompletion;
 		const elapsed = Date.now() - displayedAt;
 		let eventData: { type: string; select_kind?: 'line'; elapsed?: number };
 		switch (event) {

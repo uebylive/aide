@@ -37,7 +37,7 @@ export interface FetchAndProcessCompletionsParams {
 	providerSpecificPostProcess: (insertText: string) => string;
 	providerOptions: Readonly<ProviderOptions>;
 	// the logger to use
-	logger: CompletionLogger.LoggingService,
+	logger: CompletionLogger.LoggingService;
 	// the span id to use for logging
 	spanId: string;
 }
@@ -113,7 +113,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 			'multiline': multiline,
 			'completion': completion,
 			'completion_len': completion.length,
-			"hotStreakExtractor": hotStreakExtractor !== undefined ? "present" : "not_present",
+			'hotStreakExtractor': hotStreakExtractor !== undefined ? 'present' : 'not_present',
 		});
 
 		const extractCompletion = shouldYieldFirstCompletion

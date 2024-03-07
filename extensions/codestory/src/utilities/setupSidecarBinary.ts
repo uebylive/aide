@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { workspace, window, ProgressLocation, extensions, env } from 'vscode';
+import { window, ProgressLocation } from 'vscode';
 import { promisify } from 'util';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -336,7 +336,7 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 			// Either unref to avoid zombie process, or listen to events because you can
 			if (os.platform() === 'win32') {
 				child.stdout.on('data', (data: any) => {
-					// console.log(`stdout: ${data}`);
+					console.log(`stdout: ${data}`);
 				});
 				child.stderr.on('data', (data: any) => {
 					console.log(`stderr: ${data}`);
@@ -365,35 +365,27 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 
 	await spawnChild();
 
-
-	let hcAttempts = 0;
 	const waitForGreenHC = async () => {
-		const retry = () => {
+		let hcAttempts = 0;
+		while (hcAttempts < maxAttempts) {
+			try {
+				console.log('Health check main loop');
+				const url = `${serverUrl}/api/health`;
+				const response = await fetch(url);
+				if (response.status === 200) {
+					// allow-any-unicode-next-line
+					console.log('HC finished! We are green 🛳️');
+					return true;
+				} else {
+					console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`);
+				}
+			} catch (e: any) {
+				console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`, e);
+			}
 			hcAttempts++;
-			console.log(`Error HC failed, probably still starting up. Retrying attempt ${hcAttempts}...`);
-			setTimeout(waitForGreenHC, delay);
-		};
-		try {
-
-			console.log('Health check main loop');
-			const url = `${serverUrl}/api/health`;
-			const response = await fetch(url);
-			if (response.status === 200) {
-				// allow-any-unicode-next-line
-				console.log('HC finished! We are green 🛳️');
-				return true;
-			} else {
-				console.log('HC failed, trying again');
-				retry();
-			}
-		} catch (e: any) {
-			if (hcAttempts < maxAttempts) {
-				console.log('HC failed, trying again', e);
-				retry();
-			} else {
-				return false;
-			}
+			await new Promise(resolve => setTimeout(resolve, delay));
 		}
+		return false;
 	};
 
 	console.log('we are returning from HC check');

@@ -28,7 +28,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
-import { TypeDefinitionProvider, forkSignal, typeDefinitionForIdentifierNodes, typeDefinitionProvider } from './helpers/vscodeApi';
+import { TypeDefinitionProvider, typeDefinitionForIdentifierNodes } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -529,8 +529,8 @@ export class InlineCompletionItemProvider
 	 * goes GA.
 	 */
 	private unstable_handleDidPartiallyAcceptCompletionItem(
-		completion: Pick<AutocompleteItem, 'logId' | 'analyticsItem'>,
-		acceptedLength: number
+		_completion: Pick<AutocompleteItem, 'logId' | 'analyticsItem'>,
+		_acceptedLength: number
 	): void {
 		// CompletionLogger.partiallyAccept(
 		// 	completion.logId,
@@ -576,7 +576,7 @@ export class InlineCompletionItemProvider
 	 * error messages so every unexpected error is deduplicated by its message and rate limit errors
 	 * are only shown once during the rate limit period.
 	 */
-	private onError(error: Error): void {
+	private onError(_error: Error): void {
 		// TODO(philipp-spiess): Bring back this code once we have fewer uncaught errors
 		//
 		// c.f. https://sourcegraph.slack.com/archives/C05AGQYD528/p1693471486690459
@@ -605,7 +605,7 @@ export class InlineCompletionItemProvider
 	}
 }
 
-const globalInvocationSequenceForTracer = 0;
+// const globalInvocationSequenceForTracer = 0;
 
 
 // Check if the current text in the editor overlaps with the currently selected

@@ -1,6 +1,8 @@
-import * as vscode from "vscode";
-
-const SUFFIX_PERCENT = 0.2;
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import * as vscode from 'vscode';
 
 export interface PromptData {
 	type: string;
@@ -16,11 +18,11 @@ export interface PromptData {
 export async function getPromptHelper(
 	docText: string,
 	insertOffset: number,
-	docRelPath: string,
-	docUri: vscode.Uri,
-	docLangId: string,
+	_docRelPath: string,
+	_docUri: vscode.Uri,
+	_docLangId: string,
 ): Promise<PromptData> {
-	const suffixPercent = SUFFIX_PERCENT;
+	// const suffixPercent = SUFFIX_PERCENT;
 
 	const now = Date.now();
 
@@ -31,7 +33,7 @@ export async function getPromptHelper(
 	const now2 = Date.now();
 
 	return {
-		type: "prompt",
+		type: 'prompt',
 		prompt: {
 			prefix: trimmedPrefix,
 			suffix: completeSuffix,
@@ -43,7 +45,7 @@ export async function getPromptHelper(
 }
 
 export function trimLastLine(str: string): [string, string] { // returns [trimmedString, ws]
-	const lines = str.split("\n");
+	const lines = str.split('\n');
 	// this is the last line
 	const lastLine = lines[lines.length - 1];
 	// trim the last line
@@ -52,5 +54,5 @@ export function trimLastLine(str: string): [string, string] { // returns [trimme
 	const beforeWS = str.slice(0, str.length - nTrailingWS);
 	// gets the trailing whitespace which is remaining in the complete string
 	const ws = str.substr(beforeWS.length);
-	return [lastLine.length == nTrailingWS ? beforeWS : str, ws];
+	return [lastLine.length === nTrailingWS ? beforeWS : str, ws];
 }

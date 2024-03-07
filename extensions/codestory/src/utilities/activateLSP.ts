@@ -8,7 +8,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { ExtensionContext, commands, extensions } from 'vscode';
+import { ExtensionContext, extensions } from 'vscode';
 import logger from '../logger';
 import { isExcludedExtension } from './extensionBlockList';
 
@@ -147,12 +147,14 @@ const activateGoExtension = async () => {
 };
 
 
+/*
 const restartGoLSP = async () => {
 	// Use the most popular go lsp and restart it
 	// This comes from here:
 	// https://github.com/golang/vscode-go/blob/master/package.json#L501C21-L501C46
 	await commands.executeCommand('go.languageserver.restart');
 };
+*/
 
 
 const activateRustExtension = async () => {
@@ -171,7 +173,7 @@ const activateRustExtension = async () => {
 	});
 };
 
-export const activateExtensions = async (context: ExtensionContext, languageTypes: Set<string>) => {
+export const activateExtensions = async (_context: ExtensionContext, languageTypes: Set<string>) => {
 	// Check if any entry here is of typescript type
 	languageTypes.forEach(async (fileExtension) => {
 		if (isTypeScriptType(fileExtension)) {

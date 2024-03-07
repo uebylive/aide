@@ -290,6 +290,8 @@ Commit message: "Changed goodbye to hello and 3 to 4
 			role: 'assistant',
 		}
 	];
+
+	/*
 	const modifyCodeHallucinationPrompt: OpenAI.Chat.CreateChatCompletionRequestMessage[] = [
 		{
 			content: `
@@ -385,6 +387,7 @@ def func():
 			role: 'assistant',
 		},
 	];
+	*/
 	return modifyCodeHallucinationPrompt2;
 };
 

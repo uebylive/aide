@@ -156,6 +156,7 @@ const convertDocumentSymbolOutputToCodeSymbol = (
 	if (isSymbolInformationArray(documentSymbols)) {
 		for (let index = 0; index < documentSymbols.length; index++) {
 			const symbolInformation = documentSymbols[index];
+			console.log('[symbolInformation]', symbolInformation);
 		}
 	}
 	if (isDocumentSymbolArray(documentSymbols)) {

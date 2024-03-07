@@ -7,7 +7,7 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
 import type { DocumentContext } from './get-current-doc-context';
-import type { CompletionItemID, CompletionLogID } from './logger';
+import type { CompletionItemID } from './logger';
 import type { RequestParams } from './request-manager';
 import type { InlineCompletionItemWithAnalytics } from './text-processing/process-inline-completions';
 

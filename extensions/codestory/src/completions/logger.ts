@@ -98,9 +98,9 @@ interface SharedEventPayload extends InteractionIDPayload {
  * hasInteractionID helps extracting analytics interaction ID from parameters
  * that extend SharedEventPayload.
  */
-function hasInteractionID(params: any): params is InteractionIDPayload {
-	return 'id' in params;
-}
+// function hasInteractionID(params: any): params is InteractionIDPayload {
+// 	return 'id' in params;
+// }
 
 /** Emitted when a completion was suggested to the user and printed onto the screen */
 interface SuggestedEventPayload extends SharedEventPayload {
@@ -164,14 +164,14 @@ interface PersistenceRemovedEventPayload {
 interface NoResponseEventPayload extends SharedEventPayload { }
 
 /** Emitted when a completion request failed */
-interface ErrorEventPayload {
-	/** The error message */
-	message: string;
-	/** Eventual Sourcegraph instance traceId */
-	traceId?: string;
-	/** How often the error occurred (added to enable batching) */
-	count: number;
-}
+// interface ErrorEventPayload {
+// 	/** The error message */
+// 	message: string;
+// 	/** Eventual Sourcegraph instance traceId */
+// 	traceId?: string;
+// 	/** How often the error occurred (added to enable batching) */
+// 	count: number;
+// }
 
 /** Emitted when a completion is formatted on accept */
 interface FormatEventPayload {
@@ -183,28 +183,28 @@ interface FormatEventPayload {
 	formatter?: string;
 }
 
-function logCompletionSuggestedEvent(params: SuggestedEventPayload): void {
+function logCompletionSuggestedEvent(_params: SuggestedEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-function logCompletionAcceptedEvent(params: AcceptedEventPayload): void {
+function logCompletionAcceptedEvent(_params: AcceptedEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-function logCompletionPartiallyAcceptedEvent(params: PartiallyAcceptedEventPayload): void {
+function logCompletionPartiallyAcceptedEvent(_params: PartiallyAcceptedEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-export function logCompletionPersistencePresentEvent(params: PersistencePresentEventPayload): void {
+export function logCompletionPersistencePresentEvent(_params: PersistencePresentEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-export function logCompletionPersistenceRemovedEvent(params: PersistenceRemovedEventPayload): void {
+export function logCompletionPersistenceRemovedEvent(_params: PersistenceRemovedEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-function logCompletionNoResponseEvent(params: NoResponseEventPayload): void {
+function logCompletionNoResponseEvent(_params: NoResponseEventPayload): void {
 	// TODO(skcd): Implement this later
 }
-function logCompletionErrorEvent(params: ErrorEventPayload): void {
-	// TODO(skcd): Implement this later
-}
-export function logCompletionFormatEvent(params: FormatEventPayload): void {
+// function logCompletionErrorEvent(_params: ErrorEventPayload): void {
+// 	// TODO(skcd): Implement this later
+// }
+export function logCompletionFormatEvent(_params: FormatEventPayload): void {
 	// TODO(skcd): Impelement this later
 }
 /**
@@ -212,7 +212,7 @@ export function logCompletionFormatEvent(params: FormatEventPayload): void {
  * and should not happen under normal circumstances.
  */
 export function logCompletionBookkeepingEvent(
-	name:
+	_name:
 		| 'acceptedUntrackedCompletion'
 		| 'unexpectedNotLoaded'
 		| 'unexpectedNotStarted'
@@ -646,9 +646,9 @@ function lineAndCharCount({ insertText }: InlineCompletionItem): {
  * the map with a count of `0`. Then for subsequent errors of the same type, the count is
  * incremented and logged periodically. The count is reset to `0` after each log interval.
  */
-const TEN_MINUTES = 1000 * 60 * 10;
-const errorCounts: Map<string, number> = new Map();
-export function logError(error: Error): void {
+// const TEN_MINUTES = 1000 * 60 * 10;
+// const errorCounts: Map<string, number> = new Map();
+export function logError(_error: Error): void {
 	// TODO(skcd): Impelement this later
 }
 
