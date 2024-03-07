@@ -100,8 +100,11 @@ export class PersistenceTracker implements vscode.Disposable {
 
 	private enqueueMeasure(trackedCompletion: TrackedCompletion, nextTimeoutIndex: number): void {
 		const timeout = trackedCompletion.insertedAt + MEASURE_TIMEOUTS[nextTimeoutIndex] - Date.now();
-		const timeoutId = setTimeout(() => {
-			this.managedTimeouts.delete(timeoutId);
+		let timeoutId: null | ReturnType<typeof setTimeout> = null;
+		timeoutId = setTimeout(() => {
+			if (timeoutId !== null) {
+				this.managedTimeouts.delete(timeoutId);
+			}
 			this.measure(trackedCompletion, nextTimeoutIndex);
 		}, timeout);
 		this.managedTimeouts.add(timeoutId);
