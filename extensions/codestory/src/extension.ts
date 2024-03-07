@@ -285,17 +285,6 @@ export async function activate(context: ExtensionContext) {
 		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 	});
 
-	// workspace.onDidSaveTextDocument(async (doc) => {
-	// 	const uri = doc.uri;
-	// 	await trackCodeSymbolChanges.fileSaved(uri, logger);
-	// 	// // We should also update the model configuration here
-	// 	// const modelConfig = modelSelection.getModelConfiguration();
-	// 	// await sidecarClient.updateModelConfiguration(modelConfig);
-	// 	// // We should also update the model configuration here
-	// 	// const modelConfig2 = modelSelection.getModelConfiguration();
-	// 	// await sidecarClient.updateModelConfiguration(modelConfig2);
-	// });
-
 	context.subscriptions.push(registerCopySettingsCommand);
 
 	// Listen for document opened events

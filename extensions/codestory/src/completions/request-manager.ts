@@ -16,6 +16,7 @@ import {
 import { getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
 import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
+import { TypeDefinitionProviderWithNode } from './helpers/vscodeApi';
 
 export const isDefined = <T>(value: T): value is NonNullable<T> => value !== undefined && value !== null;
 
@@ -37,6 +38,8 @@ export interface RequestParams {
 
 	/** Pass the clipboard content */
 	clipBoardContent: string | null;
+
+	identifierNodes: TypeDefinitionProviderWithNode[];
 }
 
 export interface RequestManagerResult {
@@ -51,6 +54,7 @@ interface RequestsManagerParams {
 	logger: CompletionLogger.LoggingService;
 	spanId: string;
 	startTime: number;
+	identifierNodes: TypeDefinitionProviderWithNode[];
 }
 
 /**
@@ -151,6 +155,7 @@ export class RequestManager {
 					request.abortController.signal,
 					startTime,
 					requestParams.clipBoardContent,
+					requestParams.identifierNodes,
 				)) {
 					// we are going to get the generations back, here we will keep adding them to the cache
 					// one per line

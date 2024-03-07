@@ -15,6 +15,7 @@ import { getUserId } from '../utilities/uniqueId';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { LoggingService } from '../completions/logger';
+import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 
 export enum CompletionStopReason {
 	/**
@@ -403,6 +404,7 @@ export class SideCarClient {
 			model_config: sideCarModelConfiguration,
 			id: completionRequest.id,
 			clipboard_content: completionRequest.clipboard,
+			type_identifiers: sidecarTypeDefinitionsWithNode(completionRequest.identifierNodes),
 		};
 		const url = baseUrl.toString();
 		let finalAnswer = '';

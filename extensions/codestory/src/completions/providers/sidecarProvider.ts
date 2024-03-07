@@ -9,6 +9,7 @@ import { forkSignal, zipGenerators } from '../utils';
 import * as CompletionLogger from '../logger';
 import { FetchCompletionResult, StreamCompletionResponse, fetchAndProcessCompletions, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
 import { Provider, ProviderOptions } from './provider';
+import { TypeDefinitionProviderWithNode } from '../helpers/vscodeApi';
 
 export class SidecarProvider extends Provider {
 	private _sidecarClient: SideCarClient;
@@ -19,7 +20,12 @@ export class SidecarProvider extends Provider {
 		this._logger = logger;
 	}
 
-	public generateCompletionsPlain(abortSignal: AbortSignal, startTime: number, clipBoardContext: string | null): AsyncIterable<StreamCompletionResponse> {
+	public generateCompletionsPlain(
+		abortSignal: AbortSignal,
+		startTime: number,
+		clipBoardContext: string | null,
+		identifierNodes: TypeDefinitionProviderWithNode[],
+	): AsyncIterable<StreamCompletionResponse> {
 		const { languageId, uri } = this.options.document;
 		const completionRequest: CompletionRequest = {
 			filepath: uri.fsPath,
@@ -33,6 +39,7 @@ export class SidecarProvider extends Provider {
 			clipboard: clipBoardContext ?? undefined,
 			id: this.options.spanId,
 			requestId: this.options.spanId,
+			identifierNodes,
 		};
 		// const now = performance.now();
 		this._logger.logInfo('sidecar.inlineProvider.generate_completions_plain.send_completion_request', {
@@ -71,6 +78,7 @@ export class SidecarProvider extends Provider {
 			},
 			id: this.options.spanId,
 			requestId: this.options.spanId,
+			identifierNodes: [],
 		};
 		const now = performance.now();
 		this._logger.logInfo(
