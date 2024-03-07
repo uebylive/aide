@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
 import { IEditorContribution } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
-import { ModelProviderConfig, ProviderType, ProviderConfig, AzureOpenAIProviderConfig, OpenAIProviderConfig, OpenAICompatibleProviderConfig } from 'vs/platform/aiModel/common/aiModels';
+import { ModelProviderConfig, ProviderType, ProviderConfig, AzureOpenAIProviderConfig, OpenAIProviderConfig, OpenAICompatibleProviderConfig, AnthropicProviderConfig } from 'vs/platform/aiModel/common/aiModels';
 import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
 import { ConfigurationScope, EditPresentationTypes, IExtensionInfo } from 'vs/platform/configuration/common/configurationRegistry';
 import { IEditorOptions } from 'vs/platform/editor/common/editor';
@@ -386,5 +386,9 @@ export const isProviderItemConfigComplete = (providerItem: IProviderItem): boole
 		}
 		case 'ollama':
 			return true;
+		case 'anthropic': {
+			const { apiKey } = providerItem as AnthropicProviderConfig;
+			return !!apiKey;
+		}
 	}
 };

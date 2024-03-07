@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-
 import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
 import { formatCompletion } from './format-completion';
 import { getCurrentDocContext } from './get-current-doc-context';
@@ -28,7 +27,7 @@ import { completionProviderConfig } from './completion-provider-config';
 import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/statusBar';
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
-import { TypeDefinitionProvider, typeDefinitionForIdentifierNodes } from './helpers/vscodeApi';
+import { TypeDefinitionProviderWithNode, typeDefinitionForIdentifierNodes } from './helpers/vscodeApi';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -36,26 +35,20 @@ interface AutocompleteResult extends vscode.InlineCompletionList {
 	/** @deprecated */
 	completionEvent?: CompletionLogger.CompletionBookkeepingEvent;
 }
-
 export interface CodeStoryCompletionItemProviderConfig {
 	triggerNotice: ((notice: { key: string }) => void) | null;
-
 	// Settings
 	formatOnAccept?: boolean;
-
 	// Feature flags
 	completeSuggestWidgetSelection?: boolean;
-
 	// Sidecar client
 	sidecarClient: SideCarClient;
 }
-
 interface CompletionRequest {
 	document: vscode.TextDocument;
 	position: vscode.Position;
 	context: vscode.InlineCompletionContext;
 }
-
 export class InlineCompletionItemProvider
 	implements vscode.InlineCompletionItemProvider, vscode.Disposable {
 	private lastCompletionRequest: CompletionRequest | null = null;
@@ -64,27 +57,18 @@ export class InlineCompletionItemProvider
 	// completions, we use consult this field inside the completion callback instead.
 	private lastManualCompletionTimestamp: number | null = null;
 	// private reportedErrorMessages: Map<string, number> = new Map()
-
 	private readonly config: Required<CodeStoryCompletionItemProviderConfig>;
-
 	private requestManager: RequestManager;
-
 	/** Mockable (for testing only). */
 	protected getInlineCompletions = getInlineCompletions;
-
 	/** Accessible for testing only. */
 	protected lastCandidate: LastInlineCompletionCandidate | undefined;
-
 	private lastAcceptedCompletionItem:
 		| Pick<AutocompleteItem, 'requestParams' | 'analyticsItem'>
 		| undefined;
-
 	private disposables: vscode.Disposable[] = [];
-
 	private sidecarClient: SideCarClient;
-
 	private logger: CompletionLogger.LoggingService;
-
 	constructor({
 		completeSuggestWidgetSelection = true,
 		formatOnAccept = true,
@@ -99,7 +83,6 @@ export class InlineCompletionItemProvider
 			formatOnAccept,
 		};
 		this.sidecarClient = sidecarClient;
-
 		if (this.config.completeSuggestWidgetSelection) {
 			// This must be set to true, or else the suggest widget showing will suppress inline
 			// completions. Note that the VS Code proposed API inlineCompletionsAdditions contains
@@ -114,9 +97,7 @@ export class InlineCompletionItemProvider
 					vscode.ConfigurationTarget.Global
 				);
 		}
-
 		this.requestManager = new RequestManager(sidecarClient);
-
 		this.disposables.push(
 			vscode.commands.registerCommand(
 				'codestory.autocomplete.inline.accepted',
@@ -126,9 +107,7 @@ export class InlineCompletionItemProvider
 			)
 		);
 	}
-
 	private lastCompletionRequestTimestamp = 0;
-
 	public async provideInlineCompletionItems(
 		document: vscode.TextDocument,
 		position: vscode.Position,
@@ -168,11 +147,9 @@ export class InlineCompletionItemProvider
 			}
 		}
 		this.lastCompletionRequest = completionRequest;
-
 		if (!this.lastCompletionRequestTimestamp) {
 			this.lastCompletionRequestTimestamp = startTime;
 		}
-
 		const setIsLoading = (isLoading: boolean): void => {
 			if (isLoading) {
 				// We do not want to show a loading spinner when the user is rate limited to
@@ -184,7 +161,6 @@ export class InlineCompletionItemProvider
 				disableLoadingStatus();
 			}
 		};
-
 		const abortController = new AbortController();
 		if (token) {
 			if (token.isCancellationRequested) {
@@ -200,7 +176,6 @@ export class InlineCompletionItemProvider
 				abortController.abort();
 			});
 		}
-
 		const now = performance.now();
 		const response = await this.sidecarClient.getIdentifierNodes(
 			document.uri.fsPath,
@@ -212,9 +187,9 @@ export class InlineCompletionItemProvider
 		console.log('Time taken for identifier nodes: ', performance.now() - now);
 		console.log('Identifier nodes interested', response);
 		const responseStart = performance.now();
-		let responses: TypeDefinitionProvider[][] | unknown = [];
+		let responses: TypeDefinitionProviderWithNode[] | unknown = [];
 		try {
-			responses = await Promise.race([typeDefinitionForIdentifierNodes(response.identifier_nodes, document.uri), new Promise((_, reject) => {
+			responses = await Promise.race([typeDefinitionForIdentifierNodes(response.identifier_nodes, document.uri, this.sidecarClient), new Promise((_, reject) => {
 				const { signal } = abortController;
 				signal.addEventListener('abort', () => {
 					reject(new Error('Aborted'));
@@ -224,6 +199,8 @@ export class InlineCompletionItemProvider
 		} catch (exception) {
 			responses = [];
 		}
+		// @ts-ignore
+		const identifierNodes: TypeDefinitionProviderWithNode[] = responses;
 		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 
@@ -232,7 +209,6 @@ export class InlineCompletionItemProvider
 		if (!currentEditorContentMatchesPopupItem(document, context)) {
 			return null;
 		}
-
 		let takeSuggestWidgetSelectionIntoAccount = false;
 		// Only take the completion widget selection into account if the selection was actively changed
 		// by the user
@@ -243,9 +219,7 @@ export class InlineCompletionItemProvider
 		) {
 			takeSuggestWidgetSelectionIntoAccount = true;
 		}
-
 		// check if we should reset our current request
-
 		const triggerKind =
 			this.lastManualCompletionTimestamp &&
 				this.lastManualCompletionTimestamp > Date.now() - 500
@@ -256,7 +230,6 @@ export class InlineCompletionItemProvider
 						? TriggerKind.SuggestWidget
 						: TriggerKind.Hover;
 		this.lastManualCompletionTimestamp = null;
-
 		// my question: how is multiline defined here? that's one of the questions we want to figure out
 		const docContext = getCurrentDocContext({
 			document,
@@ -274,22 +247,18 @@ export class InlineCompletionItemProvider
 			id: id,
 			multiline_trigger: docContext.multilineTrigger ?? 'no_multiline_trigger'
 		});
-
 		const latencyFeatureFlags: LatencyFeatureFlags = {
 			user: false,
 		};
-
 		const artificialDelay = getArtificialDelay(
 			latencyFeatureFlags,
 			document.uri.toString(),
 			document.languageId,
 			undefined,
 		);
-
 		const isLocalProvider = false;
 		// TODO(skcd): Enable this again later on when we have better detection model
 		// const isLocalProvider = isLocalCompletionsProvider(this.config.providerConfig.identifier)
-
 		try {
 			// we get the results from making a call first, do we even hit the cache here?
 			// The important trick here is not that we can send back just a single result
@@ -320,20 +289,19 @@ export class InlineCompletionItemProvider
 				spanId: id,
 				startTime,
 				clipBoardContent,
+				identifierNodes,
 			});
 
 			// Avoid any further work if the completion is invalidated already.
 			if (abortController.signal.aborted) {
 				return null;
 			}
-
 			if (!result) {
 				// Returning null will clear any existing suggestions, thus we need to reset the
 				// last candidate.
 				this.lastCandidate = undefined;
 				return null;
 			}
-
 			// we need to check the results here to make sure they are not all whitespaces (which are just annoying)
 			let isNonWhitespaceCompletion = false;
 			let multilineCompletion = false;
@@ -347,7 +315,6 @@ export class InlineCompletionItemProvider
 					multilineCompletion = true;
 				}
 			});
-
 			// we only block when we have whitespace and its multiline
 			if (!isNonWhitespaceCompletion && multilineCompletion) {
 				this.logger.logInfo('sidecar.providerInlineCompletionItems.WHITESPACE', {
@@ -356,7 +323,6 @@ export class InlineCompletionItemProvider
 				});
 				return null;
 			}
-
 			this.logger.logInfo('sidecar.providerInlineCompletionItems.COMPLETE', {
 				'event_name': 'sidecar.provide_inline_completions.COMPLETE',
 				'inline_completions': result.items.map((item) => item.insertText),

@@ -139,6 +139,7 @@ export function analyticsItemToAutocompleteItem(
 			selectedCompletionInfo: context.selectedCompletionInfo,
 			position,
 			clipBoardContent: null,
+			identifierNodes: [],
 		} satisfies RequestParams;
 
 		const autocompleteItem = new AutocompleteItem({

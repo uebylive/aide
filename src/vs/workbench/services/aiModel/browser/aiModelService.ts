@@ -71,7 +71,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
 			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
@@ -93,7 +93,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					|| model.provider.type === 'openai-default'
 					|| model.provider.type === 'togetherai'
 					|| model.provider.type === 'openai-compatible'
-					|| model.provider.type === 'ollama') {
+					|| model.provider.type === 'ollama'
+					|| model.provider.type === 'anthropic') {
 					acc[key] = model;
 				}
 			}
@@ -357,6 +358,25 @@ class ModelSelectionJsonSchema {
 					}
 				}
 			},
+			'anthropicProvider': {
+				'type': 'object',
+				'properties': {
+					'anthropic': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Together AI'],
+								'description': nls.localize('modelSelection.json.togetherAIProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.togetherAIProvider.apiKey', 'API key for the provider')
+							}
+						},
+						'required': ['name', 'apiKey']
+					}
+				}
+			},
 			'providers': {
 				'oneOf': [
 					{ '$ref': '#/definitions/codestoryProvider' },
@@ -364,7 +384,8 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/azureOpenAIProvider' },
 					{ '$ref': '#/definitions/togetherAIProvider' },
 					{ '$ref': '#/definitions/openAICompatibleProvider' },
-					{ '$ref': '#/definitions/ollamaProvider' }
+					{ '$ref': '#/definitions/ollamaProvider' },
+					{ '$ref': '#/definitions/anthropicProvider' }
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -385,7 +406,7 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},

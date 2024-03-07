@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -83,7 +83,12 @@ export interface OllamaProviderConfig {
 	readonly name: 'Ollama';
 }
 
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig;
+export interface AnthropicProviderConfig {
+	readonly name: 'Anthropic';
+	readonly apiKey: string;
+}
+
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig;
 export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
@@ -92,7 +97,8 @@ export type IModelProviders =
 	| { 'azure-openai': AzureOpenAIProviderConfig }
 	| { 'togetherai': TogetherAIProviderConfig }
 	| { 'openai-compatible': OpenAICompatibleProviderConfig }
-	| { 'ollama': OllamaProviderConfig };
+	| { 'ollama': OllamaProviderConfig }
+	| { 'anthropic': AnthropicProviderConfig };
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
@@ -226,6 +232,22 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: {
 				type: 'ollama'
 			}
+		},
+		'ClaudeOpus': {
+			name: 'Claude Opus',
+			contextLength: 200000,
+			temperature: 0.2,
+			provider: {
+				type: 'anthropic'
+			}
+		},
+		'ClaudeSonnet': {
+			name: 'Claude Sonnet',
+			contextLength: 200000,
+			temperature: 0.2,
+			provider: {
+				type: 'anthropic'
+			}
 		}
 	},
 	providers: {
@@ -252,7 +274,11 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		},
 		'ollama': {
 			name: 'Ollama'
-		}
+		},
+		'anthropic': {
+			name: 'Anthropic',
+			apiKey: '',
+		},
 	}
 };
 
@@ -263,6 +289,7 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
 	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
+	'anthropic': ['ClaudeOpus', 'ClaudeSonnet']
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {

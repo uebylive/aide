@@ -464,7 +464,7 @@ export type CustomLLMType = {
 export type LLMTypeVariant = LLMType | CustomLLMType;
 
 export type IdentifierNodeInformation = {
-	identifier: string;
+	name: string;
 	range: {
 		startPosition: {
 			line: number;
@@ -526,7 +526,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 	const providers = modelSelection.providers;
 	const finalProviders = [];
 	for (const [key, value] of Object.entries(providers)) {
-		const providerConfigSideCar = getProviderconfiguration(key, value);
+		const providerConfigSideCar = getProviderConfiguration(key, value);
 		if (providerConfigSideCar !== null) {
 			finalProviders.push(providerConfigSideCar);
 		}
@@ -540,7 +540,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 }
 
 // The various types are present in aiModels.ts
-function getProviderconfiguration(type: string, value: ModelProviderConfiguration) {
+function getProviderConfiguration(type: string, value: ModelProviderConfiguration) {
 	if (type === 'openai-default') {
 		return {
 			'OpenAI': {
@@ -583,6 +583,13 @@ function getProviderconfiguration(type: string, value: ModelProviderConfiguratio
 	if (type === 'codestory') {
 		return 'CodeStory';
 	}
+	if (type === 'anthropic') {
+		return {
+			'Anthropic': {
+				'api_key': value.apiKey,
+			}
+		};
+	}
 	return null;
 }
 
@@ -603,12 +610,18 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	if (providerConfiguration.type === 'ollama') {
 		return 'Ollama';
 	}
+	if (providerConfiguration.type === 'codestory') {
+		return {
+			'CodeStory': {
+				'llm_type': null,
+			},
+		};
+	}
 	if (providerConfiguration.type === 'openai-compatible') {
 		return 'OpenAICompatible';
 	}
-	return {
-		'CodeStory': {
-			'llm_type': null,
-		},
-	};
+	if (providerConfiguration.type === 'anthropic') {
+		return 'Anthropic';
+	}
+	return null;
 }
