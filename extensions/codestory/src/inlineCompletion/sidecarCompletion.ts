@@ -68,7 +68,7 @@ type DisplayedCompletion = {
 export const DEBOUNCE_DELAY = 350;
 
 export class SidecarCompletionProvider implements InlineCompletionItemProvider {
-	private static debounceTimeout: NodeJS.Timeout | undefined = undefined;
+	private static debounceTimeout: null | ReturnType<typeof setTimeout> = null;
 	private triggerMode: 'automatic' | 'manual' | 'disabled' = 'automatic';
 	private flyingRequestController: AbortController | undefined;
 	private loading = false;
