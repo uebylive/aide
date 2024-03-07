@@ -6,24 +6,15 @@
 // We want to keep track of the code symbols which have changed so we can provide
 // an overview of what changes have been done up until now
 // This will be useful in creating a better what was I doing feature
-import { OutputChannel, Uri, workspace } from 'vscode';
-import * as path from 'path';
-import { v4 as uuidV4 } from 'uuid';
-import * as fs from 'fs';
-import { Graph, GraphDFS, WCCFinder, topoSort } from './graphTopologicalSort';
 import { createPatch } from 'diff';
+import * as events from 'events';
 import { OpenAI } from 'openai';
-import { CodeSymbolInformation, FileCodeSymbolInformation } from '../utilities/types';
-import {
-	TSMorphProjectManagement,
-	parseFileUsingTsMorph,
-	parseSourceFile,
-} from '../utilities/parseTypescript';
+import { Uri } from 'vscode';
 import { Logger } from 'winston';
-import { PythonServer } from '../utilities/pythonServerClient';
-import EventEmitter from 'events';
-import { GoLangParser } from '../languages/goCodeSymbols';
+
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
+import { CodeSymbolInformation, FileCodeSymbolInformation } from '../utilities/types';
+import { Graph, GraphDFS, WCCFinder, topoSort } from './graphTopologicalSort';
 
 export const getFileExtension = (filePath: string): string | undefined => {
 	return filePath.split('.').pop();
@@ -110,7 +101,7 @@ export class TrackCodeSymbolChanges {
 	public async filesChangedSinceLastCommit(
 		filePath: string,
 		fileContentSinceHead: string,
-		emitter: EventEmitter,
+		emitter: events.EventEmitter,
 	) {
 		// Now we try to get the extension of the file and see where it belongs
 		// to
@@ -126,6 +117,7 @@ export class TrackCodeSymbolChanges {
 				filePath: filePath,
 				codeSymbols: codeSymbols,
 			});
+			return codeSymbols;
 		}
 	}
 
@@ -175,7 +167,7 @@ export class TrackCodeSymbolChanges {
 		}
 	}
 
-	public async fileOpened(uri: Uri, logger: Logger) {
+	public async fileOpened(uri: Uri) {
 		// We opened the file, so check the code symbols here and keep track
 		// of them if we are not already doing that
 		let fileCodeSymbolInformation = this.fileOpenedCodeSymbolTracked.get(uri.fsPath);
@@ -193,8 +185,7 @@ export class TrackCodeSymbolChanges {
 
 	private async parseFileCodeSymbolDiff(
 		fsPath: string,
-		previousCodeSymbolsInFileMap: Map<string, CodeSymbolInformation>,
-		shouldLoadFresh: boolean
+		previousCodeSymbolsInFileMap: Map<string, CodeSymbolInformation>
 	) {
 		// Lets grab what code symbols we had when the file was opened for the
 		// first time
@@ -292,8 +283,7 @@ export class TrackCodeSymbolChanges {
 		}
 		const codeSymbolsWhichChanged = await this.parseFileCodeSymbolDiff(
 			uri.fsPath,
-			previousCodeSymbolsInFileMap,
-			true
+			previousCodeSymbolsInFileMap
 		);
 		this.codeSymbolsWhichChanged.set(uri, codeSymbolsWhichChanged);
 

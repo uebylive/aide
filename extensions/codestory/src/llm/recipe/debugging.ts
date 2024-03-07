@@ -7,7 +7,6 @@
 import {
 	OpenAI,
 } from 'openai';
-import * as vscode from 'vscode';
 import posthogClient from '../../posthog/client';
 import { fileFunctionsToParsePrompt, generateFileFunctionsResponseParser, generatePlanAndQueriesPrompt, generatePlanAndQueriesResponseParser } from './prompts';
 import { ToolingEventCollection } from '../../timeline/events/collection';
@@ -70,7 +69,7 @@ export const debuggingFlow = async (
 	codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
 	workingDirectory: string,
 	testSuiteRunCommand: string,
-	activeFilesTracker: ActiveFilesTracker,
+	_activeFilesTracker: ActiveFilesTracker,
 	uniqueId: string,
 	agentCustomInstruction: string | null,
 	reporef: RepoRef,

@@ -9,9 +9,9 @@
  */
 
 import * as vscode from 'vscode';
-import { ContextSelection, DiagnosticCode, DiagnosticInformation, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
+import { DiagnosticCode, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
-import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper, IndentationUtils } from './editorSessionProvider';
+import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 
 export interface EditMessage {
 	message: string | null;
@@ -21,10 +21,10 @@ export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
 	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
 	cancellationToken: vscode.CancellationToken,
-	currentRepoRef: RepoRef,
-	workingDirectory: string,
-	sidecarClient: SideCarClient,
-	language: string,
+	_currentRepoRef: RepoRef,
+	_workingDirectory: string,
+	_sidecarClient: SideCarClient,
+	_language: string,
 	textDocument: vscode.TextDocument,
 ): Promise<EditMessage> => {
 	if (cancellationToken.isCancellationRequested) {
@@ -133,6 +133,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// for doc generation we just track the answer until we get the final
 				// one and then apply it to the editor
 				generatedAnswer = inlineAgentMessage.answer;
+				console.log(generatedAnswer);
 			}
 			if (skillUsed === 'Edit' || skillUsed === 'Doc') {
 				// we first add the delta
@@ -568,7 +569,7 @@ export class LineContent {
 	// Getter to compute and retrieve the indentation level of the content
 	get indentLevel() {
 		if (this._indentLevel === -1) {
-			const [indentChars, level] = IndentationHelper.guessIndentLevel(this.content, this._indentStyle);
+			const [_indentChars, level] = IndentationHelper.guessIndentLevel(this.content, this._indentStyle);
 			this._indentLevel = level;
 		}
 		return this._indentLevel;

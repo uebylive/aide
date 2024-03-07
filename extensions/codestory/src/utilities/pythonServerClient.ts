@@ -10,9 +10,6 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { v4 as uuidV4 } from 'uuid';
 
-const PORT = 42424;
-
-
 export class PythonServer extends CodeSymbolsIndexer {
 	private _serverUrl: string;
 	constructor(serverUrl: string) {
@@ -37,11 +34,11 @@ export class PythonServer extends CodeSymbolsIndexer {
 		}
 	}
 
-	async parseFileWithDependencies(filePath: string, workingDirectory: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, _workingDirectory: string, _useCache: boolean = false): Promise<CodeSymbolInformation[]> {
 		return await this.parseFile(filePath);
 	}
 
-	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
+	async parseFileWithoutDependency(filePath: string, _workingDirectory: string, _storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
 		return await this.parseFile(filePath);
 	}
 

@@ -74,6 +74,7 @@ export class SideCarClient {
 
 	updateModelConfiguration(modelConfiguration: vscode.ModelSelection) {
 		this._modelConfiguration = modelConfiguration;
+		console.log('updated model configuration', this._modelConfiguration);
 	}
 
 	getRepoListUrl(): string {
@@ -366,7 +367,7 @@ export class SideCarClient {
 			id: requestId,
 		};
 		const url = baseUrl.toString();
-		const _ = await fetch(url, {
+		await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -622,7 +623,7 @@ export class SideCarClient {
 			events: mappedEvents,
 		};
 		const url = baseUrl.toString();
-		const response = await fetch(url, {
+		await fetch(url, {
 			method: 'POST',
 			body: JSON.stringify(body),
 			headers: {
@@ -663,7 +664,7 @@ export class SideCarClient {
 
 	async * inlineCompletion(
 		completionRequest: CompletionRequest,
-		signal: AbortSignal,
+		_signal: AbortSignal,
 	): AsyncIterable<CompletionResponse> {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(

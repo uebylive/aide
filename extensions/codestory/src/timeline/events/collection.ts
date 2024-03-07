@@ -23,11 +23,6 @@ interface TestExecutionHarness {
 	testFileLocation: string;
 }
 
-function extractMarkdownWords(text: string): string[] {
-	// ... implementation ...
-	return [];
-}
-
 interface FileSaveEvent {
 	filePath: string;
 	codeSymbolName: string;
@@ -65,7 +60,7 @@ interface ToolingEvent {
 export const thinkingEvent = (
 	userQuery: string,
 	thinkingContext: string,
-	references: CodeSymbolInformation[]
+	_references: CodeSymbolInformation[]
 ): ToolingEvent => {
 	return {
 		eventId: uuidv4(),
@@ -544,7 +539,7 @@ export class ToolingEventCollection {
 	public async addRelevantSearchResults(
 		queries: string[],
 		codeSymbolInformationList: CodeSnippetInformation[],
-		workingDirectory: string
+		_workingDirectory: string
 	) {
 		const event = relevantSearchResults(queries, codeSymbolInformationList);
 		this.events.push(event);

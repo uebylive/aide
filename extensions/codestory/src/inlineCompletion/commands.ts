@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ConfigurationTarget, ExtensionContext, commands, workspace } from 'vscode';
-import { SidecarCompletionProvider } from './sidecarCompletion';
+import { ConfigurationTarget, commands, workspace } from 'vscode';
+// import { SidecarCompletionProvider } from './sidecarCompletion';
 
 // We register all the commands here related to tab autocomplete and we do so
 // in a very simple way by even passing.
@@ -15,8 +15,9 @@ type Command = {
 	thisArg?: any;
 };
 
-const configTarget = ConfigurationTarget.Global;
+// const configTarget = ConfigurationTarget.Global;
 
+/*
 const toggleInlineCompletionTriggerMode: Command = {
 	command: 'aide.toggleInlineCompletionTriggerMode',
 	callback: (value: 'automatic' | 'manual' | undefined) => {
@@ -56,19 +57,6 @@ const acceptInlineCompletion: Command = {
 	},
 };
 
-const toggleInlineCompletion: Command = {
-	command: 'aide.inlineCompletion.toggle',
-	callback: () => {
-		const config = workspace.getConfiguration('aide');
-		const enabled = config.get('inlineCompletion.enableTabAutocomplete');
-		config.update(
-			'inlineCompletion.enableTabAutocomplete',
-			!enabled,
-			ConfigurationTarget.Global
-		);
-	},
-};
-
 // I have to handleEvent and then handle it on the sidecar completion provider just like how we are doing
 // it in tabby https://github.com/TabbyML/tabby/blob/main/clients/vscode/src/commands.ts#L212
 const acceptInlineCompletionNextWord = (completionProvider: SidecarCompletionProvider): Command => {
@@ -99,6 +87,20 @@ const dismissInlineCompletion = (completionProvider: SidecarCompletionProvider):
 			commands.executeCommand('editor.action.inlineSuggest.hide');
 		},
 	};
+};
+*/
+
+const toggleInlineCompletion: Command = {
+	command: 'aide.inlineCompletion.toggle',
+	callback: () => {
+		const config = workspace.getConfiguration('aide');
+		const enabled = config.get('inlineCompletion.enableTabAutocomplete');
+		config.update(
+			'inlineCompletion.enableTabAutocomplete',
+			!enabled,
+			ConfigurationTarget.Global
+		);
+	},
 };
 
 export const aideCommands = (

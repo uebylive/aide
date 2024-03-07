@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 // We are going to setup the anton backend here
-import fetch from 'node-fetch';
-import { workspace, window, ProgressLocation, extensions, env } from 'vscode';
+import { workspace, window, ProgressLocation, extensions } from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import axios from 'axios';
@@ -260,7 +259,7 @@ export async function startAidePythonBackend(
 			// Either unref to avoid zombie process, or listen to events because you can
 			if (os.platform() === 'win32') {
 				child.stdout.on('data', (data: any) => {
-					// console.log(`stdout: ${data}`);
+					console.log(`stdout: ${data}`);
 				});
 				child.stderr.on('data', (data: any) => {
 					console.log(`stderr: ${data}`);

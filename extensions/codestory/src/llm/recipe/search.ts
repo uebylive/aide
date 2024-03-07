@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
 import { FileCodeSymbolInformation, CodeSnippetInformation } from '../../utilities/types';
 import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
 
@@ -27,7 +26,7 @@ export const generateFileInformationSummary = async (
 	// file code symbol information
 	for (let index = 0; index < fileList.length; index++) {
 		// get the file extension
-		const fileExtension = fileList[index].split('.').reverse()[0];
+		// const fileExtension = fileList[index].split('.').reverse()[0];
 		const indexerForFile = codeSymbolsLanguageCollection.getIndexerForFile(fileList[index]);
 		if (!indexerForFile) {
 			continue;

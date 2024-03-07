@@ -21,9 +21,7 @@ import {
 	CodeSymbolInformation,
 	CodeSymbolKind,
 } from './types';
-import { exec } from 'child_process';
 import { runCommandAsync } from './commandRunner';
-import { Uri, languages, workspace } from 'vscode';
 import { getSymbolsFromDocumentUsingLSP } from './lspApi';
 import { CodeSymbolsIndexer } from '../languages/codeSymbolsIndexerTypes';
 import { isExcludedExtension } from './extensionBlockList';
@@ -639,8 +637,8 @@ function parseCodeBlockForDependencies(
 	blockCodeSymbolName: string,
 	moduleName: string,
 	workingDirectoryPath: string,
-	project: Project,
-	sourceFile: SourceFile
+	_project: Project,
+	_sourceFile: SourceFile
 ): CodeSymbolDependencies[] {
 	try {
 		const codeSymbolDependencies: CodeSymbolDependencies[] = [];
@@ -664,7 +662,7 @@ function parseCodeBlockForDependencies(
 								(codeSymbolInformation) =>
 									codeSymbolInformation as CodeSymbolDependencyWithFileInformation
 							);
-					const declarations = symbol.getDeclarations();
+					// const declarations = symbol.getDeclarations();
 					// if (declarations.length !== 0) {
 					//     return;
 					// }
@@ -759,6 +757,7 @@ export function parseCodeBlocksForDependencies(
 	return codeSymbolDependencies;
 }
 
+/*
 // This is just a hack for now to not kill vscode while we try to many many
 // times parse the same file to get information about the code lens.
 interface ParseFileContent {
@@ -767,6 +766,7 @@ interface ParseFileContent {
 }
 
 const PARSE_FILE_CACHE: Map<string, ParseFileContent> = new Map();
+*/
 
 export function parseSourceFile(
 	sourceFile: SourceFile,
@@ -837,7 +837,8 @@ export async function parseFileUsingTsMorph(
 	// We sync from the fs again if the file has changed meanwhile, this is not
 	// important for onboarding but super important when we are doing things live
 	// and on every save
-	const syncData = await sourceFile?.refreshFromFileSystem();
+	// const syncData = await sourceFile?.refreshFromFileSystem();
+	await sourceFile?.refreshFromFileSystem();
 	if (sourceFile) {
 		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
 		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
@@ -967,12 +968,12 @@ export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 		return await this.parseFileWithDependencies(filePath, workingDirectory, storeInCache);
 	}
 
-	async parseFileWithDependencies(filePath: string, workingDirectory: string, storeInCache: boolean): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, workingDirectory: string, _storeInCache: boolean): Promise<CodeSymbolInformation[]> {
 		const project = this.getTsMorphProjectForFile(filePath);
 		if (project === null) {
 			return [];
 		}
-		const sourceFile = project.getSourceFile(filePath);
+		// const sourceFile = project.getSourceFile(filePath);
 		const codeSymbols = await parseFileUsingTsMorph(
 			filePath,
 			project,
@@ -1017,7 +1018,7 @@ export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 
 export const checkIfFileExists = async (filePath: string): Promise<boolean> => {
 	try {
-		const data = await fs.promises.stat(filePath);
+		await fs.promises.stat(filePath);
 		return true;
 	} catch (err) {
 		return false;

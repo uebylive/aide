@@ -3,12 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { ContextSelection, DeepContextForView, PreciseContext } from '../../sidecar/types';
 import { createLimiter } from '../limiter';
-import { URI } from 'vscode-uri';
-import { languages } from 'vscode';
 import { getCodeSelection } from '../codeSelection';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 
@@ -23,12 +20,12 @@ const limiter = createLimiter(
 	5000
 );
 
-const limiterGPTCall = createLimiter(
-	// GPT3.5 has a very high limit so allow more connections
-	1000,
-	// even 2 seconds is super slow but its okay for now
-	2000,
-);
+// const limiterGPTCall = createLimiter(
+// 	// GPT3.5 has a very high limit so allow more connections
+// 	1000,
+// 	// even 2 seconds is super slow but its okay for now
+// 	2000,
+// );
 
 
 // This is the main function which gives us context about what's present on the
@@ -50,7 +47,7 @@ export const getLSPGraphContextForChat = async (workingDirectory: string, repoRe
 	const label = 'getLSPGraphContextForChat';
 	performance.mark(label);
 
-	const uri = URI.file(activeEditor.document.fileName);
+	const uri = vscode.Uri.file(activeEditor.document.fileName);
 	// get the view port for the current open file
 	// we do 2 things here, if we have the selection we should also note that
 	// if we don't have any selection but just the view port we should take
@@ -179,7 +176,7 @@ const getLSPContextFromSelection = async (
 	const ranges = definitionSelections
 		.map(({ fsFilePath, startPosition, endPosition }) =>
 			new vscode.Location(
-				URI.file(fsFilePath),
+				vscode.Uri.file(fsFilePath),
 				new vscode.Range(startPosition.line, startPosition.character, endPosition.line, endPosition.character)
 			)
 		)
@@ -230,7 +227,7 @@ const getLSPContextFromSelection = async (
 						line: c.range.startLine,
 						character: c.range.startCharacter,
 					},
-					uri: URI.file(c.fsFilePath),
+					uri: vscode.Uri.file(c.fsFilePath),
 					endPosition: {
 						line: c.range.endLine,
 						character: c.range.endCharacter,
@@ -264,7 +261,7 @@ export const extractDefinitionContexts = async (
 			// Here for getting the definitions we only want to get them for the
 			// files which are part of the working directory and not for each
 			// and every symbol
-			.map(fsPath => [fsPath, getDocumentSymbolRanges(URI.file(fsPath), {
+			.map(fsPath => [fsPath, getDocumentSymbolRanges(vscode.Uri.file(fsPath), {
 				workingDirectory,
 				extractOnlyInWorkingDirectory: true,
 			})])
@@ -402,7 +399,7 @@ const defaultGetHover = async (uri: vscode.Uri, position: vscode.Position): Prom
 	const endTime = Date.now();
 	console.log(`[time-taken][getHover] time taken: ${endTime - startTime} for ${uri.fsPath} at location: ${position.line}:${position.character}`);
 	return results;
-}
+};
 
 const defaultGetDefinitions = async (uri: vscode.Uri, position: vscode.Position): Promise<vscode.Location[]> => {
 	const startTime = Date.now();
@@ -458,8 +455,8 @@ export const gatherDefinitions = async (
 	requests: LSPSymbolsRequest[],
 	getHover: typeof defaultGetHover = defaultGetHover,
 	getDefinitions: typeof defaultGetDefinitions = defaultGetDefinitions,
-	getTypeDefinitions: typeof defaultGetTypeDefinitions = defaultGetTypeDefinitions,
-	getImplementations: typeof defaultGetImplementations = defaultGetImplementations
+	_getTypeDefinitions: typeof defaultGetTypeDefinitions = defaultGetTypeDefinitions,
+	_getImplementations: typeof defaultGetImplementations = defaultGetImplementations
 ): Promise<LSPSymbolDefinitionMatches[]> => {
 	// Construct a list of symbol and definition location pairs by querying the LSP server with all
 	// identifiers (heuristically chosen via regex) in the relevant code ranges.
@@ -739,14 +736,14 @@ interface LSPSymbolsRequest {
 	symbolName: string;
 	uri: vscode.Uri;
 	position: vscode.Position;
-};
+}
 
 export const gatherDefinitionRequestCandidates = async (
 	locations: vscode.Location[],
 	contentMap: Map<string, string[]>,
-	repoRef: RepoRef,
-	threadId: string,
-	sideCarClient: SideCarClient,
+	_repoRef: RepoRef,
+	_threadId: string,
+	_sideCarClient: SideCarClient,
 ): Promise<LSPSymbolsRequest[]> => {
 	const requestCandidates: LSPSymbolsRequest[] = [];
 
@@ -756,8 +753,8 @@ export const gatherDefinitionRequestCandidates = async (
 			continue;
 		}
 		for (const { start, end } of [range]) {
-			const lineContent = lines.slice(start.line, end.line + 1).join('\n');
-			const language = identifyLanguage(uri.fsPath) ?? 'not_present';
+			// const lineContent = lines.slice(start.line, end.line + 1).join('\n');
+			// const language = identifyLanguage(uri.fsPath) ?? 'not_present';
 			// We set this in a limier so we don't create too many requests
 			// and add a tight timeout to the llm call
 			let symbolsToPayAttentionTo: string[] = [];
@@ -808,7 +805,7 @@ export const extractRelevantDocumentSymbolRanges = async (
 				selections.map((selection) => selection),
 				'fsFilePath'
 			).map(selectionContext => {
-				return [selectionContext.fsFilePath, defaultGetDocumentSymbolRanges(URI.file(selectionContext.fsFilePath), {
+				return [selectionContext.fsFilePath, defaultGetDocumentSymbolRanges(vscode.Uri.file(selectionContext.fsFilePath), {
 					workingDirectory,
 					extractOnlyInWorkingDirectory: false,
 				})];
@@ -842,7 +839,7 @@ export const extractRelevantDocumentSymbolRanges = async (
 					workingDirectory,
 					startPosition: range.start,
 					endPosition: range.end,
-					uri: URI.file(fsPath),
+					uri: vscode.Uri.file(fsPath),
 				};
 			}) : documentSymbolRanges.filter(range => {
 				const result = definedRanges.some(selectionRanges => range.start.line <= selectionRanges.endPosition.line && selectionRanges.startPosition.line <= range.end.line);
@@ -854,7 +851,7 @@ export const extractRelevantDocumentSymbolRanges = async (
 					workingDirectory,
 					startPosition: range.start,
 					endPosition: range.end,
-					uri: URI.file(fsPath),
+					uri: vscode.Uri.file(fsPath),
 				};
 			}))
 		);
@@ -882,7 +879,7 @@ const unwrapThenableMap = async <K, V>(map: Map<K, Thenable<V>>): Promise<Map<K,
 interface ExtractOnlyInWorkingDirectory {
 	workingDirectory: string;
 	extractOnlyInWorkingDirectory: boolean;
-};
+}
 
 export const defaultGetDocumentSymbolRanges = async (uri: vscode.Uri, extractionMode: ExtractOnlyInWorkingDirectory): Promise<vscode.Range[]> => {
 	if (extractionMode.extractOnlyInWorkingDirectory && !uri.fsPath.startsWith(extractionMode.workingDirectory)) {
@@ -901,7 +898,7 @@ export const defaultGetDocumentSymbolRanges = async (uri: vscode.Uri, extraction
 			}
 			const newResults = result.map(extractSymbolRange);
 			return newResults;
-		}, reason => {
+		}, _reason => {
 			return [];
 		});
 	const endTime = Date.now();
@@ -916,6 +913,7 @@ const isDocumentSymbol = (s: vscode.SymbolInformation | vscode.DocumentSymbol): 
 	(s as vscode.DocumentSymbol).range !== undefined;
 
 
+/*
 function identifyLanguage(fileName: string): string | null {
 	// Define a mapping from file extensions to languages
 	const extensionToLanguage: { [key: string]: string } = {
@@ -944,3 +942,4 @@ function identifyLanguage(fileName: string): string | null {
 		return null; // or some default value, or throw an error, depending on your needs
 	}
 }
+*/

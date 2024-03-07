@@ -27,7 +27,7 @@ export interface SelectionDataForExplain {
 }
 
 
-const getLabelForSelectedContext = (workingDirectory: string, filePath: string, selection: vscode.Selection): {
+const getLabelForSelectedContext = (_workingDirectory: string, filePath: string, selection: vscode.Selection): {
 	label: string;
 	hyperlink: string;
 } => {
@@ -97,4 +97,4 @@ export const getSelectedCodeContextForExplain = (workingDirectory: string, repor
 	} else {
 		return null;
 	}
-}
+};

@@ -46,7 +46,7 @@ export class ProjectContext {
 		const filePath = path.join(folderPath, fileName);
 		const fileUri = vscode.Uri.file(filePath);
 		try {
-			const workspaceStat = await vscode.workspace.fs.stat(fileUri);
+			await vscode.workspace.fs.stat(fileUri);
 			labels.forEach((label) => this._labels.push(label));
 			const contentIndicator = this.contentIndicators.get(fileName);
 			if (contentIndicator !== undefined) {

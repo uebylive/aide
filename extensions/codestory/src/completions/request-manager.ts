@@ -71,10 +71,11 @@ export class RequestManager {
 	private readonly inflightRequests: Set<InflightRequest> = new Set();
 	// Tracks the last request that the request manager is called with. We use this to evaluate
 	// the relevance of existing requests (i.e to find out if the generations are still relevant)
-	private latestRequestParams: null | RequestsManagerParams = null;
+	// private latestRequestParams: null | RequestsManagerParams = null;
 
 	constructor(sidecarClient: SideCarClient) {
 		this.sidecarClient = sidecarClient;
+		console.log(this.sidecarClient);
 	}
 
 	public checkCache(
@@ -153,7 +154,7 @@ export class RequestManager {
 				)) {
 					// we are going to get the generations back, here we will keep adding them to the cache
 					// one per line
-					const stopReason = fetchCompletionResults.stopReason;
+					// const stopReason = fetchCompletionResults.stopReason;
 					const currentCompletion = fetchCompletionResults.completion;
 					const completionToShow = currentCompletion.trimRight();
 					// First add it to the cache so we can look it up later

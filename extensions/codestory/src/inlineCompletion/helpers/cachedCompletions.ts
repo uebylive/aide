@@ -1,4 +1,7 @@
-// We try and get the cached completions here
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 import { PromptCompletionsLRUCache, keyForPrompt } from './promptCache';
 import { PromptData } from './promptWrapper';
@@ -33,7 +36,7 @@ function getCachedChoices(promptCacheKey: string, multiline: boolean): string[] 
 function trimCompletion(choice: string, forceSingleLine: boolean): string {
 	let trimmedCompletion = choice.trimEnd();
 	if (forceSingleLine) {
-		trimmedCompletion = trimmedCompletion.split("\n")[0];
+		trimmedCompletion = trimmedCompletion.split('\n')[0];
 	}
 	return trimmedCompletion;
 }
@@ -95,6 +98,7 @@ export async function getCachedCompletions(
 			}
 			return trimmedChoices;
 		}
+		return [];
 	})(docTillCursor, prompt, requestMultiLine);
 	return cachedChoices && cachedChoices.length > 0 ? [cachedChoices, 'Cache'] : undefined;
 }

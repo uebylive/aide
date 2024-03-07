@@ -12,50 +12,50 @@ export class TimeoutError extends Error { }
  * Aborting the forked controller however does not affect the parent.
  */
 export function forkSignal(signal: AbortSignal): AbortController {
-	const controller = new AbortController()
+	const controller = new AbortController();
 	if (signal.aborted) {
-		controller.abort()
+		controller.abort();
 	}
-	signal.addEventListener('abort', () => controller.abort())
-	return controller
+	signal.addEventListener('abort', () => controller.abort());
+	return controller;
 }
 
 /**
  * Creates a simple subscriber that can be used to register callbacks
  */
-type Listener<T> = (value: T) => void
+type Listener<T> = (value: T) => void;
 interface Subscriber<T> {
-	subscribe(listener: Listener<T>): () => void
-	notify(value: T): void
+	subscribe(listener: Listener<T>): () => void;
+	notify(value: T): void;
 }
 export function createSubscriber<T>(): Subscriber<T> {
-	const listeners: Set<Listener<T>> = new Set()
+	const listeners: Set<Listener<T>> = new Set();
 	function subscribe(listener: Listener<T>): () => void {
-		listeners.add(listener)
-		return () => listeners.delete(listener)
+		listeners.add(listener);
+		return () => listeners.delete(listener);
 	}
 
 	function notify(value: T): void {
 		for (const listener of listeners) {
-			listener(value)
+			listener(value);
 		}
 	}
 
 	return {
 		subscribe,
 		notify,
-	}
+	};
 }
 
 export async function* zipGenerators<T>(generators: AsyncGenerator<T>[]): AsyncGenerator<T[]> {
 	while (true) {
-		const res = await Promise.all(generators.map(generator => generator.next()))
+		const res = await Promise.all(generators.map(generator => generator.next()));
 
 		if (res.every(r => r.done)) {
-			return
+			return;
 		}
 
-		yield res.map(r => r.value)
+		yield res.map(r => r.value);
 	}
 }
 
@@ -65,14 +65,14 @@ export async function* generatorWithErrorObserver<T>(
 ): AsyncGenerator<T> {
 	while (true) {
 		try {
-			const res = await generator.next()
+			const res = await generator.next();
 			if (res.done) {
-				return
+				return;
 			}
-			yield res.value
+			yield res.value;
 		} catch (error: unknown) {
-			errorObserver(error)
-			throw error
+			errorObserver(error);
+			throw error;
 		}
 	}
 }
@@ -84,22 +84,22 @@ export async function* generatorWithTimeout<T>(
 ): AsyncGenerator<T> {
 	// timeout of 0 means no timeout
 	if (timeoutMs === 0) {
-		return
+		return;
 	}
 
 	const timeoutPromise = createTimeout(timeoutMs).finally(() => {
-		abortController.abort()
+		abortController.abort();
 	});
 
 	while (true) {
-		const { value, done } = await Promise.race([generator.next(), timeoutPromise])
+		const { value, done } = await Promise.race([generator.next(), timeoutPromise]);
 
 		if (value) {
-			yield value
+			yield value;
 		}
 
 		if (done) {
-			break
+			break;
 		}
 	}
 }
@@ -107,5 +107,5 @@ export async function* generatorWithTimeout<T>(
 function createTimeout(timeoutMs: number): Promise<never> {
 	return new Promise((_, reject) =>
 		setTimeout(() => reject(new TimeoutError('The request timed out')), timeoutMs)
-	)
+	);
 }

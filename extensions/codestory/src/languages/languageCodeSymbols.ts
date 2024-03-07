@@ -191,7 +191,7 @@ export class LanguageParser extends CodeSymbolsIndexer {
 	}
 
 	// This parses the file without resolving the dependencies
-	async parseFileWithoutDependency(filePath: string, workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
+	async parseFileWithoutDependency(filePath: string, _workingDirectory: string, storeInCache: boolean = true): Promise<CodeSymbolInformation[]> {
 		const codeSymbols = await getSymbolsFromDocumentUsingLSP(
 			filePath,
 			'go',
@@ -244,7 +244,7 @@ export class LanguageParser extends CodeSymbolsIndexer {
 					const startLine = currentCodeSymbol.symbolStartLine + dependency.startLine;
 					// maths here is hard but if there are tabs then we are going to subtract the tabs at the start
 					const startColumn = dependency.StartColumn;
-					const endColumn = dependency.endColumn;
+					// const endColumn = dependency.endColumn;
 					// Go to definition now
 					try {
 						const definition = await getGoToDefinition(textDocument, startLine, startColumn, currentCodeSymbol.symbolName, dependency.text);
@@ -298,7 +298,7 @@ export class LanguageParser extends CodeSymbolsIndexer {
 	// This parses the file and also resolves the dependencies
 	// Ideally we will be passing the file -> Vec<CodeSymbolInformation> here
 	// but right now we use the instance from the class internally
-	async parseFileWithDependencies(filePath: string, workingDirectory: string, useCache: boolean = false): Promise<CodeSymbolInformation[]> {
+	async parseFileWithDependencies(filePath: string, workingDirectory: string, _useCache: boolean = false): Promise<CodeSymbolInformation[]> {
 		// We don't want to store the results from parsing in the cache at all
 		const codeSymbols = await this.parseFileWithoutDependency(filePath, workingDirectory, false);
 		this._fileToCodeSymbols.set(filePath, codeSymbols);

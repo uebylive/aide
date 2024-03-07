@@ -4,12 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 import { v4 as uuidv4 } from 'uuid';
 import { commands } from 'vscode';
-import { MessageHandlerData } from '@estruyf/vscode';
 
 import { debuggingFlow } from '../llm/recipe/debugging';
 import { ToolingEventCollection } from '../timeline/events/collection';
 import logger from '../logger';
-import { PromptState } from '../types';
 import postHogClient from '../posthog/client';
 import { ActiveFilesTracker } from '../activeChanges/activeFilesTracker';
 import { CodeSymbolsLanguageCollection } from '../languages/codeSymbolsLanguageCollection';
@@ -30,7 +28,7 @@ export const debug = (
 	const uniqueId = uuidv4();
 	return commands.registerCommand(
 		'codestory.debug',
-		async ({ payload, ...message }: MessageHandlerData<PromptState>) => {
+		async ({ payload, ...message }) => {
 			logger.info('[CodeStory] Debugging');
 			logger.info(payload);
 			const toolingEventCollection = new ToolingEventCollection(

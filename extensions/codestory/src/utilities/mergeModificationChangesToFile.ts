@@ -216,6 +216,7 @@ const slidingWindowReplacement = (
 					matchingIndex.index + 1,
 					true,
 				);
+				console.log('matchingIndexWithSpaces', matchingIndexWithSpaces);
 				matchingIndex.currentHits = 1;
 				success = true;
 			}
@@ -285,7 +286,7 @@ const slidingWindowReplacement = (
 export const generateNewFileFromPatch = (
 	modifyFileResponse: string,
 	oldFileContents: string,
-	chunkOffset: number = 0,
+	_chunkOffset: number = 0,
 ): string | null => {
 	let oldFileLines = oldFileContents.split('\n');
 

@@ -9,6 +9,7 @@ export class B {
 
 	constructor() {
 		this._inner = new A();
+		console.log(this._inner.doA());
 	}
 
 	doSomething() {

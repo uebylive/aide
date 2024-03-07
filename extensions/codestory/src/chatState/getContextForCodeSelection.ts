@@ -10,8 +10,6 @@
 
 import * as vscode from 'vscode';
 import { CodeSymbolInformation } from '../utilities/types';
-import * as math from 'mathjs';
-
 
 export interface SelectionReferenceData {
 	documentFilePath: string;

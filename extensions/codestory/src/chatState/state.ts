@@ -3,11 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
-import { OpenAI } from 'openai';
-import { encode } from 'gpt-tokenizer';
-
-
 const chatSystemPrompt = (agentCustomInstruction: string | null): string => {
 	if (agentCustomInstruction) {
 		return `

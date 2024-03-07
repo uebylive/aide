@@ -4,15 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
 import { EventEmitter } from 'events';
-import winston from 'winston';
+import * as winston from 'winston';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
-import { FILE_SAVE_TIME_PERIOD, TimeKeeper } from './subscriptions/timekeeper';
 import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
-import { gitCommit } from './subscriptions/gitCommit';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
@@ -262,7 +260,7 @@ export async function activate(context: ExtensionContext) {
 		rootPath ?? '',
 		logger
 	);
-	const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
+	// const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
 	// Keeps track of the symbols which are changing and creates a graph of
 	// those changes
 	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
@@ -282,7 +280,7 @@ export async function activate(context: ExtensionContext) {
 	// context.subscriptions.push(
 	workspace.onDidOpenTextDocument(async (doc) => {
 		const uri = doc.uri;
-		await trackCodeSymbolChanges.fileOpened(uri, logger);
+		await trackCodeSymbolChanges.fileOpened(uri);
 		// TODO(skcd): we want to send the file open event to the sidecar client
 		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 	});
@@ -298,9 +296,6 @@ export async function activate(context: ExtensionContext) {
 	// 	// await sidecarClient.updateModelConfiguration(modelConfig2);
 	// });
 
-	// Add git commit to the subscriptions here
-	// Git commit
-	context.subscriptions.push(gitCommit(logger, repoName, repoHash, uniqueUserId));
 	context.subscriptions.push(registerCopySettingsCommand);
 
 	// Listen for document opened events

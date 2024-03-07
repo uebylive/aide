@@ -137,7 +137,6 @@ export class IndentationHelper {
 		}
 		if (currentLevel > newLevel) {
 			// we have to shift things back by a few levels
-			const changeInLevel = currentLevel - newLevel;
 			const indentationStringToRemoveFromPrefix = style.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(style.indentSize ?? 4);
 			// we have to remove this string from every string
 			const newLines = lines.map((line) => {
@@ -151,7 +150,6 @@ export class IndentationHelper {
 		}
 		if (currentLevel < newLevel) {
 			// we have to shift things forward by a few levels
-			const changeInLevel = newLevel - currentLevel;
 			const indentationStringToAddToPrefix = style.kind === IndentStyle.Tabs ? '\t' : ' '.repeat(style.indentSize ?? 4);
 			// we have to add this string to every string
 			const newLines = lines.map((line) => {
@@ -305,21 +303,19 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 
 	prepareInteractiveEditorSession(
 		context: vscode.TextDocumentContext,
-		token: vscode.CancellationToken,
+		_token: vscode.CancellationToken,
 	): vscode.ProviderResult<CSInteractiveEditorSession> {
-		const start = context.selection.active;
-		const anchor = context.selection.anchor;
 		if (vscode.window.activeTextEditor === undefined) {
 			throw Error('no active text editor');
 		}
-		const currentEditorOptions = vscode.window.activeTextEditor?.options;
-		let fileIndentInfo;
-		if (currentEditorOptions) {
-			fileIndentInfo = {
-				insertSpaces: currentEditorOptions.insertSpaces,
-				tabSize: currentEditorOptions.tabSize
-			};
-		}
+		// const currentEditorOptions = vscode.window.activeTextEditor?.options;
+		// let fileIndentInfo;
+		// if (currentEditorOptions) {
+		// 	fileIndentInfo = {
+		// 		insertSpaces: currentEditorOptions.insertSpaces,
+		// 		tabSize: currentEditorOptions.tabSize
+		// 	};
+		// }
 		// const range = new vscode.Range(start.line - 1, start.character, anchor.line + 1, anchor.character);
 		return new CSInteractiveEditorSession(context.document, context.selection);
 	}
@@ -401,9 +397,5 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 				);
 			}
 		})();
-	}
-
-	handleInteractiveEditorResponseFeedback(session: CSInteractiveEditorSession, response: CSInteractiveEditorResponseMessage, kind: vscode.InteractiveEditorResponseFeedbackKind): void {
-		console.log('We are good');
 	}
 }

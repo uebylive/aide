@@ -8,14 +8,12 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import * as math from 'mathjs';
 
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
 	response: vscode.ChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
-	currentRepoRef: RepoRef,
 	workingDirectory: string,
 ): Promise<string> => {
 	let finalMessage = '';
@@ -181,7 +179,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 		return 0;
 	});
 	let codeSpansString = '';
-	for (let index = 0; index < math.min(5, sortedCodeSpans.length); index++) {
+	for (let index = 0; index < Math.min(5, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
 		const fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
 		const currentFileLink = `${currentCodeSpan.file_path}#L${currentCodeSpan.start_line}-L${currentCodeSpan.end_line}`;
@@ -205,7 +203,7 @@ export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, 
 		}
 		return 0;
 	});
-	for (let index = 0; index < math.min(6, sortedCodeSpans.length); index++) {
+	for (let index = 0; index < Math.min(6, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
 		console.log(workingDirectory);
 		let fullFilePath = currentCodeSpan.file_path;
@@ -230,7 +228,7 @@ export const reportProcUpdateToChat = (
 ) => {
 	if ('Proc' in proc) {
 		const paths = proc.Proc.paths;
-		for (let index = 0; index < math.min(5, paths.length); index++) {
+		for (let index = 0; index < Math.min(5, paths.length); index++) {
 			const currentPath = paths[index];
 			const fullFilePath = path.join(workingDirectory, currentPath);
 			progress.reference(vscode.Uri.file(fullFilePath));
