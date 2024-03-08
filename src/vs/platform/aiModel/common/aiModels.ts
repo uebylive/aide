@@ -313,7 +313,7 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig
 		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible'
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic'
 			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
@@ -325,7 +325,7 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 
 export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
 	return a.name === b.name
-		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI'
+		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic'
 			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
