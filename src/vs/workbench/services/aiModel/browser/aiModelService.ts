@@ -365,12 +365,12 @@ class ModelSelectionJsonSchema {
 						'type': 'object',
 						'properties': {
 							'name': {
-								'enum': ['Together AI'],
-								'description': nls.localize('modelSelection.json.togetherAIProvider.name', 'Name of the provider')
+								'enum': ['Anthropic'],
+								'description': nls.localize('modelSelection.json.anthropicProvider.name', 'Name of the provider')
 							},
 							'apiKey': {
 								'type': 'string',
-								'description': nls.localize('modelSelection.json.togetherAIProvider.apiKey', 'API key for the provider')
+								'description': nls.localize('modelSelection.json.anthropicProvider.apiKey', 'API key for the provider')
 							}
 						},
 						'required': ['name', 'apiKey']

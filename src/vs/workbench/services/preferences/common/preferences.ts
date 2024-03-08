@@ -387,8 +387,8 @@ export const isProviderItemConfigComplete = (providerItem: IProviderItem): boole
 		case 'ollama':
 			return true;
 		case 'anthropic': {
-			const { apiKey } = providerItem as AnthropicProviderConfig;
-			return !!apiKey;
+			const { name, apiKey } = providerItem as AnthropicProviderConfig;
+			return !!name && !!apiKey;
 		}
 	}
 };
