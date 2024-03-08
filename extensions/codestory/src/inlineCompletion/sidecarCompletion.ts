@@ -70,7 +70,7 @@ type DisplayedCompletion = {
 export const DEBOUNCE_DELAY = 350;
 
 export class SidecarCompletionProvider implements InlineCompletionItemProvider {
-	private static debounceTimeout: null | ReturnType<typeof setTimeout> = null;
+	private static debounceTimeout: ReturnType<typeof setTimeout> | undefined;
 	private triggerMode: 'automatic' | 'manual' | 'disabled' = 'automatic';
 	private flyingRequestController: AbortController | undefined;
 	private loading = false;
@@ -107,7 +107,7 @@ export class SidecarCompletionProvider implements InlineCompletionItemProvider {
 		const uuid = uuidV4();
 		SidecarCompletionProvider.lastRequestId = uuid;
 		if (SidecarCompletionProvider.debouncing) {
-			SidecarCompletionProvider.debounceTimeout?.refresh();
+			clearTimeout(SidecarCompletionProvider.debounceTimeout);
 			const lastUUID = await new Promise((resolve) =>
 				setTimeout(() => {
 					resolve(SidecarCompletionProvider.lastRequestId);
