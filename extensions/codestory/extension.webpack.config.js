@@ -11,6 +11,11 @@ const withDefaults = require('../shared.webpack.config');
 
 module.exports = withDefaults({
 	context: __dirname,
+	resolve: {
+		fallback: {
+			'request': require.resolve('node-fetch')
+		}
+	},
 	entry: {
 		extension: './src/extension.ts'
 	}
