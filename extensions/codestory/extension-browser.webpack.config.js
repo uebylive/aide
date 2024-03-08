@@ -15,6 +15,11 @@ module.exports = withBrowserDefaults({
 	entry: {
 		extension: './src/extension.ts'
 	},
+	resolve: {
+		fallback: {
+			'request': require.resolve('node-fetch')
+		}
+	},
 	output: {
 		filename: 'extension.js',
 		path: path.join(__dirname, 'dist')
