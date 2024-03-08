@@ -103,7 +103,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				}
 				// @ts-ignore
 				if ('DecideAction' in lastStep) {
-					progress.report(CSInteractiveEditorProgressItem.normalMessage('Deciding action...'));
+					progress.report(CSInteractiveEditorProgressItem.normalMessage('Geneating code...'));
 					continue;
 				}
 			}
