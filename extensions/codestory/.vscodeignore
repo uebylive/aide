@@ -1,21 +1,12 @@
 # This file contains all the files/directories that should
 # be ignored (i.e. not included) in the final packaged extension.
-
-# Ignore extension configs
-.vscode/**
-
-# Ignore test files
-.vscode-test/**
-out/test/**
-
-# Ignore source code
+test/**
 src/**
-
-# Ignore Misc
-.yarnrc
-vsc-extension-quickstart.md
-**/.gitignore
-**/tsconfig.json
-**/vite.config.ts
-**/*.map
-**/*.ts
+tsconfig.json
+out/**
+extension.webpack.config.js
+extension-browser.webpack.config.js
+yarn.lock
+build/**
+schemas/devContainer.codespaces.schema.json
+schemas/devContainer.vscode.schema.json
