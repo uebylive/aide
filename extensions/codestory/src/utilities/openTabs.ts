@@ -24,12 +24,19 @@ export interface FileContents {
 	contents: string;
 }
 
+export function shouldTrackFile(uri: vscode.Uri): boolean {
+	if (!['file'].includes(uri.scheme)) {
+		return false;
+	}
+	return true;
+}
+
 export async function getRelevantFiles(): Promise<FileContents[]> {
 	const files: FileContents[] = [];
 
 	function addDocument(document: vscode.TextDocument): void {
-		// Only add files and VSCode user settings.
-		if (!['file', 'vscode-userdata'].includes(document.uri.scheme)) {
+		// Only add files to the uri schema.
+		if (!['file'].includes(document.uri.scheme)) {
 			return;
 		}
 

@@ -33,7 +33,7 @@ import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
-import { changedActiveDocument, getRelevantFiles } from './utilities/openTabs';
+import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 
 
 class ProgressiveTrackSymbols {
@@ -137,7 +137,9 @@ export async function activate(context: ExtensionContext) {
 	const openTextDocuments = await getRelevantFiles();
 	openTextDocuments.forEach((openTextDocument) => {
 		// not awaiting here so we can keep loading the extension in the background
-		sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
+		if (shouldTrackFile(openTextDocument.uri)) {
+			sidecarClient.documentOpen(openTextDocument.uri.fsPath, openTextDocument.contents, openTextDocument.language);
+		}
 	});
 	// Setup the current repo representation here
 	const currentRepo = new RepoRef(
@@ -282,7 +284,9 @@ export async function activate(context: ExtensionContext) {
 		const uri = doc.uri;
 		await trackCodeSymbolChanges.fileOpened(uri);
 		// TODO(skcd): we want to send the file open event to the sidecar client
-		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
+		if (shouldTrackFile(uri)) {
+			await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
+		}
 	});
 
 	context.subscriptions.push(registerCopySettingsCommand);

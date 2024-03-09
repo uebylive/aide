@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { IdentifierNodeInformation } from '../../sidecar/types';
 import { SideCarClient } from '../../sidecar/client';
+import { shouldTrackFile } from '../../utilities/openTabs';
 
 function windowsToPosix(windowsPath: string): string {
 	let posixPath = windowsPath.split('\\').join('/');
@@ -167,7 +168,9 @@ export async function typeDefinitionProvider(
 			const textDocument = await vscode.workspace.openTextDocument(uri);
 
 			// No need to await on this
-			sidecarClient.documentOpen(textDocument.uri.fsPath, textDocument.getText(), textDocument.languageId);
+			if (shouldTrackFile(uri)) {
+				sidecarClient.documentOpen(textDocument.uri.fsPath, textDocument.getText(), textDocument.languageId);
+			}
 
 			// return the value as we would normally
 			return {
