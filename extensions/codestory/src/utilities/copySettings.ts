@@ -37,7 +37,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 	// First we want to ensure that ~/.aide exists
 
 	// if the platform is windows we have to gate is specially
-	if (os.platform() == "win32") {
+	if (os.platform() === 'win32') {
 		// Now we write custom code to make this work
 		const appDataPath = process.env.APPDATA;
 		const userProfilePath = process.env.USERPROFILE;
@@ -81,13 +81,13 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 
 
 	const homeDir = os.homedir();
-	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.aide`]);
+	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.vscode-oss`]);
 	if (exitCodeMkdir !== 0) {
 		window.showErrorMessage('Error creating ~/.aide directory');
 		logger.error('Error creating ~/.aide directory');
 		return;
 	}
-	const { exitCode } = await runCommandAsync(workingDirectory, 'cp', ['-R', `${homeDir}/.vscode/extensions`, `${homeDir}/.aide/`]);
+	const { exitCode } = await runCommandAsync(workingDirectory, 'cp', ['-R', `${homeDir}/.vscode/extensions`, `${homeDir}/.vscode-oss/`]);
 	if (exitCode !== 0) {
 		window.showErrorMessage('Error copying extensions from vscode to aide');
 		logger.error('Error copying extensions from vscode to aide');
