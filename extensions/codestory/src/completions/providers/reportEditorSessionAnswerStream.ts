@@ -120,6 +120,10 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// // FILEPATH: {file_path}
 				// // BEGIN: {hash}
 				// prefix with us, so we have to manually add it back
+
+				// TODO(skcd)[high_pri]: This will now break for other models which can't send
+				// these leading and ending lines, so we should figure out how to
+				// add these back afterwards
 				if (shouldAddLeadingStrings(modelReplying)) {
 					answerSplitOnNewLineAccumulator.addDelta('```\n');
 					answerSplitOnNewLineAccumulator.addDelta('// FILEPATH: something\n');
@@ -312,6 +316,7 @@ class StreamProcessor {
 	previousLine: LineIndentManager | null;
 	documentLineIndex: number;
 	sentEdits: boolean;
+	documentLineLimit: number;
 	constructor(progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
 		document: vscode.TextDocument,
 		lines: string[],
@@ -319,7 +324,9 @@ class StreamProcessor {
 		indentStyle: IndentStyleSpaces | undefined,
 	) {
 		// Initialize document with the given parameters
-		this.document = new DocumentManager(progress, document, lines, contextSelection, indentStyle);
+		const lastIndex = contextSelection.below.last_line_index !== -1 ? contextSelection.below.last_line_index : contextSelection.range.last_line_index;
+		this.document = new DocumentManager(progress, document, lines, contextSelection, indentStyle, lastIndex);
+		this.documentLineLimit = Math.min(contextSelection.range.last_line_index, this.document.getLineCount() - 1);
 
 		// Set markers for file path, begin, and end
 		this.filePathMarker = '// FILEPATH:';
@@ -333,6 +340,9 @@ class StreamProcessor {
 		this.sentEdits = false;
 	}
 
+	// TODO(skcd): We want to fix here how the lines are being processed and it should
+	// only happen in the range we are interested in, if we hit the end then we should not delete
+	// lines ever... so how do we do this?
 	async processLine(answerStreamLine: AnswerStreamLine) {
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
@@ -351,26 +361,49 @@ class StreamProcessor {
 			(line.indexOf('// BEGIN:') !== -1)
 		) {
 			this.endDetected = true;
+			if (line.indexOf('// END:') !== -1) {
+				// send a \n here at the end of the inserted line, since append will send it along
+				// with a \n so this should work?
+				if (this.documentLineIndex < this.documentLineLimit) {
+					// we have to replace the content between the index documentLineLimit and this.documentLineLimit
+					// this way we can remove dangling code which is left over because we have already made the changes
+					// and the length was shorter than the original implementation
+					this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
+				} else if (this.documentLineIndex === this.documentLineLimit) {
+					this.document.appendLine(new AdjustedLineContent('', 0, '', 0));
+				}
+			}
 			return;
 		}
 		if (this.endDetected && (this.currentState === StateEnum.InitialAfterFilePath || this.currentState === StateEnum.InProgress)) {
 			if (this.previousLine) {
 				const adjustedLine = this.previousLine.reindent(line, this.document.indentStyle);
+				// anchor is null always
 				const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 				if (anchor !== null) {
 					this.sentEdits = true;
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
-				} else if (this.documentLineIndex >= this.document.getLineCount()) {
-					this.sentEdits = true;
-					this.documentLineIndex = this.document.appendLine(adjustedLine);
-				} else {
-					const currentLine = this.document.getLine(this.documentLineIndex);
-					this.sentEdits = true;
-					if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '' && currentLine.indentLevel < adjustedLine.adjustedIndentLevel)) {
+					// this is the termination condition where we check for the line
+					// count in the document, since this is not 100% correct we can make
+					// this better
+				} else if (this.documentLineIndex >= this.documentLineLimit) {
+					if (this.sentEdits) {
+						// this is wrong, we should be using append here
 						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
+						// this.documentLineIndex = this.document.appendLine(adjustedLine);
 					} else {
 						this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
 					}
+					this.sentEdits = true;
+				} else {
+					// const currentLine = this.document.getLine(this.documentLineIndex);
+					// this.sentEdits = true;
+					// if (!currentLine.isSent || adjustedLine.adjustedContent === '' || (currentLine.content !== '')) {
+					// 	this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
+					// } else {
+					// 	this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
+					// }
+					this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
 				}
 			} else {
 				const initialAnchor = this.findInitialAnchor(line);
@@ -386,7 +419,7 @@ class StreamProcessor {
 	// Find the initial anchor line in the document
 	findInitialAnchor(lineContent: string): number {
 		const trimmedContent = lineContent.trim();
-		for (let index = this.document.firstSentLineIndex; index < this.document.getLineCount(); index++) {
+		for (let index = this.document.firstSentLineIndex; index < this.documentLineLimit; index++) {
 			const line = this.document.getLine(index);
 			if (line.isSent && line.trimmedContent === trimmedContent) {
 				return index;
@@ -397,17 +430,21 @@ class StreamProcessor {
 
 	// Find the anchor line in the document based on indentation and content
 	findAnchor(adjustedLine: AdjustedLineContent, startIndex: number): number | null {
-		for (let index = startIndex; index < this.document.getLineCount(); index++) {
-			const line = this.document.getLine(index);
-			if (line.isSent) {
-				if (line.trimmedContent.length > 0 && line.indentLevel < adjustedLine.adjustedIndentLevel) {
-					return null;
-				}
-				if (line.content === adjustedLine.adjustedContent) {
-					return index;
-				}
-			}
+		const endIndex = startIndex + 1;
+		if (endIndex > 10000) {
+			adjustedLine.adjustedContent = '';
 		}
+		// for (let index = startIndex; index < this.documentLineLimit; index++) {
+		// 	const line = this.document.getLine(index);
+		// 	if (line.isSent) {
+		// 		if (line.trimmedContent.length > 0 && line.indentLevel < adjustedLine.adjustedIndentLevel) {
+		// 			return null;
+		// 		}
+		// 		if (line.content === adjustedLine.adjustedContent) {
+		// 			return index;
+		// 		}
+		// 	}
+		// }
 		return null;
 	}
 }
@@ -426,7 +463,9 @@ class DocumentManager {
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
+		lineLimit: number,
 	) {
+		console.log('sidecar.document_manager');
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
@@ -434,7 +473,10 @@ class DocumentManager {
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = document.getText().split(/\r\n|\r|\n/g);
-		for (let i = 0; i < editorLines.length; i++) {
+		console.log('sidecar.document_manager.editorLines', editorLines.length, lineLimit);
+		const newDocumentLineLimit = Math.min(editorLines.length - 1, lineLimit);
+		console.log('sidecar.document_manager.newDocumentLineLimit', newDocumentLineLimit);
+		for (let i = 0; i <= newDocumentLineLimit; i++) {
 			this.lines[i] = new LineContent(editorLines[i], this.indentStyle);
 		}
 
@@ -443,6 +485,9 @@ class DocumentManager {
 		for (const section of locationSections) {
 			for (let j = 0; j < section.lines.length; j++) {
 				const lineIndex = section.first_line_index + j;
+				if (lineIndex >= this.lines.length) {
+					console.log('sidecar.document_manager.getLineCount.greater', this.lines.length, lineIndex);
+				}
 				this.lines[lineIndex].markSent();
 			}
 		}
@@ -467,8 +512,8 @@ class DocumentManager {
 
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
-		// console.log('replaceLine');
-		// console.log('replaceLine', index, newLine.adjustedContent);
+		console.log('sidecar.replaceLine');
+		console.log('sidecar.replaceLine', index, newLine.adjustedContent);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		this.progress.report({
 			edits: [
@@ -483,8 +528,8 @@ class DocumentManager {
 
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
-		// console.log('replaceLines');
-		// console.log('replaceLines', startIndex, endIndex, newLine.adjustedContent);
+		console.log('sidecar.replaceLines');
+		console.log('sidecar.replaceLines', startIndex, endIndex, newLine.adjustedContent);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -507,15 +552,15 @@ class DocumentManager {
 
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
-		// console.log('appendLine');
-		// console.log('appendLine', newLine.adjustedContent);
+		console.log('sidecar.appendLine');
+		console.log('sidecar.appendLine', this.lines.length, newLine.adjustedContent);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
 				{
 					range: new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000),
-					newText: '\n' + newLine.adjustedContent
-				}
+					newText: '\n' + newLine.adjustedContent,
+				},
 			]
 		});
 		return this.lines.length;
@@ -523,8 +568,8 @@ class DocumentManager {
 
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		// console.log('insertLineAfter');
-		// console.log('insertLineAfter', index, newLine.adjustedContent);
+		console.log('sidecar.insertLineAfter');
+		console.log('sidecar.insertLineAfter', index, newLine.adjustedContent);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.report({
 			edits: [
