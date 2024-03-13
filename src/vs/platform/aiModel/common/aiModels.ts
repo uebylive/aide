@@ -254,6 +254,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: {
 				type: 'anthropic'
 			}
+		},
+		'ClaudeHaiku': {
+			name: 'Claude Haiku',
+			contextLength: 200000,
+			temperature: 0.2,
+			provider: {
+				type: 'anthropic'
+			}
 		}
 	},
 	providers: {
@@ -293,13 +301,13 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 };
 
 export const supportedModels: Record<ProviderType, string[]> = {
-	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
+	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct', 'ClaudeHaiku'],
 	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
 	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
-	'anthropic': ['ClaudeOpus', 'ClaudeSonnet'],
+	'anthropic': ['ClaudeOpus', 'ClaudeSonnet', 'ClaudeHaiku'],
 	'fireworkai': ['CodeLlama13BInstruct'],
 };
 
