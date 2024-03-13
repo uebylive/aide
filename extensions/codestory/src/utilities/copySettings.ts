@@ -98,46 +98,66 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 	// We want to ensure that ~/Library/Application\\ Support/Aide/User exists
 	// of if its on linux it might be on path: ~/.config/aide
 	if (os.platform() === 'linux') {
-		const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.config/Code/User/`]);
-		if (exitCodeMkdirAideUser !== 0) {
-			window.showErrorMessage(`Error creating ${homeDir}/.config/Code/User/ directory`);
-			logger.error(`Error creating ${homeDir}/.config/Code/User/ directory`);
-			return;
+		try {
+			const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.config/Code/User/`]);
+			if (exitCodeMkdirAideUser !== 0) {
+				window.showErrorMessage(`Error creating ${homeDir}/.config/Code/User/ directory`);
+				logger.error(`Error creating ${homeDir}/.config/Code/User/ directory`);
+			}
+		} catch (exception) {
+			console.log('error when creating ~/.config/Code/User/ directory', exception);
 		}
-		const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/keybindings.json`, `${homeDir}/.config/Aide/User`]);
-		if (outputKeybindings.exitCode !== 0) {
-			window.showErrorMessage('Error copying keybindings from vscode to aide');
-			logger.error('Error copying keybindings from vscode to aide');
-			return;
+		try {
+			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/keybindings.json`, `${homeDir}/.config/Aide/User`]);
+			if (outputKeybindings.exitCode !== 0) {
+				window.showErrorMessage('Error copying keybindings from vscode to aide');
+				logger.error('Error copying keybindings from vscode to aide');
+			}
+		} catch (exception) {
+			console.log('error when copying keybindings.json', exception);
 		}
-		const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/settings.json`, `${homeDir}/.config/Aide/User`]);
-		if (outputSettings.exitCode !== 0) {
-			window.showErrorMessage('Error copying settings from vscode to aide');
-			logger.error('Error copying settings from vscode to aide');
-			return;
+		try {
+			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/settings.json`, `${homeDir}/.config/Aide/User`]);
+			if (outputSettings.exitCode !== 0) {
+				window.showErrorMessage('Error copying settings from vscode to aide');
+				logger.error('Error copying settings from vscode to aide');
+			}
+		} catch (exception) {
+			console.log('error when copying settings.json', exception);
 		}
 		window.showInformationMessage('Copied settings from vscode to aide');
 		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
+		return;
 	} else if (os.platform() === 'darwin') {
-		const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/Library/Application Support/Aide/User`]);
-		if (exitCodeMkdirAideUser !== 0) {
-			window.showErrorMessage('Error creating ~/Library/Application Support/Aide/User directory');
-			logger.error('Error creating ~/Library/Application Support/Aide/User directory');
-			return;
+		try {
+			const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/Library/Application Support/Aide/User`]);
+			if (exitCodeMkdirAideUser !== 0) {
+				window.showErrorMessage('Error creating ~/Library/Application Support/Aide/User directory');
+				logger.error('Error creating ~/Library/Application Support/Aide/User directory');
+			}
+		} catch (exception) {
+			console.log('error when creating ~/Library/Application Support/Aide/User directory', exception);
 		}
-		const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/keybindings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
-		if (outputKeybindings.exitCode !== 0) {
-			window.showErrorMessage('Error copying keybindings from vscode to aide');
-			logger.error('Error copying keybindings from vscode to aide');
-			return;
+		try {
+			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/keybindings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
+			if (outputKeybindings.exitCode !== 0) {
+				window.showErrorMessage('Error copying keybindings from vscode to aide');
+				logger.error('Error copying keybindings from vscode to aide');
+			}
+		} catch (exception) {
+			console.log('error when copying keybindings.json', exception);
 		}
-		const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/settings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
-		if (outputSettings.exitCode !== 0) {
-			window.showErrorMessage('Error copying settings from vscode to aide');
-			logger.error('Error copying settings from vscode to aide');
-			return;
+		try {
+			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/settings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
+			if (outputSettings.exitCode !== 0) {
+				window.showErrorMessage('Error copying settings from vscode to aide');
+				logger.error('Error copying settings from vscode to aide');
+			}
+		} catch (exception) {
+			console.log('error when copying settings.json', exception);
 		}
 		window.showInformationMessage('Copied settings from vscode to aide');
 		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
+		return;
 	}
 };
