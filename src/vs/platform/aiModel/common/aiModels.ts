@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic' | 'fireworkai';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic', 'fireworkai'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -88,7 +88,12 @@ export interface AnthropicProviderConfig {
 	readonly apiKey: string;
 }
 
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig;
+export interface FireworkAIProviderConfig {
+	readonly name: 'Firework AI';
+	readonly apiKey: string;
+}
+
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig | FireworkAIProviderConfig;
 export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
@@ -98,7 +103,8 @@ export type IModelProviders =
 	| { 'togetherai': TogetherAIProviderConfig }
 	| { 'openai-compatible': OpenAICompatibleProviderConfig }
 	| { 'ollama': OllamaProviderConfig }
-	| { 'anthropic': AnthropicProviderConfig };
+	| { 'anthropic': AnthropicProviderConfig }
+	| { 'fireworkai': FireworkAIProviderConfig };
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
@@ -279,6 +285,10 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			name: 'Anthropic',
 			apiKey: '',
 		},
+		'fireworkai': {
+			name: 'Firework AI',
+			apiKey: '',
+		},
 	}
 };
 
@@ -289,7 +299,8 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
 	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
-	'anthropic': ['ClaudeOpus', 'ClaudeSonnet']
+	'anthropic': ['ClaudeOpus', 'ClaudeSonnet'],
+	'fireworkai': ['CodeLlama13BInstruct'],
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
@@ -313,7 +324,7 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig
 		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic'
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Firework AI'
 			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
@@ -325,7 +336,7 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 
 export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
 	return a.name === b.name
-		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic'
+		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Firework AI'
 			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)

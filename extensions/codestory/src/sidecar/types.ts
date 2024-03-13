@@ -590,6 +590,13 @@ function getProviderConfiguration(type: string, value: ModelProviderConfiguratio
 			}
 		};
 	}
+	if (type === 'fireworkai') {
+		return {
+			'FireworksAI': {
+				'api_key': value.apiKey,
+			}
+		};
+	}
 	return null;
 }
 
@@ -622,6 +629,9 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	if (providerConfiguration.type === 'anthropic') {
 		return 'Anthropic';
+	}
+	if (providerConfiguration.type === 'fireworkai') {
+		return 'FireworksAI';
 	}
 	return null;
 }

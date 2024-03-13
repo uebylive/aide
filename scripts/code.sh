@@ -17,7 +17,7 @@ function code() {
 	cd "$ROOT"
 
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-		NAME=`/Users/skcd/.nvm/versions/node/v18.15.0/bin/node -p "require('./product.json').nameLong"`
+		NAME=`node -p "require('./product.json').nameLong"`
 		CODE="./.build/electron/$NAME.app/Contents/MacOS/Electron"
 	else
 		NAME=`node -p "require('./product.json').applicationName"`
