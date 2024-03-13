@@ -271,9 +271,12 @@ export async function activate(context: ExtensionContext) {
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
 	workspace.onDidChangeTextDocument(async (event) => {
-		event.contentChanges.forEach((contentChange) => {
-			console.log('[extension] onDidChangeTextDocument event::', contentChange.text);
-		});
+		const documentUri = event.document.uri;
+		// if its a schema type, then skip tracking it
+		if (documentUri.scheme === 'vscode') {
+			return;
+		}
+		console.log('[extension] onDidChangeTextDocument event::', event.document.uri.scheme);
 		// TODO(skcd): we want to send the file change event to the sidecar over here
 		await sidecarClient.documentContentChange(
 			event.document.uri.fsPath,
