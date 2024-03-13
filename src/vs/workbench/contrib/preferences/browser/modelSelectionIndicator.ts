@@ -103,8 +103,9 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			{
 				type: 'item',
 				id: 'fastModel',
-				label: 'Copilot model',
-				ariaLabel: 'Copilot model',
+				// 4 spaces here to center the labels on the UI
+				label: 'Copilot model    ',
+				ariaLabel: 'Copilot model    ',
 				tooltip: 'Copilot model'
 			},
 			{
