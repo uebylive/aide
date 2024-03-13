@@ -3,14 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
-import { EventEmitter } from 'events';
-import * as winston from 'winston';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
-import { fileStateFromPreviousCommit } from './activeChanges/fileStateFromPreviousCommit';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
@@ -34,39 +31,6 @@ import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
 import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
-
-
-class ProgressiveTrackSymbols {
-	private emitter: EventEmitter;
-
-	constructor() {
-		this.emitter = new EventEmitter();
-	}
-
-	async onLoadFromLastCommit(
-		trackCodeSymbolChanges: TrackCodeSymbolChanges,
-		workingDirectory: string,
-		logger: winston.Logger,
-	) {
-		const filesChangedFromLastCommit = await fileStateFromPreviousCommit(
-			workingDirectory ?? '',
-			logger,
-		);
-
-		for (const fileChanged of filesChangedFromLastCommit) {
-			await trackCodeSymbolChanges.filesChangedSinceLastCommit(
-				fileChanged.filePath,
-				fileChanged.fileContent,
-				this.emitter,
-			);
-		}
-		trackCodeSymbolChanges.statusUpdated = true;
-	}
-
-	on(event: string, listener: (...args: any[]) => void) {
-		this.emitter.on(event, listener);
-	}
-}
 
 
 export async function activate(context: ExtensionContext) {
@@ -261,21 +225,6 @@ export async function activate(context: ExtensionContext) {
 		codeSymbolsLanguageCollection,
 		rootPath ?? '',
 		logger
-	);
-	// const timeKeeperFileSaved = new TimeKeeper(FILE_SAVE_TIME_PERIOD);
-	// Keeps track of the symbols which are changing and creates a graph of
-	// those changes
-	const progressiveTrackSymbolsOnLoad = new ProgressiveTrackSymbols();
-	progressiveTrackSymbolsOnLoad.on('fileChanged', (fileChangedEvent) => {
-		trackCodeSymbolChanges.setFileOpenedCodeSymbolTracked(
-			fileChangedEvent.filePath,
-			fileChangedEvent.codeSymbols
-		);
-	});
-	progressiveTrackSymbolsOnLoad.onLoadFromLastCommit(
-		trackCodeSymbolChanges,
-		rootPath ?? '',
-		logger,
 	);
 
 	// Also track the documents when they were last opened
