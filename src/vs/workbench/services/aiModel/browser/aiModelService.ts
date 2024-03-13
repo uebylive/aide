@@ -71,7 +71,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
 			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
@@ -94,7 +94,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					|| model.provider.type === 'togetherai'
 					|| model.provider.type === 'openai-compatible'
 					|| model.provider.type === 'ollama'
-					|| model.provider.type === 'anthropic') {
+					|| model.provider.type === 'anthropic'
+					|| model.provider.type === 'fireworkai') {
 					acc[key] = model;
 				}
 			}
@@ -377,6 +378,25 @@ class ModelSelectionJsonSchema {
 					}
 				}
 			},
+			'fireworksaiProvider': {
+				'type': 'object',
+				'properties': {
+					'anthropic': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Firework AI'],
+								'description': nls.localize('modelSelection.json.fireworkaiProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.fireworkaiProvider.apiKey', 'API key for the provider')
+							}
+						},
+						'required': ['name', 'apiKey']
+					}
+				}
+			},
 			'providers': {
 				'oneOf': [
 					{ '$ref': '#/definitions/codestoryProvider' },
@@ -385,7 +405,8 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/togetherAIProvider' },
 					{ '$ref': '#/definitions/openAICompatibleProvider' },
 					{ '$ref': '#/definitions/ollamaProvider' },
-					{ '$ref': '#/definitions/anthropicProvider' }
+					{ '$ref': '#/definitions/anthropicProvider' },
+					{ '$ref': '#/definitions/fireworksaiProvider' },
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -406,7 +427,7 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic', 'fireworkai'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},

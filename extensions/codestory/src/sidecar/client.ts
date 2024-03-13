@@ -389,6 +389,8 @@ export class SideCarClient {
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
 			await vscode.modelSelection.getConfiguration()
 		);
+		console.log('sidecar.model_configuration');
+		console.log(JSON.stringify(sideCarModelConfiguration));
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
 
 		const body = {
