@@ -324,7 +324,8 @@ class StreamProcessor {
 		indentStyle: IndentStyleSpaces | undefined,
 	) {
 		// Initialize document with the given parameters
-		this.document = new DocumentManager(progress, document, lines, contextSelection, indentStyle, contextSelection.below.last_line_index);
+		const lastIndex = contextSelection.below.last_line_index !== -1 ? contextSelection.below.last_line_index : contextSelection.range.last_line_index;
+		this.document = new DocumentManager(progress, document, lines, contextSelection, indentStyle, lastIndex);
 		this.documentLineLimit = Math.min(contextSelection.range.last_line_index, this.document.getLineCount() - 1);
 
 		// Set markers for file path, begin, and end
@@ -388,8 +389,8 @@ class StreamProcessor {
 				} else if (this.documentLineIndex >= this.documentLineLimit) {
 					if (this.sentEdits) {
 						// this is wrong, we should be using append here
-						// this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex, adjustedLine);
-						this.documentLineIndex = this.document.appendLine(adjustedLine);
+						this.documentLineIndex = this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
+						// this.documentLineIndex = this.document.appendLine(adjustedLine);
 					} else {
 						this.documentLineIndex = this.document.replaceLine(this.documentLineIndex, adjustedLine);
 					}
@@ -472,6 +473,7 @@ class DocumentManager {
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = document.getText().split(/\r\n|\r|\n/g);
+		console.log('sidecar.document_manager.editorLines', editorLines.length, lineLimit);
 		const newDocumentLineLimit = Math.min(editorLines.length - 1, lineLimit);
 		console.log('sidecar.document_manager.newDocumentLineLimit', newDocumentLineLimit);
 		for (let i = 0; i <= newDocumentLineLimit; i++) {
