@@ -118,16 +118,16 @@ export class ModelSelectionEditor extends EditorPane {
 		this.headerContainer = DOM.append(parent, $('.model-selection-header'));
 
 		const fastModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(fastModelContainer, $('span', undefined, 'Fast Model'));
-		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Fast Model'), useCustomDrawn: true });
+		DOM.append(fastModelContainer, $('span', undefined, 'Copilot Model'));
+		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Copilot model'), useCustomDrawn: true });
 		this.fastModelSelect.render(fastModelContainer);
 		this._register(this.fastModelSelect.onDidSelect((e) => {
 			this.setFastModel(e.selected);
 		}));
 
 		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(slowModelContainer, $('span', undefined, 'Slow Model'));
-		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Slow Model'), useCustomDrawn: true });
+		DOM.append(slowModelContainer, $('span', undefined, 'Interactive Model'));
+		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Interactive model'), useCustomDrawn: true });
 		this.slowModelSelect.render(slowModelContainer);
 		this._register(this.slowModelSelect.onDidSelect((e) => {
 			this.setSlowModel(e.selected);
