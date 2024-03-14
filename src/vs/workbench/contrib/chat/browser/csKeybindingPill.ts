@@ -99,8 +99,15 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 			return null;
 		}
 
+		// move the column to the end of the line
+		const position = {
+			lineNumber: this.position.lineNumber,
+			column: this.position.column + 1000,
+		};
+
 		return {
-			position: this.position,
+			position,
+			// position: this.position,
 			preference: [ContentWidgetPositionPreference.ABOVE]
 		};
 	}
