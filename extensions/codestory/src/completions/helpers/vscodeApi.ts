@@ -6,7 +6,7 @@
 // up for using while working with the inline autocomplete
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { IdentifierNodeInformation } from '../../sidecar/types';
+import { IdentifierNodeInformation, IdentifierNodeType } from '../../sidecar/types';
 import { SideCarClient } from '../../sidecar/client';
 import { shouldTrackFile } from '../../utilities/openTabs';
 
@@ -59,6 +59,7 @@ export type TypeDefinitionProvider = {
 export type TypeDefinitionProviderWithNode = {
 	node: IdentifierNodeInformation;
 	typeDefinition: TypeDefinitionProvider[];
+	type: String;
 };
 
 export type TypeDefinitionProviderWithNodeSidecar = {
@@ -88,6 +89,7 @@ export type TypeDefinitionProviderWithNodeSidecar = {
 			};
 		};
 	}[];
+	node_type: String;
 };
 
 export function sidecarTypeDefinitionsWithNode(typeDefinitionProviders: TypeDefinitionProviderWithNode[]): TypeDefinitionProviderWithNodeSidecar[] {
@@ -120,25 +122,40 @@ export function sidecarTypeDefinitionsWithNode(typeDefinitionProviders: TypeDefi
 						}
 					}
 				};
-			})
+			}),
+			node_type: typeIdentifier.type,
 		};
 	});
 }
 
 export async function typeDefinitionForIdentifierNodes(
-	nodes: IdentifierNodeInformation[],
+	nodes: IdentifierNodeType,
 	documentUri: vscode.Uri,
 	sidecarClient: SideCarClient,
 ): Promise<TypeDefinitionProviderWithNode[]> {
-	const response = await Promise.all(nodes.map(async (identifierNode) => {
+	const identifierNodes = nodes.identifier_nodes.map((node) => {
+		return {
+			node,
+			type: 'identifier',
+		};
+	});
+	const functionNodes = nodes.function_parameters.map((node) => {
+		return {
+			node,
+			type: 'function_parameter',
+		};
+	});
+	const finalNodes = [...identifierNodes, ...functionNodes];
+	const response = await Promise.all(finalNodes.map(async (identifierNode) => {
 		const typeDefinition = await typeDefinitionProvider(
-			identifierNode,
+			identifierNode.node,
 			documentUri,
-			new vscode.Position(identifierNode.range.startPosition.line, identifierNode.range.startPosition.character),
+			new vscode.Position(identifierNode.node.range.startPosition.line, identifierNode.node.range.startPosition.character),
 			sidecarClient,
 		);
 		return {
-			node: identifierNode,
+			node: identifierNode.node,
+			type: identifierNode.type,
 			typeDefinition,
 		};
 	}));
