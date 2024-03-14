@@ -16,7 +16,7 @@ import { activateExtensions, getExtensionsInDirectory } from './utilities/activa
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
-import { getUniqueId, getUserId } from './utilities/uniqueId';
+import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
@@ -73,9 +73,6 @@ export async function activate(context: ExtensionContext) {
 	// upto
 	const projectContext = new ProjectContext();
 	await projectContext.collectContext();
-
-	// TODO(codestory): Download the rust binary here appropriate for the platform
-	// we are on. Similar to how we were doing for Aide binary
 
 	postHogClient?.capture({
 		distinctId: await getUniqueId(),
@@ -179,6 +176,7 @@ export async function activate(context: ExtensionContext) {
 		sidecarClient,
 		currentRepo,
 		rootPath ?? '',
+		shouldUseExactMatching(),
 	);
 	const interactiveSession = interactive.registerInteractiveSessionProvider(
 		'cs-chat', chatSessionProvider

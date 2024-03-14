@@ -117,6 +117,11 @@
           "default": "",
           "description": "Set custom instructions for the AI, this can be information about the repository you are working or nuances you want the AI to handle"
         },
+        "aide.useExactSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Uses the exact matching of the selection rather than expanding on it"
+        },
         "aide.sidecarURL": {
           "type": "string",
           "default": "http://127.0.0.1:42424",
