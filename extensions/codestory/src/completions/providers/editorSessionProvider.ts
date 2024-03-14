@@ -290,15 +290,18 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 	sidecarClient: SideCarClient;
 	repoRef: RepoRef;
 	workingDirectory: string;
+	shouldUseExactMatching: boolean;
 	constructor(
 		sidecarClient: SideCarClient,
 		repoRef: RepoRef,
 		workingDirectory: string,
+		shouldUseExactMatching: boolean,
 	) {
 		this.label = 'cs-chat-editor';
 		this.sidecarClient = sidecarClient;
 		this.repoRef = repoRef;
 		this.workingDirectory = workingDirectory;
+		this.shouldUseExactMatching = shouldUseExactMatching;
 	}
 
 	prepareInteractiveEditorSession(
@@ -355,6 +358,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 						character: session.range.end.character,
 						byteOffset: endOffset,
 					},
+					shouldUseExactMatching: this.shouldUseExactMatching,
 				},
 				textDocumentWeb: {
 					text,

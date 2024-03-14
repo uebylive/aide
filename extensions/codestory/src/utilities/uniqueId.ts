@@ -92,3 +92,17 @@ export function getUserId(): string {
 		return 'You';
 	}
 }
+
+export function shouldUseExactMatching(): boolean {
+	try {
+		const aideConfiguration = vscode.workspace.getConfiguration('aide');
+		const useExactMatching = aideConfiguration.get('useExactSelection');
+		if (useExactMatching) {
+			return true;
+		} else {
+			return false;
+		}
+	} catch (err) {
+		return false;
+	}
+}

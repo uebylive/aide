@@ -205,6 +205,7 @@ export interface SnippetInformation {
 		character: number;
 		byteOffset: number;
 	};
+	shouldUseExactMatching: boolean;
 }
 
 export enum DiagnosticSeverity {
