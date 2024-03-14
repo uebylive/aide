@@ -825,7 +825,8 @@ export const convertVSCodeDiagnostic = (
 export const shouldAddLeadingStrings = (
 	model: InLineAgentLLMType | undefined,
 ): boolean => {
-	if (model === 'MistralInstruct' || model === 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct') {
+	console.log('mode being used', model);
+	if (model === 'MistralInstruct' || model === 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct' || model === 'CodeLLama70BInstruct' || model === 'CodeLlama13BInstruct' || model === 'CodeLlama7BInstruct') {
 		return true;
 	}
 	return false;

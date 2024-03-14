@@ -311,15 +311,6 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 		if (vscode.window.activeTextEditor === undefined) {
 			throw Error('no active text editor');
 		}
-		// const currentEditorOptions = vscode.window.activeTextEditor?.options;
-		// let fileIndentInfo;
-		// if (currentEditorOptions) {
-		// 	fileIndentInfo = {
-		// 		insertSpaces: currentEditorOptions.insertSpaces,
-		// 		tabSize: currentEditorOptions.tabSize
-		// 	};
-		// }
-		// const range = new vscode.Range(start.line - 1, start.character, anchor.line + 1, anchor.character);
 		return new CSInteractiveEditorSession(context.document, context.selection);
 	}
 
