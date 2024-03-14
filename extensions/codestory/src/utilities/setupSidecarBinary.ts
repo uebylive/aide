@@ -99,28 +99,53 @@ async function checkServerRunning(serverUrl: string): Promise<boolean> {
 }
 
 function killProcessOnPort(port: number) {
-	// Find the process ID using lsof (this command is for macOS/Linux)
-	exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}'`, (error, stdout) => {
-		if (error) {
-			console.error(`exec error: ${error}`);
-			return;
-		}
+	if (os.platform() === 'win32') {
+		// Find the process ID using netstat (this command is for Windows)
+		exec(`netstat -ano | findstr :${port}`, (error, stdout) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
+				return;
+			}
 
-		const pid = stdout.trim();
+			const pid = stdout.split(/\s+/).slice(-2, -1)[0];
 
-		if (pid) {
-			// Kill the process
-			execFile('kill', ['-2', `${pid}`], (killError) => {
-				if (killError) {
-					console.error(`Error killing process: ${killError}`);
-					return;
-				}
-				console.log(`Killed process with PID: ${pid}`);
-			});
-		} else {
-			console.log(`No process running on port ${port}`);
-		}
-	});
+			if (pid) {
+				// Kill the process
+				exec(`taskkill /PID ${pid} /F`, (killError) => {
+					if (killError) {
+						console.error(`Error killing process: ${killError}`);
+						return;
+					}
+					console.log(`Killed process with PID: ${pid}`);
+				});
+			} else {
+				console.log(`No process running on port ${port}`);
+			}
+		});
+	} else {
+		// Find the process ID using lsof (this command is for macOS/Linux)
+		exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}'`, (error, stdout) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
+				return;
+			}
+
+			const pid = stdout.trim();
+
+			if (pid) {
+				// Kill the process
+				execFile('kill', ['-2', `${pid}`], (killError) => {
+					if (killError) {
+						console.error(`Error killing process: ${killError}`);
+						return;
+					}
+					console.log(`Killed process with PID: ${pid}`);
+				});
+			} else {
+				console.log(`No process running on port ${port}`);
+			}
+		});
+	}
 }
 
 async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
