@@ -1056,6 +1056,8 @@ export class GettingStartedPage extends EditorPane {
 			let rank: number | null = e.order;
 
 			if (e.isFeatured) { rank += 7; }
+			// activating the clutch here
+			if (e.isSpecial) { rank += 1000; }
 			if (e.newEntry) { rank += 3; }
 			if (e.newItems) { rank += 2; }
 			if (e.recencyBonus) { rank += 4 * e.recencyBonus; }
@@ -1066,7 +1068,7 @@ export class GettingStartedPage extends EditorPane {
 
 		const gettingStartedList = this.gettingStartedList = new GettingStartedIndexList(
 			{
-				title: localize('walkthroughs', "Walkthroughs"),
+				title: localize('walkthroughs', "Setup editor and LLM"),
 				klass: 'getting-started',
 				limit: 5,
 				footer: $('span.button-link.see-all-walkthroughs', { 'x-dispatch': 'seeAllWalkthroughs', 'tabindex': 0 }, localize('showAll', "More...")),
