@@ -31,6 +31,7 @@ import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
 import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
+import { checkReadonlyFSMode } from './utilities/readonlyFS';
 
 
 export async function activate(context: ExtensionContext) {
@@ -49,6 +50,11 @@ export async function activate(context: ExtensionContext) {
 	}
 	if (rootPath === '') {
 		window.showErrorMessage('Please open a folder in Aide to use CodeStory');
+		return;
+	}
+	const readonlyFS = checkReadonlyFSMode();
+	if (readonlyFS) {
+		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](http://localhost:3000/troubleshooting#macos-readonlyfs-warning)');
 		return;
 	}
 	const agentSystemInstruction = readCustomSystemInstruction();
