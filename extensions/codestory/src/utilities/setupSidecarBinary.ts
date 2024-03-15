@@ -180,9 +180,14 @@ export async function startSidecarBinaryWithLocal(
 	if (fs.existsSync(sidecarBinPath)) {
 		const sidecarBinPathExists = fs.existsSync(path.join(sidecarBinPath, 'sidecar'));
 		if (sidecarBinPathExists) {
-			const sidecarValue = await runSideCarBinary(sidecarBinPath, serverUrl);
-			console.log('Sidecar binary exists locally, running it', sidecarValue);
-			return sidecarValue;
+			try {
+				console.log('Starting sidecar binary locally', sidecarBinPath, serverUrl);
+				const sidecarValue = await runSideCarBinary(sidecarBinPath, serverUrl);
+				console.log('Sidecar binary exists locally, running it', sidecarValue);
+				return sidecarValue;
+			} catch (e) {
+				console.log('Failed to run sidecar binary locally', e);
+			}
 		}
 	}
 
