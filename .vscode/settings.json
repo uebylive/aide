@@ -172,4 +172,15 @@
 	"inlineChat.mode": "live",
 	"testing.defaultGutterClickAction": "contextMenu",
 	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"cSpell.words": [
+		"check",
+		"Copyright",
+		"Corporation",
+		"function",
+		"Microsoft",
+		"Mode",
+		"Readonly",
+		"reserved",
+		"rights"
+	],
 }
