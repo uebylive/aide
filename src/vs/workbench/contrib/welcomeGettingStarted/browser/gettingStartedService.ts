@@ -53,6 +53,7 @@ export interface IWalkthrough {
 	order: number;
 	source: string;
 	isFeatured: boolean;
+	isSpecial?: boolean;
 	next?: string;
 	when: ContextKeyExpression;
 	steps: IWalkthroughStep[];

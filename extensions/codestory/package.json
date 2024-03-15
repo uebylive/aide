@@ -43,6 +43,10 @@
   "contributes": {
     "commands": [
       {
+        "command": "webview.preCopySettings",
+        "title": "CodeStory Pre-launch: Export extensions/settings and keybindings to VSCode"
+      },
+      {
         "command": "webview.copySettings",
         "title": "CodeStory: Import settings and keybindings from VSCode"
       },

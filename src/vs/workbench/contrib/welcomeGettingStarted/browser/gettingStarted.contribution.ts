@@ -266,6 +266,37 @@ registerAction2(class extends Action2 {
 	}
 });
 
+registerAction2(class extends Action2 {
+	constructor() {
+		super({
+			id: 'welcome.showModelConfiguration',
+			title: localize2('welcome.showModelConfiguration', 'Open Model Configuration...'),
+			category,
+			f1: true,
+		});
+	}
+
+	// private async getQuickPickItems(
+	// 	contextService: IContextKeyService,
+	// 	gettingStartedService: IWalkthroughsService
+	// ): Promise<IQuickPickItem[]> {
+	// 	const categories = await gettingStartedService.getWalkthroughs();
+	// 	return categories
+	// 		.filter(c => contextService.contextMatchesRules(c.when))
+	// 		.map(x => ({
+	// 			id: x.id,
+	// 			label: x.title,
+	// 			detail: x.description,
+	// 			description: x.source,
+	// 		}));
+	// }
+
+	async run(accessor: ServicesAccessor) {
+		const commandService = accessor.get(ICommandService);
+		commandService.executeCommand('workbench.action.openModelSelection');
+	}
+});
+
 export const WorkspacePlatform = new RawContextKey<'mac' | 'linux' | 'windows' | 'webworker' | undefined>('workspacePlatform', undefined, localize('workspacePlatform', "The platform of the current workspace, which in remote or serverless contexts may be different from the platform of the UI"));
 class WorkspacePlatformContribution {
 

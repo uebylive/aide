@@ -44,6 +44,18 @@ export async function activate(context: ExtensionContext) {
 		distinctId: getUniqueId(),
 		event: 'extension_activated',
 	});
+	const appDataPath = process.env.APPDATA;
+	const userProfilePath = process.env.USERPROFILE;
+	console.log('appDataPath', appDataPath);
+	console.log('userProfilePath', userProfilePath);
+	console.log(env.appRoot);
+	const registerPreCopyCommand = commands.registerCommand(
+		'webview.preCopySettings',
+		async () => {
+			await copySettings(env.appRoot, logger);
+		}
+	);
+	context.subscriptions.push(registerPreCopyCommand);
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
 		rootPath = '';
@@ -52,6 +64,14 @@ export async function activate(context: ExtensionContext) {
 		window.showErrorMessage('Please open a folder in Aide to use CodeStory');
 		return;
 	}
+	// Create the copy settings from vscode command for the extension
+	const registerCopySettingsCommand = commands.registerCommand(
+		'webview.copySettings',
+		async () => {
+			await copySettings(rootPath ?? '', logger);
+		}
+	);
+	context.subscriptions.push(registerCopySettingsCommand);
 	const readonlyFS = checkReadonlyFSMode();
 	if (readonlyFS) {
 		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](http://localhost:3000/troubleshooting#macos-readonlyfs-warning)');
@@ -217,14 +237,6 @@ export async function activate(context: ExtensionContext) {
 		)
 	);
 
-	// Create the copy settings from vscode command for the extension
-	const registerCopySettingsCommand = commands.registerCommand(
-		'webview.copySettings',
-		async () => {
-			await copySettings(rootPath ?? '', logger);
-		}
-	);
-
 	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
 		codeSymbolsLanguageCollection,
 		rootPath ?? '',
@@ -241,8 +253,6 @@ export async function activate(context: ExtensionContext) {
 			await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
 		}
 	});
-
-	context.subscriptions.push(registerCopySettingsCommand);
 
 	// Listen for document opened events
 	workspace.onDidOpenTextDocument((document: TextDocument) => {
