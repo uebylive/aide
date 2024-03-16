@@ -762,11 +762,13 @@ class ProviderColumnsRenderer implements ITableRenderer<IProviderItemEntry, IPro
 
 		if (providerTypeValues.includes(providerItem.type)) {
 			templateData.providerLabelContainer.classList.remove('hide');
+			templateData.providerLogo.classList.remove(...providerTypeValues);
 			templateData.providerLogo.classList.add(providerItem.type);
 			templateData.providerLabel.set(providerItem.name, []);
 		} else {
 			templateData.providerLabelContainer.classList.remove(providerItem.type);
 			templateData.providerLabelContainer.classList.add('hide');
+			templateData.providerLogo.classList.remove(...providerTypeValues);
 			templateData.providerLabel.set(undefined);
 		}
 	}
