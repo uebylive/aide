@@ -268,8 +268,8 @@
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-logo.fireworkai {
-	mask-image: url('logos/anthropic.svg');
-	-webkit-mask-image: url('logos/anthropic.svg');
+	mask-image: url('logos/fireworks.svg');
+	-webkit-mask-image: url('logos/fireworks.svg');
 	mask-size: contain;
 	-webkit-mask-size: contain;
 	mask-repeat: no-repeat;
