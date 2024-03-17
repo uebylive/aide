@@ -212,7 +212,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 16384,
 			temperature: 0.2,
 			provider: {
-				type: 'togetherai'
+				type: 'codestory'
 			}
 		},
 		'DeepSeekCoder33BInstruct': {
@@ -252,7 +252,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 200000,
 			temperature: 0.2,
 			provider: {
-				type: 'anthropic'
+				type: 'codestory'
 			}
 		},
 		'ClaudeHaiku': {
@@ -260,7 +260,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 200000,
 			temperature: 0.2,
 			provider: {
-				type: 'anthropic'
+				type: 'codestory'
 			}
 		}
 	},

@@ -34,7 +34,7 @@ export class AideQuickFix implements vscode.CodeActionProvider {
 		fixCodeAction.diagnostics = severeDiagnostics;
 		fixCodeAction.command = {
 			title: '$(sparkle) ' + fixCodeAction.title,
-			command: 'vscode.editorCSChat.start',
+			command: 'inlineChat.start',
 			arguments: [
 				{
 					autoSend: true,
