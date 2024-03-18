@@ -74,7 +74,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(registerCopySettingsCommand);
 	const readonlyFS = checkReadonlyFSMode();
 	if (readonlyFS) {
-		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](http://localhost:3000/troubleshooting#macos-readonlyfs-warning)');
+		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
 		return;
 	}
 	const agentSystemInstruction = readCustomSystemInstruction();
