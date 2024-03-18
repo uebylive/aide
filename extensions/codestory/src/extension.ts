@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
+import * as os from 'os';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
@@ -43,6 +44,9 @@ export async function activate(context: ExtensionContext) {
 	postHogClient?.capture({
 		distinctId: getUniqueId(),
 		event: 'extension_activated',
+		properties: {
+			platform: os.platform(),
+		},
 	});
 	const appDataPath = process.env.APPDATA;
 	const userProfilePath = process.env.USERPROFILE;
