@@ -24,6 +24,9 @@
 			"DOM",
 			"DOM.Iterable",
 			"WebWorker.ImportScripts"
-		]
-	}
+		],
+	},
+	"exclude": [
+		"./vs/platform/diffdom"
+	]
 }

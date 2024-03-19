@@ -69,6 +69,7 @@ import { ICSChatResponseViewModel as IChatResponseViewModel } from 'vs/workbench
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection';
+import { DiffDOM } from 'vs/platform/diffdom/browser/index';
 
 const $ = dom.$;
 
@@ -643,11 +644,26 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 						if (result === null) {
 							templateData.value.replaceChild($('span.placeholder-for-deleted-thing'), existingElement);
 						} else {
-							templateData.value.replaceChild(result.element, existingElement);
+							const dd = new DiffDOM();
+							console.log('diffing elements');
+							console.log(templateData.value);
+							console.log(existingElement);
+							console.log(result.element);
+							const diff = dd.diff(existingElement, result.element);
+							console.log(diff);
+							const applied = dd.apply(existingElement, diff);
+							console.log('applied', applied);
+							console.log(existingElement);
+							// templateData.value.replaceChild(result.element, existingElement);
 						}
 					} else if (result) {
+						console.log('appending child');
+						console.log(result.element);
 						templateData.value.appendChild(result.element);
 					}
+					console.log('TEMPLATE DATA');
+					console.log(templateData.value);
+					console.log(result?.element);
 
 					if (result) {
 						disposables.add(result);

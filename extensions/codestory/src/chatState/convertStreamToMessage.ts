@@ -51,6 +51,8 @@ export const reportFromStreamToSearchProgress = async (
 	let enteredAnswerGenerationLoop = false;
 
 	for await (const conversationMessage of asyncIterable) {
+		// await new Promise(r => setTimeout(r, 2000));
+
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
 
