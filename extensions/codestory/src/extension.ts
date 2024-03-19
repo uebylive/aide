@@ -9,13 +9,10 @@ import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
-import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
-import { readTestSuiteRunCommand } from './utilities/activeDirectories';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
-import { CodeSymbolsLanguageCollection } from './languages/codeSymbolsLanguageCollection';
 import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
@@ -24,7 +21,6 @@ import { CSInteractiveEditorSessionProvider } from './completions/providers/edit
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider, CSChatSessionProvider } from './completions/providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
-import { getOpenAIApiKey } from './utilities/getOpenAIKey';
 import { AideQuickFix } from './quickActions/fix';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
@@ -96,7 +92,6 @@ export async function activate(context: ExtensionContext) {
 	const repoHash = await getGitCurrentHash(
 		rootPath,
 	);
-	const openAIKey = getOpenAIApiKey();
 
 	// We also get some context about the workspace we are in and what we are
 	// upto
@@ -121,7 +116,7 @@ export async function activate(context: ExtensionContext) {
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
-	const sidecarClient = new SideCarClient(sidecarUrl, openAIKey, modelConfiguration);
+	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
 
 	// we want to send the open tabs here to the sidecar
 	const openTextDocuments = await getRelevantFiles();
@@ -160,17 +155,12 @@ export async function activate(context: ExtensionContext) {
 	// set the status bar as well
 	startupStatusBar();
 
-	// Now setup the indexer collection
-	const codeSymbolsLanguageCollection = new CodeSymbolsLanguageCollection();
-
 	// Get the storage object here
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
 	logger.info(codeStoryStorage);
 	logger.info(rootPath);
 	// Active files tracker
 	const activeFilesTracker = new ActiveFilesTracker();
-	// Get the test-suite command
-	const testSuiteRunCommand = readTestSuiteRunCommand();
 
 
 	// Register the semantic search command here
@@ -218,27 +208,11 @@ export async function activate(context: ExtensionContext) {
 
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
-		codeSymbolsLanguageCollection,
-		testSuiteRunCommand, activeFilesTracker, uniqueUserId,
-		agentSystemInstruction, sidecarClient, currentRepo, projectContext,
+		uniqueUserId,
+		sidecarClient, currentRepo, projectContext,
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	context.subscriptions.push(
-		debug(
-			// TODO(codestory): Fix this properly later on
-			codeSymbolsLanguageCollection,
-			sidecarClient,
-			repoName,
-			repoHash,
-			rootPath ?? '',
-			testSuiteRunCommand,
-			activeFilesTracker,
-			uniqueUserId,
-			agentSystemInstruction,
-			currentRepo,
-		)
-	);
 
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
