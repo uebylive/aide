@@ -8,7 +8,6 @@ import * as os from 'os';
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import postHogClient from './posthog/client';
-import { TrackCodeSymbolChanges } from './activeChanges/trackCodeSymbolChanges';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { debug } from './subscriptions/debug';
 import { copySettings } from './utilities/copySettings';
@@ -241,17 +240,10 @@ export async function activate(context: ExtensionContext) {
 		)
 	);
 
-	const trackCodeSymbolChanges = new TrackCodeSymbolChanges(
-		codeSymbolsLanguageCollection,
-		rootPath ?? '',
-		logger
-	);
-
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
 	workspace.onDidOpenTextDocument(async (doc) => {
 		const uri = doc.uri;
-		await trackCodeSymbolChanges.fileOpened(uri);
 		// TODO(skcd): we want to send the file open event to the sidecar client
 		if (shouldTrackFile(uri)) {
 			await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
