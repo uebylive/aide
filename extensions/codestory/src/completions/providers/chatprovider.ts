@@ -2,19 +2,14 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { v4 as uuidv4 } from 'uuid';
 import * as vscode from 'vscode';
 
-import { ActiveFilesTracker } from '../../activeChanges/activeFilesTracker';
 import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
-import { CodeSymbolsLanguageCollection } from '../../languages/codeSymbolsLanguageCollection';
-import { debuggingFlow } from '../../llm/recipe/debugging';
 import logger from '../../logger';
 import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { InLineAgentContextSelection } from '../../sidecar/types';
-import { ToolingEventCollection } from '../../timeline/events/collection';
 import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
@@ -81,14 +76,10 @@ export class CSChatSessionProvider implements vscode.InteractiveSessionProvider<
 export class CSChatAgentProvider implements vscode.Disposable {
 	private chatAgent: vscode.ChatParticipant;
 
-	private _codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection;
 	private _workingDirectory: string;
-	private _testSuiteRunCommand: string;
-	private _activeFilesTracker: ActiveFilesTracker;
 	private _repoName: string;
 	private _repoHash: string;
 	private _uniqueUserId: string;
-	private _agentCustomInformation: string | null;
 	private _sideCarClient: SideCarClient;
 	private _currentRepoRef: RepoRef;
 	private _projectContext: ProjectContext;
@@ -97,11 +88,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		workingDirectory: string,
 		repoName: string,
 		repoHash: string,
-		codeSymbolsLanguageCollection: CodeSymbolsLanguageCollection,
-		testSuiteRunCommand: string,
-		activeFilesTracker: ActiveFilesTracker,
 		uniqueUserId: string,
-		agentCustomInstruction: string | null,
 		sideCarClient: SideCarClient,
 		repoRef: RepoRef,
 		projectContext: ProjectContext,
@@ -109,11 +96,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._workingDirectory = workingDirectory;
 		this._repoHash = repoHash;
 		this._repoName = repoName;
-		this._codeSymbolsLanguageCollection = codeSymbolsLanguageCollection;
-		this._testSuiteRunCommand = testSuiteRunCommand;
-		this._activeFilesTracker = activeFilesTracker;
 		this._uniqueUserId = uniqueUserId;
-		this._agentCustomInformation = agentCustomInstruction;
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
@@ -156,33 +139,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			}
 		}
 		logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
-		if (requestType === 'instruction') {
-			const prompt = request.prompt.toString().slice(7).trim();
-			if (prompt.length === 0) {
-				return new CSChatResponseForProgress(new CSChatResponseErrorDetails('Please provide a prompt for the agent to work on'));
-			}
-
-			const toolingEventCollection = new ToolingEventCollection(
-				`/tmp/${uuidv4()}`,
-				{ response: response, cancellationToken: token },
-				prompt,
-			);
-
-			const uniqueId = uuidv4();
-			await debuggingFlow(
-				prompt,
-				toolingEventCollection,
-				this._sideCarClient,
-				this._codeSymbolsLanguageCollection,
-				this._workingDirectory,
-				this._testSuiteRunCommand,
-				this._activeFilesTracker,
-				uniqueId,
-				this._agentCustomInformation,
-				this._currentRepoRef,
-			);
-			return new CSChatResponseForProgress();
-		} else if (requestType === 'explain') {
+		if (requestType === 'explain') {
 			// Implement the explain feature here
 			const explainString = request.prompt.toString().slice('/explain'.length).trim();
 			const currentSelection = getSelectedCodeContextForExplain(this._workingDirectory, this._currentRepoRef);

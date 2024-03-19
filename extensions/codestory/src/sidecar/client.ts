@@ -58,17 +58,14 @@ export class RepoRef {
 
 export class SideCarClient {
 	private _url: string;
-	private _openAIKey: string | null = null;
 	private _modelConfiguration: vscode.ModelSelection;
 	private _userId: string | null;
 
 	constructor(
 		url: string,
-		openAIKey: string | null,
 		modelConfiguration: vscode.ModelSelection,
 	) {
 		this._url = url;
-		this._openAIKey = openAIKey;
 		this._modelConfiguration = modelConfiguration;
 		this._userId = getUserId();
 	}
@@ -108,34 +105,6 @@ export class SideCarClient {
 		console.log(responseJson);
 	}
 
-	async getSymbolsForGoToDefinition(
-		codeSnippet: string,
-		repoRef: RepoRef,
-		threadId: string,
-		language: string,
-	): Promise<string[]> {
-		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agent/goto_definition_symbols';
-		const body = {
-			repo_ref: repoRef.getRepresentation(),
-			code_snippet: codeSnippet,
-			thread_id: threadId,
-			language: language,
-			openai_key: this._openAIKey,
-		};
-		const url = baseUrl.toString();
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-		});
-		const responseJson = await response.json();
-		const symbols = responseJson.symbols as string[];
-		return symbols;
-	}
-
 	async getRepoStatus(): Promise<RepoStatus> {
 		const response = await fetch(this.getRepoListUrl());
 		const repoList = (await response.json()) as RepoStatus;
@@ -170,17 +139,8 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/in_editor/answer';
 		const url = baseUrl.toString();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
-		// This is where we have to send the model selection object
-		// const modelConfig = {
-		// 	slow_model: this._modelConfiguration.slowModel,
-		// 	fast_model: this._modelConfiguration.fastModel,
-		// 	models: this._modelConfiguration.models,
-		// 	providers,
-		// };
-		console.log(JSON.stringify(sideCarModelConfiguration));
 		const finalContext = {
 			...context,
-			openai_key: this._openAIKey,
 			modelConfig: sideCarModelConfiguration,
 			userId: this._userId,
 		};
@@ -236,7 +196,6 @@ export class SideCarClient {
 			user_query: userQuery,
 			session_id: sessionId,
 			code_block_index: codeBlockIndex,
-			openai_key: this._openAIKey,
 			userId: this._userId,
 			model_config: sideCarModelConfiguration,
 		};
@@ -273,7 +232,6 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
-			openai_key: this._openAIKey,
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
 		};
@@ -306,9 +264,6 @@ export class SideCarClient {
 		baseUrl.searchParams.set('end_line', selection.lineEnd.toString());
 		baseUrl.searchParams.set('relative_path', selection.relativeFilePath);
 		baseUrl.searchParams.set('thread_id', threadId);
-		if (this._openAIKey !== null) {
-			baseUrl.searchParams.set('openai_key', this._openAIKey);
-		}
 		const url = baseUrl.toString();
 		const asyncIterableResponse = await callServerEventStreamingBufferedGET(url);
 		for await (const line of asyncIterableResponse) {
@@ -723,9 +678,6 @@ export class SideCarClient {
 			const baseUrl = new URL(this._url);
 			baseUrl.pathname = '/api/repo/sync';
 			baseUrl.searchParams.set('repo', repoRef.getRepresentation());
-			if (this._openAIKey !== null) {
-				baseUrl.searchParams.set('openai_key', this._openAIKey);
-			}
 			const url = baseUrl.toString();
 			const response = await fetch(url);
 			const responseJson = await response.json();
@@ -768,9 +720,6 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agent/hybrid_search';
 		baseUrl.searchParams.set('repo', reporef.getRepresentation());
 		baseUrl.searchParams.set('query', query);
-		if (this._openAIKey !== null) {
-			baseUrl.searchParams.set('openai_key', this._openAIKey);
-		}
 		const url = baseUrl.toString();
 		const response = await fetch(url);
 		const responseJson = await response.json();
