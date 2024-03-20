@@ -76,6 +76,10 @@
       {
         "name": "aide",
         "isDefault": true
+      },
+      {
+        "name": "web",
+        "description": "Browse the web to gather context"
       }
     ],
     "menus": {

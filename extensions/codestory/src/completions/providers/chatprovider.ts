@@ -125,6 +125,27 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			}
 		};
 		this.chatAgent.editsProvider = this.editsProvider;
+
+		const provideLanguageModelResponse2 = async (_messages: vscode.LanguageModelChatMessage[], _options: { [name: string]: any }, _extensionId: string, progress: vscode.Progress<vscode.ChatResponseFragment>, _token: vscode.CancellationToken) => {
+			progress.report({ index: 0, part: 'Language model response!' });
+		};
+		vscode.chat.registerChatResponseProvider('aide-model-provider', { provideLanguageModelResponse2 }, { name: 'Model provider' });
+
+		const webRequestHandler: vscode.ChatRequestHandler = async (_request, _context, response, token) => {
+			// Do web browsing using PPLX API
+			const webResponse = 'Blah!';
+			const messages = [
+				new vscode.LanguageModelChatUserMessage(`The gathered context from web is ${webResponse}`)
+			];
+			const chatResponse = await vscode.lm.sendChatRequest('aide-model-provider', messages, {}, token);
+			for await (const fragment of chatResponse.stream) {
+				response.markdown(fragment);
+			}
+			return new CSChatResponseForProgress();
+		};
+		const webAgent = vscode.chat.createChatParticipant('web', webRequestHandler);
+		webAgent.fullName = 'Web Browsing';
+		webAgent.description = 'Browse the web to gather context';
 	}
 
 	defaultAgentRequestHandler: vscode.ChatRequestHandler = async (request, _context, response, token) => {
