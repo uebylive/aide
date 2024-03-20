@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
-import * as os from 'os';
 import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
 import { formatCompletion } from './format-completion';
 import { getCurrentDocContext } from './get-current-doc-context';
@@ -29,8 +28,6 @@ import { disableLoadingStatus, setLoadingStatus } from '../inlineCompletion/stat
 import { SideCarClient } from '../sidecar/client';
 import { uniqueId } from 'lodash';
 import { TypeDefinitionProviderWithNode, typeDefinitionForIdentifierNodes } from './helpers/vscodeApi';
-import postHogClient from '../posthog/client';
-import { getUniqueId } from '../utilities/uniqueId';
 
 interface AutocompleteResult extends vscode.InlineCompletionList {
 	logId: string;
@@ -466,13 +463,6 @@ export class InlineCompletionItemProvider
 
 		this.logger.logInfo('sidecar.inlinecompletion.accepted', {
 			'event_name': 'sidecar.inlinecompletion.accepted',
-		});
-		postHogClient?.capture({
-			distinctId: getUniqueId(),
-			event: 'sidecar.tab_autocomplete.accepted',
-			properties: {
-				platform: os.platform(),
-			}
 		});
 
 		// When a completion is accepted, the lastCandidate should be cleared. This makes sure the
