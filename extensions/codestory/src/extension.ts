@@ -47,7 +47,6 @@ export async function activate(context: ExtensionContext) {
 	const userProfilePath = process.env.USERPROFILE;
 	console.log('appDataPath', appDataPath);
 	console.log('userProfilePath', userProfilePath);
-	console.log(env.appRoot);
 	const registerPreCopyCommand = commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
@@ -260,7 +259,6 @@ export async function activate(context: ExtensionContext) {
 		if (documentUri.scheme === 'vscode') {
 			return;
 		}
-		console.log('[extension] onDidChangeTextDocument event::', event.document.uri.scheme);
 		// TODO(skcd): we want to send the file change event to the sidecar over here
 		await sidecarClient.documentContentChange(
 			event.document.uri.fsPath,
