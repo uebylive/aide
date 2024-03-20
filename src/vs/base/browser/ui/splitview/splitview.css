@@ -3,14 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench:not(.monaco-workbench:has(.monaco-sash.active), .monaco-workbench:has(iframe)) .split-view-container div[style*="top"]:not(.monaco-editor .overflowingContentWidgets, .monaco-editor .overflowingContentWidgets *, .monaco-editor .margin, .monaco-editor .margin *, .monaco-editor .context-view, .monaco-editor .context-view *, .editor-scrollable *, .monaco-list-rows, .monaco-list-rows *, .split-view-view:has(> .terminal-outer-container), .terminal-outer-container *, .notifications-toasts *, .zone-widget, .monaco-menu-container),
-.monaco-workbench:not(.monaco-workbench:has(.monaco-sash.active), .monaco-workbench:has(iframe)) .split-view-container div[style*="left"]:not(.monaco-editor .overflowingContentWidgets, .monaco-editor .overflowingContentWidgets *, .monaco-editor .margin, .monaco-editor .margin *, .monaco-editor .context-view, .monaco-editor .context-view *, .editor-scrollable *, .monaco-list-rows, .monaco-list-rows *, .split-view-view:has(> .terminal-outer-container), .terminal-outer-container *, .notifications-toasts *, .zone-widget, .monaco-menu-container),
-.monaco-workbench:not(.monaco-workbench:has(.monaco-sash.active), .monaco-workbench:has(iframe)) .split-view-container div[style*="width"]:not(.monaco-editor .overflowingContentWidgets, .monaco-editor .overflowingContentWidgets *, .monaco-editor .margin, .monaco-editor .margin *, .monaco-editor .context-view, .monaco-editor .context-view *, .editor-scrollable *, .monaco-list-rows, .monaco-list-rows *, .split-view-view:has(> .terminal-outer-container), .terminal-outer-container *, .notifications-toasts *, .zone-widget, .monaco-menu-container),
-.monaco-workbench:not(.monaco-workbench:has(.monaco-sash.active), .monaco-workbench:has(iframe)) .split-view-container div[style*="height"]:not(.monaco-editor .overflowingContentWidgets, .monaco-editor .overflowingContentWidgets *, .monaco-editor .margin, .monaco-editor .margin *, .monaco-editor .context-view, .monaco-editor .context-view *, .editor-scrollable *, .monaco-list-rows, .monaco-list-rows *, .split-view-view:has(> .terminal-outer-container), .terminal-outer-container *, .notifications-toasts *, .zone-widget, .monaco-menu-container) {
-	transition-property: top, left, width, height;
-	transition-duration: 200ms;
-}
-
 .monaco-split-view2 {
 	position: relative;
 	width: 100%;

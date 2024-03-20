@@ -90,8 +90,6 @@ export const reportFromStreamToSearchProgress = async (
 		else {
 			const stepsTaken = conversationMessage.steps_taken.length;
 			const lastStep = conversationMessage.steps_taken[stepsTaken - 1];
-			console.log(`[search][stream] whats the last step here`);
-			console.log(lastStep);
 			if ('Code' in lastStep) {
 				reportCodeReferencesToChat(
 					response,
