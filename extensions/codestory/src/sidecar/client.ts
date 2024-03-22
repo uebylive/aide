@@ -16,6 +16,7 @@ import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidec
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { LoggingService } from '../completions/logger';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
+import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 
 export enum CompletionStopReason {
 	/**
@@ -225,6 +226,7 @@ export class SideCarClient {
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const agentSystemInstruction = readCustomSystemInstruction();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
@@ -234,6 +236,7 @@ export class SideCarClient {
 			active_window_data: activeWindowData,
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
+			system_instruction: agentSystemInstruction,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
