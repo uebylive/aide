@@ -95,21 +95,36 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	}
 
 	getPosition(): IContentWidgetPosition | null {
-		if (!this.position) {
+		const selection = this._editor.getSelection();
+		console.log('csKeybinding.keybinding');
+		console.log(selection);
+		console.log('csKeybindings.position');
+		console.log(this.position);
+		if (!selection) {
 			return null;
 		}
-
-		// move the column to the end of the line
-		const position = {
-			lineNumber: this.position.lineNumber,
-			column: this.position.column + 1000,
-		};
-
-		return {
-			position,
-			// position: this.position,
-			preference: [ContentWidgetPositionPreference.ABOVE]
-		};
+		const selectionStartLine = selection.selectionStartLineNumber;
+		if (selection.startLineNumber === selectionStartLine) {
+			// this is from a top-to-bottom-selection
+			// so we want to show the widget on the top
+			return {
+				position: {
+					lineNumber: selectionStartLine,
+					column: selection.startColumn,
+				},
+				preference: [ContentWidgetPositionPreference.ABOVE]
+			};
+		} else {
+			// this is from bottom-to-top selection
+			// so we want to return the position to the bottom
+			return {
+				position: {
+					lineNumber: selection.endLineNumber,
+					column: selection.endColumn,
+				},
+				preference: [ContentWidgetPositionPreference.BELOW],
+			};
+		}
 	}
 
 	showAt(position: IPosition) {
