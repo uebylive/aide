@@ -6,6 +6,7 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
+// import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
@@ -21,10 +22,11 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, OpenFileCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertOpenFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
+// import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
@@ -79,6 +81,19 @@ class CSBuiltinDynamicCompletions extends Disposable {
 							kind: CompletionItemKind.Text,
 							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
 							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}openFiles`,
+							insertText: `${chatVariableLeader}openFiles`,
+							detail: localize("pickOpenFiles", "Adds Open Files to context"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: {
+								id: MultiLevelCodeTriggerAction.ID,
+								title: MultiLevelCodeTriggerAction.ID,
+								arguments: [{ widget, range: afterRange, pick: 'openFiles' }],
+							},
+							sortText: 'z',
 						}
 					]
 				};
@@ -226,3 +241,88 @@ class CodeSymbolCompletions extends Disposable {
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(CodeSymbolCompletions, LifecyclePhase.Eventually);
+
+
+class OpenFileCompletions extends Disposable {
+	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}openFiles`, 'g'); // MUST be using `g`-flag
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		// @IEditorService private readonly editorService: IEditorService,
+		// @ILabelService private readonly labelService: ILabelService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: OpenFileCompletionProviderName,
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+				if (!widget) {
+					return null;
+				}
+
+				// early bail here if we are not in a chat widget
+				if (widget.viewModel?.providerId !== 'cs-chat') {
+					return null;
+				}
+
+				const varWord = getWordAtText(position.column, OpenFileCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				if (!varWord && model.getWordUntilPosition(position).word) {
+					return null;
+				}
+
+				const range: IRange = {
+					startLineNumber: position.lineNumber,
+					startColumn: varWord ? varWord.endColumn : position.column,
+					endLineNumber: position.lineNumber,
+					endColumn: varWord ? varWord.endColumn : position.column
+				};
+
+				// const openEditors = this.editorService.visibleEditorPanes;
+				// const completionURIs = openEditors.map(editor => editor.input.resource);
+
+				const editRange: IRange = {
+					startLineNumber: position.lineNumber,
+					startColumn: varWord ? varWord.startColumn : position.column,
+					endLineNumber: position.lineNumber,
+					endColumn: varWord ? varWord.endColumn : position.column
+				};
+
+				return {
+					suggestions: [
+						<CompletionItem>{
+							label: 'openFiles ',
+							insertText: '',
+							detail: 'Insert open files to chat context',
+							kind: CompletionItemKind.Text,
+							range,
+							command: { id: SelectAndInsertOpenFileAction.ID, title: SelectAndInsertOpenFileAction.ID, arguments: [{ widget, range: editRange }] },
+							sortText: 'z'
+						}
+					],
+				};
+
+				// const completionItems = completionURIs.filter((uri) => {
+				// 	return uri !== undefined;
+				// }).map(uri => {
+				// 	const detail = this.labelService.getUriLabel(dirname(uri as URI), { relative: true });
+				// 	return <CompletionItem>{
+				// 		label: basenameOrAuthority(uri as URI),
+				// 		insertText: '',
+				// 		detail,
+				// 		kind: CompletionItemKind.File,
+				// 		range,
+				// 		command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
+				// 		sortText: 'z'
+				// 	};
+				// });
+
+				// return {
+				// 	suggestions: completionItems
+				// };
+			}
+		}));
+	}
+}
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(OpenFileCompletions, LifecyclePhase.Eventually);

@@ -24,14 +24,16 @@ import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/chat/common/chatCo
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
+export const OpenFileCompletionProviderName = 'chatOpenFileCompletionProviderName';
 
 interface MultiLevelCodeTriggerActionContext {
 	widget: IChatWidget;
 	range: IRange;
-	pick: 'file' | 'code';
+	pick: 'file' | 'code' | 'openFiles';
 }
 
 function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
@@ -69,10 +71,9 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const codeSymbolCompletionProvider = completionProviders.find(
-			provider => provider._debugDisplayName === (
-				context.pick === 'code' ? CodeSymbolCompletionProviderName : FileReferenceCompletionProviderName
-			));
+		const providerName = context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'openFiles' ? OpenFileCompletionProviderName : FileReferenceCompletionProviderName;
+		const codeSymbolCompletionProvider = completionProviders.find(provider => provider._debugDisplayName === providerName);
+
 		if (!codeSymbolCompletionProvider) {
 			doCleanup();
 			return;
@@ -313,3 +314,91 @@ class ChatAddContext extends EditorAction2 {
 	}
 }
 registerAction2(ChatAddContext);
+
+interface OpenFileActionContext {
+	widget: IChatWidget;
+	range: IRange;
+}
+
+function isOpenFileActionContext(context: any): context is OpenFileActionContext {
+	return 'widget' in context && 'range' in context;
+}
+
+export class SelectAndInsertOpenFileAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.csSelectAndInsertOpenFile';
+
+	constructor() {
+		super({
+			id: SelectAndInsertOpenFileAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+		const editorService = accessor.get(IEditorService);
+
+		const context = args[0];
+		if (!isOpenFileActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `openFile`
+			context.widget.inputEditor.executeEdits('chatInsertOpenFile', [{ range: context.range, text: `` }]);
+		};
+
+		const openEditors = editorService.visibleEditorPanes;
+		if (openEditors.length === 0) {
+			logService.trace('SelectAndInsertOpenFileAction: no open editors');
+			doCleanup();
+			return;
+		}
+
+		const editor = context.widget.inputEditor;
+		let currentRange = context.range;
+
+		for (const editorPane of openEditors) {
+			const resource = editorPane.input.resource;
+			if (!resource) {
+				continue;
+			}
+
+			const model = await textModelService.createModelReference(resource);
+			const fileRange = model.object.textEditorModel.getFullModelRange();
+			model.dispose();
+
+			const fileName = basename(resource);
+			const text = `${chatVariableLeader}file:${fileName}`;
+			const success = editor.executeEdits('chatInsertOpenFile', [{ range: currentRange, text: text + ' ' }]);
+			if (!success) {
+				logService.trace(`SelectAndInsertOpenFileAction: failed to insert "${text}"`);
+				continue;
+			}
+
+			const insertedRange = {
+				startLineNumber: currentRange.startLineNumber,
+				startColumn: currentRange.startColumn,
+				endLineNumber: currentRange.startLineNumber,
+				endColumn: currentRange.startColumn + text.length
+			};
+
+			// Update the currentRange for the next insertion
+			currentRange = {
+				startLineNumber: insertedRange.endLineNumber,
+				startColumn: insertedRange.endColumn + 1,
+				endLineNumber: insertedRange.endLineNumber,
+				endColumn: insertedRange.endColumn + 1
+			};
+
+			const valueObj = { uri: resource, range: fileRange };
+			const value = JSON.stringify(valueObj);
+			context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+				range: insertedRange,
+				data: [{ level: 'full', value, kind: 'file' }]
+			});
+		}
+	}
+}
+registerAction2(SelectAndInsertOpenFileAction);
