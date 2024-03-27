@@ -33,7 +33,7 @@ export const OpenFileCompletionProviderName = 'chatOpenFileCompletionProviderNam
 interface MultiLevelCodeTriggerActionContext {
 	widget: IChatWidget;
 	range: IRange;
-	pick: 'file' | 'code' | 'openFiles';
+	pick: 'file' | 'code' | 'currentFiles';
 }
 
 function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
@@ -71,7 +71,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const providerName = context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'openFiles' ? OpenFileCompletionProviderName : FileReferenceCompletionProviderName;
+		const providerName = context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'currentFiles' ? OpenFileCompletionProviderName : FileReferenceCompletionProviderName;
 		const codeSymbolCompletionProvider = completionProviders.find(provider => provider._debugDisplayName === providerName);
 
 		if (!codeSymbolCompletionProvider) {

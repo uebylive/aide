@@ -83,15 +83,15 @@ class CSBuiltinDynamicCompletions extends Disposable {
 							sortText: 'z'
 						},
 						<CompletionItem>{
-							label: `${chatVariableLeader}openFiles`,
-							insertText: `${chatVariableLeader}openFiles`,
+							label: `${chatVariableLeader}currentFiles`,
+							insertText: `${chatVariableLeader}currentFiles`,
 							detail: localize("pickOpenFiles", "Adds Open Files to context"),
 							range,
 							kind: CompletionItemKind.Text,
 							command: {
 								id: MultiLevelCodeTriggerAction.ID,
 								title: MultiLevelCodeTriggerAction.ID,
-								arguments: [{ widget, range: afterRange, pick: 'openFiles' }],
+								arguments: [{ widget, range: afterRange, pick: 'currentFiles' }],
 							},
 							sortText: 'z',
 						}
