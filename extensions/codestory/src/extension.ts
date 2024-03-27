@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env } from 'vscode';
 import * as os from 'os';
+import * as http from 'http';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
@@ -28,10 +29,27 @@ import { createInlineCompletionItemProvider } from './completions/create-inline-
 import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
 import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
+import { handleRequest } from './server/requestHandler';
+
 
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
+	// start a stupid server here
+	const server = http.createServer(handleRequest);
+	const port = 42423; // Choose an available port
+	server.listen(port, () => {
+		console.log(`Server for talking to sidecar is running at http://localhost:${port}/`);
+	});
+
+	// Register a disposable to stop the server when the extension is deactivated
+	context.subscriptions.push({
+		dispose: () => {
+			if (server) {
+				server.close();
+			}
+		},
+	});
 	const uniqueUserId = getUniqueId();
 	const userId = getUserId();
 	console.log('User id:' + userId);
