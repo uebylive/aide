@@ -220,7 +220,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 16384,
 			temperature: 0.2,
 			provider: {
-				type: 'togetherai'
+				type: 'codestory'
 			}
 		},
 		'DeepSeekCoder1.3BInstruct': {
