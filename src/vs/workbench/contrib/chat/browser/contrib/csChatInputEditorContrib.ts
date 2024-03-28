@@ -85,7 +85,7 @@ class CSBuiltinDynamicCompletions extends Disposable {
 						<CompletionItem>{
 							label: `${chatVariableLeader}currentFiles`,
 							insertText: `${chatVariableLeader}currentFiles`,
-							detail: localize("pickOpenFiles", "Adds Open Files to context"),
+							detail: localize("pickOpenFiles", "Adds current open files to context"),
 							range,
 							kind: CompletionItemKind.Text,
 							command: {
@@ -244,7 +244,7 @@ Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).regi
 
 
 class OpenFileCompletions extends Disposable {
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}openFiles`, 'g'); // MUST be using `g`-flag
+	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}currentFiles`, 'g'); // MUST be using `g`-flag
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
@@ -292,7 +292,7 @@ class OpenFileCompletions extends Disposable {
 				return {
 					suggestions: [
 						<CompletionItem>{
-							label: 'openFiles ',
+							label: 'currentFiles ',
 							insertText: '',
 							detail: 'Insert open files to chat context',
 							kind: CompletionItemKind.Text,
