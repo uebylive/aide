@@ -76,10 +76,7 @@ export async function activate(context: ExtensionContext) {
 	if (!rootPath) {
 		rootPath = '';
 	}
-	if (rootPath === '') {
-		window.showErrorMessage('Please open a folder in Aide to use CodeStory');
-		return;
-	}
+
 	// Create the copy settings from vscode command for the extension
 	const registerCopySettingsCommand = commands.registerCommand(
 		'webview.copySettings',

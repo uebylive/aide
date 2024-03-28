@@ -136,7 +136,7 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 		@IThemeService themeService: IThemeService,
 		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
 		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
-		@IExtensionService private readonly extensionService: IExtensionService,
+		@IExtensionService protected readonly extensionService: IExtensionService,
 		@IMenuService protected readonly menuService: IMenuService,
 	) {
 		let location = ViewContainerLocation.Sidebar;

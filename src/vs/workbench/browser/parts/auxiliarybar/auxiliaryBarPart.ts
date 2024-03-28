@@ -15,7 +15,7 @@ import { contrastBorder } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ActiveAuxiliaryContext, AuxiliaryBarFocusContext } from 'vs/workbench/common/contextkeys';
 import { ACTIVITY_BAR_BADGE_BACKGROUND, ACTIVITY_BAR_BADGE_FOREGROUND, PANEL_ACTIVE_TITLE_BORDER, PANEL_ACTIVE_TITLE_FOREGROUND, PANEL_DRAG_AND_DROP_BORDER, PANEL_INACTIVE_TITLE_FOREGROUND, SIDE_BAR_BACKGROUND, SIDE_BAR_BORDER, SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
-import { IViewDescriptorService } from 'vs/workbench/common/views';
+import { IViewDescriptorService, ViewContainerLocation } from 'vs/workbench/common/views';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 import { IWorkbenchLayoutService, Parts, Position } from 'vs/workbench/services/layout/browser/layoutService';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
@@ -29,6 +29,7 @@ import { AbstractPaneCompositePart } from 'vs/workbench/browser/parts/paneCompos
 import { ActionsOrientation } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IPaneCompositeBarOptions } from 'vs/workbench/browser/parts/paneCompositeBar';
 import { IMenuService } from 'vs/platform/actions/common/actions';
+import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 
 export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 
@@ -78,6 +79,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
 		@ICommandService private commandService: ICommandService,
+		@IPaneCompositePartService private paneCompositeService: IPaneCompositePartService,
 		@IMenuService menuService: IMenuService,
 	) {
 		super(
@@ -104,6 +106,22 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			extensionService,
 			menuService,
 		);
+
+		this._register(this.extensionService.onDidRegisterExtensions(async () => {
+			const csExtensionID = 'codestory-ghost.codestoryai';
+			const csExtension = extensionService.extensions.find(ext => ext.identifier.value === csExtensionID);
+			if (csExtension) {
+				this.paneCompositeService.openPaneComposite('workbench.panel.csChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
+			}
+		}));
+
+		this._register(this.extensionService.onDidChangeExtensions(async (e) => {
+			const csExtensionID = 'codestory-ghost.codestoryai';
+			const csExtension = e.added.find(ext => ext.identifier.value === csExtensionID);
+			if (csExtension) {
+				this.paneCompositeService.openPaneComposite('workbench.panel.csChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
+			}
+		}));
 	}
 
 	override updateStyles(): void {
