@@ -21,7 +21,8 @@
     "defaultChatParticipant",
     "chatVariableResolver",
     "languageModels",
-    "modelSelection"
+    "modelSelection",
+    "terminalSelection"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
