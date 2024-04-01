@@ -17,6 +17,7 @@ import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../co
 import { LoggingService } from '../completions/logger';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
+import { TERMINAL_SELECTION } from '../completions/providers/terminalSelection';
 
 export enum CompletionStopReason {
 	/**
@@ -783,15 +784,23 @@ interface CodeSelectionUriRange {
 
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatResolvedVariable[],
-): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[] }> {
+): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
+	let terminalSelection: string | undefined = undefined;
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 	for (let index = 0; index < variables.length; index++) {
 		const variable = variables[index];
 		const name = variable.name;
 		const value = variable.values;
 		if (value.length === 0) {
+			continue;
+		}
+		// TODO(skcd): Is there a better way to handle this code, because we will
+		// obviously have more variables coming in the future
+		if (name === TERMINAL_SELECTION) {
+			// we are looking at the terminal selection and we have some value for it
+			terminalSelection = variable.values[0].value as string;
 			continue;
 		}
 		const variableValue = value[0];
@@ -885,6 +894,7 @@ async function convertVSCodeVariableToSidecar(
 				language: fileContent[1],
 			};
 		}),
+		terminal_selection: terminalSelection,
 	};
 }
 

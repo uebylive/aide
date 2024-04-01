@@ -3,10 +3,7 @@
 	"compilerOptions": {
 		"outDir": "./out",
 		"esModuleInterop": true,
-		"lib": [
-			"ES2022",
-			"DOM"
-		]
+		"lib": ["ES2022", "DOM"]
 	},
 	"include": [
 		"src/**/*",
@@ -19,6 +16,7 @@
 		"../../src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.interactive.d.ts",
 		"../../src/vscode-dts/vscode.proposed.languageModels.d.ts",
-		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts"
+		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts",
+		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts"
 	]
 }

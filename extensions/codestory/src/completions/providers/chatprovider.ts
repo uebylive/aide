@@ -15,6 +15,7 @@ import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
+import { registerTerminalSelection } from './terminalSelection';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -124,6 +125,9 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				];
 			}
 		};
+
+		// register the extra variables here
+		registerTerminalSelection();
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
