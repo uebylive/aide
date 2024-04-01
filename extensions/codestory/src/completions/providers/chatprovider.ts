@@ -15,6 +15,7 @@ import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
+import { registerTerminalSelection } from './terminalSelection';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -124,26 +125,9 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				];
 			}
 		};
-		// TODO(skcd): This isnot working, we are parsing the value as a JSON which makes sense maybe?
-		vscode.chat.registerChatVariableResolver('terminalSelection', 'Selection in the terminal', {
-			resolve: (name: string, context: vscode.ChatVariableContext, token: vscode.CancellationToken) => {
-				const mood = Math.random() > 0.5 ? 'happy' : 'grumpy';
-				return [
-					{
-						level: vscode.ChatVariableLevel.Short,
-						value: 'version 1.3 ' + mood
-					},
-					{
-						level: vscode.ChatVariableLevel.Medium,
-						value: 'I am a playful cat, version 1.3, and I am ' + mood
-					},
-					{
-						level: vscode.ChatVariableLevel.Full,
-						value: 'I am a playful cat, version 1.3, this version prefer to explain everything using mouse and tail metaphores. I am ' + mood
-					}
-				];
-			}
-		});
+
+		// register the extra variables here
+		registerTerminalSelection();
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
