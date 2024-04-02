@@ -30,6 +30,7 @@ import { parseAllVisibleDocuments } from './completions/text-processing/treeSitt
 import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { handleRequest } from './server/requestHandler';
+import { AddressInfo } from 'net';
 
 
 
@@ -37,10 +38,26 @@ export async function activate(context: ExtensionContext) {
 	// Project root here
 	// start a stupid server here
 	const server = http.createServer(handleRequest);
-	const port = 42423; // Choose an available port
+	let port = 42423; // Default chooses 42423, but if its not available then we
+	// can still grab it by listenting to port 0
 	server.listen(port, () => {
 		console.log(`Server for talking to sidecar is running at http://localhost:${port}/`);
-	});
+	})
+		.on('error', (err: NodeJS.ErrnoException) => {
+			if (err.code === 'EADDRINUSE') {
+				console.error(`Port ${port} is already in use, trying another port...`);
+				server.listen(0, () => {
+					const serverAddress = server.address();
+					if (serverAddress) {
+						const newAddress: AddressInfo = serverAddress as AddressInfo;
+						port = newAddress.port;
+					}
+					console.log(`Server for talking to sidecar is running at http://localhost:${server.address()}/`);
+				}); // Use 0 to let the OS pick an available port
+			} else {
+				console.error(`Failed to start server: ${err.message}`);
+			}
+		});
 
 	// Register a disposable to stop the server when the extension is deactivated
 	context.subscriptions.push({
