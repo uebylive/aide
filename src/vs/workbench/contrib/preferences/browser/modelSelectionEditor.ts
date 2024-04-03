@@ -126,8 +126,8 @@ export class ModelSelectionEditor extends EditorPane {
 		}));
 
 		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(slowModelContainer, $('span', undefined, 'Interactive Model'));
-		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Interactive model'), useCustomDrawn: true });
+		DOM.append(slowModelContainer, $('span', undefined, 'Chat Model'));
+		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Chat Model'), useCustomDrawn: true });
 		this.slowModelSelect.render(slowModelContainer);
 		this._register(this.slowModelSelect.onDidSelect((e) => {
 			this.setSlowModel(e.selected);

@@ -111,9 +111,9 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			{
 				type: 'item',
 				id: 'slowModel',
-				label: 'Interactive model',
-				ariaLabel: 'Interactive model',
-				tooltip: 'Interactive model'
+				label: 'Chat Model',
+				ariaLabel: 'Chat Model',
+				tooltip: 'Chat Model'
 			}
 		];
 		quickPick.step = 1;
