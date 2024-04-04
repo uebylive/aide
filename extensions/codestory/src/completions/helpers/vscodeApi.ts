@@ -186,6 +186,8 @@ export async function typeDefinitionProvider(
 
 			// No need to await on this
 			if (shouldTrackFile(uri)) {
+				console.log('we are tracking this uri');
+				console.log(uri);
 				sidecarClient.documentOpen(textDocument.uri.fsPath, textDocument.getText(), textDocument.languageId);
 			}
 
