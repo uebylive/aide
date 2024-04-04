@@ -16,6 +16,7 @@ declare module 'vscode' {
 	export interface SymbolNavigationEvent {
 		position: Position;
 		action: SymbolNavigationActionType;
+		uri: Uri;
 	}
 
 	export interface CSEventHandler {

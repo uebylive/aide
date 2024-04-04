@@ -4,8 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Position } from 'vs/editor/common/core/position';
+import { URI } from 'vs/base/common/uri';
 
 export type SymbolNavigationEvent = {
 	position: Position;
 	action: string;
+	uri: URI;
 };
