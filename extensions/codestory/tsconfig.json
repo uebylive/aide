@@ -12,11 +12,12 @@
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatVariableResolver.d.ts",
+		"../../src/vscode-dts/vscode.proposed.csevents.d.ts",
 		"../../src/vscode-dts/vscode.proposed.defaultChatParticipant.d.ts",
 		"../../src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.interactive.d.ts",
 		"../../src/vscode-dts/vscode.proposed.languageModels.d.ts",
 		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts",
-		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts"
+		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts",
 	]
 }
