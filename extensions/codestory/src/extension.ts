@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, interactive, window, workspace, languages, modelSelection, env } from 'vscode';
+import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env, csevents } from 'vscode';
 import * as os from 'os';
 import * as http from 'http';
 
@@ -134,6 +134,13 @@ export async function activate(context: ExtensionContext) {
 			repoName,
 			repoHash,
 		}
+	});
+
+	csevents.registerCSEventHandler({
+		reportSymbolNavigation(event) {
+			console.log('Received symbol navigation event!');
+			console.log(event);
+		},
 	});
 
 	// Get model selection configuration

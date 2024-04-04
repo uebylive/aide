@@ -89,6 +89,7 @@ import './mainThreadProfilContentHandlers';
 import './mainThreadAiRelatedInformation';
 import './mainThreadAiEmbeddingVector';
 import './mainThreadIssueReporter';
+import './mainThreadCSEvents';
 
 export class ExtensionPoints implements IWorkbenchContribution {
 

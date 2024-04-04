@@ -25,6 +25,7 @@ import { StandardTokenType } from 'vs/editor/common/encodedTokenAttributes';
 import * as languages from 'vs/editor/common/languages';
 import { CharacterPair, CommentRule, EnterAction } from 'vs/editor/common/languages/languageConfiguration';
 import { EndOfLineSequence } from 'vs/editor/common/model';
+import { SymbolNavigationEvent } from 'vs/editor/common/model/csEvents';
 import { IModelChangedEvent } from 'vs/editor/common/model/mirrorTextModel';
 import { IAccessibilityInformation } from 'vs/platform/accessibility/common/accessibility';
 import { ILocalizedString } from 'vs/platform/action/common/action';
@@ -2774,6 +2775,15 @@ export interface MainThreadTestingShape {
 	$markTestRetired(testIds: string[] | undefined): void;
 }
 
+export interface ExtHostCSEventsShape {
+	$reportSymbolNavigation(extensionId: string, event: SymbolNavigationEvent): void;
+}
+
+export interface MainThreadCSEventsShape extends IDisposable {
+	$registerCSEventHandler(extensionId: string): void;
+	$unregisterCSEventHandler(extensionId: string): void;
+}
+
 // --- proxy identifiers
 
 export const MainContext = {
@@ -2848,6 +2858,7 @@ export const MainContext = {
 	MainThreadAiEmbeddingVector: createProxyIdentifier<MainThreadAiEmbeddingVectorShape>('MainThreadAiEmbeddingVector'),
 	MainThreadIssueReporter: createProxyIdentifier<MainThreadIssueReporterShape>('MainThreadIssueReporter'),
 	MainThreadModelSelection: createProxyIdentifier<MainThreadModelSelectionShape>('MainThreadModelSelection'),
+	MainThreadCSEvents: createProxyIdentifier<MainThreadCSEventsShape>('MainThreadCSEvents'),
 };
 
 export const ExtHostContext = {
@@ -2919,4 +2930,5 @@ export const ExtHostContext = {
 	ExtHostLocalization: createProxyIdentifier<ExtHostLocalizationShape>('ExtHostLocalization'),
 	ExtHostIssueReporter: createProxyIdentifier<ExtHostIssueReporterShape>('ExtHostIssueReporter'),
 	ExtHostModelSelection: createProxyIdentifier<ExtHostModelSelectionShape>('ExtHostModelSelection'),
+	ExtHostCSEvents: createProxyIdentifier<ExtHostCSEventsShape>('ExtHostCSEvents'),
 };
