@@ -12,7 +12,6 @@ import postHogClient from './posthog/client';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { copySettings } from './utilities/copySettings';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
-import { ActiveFilesTracker } from './activeChanges/activeFilesTracker';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
@@ -26,8 +25,7 @@ import { AideQuickFix } from './quickActions/fix';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
-import { parseAllVisibleDocuments } from './completions/text-processing/treeSitter/parseTree';
-import { changedActiveDocument, getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
+import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { handleRequest } from './server/requestHandler';
 import { AddressInfo } from 'net';
@@ -197,8 +195,6 @@ export async function activate(context: ExtensionContext) {
 	const codeStoryStorage = await loadOrSaveToStorage(context.globalStorageUri.fsPath, rootPath);
 	logger.info(codeStoryStorage);
 	logger.info(rootPath);
-	// Active files tracker
-	const activeFilesTracker = new ActiveFilesTracker();
 
 
 	// Register the semantic search command here
@@ -253,31 +249,23 @@ export async function activate(context: ExtensionContext) {
 
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
-	workspace.onDidOpenTextDocument(async (doc) => {
-		const uri = doc.uri;
-		// TODO(skcd): we want to send the file open event to the sidecar client
-		if (shouldTrackFile(uri)) {
-			await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
-		}
-	});
+	// workspace.onDidOpenTextDocument(async (doc) => {
+	// 	const uri = doc.uri;
+	// 	console.log('document open');
+	// 	// TODO(skcd): we want to send the file open event to the sidecar client
+	// 	if (shouldTrackFile(uri)) {
+	// 		console.log('we are tracking uri', uri.scheme);
+	// 		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
+	// 	}
+	// });
 
-	// Listen for document opened events
-	workspace.onDidOpenTextDocument((document: TextDocument) => {
-		activeFilesTracker.openTextDocument(document);
-	});
-
-	// Listen for document closed events
-	workspace.onDidCloseTextDocument((document: TextDocument) => {
-		activeFilesTracker.onCloseTextDocument(document);
-	});
-
-	// Listen for active editor change events (user navigating between files)
-	window.onDidChangeActiveTextEditor(async (editor) => {
-		activeFilesTracker.onDidChangeActiveTextEditor(editor);
-		// if we are going to change the active text editor, then we should tell
-		// the sidecar about it
-		await changedActiveDocument(editor, sidecarClient);
-	});
+	// // Listen for active editor change events (user navigating between files)
+	// window.onDidChangeActiveTextEditor(async (editor) => {
+	// 	activeFilesTracker.onDidChangeActiveTextEditor(editor);
+	// 	// if we are going to change the active text editor, then we should tell
+	// 	// the sidecar about it
+	// 	await changedActiveDocument(editor, sidecarClient);
+	// });
 
 	// Register feedback commands
 	context.subscriptions.push(
@@ -287,8 +275,22 @@ export async function activate(context: ExtensionContext) {
 		})
 	);
 
-	// Now we are going to also parse all the open editors
-	window.onDidChangeVisibleTextEditors(parseAllVisibleDocuments);
+	window.onDidChangeActiveTextEditor(async (editor) => {
+		if (editor) {
+			const activeDocument = editor.document;
+			if (activeDocument) {
+				const activeDocumentUri = activeDocument.uri;
+				if (shouldTrackFile(activeDocumentUri)) {
+					console.log('editor.onDidChangeActiveTextEditor', activeDocumentUri.fsPath);
+					await sidecarClient.documentOpen(
+						activeDocumentUri.fsPath,
+						activeDocument.getText(),
+						activeDocument.languageId
+					);
+				}
+			}
+		}
+	});
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
 	workspace.onDidChangeTextDocument(async (event) => {
@@ -298,11 +300,13 @@ export async function activate(context: ExtensionContext) {
 			return;
 		}
 		// TODO(skcd): we want to send the file change event to the sidecar over here
-		await sidecarClient.documentContentChange(
-			event.document.uri.fsPath,
-			event.contentChanges,
-			event.document.getText(),
-			event.document.languageId,
-		);
+		if (shouldTrackFile(documentUri)) {
+			await sidecarClient.documentContentChange(
+				documentUri.fsPath,
+				event.contentChanges,
+				event.document.getText(),
+				event.document.languageId,
+			);
+		}
 	});
 }

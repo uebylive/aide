@@ -28,6 +28,9 @@ export function shouldTrackFile(uri: vscode.Uri): boolean {
 	if (!['file'].includes(uri.scheme)) {
 		return false;
 	}
+	if (uri.scheme === 'untitled') {
+		return false;
+	}
 	// If we have rustup in the file name then we should not be tracking it
 	if (uri.fsPath.indexOf('.rustup') !== -1) {
 		return false;

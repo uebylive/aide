@@ -602,6 +602,7 @@ export class SideCarClient {
 		fileContent: string,
 		language: string,
 	): Promise<void> {
+		console.log('sidecar.documentOpen.file_path', filePath);
 		// There might be files which have a .git extension we should not be sending
 		// those to the sidecar
 		if (filePath.endsWith('.git')) {
