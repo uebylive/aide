@@ -153,7 +153,6 @@ export async function activate(context: ExtensionContext) {
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
-
 	// we want to send the open tabs here to the sidecar
 	const openTextDocuments = await getRelevantFiles();
 	openTextDocuments.forEach((openTextDocument) => {

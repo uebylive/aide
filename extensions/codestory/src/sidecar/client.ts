@@ -568,6 +568,10 @@ export class SideCarClient {
 		fileContent: string,
 		language: string,
 	): Promise<void> {
+		console.log('sidecar.documentContentChange', {
+			filePath,
+			language,
+		});
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/inline_completion/document_content_changed';
 		const mappedEvents = events.map((event) => {
