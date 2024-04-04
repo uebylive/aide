@@ -7,4 +7,5 @@ import { Position } from 'vs/editor/common/core/position';
 
 export type SymbolNavigationEvent = {
 	position: Position;
+	action: string;
 };

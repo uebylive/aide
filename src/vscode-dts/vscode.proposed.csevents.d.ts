@@ -4,12 +4,22 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export enum SymbolNavigationActionType {
+		GoToDefinition = 0,
+		GoToDeclaration = 1,
+		GoToTypeDefinition = 2,
+		GoToImplementation = 3,
+		GoToReferences = 4,
+		GenericGoToLocation = 5
+	}
+
 	export interface SymbolNavigationEvent {
 		position: Position;
+		action: SymbolNavigationActionType;
 	}
 
 	export interface CSEventHandler {
-		reportSymbolNavigation(event: SymbolNavigationEvent): void;
+		handleSymbolNavigation(event: SymbolNavigationEvent): void;
 	}
 
 	export namespace csevents {

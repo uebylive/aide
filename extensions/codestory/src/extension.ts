@@ -137,7 +137,7 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	csevents.registerCSEventHandler({
-		reportSymbolNavigation(event) {
+		handleSymbolNavigation(event) {
 			console.log('Received symbol navigation event!');
 			console.log(event);
 		},
