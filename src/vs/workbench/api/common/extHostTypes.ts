@@ -4372,3 +4372,16 @@ export enum InlineEditTriggerKind {
 }
 
 //#endregion
+
+//#region csEvents
+
+export enum SymbolNavigationActionType {
+	GoToDefinition = 0,
+	GoToDeclaration = 1,
+	GoToTypeDefinition = 2,
+	GoToImplementation = 3,
+	GoToReferences = 4,
+	GenericGoToLocation = 5
+}
+
+//#endregion

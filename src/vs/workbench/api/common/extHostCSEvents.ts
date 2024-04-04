@@ -30,11 +30,11 @@ export class ExtHostCSEvents implements ExtHostCSEventsShape {
 			throw new Error('CS event handler not found');
 		}
 
-		const extEvent: ExtSymbolNavigationEvent = {
-			position: TypeConverters.Position.to(event.position)
-		};
+		const position = TypeConverters.Position.to(event.position);
+		const action = TypeConverters.SymbolNavigationActionType.to(event.action);
+		const extEvent: ExtSymbolNavigationEvent = { position, action };
 
-		provider.reportSymbolNavigation(extEvent);
+		provider.handleSymbolNavigation(extEvent);
 	}
 
 	registerCSEventsHandler(extension: IExtensionDescription, handler: CSEventHandler): Disposable {

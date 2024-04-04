@@ -2708,3 +2708,30 @@ export namespace DebugTreeItem {
 		};
 	}
 }
+
+export namespace SymbolNavigationActionType {
+	export function to(action: string): vscode.SymbolNavigationActionType {
+		switch (action) {
+			case 'editor.action.revealDefinition':
+			case 'editor.action.revealDefinitionAside':
+			case 'editor.action.peekDefinition':
+				return types.SymbolNavigationActionType.GoToDefinition;
+			case 'editor.action.revealDeclaration':
+			case 'editor.action.peekDeclaration':
+				return types.SymbolNavigationActionType.GoToDeclaration;
+			case 'editor.action.goToTypeDefinition':
+			case 'editor.action.peekTypeDefinition':
+				return types.SymbolNavigationActionType.GoToTypeDefinition;
+			case 'editor.action.goToImplementation':
+			case 'editor.action.peekImplementation':
+				return types.SymbolNavigationActionType.GoToImplementation;
+			case 'editor.action.goToReferences':
+			case 'editor.action.referenceSearch.trigger':
+				return types.SymbolNavigationActionType.GoToReferences;
+			case 'editor.action.goToLocation':
+				return types.SymbolNavigationActionType.GenericGoToLocation;
+			default:
+				return types.SymbolNavigationActionType.GoToDefinition;
+		}
+	}
+}

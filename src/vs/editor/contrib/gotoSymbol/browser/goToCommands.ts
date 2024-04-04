@@ -128,7 +128,7 @@ export abstract class SymbolNavigationAction extends EditorAction2 {
 			}
 
 			alert(references.ariaMessage);
-			csEventsService.reportSymbolNavigation({ position: anchor.position });
+			csEventsService.reportSymbolNavigation({ position: anchor.position, action: this.desc.id });
 
 			let altAction: SymbolNavigationAction | null | undefined;
 			if (references.referenceAt(model.uri, position)) {
