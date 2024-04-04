@@ -139,12 +139,14 @@ export async function activate(context: ExtensionContext) {
 
 	csevents.registerCSEventHandler({
 		handleSymbolNavigation(event) {
+			const currentWindow = window.activeTextEditor?.document.uri.fsPath;
 			postHogClient?.capture({
 				distinctId: getUniqueId(),
 				event: 'symbol_navigation',
 				properties: {
 					action: getSymbolNavigationActionTypeLabel(event.action),
 					file_path: event.uri.fsPath,
+					current_window: currentWindow,
 				},
 			});
 			console.log('Received symbol navigation event!');
