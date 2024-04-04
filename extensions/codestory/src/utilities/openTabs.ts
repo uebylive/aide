@@ -142,9 +142,11 @@ export async function changedActiveDocument(document: vscode.TextEditor | undefi
 	if (document.document.uri.scheme === 'codegen') {
 		return;
 	}
-	await sidecarClient.documentOpen(
-		document.document.uri.fsPath,
-		document.document.getText(),
-		document.document.languageId,
-	);
+	if (shouldTrackFile(document.document.uri)) {
+		await sidecarClient.documentOpen(
+			document.document.uri.fsPath,
+			document.document.getText(),
+			document.document.languageId,
+		);
+	}
 }
