@@ -244,7 +244,6 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-
 	// Also track the documents when they were last opened
 	// context.subscriptions.push(
 	workspace.onDidOpenTextDocument(async (doc) => {

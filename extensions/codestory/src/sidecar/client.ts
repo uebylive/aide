@@ -367,6 +367,7 @@ export class SideCarClient {
 			id: completionRequest.id,
 			clipboard_content: completionRequest.clipboard,
 			type_identifiers: sidecarTypeDefinitionsWithNode(completionRequest.identifierNodes),
+			user_id: this._userId,
 		};
 		const url = baseUrl.toString();
 		let finalAnswer = '';
