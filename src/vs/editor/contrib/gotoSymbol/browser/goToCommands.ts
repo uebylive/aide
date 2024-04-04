@@ -21,6 +21,7 @@ import { ScrollType } from 'vs/editor/common/editorCommon';
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import { ITextModel } from 'vs/editor/common/model';
 import { isLocationLink, Location, LocationLink } from 'vs/editor/common/languages';
+import { ICSEventsService } from 'vs/editor/common/services/csEvents';
 import { ReferencesController } from 'vs/editor/contrib/gotoSymbol/browser/peek/referencesController';
 import { ReferencesModel } from 'vs/editor/contrib/gotoSymbol/browser/referencesModel';
 import { ISymbolNavigationService } from 'vs/editor/contrib/gotoSymbol/browser/symbolNavigation';
@@ -112,6 +113,7 @@ export abstract class SymbolNavigationAction extends EditorAction2 {
 		const symbolNavService = accessor.get(ISymbolNavigationService);
 		const languageFeaturesService = accessor.get(ILanguageFeaturesService);
 		const instaService = accessor.get(IInstantiationService);
+		const csEventsService = accessor.get(ICSEventsService);
 
 		const model = editor.getModel();
 		const position = editor.getPosition();
@@ -126,6 +128,7 @@ export abstract class SymbolNavigationAction extends EditorAction2 {
 			}
 
 			alert(references.ariaMessage);
+			csEventsService.reportSymbolNavigation({ position: anchor.position });
 
 			let altAction: SymbolNavigationAction | null | undefined;
 			if (references.referenceAt(model.uri, position)) {

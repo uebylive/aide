@@ -27,9 +27,9 @@ import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
 import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
 import { IExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
 import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
+import { ExtHostCSEvents } from 'vs/workbench/api/common/extHostCSEvents';
 import { ExtHostChat } from 'vs/workbench/api/common/extHostChat';
 import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
-import { IExtHostLanguageModels } from 'vs/workbench/api/common/extHostLanguageModels';
 import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariables';
 import { ExtHostClipboard } from 'vs/workbench/api/common/extHostClipboard';
 import { ExtHostEditorInsets } from 'vs/workbench/api/common/extHostCodeInsets';
@@ -58,6 +58,7 @@ import { ExtHostInteractive } from 'vs/workbench/api/common/extHostInteractive';
 import { ExtHostIssueReporter } from 'vs/workbench/api/common/extHostIssueReporter';
 import { ExtHostLabelService } from 'vs/workbench/api/common/extHostLabelService';
 import { ExtHostLanguageFeatures } from 'vs/workbench/api/common/extHostLanguageFeatures';
+import { IExtHostLanguageModels } from 'vs/workbench/api/common/extHostLanguageModels';
 import { ExtHostLanguages } from 'vs/workbench/api/common/extHostLanguages';
 import { IExtHostLocalizationService } from 'vs/workbench/api/common/extHostLocalizationService';
 import { IExtHostManagedSockets } from 'vs/workbench/api/common/extHostManagedSockets';
@@ -220,6 +221,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
 	const extHostSpeech = rpcProtocol.set(ExtHostContext.ExtHostSpeech, new ExtHostSpeech(rpcProtocol));
 	const extHostModelSelection = rpcProtocol.set(ExtHostContext.ExtHostModelSelection, new ExtHostModelSelection(rpcProtocol));
+	const extHostCSEvents = rpcProtocol.set(ExtHostContext.ExtHostCSEvents, new ExtHostCSEvents(rpcProtocol));
 
 	// Check that no named customers are missing
 	const expected = Object.values<ProxyIdentifier<any>>(ExtHostContext);
@@ -1477,6 +1479,14 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
+		// namespace: csevents
+		const csevents: typeof vscode.csevents = {
+			registerCSEventHandler(handler: vscode.CSEventHandler) {
+				checkProposedApiEnabled(extension, 'csevents');
+				return extHostCSEvents.registerCSEventsHandler(extension, handler);
+			},
+		};
+
 		return <typeof vscode>{
 			version: initData.version,
 			// namespaces
@@ -1484,6 +1494,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			authentication,
 			commands,
 			comments,
+			csevents,
 			chat,
 			debug,
 			env,
