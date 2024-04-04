@@ -32,7 +32,8 @@ export class ExtHostCSEvents implements ExtHostCSEventsShape {
 
 		const position = TypeConverters.Position.to(event.position);
 		const action = TypeConverters.SymbolNavigationActionType.to(event.action);
-		const extEvent: ExtSymbolNavigationEvent = { position, action };
+		const uri = event.uri;
+		const extEvent: ExtSymbolNavigationEvent = { position, action, uri };
 
 		provider.handleSymbolNavigation(extEvent);
 	}

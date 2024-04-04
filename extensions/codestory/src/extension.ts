@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, interactive, TextDocument, window, workspace, languages, modelSelection, env, csevents } from 'vscode';
+import { commands, ExtensionContext, interactive, window, workspace, languages, modelSelection, env, csevents } from 'vscode';
 import * as os from 'os';
 import * as http from 'http';
 
@@ -29,6 +29,7 @@ import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { handleRequest } from './server/requestHandler';
 import { AddressInfo } from 'net';
+import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 
 
 
@@ -138,6 +139,14 @@ export async function activate(context: ExtensionContext) {
 
 	csevents.registerCSEventHandler({
 		handleSymbolNavigation(event) {
+			postHogClient?.capture({
+				distinctId: getUniqueId(),
+				event: 'symbol_navigation',
+				properties: {
+					action: getSymbolNavigationActionTypeLabel(event.action),
+					file_path: event.uri.fsPath,
+				},
+			});
 			console.log('Received symbol navigation event!');
 			console.log(event);
 		},
