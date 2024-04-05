@@ -234,6 +234,7 @@ export interface InEditorRequest {
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
 	diagnosticsInformation: DiagnosticInformationFromEditor | null;
+	userContext: { variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined };
 }
 
 export interface DiagnosticInformationFromEditor {
