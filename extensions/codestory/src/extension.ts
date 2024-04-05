@@ -137,6 +137,7 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
+
 	csevents.registerCSEventHandler({
 		handleSymbolNavigation(event) {
 			const currentWindow = window.activeTextEditor?.document.uri.fsPath;

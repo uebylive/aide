@@ -364,6 +364,11 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 					textDocument,
 					session.range,
 				),
+				userContext: {
+					variables: [],
+					file_content_map: [],
+					terminal_selection: undefined,
+				}
 			};
 			const messages = await this.sidecarClient.getInLineEditorResponse(context);
 			const messageReply = await reportFromStreamToEditorSessionProgress(
