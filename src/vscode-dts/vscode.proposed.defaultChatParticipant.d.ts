@@ -59,7 +59,7 @@ declare module 'vscode' {
 
 	export interface CSChatCodeblockContext {
 		code: string;
-		languageId: string;
+		languageId?: string;
 		codeBlockIndex: number;
 	}
 

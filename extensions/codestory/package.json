@@ -76,7 +76,9 @@
     ],
     "chatParticipants": [
       {
-        "name": "aide",
+        "id": "aide",
+        "name": "Aide",
+        "description": "What can I help you with today?",
         "isDefault": true
       }
     ],

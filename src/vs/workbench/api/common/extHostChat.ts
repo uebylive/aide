@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Iterable } from 'vs/base/common/iterator';
 import { toDisposable } from 'vs/base/common/lifecycle';
 import { IRelaxedExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ExtHostChatShape, IChatDto, IMainContext, MainContext, MainThreadChatShape } from 'vs/workbench/api/common/extHost.protocol';
@@ -42,20 +41,15 @@ export class ExtHostChat implements ExtHostChatShape {
 	registerChatProvider(extension: Readonly<IRelaxedExtensionDescription>, id: string, provider: vscode.InteractiveSessionProvider): vscode.Disposable {
 		const wrapper = new ChatProviderWrapper(extension, provider);
 		this._chatProvider.set(wrapper.handle, wrapper);
-		this._proxy.$registerChatProvider(wrapper.handle, extension.identifier, id);
+		this._proxy.$registerChatProvider(wrapper.handle, id);
 		return toDisposable(() => {
 			this._proxy.$unregisterChatProvider(wrapper.handle);
 			this._chatProvider.delete(wrapper.handle);
 		});
 	}
 
-	transferChatSession(session: vscode.InteractiveSession, newWorkspace: vscode.Uri): void {
-		const sessionId = Iterable.find(this._chatSessions.keys(), key => this._chatSessions.get(key) === session) ?? 0;
-		if (typeof sessionId !== 'number') {
-			return;
-		}
-
-		this._proxy.$transferChatSession(sessionId, newWorkspace);
+	transferActiveChat(newWorkspace: vscode.Uri): void {
+		this._proxy.$transferActiveChatSession(newWorkspace);
 	}
 
 	async $prepareChat(handle: number, token: CancellationToken): Promise<IChatDto | undefined> {

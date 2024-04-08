@@ -9,8 +9,7 @@ import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { localize } from 'vs/nls';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
-import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
 import { IInlineChatFollowup } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
@@ -21,11 +20,11 @@ export class ChatFollowups<T extends IChatFollowup | IInlineChatFollowup> extend
 	constructor(
 		container: HTMLElement,
 		followups: T[],
+		private readonly location: ChatAgentLocation,
 		private readonly options: IButtonStyles | undefined,
 		private readonly clickHandler: (followup: T) => void,
 		@IContextKeyService private readonly contextService: IContextKeyService,
 		@IChatAgentService private readonly chatAgentService: IChatAgentService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService
 	) {
 		super();
 
@@ -39,20 +38,20 @@ export class ChatFollowups<T extends IChatFollowup | IInlineChatFollowup> extend
 			return;
 		}
 
-		const lastFocusedWidget = this.chatWidgetService.lastFocusedWidget;
-		const providerId = lastFocusedWidget?.providerId;
-		if (!providerId) {
-			return;
-		}
-
-		if (!this.chatAgentService.getDefaultAgent(providerId)) {
+		if (!this.chatAgentService.getDefaultAgent(this.location)) {
 			// No default agent yet, which affects how followups are rendered, so can't render this yet
 			return;
 		}
 
 		let tooltipPrefix = '';
-		if ('agentId' in followup && followup.agentId && followup.agentId !== this.chatAgentService.getDefaultAgent(providerId)?.id) {
-			tooltipPrefix += `${chatAgentLeader}${followup.agentId} `;
+		if ('agentId' in followup && followup.agentId && followup.agentId !== this.chatAgentService.getDefaultAgent(this.location)?.id) {
+			const agent = this.chatAgentService.getAgent(followup.agentId);
+			if (!agent) {
+				// Refers to agent that doesn't exist
+				return;
+			}
+
+			tooltipPrefix += `${chatAgentLeader}${agent.name} `;
 			if ('subCommand' in followup && followup.subCommand) {
 				tooltipPrefix += `${chatSubcommandLeader}${followup.subCommand} `;
 			}
