@@ -14,7 +14,7 @@
 }
 
 .cschat-item-container {
-	padding: 16px;
+	padding: 16px 20px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -31,7 +31,6 @@
 	align-items: center;
 	justify-content: space-between;
 	position: relative;
-	margin-bottom: 3px;
 }
 
 .cschat-input-part .header.hidden,
@@ -48,8 +47,8 @@
 
 .cschat-input-part .header .username,
 .cschat-item-container .header .username {
-	margin: 0 2px;
-	font-size: 13px;
+	margin: 0;
+	font-size: 12px;
 	font-weight: 600;
 }
 
@@ -181,6 +180,11 @@
 	background-color: var(--vscode-chat-list-background);
 }
 
+.cschat-item-container.interactive-request .header .monaco-toolbar {
+	/* Take the partially-transparent background color override for request rows */
+	background-color: inherit;
+}
+
 .cschat-item-container .header .monaco-toolbar .checked.action-label,
 .cschat-item-container .header .monaco-toolbar .checked.action-label:hover {
 	color: var(--vscode-inputOption-activeForeground) !important;
@@ -294,7 +298,7 @@
 }
 
 .cschat-item-container.interactive-item-compact {
-	padding: 8px;
+	padding: 8px 20px;
 }
 
 .cschat-item-container.interactive-item-compact.no-padding {
@@ -303,17 +307,17 @@
 }
 
 .cschat-item-container.interactive-item-compact .header {
-	height: 24px;
+	height: 16px;
 }
 
 .cschat-item-container.interactive-item-compact .header .avatar {
-	width: 24px;
-	height: 24px;
+	width: 18px;
+	height: 18px;
 }
 
 .cschat-item-container.interactive-item-compact .header .avatar .icon {
-	width: 24px;
-	height: 24px;
+	width: 16px;
+	height: 16px;
 }
 
 .cschat-item-container.interactive-item-compact .header .codicon-avatar .codicon {
@@ -351,12 +355,24 @@
 
 .cschat-session .interactive-input-and-execute-toolbar {
 	display: flex;
-	flex-direction: column;
 	box-sizing: border-box;
 	cursor: text;
+	/*
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 4px;
+	*/
 	position: relative;
-	align-items: center;
+	/*
+	padding: 0 6px;
+	margin-bottom: 4px;
+	*/
+	align-items: flex-end;
 	justify-content: space-between;
+}
+
+.cschat-session .interactive-input-part.compact .interactive-input-and-execute-toolbar {
+	margin-bottom: 0;
 }
 
 .cschat-session .interactive-input-and-side-toolbar {
@@ -369,10 +385,16 @@
 	border-color: var(--vscode-focusBorder);
 }
 
-/* .cschat-session .interactive-input-and-execute-toolbar .monaco-editor,
+.cschat-session .interactive-input-and-execute-toolbar .monaco-editor .mtk1 {
+	color: var(--vscode-input-foreground);
+}
+
+/*
+.cschat-session .interactive-input-and-execute-toolbar .monaco-editor,
 .cschat-session .interactive-input-and-execute-toolbar .monaco-editor .monaco-editor-background {
-	background-color: var(--vscode-sideBar-background) !important;
-} */
+	background-color: var(--vscode-input-background) !important;
+}
+*/
 
 .cschat-session .interactive-input-and-execute-toolbar .monaco-editor .cursors-layer {
 	padding-left: 4px;
@@ -380,9 +402,14 @@
 
 .cschat-session .cschat-input-part .interactive-execute-toolbar {
 	height: 22px;
-	width: 100%;
+
+	/* It's bottom-aligned, make it appear centered within the container */
+	margin-bottom: 7px;
+}
+
+.cschat-session .cschat-input-part .interactive-execute-toolbar .monaco-action-bar .actions-container {
 	display: flex;
-	justify-content: end;
+	gap: 4px;
 }
 
 .cschat-session .cschat-input-part .interactive-execute-toolbar .codicon-debug-stop {
@@ -393,66 +420,6 @@
 .interactive-response .interactive-result-code-block .interactive-result-editor .monaco-editor .margin,
 .interactive-response .interactive-result-code-block .interactive-result-editor .monaco-editor .monaco-editor-background {
 	background-color: var(--vscode-interactive-result-editor-background-color) !important;
-}
-
-.interactive-response .interactive-result-code-block .interactive-result-editor {
-	border-radius: 4px 4px 0px 0px;
-}
-
-.interactive-response .interactive-result-code-block {
-	position: relative;
-	padding: 2px;
-	overflow: hidden;
-	border-radius: 5px;
-	border: 2px solid var(--vscode-input-border, transparent);
-}
-
-.interactive-response .interactive-result-code-block::after {
-	content: '';
-	display: block;
-	position: absolute;
-}
-
-.interactive-response .applying-edits.interactive-result-code-block {
-	border: unset;
-	padding: 4px;
-}
-
-.interactive-response .interactive-result-code-block.approved-edits {
-	border: 2px solid rgba(156,204,44, 0.8);
-}
-
-.interactive-response .applying-edits.interactive-result-code-block::after {
-	height: 800%;
-	width: 800%;
-	top: -350%;
-	left: -350%;
-	background-size: 100% 100%;
-	background-position: 0px 0px;
-	background-image: linear-gradient(0deg, var(--vscode-foreground, transparent) 0%, #00000000 50%, #00000000 100%);
-	animation: rotateBorder 2s linear infinite;
-}
-
-@keyframes rotateBorder {
-	0% {
-		transform: rotate(0deg);
-	}
-	100% {
-		transform: rotate(360deg);
-	}
-}
-
-.interactive-result-editor-location-ribbon {
-	cursor: pointer;
-	color: var(--vscode-statusBar-foreground);
-	background-color: var(--vscode-statusBar-background);
-	border-radius: 0 0 4px 4px;
-	white-space: pre;
-	font-size: 12;
-}
-
-.interactive-result-editor-location-ribbon .editor-location-uri {
-	padding: 2px 8px;
 }
 
 .interactive-item-compact .interactive-result-code-block {
@@ -486,11 +453,22 @@
 }
 
 .cschat-session .cschat-input-part {
-	padding: 12px 0px;
+	padding: 12px 20px 0px 20px;
 	display: flex;
 	flex-direction: column;
-	padding: 15px 16px 12px 16px;
 	border-top: 1px solid var(--vscode-chat-requestBorder, transparent);
+}
+
+.cschat-session .interactive-input-part.compact {
+	margin: 0;
+	padding: 6px 0px;
+}
+
+.cschat-session .chat-implicit-context {
+	padding: 8px 8px 13px;
+	margin-bottom: -5px;
+	border: 1px solid var(--vscode-input-border, var(--vscode-input-background, transparent));
+	border-radius: 6px 6px 0px 0px;
 }
 
 .interactive-session-followups {
@@ -512,10 +490,6 @@
 
 .cschat-item-container .interactive-response-followups .monaco-button {
 	padding: 4px 8px;
-}
-
-.cschat-session .cschat-input-part .interactive-input-followups {
-	margin: 0px 20px;
 }
 
 .cschat-session .cschat-input-part .interactive-input-followups .interactive-session-followups {
@@ -559,23 +533,19 @@
 
 /* #region Quick Chat */
 
-.quick-input-widget .cschat-session .monaco-list-rows {
-	background: unset !important;
-}
-
 .quick-input-widget .cschat-session .cschat-input-part {
-	padding: 8px;
+	padding: 8px 6px 6px 6px;
+	margin: 0 3px;
 }
 
 .quick-input-widget .cschat-session .cschat-input-part .interactive-execute-toolbar {
-	bottom: 1px;
+	margin-bottom: 1px;
 }
 
 .quick-input-widget .cschat-session .interactive-input-and-execute-toolbar {
 	margin: 0;
 	border-radius: 2px;
 	padding: 0 4px 0 6px;
-	border: 0;
 }
 
 .quick-input-widget .interactive-list {

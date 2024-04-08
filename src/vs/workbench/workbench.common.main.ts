@@ -122,6 +122,7 @@ import 'vs/workbench/services/userActivity/common/userActivityService';
 import 'vs/workbench/services/userActivity/browser/userActivityBrowser';
 import 'vs/workbench/services/issue/browser/issueTroubleshoot';
 import 'vs/workbench/services/editor/browser/editorPaneService';
+import 'vs/workbench/services/editor/common/customEditorLabelService';
 
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { ExtensionGalleryService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
@@ -395,4 +396,6 @@ import 'vs/workbench/contrib/share/browser/share.contribution';
 // Account Entitlements
 import 'vs/workbench/contrib/accountEntitlements/browser/accountsEntitlements.contribution';
 
+// Synchronized Scrolling
+import 'vs/workbench/contrib/scrollLocking/browser/scrollLocking.contribution';
 //#endregion

@@ -21,7 +21,7 @@ import { isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 
 const $ = dom.$;
 
-export interface ICSSimpleCodeBlockData extends ICodeBlockData {
+export interface ICSCodeBlockData extends ICodeBlockData {
 	edits?: IChatEditSummary | undefined;
 }
 
@@ -55,8 +55,8 @@ export class CSCodeBlockPart extends CodeBlockPart {
 		resultEditorNode?.after(this.exportedLocationRibbon);
 	}
 
-	override async render(data: ICSSimpleCodeBlockData, width: number): Promise<void> {
-		await super.render(data, width);
+	override async render(data: ICSCodeBlockData, width: number, editable: boolean | undefined) {
+		await super.render(data, width, editable);
 
 		dom.clearNode(this.exportedLocationRibbon);
 		const isApplyingEdits = isResponseVM(data.element) && (this.editSessionService.activeEditCodeblockNumber ?? -1) >= 0;

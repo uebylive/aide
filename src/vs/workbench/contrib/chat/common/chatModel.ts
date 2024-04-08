@@ -9,21 +9,32 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString, MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
-import { basename } from 'vs/base/common/resources';
+import { basename, isEqual } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI, UriComponents, UriDto, isUriComponents } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChat, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatContent, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatTreeData, IChatUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/chat/common/chatService';
+import { IChat, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatContent, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatTextEdit, IChatTreeData, IChatUsedContext, InteractiveSessionVoteDirection, isIUsedContext } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/chat/common/chatVariables';
 import type { ICSChatModel, ICSChatResponseModel, IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 
-export interface IChatRequestVariableData {
+export interface IChatPromptVariableData {
 	variables: { name: string; range: IOffsetRange; values: IChatRequestVariableValue[] }[];
+}
+
+export interface IChatRequestVariableEntry {
+	name: string;
+	range?: IOffsetRange;
+	values: IChatRequestVariableValue[];
+	references?: IChatContentReference[];
+}
+
+export interface IChatRequestVariableData {
+	variables: IChatRequestVariableEntry[];
 }
 
 export interface IChatRequestModel {
@@ -42,7 +53,8 @@ export type IChatProgressResponseContent =
 	| IChatTreeData
 	| IChatContentInlineReference
 	| IChatProgressMessage
-	| IChatCommandButton;
+	| IChatCommandButton
+	| IChatTextEdit;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability>;
 
@@ -64,6 +76,7 @@ export interface IChatResponseModel {
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
+	readonly agentOrSlashCommandDetected: boolean;
 	readonly response: IResponse;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
@@ -166,8 +179,25 @@ export class Response implements IResponse {
 			} else {
 				this._responseParts[responsePartLength] = { content: new MarkdownString(lastResponsePart.content.value + progress.content, lastResponsePart.content), kind: 'markdownContent' };
 			}
-
 			this._updateRepr(quiet);
+
+		} else if (progress.kind === 'textEdit') {
+			if (progress.edits.length > 0) {
+				// merge text edits for the same file no matter when they come in
+				let found = false;
+				for (let i = 0; !found && i < this._responseParts.length; i++) {
+					const candidate = this._responseParts[i];
+					if (candidate.kind === 'textEdit' && isEqual(candidate.uri, progress.uri)) {
+						candidate.edits.push(...progress.edits);
+						found = true;
+					}
+				}
+				if (!found) {
+					this._responseParts.push(progress);
+				}
+				this._updateRepr(quiet);
+			}
+
 		} else {
 			this._responseParts.push(progress);
 			this._updateRepr(quiet);
@@ -182,6 +212,8 @@ export class Response implements IResponse {
 				return basename('uri' in part.inlineReference ? part.inlineReference.uri : part.inlineReference);
 			} else if (part.kind === 'command') {
 				return part.command.title;
+			} else if (part.kind === 'textEdit') {
+				return '';
 			} else {
 				return part.content.value;
 			}
@@ -251,6 +283,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._slashCommand;
 	}
 
+	private _agentOrSlashCommandDetected: boolean | undefined;
+	public get agentOrSlashCommandDetected(): boolean {
+		return this._agentOrSlashCommandDetected ?? false;
+	}
+
 	private _usedContext: IChatUsedContext | undefined;
 	public get usedContext(): IChatUsedContext | undefined {
 		return this._usedContext;
@@ -316,6 +353,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	setAgent(agent: IChatAgentData, slashCommand?: IChatAgentCommand) {
 		this._agent = agent;
 		this._slashCommand = slashCommand;
+		this._agentOrSlashCommandDetected = true;
 		this._onDidChange.fire();
 	}
 
@@ -508,13 +546,17 @@ export class ChatModel extends Disposable implements IChatModel {
 		return !!lastRequest && !!lastRequest.response && !lastRequest.response.isComplete;
 	}
 
+	get hasRequests(): boolean {
+		return this._requests.length > 0;
+	}
+
 	private _creationDate: number;
 	get creationDate(): number {
 		return this._creationDate;
 	}
 
 	private get _defaultAgent() {
-		return this.chatAgentService.getDefaultAgent(this.providerId);
+		return this.chatAgentService.getDefaultAgent(this.providerId, ChatAgentLocation.Panel);
 	}
 
 	get requesterUsername(): string {
@@ -600,7 +642,7 @@ export class ChatModel extends Disposable implements IChatModel {
 				const request = new ChatRequestModel(this, parsedRequest, variableData);
 				if (raw.response || raw.result || (raw as any).responseErrorDetails) {
 					const agent = (raw.agent && 'metadata' in raw.agent) ? // Check for the new format, ignore entries in the old format
-						revive<ISerializableChatAgentData>(raw.agent) : undefined;
+						this.reviveSerializedAgent(raw.agent) : undefined;
 
 					// Port entries from old format
 					const result = 'responseErrorDetails' in raw ?
@@ -620,6 +662,16 @@ export class ChatModel extends Disposable implements IChatModel {
 			this.logService.error('Failed to parse chat data', error);
 			return [];
 		}
+	}
+
+	private reviveSerializedAgent(raw: ISerializableChatAgentData): IChatAgentData {
+		const agent = 'name' in raw ?
+			raw :
+			{
+				...(raw as any),
+				name: (raw as any).id,
+			};
+		return revive(agent);
 	}
 
 	private getParsedRequestFromString(message: string): IParsedChatRequest {
@@ -707,12 +759,12 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		if (progress.kind === 'vulnerability') {
 			request.response.updateContent({ kind: 'markdownVuln', content: { value: progress.content }, vulnerabilities: progress.vulnerabilities }, quiet);
-		} else if (progress.kind === 'content' || progress.kind === 'markdownContent' || progress.kind === 'treeData' || progress.kind === 'inlineReference' || progress.kind === 'markdownVuln' || progress.kind === 'progressMessage' || progress.kind === 'command') {
+		} else if (progress.kind === 'content' || progress.kind === 'markdownContent' || progress.kind === 'treeData' || progress.kind === 'inlineReference' || progress.kind === 'markdownVuln' || progress.kind === 'progressMessage' || progress.kind === 'command' || progress.kind === 'textEdit') {
 			request.response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
 			request.response.applyReference(progress);
 		} else if (progress.kind === 'agentDetection') {
-			const agent = this.chatAgentService.getRegisteredAgent(progress.agentName);
+			const agent = this.chatAgentService.getAgent(progress.agentId);
 			if (agent) {
 				request.response.setAgent(agent, progress.command);
 			}
@@ -811,7 +863,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					vote: r.response?.vote,
 					agent: r.response?.agent ?
 						// May actually be the full IChatAgent instance, just take the data props. slashCommands don't matter here.
-						{ id: r.response.agent.id, providerId: r.response.providerId, extensionId: r.response.agent.extensionId, metadata: r.response.agent.metadata, slashCommands: [], isDefault: r.response.agent.isDefault }
+						{ id: r.response.agent.id, providerId: this.providerId, name: r.response.agent.name, description: r.response.agent.description, extensionId: r.response.agent.extensionId, metadata: r.response.agent.metadata, slashCommands: [], locations: r.response.agent.locations, isDefault: r.response.agent.isDefault }
 						: undefined,
 					slashCommand: r.response?.slashCommand,
 					usedContext: r.response?.usedContext,
@@ -876,11 +928,11 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	}
 
 	public get username(): string {
-		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.fullName ?? '';
+		return this.chatAgentService.getDefaultAgent(this.providerId, ChatAgentLocation.Panel)?.metadata.fullName ?? '';
 	}
 
 	public get avatarIcon(): ThemeIcon | URI | undefined {
-		return this.chatAgentService.getDefaultAgent(this.providerId)?.metadata.themeIcon;
+		return this.chatAgentService.getDefaultAgent(this.providerId, ChatAgentLocation.Panel)?.metadata.themeIcon;
 	}
 }
 
@@ -898,7 +950,8 @@ export function getHistoryEntriesFromModel(model: IChatModel): IChatAgentHistory
 			agentId: request.response.agent?.id ?? '',
 			message: promptTextResult.message,
 			command: request.response.slashCommand?.name,
-			variables: updateRanges(request.variableData, promptTextResult.diff) // TODO bit of a hack
+			variables: updateRanges(request.variableData, promptTextResult.diff), // TODO bit of a hack
+			location: ChatAgentLocation.Panel
 		};
 		history.push({ request: historyRequest, response: request.response.response.value, result: request.response.result ?? {} });
 	}
@@ -910,7 +963,7 @@ export function updateRanges(variableData: IChatRequestVariableData, diff: numbe
 	return {
 		variables: variableData.variables.map(v => ({
 			...v,
-			range: {
+			range: v.range && {
 				start: v.range.start - diff,
 				endExclusive: v.range.endExclusive - diff
 			}

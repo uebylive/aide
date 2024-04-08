@@ -32,11 +32,12 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkbenchQuickAccessConfiguration } from 'vs/workbench/browser/quickaccess';
 import { CHAT_OPEN_ACTION_ID } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { ASK_QUICK_QUESTION_ACTION_ID } from 'vs/workbench/contrib/chat/browser/actions/chatQuickInputActions';
-import { IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CommandInformationResult, IAiRelatedInformationService, RelatedInformationType } from 'vs/workbench/services/aiRelatedInformation/common/aiRelatedInformation';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { createKeybindingCommandQuery } from 'vs/workbench/services/preferences/browser/keybindingsEditorModel';
 import { IPreferencesService } from 'vs/workbench/services/preferences/common/preferences';
 
 export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAccessProvider {
@@ -132,7 +133,7 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 				tooltip: localize('configure keybinding', "Configure Keybinding"),
 			}],
 			trigger: (): TriggerAction => {
-				this.preferencesService.openGlobalKeybindingSettings(false, { query: `@command:${picks.commandId}` });
+				this.preferencesService.openGlobalKeybindingSettings(false, { query: createKeybindingCommandQuery(picks.commandId, picks.commandWhen) });
 				return TriggerAction.CLOSE_PICKER;
 			},
 		}));
@@ -172,11 +173,13 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 			});
 		}
 
-		const defaultAgents = this.chatAgentService.getDefaultAgents();
-		if (defaultAgents) {
-			for (const defaultAgent of defaultAgents) {
+		const activatedAgents = this.chatAgentService.getActivatedAgents();
+		for (const agent of activatedAgents) {
+			const isDefaultAgent = agent.isDefault;
+			const isPanelAgent = agent.locations.includes(ChatAgentLocation.Panel);
+			if (isDefaultAgent && isPanelAgent) {
 				additionalPicks.push({
-					label: localize('askXInChat', "Ask {0}: {1}", defaultAgent.metadata.fullName, filter),
+					label: localize('askXInChat', "Ask {0}: {1}", agent.metadata.fullName, filter),
 					commandId: this.configuration.experimental.askChatLocation === 'quickChat' ? ASK_QUICK_QUESTION_ACTION_ID : CHAT_OPEN_ACTION_ID,
 					args: [filter]
 				});
@@ -245,6 +248,7 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 				: { value: metadataDescription, original: metadataDescription };
 			globalCommandPicks.push({
 				commandId: action.item.id,
+				commandWhen: action.item.precondition?.serialize(),
 				commandAlias,
 				label: stripIcons(label),
 				commandDescription,

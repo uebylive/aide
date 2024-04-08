@@ -18,6 +18,7 @@ import { convertToVSCPaths, convertToDAPaths, isSessionAttach } from 'vs/workben
 import { ErrorNoTelemetry } from 'vs/base/common/errors';
 import { IDebugVisualizerService } from 'vs/workbench/contrib/debug/common/debugVisualizers';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
+import { Event } from 'vs/base/common/event';
 
 @extHostNamedCustomer(MainContext.MainThreadDebugService)
 export class MainThreadDebugService implements MainThreadDebugServiceShape, IDebugAdapterFactory {
@@ -88,28 +89,28 @@ export class MainThreadDebugService implements MainThreadDebugServiceShape, IDeb
 		this._debugAdapterDescriptorFactories = new Map();
 		this._extHostKnownSessions = new Set();
 
-		this._toDispose.add(this.debugService.getViewModel().onDidFocusThread(({ thread, explicit, session }) => {
-			if (session) {
-				const dto: IThreadFocusDto = {
+		const viewModel = this.debugService.getViewModel();
+		this._toDispose.add(Event.any(viewModel.onDidFocusStackFrame, viewModel.onDidFocusThread)(() => {
+			const stackFrame = viewModel.focusedStackFrame;
+			const thread = viewModel.focusedThread;
+			if (stackFrame) {
+				this._proxy.$acceptStackFrameFocus({
+					kind: 'stackFrame',
+					threadId: stackFrame.thread.threadId,
+					frameId: stackFrame.frameId,
+					sessionId: stackFrame.thread.session.getId(),
+				} satisfies IStackFrameFocusDto);
+			} else if (thread) {
+				this._proxy.$acceptStackFrameFocus({
 					kind: 'thread',
-					threadId: thread?.threadId,
-					sessionId: session.getId(),
-				};
-				this._proxy.$acceptStackFrameFocus(dto);
+					threadId: thread.threadId,
+					sessionId: thread.session.getId(),
+				} satisfies IThreadFocusDto);
+			} else {
+				this._proxy.$acceptStackFrameFocus(undefined);
 			}
 		}));
 
-		this._toDispose.add(this.debugService.getViewModel().onDidFocusStackFrame(({ stackFrame, explicit, session }) => {
-			if (session) {
-				const dto: IStackFrameFocusDto = {
-					kind: 'stackFrame',
-					threadId: stackFrame?.thread.threadId,
-					frameId: stackFrame?.frameId,
-					sessionId: session.getId(),
-				};
-				this._proxy.$acceptStackFrameFocus(dto);
-			}
-		}));
 		this.sendBreakpointsAndListen();
 	}
 
@@ -384,7 +385,8 @@ export class MainThreadDebugService implements MainThreadDebugServiceShape, IDeb
 	}
 
 	public $acceptDAError(handle: number, name: string, message: string, stack: string) {
-		this.getDebugAdapter(handle).fireError(handle, new Error(`${name}: ${message}\n${stack}`));
+		// don't use getDebugAdapter since an error can be expected on a post-close
+		this._debugAdapters.get(handle)?.fireError(handle, new Error(`${name}: ${message}\n${stack}`));
 	}
 
 	public $acceptDAExit(handle: number, code: number, signal: string) {
