@@ -57,7 +57,7 @@ suite('VoiceChat', () => {
 		invokeAgent(id: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> { throw new Error(); }
 		getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]> { throw new Error(); }
 		getActivatedAgents(): IChatAgent[] { return agents; }
-		getAgents(): IChatAgent[] { return agents; }
+		getAgents(providerId: string): IChatAgent[] { return agents; }
 		getDefaultAgent(): IChatAgent | undefined { throw new Error(); }
 		getSecondaryAgent(): IChatAgent | undefined { throw new Error(); }
 		registerAgent(id: string, data: IChatAgentData): IDisposable { throw new Error('Method not implemented.'); }

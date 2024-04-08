@@ -212,7 +212,7 @@ class InputEditorDecorations extends Disposable {
 
 		const textDecorations: IDecorationOptions[] | undefined = [];
 		if (agentPart) {
-			const isDupe = !!this.chatAgentService.getAgents().find(other => other.name === agentPart.agent.name && other.id !== agentPart.agent.id);
+			const isDupe = !!this.chatAgentService.getAgents(viewModel.providerId).find(other => other.name === agentPart.agent.name && other.id !== agentPart.agent.id);
 			const id = isDupe ? `(${agentPart.agent.id}) ` : '';
 			const agentHover = `${id}${agentPart.agent.description}`;
 			textDecorations.push({ range: agentPart.editorRange, hoverMessage: new MarkdownString(agentHover) });
@@ -350,7 +350,7 @@ class AgentCompletions extends Disposable {
 					return null;
 				}
 
-				const agents = this.chatAgentService.getAgents()
+				const agents = this.chatAgentService.getAgents(widget.viewModel.providerId)
 					.filter(a => !a.isDefault)
 					.filter(a => a.locations.includes(widget.location));
 
@@ -440,7 +440,7 @@ class AgentCompletions extends Disposable {
 					return null;
 				}
 
-				const agents = this.chatAgentService.getAgents()
+				const agents = this.chatAgentService.getAgents(widget.viewModel.providerId)
 					.filter(a => a.locations.includes(widget.location));
 
 				const justAgents: CompletionItem[] = agents
