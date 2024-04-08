@@ -173,13 +173,17 @@ export class CommandsQuickAccessProvider extends AbstractEditorCommandsQuickAcce
 			});
 		}
 
-		const defaultAgent = this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel);
-		if (defaultAgent) {
-			additionalPicks.push({
-				label: localize('askXInChat', "Ask {0}: {1}", defaultAgent.metadata.fullName, filter),
-				commandId: this.configuration.experimental.askChatLocation === 'quickChat' ? ASK_QUICK_QUESTION_ACTION_ID : CHAT_OPEN_ACTION_ID,
-				args: [filter]
-			});
+		const activatedAgents = this.chatAgentService.getActivatedAgents();
+		for (const agent of activatedAgents) {
+			const isDefaultAgent = agent.isDefault;
+			const isPanelAgent = agent.locations.includes(ChatAgentLocation.Panel);
+			if (isDefaultAgent && isPanelAgent) {
+				additionalPicks.push({
+					label: localize('askXInChat', "Ask {0}: {1}", agent.metadata.fullName, filter),
+					commandId: this.configuration.experimental.askChatLocation === 'quickChat' ? ASK_QUICK_QUESTION_ACTION_ID : CHAT_OPEN_ACTION_ID,
+					args: [filter]
+				});
+			}
 		}
 
 		return additionalPicks;

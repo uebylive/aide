@@ -81,6 +81,11 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 	}
 
 	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: { name: string; description: string } | undefined): void {
+		const chatSessionProvider = this._chatService.getProviderInfos().find(p => p.extensionId === extension.value);
+		if (!chatSessionProvider) {
+			throw new Error(`valid chatSessionProvider not found. Ideally this shouldn't happen, and is an editor bug.`);
+		}
+
 		const staticAgentRegistration = this._chatAgentService.getAgent(id);
 		if (!staticAgentRegistration && !dynamicProps) {
 			if (this._chatAgentService.getAgentsByName(id).length) {
@@ -137,6 +142,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 			disposable = this._chatAgentService.registerDynamicAgent(
 				{
 					id,
+					providerId: chatSessionProvider.id,
 					name: dynamicProps.name,
 					description: dynamicProps.description,
 					extensionId: extension,

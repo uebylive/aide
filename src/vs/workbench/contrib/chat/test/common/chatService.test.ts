@@ -57,6 +57,7 @@ class SimpleTestProvider extends Disposable implements IChatProvider {
 const chatAgentWithUsedContextId = 'ChatProviderWithUsedContext';
 const chatAgentWithUsedContext: IChatAgent = {
 	id: chatAgentWithUsedContextId,
+	providerId: 'testAgentProvider',
 	name: chatAgentWithUsedContextId,
 	extensionId: nullExtensionDescription.identifier,
 	locations: [ChatAgentLocation.Panel],
@@ -114,8 +115,8 @@ suite('ChatService', () => {
 				return {};
 			},
 		} satisfies IChatAgentImplementation;
-		testDisposables.add(chatAgentService.registerAgent('testAgent', { name: 'testAgent', id: 'testAgent', isDefault: true, extensionId: nullExtensionDescription.identifier, locations: [ChatAgentLocation.Panel], metadata: {}, slashCommands: [] }));
-		testDisposables.add(chatAgentService.registerAgent(chatAgentWithUsedContextId, { name: chatAgentWithUsedContextId, id: chatAgentWithUsedContextId, extensionId: nullExtensionDescription.identifier, locations: [ChatAgentLocation.Panel], metadata: {}, slashCommands: [] }));
+		testDisposables.add(chatAgentService.registerAgent('testAgent', { name: 'testAgent', id: 'testAgent', providerId: 'testAgentProvider', isDefault: true, extensionId: nullExtensionDescription.identifier, locations: [ChatAgentLocation.Panel], metadata: {}, slashCommands: [] }));
+		testDisposables.add(chatAgentService.registerAgent(chatAgentWithUsedContextId, { name: chatAgentWithUsedContextId, id: chatAgentWithUsedContextId, providerId: 'testAgentProvider', extensionId: nullExtensionDescription.identifier, locations: [ChatAgentLocation.Panel], metadata: {}, slashCommands: [] }));
 		testDisposables.add(chatAgentService.registerAgentImplementation('testAgent', agent));
 		chatAgentService.updateAgent('testAgent', { requester: { name: 'test' }, fullName: 'test' });
 	});
@@ -177,8 +178,10 @@ suite('ChatService', () => {
 	test('Can\'t register same provider id twice', async () => {
 		const testService = testDisposables.add(instantiationService.createInstance(ChatService));
 		const id = 'testProvider';
+		const extensionId = 'testExtension';
 		testDisposables.add(testService.registerProvider({
 			id,
+			extensionId,
 			prepareSession: function (token: CancellationToken): ProviderResult<IChat | undefined> {
 				throw new Error('Function not implemented.');
 			}
@@ -187,6 +190,7 @@ suite('ChatService', () => {
 		assert.throws(() => {
 			testDisposables.add(testService.registerProvider({
 				id,
+				extensionId,
 				prepareSession: function (token: CancellationToken): ProviderResult<IChat | undefined> {
 					throw new Error('Function not implemented.');
 				}

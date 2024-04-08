@@ -243,6 +243,7 @@ export class InlineChatSessionServiceImpl implements IInlineChatSessionService {
 			const that = this;
 			const agentData: IChatAgentData = {
 				id: _bridgeAgentId,
+				providerId: 'codestory.editor',
 				name: 'editor',
 				extensionId: nullExtensionDescription.identifier,
 				isDefault: true,
@@ -306,6 +307,7 @@ export class InlineChatSessionServiceImpl implements IInlineChatSessionService {
 		const registerFakeChatProvider = (provider: IInlineChatSessionProvider) => {
 			const d = this._chatService.registerProvider({
 				id: this._asChatProviderBrigdeName(provider),
+				extensionId: provider.extensionId.value,
 				prepareSession() {
 					return {
 						id: Math.random()

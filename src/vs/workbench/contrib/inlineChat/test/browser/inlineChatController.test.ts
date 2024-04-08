@@ -184,6 +184,7 @@ suite('InteractiveChatController', function () {
 		store.add(chatAgentService.registerDynamicAgent({
 			extensionId: nullExtensionDescription.identifier,
 			id: 'testAgent',
+			providerId: 'testAgentProvider',
 			name: 'testAgent',
 			isDefault: true,
 			locations: [ChatAgentLocation.Panel],

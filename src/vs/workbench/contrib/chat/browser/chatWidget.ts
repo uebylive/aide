@@ -540,7 +540,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			let msg = '';
-			if (e.followup.agentId && e.followup.agentId !== this.chatAgentService.getDefaultAgent(this.location)?.id) {
+			if (e.followup.agentId && e.followup.agentId !== this.chatAgentService.getDefaultAgent(this.viewModel.providerId, this.location)?.id) {
 				const agent = this.chatAgentService.getAgent(e.followup.agentId);
 				if (!agent) {
 					return;
@@ -602,7 +602,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 		this.parsedChatRequest = undefined;
 		const agentAndSubcommand = extractAgentAndCommand(this.parsedInput);
-		const currentAgent = agentAndSubcommand.agentPart?.agent ?? this.chatAgentService.getDefaultAgent(this.location);
+		const currentAgent = agentAndSubcommand.agentPart?.agent ?? this.chatAgentService.getDefaultAgent(this.viewModel.providerId, this.location);
 		const implicitVariables = agentAndSubcommand.commandPart ?
 			agentAndSubcommand.commandPart.command.defaultImplicitVariables :
 			currentAgent?.defaultImplicitVariables;

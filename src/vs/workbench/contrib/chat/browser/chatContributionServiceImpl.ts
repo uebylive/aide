@@ -171,6 +171,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _csViewContainer: ViewContainer;
 	private _registrationDisposables = new Map<string, IDisposable>();
 	private _participantRegistrationDisposables = new DisposableMap<string>();
+	private _interactiveSessionProviders = new Map<string, string>();
 
 	constructor(
 		@IChatContributionService private readonly _chatContributionService: IChatContributionService,
@@ -228,6 +229,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 				for (const providerDescriptor of extension.value) {
 					this.registerChatProvider(providerDescriptor);
 					this._chatContributionService.registerChatProvider(providerDescriptor);
+					this._interactiveSessionProviders.set(extension.description.identifier.value, providerDescriptor.id);
 				}
 				this._registrationDisposables.set(extension.description.identifier.value, extensionDisposable);
 			}
@@ -271,6 +273,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 							{
 								extensionId: extension.description.identifier,
 								id: providerDescriptor.id,
+								providerId: this._interactiveSessionProviders.get(extension.description.identifier.value)!,
 								description: providerDescriptor.description,
 								metadata: {
 									isSticky: providerDescriptor.isSticky,

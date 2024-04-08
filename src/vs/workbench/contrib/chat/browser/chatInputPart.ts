@@ -59,7 +59,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/wor
 
 const $ = dom.$;
 
-const CS_INPUT_EDITOR_MIN_HEIGHT = 140;
+const CS_INPUT_EDITOR_MIN_HEIGHT = 120;
 const INPUT_EDITOR_MAX_HEIGHT = 250;
 
 interface IChatInputPartOptions {

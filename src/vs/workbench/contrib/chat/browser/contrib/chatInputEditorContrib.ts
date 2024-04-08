@@ -127,7 +127,7 @@ class InputEditorDecorations extends Disposable {
 		}
 
 		if (!inputValue) {
-			const defaultAgent = this.chatAgentService.getDefaultAgent(this.widget.location);
+			const defaultAgent = this.chatAgentService.getDefaultAgent(viewModel.providerId, this.widget.location);
 			const decoration: IDecorationOptions[] = [
 				{
 					range: {

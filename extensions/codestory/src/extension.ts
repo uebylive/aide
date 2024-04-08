@@ -14,7 +14,6 @@ import { copySettings } from './utilities/copySettings';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
-import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './completions/providers/editorSessionProvider';
@@ -77,10 +76,6 @@ export async function activate(context: ExtensionContext) {
 			platform: os.platform(),
 		},
 	});
-	const appDataPath = process.env.APPDATA;
-	const userProfilePath = process.env.USERPROFILE;
-	console.log('appDataPath', appDataPath);
-	console.log('userProfilePath', userProfilePath);
 	const registerPreCopyCommand = commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
@@ -105,12 +100,6 @@ export async function activate(context: ExtensionContext) {
 	if (readonlyFS) {
 		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
 		return;
-	}
-	const agentSystemInstruction = readCustomSystemInstruction();
-	if (agentSystemInstruction === null) {
-		console.log(
-			'Aide can help you better if you give it custom instructions by going to your settings and setting it in aide.systemInstruction (search for this string in User Settings) and reload vscode for this to take effect by doing Cmd+Shift+P: Developer: Reload Window'
-		);
 	}
 	// Activate the LSP extensions which are needed for things to work
 	await activateExtensions(context, getExtensionsInDirectory(rootPath));
@@ -159,7 +148,6 @@ export async function activate(context: ExtensionContext) {
 	const modelConfiguration = await modelSelection.getConfiguration();
 	const execPath = process.execPath;
 	console.log('Exec path:' + execPath);
-	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
