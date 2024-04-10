@@ -139,7 +139,7 @@ export interface IBaseChatAgentService {
 	invokeAgent(agent: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult>;
 	getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]>;
 	getAgent(id: string): IChatAgentData | undefined;
-	getAgents(providerId: string): IChatAgentData[];
+	getAgents(): IChatAgentData[];
 	getActivatedAgents(): Array<IChatAgent>;
 	getAgentsByName(name: string): IChatAgentData[];
 	getDefaultAgent(providerId: string, location: ChatAgentLocation): IChatAgent | undefined;
@@ -247,8 +247,8 @@ export class ChatAgentService implements IBaseChatAgentService {
 	/**
 	 * Returns all agent datas that exist- static registered and dynamic ones.
 	 */
-	getAgents(providerId: string): IChatAgentData[] {
-		return this._agents.map(entry => entry.data).filter(agent => agent.providerId === providerId);
+	getAgents(): IChatAgentData[] {
+		return this._agents.map(entry => entry.data);
 	}
 
 	getActivatedAgents(): IChatAgent[] {
@@ -258,7 +258,7 @@ export class ChatAgentService implements IBaseChatAgentService {
 	}
 
 	getAgentsByName(name: string): IChatAgentData[] {
-		return this._agents.map(entry => entry.data).filter(a => a.name === name);
+		return this.getAgents().filter(a => a.name === name);
 	}
 
 	async invokeAgent(id: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> {

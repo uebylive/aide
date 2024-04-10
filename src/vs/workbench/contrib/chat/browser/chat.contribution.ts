@@ -261,7 +261,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 			const lastFocusedWidget = chatWidgetService.lastFocusedWidget;
 			const providerId = lastFocusedWidget?.providerId!;
 			const defaultAgent = chatAgentService.getDefaultAgent(providerId, ChatAgentLocation.Panel);
-			const agents = chatAgentService.getAgents(providerId);
+			const agents = chatAgentService.getAgents();
 
 			// Report prefix
 			if (defaultAgent?.metadata.helpTextPrefix) {
