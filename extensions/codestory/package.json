@@ -79,8 +79,7 @@
         "id": "aide",
         "name": "Aide",
         "description": "What can I help you with today?",
-        "isDefault": true,
-        "locations": ["panel"]
+        "isDefault": true
       }
     ],
     "menus": {

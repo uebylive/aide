@@ -1333,7 +1333,7 @@ export type IChatProgressDto =
 	| Dto<IChatProgress>;
 
 export interface MainThreadChatShape extends IDisposable {
-	$registerChatProvider(handle: number, extension: ExtensionIdentifier, id: string): Promise<void>;
+	$registerChatProvider(handle: number, id: string): Promise<void>;
 	$acceptChatState(sessionId: number, state: any): Promise<void>;
 	$unregisterChatProvider(handle: number): Promise<void>;
 	$transferActiveChatSession(toWorkspace: UriComponents): void;

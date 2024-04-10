@@ -6,7 +6,6 @@
 import { Emitter } from 'vs/base/common/event';
 import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { URI, UriComponents } from 'vs/base/common/uri';
-import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
 import { ExtHostChatShape, ExtHostContext, MainContext, MainThreadChatShape } from 'vs/workbench/api/common/extHost.protocol';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
@@ -45,7 +44,7 @@ export class MainThreadChat extends Disposable implements MainThreadChatShape {
 		this._chatService.transferChatSession({ sessionId, inputValue }, URI.revive(toWorkspace));
 	}
 
-	async $registerChatProvider(handle: number, extension: ExtensionIdentifier, id: string): Promise<void> {
+	async $registerChatProvider(handle: number, id: string): Promise<void> {
 		const registration = this._chatContribService.registeredProviders.find(staticProvider => staticProvider.id === id);
 		if (!registration) {
 			throw new Error(`Provider ${id} must be declared in the package.json.`);
@@ -53,7 +52,6 @@ export class MainThreadChat extends Disposable implements MainThreadChatShape {
 
 		const unreg = this._chatService.registerProvider({
 			id,
-			extensionId: extension.value,
 			prepareSession: async (token) => {
 				const session = await this._proxy.$prepareChat(handle, token);
 				if (!session) {

@@ -51,7 +51,7 @@ export interface IChatAgentData {
 	name: string;
 	description?: string;
 	extensionId: ExtensionIdentifier;
-	providerId: string;
+	providerId?: string;
 	/** The agent invoked when no agent is specified */
 	isDefault?: boolean;
 	metadata: IChatAgentMetadata;
@@ -142,7 +142,7 @@ export interface IBaseChatAgentService {
 	getAgents(): IChatAgentData[];
 	getActivatedAgents(): Array<IChatAgent>;
 	getAgentsByName(name: string): IChatAgentData[];
-	getDefaultAgent(providerId: string, location: ChatAgentLocation): IChatAgent | undefined;
+	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined;
 	getSecondaryAgent(): IChatAgentData | undefined;
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
@@ -227,8 +227,8 @@ export class ChatAgentService implements IBaseChatAgentService {
 		this._onDidChangeAgents.fire(new MergedChatAgent(agent.data, agent.impl));
 	}
 
-	getDefaultAgent(providerId: string, location: ChatAgentLocation): IChatAgent | undefined {
-		return this.getActivatedAgents().find(a => !!a.isDefault && a.providerId === providerId && a.locations.includes(location));
+	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined {
+		return this.getActivatedAgents().find(a => !!a.isDefault && a.locations.includes(location));
 	}
 
 	getSecondaryAgent(): IChatAgentData | undefined {
@@ -291,7 +291,6 @@ export class MergedChatAgent implements IChatAgent {
 	) { }
 
 	get id(): string { return this.data.id; }
-	get providerId(): string { return this.data.providerId; }
 	get name(): string { return this.data.name ?? ''; }
 	get description(): string { return this.data.description ?? ''; }
 	get extensionId(): ExtensionIdentifier { return this.data.extensionId; }

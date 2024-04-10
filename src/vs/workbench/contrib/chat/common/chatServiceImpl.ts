@@ -383,7 +383,7 @@ export class ChatService extends Disposable implements IChatService {
 
 			this.trace('startSession', `Provider returned session`);
 
-			const defaultAgent = this.chatAgentService.getDefaultAgent(provider.id, ChatAgentLocation.Panel);
+			const defaultAgent = this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel);
 			if (!defaultAgent) {
 				throw new ErrorNoTelemetry('No default agent');
 			}
@@ -391,7 +391,6 @@ export class ChatService extends Disposable implements IChatService {
 			const welcomeMessage = model.welcomeMessage ? undefined : await defaultAgent.provideWelcomeMessage?.(token) ?? undefined;
 			const welcomeModel = welcomeMessage && this.instantiationService.createInstance(
 				ChatWelcomeMessageModel,
-				provider.id,
 				welcomeMessage.map(item => typeof item === 'string' ? new MarkdownString(item) : item),
 				await defaultAgent.provideSampleQuestions?.(token) ?? []
 			);
@@ -459,7 +458,7 @@ export class ChatService extends Disposable implements IChatService {
 			return;
 		}
 
-		const defaultAgent = this.chatAgentService.getDefaultAgent(provider.id, location)!;
+		const defaultAgent = this.chatAgentService.getDefaultAgent(location)!;
 
 		const parsedRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(sessionId, request, location, parserContext);
 		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? defaultAgent;
@@ -735,7 +734,6 @@ export class ChatService extends Disposable implements IChatService {
 		return Array.from(this._providers.values()).map(provider => {
 			return {
 				id: provider.id,
-				extensionId: provider.extensionId,
 			};
 		});
 	}
