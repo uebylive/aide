@@ -15,7 +15,7 @@ import { ChatCodeBlockAction, IChatCodeBlockActionContext } from 'vs/workbench/c
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_HAS_DEFAULT_AGENT, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS } from 'vs/workbench/contrib/chat/common/csChatContextKeys';
@@ -47,7 +47,7 @@ registerAction2(class ExportToCodebaseAction extends ChatCodeBlockAction {
 		super({
 			id: 'workbench.action.chat.exportToCodebase',
 			title: localize2('interactive.exportToCodebase.label', "Apply changes to codebase"),
-			precondition: CONTEXT_PROVIDER_EXISTS,
+			precondition: CONTEXT_HAS_DEFAULT_AGENT,
 			f1: true,
 			category: CHAT_CATEGORY,
 			icon: Codicon.merge,
@@ -109,7 +109,6 @@ registerAction2(class ExportToCodebaseAction extends ChatCodeBlockAction {
 		if (isResponseVM(context.element)) {
 			const chatService = accessor.get(IChatService);
 			chatService.notifyUserAction({
-				providerId: context.element.providerId,
 				agentId: context.element.agent?.id,
 				sessionId: context.element.sessionId,
 				requestId: context.element.requestId,

@@ -82,10 +82,9 @@
 		}
 	],
 	"extensionEnabledApiProposals": {
-		"GitHub.copilot": [
-			"inlineCompletionsAdditions"
-		],
+		"GitHub.copilot": ["inlineCompletionsAdditions"],
 		"GitHub.copilot-chat": [
+			"extensionsAny",
 			"newSymbolNamesProvider",
 			"interactive",
 			"chatProvider",
@@ -103,7 +102,10 @@
 			"chatParticipantAdditions",
 			"defaultChatParticipant",
 			"chatVariableResolver",
-			"contribSourceControlInputBoxMenu"
+			"contribSourceControlInputBoxMenu",
+			"authLearnMore",
+			"testObserver",
+			"aiTextSearchProvider"
 		]
 	}
 }

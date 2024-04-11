@@ -29,6 +29,7 @@ suite('VoiceChat', () => {
 
 		providerId: string = 'testProvider';
 		extensionId: ExtensionIdentifier = nullExtensionDescription.identifier;
+		extensionPublisher = '';
 		locations: ChatAgentLocation[] = [ChatAgentLocation.Panel];
 		public readonly name: string;
 		constructor(readonly id: string, readonly slashCommands: IChatAgentCommand[]) {
@@ -59,6 +60,7 @@ suite('VoiceChat', () => {
 		getActivatedAgents(): IChatAgent[] { return agents; }
 		getAgents(): IChatAgent[] { return agents; }
 		getDefaultAgent(): IChatAgent | undefined { throw new Error(); }
+		getContributedDefaultAgent(): IChatAgentData | undefined { throw new Error(); }
 		getSecondaryAgent(): IChatAgent | undefined { throw new Error(); }
 		registerAgent(id: string, data: IChatAgentData): IDisposable { throw new Error('Method not implemented.'); }
 		getAgent(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }

@@ -19,7 +19,7 @@ import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { CSInteractiveEditorSessionProvider } from './completions/providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
-import { CSChatAgentProvider, CSChatSessionProvider } from './completions/providers/chatprovider';
+import { CSChatAgentProvider } from './completions/providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { AideQuickFix } from './quickActions/fix';
 import { aideCommands } from './inlineCompletion/commands';
@@ -235,21 +235,16 @@ export async function activate(context: ExtensionContext) {
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
 	// Register chat provider
-	const chatSessionProvider = new CSChatSessionProvider();
 	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
 		sidecarClient,
 		currentRepo,
 		rootPath ?? '',
 		shouldUseExactMatching(),
 	);
-	const interactiveSession = interactive.registerInteractiveSessionProvider(
-		'cs-chat', chatSessionProvider
-	);
 	const interactiveEditorSession = interactive.registerInteractiveEditorSessionProvider(
 		interactiveEditorSessionProvider,
 	);
 	context.subscriptions.push(interactiveEditorSession);
-	context.subscriptions.push(interactiveSession);
 
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,

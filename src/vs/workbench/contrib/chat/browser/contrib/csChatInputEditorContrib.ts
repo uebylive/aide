@@ -6,7 +6,6 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
-// import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
@@ -26,7 +25,6 @@ import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, 
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
-// import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
@@ -52,9 +50,9 @@ class CSBuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				if (widget.viewModel?.providerId !== 'cs-chat') {
-					return null;
-				}
+				// if (widget.viewModel?.providerId !== 'cs-chat') {
+				// 	return null;
+				// }
 
 				const range = computeCompletionRanges(model, position, CSBuiltinDynamicCompletions.VariableNameDef);
 				if (!range) {
@@ -249,8 +247,6 @@ class OpenFileCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		// @IEditorService private readonly editorService: IEditorService,
-		// @ILabelService private readonly labelService: ILabelService,
 	) {
 		super();
 
@@ -263,9 +259,9 @@ class OpenFileCompletions extends Disposable {
 				}
 
 				// early bail here if we are not in a chat widget
-				if (widget.viewModel?.providerId !== 'cs-chat') {
-					return null;
-				}
+				// if (widget.viewModel?.providerId !== 'cs-chat') {
+				// 	return null;
+				// }
 
 				const varWord = getWordAtText(position.column, OpenFileCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
 				if (!varWord && model.getWordUntilPosition(position).word) {

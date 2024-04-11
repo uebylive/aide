@@ -13,14 +13,11 @@ import { Codicon } from 'vs/base/common/codicons';
 import { Emitter } from 'vs/base/common/event';
 import { HistoryNavigator } from 'vs/base/common/history';
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { FileAccess } from 'vs/base/common/network';
 import { isMacintosh } from 'vs/base/common/platform';
-import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
-import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
 import { IDimension } from 'vs/editor/common/core/dimension';
 import { IPosition } from 'vs/editor/common/core/position';
 import { ITextModel } from 'vs/editor/common/model';
@@ -59,7 +56,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/wor
 
 const $ = dom.$;
 
-const CS_INPUT_EDITOR_MIN_HEIGHT = 140;
+// const CS_INPUT_EDITOR_MIN_HEIGHT = 140;
 const INPUT_EDITOR_MAX_HEIGHT = 250;
 
 interface IChatInputPartOptions {
@@ -134,7 +131,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private inputEditorHasText: IContextKey<boolean>;
 	private chatCursorAtTop: IContextKey<boolean>;
 	private inputEditorHasFocus: IContextKey<boolean>;
-	private providerId: string | undefined;
 
 	private cachedDimensions: dom.Dimension | undefined;
 	private cachedToolbarWidth: number | undefined;
@@ -187,41 +183,40 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return localize('chatInput', "Chat Input");
 	}
 
-	setState(providerId: string, inputValue: string | undefined, requester?: IChatRequester): void {
-		this.providerId = providerId;
-		const history = this.historyService.getHistory(providerId);
+	setState(inputValue: string | undefined, requester?: IChatRequester): void {
+		const history = this.historyService.getHistory();
 		this.history = new HistoryNavigator(history, 50);
 
 		if (typeof inputValue === 'string') {
 			this.setValue(inputValue);
 		}
 
-		if (providerId === 'cs-chat') {
-			this.container.classList.replace('interactive-input-part', 'cschat-input-part');
-			if (!this.requesterContainer) {
-				const secondChild = this.container.childNodes[1];
-				const header = $('.header');
-				this.container.insertBefore(header, secondChild);
-				const user = dom.append(header, $('.user'));
-				const model = dom.append(header, $('.slow-model'));
-				dom.append(user, $('.avatar-container'));
-				dom.append(user, $('h3.username'));
-				this.requesterContainer = user;
-				this.modelNameContainer = model;
-				this.modelNameContainer.style.display = 'none';
+		// if (providerId === 'cs-chat') {
+		// 	this.container.classList.replace('interactive-input-part', 'cschat-input-part');
+		// 	if (!this.requesterContainer) {
+		// 		const secondChild = this.container.childNodes[1];
+		// 		const header = $('.header');
+		// 		this.container.insertBefore(header, secondChild);
+		// 		const user = dom.append(header, $('.user'));
+		// 		const model = dom.append(header, $('.slow-model'));
+		// 		dom.append(user, $('.avatar-container'));
+		// 		dom.append(user, $('h3.username'));
+		// 		this.requesterContainer = user;
+		// 		this.modelNameContainer = model;
+		// 		this.modelNameContainer.style.display = 'none';
 
-				this.inputEditor.updateOptions({
-					fontFamily: EDITOR_FONT_DEFAULTS.fontFamily,
-					cursorWidth: 3,
-					acceptSuggestionOnEnter: 'on'
-				});
-			}
+		// 		this.inputEditor.updateOptions({
+		// 			fontFamily: EDITOR_FONT_DEFAULTS.fontFamily,
+		// 			cursorWidth: 3,
+		// 			acceptSuggestionOnEnter: 'on'
+		// 		});
+		// 	}
 
-			if (requester) {
-				this._renderRequester(requester);
-			}
-			this._renderModelName();
-		}
+		// 	if (requester) {
+		// 		this._renderRequester(requester);
+		// 	}
+		// 	this._renderModelName();
+		// }
 	}
 
 	get element(): HTMLElement {
@@ -518,14 +513,27 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private getLayoutData() {
+		// return {
+		// 	inputEditorBorder: 2,
+		// 	followupsHeight: this.followupsContainer.offsetHeight,
+		// 	inputPartEditorHeight: this.providerId === 'cs-chat' ? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT) : Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
+		// 	inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : this.providerId === 'cs-chat' ? 24 : 40,
+		// 	inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : this.providerId === 'cs-chat' ? 34 : 24,
+		// 	implicitContextHeight: this.implicitContextContainer.offsetHeight,
+		// 	editorBorder: this.providerId === 'cs-chat' ? 0 : 2,
+		// 	editorPadding: 12,
+		// 	toolbarPadding: 4,
+		// 	executeToolbarWidth: this.cachedToolbarWidth = this.toolbar.getItemsWidth(),
+		// 	sideToolbarWidth: this.inputSideToolbarContainer ? dom.getTotalWidth(this.inputSideToolbarContainer) + 4 /*gap*/ : 0,
+		// };
 		return {
 			inputEditorBorder: 2,
 			followupsHeight: this.followupsContainer.offsetHeight,
-			inputPartEditorHeight: this.providerId === 'cs-chat' ? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT) : Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
-			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : this.providerId === 'cs-chat' ? 24 : 40,
-			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : this.providerId === 'cs-chat' ? 34 : 24,
+			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
+			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : 40,
+			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : 24,
 			implicitContextHeight: this.implicitContextContainer.offsetHeight,
-			editorBorder: this.providerId === 'cs-chat' ? 0 : 2,
+			editorBorder: 2,
 			editorPadding: 12,
 			toolbarPadding: 4,
 			executeToolbarWidth: this.cachedToolbarWidth = this.toolbar.getItemsWidth(),
@@ -535,24 +543,24 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	saveState(): void {
 		const inputHistory = this.history.getHistory();
-		this.historyService.saveHistory(this.providerId!, inputHistory);
+		this.historyService.saveHistory(inputHistory);
 	}
 
-	private _renderRequester(requester: IChatRequester): void {
-		const username = requester.username || localize('requester', "You");
-		this.requesterContainer.querySelector('h3.username')!.textContent = username;
+	// private _renderRequester(requester: IChatRequester): void {
+	// 	const username = requester.username || localize('requester', "You");
+	// 	this.requesterContainer.querySelector('h3.username')!.textContent = username;
 
-		const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
-		if (requester.avatarIconUri) {
-			const avatarImgIcon = $<HTMLImageElement>('img.icon');
-			avatarImgIcon.src = FileAccess.uriToBrowserUri(requester.avatarIconUri).toString(true);
-			avatarContainer.replaceChildren($('.avatar', undefined, avatarImgIcon));
-		} else {
-			const defaultIcon = Codicon.account;
-			const avatarIcon = $(ThemeIcon.asCSSSelector(defaultIcon));
-			avatarContainer.replaceChildren($('.avatar.codicon-avatar', undefined, avatarIcon));
-		}
-	}
+	// 	const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
+	// 	if (requester.avatarIconUri) {
+	// 		const avatarImgIcon = $<HTMLImageElement>('img.icon');
+	// 		avatarImgIcon.src = FileAccess.uriToBrowserUri(requester.avatarIconUri).toString(true);
+	// 		avatarContainer.replaceChildren($('.avatar', undefined, avatarImgIcon));
+	// 	} else {
+	// 		const defaultIcon = Codicon.account;
+	// 		const avatarIcon = $(ThemeIcon.asCSSSelector(defaultIcon));
+	// 		avatarContainer.replaceChildren($('.avatar.codicon-avatar', undefined, avatarIcon));
+	// 	}
+	// }
 
 	private async _renderModelName(): Promise<void> {
 		const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();

@@ -31,9 +31,6 @@ class CSChatParticipant implements vscode.ChatRequesterInformation {
 	}
 }
 
-class CSChatSession implements vscode.InteractiveSession {
-}
-
 class CSChatResponseErrorDetails implements vscode.ChatErrorDetails {
 	message: string;
 	responseIsIncomplete?: boolean | undefined;
@@ -65,12 +62,6 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 
 	toString(): string {
 		return `CSChatResponseForProgress { errorDetails: ${this.errorDetails?.toString()}, metadata: ${this.metadata} }`;
-	}
-}
-
-export class CSChatSessionProvider implements vscode.InteractiveSessionProvider<CSChatSession> {
-	prepareSession(_token: vscode.CancellationToken): vscode.ProviderResult<CSChatSession> {
-		return new CSChatSession();
 	}
 }
 

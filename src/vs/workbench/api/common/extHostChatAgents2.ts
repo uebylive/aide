@@ -23,7 +23,7 @@ import { ExtHostChatAgentsShape2, ICSChatAgentEditResponseDto, IChatAgentComplet
 import { CommandsConverter, ExtHostCommands } from 'vs/workbench/api/common/extHostCommands';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatContentReference, IChatFollowup, IChatProgress, IChatUserActionEvent, InteractiveSessionVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
@@ -213,6 +213,10 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 		private readonly commands: ExtHostCommands,
 	) {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadChatAgents2);
+	}
+
+	transferActiveChat(newWorkspace: vscode.Uri): void {
+		this._proxy.$transferActiveChatSession(newWorkspace);
 	}
 
 	createChatAgent(extension: IExtensionDescription, id: string, handler: vscode.ChatExtendedRequestHandler): vscode.ChatParticipant {
@@ -418,13 +422,13 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 		return await agent.provideWelcomeMessage(token);
 	}
 
-	async $provideSampleQuestions(handle: number, token: CancellationToken): Promise<IChatFollowup[] | undefined> {
+	async $provideSampleQuestions(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<IChatFollowup[] | undefined> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
 			return;
 		}
 
-		return (await agent.provideSampleQuestions(token))
+		return (await agent.provideSampleQuestions(typeConvert.ChatLocation.to(location), token))
 			.map(f => typeConvert.ChatFollowup.from(f, undefined));
 	}
 }
@@ -505,11 +509,11 @@ class ExtHostChatAgent {
 		});
 	}
 
-	async provideSampleQuestions(token: CancellationToken): Promise<vscode.ChatFollowup[]> {
+	async provideSampleQuestions(location: vscode.ChatLocation, token: CancellationToken): Promise<vscode.ChatFollowup[]> {
 		if (!this._welcomeMessageProvider || !this._welcomeMessageProvider.provideSampleQuestions) {
 			return [];
 		}
-		const content = await this._welcomeMessageProvider.provideSampleQuestions(token);
+		const content = await this._welcomeMessageProvider.provideSampleQuestions(location, token);
 		if (!content) {
 			return [];
 		}
