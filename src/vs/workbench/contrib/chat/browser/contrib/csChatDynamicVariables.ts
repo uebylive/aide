@@ -20,7 +20,7 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatWidget, showChatView } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatDynamicVariableModel } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
-import { CONTEXT_HAS_DEFAULT_AGENT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -249,7 +249,7 @@ class ChatAddContext extends EditorAction2 {
 		super({
 			id: ChatAddContext.ID,
 			title: localize2({ key: 'actions.chat.addContext', comment: ['Add context to the chat input box'] }, "Add Context"),
-			precondition: CONTEXT_HAS_DEFAULT_AGENT,
+			precondition: CONTEXT_CHAT_ENABLED,
 			keybinding: {
 				when: EditorContextKeys.textInputFocus,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
