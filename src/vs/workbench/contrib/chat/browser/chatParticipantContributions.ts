@@ -7,6 +7,8 @@ import { isNonEmptyArray } from 'vs/base/common/arrays';
 import { Codicon } from 'vs/base/common/codicons';
 import { DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { localize, localize2 } from 'vs/nls';
+import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from 'vs/platform/configuration/common/configurationRegistry';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
@@ -129,11 +131,22 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _viewContainer: ViewContainer;
 	private _participantRegistrationDisposables = new DisposableMap<string>();
 
+	private _configuredDefaultAgent?: string;
+	private _availableDefaultAgents = new Map<
+		string,
+		{
+			providerDescriptor: IRawChatParticipantContribution;
+			extension: extensionsRegistry.IExtensionPointUser<IRawChatParticipantContribution[]>;
+		}
+	>();
+	private readonly configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
+
 	constructor(
 		@IChatAgentService private readonly _chatAgentService: IChatAgentService,
 		@IProductService private readonly productService: IProductService,
 		@IContextKeyService private readonly contextService: IContextKeyService,
 		@ILogService private readonly logService: ILogService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 		this._viewContainer = this.registerViewContainer();
 		this.registerListeners();
@@ -172,64 +185,143 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 				}
 			}
 		}, null, this.disposables);
+
+		this.configurationService.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('chat.defaultAgent')) {
+				const currentDefaultAgentId = this._configuredDefaultAgent;
+				this._configuredDefaultAgent = this.configurationService.getValue<string>('chat.defaultAgent');
+				if (currentDefaultAgentId && currentDefaultAgentId !== this._configuredDefaultAgent) {
+					const availableDefaultAgents = Array.from(this._availableDefaultAgents.entries());
+					const currentDefaultAgent = this._availableDefaultAgents.get(currentDefaultAgentId);
+					if (currentDefaultAgent) {
+						const { extension, providerDescriptor } = currentDefaultAgent;
+						this._participantRegistrationDisposables.deleteAndDispose(getParticipantKey(extension.description.identifier, providerDescriptor.name));
+					}
+					availableDefaultAgents
+						.filter(agent => agent[1].providerDescriptor.id === this._configuredDefaultAgent)
+						.forEach(entry => {
+							const { providerDescriptor, extension } = entry[1];
+							const store = this.registerAgentAndView(providerDescriptor, extension);
+							this._participantRegistrationDisposables.set(getParticipantKey(extension.description.identifier, providerDescriptor.name), store);
+						});
+				}
+			}
+		});
+	}
+
+	private isValidAgent(providerDescriptor: IRawChatParticipantContribution, extension: extensionsRegistry.IExtensionPointUser<IRawChatParticipantContribution[]>): boolean {
+		if (providerDescriptor.isDefault && !isProposedApiEnabled(extension.description, 'defaultChatParticipant')) {
+			this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: defaultChatParticipant.`);
+			return false;
+		}
+
+		if (providerDescriptor.defaultImplicitVariables && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
+			this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
+			return false;
+		}
+
+		if (!providerDescriptor.id || !providerDescriptor.name) {
+			this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT register participant without both id and name.`);
+			return false;
+		}
+
+		return true;
 	}
 
 	private handleAndRegisterChatExtensions(): void {
 		chatParticipantExtensionPoint.setHandler((extensions, delta) => {
+			let aideAgent: IRawChatParticipantContribution | undefined;
+			for (const extension of extensions) {
+				for (const providerDescriptor of extension.value) {
+					if (!this.isValidAgent(providerDescriptor, extension)) {
+						continue;
+					}
+
+					if (providerDescriptor.isDefault) {
+						this._availableDefaultAgents.set(providerDescriptor.id, { providerDescriptor, extension });
+
+						if (providerDescriptor.id === 'aide') {
+							aideAgent = providerDescriptor;
+						}
+					}
+				}
+			}
+			if (this._availableDefaultAgents.size > 1) {
+				const defaultDefaultAgent = aideAgent ? aideAgent.id : Array.from(this._availableDefaultAgents.keys())[0];
+				this.configurationRegistry.updateConfigurations({
+					add: [
+						{
+							properties: {
+								'chat.defaultAgent': {
+									type: 'string',
+									description: localize('chat.defaultAgent', "The default chat participant to use in the chat."),
+									default: defaultDefaultAgent,
+									enum: Array.from(this._availableDefaultAgents.keys(), (entry) => entry.toString()),
+									enumItemLabels: Array.from(this._availableDefaultAgents.entries(), (entry) => entry[1].providerDescriptor.name),
+								}
+							}
+						}
+					],
+					remove: []
+				});
+			}
+
+			this._configuredDefaultAgent = this.configurationService.getValue<string>('chat.defaultAgent');
 			for (const extension of delta.added) {
 				for (const providerDescriptor of extension.value) {
-					if (providerDescriptor.isDefault && !isProposedApiEnabled(extension.description, 'defaultChatParticipant')) {
-						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: defaultChatParticipant.`);
+					if (!this.isValidAgent(providerDescriptor, extension)) {
 						continue;
 					}
 
-					if (providerDescriptor.defaultImplicitVariables && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
-						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
-						continue;
+					if (providerDescriptor.isDefault) {
+						this._availableDefaultAgents.set(providerDescriptor.id, { providerDescriptor, extension });
+						if (providerDescriptor.id !== this._configuredDefaultAgent) {
+							continue;
+						}
 					}
 
-					if (!providerDescriptor.id || !providerDescriptor.name) {
-						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT register participant without both id and name.`);
-						continue;
-					}
-
-					const store = new DisposableStore();
-					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(ChatAgentLocation.Panel))) {
-						store.add(this.registerDefaultParticipantView(providerDescriptor));
-					}
-
-					store.add(this._chatAgentService.registerAgent(
-						providerDescriptor.id,
-						{
-							extensionId: extension.description.identifier,
-							extensionPublisher: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
-							id: providerDescriptor.id,
-							description: providerDescriptor.description,
-							metadata: {
-								isSticky: providerDescriptor.isSticky,
-							},
-							name: providerDescriptor.name,
-							isDefault: providerDescriptor.isDefault,
-							defaultImplicitVariables: providerDescriptor.defaultImplicitVariables,
-							locations: isNonEmptyArray(providerDescriptor.locations) ?
-								providerDescriptor.locations.map(ChatAgentLocation.fromRaw) :
-								[ChatAgentLocation.Panel],
-							slashCommands: providerDescriptor.commands ?? []
-						} satisfies IChatAgentData));
-
-					this._participantRegistrationDisposables.set(
-						getParticipantKey(extension.description.identifier, providerDescriptor.id),
-						store
-					);
+					const participantKey = getParticipantKey(extension.description.identifier, providerDescriptor.name);
+					this._participantRegistrationDisposables.deleteAndDispose(participantKey);
+					const store = this.registerAgentAndView(providerDescriptor, extension);
+					this._participantRegistrationDisposables.set(participantKey, store);
 				}
 			}
 
 			for (const extension of delta.removed) {
 				for (const providerDescriptor of extension.value) {
+					this._availableDefaultAgents.delete(providerDescriptor.id);
 					this._participantRegistrationDisposables.deleteAndDispose(getParticipantKey(extension.description.identifier, providerDescriptor.name));
 				}
 			}
 		});
+	}
+
+	private registerAgentAndView(providerDescriptor: IRawChatParticipantContribution, extension: extensionsRegistry.IExtensionPointUser<IRawChatParticipantContribution[]>): DisposableStore {
+		const store = new DisposableStore();
+		if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(ChatAgentLocation.Panel))) {
+			store.add(this.registerDefaultParticipantView(providerDescriptor));
+		}
+
+		store.add(this._chatAgentService.registerAgent(
+			providerDescriptor.id,
+			{
+				extensionId: extension.description.identifier,
+				extensionPublisher: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
+				id: providerDescriptor.id,
+				description: providerDescriptor.description,
+				metadata: {
+					isSticky: providerDescriptor.isSticky,
+				},
+				name: providerDescriptor.name,
+				isDefault: providerDescriptor.isDefault,
+				defaultImplicitVariables: providerDescriptor.defaultImplicitVariables,
+				locations: isNonEmptyArray(providerDescriptor.locations) ?
+					providerDescriptor.locations.map(ChatAgentLocation.fromRaw) :
+					[ChatAgentLocation.Panel],
+				slashCommands: providerDescriptor.commands ?? []
+			} satisfies IChatAgentData));
+
+		return store;
 	}
 
 	private registerViewContainer(): ViewContainer {
