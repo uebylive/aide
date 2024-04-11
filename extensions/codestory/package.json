@@ -8,7 +8,7 @@
     "vscode": "^1.75.0"
   },
   "main": "./out/extension.js",
-  "activationEvents": [],
+  "activationEvents": ["onStartupFinished"],
   "enabledApiProposals": [
     "inlineCompletionsAdditions",
     "interactive",
