@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Location } from 'vs/editor/common/languages';
 import { coalesce } from 'vs/base/common/arrays';
 import { raceCancellation } from 'vs/base/common/async';
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -15,6 +14,7 @@ import { DisposableMap, DisposableStore } from 'vs/base/common/lifecycle';
 import { StopWatch } from 'vs/base/common/stopwatch';
 import { assertType } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
+import { Location } from 'vs/editor/common/languages';
 import { localize } from 'vs/nls';
 import { ExtensionIdentifier, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
@@ -35,13 +35,12 @@ class ChatAgentResponseStream {
 	private _stopWatch = StopWatch.create(false);
 	private _isClosed: boolean = false;
 	private _firstProgress: number | undefined;
-	private _apiObject: vscode.ChatExtendedResponseStream | undefined;
+	private _apiObject: vscode.ChatResponseStream | undefined;
 
 	constructor(
 		private readonly _extension: IExtensionDescription,
 		private readonly _request: IChatAgentRequest,
 		private readonly _proxy: MainThreadChatAgentsShape2,
-		private readonly _logService: ILogService,
 		private readonly _commandsConverter: CommandsConverter,
 		private readonly _sessionDisposables: DisposableStore
 	) { }
@@ -85,6 +84,17 @@ class ChatAgentResponseStream {
 					throwIfDone(this.markdown);
 					const part = new extHostTypes.ChatResponseMarkdownPart(value);
 					const dto = typeConvert.ChatResponseMarkdownPart.from(part);
+					_report(dto);
+					return this;
+				},
+				markdownWithVulnerabilities(value, vulnerabilities) {
+					throwIfDone(this.markdown);
+					if (vulnerabilities) {
+						checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+					}
+
+					const part = new extHostTypes.ChatResponseMarkdownWithVulnerabilitiesPart(value, vulnerabilities);
+					const dto = typeConvert.ChatResponseMarkdownWithVulnerabilitiesPart.from(part);
 					_report(dto);
 					return this;
 				},
@@ -158,10 +168,19 @@ class ChatAgentResponseStream {
 					_report(dto);
 					return this;
 				},
+				detectedParticipant(participant, command) {
+					throwIfDone(this.detectedParticipant);
+					checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+
+					const part = new extHostTypes.ChatResponseDetectedParticipantPart(participant, command);
+					const dto = typeConvert.ChatResponseDetectedParticipantPart.from(part);
+					_report(dto);
+					return this;
+				},
 				push(part) {
 					throwIfDone(this.push);
 
-					if (part instanceof extHostTypes.ChatResponseTextEditPart) {
+					if (part instanceof extHostTypes.ChatResponseTextEditPart || part instanceof extHostTypes.ChatResponseMarkdownWithVulnerabilitiesPart || part instanceof extHostTypes.ChatResponseDetectedParticipantPart) {
 						checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
 					}
 
@@ -175,22 +194,6 @@ class ChatAgentResponseStream {
 
 					return this;
 				},
-				report(progress) {
-					throwIfDone(this.report);
-					if ('placeholder' in progress && 'resolvedContent' in progress) {
-						// Ignore for now, this is the deleted Task type
-						return;
-					}
-
-					const value = typeConvert.ChatResponseProgress.from(that._extension, progress);
-					if (!value) {
-						that._logService.error('Unknown progress type: ' + JSON.stringify(progress));
-						return;
-					}
-
-					_report(value);
-					return this;
-				}
 			};
 		}
 
@@ -250,7 +253,7 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 			this._sessionDisposables.set(request.sessionId, sessionDisposables);
 		}
 
-		const stream = new ChatAgentResponseStream(agent.extension, request, this._proxy, this._logService, this.commands.converter, sessionDisposables);
+		const stream = new ChatAgentResponseStream(agent.extension, request, this._proxy, this.commands.converter, sessionDisposables);
 		try {
 			const convertedHistory = await this.prepareHistoryTurns(request.agentId, context);
 			const task = agent.invoke(
@@ -708,7 +711,7 @@ class ExtHostChatAgent {
 		} satisfies vscode.ChatParticipant;
 	}
 
-	invoke(request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatExtendedResponseStream, token: CancellationToken): vscode.ProviderResult<vscode.ChatResult | void> {
+	invoke(request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: CancellationToken): vscode.ProviderResult<vscode.ChatResult | void> {
 		return this._requestHandler(request, context, response, token);
 	}
 
