@@ -614,10 +614,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
-		// const providerId = model.providerId;
-		// if (providerId === 'cs-chat') {
-		// 	this.container.classList.replace('interactive-session', 'cschat-session');
-		// }
+		if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+			this.container.classList.replace('interactive-session', 'cschat-session');
+		} else {
+			this.container.classList.replace('cschat-session', 'interactive-session');
+		}
 
 		this._register(model.onDidChange(e => {
 			if (e.kind === 'initialize') {
