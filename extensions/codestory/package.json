@@ -64,13 +64,6 @@
         }
       ]
     },
-    "interactiveSession": [
-      {
-        "id": "cs-chat",
-        "label": "CodeStory Agent",
-        "icon": "assets/aide-white.svg"
-      }
-    ],
     "chatParticipants": [
       {
         "id": "aide",
