@@ -22,6 +22,7 @@ import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
 import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, OpenFileCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertOpenFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
@@ -37,6 +38,7 @@ class CSBuiltinDynamicCompletions extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 		super();
 		this.workspaceSymbolsQuickAccess.getSymbolPicks('', undefined, CancellationToken.None);
@@ -50,9 +52,9 @@ class CSBuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				// if (widget.viewModel?.providerId !== 'cs-chat') {
-				// 	return null;
-				// }
+				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
+					return null;
+				}
 
 				const range = computeCompletionRanges(model, position, CSBuiltinDynamicCompletions.VariableNameDef);
 				if (!range) {
@@ -247,6 +249,7 @@ class OpenFileCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 		super();
 
@@ -258,10 +261,9 @@ class OpenFileCompletions extends Disposable {
 					return null;
 				}
 
-				// early bail here if we are not in a chat widget
-				// if (widget.viewModel?.providerId !== 'cs-chat') {
-				// 	return null;
-				// }
+				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
+					return null;
+				}
 
 				const varWord = getWordAtText(position.column, OpenFileCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
 				if (!varWord && model.getWordUntilPosition(position).word) {
@@ -298,25 +300,6 @@ class OpenFileCompletions extends Disposable {
 						}
 					],
 				};
-
-				// const completionItems = completionURIs.filter((uri) => {
-				// 	return uri !== undefined;
-				// }).map(uri => {
-				// 	const detail = this.labelService.getUriLabel(dirname(uri as URI), { relative: true });
-				// 	return <CompletionItem>{
-				// 		label: basenameOrAuthority(uri as URI),
-				// 		insertText: '',
-				// 		detail,
-				// 		kind: CompletionItemKind.File,
-				// 		range,
-				// 		command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
-				// 		sortText: 'z'
-				// 	};
-				// });
-
-				// return {
-				// 	suggestions: completionItems
-				// };
 			}
 		}));
 	}

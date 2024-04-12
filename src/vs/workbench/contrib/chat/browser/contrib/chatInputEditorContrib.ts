@@ -520,6 +520,7 @@ class BuiltinDynamicCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 		super();
 
@@ -532,9 +533,9 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				// if (widget.viewModel?.providerId === 'cs-chat') {
-				// 	return null;
-				// }
+				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id === 'aide') {
+					return null;
+				}
 
 				const range = computeCompletionRanges(model, position, BuiltinDynamicCompletions.VariableNameDef);
 				if (!range) {

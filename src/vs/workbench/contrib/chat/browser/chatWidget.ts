@@ -579,6 +579,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
 			if (this.viewModel) {
 				this.updateImplicitContextKinds();
+				// TODO(@ghostwriternr): This is a hack to reload the widgets when default agent preference is changed.
+				// Maybe figure out what the original intention of this callback was later. I'm okay with this for now.
+				this.clear();
 			}
 		}));
 	}
@@ -611,10 +614,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
-		// const providerId = model.providerId;
-		// if (providerId === 'cs-chat') {
-		// 	this.container.classList.replace('interactive-session', 'cschat-session');
-		// }
+		if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+			this.container.classList.replace('interactive-session', 'cschat-session');
+		} else {
+			this.container.classList.replace('cschat-session', 'interactive-session');
+		}
 
 		this._register(model.onDidChange(e => {
 			if (e.kind === 'initialize') {

@@ -7,13 +7,16 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Iterable } from 'vs/base/common/iterator';
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { ProviderResult } from 'vs/editor/common/languages';
+import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from 'vs/platform/configuration/common/configurationRegistry';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { Registry } from 'vs/platform/registry/common/platform';
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatProgressResponseContent, IChatRequestVariableData } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from 'vs/workbench/contrib/chat/common/chatParticipantContribTypes';
@@ -163,7 +166,7 @@ export interface IChatAgentService extends IBaseChatAgentService {
 	makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
 }
 
-export class ChatAgentService implements IBaseChatAgentService {
+export class ChatAgentService extends Disposable implements IBaseChatAgentService {
 
 	public static readonly AGENT_LEADER = '@';
 
@@ -175,11 +178,23 @@ export class ChatAgentService implements IBaseChatAgentService {
 	readonly onDidChangeAgents: Event<IChatAgent | undefined> = this._onDidChangeAgents.event;
 
 	private readonly _hasDefaultAgent: IContextKey<boolean>;
+	private _defaultAgent = new Map<ChatAgentLocation, IChatAgent>();
+	private _contributedDefaultAgent = new Map<ChatAgentLocation, IChatAgentData>();
+
+	private readonly configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
 
 	constructor(
-		@IContextKeyService private readonly contextKeyService: IContextKeyService
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
+		super();
 		this._hasDefaultAgent = CONTEXT_CHAT_ENABLED.bindTo(this.contextKeyService);
+
+		this._register(this.configurationService.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('chat.defaultAgent')) {
+				this._updateDefaultAgents();
+			}
+		}));
 	}
 
 	registerAgent(id: string, data: IChatAgentData): IDisposable {
@@ -214,9 +229,7 @@ export class ChatAgentService implements IBaseChatAgentService {
 			throw new Error(`Agent already has implementation: ${JSON.stringify(id)}`);
 		}
 
-		if (entry.data.isDefault) {
-			this._hasDefaultAgent.set(true);
-		}
+		this._updateDefaultAgents();
 
 		entry.impl = agentImpl;
 		this._onDidChangeAgents.fire(new MergedChatAgent(entry.data, agentImpl));
@@ -225,9 +238,7 @@ export class ChatAgentService implements IBaseChatAgentService {
 			entry.impl = undefined;
 			this._onDidChangeAgents.fire(undefined);
 
-			if (entry.data.isDefault) {
-				this._hasDefaultAgent.set(false);
-			}
+			this._updateDefaultAgents();
 		});
 	}
 
@@ -235,10 +246,13 @@ export class ChatAgentService implements IBaseChatAgentService {
 		const agent = { data, impl: agentImpl };
 		this._agents.push(agent);
 		this._onDidChangeAgents.fire(new MergedChatAgent(data, agentImpl));
+		this._updateDefaultAgents();
 
 		return toDisposable(() => {
 			this._agents = this._agents.filter(a => a !== agent);
 			this._onDidChangeAgents.fire(undefined);
+
+			this._updateDefaultAgents();
 		});
 	}
 
@@ -249,14 +263,16 @@ export class ChatAgentService implements IBaseChatAgentService {
 		}
 		agent.data.metadata = { ...agent.data.metadata, ...updateMetadata };
 		this._onDidChangeAgents.fire(new MergedChatAgent(agent.data, agent.impl));
+
+		this._updateDefaultAgents();
 	}
 
 	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined {
-		return this.getActivatedAgents().find(a => !!a.isDefault && a.locations.includes(location));
+		return this._defaultAgent.get(location);
 	}
 
 	getContributedDefaultAgent(location: ChatAgentLocation): IChatAgentData | undefined {
-		return this.getAgents().find(a => !!a.isDefault && a.locations.includes(location));
+		return this._contributedDefaultAgent.get(location);
 	}
 
 	getSecondaryAgent(): IChatAgentData | undefined {
@@ -309,6 +325,64 @@ export class ChatAgentService implements IBaseChatAgentService {
 		}
 
 		return data.impl.provideFollowups(request, result, history, token);
+	}
+
+	private _updateDefaults<T extends IChatAgent | IChatAgentData>(
+		defaultAgents: T[],
+		defaultAgentMap: Map<ChatAgentLocation, T>
+	): typeof defaultAgentMap {
+		const defaultAgentsByLocation = new Map<ChatAgentLocation, T[]>();
+
+		for (const agent of defaultAgents) {
+			agent.locations.forEach(location => {
+				if (!defaultAgentsByLocation.has(location)) {
+					defaultAgentsByLocation.set(location, []);
+				}
+				defaultAgentsByLocation.get(location)!.push(agent);
+			});
+		}
+
+		defaultAgentsByLocation.forEach((defaultAgentsForLocation, location) => {
+			const aideAgent = defaultAgentsForLocation.find(agent => agent.id === 'aide');
+			if (defaultAgentsForLocation.length === 0) {
+				defaultAgentMap.delete(location);
+				return;
+			} else if (defaultAgentsForLocation.length === 1) {
+				defaultAgentMap.set(location, aideAgent ?? defaultAgentsForLocation[0]);
+				return;
+			} else if (defaultAgentsForLocation.length > 1) {
+				const preferenceKey = `chat.defaultAgent.${location}`;
+				const configuredDefaultAgentId = this.configurationService.getValue<string>(preferenceKey);
+				const configuredDefaultAgent = defaultAgentsForLocation.find(agent => agent.id === configuredDefaultAgentId);
+				const defaultAgentForLocation = configuredDefaultAgent ?? aideAgent ?? defaultAgentsForLocation[0];
+				defaultAgentMap.set(location, defaultAgentForLocation);
+				this.configurationRegistry.registerConfiguration({
+					properties: {
+						[preferenceKey]: {
+							type: 'string',
+							description: `The default chat participant to use in the ${location}.`,
+							default: defaultAgentForLocation.id,
+							enum: defaultAgentsForLocation.map(agent => agent.id),
+							enumItemLabels: defaultAgentsForLocation.map(agent => agent.name),
+						}
+					}
+				});
+			}
+		});
+
+		return defaultAgentMap;
+	}
+
+	private _updateDefaultAgents() {
+		const defaultAgents = this.getActivatedAgents().filter(a => a.isDefault);
+		const contributedDefaultAgents = this.getAgents().filter(a => a.isDefault);
+		if (defaultAgents.length > 0) {
+			this._hasDefaultAgent.set(true);
+		}
+
+		this._defaultAgent = this._updateDefaults(defaultAgents, this._defaultAgent);
+		this._contributedDefaultAgent = this._updateDefaults(contributedDefaultAgents, this._contributedDefaultAgent);
+		this._onDidChangeAgents.fire(undefined);
 	}
 }
 
