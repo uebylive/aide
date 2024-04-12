@@ -8,10 +8,7 @@
     "vscode": "^1.75.0"
   },
   "main": "./out/extension.js",
-  "activationEvents": [
-    "onStartupFinished",
-    "onSearch:text"
-  ],
+  "activationEvents": ["onStartupFinished"],
   "enabledApiProposals": [
     "inlineCompletionsAdditions",
     "interactive",
@@ -67,20 +64,12 @@
         }
       ]
     },
-    "interactiveSession": [
-      {
-        "id": "cs-chat",
-        "label": "CodeStory Agent",
-        "icon": "assets/aide-white.svg"
-      }
-    ],
     "chatParticipants": [
       {
         "id": "aide",
         "name": "Aide",
         "description": "What can I help you with today?",
-        "isDefault": true,
-        "locations": ["panel"]
+        "isDefault": true
       }
     ],
     "menus": {

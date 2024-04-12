@@ -116,8 +116,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _inputEditor!: CodeEditorWidget;
 	private _inputEditorElement!: HTMLElement;
 
-	protected requesterContainer!: HTMLElement;
-	protected modelNameContainer!: HTMLElement;
+	protected requesterContainer: HTMLElement | undefined;
+	protected modelNameContainer: HTMLElement | undefined;
 
 	private toolbar!: MenuWorkbenchToolBar;
 
@@ -134,7 +134,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private inputEditorHasText: IContextKey<boolean>;
 	private chatCursorAtTop: IContextKey<boolean>;
 	private inputEditorHasFocus: IContextKey<boolean>;
-	private providerId: string | undefined;
 
 	private cachedDimensions: dom.Dimension | undefined;
 	private cachedToolbarWidth: number | undefined;
@@ -146,6 +145,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		protected readonly location: ChatAgentLocation,
 		protected readonly options: IChatInputPartOptions,
 		@IChatWidgetHistoryService protected readonly historyService: IChatWidgetHistoryService,
+		@IChatAgentService protected readonly chatAgentService: IChatAgentService,
 		@IModelService protected readonly modelService: IModelService,
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
@@ -187,16 +187,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return localize('chatInput', "Chat Input");
 	}
 
-	setState(providerId: string, inputValue: string | undefined, requester?: IChatRequester): void {
-		this.providerId = providerId;
-		const history = this.historyService.getHistory(providerId);
+	setState(inputValue: string | undefined, requester: IChatRequester): void {
+		const history = this.historyService.getHistory();
 		this.history = new HistoryNavigator(history, 50);
 
 		if (typeof inputValue === 'string') {
 			this.setValue(inputValue);
 		}
 
-		if (providerId === 'cs-chat') {
+		if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
 			this.container.classList.replace('interactive-input-part', 'cschat-input-part');
 			if (!this.requesterContainer) {
 				const secondChild = this.container.childNodes[1];
@@ -217,10 +216,26 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				});
 			}
 
-			if (requester) {
-				this._renderRequester(requester);
-			}
+			this._renderRequester(requester);
 			this._renderModelName();
+		} else {
+			this.container.classList.replace('cschat-input-part', 'interactive-input-part');
+
+			// Remove the elements that were added
+			if (this.requesterContainer) {
+				this.requesterContainer.remove();
+				this.requesterContainer = undefined;
+			}
+			if (this.modelNameContainer) {
+				this.modelNameContainer.remove();
+			}
+
+			// Restore the original state of the inputEditor
+			this.inputEditor.updateOptions({
+				fontFamily: DEFAULT_FONT_FAMILY,
+				cursorWidth: 1,
+				acceptSuggestionOnEnter: 'off'
+			});
 		}
 	}
 
@@ -518,14 +533,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private getLayoutData() {
+		const aideUI = this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide';
 		return {
 			inputEditorBorder: 2,
 			followupsHeight: this.followupsContainer.offsetHeight,
-			inputPartEditorHeight: this.providerId === 'cs-chat' ? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT) : Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
-			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : this.providerId === 'cs-chat' ? 24 : 40,
-			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : this.providerId === 'cs-chat' ? 34 : 24,
+			inputPartEditorHeight: aideUI ? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT) : Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
+			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : aideUI ? 24 : 40,
+			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : aideUI ? 34 : 24,
 			implicitContextHeight: this.implicitContextContainer.offsetHeight,
-			editorBorder: this.providerId === 'cs-chat' ? 0 : 2,
+			editorBorder: aideUI ? 0 : 2,
 			editorPadding: 12,
 			toolbarPadding: 4,
 			executeToolbarWidth: this.cachedToolbarWidth = this.toolbar.getItemsWidth(),
@@ -535,11 +551,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	saveState(): void {
 		const inputHistory = this.history.getHistory();
-		this.historyService.saveHistory(this.providerId!, inputHistory);
+		this.historyService.saveHistory(inputHistory);
 	}
 
 	private _renderRequester(requester: IChatRequester): void {
 		const username = requester.username || localize('requester', "You");
+		if (!this.requesterContainer) {
+			return;
+		}
+
 		this.requesterContainer.querySelector('h3.username')!.textContent = username;
 
 		const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
@@ -555,6 +575,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private async _renderModelName(): Promise<void> {
+		if (!this.modelNameContainer) {
+			return;
+		}
+
 		const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();
 		const modelName = modelSelectionSettings.models[modelSelectionSettings.slowModel].name;
 

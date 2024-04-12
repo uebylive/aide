@@ -18,13 +18,13 @@ import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ILogService } from 'vs/platform/log/common/log';
-import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
+import { IChatWidget, showChatView } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatDynamicVariableModel } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
-import { CONTEXT_PROVIDER_EXISTS } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
-import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
@@ -249,7 +249,7 @@ class ChatAddContext extends EditorAction2 {
 		super({
 			id: ChatAddContext.ID,
 			title: localize2({ key: 'actions.chat.addContext', comment: ['Add context to the chat input box'] }, "Add Context"),
-			precondition: CONTEXT_PROVIDER_EXISTS,
+			precondition: CONTEXT_CHAT_ENABLED,
 			keybinding: {
 				when: EditorContextKeys.textInputFocus,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
@@ -259,15 +259,9 @@ class ChatAddContext extends EditorAction2 {
 	}
 
 	async runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): Promise<void> {
-		const chatService = accessor.get(IChatService);
-		const chatWidgetService = accessor.get(IChatWidgetService);
+		const viewsService = accessor.get(IViewsService);
 
-		const providers = chatService.getProviderInfos();
-		if (!providers.length) {
-			return;
-		}
-
-		const chatWidget = await chatWidgetService.revealViewForProvider(providers[0].id);
+		const chatWidget = await showChatView(viewsService);
 		const editorModel = editor.getModel();
 		if (!editorModel || !chatWidget) {
 			return;

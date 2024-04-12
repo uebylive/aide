@@ -7,6 +7,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, DisposableMap, IDisposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { escapeRegExpCharacters } from 'vs/base/common/strings';
+import { URI, UriComponents } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
@@ -17,7 +18,8 @@ import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
 import { reviveWorkspaceEditDto } from 'vs/workbench/api/browser/mainThreadBulkEdits';
-import { ExtHostChatAgentsShape2, ExtHostContext, ICSChatAgentEditResponseDto, IChatProgressDto, IExtensionChatAgentMetadata, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { ILogService } from 'vs/platform/log/common/log';
+import { ExtHostChatAgentsShape2, ExtHostContext, IChatProgressDto, ICSChatAgentEditResponseDto, IExtensionChatAgentMetadata, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { AddDynamicVariableAction, IAddDynamicVariableContext } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
@@ -27,6 +29,7 @@ import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestP
 import { IChatFollowup, IChatProgress, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { ICSChatAgentEditResponse } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 interface AgentData {
 	dispose: () => void;
@@ -53,6 +56,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 		@IChatWidgetService private readonly _chatWidgetService: IChatWidgetService,
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@IUriIdentityService private readonly _uriIdentService: IUriIdentityService,
+		@ILogService private readonly _logService: ILogService,
+		@IExtensionService private readonly _extensionService: IExtensionService,
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChatAgents2);
@@ -80,12 +85,19 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 		this._agents.deleteAndDispose(handle);
 	}
 
-	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: { name: string; description: string } | undefined): void {
-		const chatSessionProvider = this._chatService.getProviderInfos().find(p => p.extensionId === extension.value);
-		if (!chatSessionProvider) {
-			throw new Error(`valid chatSessionProvider not found. Ideally this shouldn't happen, and is an editor bug.`);
+	$transferActiveChatSession(toWorkspace: UriComponents): void {
+		const widget = this._chatWidgetService.lastFocusedWidget;
+		const sessionId = widget?.viewModel?.model.sessionId;
+		if (!sessionId) {
+			this._logService.error(`MainThreadChat#$transferActiveChatSession: No active chat session found`);
+			return;
 		}
 
+		const inputValue = widget?.inputEditor.getValue() ?? '';
+		this._chatService.transferChatSession({ sessionId, inputValue }, URI.revive(toWorkspace));
+	}
+
+	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: { name: string; description: string } | undefined): void {
 		const staticAgentRegistration = this._chatAgentService.getAgent(id);
 		if (!staticAgentRegistration && !dynamicProps) {
 			if (this._chatAgentService.getAgentsByName(id).length) {
@@ -113,11 +125,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 
 				return this._proxy.$provideFollowups(request, handle, result, { history }, token);
 			},
-			provideWelcomeMessage: (token: CancellationToken) => {
-				return this._proxy.$provideWelcomeMessage(handle, token);
-			},
-			provideSampleQuestions: (token: CancellationToken) => {
-				return this._proxy.$provideSampleQuestions(handle, token);
+			provideWelcomeMessage: (location: ChatAgentLocation, token: CancellationToken) => {
+				return this._proxy.$provideWelcomeMessage(handle, location, token);
 			},
 			provideEdits: async (request, progress, token) => {
 				this._pendingEdits.set(request.responseId, progress);
@@ -134,18 +143,22 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 				}
 
 				return { edits, codeBlockIndex: response?.codeBlockIndex ?? 0 };
+			},
+			provideSampleQuestions: (location: ChatAgentLocation, token: CancellationToken) => {
+				return this._proxy.$provideSampleQuestions(handle, location, token);
 			}
 		};
 
 		let disposable: IDisposable;
 		if (!staticAgentRegistration && dynamicProps) {
+			const extensionDescription = this._extensionService.extensions.find(e => ExtensionIdentifier.equals(e.identifier, extension));
 			disposable = this._chatAgentService.registerDynamicAgent(
 				{
 					id,
-					providerId: chatSessionProvider.id,
 					name: dynamicProps.name,
 					description: dynamicProps.description,
 					extensionId: extension,
+					extensionPublisher: extensionDescription?.publisherDisplayName ?? extension.value,
 					metadata: revive(metadata),
 					slashCommands: [],
 					locations: [ChatAgentLocation.Panel] // TODO all dynamic participants are panel only?

@@ -6,7 +6,6 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
-// import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
@@ -23,10 +22,10 @@ import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
 import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, OpenFileCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertOpenFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
-// import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
@@ -39,6 +38,7 @@ class CSBuiltinDynamicCompletions extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 		super();
 		this.workspaceSymbolsQuickAccess.getSymbolPicks('', undefined, CancellationToken.None);
@@ -52,7 +52,7 @@ class CSBuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				if (widget.viewModel?.providerId !== 'cs-chat') {
+				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
 					return null;
 				}
 
@@ -249,8 +249,7 @@ class OpenFileCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		// @IEditorService private readonly editorService: IEditorService,
-		// @ILabelService private readonly labelService: ILabelService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 		super();
 
@@ -262,8 +261,7 @@ class OpenFileCompletions extends Disposable {
 					return null;
 				}
 
-				// early bail here if we are not in a chat widget
-				if (widget.viewModel?.providerId !== 'cs-chat') {
+				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
 					return null;
 				}
 
@@ -302,25 +300,6 @@ class OpenFileCompletions extends Disposable {
 						}
 					],
 				};
-
-				// const completionItems = completionURIs.filter((uri) => {
-				// 	return uri !== undefined;
-				// }).map(uri => {
-				// 	const detail = this.labelService.getUriLabel(dirname(uri as URI), { relative: true });
-				// 	return <CompletionItem>{
-				// 		label: basenameOrAuthority(uri as URI),
-				// 		insertText: '',
-				// 		detail,
-				// 		kind: CompletionItemKind.File,
-				// 		range,
-				// 		command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
-				// 		sortText: 'z'
-				// 	};
-				// });
-
-				// return {
-				// 	suggestions: completionItems
-				// };
 			}
 		}));
 	}
