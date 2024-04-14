@@ -577,6 +577,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}));
 		this._register(this.inputEditor.onDidChangeModelContent(() => this.updateImplicitContextKinds()));
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
+			if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+				this.listContainer.classList.replace('interactive-list', 'cschat-list');
+			} else {
+				this.listContainer.classList.replace('cschat-list', 'interactive-list');
+			}
 			if (this.viewModel) {
 				this.updateImplicitContextKinds();
 				// TODO(@ghostwriternr): This is a hack to reload the widgets when default agent preference is changed.

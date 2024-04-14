@@ -121,7 +121,7 @@ class FileReferenceCompletions extends Disposable {
 			_debugDisplayName: FileReferenceCompletionProviderName,
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.supportsFileReferences) {
+				if (!widget) {
 					return null;
 				}
 
@@ -195,7 +195,7 @@ class CodeSymbolCompletions extends Disposable {
 			_debugDisplayName: CodeSymbolCompletionProviderName,
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.supportsFileReferences) {
+				if (!widget) {
 					return null;
 				}
 

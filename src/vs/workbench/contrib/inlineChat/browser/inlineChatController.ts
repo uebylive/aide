@@ -20,7 +20,7 @@ import { IPosition, Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { ISelection, Selection } from 'vs/editor/common/core/selection';
 import { IEditorContribution, IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { CompletionItemKind, CompletionList, TextEdit } from 'vs/editor/common/languages';
+import { CompletionItem, CompletionItemKind, CompletionList, TextEdit } from 'vs/editor/common/languages';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { InlineCompletionsController } from 'vs/editor/contrib/inlineCompletions/browser/inlineCompletionsController';
 import { localize } from 'vs/nls';
@@ -31,7 +31,7 @@ import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiati
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatWidgetService, showChatView } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { chatAgentLeader, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart } from 'vs/workbench/contrib/chat/common/chatParserTypes';
+import { chatAgentLeader, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { IInlineChatSavingService } from './inlineChatSavingService';
 import { EmptyResponse, ErrorResponse, ReplyResponse, Session, SessionPrompt } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
@@ -52,6 +52,8 @@ import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { isEqual } from 'vs/base/common/resources';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
+import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 
 export const enum State {
 	CREATE_SESSION = 'CREATE_SESSION',
@@ -365,7 +367,7 @@ export class InlineChatController implements IEditorContribution {
 		this._sessionStore.add(this._session.wholeRange.onDidChange(updateWholeRangeDecoration));
 		updateWholeRangeDecoration();
 
-		this._sessionStore.add(this._input.value.onDidBlur(() => this.cancelSession()));
+		// this._sessionStore.add(this._input.value.onDidBlur(() => this.cancelSession()));
 
 		this._input.value.setSession(this._session);
 		// this._zone.value.widget.updateSlashCommands(this._session.session.slashCommands ?? []);
@@ -471,6 +473,55 @@ export class InlineChatController implements IEditorContribution {
 				}
 
 				return result;
+			}
+		}));
+
+		this._sessionStore.add(this._languageFeatureService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: 'inlineChatDynamicCompletions',
+			triggerCharacters: [chatVariableLeader],
+			provideCompletionItems: (model, position, context, token) => {
+				if (position.lineNumber !== 1 || !this._session) {
+					return undefined;
+				}
+
+				const widget = this._chatWidgetService.getWidgetByInputUri(model.uri);
+				if (widget !== this._zone.value.widget.chatWidget && widget !== this._input.value.chatWidget) {
+					return undefined;
+				}
+
+				// TODO(@ghostwriternr): Add this back when agent API becomes stable for inline chat
+				// if (this._chatAgentService.getDefaultAgent(ChatAgentLocation.Editor)?.id !== 'aide') {
+				// 	return undefined;
+				// }
+
+				const range = computeCompletionRanges(model, position, new RegExp(`${chatVariableLeader}\\w*`, 'g'));
+				if (!range) {
+					return undefined;
+				}
+
+				const afterRange = new Range(position.lineNumber, range.replace.startColumn, position.lineNumber, range.replace.startColumn + '#code:'.length);
+				return <CompletionList>{
+					suggestions: [
+						<CompletionItem>{
+							label: `${chatVariableLeader}file`,
+							insertText: `${chatVariableLeader}file:`,
+							detail: localize('pickFileReferenceLabel', "Pick a file"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'file' }] },
+							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}code`,
+							insertText: `${chatVariableLeader}code:`,
+							detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
+							sortText: 'z'
+						}
+					]
+				};
 			}
 		}));
 
