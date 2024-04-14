@@ -489,9 +489,10 @@ export class InlineChatController implements IEditorContribution {
 					return undefined;
 				}
 
-				if (this._chatAgentService.getDefaultAgent(ChatAgentLocation.Editor)?.id !== 'aide') {
-					return undefined;
-				}
+				// TODO(@ghostwriternr): Add this back when agent API becomes stable for inline chat
+				// if (this._chatAgentService.getDefaultAgent(ChatAgentLocation.Editor)?.id !== 'aide') {
+				// 	return undefined;
+				// }
 
 				const range = computeCompletionRanges(model, position, new RegExp(`${chatVariableLeader}\\w*`, 'g'));
 				if (!range) {

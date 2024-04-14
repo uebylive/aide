@@ -212,7 +212,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				this.inputEditor.updateOptions({
 					fontFamily: EDITOR_FONT_DEFAULTS.fontFamily,
 					cursorWidth: 3,
-					acceptSuggestionOnEnter: 'on'
 				});
 			}
 
@@ -234,7 +233,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this.inputEditor.updateOptions({
 				fontFamily: DEFAULT_FONT_FAMILY,
 				cursorWidth: 1,
-				acceptSuggestionOnEnter: 'off'
 			});
 		}
 	}
