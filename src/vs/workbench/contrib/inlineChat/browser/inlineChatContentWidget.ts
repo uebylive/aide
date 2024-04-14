@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/inlineChatContentWidget';
+import 'vs/css!./media/inlineCSChatContentWidget';
 import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from 'vs/editor/browser/editorBrowser';
 import * as dom from 'vs/base/browser/dom';
 import { IDimension } from 'vs/editor/common/core/dimension';
@@ -15,7 +16,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { inlineChatBackground } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { Session } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
-import { ChatAgentLocation } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { editorBackground, editorForeground, inputBackground } from 'vs/platform/theme/common/colorRegistry';
 import { ChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { Range } from 'vs/editor/common/core/range';
@@ -48,6 +49,7 @@ export class InlineChatContentWidget implements IContentWidget {
 		private readonly _editor: ICodeEditor,
 		@IInstantiationService instaService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 	) {
 
 		this._defaultChatModel = this._store.add(instaService.createInstance(ChatModel, undefined, ChatAgentLocation.Editor));
@@ -89,6 +91,9 @@ export class InlineChatContentWidget implements IContentWidget {
 
 		this._domNode.tabIndex = -1;
 		this._domNode.className = 'inline-chat-content-widget interactive-session';
+		if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Editor)?.id === 'aide') {
+			this._domNode.className = 'inline-cschat-content-widget cschat-session';
+		}
 
 		this._domNode.appendChild(this._inputContainer);
 

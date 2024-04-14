@@ -371,7 +371,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
-			const currentHeight = Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
+			const currentHeight = this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide'
+				? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT)
+				: Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
+
 			if (currentHeight !== this.inputEditorHeight) {
 				this.inputEditorHeight = currentHeight;
 				this._onDidChangeHeight.fire();
@@ -539,7 +542,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			followupsHeight: this.followupsContainer.offsetHeight,
 			inputPartEditorHeight: aideUI ? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT) : Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
 			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : aideUI ? 24 : 40,
-			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : aideUI ? 34 : 24,
+			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : aideUI ? 46 : 24,
 			implicitContextHeight: this.implicitContextContainer.offsetHeight,
 			editorBorder: aideUI ? 0 : 2,
 			editorPadding: 12,

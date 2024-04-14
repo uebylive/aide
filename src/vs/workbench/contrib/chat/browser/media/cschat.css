@@ -8,7 +8,7 @@
 	margin: auto;
 }
 
-.interactive-list > .monaco-list > .monaco-scrollable-element > .monaco-list-rows > .monaco-list-row > .monaco-tl-row > .monaco-tl-twistie {
+.cschat-list > .monaco-list > .monaco-scrollable-element > .monaco-list-rows > .monaco-list-row > .monaco-tl-row > .monaco-tl-twistie {
 	/* Hide twisties from chat tree rows, but not from nested trees within a chat response */
 	display: none !important;
 }
@@ -226,8 +226,9 @@
 	color: var(--vscode-textPreformat-foreground);
 }
 
-.interactive-list {
+.cschat-list {
 	overflow: hidden;
+	border-bottom: 1px solid var(--vscode-chat-requestBorder, transparent);
 }
 
 .interactive-request {
@@ -363,8 +364,8 @@
 	border-radius: 4px;
 	*/
 	position: relative;
+	padding: 6px 0px;
 	/*
-	padding: 0 6px;
 	margin-bottom: 4px;
 	*/
 	align-items: flex-end;
@@ -453,10 +454,9 @@
 }
 
 .cschat-session .cschat-input-part {
-	padding: 12px 20px 0px 20px;
+	padding: 12px 20px;
 	display: flex;
 	flex-direction: column;
-	border-top: 1px solid var(--vscode-chat-requestBorder, transparent);
 }
 
 .cschat-session .interactive-input-part.compact {
@@ -548,7 +548,7 @@
 	padding: 0 4px 0 6px;
 }
 
-.quick-input-widget .interactive-list {
+.quick-input-widget .cschat-list {
 	border-bottom-right-radius: 6px;
 	border-bottom-left-radius: 6px;
 }
