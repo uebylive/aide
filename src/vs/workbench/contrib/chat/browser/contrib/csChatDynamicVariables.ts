@@ -23,7 +23,6 @@ import { ChatDynamicVariableModel } from 'vs/workbench/contrib/chat/browser/cont
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
