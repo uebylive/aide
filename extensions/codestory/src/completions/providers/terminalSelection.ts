@@ -4,11 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
-export const TERMINAL_SELECTION = 'terminalSelection';
+export const TERMINAL_SELECTION_VARIABLE = 'terminalSelection';
 
 export function registerTerminalSelection() {
 	// TODO(skcd): This isnot working, we are parsing the value as a JSON which makes sense maybe?
-	vscode.chat.registerChatVariableResolver(TERMINAL_SELECTION, 'User selection in the terminal', {
+	vscode.chat.registerChatVariableResolver(TERMINAL_SELECTION_VARIABLE, 'User selection in the terminal', {
 		resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
 			let selection = '';
 			try {
