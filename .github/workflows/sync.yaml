@@ -37,7 +37,7 @@ jobs:
         run: |
           git push -u origin update-from-upstream
 
-        - name: Create pull request
+      - name: Create pull request
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
