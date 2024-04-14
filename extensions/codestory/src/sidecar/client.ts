@@ -3,21 +3,22 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as vscode from 'vscode';
 import * as path from 'path';
-import { sleep } from '../utilities/sleep';
-import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
-import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import * as vscode from 'vscode';
+import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
+import { LoggingService } from '../completions/logger';
+import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
+import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
+import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
+import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
-import { getUserId } from '../utilities/uniqueId';
-import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
-import { LoggingService } from '../completions/logger';
-import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
+import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
-import { TERMINAL_SELECTION } from '../completions/providers/terminalSelection';
+import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
+import { getUserId } from '../utilities/uniqueId';
+import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 
 export enum CompletionStopReason {
 	/**
@@ -792,103 +793,64 @@ async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatResolvedVariable[],
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
-	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	let terminalSelection: string | undefined = undefined;
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
-	for (let index = 0; index < variables.length; index++) {
-		const variable = variables[index];
+
+	const resolveFileReference = async (variableName: string, variableValue: vscode.ChatVariableValue) => {
+		const parsedJson = JSON.parse(variableValue.value as string) as CodeSelectionUriRange;
+		const filePath = vscode.Uri.parse(parsedJson.uri.path);
+		const cachedFile = fileCache.get(filePath.fsPath);
+		if (cachedFile === undefined) {
+			const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
+			fileCache.set(filePath.fsPath, fileDocument);
+		}
+		const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
+		const startRange = {
+			line: parsedJson.range.startLineNumber,
+			character: parsedJson.range.startColumn,
+		};
+		const endRange = {
+			line: parsedJson.range.endLineNumber,
+			character: parsedJson.range.endColumn,
+		};
+		const variableType = getVariableType(
+			variableName,
+			startRange,
+			endRange,
+			fileDocument,
+		);
+		const content = fileDocument.getText(new vscode.Range(
+			new vscode.Position(startRange.line, startRange.character),
+			new vscode.Position(endRange.line, endRange.character),
+		));
+		resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
+		if (variableType !== null) {
+			sidecarVariables.push({
+				name: variableName,
+				start_position: startRange,
+				end_position: endRange,
+				fs_file_path: filePath.fsPath,
+				type: variableType,
+				content,
+				language: fileDocument.languageId,
+			});
+		}
+	};
+
+	for (const variable of variables) {
 		const name = variable.name;
-		const value = variable.values;
-		if (value.length === 0) {
-			continue;
-		}
-		// TODO(skcd): Is there a better way to handle this code, because we will
-		// obviously have more variables coming in the future
-		if (name === TERMINAL_SELECTION) {
+		const values = variable.values;
+		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
-			terminalSelection = variable.values[0].value as string;
-			continue;
-		}
-		const variableValue = value[0];
-		if (typeof variableValue.value === 'string') {
-			// TODO write code from here for the selection logic
-			const parsedJson = JSON.parse(variableValue.value) as CodeSelectionUriRange;
-			const filePath = vscode.Uri.parse(parsedJson.uri.path);
-			const cachedFile = fileCache.get(filePath.fsPath);
-			if (cachedFile === undefined) {
-				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
-				fileCache.set(filePath.fsPath, fileDocument);
+			terminalSelection = values[0].value as string;
+		} else if (name === OPEN_FILES_VARIABLE) {
+			for (const value of values) {
+				await resolveFileReference('file', value);
 			}
-			const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
-			const startRange = {
-				line: parsedJson.range.startLineNumber,
-				character: parsedJson.range.startColumn,
-			};
-			const endRange = {
-				line: parsedJson.range.endLineNumber,
-				character: parsedJson.range.endColumn,
-			};
-			const variableType = getVariableType(
-				name,
-				startRange,
-				endRange,
-				fileDocument,
-			);
-			const content = fileDocument.getText(new vscode.Range(
-				new vscode.Position(startRange.line, startRange.character),
-				new vscode.Position(endRange.line, endRange.character),
-			));
-			resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
-			if (variableType !== null) {
-				sidecarVariables.push({
-					name,
-					start_position: startRange,
-					end_position: endRange,
-					fs_file_path: filePath.fsPath,
-					type: variableType,
-					content,
-					language: fileDocument.languageId,
-				});
-			}
-		} else {
-			const parsedValue = variableValue.value as any;
-			const fsFilePath = parsedValue.uri.fsPath;
-			const cachedFile = fileCache.get(fsFilePath);
-			if (cachedFile === undefined) {
-				const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fsFilePath));
-				fileCache.set(fsFilePath, fileDocument);
-			}
-			const fileDocument = fileCache.get(fsFilePath) as vscode.TextDocument;
-			const startRange = {
-				line: parsedValue.range.startLineNumber,
-				character: parsedValue.range.startColumn,
-			};
-			const endRange = {
-				line: parsedValue.range.endLineNumber,
-				character: parsedValue.range.endColumn,
-			};
-			const variableType = getVariableType(
-				name,
-				startRange,
-				endRange,
-				fileDocument,
-			);
-			const content = fileDocument.getText(new vscode.Range(
-				new vscode.Position(startRange.line, startRange.character),
-				new vscode.Position(endRange.line, endRange.character),
-			));
-			resolvedFileCache.set(fsFilePath, [fileDocument.getText(), fileDocument.languageId]);
-			if (variableType !== null) {
-				sidecarVariables.push({
-					name,
-					start_position: startRange,
-					end_position: endRange,
-					fs_file_path: fsFilePath,
-					type: variableType,
-					content,
-					language: fileDocument.languageId,
-				});
-			}
+		} else if (name === 'file' || name === 'code') {
+			const variableValue = values[0];
+			await resolveFileReference(name, variableValue);
 		}
 	}
 	return {
@@ -910,7 +872,9 @@ function getVariableType(
 	endPosition: Position,
 	textDocument: vscode.TextDocument,
 ): SidecarVariableType | null {
-	if (name.startsWith('file')) {
+	if (name === 'currentFile') {
+		return 'File';
+	} else if (name.startsWith('file')) {
 		// here we have to check if the range is the full file or just a partial
 		// range in which case its a selection
 		const textLines = textDocument.lineCount;

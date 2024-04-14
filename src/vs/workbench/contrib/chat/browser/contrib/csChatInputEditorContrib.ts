@@ -21,7 +21,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, OpenFileCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertOpenFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -81,19 +81,6 @@ class CSBuiltinDynamicCompletions extends Disposable {
 							kind: CompletionItemKind.Text,
 							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
 							sortText: 'z'
-						},
-						<CompletionItem>{
-							label: `${chatVariableLeader}currentFiles`,
-							insertText: `${chatVariableLeader}currentFiles`,
-							detail: localize("pickOpenFiles", "Adds current open files to context"),
-							range,
-							kind: CompletionItemKind.Text,
-							command: {
-								id: MultiLevelCodeTriggerAction.ID,
-								title: MultiLevelCodeTriggerAction.ID,
-								arguments: [{ widget, range: afterRange, pick: 'currentFiles' }],
-							},
-							sortText: 'z',
 						}
 					]
 				};
@@ -241,67 +228,3 @@ class CodeSymbolCompletions extends Disposable {
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(CodeSymbolCompletions, LifecyclePhase.Eventually);
-
-
-class OpenFileCompletions extends Disposable {
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}currentFiles`, 'g'); // MUST be using `g`-flag
-
-	constructor(
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
-	) {
-		super();
-
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: OpenFileCompletionProviderName,
-			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget) {
-					return null;
-				}
-
-				if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
-					return null;
-				}
-
-				const varWord = getWordAtText(position.column, OpenFileCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
-				if (!varWord && model.getWordUntilPosition(position).word) {
-					return null;
-				}
-
-				const range: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.endColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
-
-				// const openEditors = this.editorService.visibleEditorPanes;
-				// const completionURIs = openEditors.map(editor => editor.input.resource);
-
-				const editRange: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.startColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
-
-				return {
-					suggestions: [
-						<CompletionItem>{
-							label: 'currentFiles ',
-							insertText: '',
-							detail: 'Insert open files to chat context',
-							kind: CompletionItemKind.Text,
-							range,
-							command: { id: SelectAndInsertOpenFileAction.ID, title: SelectAndInsertOpenFileAction.ID, arguments: [{ widget, range: editRange }] },
-							sortText: 'z'
-						}
-					],
-				};
-			}
-		}));
-	}
-}
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(OpenFileCompletions, LifecyclePhase.Eventually);
