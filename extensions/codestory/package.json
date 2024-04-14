@@ -1,7 +1,7 @@
 {
   "name": "codestoryai",
-  "displayName": "CodeStory.AI",
-  "description": "CodeStory is an AI assistant to remove all context switch costs for code reviews.",
+  "displayName": "Aide",
+  "description": "",
   "publisher": "codestory-ghost",
   "version": "0.6.1",
   "engines": {
