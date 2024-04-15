@@ -108,7 +108,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			'aide-user.png'
 		));
 		this.chatAgent.supportIssueReporting = true;
-		this.chatAgent.sampleRequest = 'Explain the active file in the editor';
 		this.chatAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
 				return [
