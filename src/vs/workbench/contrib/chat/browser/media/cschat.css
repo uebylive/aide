@@ -356,6 +356,7 @@
 
 .cschat-session .interactive-input-and-execute-toolbar {
 	display: flex;
+	flex-direction: column;
 	box-sizing: border-box;
 	cursor: text;
 	/*
@@ -369,6 +370,12 @@
 	margin-bottom: 4px;
 	*/
 	align-items: flex-end;
+	justify-content: space-between;
+}
+
+.cschat-session .interactive-input-toolbars {
+	width: 100%;
+	display: flex;
 	justify-content: space-between;
 }
 
@@ -415,6 +422,18 @@
 
 .cschat-session .cschat-input-part .interactive-execute-toolbar .codicon-debug-stop {
 	color: var(--vscode-icon-foreground) !important;
+}
+
+.cschat-session .cschat-input-part .interactive-aide-toolbar {
+	height: 22px;
+
+	/* It's bottom-aligned, make it appear centered within the container */
+	margin-bottom: 7px;
+}
+
+.cschat-session .cschat-input-part .interactive-aide-toolbar .monaco-action-bar .actions-container {
+	display: flex;
+	gap: 4px;
 }
 
 .interactive-response .interactive-result-code-block .interactive-result-editor .monaco-editor,
