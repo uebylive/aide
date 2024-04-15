@@ -10,7 +10,6 @@ import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
-import { copySettings } from './utilities/copySettings';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
@@ -20,7 +19,6 @@ import { CSInteractiveEditorSessionProvider } from './completions/providers/edit
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider, CSChatSessionProvider } from './completions/providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
-import { AideQuickFix } from './quickActions/fix';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
@@ -29,6 +27,8 @@ import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { handleRequest } from './server/requestHandler';
 import { AddressInfo } from 'net';
 import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
+import { AideQuickFix } from './quickActions/fix';
+import { copySettings } from './utilities/copySettings';
 
 
 

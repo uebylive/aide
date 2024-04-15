@@ -485,6 +485,7 @@ export type IdentifierNodeInformation = {
 export type IdentifierNodeType = {
 	identifier_nodes: IdentifierNodeInformation[];
 	function_parameters: IdentifierNodeInformation[];
+	import_nodes: IdentifierNodeInformation[];
 };
 
 

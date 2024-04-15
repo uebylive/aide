@@ -145,7 +145,13 @@ export async function typeDefinitionForIdentifierNodes(
 			type: 'function_parameter',
 		};
 	});
-	const finalNodes = [...identifierNodes, ...functionNodes];
+	const importNodes = nodes.import_nodes.map((node) => {
+		return {
+			node,
+			type: 'import_node',
+		};
+	});
+	const finalNodes = [...identifierNodes, ...functionNodes, ...importNodes];
 	const response = await Promise.all(finalNodes.map(async (identifierNode) => {
 		const typeDefinition = await typeDefinitionProvider(
 			identifierNode.node,
