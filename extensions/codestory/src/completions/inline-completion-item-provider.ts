@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 import { getArtificialDelay, resetArtificialDelay, type LatencyFeatureFlags } from './artificial-delay';
-import { formatCompletion } from './format-completion';
 import { getCurrentDocContext } from './get-current-doc-context';
 import {
 	getInlineCompletions,
@@ -453,10 +452,6 @@ export class InlineCompletionItemProvider
 
 		if (!completion) {
 			return;
-		}
-
-		if (this.config.formatOnAccept) {
-			await formatCompletion(completion as AutocompleteItem);
 		}
 
 		resetArtificialDelay();
