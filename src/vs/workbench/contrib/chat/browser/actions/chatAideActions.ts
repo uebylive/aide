@@ -12,6 +12,7 @@ import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/act
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { showChatView } from 'vs/workbench/contrib/chat/browser/chat';
 import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CONTEXT_IN_AIDE_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export class InsertContextTrigger extends Action2 {
@@ -27,6 +28,7 @@ export class InsertContextTrigger extends Action2 {
 			menu: [
 				{
 					id: MenuId.ChatAideActions,
+					when: CONTEXT_IN_AIDE_CHAT_SESSION,
 					group: 'navigation',
 				}
 			]

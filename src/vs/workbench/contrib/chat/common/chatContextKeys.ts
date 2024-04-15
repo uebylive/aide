@@ -20,6 +20,7 @@ export const CONTEXT_CHAT_INPUT_HAS_TEXT = new RawContextKey<boolean>('chatInput
 export const CONTEXT_CHAT_INPUT_HAS_FOCUS = new RawContextKey<boolean>('chatInputHasFocus', false, { type: 'boolean', description: localize('interactiveInputHasFocus', "True when the chat input has focus.") });
 export const CONTEXT_IN_CHAT_INPUT = new RawContextKey<boolean>('inChatInput', false, { type: 'boolean', description: localize('inInteractiveInput', "True when focus is in the chat input, false otherwise.") });
 export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inChat', false, { type: 'boolean', description: localize('inChat', "True when focus is in the chat widget, false otherwise.") });
+export const CONTEXT_IN_AIDE_CHAT_SESSION = new RawContextKey<boolean>('inAideChat', false, { type: 'boolean', description: localize('inAideChat', "True when focus is in a chat widget with the Aide agent, false otherwise.") });
 
 export const CONTEXT_CHAT_ENABLED = new RawContextKey<boolean>('chatIsEnabled', false, { type: 'boolean', description: localize('chatIsEnabled', "True when chat is enabled because a default chat participant is registered.") });
 export const CONTEXT_CHAT_INPUT_CURSOR_AT_TOP = new RawContextKey<boolean>('chatCursorAtTop', false);
