@@ -213,6 +213,9 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		};
 		const entry = { data };
 		this._agents.push(entry);
+
+		this._updateDefaultAgents();
+
 		return toDisposable(() => {
 			this._agents = this._agents.filter(a => a !== entry);
 			this._onDidChangeAgents.fire(undefined);
