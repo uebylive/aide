@@ -49,6 +49,7 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { CancelAction, ChatSubmitSecondaryAgentAction, IChatExecuteActionContext, SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
+import { ActionViewItemWithKb } from 'vs/workbench/contrib/chat/browser/contrib/actionViewItemWithKb';
 import { IChatRequester } from 'vs/workbench/contrib/chat/browser/csChat';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
@@ -197,7 +198,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this.setValue(inputValue);
 		}
 
-		if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+		if (this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide') {
 			this.container.classList.replace('interactive-input-part', 'cschat-input-part');
 			if (!this.requesterContainer) {
 				const secondChild = this.container.childNodes[1];
@@ -371,7 +372,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
-			const currentHeight = this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide'
+			const currentHeight = this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide'
 				? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT)
 				: Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
 
@@ -444,10 +445,14 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				if (this.location === ChatAgentLocation.Panel) {
+				if (this.location === ChatAgentLocation.Panel && this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel)?.id !== 'aide') {
 					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 						const dropdownAction = this.instantiationService.createInstance(MenuItemAction, { id: 'chat.moreExecuteActions', title: localize('notebook.moreExecuteActionsLabel', "More..."), icon: Codicon.chevronDown }, undefined, undefined, undefined, undefined);
 						return this.instantiationService.createInstance(ChatSubmitDropdownActionItem, action, dropdownAction);
+					}
+				} else if (this.location === ChatAgentLocation.Panel) {
+					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+						return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 					}
 				}
 
@@ -528,7 +533,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private previousInputEditorDimension: IDimension | undefined;
 	private _layout(height: number, width: number, allowRecurse = true): void {
 
-		const aideUI = this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide';
+		const aideUI = this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide';
 		let data = this.getLayoutData();
 		if (aideUI) {
 			data = this.getAideLayoutData();

@@ -579,7 +579,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}));
 		this._register(this.inputEditor.onDidChangeModelContent(() => this.updateImplicitContextKinds()));
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
-			if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+			if (this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide') {
 				this.listContainer.classList.replace('interactive-list', 'cschat-list');
 			} else {
 				this.listContainer.classList.replace('cschat-list', 'interactive-list');
@@ -621,7 +621,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
-		if (this.chatAgentService.getDefaultAgent(this.location)?.id === 'aide') {
+		if (this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide') {
 			this.isAideAgent.set(true);
 			this.container.classList.replace('interactive-session', 'cschat-session');
 		} else {

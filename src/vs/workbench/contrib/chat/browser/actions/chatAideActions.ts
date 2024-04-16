@@ -21,7 +21,7 @@ export class InsertContextTrigger extends Action2 {
 	constructor() {
 		super({
 			id: InsertContextTrigger.ID,
-			title: localize2('interactive.insertContextTrigger.label', "Add context"),
+			title: localize2('interactive.insertContextTrigger.label', "Add context (#)"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.symbolNumeric,
