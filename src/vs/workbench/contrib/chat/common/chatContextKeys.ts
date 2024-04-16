@@ -12,6 +12,7 @@ export const CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND = new RawContextKey<boolean
 export const CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING = new RawContextKey<boolean>('chatResponseSupportsIssueReporting', false, { type: 'boolean', description: localize('chatResponseSupportsIssueReporting', "True when the current chat response supports issue reporting.") });
 export const CONTEXT_RESPONSE_FILTERED = new RawContextKey<boolean>('chatSessionResponseFiltered', false, { type: 'boolean', description: localize('chatResponseFiltered', "True when the chat response was filtered out by the server.") });
 export const CONTEXT_CHAT_REQUEST_IN_PROGRESS = new RawContextKey<boolean>('chatSessionRequestInProgress', false, { type: 'boolean', description: localize('interactiveSessionRequestInProgress', "True when the current request is still in progress.") });
+export const CONTEXT_CHAT_HAS_REQUESTS = new RawContextKey<boolean>('chatSessionHasRequests', false, { type: 'boolean', description: localize('interactiveSessionHasRequests', "True when the current chat session has requests.") });
 
 export const CONTEXT_RESPONSE = new RawContextKey<boolean>('chatResponse', false, { type: 'boolean', description: localize('chatResponse', "The chat item is a response.") });
 export const CONTEXT_REQUEST = new RawContextKey<boolean>('chatRequest', false, { type: 'boolean', description: localize('chatRequest', "The chat item is a request") });

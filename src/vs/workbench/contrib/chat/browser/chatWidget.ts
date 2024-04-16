@@ -32,7 +32,7 @@ import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, extractAgentAndCommand } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
@@ -121,6 +121,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private bodyDimension: dom.Dimension | undefined;
 	private visibleChangeCount = 0;
 	private requestInProgress: IContextKey<boolean>;
+	private hasRequests: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
 	private isAideAgent: IContextKey<boolean>;
 
@@ -186,6 +187,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.isAideAgent = CONTEXT_IN_AIDE_CHAT_SESSION.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+		this.hasRequests = CONTEXT_CHAT_HAS_REQUESTS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
 
@@ -646,6 +648,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			this.requestInProgress.set(this.viewModel.requestInProgress);
+			if (this.viewModel.getItems().length > 1) {
+				this.hasRequests.set(true);
+			} else {
+				this.hasRequests.set(false);
+			}
 
 			this.onDidChangeItems();
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
