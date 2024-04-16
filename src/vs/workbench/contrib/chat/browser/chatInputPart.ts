@@ -46,6 +46,7 @@ import { asCssVariableWithDefault, checkboxBorder, inputBackground } from 'vs/pl
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
+import { ClearChatEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
 import { CancelAction, ChatSubmitSecondaryAgentAction, IChatExecuteActionContext, SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExecuteActions';
 import { IChatWidget } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatFollowups } from 'vs/workbench/contrib/chat/browser/chatFollowups';
@@ -451,7 +452,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 						return this.instantiationService.createInstance(ChatSubmitDropdownActionItem, action, dropdownAction);
 					}
 				} else if (this.location === ChatAgentLocation.Panel) {
-					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID || action.id === ClearChatEditorAction.ID) && action instanceof MenuItemAction) {
 						return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 					}
 				}
