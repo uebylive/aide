@@ -34,7 +34,6 @@ export class ActionViewItemWithKb extends ActionViewItem {
 			k.set(kb);
 			this.label.textContent = this._action.label;
 			this.label.appendChild(div);
-			this.label.classList.add('inlineEditStatusBarItemLabel');
 		}
 	}
 }
