@@ -300,7 +300,7 @@ export class SelectAndInsertFolderAction extends Action2 {
 		});
 	}
 }
-registerAction2(SelectAndInsertFileAction);
+registerAction2(SelectAndInsertFolderAction);
 
 export interface IAddDynamicVariableContext {
 	widget: IChatWidget;

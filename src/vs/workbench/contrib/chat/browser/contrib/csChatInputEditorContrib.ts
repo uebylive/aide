@@ -81,6 +81,15 @@ class CSBuiltinDynamicCompletions extends Disposable {
 							kind: CompletionItemKind.Text,
 							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
 							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}folder`,
+							insertText: `${chatVariableLeader}folder:`,
+							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'folder' }] },
+							sortText: 'z'
 						}
 					]
 				};
@@ -265,7 +274,7 @@ class FolderReferenceCompletions extends Disposable {
 					endColumn: varWord ? varWord.endColumn : position.column
 				};
 
-				const files = await this.doGetFileSearchResults(_token);
+				const files = await this.doGetFolderSearchResults(_token);
 				const completionURIs = files.results.map(result => result.resource);
 
 				const editRange: IRange = {
@@ -281,7 +290,7 @@ class FolderReferenceCompletions extends Disposable {
 						label: basenameOrAuthority(uri),
 						insertText: '',
 						detail,
-						kind: CompletionItemKind.File,
+						kind: CompletionItemKind.Folder,
 						range,
 						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
 						sortText: 'z'
@@ -295,13 +304,14 @@ class FolderReferenceCompletions extends Disposable {
 		}));
 	}
 
-	private doGetFileSearchResults(token: CancellationToken): Promise<ISearchComplete> {
+	private doGetFolderSearchResults(token: CancellationToken): Promise<ISearchComplete> {
 		return this.searchService.fileSearch(
 			this.fileQueryBuilder.file(
 				this.contextService.getWorkspace().folders,
 				{
 					extraFileResources: this.instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
 					sortByScore: true,
+					filePattern: '*/',
 				}
 			), token);
 	}
