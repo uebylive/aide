@@ -213,6 +213,95 @@ export class SelectAndInsertFileAction extends Action2 {
 }
 registerAction2(SelectAndInsertFileAction);
 
+export class SelectAndInsertFolderAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.selectAndInsertFolder';
+
+	constructor() {
+		super({
+			id: SelectAndInsertFolderAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+		const quickInputService = accessor.get(IQuickInputService);
+		const chatVariablesService = accessor.get(IChatVariablesService);
+
+		const context = args[0];
+		if (!isSelectAndInsertFileActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `folder`
+			context.widget.inputEditor.executeEdits('chatInsertFolder', [{ range: context.range, text: `` }]);
+		};
+
+		let options: IQuickAccessOptions | undefined;
+		const foldersVariableName = 'folders';
+		const foldersItem = {
+			label: localize('allFolders', 'All Folder'),
+			description: localize('allFoldersDescription', 'Search for relevant folders in the workspace and provide context from them'),
+		};
+		// If we have a `files` variable, add an option to select all files in the picker.
+		// This of course assumes that the `files` variable has the behavior that it searches
+		// through files in the workspace.
+		if (chatVariablesService.hasVariable(foldersVariableName)) {
+			options = {
+				providerOptions: <AnythingQuickAccessProviderRunOptions>{
+					additionPicks: [foldersItem, { type: 'separator' }]
+				},
+			};
+		}
+		// TODO: have dedicated UX for this instead of using the quick access picker
+		const picks = await quickInputService.quickAccess.pick('', options);
+		if (!picks?.length) {
+			logService.trace('SelectAndInsertFolderAction: no file selected');
+			doCleanup();
+			return;
+		}
+
+		const editor = context.widget.inputEditor;
+		const range = context.range;
+
+		// Handle the special case of selecting all files
+		if (picks[0] === foldersItem) {
+			const text = `#${foldersVariableName}`;
+			const success = editor.executeEdits('chatInsertFolder', [{ range, text: text + ' ' }]);
+			if (!success) {
+				logService.trace(`SelectAndInsertFolderAction: failed to insert "${text}"`);
+				doCleanup();
+			}
+			return;
+		}
+
+		// Handle the case of selecting a specific file
+		const resource = (picks[0] as unknown as { resource: unknown }).resource as URI;
+		if (!textModelService.canHandleResource(resource)) {
+			logService.trace('SelectAndInsertFolderAction: non-text resource selected');
+			doCleanup();
+			return;
+		}
+
+		const fileName = basename(resource);
+		const text = `#folder:${fileName}`;
+		const success = editor.executeEdits('chatInsertFolder', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertFolderAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: [{ level: 'full', value: resource }]
+		});
+	}
+}
+registerAction2(SelectAndInsertFileAction);
+
 export interface IAddDynamicVariableContext {
 	widget: IChatWidget;
 	range: IRange;
