@@ -21,7 +21,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -255,7 +255,7 @@ class FolderReferenceCompletions extends Disposable {
 		super();
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: FileReferenceCompletionProviderName,
+			_debugDisplayName: FolderReferenceCompletionProviderName,
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget) {
