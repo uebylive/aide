@@ -25,13 +25,14 @@ import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserT
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
+export const FolderReferenceCompletionProviderName = 'chatInplaceFolderReferenceCompletionProvider';
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
 interface MultiLevelCodeTriggerActionContext {
 	widget: IChatWidget;
 	range: IRange;
-	pick: 'file' | 'code';
+	pick: 'file' | 'code' | 'folder';
 }
 
 function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
@@ -71,7 +72,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
 		const codeSymbolCompletionProvider = completionProviders.find(
 			provider => provider._debugDisplayName === (
-				context.pick === 'code' ? CodeSymbolCompletionProviderName : FileReferenceCompletionProviderName
+				context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'file' ? FileReferenceCompletionProviderName : FolderReferenceCompletionProviderName
 			));
 
 		if (!codeSymbolCompletionProvider) {
@@ -93,6 +94,62 @@ interface SelectAndInsertFileActionContext {
 function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
 	return 'widget' in context && 'range' in context && 'uri' in context;
 }
+
+export class SelectAndInsertFolderAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.csSelectAndInsertFolder';
+
+	constructor() {
+		super({
+			id: SelectAndInsertFolderAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isSelectAndInsertFileActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `file`
+			context.widget.inputEditor.executeEdits('chatInsertFolder', [{ range: context.range, text: `` }]);
+		};
+
+		const resource = context.uri;
+		if (!resource) {
+			logService.trace('SelectAndInsertFolderAction: no resource selected');
+			doCleanup();
+			return;
+		}
+
+		const model = await textModelService.createModelReference(resource);
+		const fileRange = model.object.textEditorModel.getFullModelRange();
+		model.dispose();
+
+		const fileName = basename(resource);
+		const editor = context.widget.inputEditor;
+		const text = `${chatVariableLeader}folder:${fileName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertFolder', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertFolderAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		const valueObj = { uri: resource, range: fileRange };
+		const value = JSON.stringify(valueObj);
+		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: [{ level: 'full', value, kind: 'folder' }]
+		});
+	}
+}
+registerAction2(SelectAndInsertFolderAction);
 
 export class SelectAndInsertFileAction extends Action2 {
 	static readonly ID = 'workbench.action.chat.csSelectAndInsertFile';

@@ -21,7 +21,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -80,6 +80,15 @@ class CSBuiltinDynamicCompletions extends Disposable {
 							range,
 							kind: CompletionItemKind.Text,
 							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
+							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}folder`,
+							insertText: `${chatVariableLeader}folder:`,
+							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'folder' }] },
 							sortText: 'z'
 						}
 					]
@@ -167,6 +176,7 @@ class FileReferenceCompletions extends Disposable {
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FileReferenceCompletions, LifecyclePhase.Eventually);
 
+
 class CodeSymbolCompletions extends Disposable {
 	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}code:\\w*`, 'g'); // MUST be using `g`-flag
 	private readonly workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
@@ -228,3 +238,82 @@ class CodeSymbolCompletions extends Disposable {
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(CodeSymbolCompletions, LifecyclePhase.Eventually);
+
+
+class FolderReferenceCompletions extends Disposable {
+	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}folder:\\w*`, 'g'); // MUST be using `g`-flag
+	private readonly fileQueryBuilder = this.instantiationService.createInstance(QueryBuilder);
+
+	constructor(
+		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@ISearchService private readonly searchService: ISearchService,
+		@ILabelService private readonly labelService: ILabelService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: FolderReferenceCompletionProviderName,
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+				if (!widget) {
+					return null;
+				}
+
+				const varWord = getWordAtText(position.column, FolderReferenceCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+				if (!varWord && model.getWordUntilPosition(position).word) {
+					return null;
+				}
+
+				const range: IRange = {
+					startLineNumber: position.lineNumber,
+					startColumn: varWord ? varWord.endColumn : position.column,
+					endLineNumber: position.lineNumber,
+					endColumn: varWord ? varWord.endColumn : position.column
+				};
+
+				const files = await this.doGetFolderSearchResults(_token);
+				const completionURIs = files.results.map(result => result.resource);
+
+				const editRange: IRange = {
+					startLineNumber: position.lineNumber,
+					startColumn: varWord ? varWord.startColumn : position.column,
+					endLineNumber: position.lineNumber,
+					endColumn: varWord ? varWord.endColumn : position.column
+				};
+
+				const completionItems = completionURIs.map(uri => {
+					const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
+					return <CompletionItem>{
+						label: basenameOrAuthority(uri),
+						insertText: '',
+						detail,
+						kind: CompletionItemKind.Folder,
+						range,
+						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
+						sortText: 'z'
+					};
+				});
+
+				return {
+					suggestions: completionItems
+				};
+			}
+		}));
+	}
+
+	private doGetFolderSearchResults(token: CancellationToken): Promise<ISearchComplete> {
+		return this.searchService.fileSearch(
+			this.fileQueryBuilder.file(
+				this.contextService.getWorkspace().folders,
+				{
+					extraFileResources: this.instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
+					sortByScore: true,
+					filePattern: '*/',
+				}
+			), token);
+	}
+}
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FolderReferenceCompletions, LifecyclePhase.Eventually);

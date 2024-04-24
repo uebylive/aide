@@ -25,7 +25,7 @@ import { SubmitAction } from 'vs/workbench/contrib/chat/browser/actions/chatExec
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
-import { SelectAndInsertFileAction, dynamicVariableDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
+import { SelectAndInsertFileAction, SelectAndInsertFolderAction, dynamicVariableDecorationType } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/chat/common/chatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
@@ -542,7 +542,8 @@ class BuiltinDynamicCompletions extends Disposable {
 					return null;
 				}
 
-				const afterRange = new Range(position.lineNumber, range.replace.startColumn, position.lineNumber, range.replace.startColumn + '#file:'.length);
+				const fileAfterRange = new Range(position.lineNumber, range.replace.startColumn, position.lineNumber, range.replace.startColumn + '#file:'.length);
+				const folderAfterRange = new Range(position.lineNumber, range.replace.startColumn, position.lineNumber, range.replace.startColumn + '#folder:'.length);
 				return <CompletionList>{
 					suggestions: [
 						<CompletionItem>{
@@ -551,7 +552,16 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickFileLabel', "Pick a file"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: afterRange }] },
+							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: fileAfterRange }] },
+							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}folder`,
+							insertText: `${chatVariableLeader}folder:`,
+							detail: localize('pickFolderLabel', "Pick a folder"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: SelectAndInsertFolderAction.ID, title: SelectAndInsertFolderAction.ID, arguments: [{ widget, range: folderAfterRange }] },
 							sortText: 'z'
 						}
 					]
