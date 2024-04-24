@@ -353,9 +353,10 @@ declare module 'vscode' {
 		 * *Note* that the reference is not rendered inline with the response.
 		 *
 		 * @param value A uri or location
+		 * @param iconPath Icon for the reference shown in UI
 		 * @returns This stream.
 		 */
-		reference(value: Uri | Location | { variableName: string; value?: Uri | Location }): ChatResponseStream;
+		reference(value: Uri | Location | { variableName: string; value?: Uri | Location }, iconPath?: ThemeIcon): ChatResponseStream;
 
 		/**
 		 * Pushes a part to this stream.
@@ -398,7 +399,8 @@ declare module 'vscode' {
 
 	export class ChatResponseReferencePart {
 		value: Uri | Location | { variableName: string; value?: Uri | Location };
-		constructor(value: Uri | Location | { variableName: string; value?: Uri | Location });
+		iconPath?: ThemeIcon;
+		constructor(value: Uri | Location | { variableName: string; value?: Uri | Location }, iconPath?: ThemeIcon);
 	}
 
 	export class ChatResponseCommandButtonPart {
