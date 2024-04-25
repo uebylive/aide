@@ -185,16 +185,210 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 		description: localize('gettingStarted.setupAide.description', "Setup Large Language Models and learn the basics"),
 		isFeatured: true,
 		icon: setupIcon,
+<<<<<<< HEAD
 		isSpecial: true,
 		when: 'true',
 		next: 'Setup',
+=======
+		when: '!isWeb',
+		next: 'Beginner',
+		content: {
+			type: 'steps',
+			steps: [
+				{
+					id: 'pickColorTheme',
+					title: localize('gettingStarted.pickColor.title', "Choose your theme"),
+					description: localize('gettingStarted.pickColor.description.interpolated', "The right theme helps you focus on your code, is easy on your eyes, and is simply more fun to use.\n{0}", Button(localize('titleID', "Browse Color Themes"), 'command:workbench.action.selectTheme')),
+					completionEvents: [
+						'onSettingChanged:workbench.colorTheme',
+						'onCommand:workbench.action.selectTheme'
+					],
+					media: { type: 'markdown', path: 'theme_picker', }
+				},
+				{
+					id: 'extensionsWeb',
+					title: localize('gettingStarted.extensions.title', "Code with extensions"),
+					description: localize('gettingStarted.extensionsWeb.description.interpolated', "Extensions are VS Code's power-ups. A growing number are becoming available in the web.\n{0}", Button(localize('browsePopularWeb', "Browse Popular Web Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
+					when: 'workspacePlatform == \'webworker\'',
+					media: {
+						type: 'svg', altText: 'VS Code extension marketplace with featured language extensions', path: 'extensions-web.svg'
+					},
+				},
+				{
+					id: 'findLanguageExtensions',
+					title: localize('gettingStarted.findLanguageExts.title', "Rich support for all your languages"),
+					description: localize('gettingStarted.findLanguageExts.description.interpolated', "Code smarter with syntax highlighting, code completion, linting and debugging. While many languages are built-in, many more can be added as extensions.\n{0}", Button(localize('browseLangExts', "Browse Language Extensions"), 'command:workbench.extensions.action.showLanguageExtensions')),
+					when: 'workspacePlatform != \'webworker\'',
+					media: {
+						type: 'svg', altText: 'Language extensions', path: 'languages.svg'
+					},
+				},
+				{
+					id: 'settings',
+					title: localize('gettingStarted.settings.title', "Tune your settings"),
+					description: localize('gettingStarted.settings.description.interpolated', "Customize every aspect of VS Code and your extensions to your liking. Commonly used settings are listed first to get you started.\n{0}", Button(localize('tweakSettings', "Open Settings"), 'command:toSide:workbench.action.openSettings')),
+					media: {
+						type: 'svg', altText: 'VS Code Settings', path: 'settings.svg'
+					},
+				},
+				{
+					id: 'settingsSync',
+					title: localize('gettingStarted.settingsSync.title', "Sync settings across devices"),
+					description: localize('gettingStarted.settingsSync.description.interpolated', "Keep your essential customizations backed up and updated across all your devices.\n{0}", Button(localize('enableSync', "Backup and Sync Settings"), 'command:workbench.userDataSync.actions.turnOn')),
+					when: 'syncStatus != uninitialized',
+					completionEvents: ['onEvent:sync-enabled'],
+					media: {
+						type: 'svg', altText: 'The "Turn on Sync" entry in the settings gear menu.', path: 'settingsSync.svg'
+					},
+				},
+				{
+					id: 'commandPaletteTask',
+					title: localize('gettingStarted.commandPalette.title', "Unlock productivity with the Command Palette "),
+					description: localize('gettingStarted.commandPalette.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in VS Code.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
+					media: { type: 'svg', altText: 'Command Palette overlay for searching and executing commands.', path: 'commandPalette.svg' },
+				},
+				{
+					id: 'pickAFolderTask-Mac',
+					title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
+					description: localize('gettingStarted.setup.OpenFolder.description.interpolated', "You're all set to start coding. Open a project folder to get your files into VS Code.\n{0}", Button(localize('pickFolder', "Pick a Folder"), 'command:workbench.action.files.openFileFolder')),
+					when: 'isMac && workspaceFolderCount == 0',
+					media: {
+						type: 'svg', altText: 'Explorer view showing buttons for opening folder and cloning repository.', path: 'openFolder.svg'
+					}
+				},
+				{
+					id: 'pickAFolderTask-Other',
+					title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
+					description: localize('gettingStarted.setup.OpenFolder.description.interpolated', "You're all set to start coding. Open a project folder to get your files into VS Code.\n{0}", Button(localize('pickFolder', "Pick a Folder"), 'command:workbench.action.files.openFolder')),
+					when: '!isMac && workspaceFolderCount == 0',
+					media: {
+						type: 'svg', altText: 'Explorer view showing buttons for opening folder and cloning repository.', path: 'openFolder.svg'
+					}
+				},
+				{
+					id: 'quickOpen',
+					title: localize('gettingStarted.quickOpen.title', "Quickly navigate between your files"),
+					description: localize('gettingStarted.quickOpen.description.interpolated', "Navigate between files in an instant with one keystroke. Tip: Open multiple files by pressing the right arrow key.\n{0}", Button(localize('quickOpen', "Quick Open a File"), 'command:toSide:workbench.action.quickOpen')),
+					when: 'workspaceFolderCount != 0',
+					media: {
+						type: 'svg', altText: 'Go to file in quick search.', path: 'search.svg'
+					}
+				},
+				{
+					id: 'videoTutorial',
+					title: localize('gettingStarted.videoTutorial.title', "Watch video tutorials"),
+					description: localize('gettingStarted.videoTutorial.description.interpolated', "Watch the first in a series of short & practical video tutorials for VS Code's key features.\n{0}", Button(localize('watch', "Watch Tutorial"), 'https://aka.ms/vscode-getting-started-video')),
+					media: { type: 'svg', altText: 'VS Code Settings', path: 'learn.svg' },
+				}
+			]
+		}
+	},
+
+	{
+		id: 'SetupWeb',
+		title: localize('gettingStarted.setupWeb.title', "Get Started with VS Code for the Web"),
+		description: localize('gettingStarted.setupWeb.description', "Customize your editor, learn the basics, and start coding"),
+		isFeatured: true,
+		icon: setupIcon,
+		when: 'isWeb',
+		next: 'Beginner',
+		content: {
+			type: 'steps',
+			steps: [
+				{
+					id: 'pickColorThemeWeb',
+					title: localize('gettingStarted.pickColor.title', "Choose your theme"),
+					description: localize('gettingStarted.pickColor.description.interpolated', "The right theme helps you focus on your code, is easy on your eyes, and is simply more fun to use.\n{0}", Button(localize('titleID', "Browse Color Themes"), 'command:workbench.action.selectTheme')),
+					completionEvents: [
+						'onSettingChanged:workbench.colorTheme',
+						'onCommand:workbench.action.selectTheme'
+					],
+					media: { type: 'markdown', path: 'theme_picker', }
+				},
+				{
+					id: 'menuBarWeb',
+					title: localize('gettingStarted.menuBar.title', "Just the right amount of UI"),
+					description: localize('gettingStarted.menuBar.description.interpolated', "The full menu bar is available in the dropdown menu to make room for your code. Toggle its appearance for faster access. \n{0}", Button(localize('toggleMenuBar', "Toggle Menu Bar"), 'command:workbench.action.toggleMenuBar')),
+					when: 'isWeb',
+					media: {
+						type: 'svg', altText: 'Comparing menu dropdown with the visible menu bar.', path: 'menuBar.svg'
+					},
+				},
+				{
+					id: 'extensionsWebWeb',
+					title: localize('gettingStarted.extensions.title', "Code with extensions"),
+					description: localize('gettingStarted.extensionsWeb.description.interpolated', "Extensions are VS Code's power-ups. A growing number are becoming available in the web.\n{0}", Button(localize('browsePopularWeb', "Browse Popular Web Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
+					when: 'workspacePlatform == \'webworker\'',
+					media: {
+						type: 'svg', altText: 'VS Code extension marketplace with featured language extensions', path: 'extensions-web.svg'
+					},
+				},
+				{
+					id: 'findLanguageExtensionsWeb',
+					title: localize('gettingStarted.findLanguageExts.title', "Rich support for all your languages"),
+					description: localize('gettingStarted.findLanguageExts.description.interpolated', "Code smarter with syntax highlighting, code completion, linting and debugging. While many languages are built-in, many more can be added as extensions.\n{0}", Button(localize('browseLangExts', "Browse Language Extensions"), 'command:workbench.extensions.action.showLanguageExtensions')),
+					when: 'workspacePlatform != \'webworker\'',
+					media: {
+						type: 'svg', altText: 'Language extensions', path: 'languages.svg'
+					},
+				},
+				{
+					id: 'settingsSyncWeb',
+					title: localize('gettingStarted.settingsSync.title', "Sync settings across devices"),
+					description: localize('gettingStarted.settingsSync.description.interpolated', "Keep your essential customizations backed up and updated across all your devices.\n{0}", Button(localize('enableSync', "Backup and Sync Settings"), 'command:workbench.userDataSync.actions.turnOn')),
+					when: 'syncStatus != uninitialized',
+					completionEvents: ['onEvent:sync-enabled'],
+					media: {
+						type: 'svg', altText: 'The "Turn on Sync" entry in the settings gear menu.', path: 'settingsSync.svg'
+					},
+				},
+				{
+					id: 'commandPaletteTaskWeb',
+					title: localize('gettingStarted.commandPalette.title', "Unlock productivity with the Command Palette "),
+					description: localize('gettingStarted.commandPalette.description.interpolated', "Run commands without reaching for your mouse to accomplish any task in VS Code.\n{0}", Button(localize('commandPalette', "Open Command Palette"), 'command:workbench.action.showCommands')),
+					media: { type: 'svg', altText: 'Command Palette overlay for searching and executing commands.', path: 'commandPalette.svg' },
+				},
+				{
+					id: 'pickAFolderTask-WebWeb',
+					title: localize('gettingStarted.setup.OpenFolder.title', "Open up your code"),
+					description: localize('gettingStarted.setup.OpenFolderWeb.description.interpolated', "You're all set to start coding. You can open a local project or a remote repository to get your files into VS Code.\n{0}\n{1}", Button(localize('openFolder', "Open Folder"), 'command:workbench.action.addRootFolder'), Button(localize('openRepository', "Open Repository"), 'command:remoteHub.openRepository')),
+					when: 'workspaceFolderCount == 0',
+					media: {
+						type: 'svg', altText: 'Explorer view showing buttons for opening folder and cloning repository.', path: 'openFolder.svg'
+					}
+				},
+				{
+					id: 'quickOpenWeb',
+					title: localize('gettingStarted.quickOpen.title', "Quickly navigate between your files"),
+					description: localize('gettingStarted.quickOpen.description.interpolated', "Navigate between files in an instant with one keystroke. Tip: Open multiple files by pressing the right arrow key.\n{0}", Button(localize('quickOpen', "Quick Open a File"), 'command:toSide:workbench.action.quickOpen')),
+					when: 'workspaceFolderCount != 0',
+					media: {
+						type: 'svg', altText: 'Go to file in quick search.', path: 'search.svg'
+					}
+				}
+			]
+		}
+	},
+
+	{
+		id: 'Beginner',
+		isFeatured: false,
+		title: localize('gettingStarted.beginner.title', "Learn the Fundamentals"),
+		icon: beginnerIcon,
+		description: localize('gettingStarted.beginner.description', "Get an overview of the most essential features"),
+>>>>>>> upstream/main
 		content: {
 			type: 'steps',
 			steps: [
 				{
 					id: 'extensions',
+<<<<<<< HEAD
 					title: localize('gettingStarted.extensions.title', "Import extensions and settings from VSCode"),
 					description: localize('gettingStarted.extensions.description.imported', "Import your extensions and settinsg from VSCode, and jump back to coding.\n{0}", Button(localize('browseRecommended', "Import Extensions and Settings from VSCode"), 'command:webview.preCopySettings')),
+=======
+					title: localize('gettingStarted.extensions.title', "Code with extensions"),
+					description: localize('gettingStarted.extensions.description.interpolated', "Extensions are VS Code's power-ups. They range from handy productivity hacks, expanding out-of-the-box features, to adding completely new capabilities.\n{0}", Button(localize('browsePopular', "Browse Popular Extensions"), 'command:workbench.extensions.action.showPopularExtensions')),
+>>>>>>> upstream/main
 					when: 'workspacePlatform != \'webworker\'',
 					media: {
 						type: 'svg', altText: 'VS Code extension marketplace with featured language extensions', path: 'extensions.svg'
