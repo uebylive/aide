@@ -69,7 +69,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
-			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
+			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'GeminiPro') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
 			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
@@ -95,7 +95,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					|| model.provider.type === 'openai-compatible'
 					|| model.provider.type === 'ollama'
 					|| model.provider.type === 'anthropic'
-					|| model.provider.type === 'fireworkai') {
+					|| model.provider.type === 'fireworkai'
+					|| model.provider.type === 'geminipro') {
 					acc[key] = model;
 				}
 			}
@@ -381,7 +382,7 @@ class ModelSelectionJsonSchema {
 			'fireworksaiProvider': {
 				'type': 'object',
 				'properties': {
-					'anthropic': {
+					'fireworksai': {
 						'type': 'object',
 						'properties': {
 							'name': {
@@ -391,6 +392,29 @@ class ModelSelectionJsonSchema {
 							'apiKey': {
 								'type': 'string',
 								'description': nls.localize('modelSelection.json.fireworkaiProvider.apiKey', 'API key for the provider')
+							}
+						},
+						'required': ['name', 'apiKey']
+					}
+				}
+			},
+			'geminiProProvider': {
+				'type': 'object',
+				'properties': {
+					'geminipro': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Gemini Pro 1.5'],
+								'description': nls.localize('modelSelection.json.geminiProProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.geminiProProvider.apiKey', 'API key for the provider')
+							},
+							'apiBase': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.geminiProProvider.apiBase', 'Base URL of the provider\'s API')
 							}
 						},
 						'required': ['name', 'apiKey']
@@ -407,6 +431,7 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/ollamaProvider' },
 					{ '$ref': '#/definitions/anthropicProvider' },
 					{ '$ref': '#/definitions/fireworksaiProvider' },
+					{ '$ref': '#/definitions/geminiProProvider' },
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -427,7 +452,7 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic', 'fireworkai'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic', 'fireworkai', 'geminipro'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},

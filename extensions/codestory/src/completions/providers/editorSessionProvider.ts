@@ -368,6 +368,7 @@ export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEdi
 					variables: [],
 					file_content_map: [],
 					terminal_selection: undefined,
+					folder_paths: [],
 				}
 			};
 			const messages = await this.sidecarClient.getInLineEditorResponse(context);
