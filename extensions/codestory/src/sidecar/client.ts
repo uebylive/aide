@@ -229,6 +229,8 @@ export class SideCarClient {
 		const activeWindowData = getCurrentActiveWindow();
 		const folders = folderFromQuery(query);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		console.log(sideCarModelConfiguration);
+		console.log(JSON.stringify(sideCarModelConfiguration));
 		const agentSystemInstruction = readCustomSystemInstruction();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),

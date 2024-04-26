@@ -234,7 +234,7 @@ export interface InEditorRequest {
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
 	diagnosticsInformation: DiagnosticInformationFromEditor | null;
-	userContext: { variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined };
+	userContext: { variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined; folder_paths: string[] };
 }
 
 export interface DiagnosticInformationFromEditor {
@@ -604,6 +604,14 @@ function getProviderConfiguration(type: string, value: ModelProviderConfiguratio
 			}
 		};
 	}
+	if (type === 'geminipro') {
+		return {
+			'GeminiPro': {
+				'api_key': value.apiKey,
+				'api_base': value.apiBase,
+			}
+		};
+	}
 	return null;
 }
 
@@ -639,6 +647,9 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	if (providerConfiguration.type === 'fireworkai') {
 		return 'FireworksAI';
+	}
+	if (providerConfiguration.type === 'geminipro') {
+		return 'GeminiPro';
 	}
 	return null;
 }

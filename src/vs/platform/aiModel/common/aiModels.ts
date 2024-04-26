@@ -17,8 +17,8 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic' | 'fireworkai';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic', 'fireworkai'];
+export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic' | 'fireworkai' | 'geminipro';
+export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic', 'fireworkai', 'geminipro'];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -93,7 +93,13 @@ export interface FireworkAIProviderConfig {
 	readonly apiKey: string;
 }
 
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig | FireworkAIProviderConfig;
+export interface GeminiProProviderConfig {
+	readonly name: 'GeminiPro';
+	readonly apiKey: string;
+	readonly apiBase: string;
+}
+
+export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig | FireworkAIProviderConfig | GeminiProProviderConfig;
 export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
 
 export type IModelProviders =
@@ -104,7 +110,8 @@ export type IModelProviders =
 	| { 'openai-compatible': OpenAICompatibleProviderConfig }
 	| { 'ollama': OllamaProviderConfig }
 	| { 'anthropic': AnthropicProviderConfig }
-	| { 'fireworkai': FireworkAIProviderConfig };
+	| { 'fireworkai': FireworkAIProviderConfig }
+	| { 'geminipro': GeminiProProviderConfig };
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
@@ -262,7 +269,15 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: {
 				type: 'codestory'
 			}
-		}
+		},
+		'GeminiPro1.5': {
+			name: 'Gemini Pro 1.5',
+			contextLength: 1000000,
+			temperature: 0.2,
+			provider: {
+				type: 'geminipro',
+			}
+		},
 	},
 	providers: {
 		'codestory': {
@@ -297,6 +312,11 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			name: 'Firework AI',
 			apiKey: '',
 		},
+		'geminipro': {
+			name: 'GeminiPro',
+			apiBase: '',
+			apiKey: '',
+		}
 	}
 };
 
@@ -309,6 +329,7 @@ export const supportedModels: Record<ProviderType, string[]> = {
 	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
 	'anthropic': ['ClaudeOpus', 'ClaudeSonnet', 'ClaudeHaiku'],
 	'fireworkai': ['CodeLlama13BInstruct'],
+	'geminipro': ['GeminiPro1.5'],
 };
 
 export const providersSupportingModel = (model: string): ProviderType[] => {
@@ -332,11 +353,11 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig
 		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Firework AI'
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Firework AI' || defaultConfig.name === 'GeminiPro'
 			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible'
+		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'GeminiPro'
 			? defaultConfig.apiBase === (config as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);
@@ -344,11 +365,11 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 
 export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
 	return a.name === b.name
-		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Firework AI'
+		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Firework AI' || a.name === 'GeminiPro'
 			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible'
+		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'GeminiPro'
 			? (a as BaseOpenAICompatibleProviderConfig).apiBase === (b as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);
