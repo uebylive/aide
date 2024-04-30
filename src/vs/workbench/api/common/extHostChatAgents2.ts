@@ -10,7 +10,7 @@ import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { Emitter } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Iterable } from 'vs/base/common/iterator';
-import { DisposableMap, DisposableStore } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableMap, DisposableStore } from 'vs/base/common/lifecycle';
 import { StopWatch } from 'vs/base/common/stopwatch';
 import { assertType } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
@@ -125,7 +125,7 @@ class ChatAgentResponseStream {
 					_report(dto);
 					return this;
 				},
-				reference(value) {
+				reference(value, iconPath) {
 					throwIfDone(this.reference);
 
 					if ('variableName' in value && !value.value) {
@@ -140,7 +140,7 @@ class ChatAgentResponseStream {
 								} satisfies IChatContentReference));
 							} else {
 								// Participant sent a variableName reference but the variable produced no references. Show variable reference with no value
-								const part = new extHostTypes.ChatResponseReferencePart(value);
+								const part = new extHostTypes.ChatResponseReferencePart(value, iconPath);
 								const dto = typeConvert.ChatResponseReferencePart.from(part);
 								references = [dto];
 							}
@@ -151,7 +151,7 @@ class ChatAgentResponseStream {
 							// Something went wrong- that variable doesn't actually exist
 						}
 					} else {
-						const part = new extHostTypes.ChatResponseReferencePart(value);
+						const part = new extHostTypes.ChatResponseReferencePart(value, iconPath);
 						const dto = typeConvert.ChatResponseReferencePart.from(part);
 						_report(dto);
 					}
@@ -185,7 +185,7 @@ class ChatAgentResponseStream {
 
 					if (part instanceof extHostTypes.ChatResponseReferencePart) {
 						// Ensure variable reference values get fixed up
-						this.reference(part.value);
+						this.reference(part.value, part.iconPath);
 					} else {
 						const dto = typeConvert.ChatResponsePart.from(part, that._commandsConverter, that._sessionDisposables);
 						_report(dto);
@@ -200,20 +200,22 @@ class ChatAgentResponseStream {
 	}
 }
 
-export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
+export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsShape2 {
 
 	private static _idPool = 0;
 
 	private readonly _agents = new Map<number, ExtHostChatAgent>();
 	private readonly _proxy: MainThreadChatAgentsShape2;
 
-	private readonly _sessionDisposables: DisposableMap<string, DisposableStore> = new DisposableMap();
+	private readonly _sessionDisposables: DisposableMap<string, DisposableStore> = this._register(new DisposableMap());
+	private readonly _completionDisposables: DisposableMap<number, DisposableStore> = this._register(new DisposableMap());
 
 	constructor(
 		mainContext: IMainContext,
 		private readonly _logService: ILogService,
 		private readonly commands: ExtHostCommands,
 	) {
+		super();
 		this._proxy = mainContext.getProxy(MainContext.MainThreadChatAgents2);
 	}
 
@@ -410,8 +412,18 @@ export class ExtHostChatAgents2 implements ExtHostChatAgentsShape2 {
 			return [];
 		}
 
+		let disposables = this._completionDisposables.get(handle);
+		if (disposables) {
+			// Clear any disposables from the last invocation of this completion provider
+			disposables.clear();
+		} else {
+			disposables = new DisposableStore();
+			this._completionDisposables.set(handle, disposables);
+		}
+
 		const items = await agent.invokeCompletionProvider(query, token);
-		return items.map(typeConvert.ChatAgentCompletionItem.from);
+
+		return items.map((i) => typeConvert.ChatAgentCompletionItem.from(i, this.commands.converter, disposables));
 	}
 
 	async $provideWelcomeMessage(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {
