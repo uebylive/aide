@@ -22,7 +22,6 @@ import { IEditableData } from 'vs/workbench/common/views';
 import { ITerminalStatusList } from 'vs/workbench/contrib/terminal/browser/terminalStatusList';
 import { XtermTerminal } from 'vs/workbench/contrib/terminal/browser/xterm/xtermTerminal';
 import { IRegisterContributedProfileArgs, IRemoteTerminalAttachTarget, IStartExtensionTerminalRequest, ITerminalConfiguration, ITerminalFont, ITerminalProcessExtHostProxy, ITerminalProcessInfo } from 'vs/workbench/contrib/terminal/common/terminal';
-import { ISimpleSelectedSuggestion } from 'vs/workbench/services/suggest/browser/simpleSuggestWidget';
 import type { IMarker, ITheme, Terminal as RawXtermTerminal, IBufferRange } from '@xterm/xterm';
 import { ScrollPosition } from 'vs/workbench/contrib/terminal/browser/xterm/markNavigationAddon';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -438,6 +437,12 @@ export interface ICreateTerminalOptions {
 	 * The terminal's location (editor or panel), it's terminal parent (split to the right), or editor group
 	 */
 	location?: ITerminalLocationOptions;
+
+	/**
+	 * This terminal will not wait for contributed profiles to resolve which means it will proceed
+	 * when the workbench is not yet loaded.
+	 */
+	skipContributedProfileCheck?: boolean;
 }
 
 export interface TerminalEditorLocation {
@@ -1232,18 +1237,4 @@ export const enum LinuxDistro {
 
 export const enum TerminalDataTransfers {
 	Terminals = 'Terminals'
-}
-
-export interface ISuggestController {
-	selectPreviousSuggestion(): void;
-	selectPreviousPageSuggestion(): void;
-	selectNextSuggestion(): void;
-	selectNextPageSuggestion(): void;
-	acceptSelectedSuggestion(suggestion?: Pick<ISimpleSelectedSuggestion, 'item' | 'model'>): void;
-	hideSuggestWidget(): void;
-	/**
-	 * Handle data written to the terminal outside of xterm.js which has no corresponding
-	 * `Terminal.onData` event.
-	 */
-	handleNonXtermData(data: string): void;
 }
