@@ -51,6 +51,7 @@ export async function activate(context: ExtensionContext) {
 						const newAddress: AddressInfo = serverAddress as AddressInfo;
 						port = newAddress.port;
 					}
+					console.log(serverAddress);
 					console.log(`Server for talking to sidecar is running at http://localhost:${server.address()}/`);
 				}); // Use 0 to let the OS pick an available port
 			} else {
