@@ -3,11 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarOpenFileToolRequest } from './types';
+import { SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarOpenFileToolRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
+import { SIDECAR_CLIENT } from '../extension';
+import { goToImplementation } from './goToImplementation';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -45,17 +47,33 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 			res.end(JSON.stringify(response));
 		} else if (req.method === 'POST' && req.url === '/file_open') {
 			const body = await readRequestBody(req);
+			console.log('file open request');
 			const openFileRequest: SidecarOpenFileToolRequest = JSON.parse(body);
 			const response = await openFileEditor(openFileRequest);
+			console.log('file open respnose');
+			console.log(response);
+			if (response.exists) {
+				// we should only do this if there is some file content
+				SIDECAR_CLIENT?.documentOpen(openFileRequest.fs_file_path, response.file_contents, response.language);
+			}
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
-		} else if (req.method === 'POST' && req.url === 'go_to_definition') {
+		} else if (req.method === 'POST' && req.url === '/go_to_definition') {
+			console.log('go-to-definition');
 			const body = await readRequestBody(req);
 			const request: SidecarGoToDefinitionRequest = JSON.parse(body);
 			const response = await goToDefinition(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
+		} else if (req.method === 'POST' && req.url === '/go_to_implementation') {
+			console.log('go-to-implementation');
+			const body = await readRequestBody(req);
+			const request: SidecarGoToImplementationRequest = JSON.parse(body);
+			const response = await goToImplementation(request);
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify(response));
 		} else {
+			console.log('HC request');
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify({ reply: 'gg' }));
 		}

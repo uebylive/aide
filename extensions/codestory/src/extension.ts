@@ -32,41 +32,12 @@ import { AideQuickFix } from './quickActions/fix';
 import { copySettings } from './utilities/copySettings';
 
 
+export let SIDECAR_CLIENT: SideCarClient | null = null;
+
+
 
 export async function activate(context: ExtensionContext) {
 	// Project root here
-	// start a stupid server here
-	const server = http.createServer(handleRequest);
-	let port = 42423; // Default chooses 42423, but if its not available then we
-	// can still grab it by listenting to port 0
-	server.listen(port, () => {
-		console.log(`Server for talking to sidecar is running at http://localhost:${port}/`);
-	})
-		.on('error', (err: NodeJS.ErrnoException) => {
-			if (err.code === 'EADDRINUSE') {
-				console.error(`Port ${port} is already in use, trying another port...`);
-				server.listen(0, () => {
-					const serverAddress = server.address();
-					if (serverAddress) {
-						const newAddress: AddressInfo = serverAddress as AddressInfo;
-						port = newAddress.port;
-					}
-					console.log(serverAddress);
-					console.log(`Server for talking to sidecar is running at http://localhost:${server.address()}/`);
-				}); // Use 0 to let the OS pick an available port
-			} else {
-				console.error(`Failed to start server: ${err.message}`);
-			}
-		});
-
-	// Register a disposable to stop the server when the extension is deactivated
-	context.subscriptions.push({
-		dispose: () => {
-			if (server) {
-				server.close();
-			}
-		},
-	});
 	const uniqueUserId = getUniqueId();
 	const userId = getUserId();
 	console.log('User id:' + userId);
@@ -166,6 +137,41 @@ export async function activate(context: ExtensionContext) {
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
+	SIDECAR_CLIENT = sidecarClient;
+
+	// Server for the sidecar to talk to the editor
+	const server = http.createServer(handleRequest);
+	let port = 42423; // Default chooses 42423, but if its not available then we
+	// can still grab it by listenting to port 0
+	server.listen(port, () => {
+		console.log(`Server for talking to sidecar is running at http://localhost:${port}/`);
+	})
+		.on('error', (err: NodeJS.ErrnoException) => {
+			if (err.code === 'EADDRINUSE') {
+				console.error(`Port ${port} is already in use, trying another port...`);
+				server.listen(0, () => {
+					const serverAddress = server.address();
+					if (serverAddress) {
+						const newAddress: AddressInfo = serverAddress as AddressInfo;
+						port = newAddress.port;
+					}
+					console.log(serverAddress);
+					console.log(`Server for talking to sidecar is running at http://localhost:${server.address()}/`);
+				}); // Use 0 to let the OS pick an available port
+			} else {
+				console.error(`Failed to start server: ${err.message}`);
+			}
+		});
+
+	// Register a disposable to stop the server when the extension is deactivated
+	context.subscriptions.push({
+		dispose: () => {
+			if (server) {
+				server.close();
+			}
+		},
+	});
+
 	// we want to send the open tabs here to the sidecar
 	const openTextDocuments = await getRelevantFiles();
 	openTextDocuments.forEach((openTextDocument) => {
@@ -253,26 +259,6 @@ export async function activate(context: ExtensionContext) {
 		sidecarClient, currentRepo, projectContext,
 	);
 	context.subscriptions.push(chatAgentProvider);
-
-	// Also track the documents when they were last opened
-	// context.subscriptions.push(
-	// workspace.onDidOpenTextDocument(async (doc) => {
-	// 	const uri = doc.uri;
-	// 	console.log('document open');
-	// 	// TODO(skcd): we want to send the file open event to the sidecar client
-	// 	if (shouldTrackFile(uri)) {
-	// 		console.log('we are tracking uri', uri.scheme);
-	// 		await sidecarClient.documentOpen(uri.fsPath, doc.getText(), doc.languageId);
-	// 	}
-	// });
-
-	// // Listen for active editor change events (user navigating between files)
-	// window.onDidChangeActiveTextEditor(async (editor) => {
-	// 	activeFilesTracker.onDidChangeActiveTextEditor(editor);
-	// 	// if we are going to change the active text editor, then we should tell
-	// 	// the sidecar about it
-	// 	await changedActiveDocument(editor, sidecarClient);
-	// });
 
 	// Register feedback commands
 	context.subscriptions.push(

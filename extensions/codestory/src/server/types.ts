@@ -52,4 +52,18 @@ export type SidecarOpenFileToolRequest = {
 export type SidecarOpenFileToolResponse = {
 	fs_file_path: string;
 	file_contents: string;
+	language: string;
+	exists: boolean;
+};
+
+export type SidecarGoToImplementationRequest = {
+	fs_file_path: string;
+	position: {
+		line: number;
+		character: number;
+	};
+};
+
+export type SidecarGoToImplementationResponse = {
+	implementation_locations: FileAndRange[];
 };
