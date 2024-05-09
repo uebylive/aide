@@ -72,7 +72,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		return Math.max(width, 300);
 	}
 
-	readonly priority: LayoutPriority = LayoutPriority.Low;
+	readonly priority = LayoutPriority.Low;
 
 	constructor(
 		@INotificationService notificationService: INotificationService,
@@ -263,6 +263,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		if (this.getCompositeBarPosition() === CompositeBarPosition.TOP) {
 			return 22;
 		}
+
 		return super.getToolbarWidth();
 	}
 
