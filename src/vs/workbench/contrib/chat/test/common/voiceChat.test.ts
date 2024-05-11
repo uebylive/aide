@@ -16,7 +16,7 @@ import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatProgress } from 'vs/workbench/contrib/chat/common/chatService';
 import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IVoiceChatSessionOptions, IVoiceChatTextEvent, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChat';
-import { ISpeechProvider, ISpeechService, ISpeechToTextEvent, ISpeechToTextSession, KeywordRecognitionStatus, SpeechToTextStatus } from 'vs/workbench/contrib/speech/common/speechService';
+import { ISpeechProvider, ISpeechService, ISpeechToTextEvent, ISpeechToTextSession, ITextToSpeechSession, KeywordRecognitionStatus, SpeechToTextStatus } from 'vs/workbench/contrib/speech/common/speechService';
 import { nullExtensionDescription } from 'vs/workbench/services/extensions/common/extensions';
 
 suite('VoiceChat', () => {
@@ -30,6 +30,8 @@ suite('VoiceChat', () => {
 		providerId: string = 'testProvider';
 		extensionId: ExtensionIdentifier = nullExtensionDescription.identifier;
 		extensionPublisher = '';
+		extensionDisplayName = '';
+		extensionPublisherId = '';
 		locations: ChatAgentLocation[] = [ChatAgentLocation.Panel];
 		public readonly name: string;
 		constructor(readonly id: string, readonly slashCommands: IChatAgentCommand[]) {
@@ -66,7 +68,11 @@ suite('VoiceChat', () => {
 		getAgent(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }
 		getAgentsByName(name: string): IChatAgentData[] { throw new Error('Method not implemented.'); }
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error('Method not implemented.'); }
+<<<<<<< HEAD
 		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }
+=======
+		getAgentByFullyQualifiedId(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }
+>>>>>>> upstream/main
 	}
 
 	class TestSpeechService implements ISpeechService {
@@ -76,6 +82,7 @@ suite('VoiceChat', () => {
 
 		readonly hasSpeechProvider = true;
 		readonly hasActiveSpeechToTextSession = false;
+		readonly hasActiveTextToSpeechSession = false;
 		readonly hasActiveKeywordRecognition = false;
 
 		registerSpeechProvider(identifier: string, provider: ISpeechProvider): IDisposable { throw new Error('Method not implemented.'); }
@@ -85,6 +92,16 @@ suite('VoiceChat', () => {
 		async createSpeechToTextSession(token: CancellationToken): Promise<ISpeechToTextSession> {
 			return {
 				onDidChange: emitter.event
+			};
+		}
+
+		onDidStartTextToSpeechSession = Event.None;
+		onDidEndTextToSpeechSession = Event.None;
+
+		async createTextToSpeechSession(token: CancellationToken): Promise<ITextToSpeechSession> {
+			return {
+				onDidChange: Event.None,
+				synthesize: async () => { }
 			};
 		}
 
