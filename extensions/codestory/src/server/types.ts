@@ -67,3 +67,22 @@ export type SidecarGoToImplementationRequest = {
 export type SidecarGoToImplementationResponse = {
 	implementation_locations: FileAndRange[];
 };
+
+export type SidecarQuickFixRequest = {
+	fs_file_path: string;
+	range: {
+		startPosition: {
+			line: number;
+			character: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+		};
+	};
+};
+
+// Keeping it simple for now
+export type SidecarQuickFixResponse = {
+	options: string[];
+};

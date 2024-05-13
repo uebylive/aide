@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, interactive, window, workspace, languages, modelSelection, env, csevents } from 'vscode';
+import { commands, ExtensionContext, interactive, window, workspace, languages, modelSelection, env, csevents, Uri, Position } from 'vscode';
 import * as os from 'os';
 import * as http from 'http';
 
@@ -302,4 +302,47 @@ export async function activate(context: ExtensionContext) {
 			);
 		}
 	});
+
+
+	// TODO(skcd): I promise to clean this up better, I am trying to see if things still
+	// work if I wait here and check the diagnostics and if its working
+	// await new Promise(resolve => setTimeout(resolve, 20000));
+	// // over here we will execute the code action provider
+	// try {
+	// 	const textDocumentUri = Uri.file('/Users/skcd/scratch/sidecar/sidecar/src/agentic/symbol/helpers.rs');
+	// 	// opens the text document as required
+	// 	await workspace.openTextDocument(textDocumentUri);
+	// 	const range = new vscode.Range(new Position(3, 24), new Position(3, 25));
+	// 	const codeActions: vscode.CodeAction[] = await commands.executeCommand(
+	// 		'vscode.executeCodeActionProvider',
+	// 		textDocumentUri,
+	// 		range,
+	// 	);
+	// 	console.log('code actions worked');
+	// 	// lets see what happens over here
+	// 	console.log(codeActions);
+	// 	const firstCodeActionCommand = codeActions[1].command;
+	// 	const firstCodeArguments = codeActions[1].command?.arguments;
+	// 	try {
+	// 		if (firstCodeActionCommand !== undefined && firstCodeArguments !== undefined) {
+	// 			// console.log(firstCodeAction.command);
+	// 			// console.log(firstCodeAction.arguments);
+	// 			console.log(firstCodeArguments[0]);
+	// 			const firstArgument = firstCodeArguments[0][0].arguments;
+	// 			console.log(firstArgument);
+	// 			const result = await commands.executeCommand('rust-analyzer.resolveCodeAction', firstArgument);
+	// 			// const result = await commands.executeCommand(firstCodeActionCommand.command, ...firstCodeArguments);
+	// 			console.log('sub results from result');
+	// 			console.log(result);
+	// 		} else {
+	// 			console.log('missing command');
+	// 		}
+	// 	} catch (exception) {
+	// 		console.log(exception);
+	// 	}
+	// 	// await commands.executeCommand(codeActions[0].command, ...codeActions[1].arguments);
+	// } catch (exception) {
+	// 	console.log('code action execution error');
+	// 	console.error(exception);
+	// }
 }
