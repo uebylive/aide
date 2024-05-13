@@ -20,6 +20,7 @@ import { ILanguageService } from 'vs/editor/common/languages/language';
 import { ITextModel } from 'vs/editor/common/model';
 import { TextModel } from 'vs/editor/common/model/textModel';
 import { isDefined } from 'vs/base/common/types';
+import { ILanguageDetectionService } from 'vs/workbench/services/languageDetection/common/languageDetectionWorkerService';
 
 
 class StackOperation implements IWorkspaceUndoRedoElement {
@@ -145,6 +146,10 @@ type TransformedEdit = {
 };
 
 class NotebookEventEmitter extends PauseableEmitter<NotebookTextModelChangedEvent> {
+	get isEmpty() {
+		return this._eventQueue.isEmpty();
+	}
+
 	isDirtyEvent() {
 		for (const e of this._eventQueue) {
 			for (let i = 0; i < e.rawEvents.length; i++) {
@@ -213,6 +218,7 @@ export class NotebookTextModel extends Disposable implements INotebookTextModel 
 		@IUndoRedoService private readonly _undoService: IUndoRedoService,
 		@IModelService private readonly _modelService: IModelService,
 		@ILanguageService private readonly _languageService: ILanguageService,
+		@ILanguageDetectionService private readonly _languageDetectionService: ILanguageDetectionService
 	) {
 		super();
 		this.transientOptions = options;
@@ -285,7 +291,7 @@ export class NotebookTextModel extends Disposable implements INotebookTextModel 
 			const cellHandle = this._cellhandlePool++;
 			const cellUri = CellUri.generate(this.uri, cellHandle);
 			const collapseState = this._getDefaultCollapseState(cell);
-			return new NotebookCellTextModel(cellUri, cellHandle, cell.source, cell.language, cell.mime, cell.cellKind, cell.outputs, cell.metadata, cell.internalMetadata, collapseState, this.transientOptions, this._languageService);
+			return new NotebookCellTextModel(cellUri, cellHandle, cell.source, cell.language, cell.mime, cell.cellKind, cell.outputs, cell.metadata, cell.internalMetadata, collapseState, this.transientOptions, this._languageService, this._languageDetectionService);
 		});
 
 		for (let i = 0; i < mainCells.length; i++) {
@@ -511,16 +517,18 @@ export class NotebookTextModel extends Disposable implements INotebookTextModel 
 			this._doApplyEdits(rawEdits, synchronous, computeUndoRedo, beginSelectionState, undoRedoGroup);
 			return true;
 		} finally {
-			// Update selection and versionId after applying edits.
-			const endSelections = endSelectionsComputer();
-			this._increaseVersionId(this._operationManager.isUndoStackEmpty() && !this._pauseableEmitter.isDirtyEvent());
+			if (!this._pauseableEmitter.isEmpty) {
+				// Update selection and versionId after applying edits.
+				const endSelections = endSelectionsComputer();
+				this._increaseVersionId(this._operationManager.isUndoStackEmpty() && !this._pauseableEmitter.isDirtyEvent());
 
-			// Finalize undo element
-			this._operationManager.pushStackElement(this._alternativeVersionId, endSelections);
+				// Finalize undo element
+				this._operationManager.pushStackElement(this._alternativeVersionId, endSelections);
 
-			// Broadcast changes
-			this._pauseableEmitter.fire({ rawEvents: [], versionId: this.versionId, synchronous: synchronous, endSelectionState: endSelections });
-			this._pauseableEmitter.resume();
+				// Broadcast changes
+				this._pauseableEmitter.fire({ rawEvents: [], versionId: this.versionId, synchronous: synchronous, endSelectionState: endSelections });
+				this._pauseableEmitter.resume();
+			}
 		}
 	}
 
@@ -722,7 +730,8 @@ export class NotebookTextModel extends Disposable implements INotebookTextModel 
 			const cell = new NotebookCellTextModel(
 				cellUri, cellHandle,
 				cellDto.source, cellDto.language, cellDto.mime, cellDto.cellKind, cellDto.outputs || [], cellDto.metadata, cellDto.internalMetadata, collapseState, this.transientOptions,
-				this._languageService
+				this._languageService,
+				this._languageDetectionService
 			);
 			const textModel = this._modelService.getModel(cellUri);
 			if (textModel && textModel instanceof TextModel) {
