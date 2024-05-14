@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarOpenFileToolRequest, SidecarQuickFixRequest } from './types';
+import { SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarOpenFileToolRequest, SidecarQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
 import { goToImplementation } from './goToImplementation';
-import { quickFixList } from './quickFix';
+import { quickFixInvocation, quickFixList } from './quickFix';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -73,11 +73,18 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 			const response = await goToImplementation(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
-		} else if (req.method === 'POST' && req.url === '/invoke_quick_fix') {
-			console.log('quick-fix');
+		} else if (req.method === 'POST' && req.url === '/select_quick_fix') {
+			console.log('select-quick-fix');
 			const body = await readRequestBody(req);
 			const request: SidecarQuickFixRequest = JSON.parse(body);
 			const response = await quickFixList(request);
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify(response));
+		} else if (req.method === 'POST' && req.url === '/invoke_quick_fix') {
+			console.log('invoke-quick-fix');
+			const body = await readRequestBody(req);
+			const request: SidecarQuickFixInvocationRequest = JSON.parse(body);
+			const response = await quickFixInvocation(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
 		} else {
