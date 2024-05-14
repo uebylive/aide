@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarOpenFileToolRequest, SidecarQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
+import { SidecarApplyEditsRequest, SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarOpenFileToolRequest, SidecarQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -11,6 +11,7 @@ import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
 import { goToImplementation } from './goToImplementation';
 import { quickFixInvocation, quickFixList } from './quickFix';
+import { applyEdits } from './applyEdits';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -85,6 +86,13 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 			const body = await readRequestBody(req);
 			const request: SidecarQuickFixInvocationRequest = JSON.parse(body);
 			const response = await quickFixInvocation(request);
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify(response));
+		} else if (req.method === 'POST' && req.url === '/apply_edits') {
+			console.log('apply-edits');
+			const body = await readRequestBody(req);
+			const request: SidecarApplyEditsRequest = JSON.parse(body);
+			const response = await applyEdits(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
 		} else {
