@@ -81,17 +81,20 @@ export async function quickFixInvocation(request: SidecarQuickFixInvocationReque
 export async function quickFixList(request: SidecarQuickFixRequest): Promise<SidecarQuickFixResponse> {
 	const textDocumentUri = vscode.Uri.file(request.fs_file_path);
 	const requestId = request.request_id;
+	const startPosition = request.range.startPosition;
+	const endPosition = request.range.endPosition;
+	const quickFixRange = new vscode.Range(new vscode.Position(startPosition.line, startPosition.character), new vscode.Position(endPosition.line, endPosition.character));
 	await vscode.workspace.openTextDocument(textDocumentUri);
 	const codeActions: vscode.CodeAction[] = await vscode.commands.executeCommand(
 		'vscode.executeCodeActionProvider',
 		textDocumentUri,
-		request.range,
+		quickFixRange,
 	);
 	const actionsFlattened: { label: string; arguments: any; command: string; id: number }[] = [];
 	let actionIndex = 0;
 	// Over here try to get all the code actions which we need to execute
 	codeActions.forEach((codeAction) => {
-		if (codeAction.command?.command === 'rust-analyzer.resolveCodeAction') {
+		if (codeAction.command?.command === 'rust-analyzer.applyActionGroup') {
 			// This means there are multiple commands in there, so we have to add it
 			// to the flattened list
 			const commandPossibleArguments = codeAction.command.arguments ?? [];
@@ -107,9 +110,11 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 			}
 		} else {
 			const actionCommand = codeAction.command;
+			console.log('whats the command over here');
+			console.log(actionCommand);
 			if (actionCommand !== undefined) {
 				actionsFlattened.push({
-					label: codeAction.title,
+					label: actionCommand.title,
 					command: actionCommand.command,
 					arguments: actionCommand.arguments,
 					id: actionIndex,
@@ -118,6 +123,9 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 			}
 		}
 	});
+	console.log('actions');
+	console.log(actionsFlattened);
+	console.log('actions list');
 	QUICK_FIX_LIST.insertForRequestId(requestId, actionsFlattened);
 	return {
 		options: actionsFlattened.map((action) => {
