@@ -101,3 +101,35 @@ export type SidecarQuickFixInvocationResponse = {
 	request_id: string;
 	invocation_success: boolean;
 };
+
+export type SidecarApplyEditsRequest = {
+	fs_file_path: string;
+	edited_content: string;
+	selected_range: {
+		startPosition: {
+			line: number;
+			character: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+		};
+	};
+}
+
+export type SidecarApplyEditsResponse = {
+	fs_file_path: string;
+	success: boolean;
+	new_range: {
+		startPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+	};
+};
