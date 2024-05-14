@@ -227,7 +227,6 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
-		const folders = folderFromQuery(query);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		console.log(sideCarModelConfiguration);
 		console.log(JSON.stringify(sideCarModelConfiguration));
@@ -236,7 +235,7 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecar(variables, folders),
+			user_context: await convertVSCodeVariableToSidecar(variables),
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
 			model_config: sideCarModelConfiguration,
@@ -792,35 +791,9 @@ interface CodeSelectionUriRange {
 	};
 }
 
-function folderFromQuery(query: string): string[] {
-	const folderRegex = /#folder:([^#\s]+)/g;
-	const matches = query.matchAll(folderRegex);
-	const folders: string[] = [];
-	for (const match of matches) {
-		// add the workspace root path to the folder so we get the relative path
-		// here always
-		console.log(match[1]);
-		folders.push(match[1]);
-	}
-	console.log('folders from query', query);
-	console.log('folders from query', folders);
-	const workspaceFolders = folders.map((folder) => {
-		const rootPath = vscode.workspace.rootPath;
-		if (rootPath) {
-			const newPath = path.join(rootPath, folder);
-			return newPath;
-		} else {
-			return folder;
-		}
-	});
-	console.log('workspace folder', workspaceFolders);
-	return workspaceFolders;
-}
-
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatResolvedVariable[],
-	folders: string[],
-): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined; folder_paths: string[] }> {
+): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	let terminalSelection: string | undefined = undefined;
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
@@ -880,6 +853,21 @@ async function convertVSCodeVariableToSidecar(
 		} else if (name === 'file' || name === 'code') {
 			const variableValue = values[0];
 			await resolveFileReference(name, variableValue);
+		} else if (name === 'folder') {
+			// Get the files in the folder
+			const parsedJson = JSON.parse(values[0].value as string) as vscode.Uri;
+			const folderPath = vscode.Uri.parse(parsedJson.path);
+			const folderFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(folderPath.fsPath, '**/*'));
+			for (const filePath of folderFiles) {
+				resolveFileReference(
+					'file',
+					{
+						level: vscode.ChatVariableLevel.Full,
+						value: JSON.stringify({ uri: filePath }),
+						kind: 'file'
+					}
+				);
+			}
 		}
 	}
 	return {
@@ -892,7 +880,6 @@ async function convertVSCodeVariableToSidecar(
 			};
 		}),
 		terminal_selection: terminalSelection,
-		folder_paths: folders,
 	};
 }
 

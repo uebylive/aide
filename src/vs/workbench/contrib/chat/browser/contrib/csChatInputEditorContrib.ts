@@ -6,6 +6,7 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
+import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { getWordAtText } from 'vs/editor/common/core/wordHelper';
@@ -21,7 +22,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -274,8 +275,7 @@ class FolderReferenceCompletions extends Disposable {
 					endColumn: varWord ? varWord.endColumn : position.column
 				};
 
-				const files = await this.doGetFolderSearchResults(_token);
-				const completionURIs = files.results.map(result => result.resource);
+				const completionURIs = await this.doGetFolderSearchResults(_token);
 
 				const editRange: IRange = {
 					startLineNumber: position.lineNumber,
@@ -285,14 +285,12 @@ class FolderReferenceCompletions extends Disposable {
 				};
 
 				const completionItems = completionURIs.map(uri => {
-					const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
 					return <CompletionItem>{
-						label: basenameOrAuthority(uri),
+						label: this.labelService.getUriLabel(uri, { relative: true }),
 						insertText: '',
-						detail,
 						kind: CompletionItemKind.Folder,
 						range,
-						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
+						command: { id: SelectAndInsertFolderAction.ID, title: SelectAndInsertFolderAction.ID, arguments: [{ widget, range: editRange, uri }] },
 						sortText: 'z'
 					};
 				});
@@ -304,16 +302,21 @@ class FolderReferenceCompletions extends Disposable {
 		}));
 	}
 
-	private doGetFolderSearchResults(token: CancellationToken): Promise<ISearchComplete> {
-		return this.searchService.fileSearch(
+	private async doGetFolderSearchResults(token: CancellationToken): Promise<URI[]> {
+		const response = await this.searchService.fileSearch(
 			this.fileQueryBuilder.file(
 				this.contextService.getWorkspace().folders,
 				{
 					extraFileResources: this.instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
 					sortByScore: true,
-					filePattern: '*/',
 				}
 			), token);
+		const dirUris = new Map<string, URI>();
+		response.results.forEach(result => {
+			const dirUri = dirname(result.resource);
+			dirUris.set(dirUri.toString(), dirUri);
+		});
+		return Array.from(dirUris.values());
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FolderReferenceCompletions, LifecyclePhase.Eventually);

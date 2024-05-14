@@ -106,7 +106,6 @@ export class SelectAndInsertFolderAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		const textModelService = accessor.get(ITextModelService);
 		const logService = accessor.get(ILogService);
 
 		const context = args[0];
@@ -115,7 +114,7 @@ export class SelectAndInsertFolderAction extends Action2 {
 		}
 
 		const doCleanup = () => {
-			// Failed, remove the dangling `file`
+			// Failed, remove the dangling `folder`
 			context.widget.inputEditor.executeEdits('chatInsertFolder', [{ range: context.range, text: `` }]);
 		};
 
@@ -125,10 +124,6 @@ export class SelectAndInsertFolderAction extends Action2 {
 			doCleanup();
 			return;
 		}
-
-		const model = await textModelService.createModelReference(resource);
-		const fileRange = model.object.textEditorModel.getFullModelRange();
-		model.dispose();
 
 		const fileName = basename(resource);
 		const editor = context.widget.inputEditor;
@@ -141,7 +136,7 @@ export class SelectAndInsertFolderAction extends Action2 {
 			return;
 		}
 
-		const valueObj = { uri: resource, range: fileRange };
+		const valueObj = { uri: resource };
 		const value = JSON.stringify(valueObj);
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
