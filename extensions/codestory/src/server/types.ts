@@ -70,6 +70,7 @@ export type SidecarGoToImplementationResponse = {
 
 export type SidecarQuickFixRequest = {
 	fs_file_path: string;
+	request_id: string;
 	range: {
 		startPosition: {
 			line: number;
@@ -84,5 +85,19 @@ export type SidecarQuickFixRequest = {
 
 // Keeping it simple for now
 export type SidecarQuickFixResponse = {
-	options: string[];
+	options: {
+		label: string;
+		index: number;
+	}[];
+};
+
+export type SidecarQuickFixInvocationRequest = {
+	index: number;
+	request_id: string;
+	fs_file_path: string;
+};
+
+export type SidecarQuickFixInvocationResponse = {
+	request_id: string;
+	invocation_success: boolean;
 };
