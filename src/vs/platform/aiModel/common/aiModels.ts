@@ -182,6 +182,14 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'openai-default'
 			}
 		},
+		'Gpt4o': {
+			name: 'GPT-4o',
+			contextLength: 8192,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
 		'GPT3_5': {
 			name: 'GPT-3.5 Turbo',
 			contextLength: 4096,
@@ -322,7 +330,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 
 export const supportedModels: Record<ProviderType, string[]> = {
 	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama7BInstruct', 'ClaudeHaiku', 'ClaudeSonnet', 'DeepSeekCoder33BInstruct', 'Gpt4Turbo'],
-	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
+	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5', 'Gpt4o'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct'],
