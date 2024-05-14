@@ -309,10 +309,10 @@ export async function activate(context: ExtensionContext) {
 	// await new Promise(resolve => setTimeout(resolve, 20000));
 	// // over here we will execute the code action provider
 	// try {
-	// 	const textDocumentUri = Uri.file('/Users/skcd/scratch/sidecar/sidecar/src/agentic/symbol/helpers.rs');
+	// 	const textDocumentUri = Uri.file('/Users/skcd/scratch/sidecar/llm_client/src/clients/types.rs');
 	// 	// opens the text document as required
 	// 	await workspace.openTextDocument(textDocumentUri);
-	// 	const range = new vscode.Range(new Position(3, 24), new Position(3, 25));
+	// 	const range = new vscode.Range(new Position(571, 27), new Position(571, 28));
 	// 	const codeActions: vscode.CodeAction[] = await commands.executeCommand(
 	// 		'vscode.executeCodeActionProvider',
 	// 		textDocumentUri,

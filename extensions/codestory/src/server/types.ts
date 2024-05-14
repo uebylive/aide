@@ -70,6 +70,7 @@ export type SidecarGoToImplementationResponse = {
 
 export type SidecarQuickFixRequest = {
 	fs_file_path: string;
+	request_id: string;
 	range: {
 		startPosition: {
 			line: number;
@@ -84,5 +85,51 @@ export type SidecarQuickFixRequest = {
 
 // Keeping it simple for now
 export type SidecarQuickFixResponse = {
-	options: string[];
+	options: {
+		label: string;
+		index: number;
+	}[];
+};
+
+export type SidecarQuickFixInvocationRequest = {
+	index: number;
+	request_id: string;
+	fs_file_path: string;
+};
+
+export type SidecarQuickFixInvocationResponse = {
+	request_id: string;
+	invocation_success: boolean;
+};
+
+export type SidecarApplyEditsRequest = {
+	fs_file_path: string;
+	edited_content: string;
+	selected_range: {
+		startPosition: {
+			line: number;
+			character: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+		};
+	};
+}
+
+export type SidecarApplyEditsResponse = {
+	fs_file_path: string;
+	success: boolean;
+	new_range: {
+		startPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+	};
 };
