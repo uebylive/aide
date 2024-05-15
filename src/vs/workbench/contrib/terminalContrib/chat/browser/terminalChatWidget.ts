@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type { Terminal as RawXtermTerminal } from '@xterm/xterm';
-import { Dimension, IFocusTracker, trackFocus } from 'vs/base/browser/dom';
-import { Event } from 'vs/base/common/event';
+import { Dimension, getActiveWindow, IFocusTracker, trackFocus } from 'vs/base/browser/dom';
+import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, toDisposable } from 'vs/base/common/lifecycle';
 import { MicrotaskDelay } from 'vs/base/common/symbols';
 import 'vs/css!./media/terminalChatWidget';
@@ -26,6 +26,9 @@ const enum Constants {
 export class TerminalChatWidget extends Disposable {
 
 	private readonly _container: HTMLElement;
+
+	private readonly _onDidHideInput = this._register(new Emitter<void>());
+	readonly onDidHideInput = this._onDidHideInput.event;
 
 	private readonly _inlineChatWidget: InlineChatWidget;
 	public get inlineChatWidget(): InlineChatWidget { return this._inlineChatWidget; }
@@ -88,6 +91,11 @@ export class TerminalChatWidget extends Disposable {
 		this._container.appendChild(this._inlineChatWidget.domNode);
 
 		this._focusTracker = this._register(trackFocus(this._container));
+		this._register(this._focusTracker.onDidBlur(() => {
+			if (!this._instance.isVisible) {
+				this.hide();
+			}
+		}));
 		this.hide();
 	}
 
@@ -100,11 +108,18 @@ export class TerminalChatWidget extends Disposable {
 	}
 
 	private _doLayout(heightInPixel: number) {
-		const width = Math.min(640, this._terminalElement.clientWidth - 12/* padding */ - 2/* border */ - Constants.HorizontalMargin);
+		const xtermElement = this._xterm.raw!.element;
+		if (!xtermElement) {
+			return;
+		}
+		const style = getActiveWindow().getComputedStyle(xtermElement);
+		const xtermPadding = parseInt(style.paddingLeft) + parseInt(style.paddingRight);
+		const width = Math.min(640, xtermElement.clientWidth - 12/* padding */ - 2/* border */ - Constants.HorizontalMargin - xtermPadding);
 		const height = Math.min(480, heightInPixel, this._getTerminalWrapperHeight() ?? Number.MAX_SAFE_INTEGER);
 		if (width === 0 || height === 0) {
 			return;
 		}
+		this._container.style.paddingLeft = style.paddingLeft;
 		this._dimension = new Dimension(width, height);
 		this._inlineChatWidget.layout(this._dimension);
 
@@ -122,6 +137,7 @@ export class TerminalChatWidget extends Disposable {
 		this._focusedContextKey.set(true);
 		this._visibleContextKey.set(true);
 		this._inlineChatWidget.focus();
+		this._instance.scrollToBottom();
 	}
 
 	private _updateVerticalPosition(): void {
@@ -163,6 +179,7 @@ export class TerminalChatWidget extends Disposable {
 		this._inlineChatWidget.value = '';
 		this._instance.focus();
 		this._setTerminalOffset(undefined);
+		this._onDidHideInput.fire();
 	}
 	private _setTerminalOffset(offset: number | undefined) {
 		if (offset === undefined || this._container.classList.contains('hide')) {

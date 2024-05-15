@@ -5,7 +5,7 @@
 
 import { isNonEmptyArray } from 'vs/base/common/arrays';
 import { Codicon } from 'vs/base/common/codicons';
-import { DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { localize, localize2 } from 'vs/nls';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
@@ -39,7 +39,12 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 					type: 'string'
 				},
 				name: {
-					description: localize('chatParticipantName', "User-facing display name for this chat participant. The user will use '@' with this name to invoke the participant."),
+					description: localize('chatParticipantName', "User-facing name for this chat participant. The user will use '@' with this name to invoke the participant."),
+					type: 'string',
+					pattern: '^[\\w0-9_-]+$'
+				},
+				fullName: {
+					markdownDescription: localize('chatParticipantFullName', "The full name of this chat participant, which is shown as the label for responses coming from this participant. If not provided, {0} is used.", '`name`'),
 					type: 'string'
 				},
 				description: {
@@ -53,6 +58,10 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 				isSticky: {
 					description: localize('chatCommandSticky', "Whether invoking the command puts the chat into a persistent mode, where the command is automatically added to the chat input for the next message."),
 					type: 'boolean'
+				},
+				sampleRequest: {
+					description: localize('chatSampleRequest', "When the user clicks this participant in `/help`, this text will be submitted to the participant."),
+					type: 'string'
 				},
 				defaultImplicitVariables: {
 					markdownDescription: '**Only** allowed for extensions that have the `chatParticipantAdditions` proposal. The names of the variables that are invoked by default',
@@ -83,7 +92,7 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 								type: 'string'
 							},
 							sampleRequest: {
-								description: localize('chatCommandSampleRequest', "When the user clicks this command in `/help`, this text will be submitted to this participant."),
+								description: localize('chatCommandSampleRequest', "When the user clicks this command in `/help`, this text will be submitted to the participant."),
 								type: 'string'
 							},
 							isSticky: {
@@ -200,13 +209,17 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 						providerDescriptor.id,
 						{
 							extensionId: extension.description.identifier,
-							extensionPublisher: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
+							publisherDisplayName: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
+							extensionPublisherId: extension.description.publisher,
+							extensionDisplayName: extension.description.displayName ?? extension.description.name,
 							id: providerDescriptor.id,
 							description: providerDescriptor.description,
 							metadata: {
 								isSticky: providerDescriptor.isSticky,
+								sampleRequest: providerDescriptor.sampleRequest,
 							},
 							name: providerDescriptor.name,
+							fullName: providerDescriptor.fullName,
 							isDefault: providerDescriptor.isDefault,
 							defaultImplicitVariables: providerDescriptor.defaultImplicitVariables,
 							locations: isNonEmptyArray(providerDescriptor.locations) ?
@@ -258,21 +271,30 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		return viewContainer;
 	}
 
+	private hasRegisteredDefaultParticipantView = false;
 	private registerDefaultParticipantView(defaultParticipantDescriptor: IRawChatParticipantContribution): IDisposable {
+		if (this.hasRegisteredDefaultParticipantView) {
+			this.logService.warn(`Tried to register a second default chat participant view for "${defaultParticipantDescriptor.id}"`);
+			return Disposable.None;
+		}
+
 		// Register View
+		const name = defaultParticipantDescriptor.fullName ?? defaultParticipantDescriptor.name;
 		const viewDescriptor: IViewDescriptor[] = [{
 			id: CHAT_VIEW_ID,
 			containerIcon: this._viewContainer.icon,
 			containerTitle: this._viewContainer.title.value,
 			singleViewPaneContainerTitle: this._viewContainer.title.value,
-			name: { value: defaultParticipantDescriptor.name, original: defaultParticipantDescriptor.name },
+			name: { value: name, original: name },
 			canToggleVisibility: false,
 			canMoveView: true,
 			ctorDescriptor: new SyncDescriptor(ChatViewPane),
 		}];
+		this.hasRegisteredDefaultParticipantView = true;
 		Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, this._viewContainer);
 
 		return toDisposable(() => {
+			this.hasRegisteredDefaultParticipantView = false;
 			Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).deregisterViews(viewDescriptor, this._viewContainer);
 		});
 	}
