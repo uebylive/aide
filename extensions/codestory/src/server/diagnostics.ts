@@ -4,12 +4,29 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import { SidecarDiagnostics } from './types';
 
-export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): vscode.Diagnostic[] {
+export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): SidecarDiagnostics[] {
 	const fileUri = vscode.Uri.file(filePath);
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
-	diagnostics.filter((diagnostic) => {
+	const sidecarDiagnostics = diagnostics.filter((diagnostic) => {
 		return interestedRange.contains(diagnostic.range);
+	}).map((diagnostic) => {
+		return {
+			diagnostic: diagnostic.message,
+			range: {
+				startPosition: {
+					line: diagnostic.range.start.line,
+					character: diagnostic.range.start.character,
+					byte_offset: 0,
+				},
+				endPosition: {
+					line: diagnostic.range.end.line,
+					character: diagnostic.range.end.character,
+					byte_offset: 0,
+				},
+			},
+		};
 	});
-	return diagnostics;
+	return sidecarDiagnostics;
 }
