@@ -20,7 +20,7 @@ import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
-import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputEditorContrib';
+import { computeCompletionRanges } from 'vs/workbench/contrib/chat/browser/contrib/chatInputCompletions';
 import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, MultiLevelCodeTriggerAction, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/csChatDynamicVariables';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';

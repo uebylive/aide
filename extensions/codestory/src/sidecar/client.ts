@@ -220,7 +220,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: readonly vscode.ChatResolvedVariable[],
+		variables: readonly vscode.ChatPromptReference[],
 		projectLabels: string[],
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
@@ -818,7 +818,7 @@ function folderFromQuery(query: string): string[] {
 }
 
 async function convertVSCodeVariableToSidecar(
-	variables: readonly vscode.ChatResolvedVariable[],
+	variables: readonly vscode.ChatPromptReference[],
 	folders: string[],
 ): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined; folder_paths: string[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
@@ -826,8 +826,8 @@ async function convertVSCodeVariableToSidecar(
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
-	const resolveFileReference = async (variableName: string, variableValue: vscode.ChatVariableValue) => {
-		const parsedJson = JSON.parse(variableValue.value as string) as CodeSelectionUriRange;
+	const resolveFileReference = async (variableName: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
+		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
 		const filePath = vscode.Uri.parse(parsedJson.uri.path);
 		const cachedFile = fileCache.get(filePath.fsPath);
 		if (cachedFile === undefined) {
@@ -869,17 +869,14 @@ async function convertVSCodeVariableToSidecar(
 
 	for (const variable of variables) {
 		const name = variable.name;
-		const values = variable.values;
+		const value = variable.value;
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
-			terminalSelection = values[0].value as string;
+			terminalSelection = value as string;
 		} else if (name === OPEN_FILES_VARIABLE) {
-			for (const value of values) {
-				await resolveFileReference('file', value);
-			}
+			await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
-			const variableValue = values[0];
-			await resolveFileReference(name, variableValue);
+			await resolveFileReference(name, value);
 		}
 	}
 	return {

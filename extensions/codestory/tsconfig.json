@@ -8,7 +8,6 @@
 	"include": [
 		"src/**/*",
 		"../../src/vscode-dts/vscode.d.ts",
-		"../../src/vscode-dts/vscode.proposed.chatParticipant.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatVariableResolver.d.ts",

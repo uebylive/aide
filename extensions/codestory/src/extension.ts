@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, interactive, window, workspace, languages, modelSelection, env, csevents, } from 'vscode';
+import { commands, ExtensionContext, window, workspace, languages, modelSelection, env, csevents, } from 'vscode';
 import * as os from 'os';
 import * as http from 'http';
 
@@ -12,11 +12,10 @@ import postHogClient from './posthog/client';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
-import { getUniqueId, getUserId, shouldUseExactMatching } from './utilities/uniqueId';
+import { getUniqueId, getUserId } from './utilities/uniqueId';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
-import { CSInteractiveEditorSessionProvider } from './completions/providers/editorSessionProvider';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSChatAgentProvider } from './completions/providers/chatprovider';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
@@ -240,18 +239,6 @@ export async function activate(context: ExtensionContext) {
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
-
-	// Register chat provider
-	const interactiveEditorSessionProvider = new CSInteractiveEditorSessionProvider(
-		sidecarClient,
-		currentRepo,
-		rootPath ?? '',
-		shouldUseExactMatching(),
-	);
-	const interactiveEditorSession = interactive.registerInteractiveEditorSessionProvider(
-		interactiveEditorSessionProvider,
-	);
-	context.subscriptions.push(interactiveEditorSession);
 
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,

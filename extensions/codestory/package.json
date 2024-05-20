@@ -13,12 +13,10 @@
     "inlineCompletionsAdditions",
     "interactive",
     "chatProvider",
-    "chatParticipant",
     "chatParticipantAdditions",
     "csevents",
     "defaultChatParticipant",
     "chatVariableResolver",
-    "languageModels",
     "modelSelection",
     "terminalSelection"
   ],
