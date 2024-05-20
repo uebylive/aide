@@ -115,12 +115,28 @@ export type SidecarApplyEditsRequest = {
 			character: number;
 		};
 	};
-}
+};
 
 export type SidecarApplyEditsResponse = {
 	fs_file_path: string;
 	success: boolean;
 	new_range: {
+		startPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+		endPosition: {
+			line: number;
+			character: number;
+			byte_offset: number;
+		};
+	};
+};
+
+export type SidecarDiagnostics = {
+	diagnostic: string;
+	range: {
 		startPosition: {
 			line: number;
 			character: number;
