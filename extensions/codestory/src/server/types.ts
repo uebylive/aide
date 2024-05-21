@@ -68,6 +68,18 @@ export type SidecarGoToImplementationResponse = {
 	implementation_locations: FileAndRange[];
 };
 
+export type SidecarGoToReferencesRequest = {
+	fs_file_path: string;
+	position: {
+		line: number;
+		character: number;
+	};
+};
+
+export type SidecarGoToRefernecesResponse = {
+	reference_locations: FileAndRange[];
+};
+
 export type SidecarQuickFixRequest = {
 	fs_file_path: string;
 	request_id: string;
