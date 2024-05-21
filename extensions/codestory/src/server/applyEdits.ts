@@ -17,12 +17,21 @@ export async function applyEdits(request: SidecarApplyEditsRequest): Promise<Sid
 	const replacedText = request.edited_content;
 	const range = new vscode.Range(new vscode.Position(startPosition.line, startPosition.character), new vscode.Position(endPosition.line, endPosition.character));
 	const workspaceEdit = new vscode.WorkspaceEdit();
+	const fileUri = vscode.Uri.file(filePath);
+
+	// we want to open the text document first
+	await vscode.workspace.openTextDocument(fileUri);
 	workspaceEdit.replace(
-		vscode.Uri.file(filePath),
+		fileUri,
 		range,
 		replacedText,
 	);
+	// apply the edits to it
 	const success = await vscode.workspace.applyEdit(workspaceEdit);
+	// we also want to save the file at this point after applying the edit
+	const _ = await vscode.workspace.save(fileUri);
+
+
 	// we calculate how many lines we get after replacing the text
 	// once we make the edit on the range, the new range is presented to us
 	// we have to calculate the new range and use that instead
