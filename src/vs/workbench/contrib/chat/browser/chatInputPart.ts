@@ -7,7 +7,8 @@ import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { IHistoryNavigationWidget } from 'vs/base/browser/history';
 import * as aria from 'vs/base/browser/ui/aria/aria';
-import { Checkbox } from 'vs/base/browser/ui/toggle/toggle';
+import { Range } from 'vs/editor/common/core/range';
+import { Button } from 'vs/base/browser/ui/button/button';
 import { IAction } from 'vs/base/common/actions';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter } from 'vs/base/common/event';
@@ -36,14 +37,14 @@ import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
+import { FileKind } from 'vs/platform/files/common/files';
 import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/browser/contextScopedHistoryWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { INotificationService } from 'vs/platform/notification/common/notification';
-import { defaultCheckboxStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { asCssVariableWithDefault, checkboxBorder, inputBackground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { ClearChatEditorAction } from 'vs/workbench/contrib/chat/browser/actions/chatClearActions';
@@ -54,6 +55,7 @@ import { ActionViewItemWithKb } from 'vs/workbench/contrib/chat/browser/contrib/
 import { IChatRequester } from 'vs/workbench/contrib/chat/browser/csChat';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IChatHistoryEntry, IChatWidgetHistoryService } from 'vs/workbench/contrib/chat/common/chatWidgetHistoryService';
@@ -92,9 +94,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
+	private _onDidDeleteContext = this._register(new Emitter<IChatRequestVariableEntry>());
+	readonly onDidDeleteContext = this._onDidDeleteContext.event;
+
 	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: IChatFollowup; response: IChatResponseViewModel | undefined }>());
 	readonly onDidAcceptFollowup = this._onDidAcceptFollowup.event;
 
+	public get attachedContext() {
+		return this._attachedContext;
+	}
+
+	private readonly _attachedContext = new Set<IChatRequestVariableEntry>();
+
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	private readonly _contextResourceLabels = this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event });
+
+	private readonly inputEditorMaxHeight: number;
 	private inputEditorHeight = 0;
 	protected container!: HTMLElement;
 
@@ -103,13 +118,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());
 
-	private implicitContextContainer!: HTMLElement;
-	private implicitContextLabel!: HTMLElement;
-	private implicitContextCheckbox!: Checkbox;
-	private implicitContextSettingEnabled = false;
-	get implicitContextEnabled() {
-		return this.implicitContextCheckbox.checked;
-	}
+	private attachedContextContainer!: HTMLElement;
+	private readonly attachedContextDisposables = this._register(new DisposableStore());
 
 	private _inputPartHeight: number = 0;
 	get inputPartHeight() {
@@ -160,6 +170,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	) {
 		super();
 
+		this.inputEditorMaxHeight = this.options.renderStyle === 'compact' ? INPUT_EDITOR_MAX_HEIGHT / 3 : INPUT_EDITOR_MAX_HEIGHT;
+
 		this.inputEditorHasText = CONTEXT_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.chatCursorAtTop = CONTEXT_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
@@ -167,14 +179,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.history = new HistoryNavigator([], 5);
 		this._register(this.historyService.onDidClearHistory(() => this.history.clear()));
 
-		this.implicitContextSettingEnabled = this.configurationService.getValue<boolean>('chat.experimental.implicitContext');
 		this._register(this.configurationService.onDidChangeConfiguration(e => {
 			if (e.affectsConfiguration(AccessibilityVerbositySettingId.Chat)) {
 				this.inputEditor.updateOptions({ ariaLabel: this._getAriaLabel() });
-			}
-
-			if (e.affectsConfiguration('chat.experimental.implicitContext')) {
-				this.implicitContextSettingEnabled = this.configurationService.getValue<boolean>('chat.experimental.implicitContext');
 			}
 		}));
 		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
@@ -191,8 +198,13 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return localize('chatInput', "Chat Input");
 	}
 
+<<<<<<< HEAD
 	setState(inputValue: string | undefined, requester: IChatRequester): void {
 		const history = this.historyService.getHistory();
+=======
+	setState(inputValue: string | undefined): void {
+		const history = this.historyService.getHistory(this.location);
+>>>>>>> upstream/main
 		this.history = new HistoryNavigator(history, 50);
 
 		if (typeof inputValue === 'string') {
@@ -239,6 +251,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				cursorWidth: 1,
 			});
 		}
+	}
+
+	setVisible(visible: boolean): void {
+		this._onDidChangeVisibility.fire(visible);
 	}
 
 	get element(): HTMLElement {
@@ -329,13 +345,21 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor.focus();
 	}
 
+	attachContext(...contentReferences: IChatRequestVariableEntry[]): void {
+		for (const reference of contentReferences) {
+			this.attachedContext.add(reference);
+		}
+
+		this.initAttachedContext(this.attachedContextContainer);
+	}
+
 	render(container: HTMLElement, initialValue: string, widget: IChatWidget) {
 		this.container = dom.append(container, $('.interactive-input-part'));
 		this.container.classList.toggle('compact', this.options.renderStyle === 'compact');
 
 		this.followupsContainer = dom.append(this.container, $('.interactive-input-followups'));
-		this.implicitContextContainer = dom.append(this.container, $('.chat-implicit-context'));
-		this.initImplicitContext(this.implicitContextContainer);
+		this.attachedContextContainer = dom.append(this.container, $('.chat-attached-context'));
+		this.initAttachedContext(this.attachedContextContainer);
 		const inputAndSideToolbar = dom.append(this.container, $('.interactive-input-and-side-toolbar'));
 		const inputContainer = dom.append(inputAndSideToolbar, $('.interactive-input-and-execute-toolbar'));
 
@@ -373,10 +397,14 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
+<<<<<<< HEAD
 			const currentHeight = this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide'
 				? Math.max(this._inputEditor.getContentHeight(), CS_INPUT_EDITOR_MIN_HEIGHT)
 				: Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT);
 
+=======
+			const currentHeight = Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight);
+>>>>>>> upstream/main
 			if (currentHeight !== this.inputEditorHeight) {
 				this.inputEditorHeight = currentHeight;
 				this._onDidChangeHeight.fire();
@@ -496,16 +524,35 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 	}
 
-	private initImplicitContext(container: HTMLElement) {
-		this.implicitContextCheckbox = new Checkbox('#selection', true, { ...defaultCheckboxStyles, checkboxBorder: asCssVariableWithDefault(checkboxBorder, inputBackground) });
-		container.append(this.implicitContextCheckbox.domNode);
-		this.implicitContextLabel = dom.append(container, $('span.chat-implicit-context-label'));
-		this.implicitContextLabel.textContent = '#selection';
-	}
+	private initAttachedContext(container: HTMLElement) {
+		dom.clearNode(container);
+		this.attachedContextDisposables.clear();
+		dom.setVisibility(Boolean(this.attachedContext.size), this.attachedContextContainer);
+		for (const attachment of this.attachedContext) {
+			const widget = dom.append(container, $('.chat-attached-context-attachment.show-file-icons'));
+			const label = this._contextResourceLabels.create(widget, { supportIcons: true });
+			const file = URI.isUri(attachment.value) ? attachment.value : attachment.value && typeof attachment.value === 'object' && 'uri' in attachment.value && URI.isUri(attachment.value.uri) ? attachment.value.uri : undefined;
+			if (file) {
+				label.setFile(file, {
+					fileKind: FileKind.FILE,
+					hidePath: true,
+					range: attachment.value && typeof attachment.value === 'object' && 'range' in attachment.value && Range.isIRange(attachment.value.range) ? attachment.value.range : undefined,
+				});
+			} else {
+				label.setLabel(attachment.fullName ?? attachment.name);
+			}
 
-	setImplicitContextKinds(kinds: string[]) {
-		dom.setVisibility(this.implicitContextSettingEnabled && kinds.length > 0, this.implicitContextContainer);
-		this.implicitContextLabel.textContent = localize('use', "Use") + ' ' + kinds.map(k => `#${k}`).join(', ');
+			const clearButton = new Button(widget, { supportIcons: true });
+			this.attachedContextDisposables.add(clearButton);
+			clearButton.icon = Codicon.close;
+			const disp = clearButton.onDidClick(() => {
+				this.attachedContext.delete(attachment);
+				disp.dispose();
+				this._onDidChangeHeight.fire();
+				this._onDidDeleteContext.fire(attachment);
+			});
+			this.attachedContextDisposables.add(disp);
+		}
 	}
 
 	async renderFollowups(items: IChatFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
@@ -533,6 +580,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private previousInputEditorDimension: IDimension | undefined;
 	private _layout(height: number, width: number, allowRecurse = true): void {
+		this.initAttachedContext(this.attachedContextContainer);
 
 		const aideUI = this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide';
 		let data = this.getLayoutData();
@@ -564,10 +612,17 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return {
 			inputEditorBorder: 2,
 			followupsHeight: this.followupsContainer.offsetHeight,
+<<<<<<< HEAD
 			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), INPUT_EDITOR_MAX_HEIGHT),
 			inputPartHorizontalPadding: 40,
 			inputPartVerticalPadding: 24,
 			implicitContextHeight: this.implicitContextContainer.offsetHeight,
+=======
+			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight),
+			inputPartHorizontalPadding: this.options.renderStyle === 'compact' ? 8 : 40,
+			inputPartVerticalPadding: this.options.renderStyle === 'compact' ? 12 : 24,
+			implicitContextHeight: this.attachedContextContainer.offsetHeight,
+>>>>>>> upstream/main
 			editorBorder: 2,
 			editorPadding: 12,
 			toolbarPadding: 4,
@@ -596,7 +651,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	saveState(): void {
 		const inputHistory = this.history.getHistory();
-		this.historyService.saveHistory(inputHistory);
+		this.historyService.saveHistory(this.location, inputHistory);
 	}
 
 	private _renderRequester(requester: IChatRequester): void {
