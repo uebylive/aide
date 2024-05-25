@@ -11,6 +11,7 @@ import { URI } from 'vs/base/common/uri';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { localize, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
+import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
 import { IQuickInputService, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
@@ -18,7 +19,7 @@ import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatAct
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { SelectAndInsertFileAction } from 'vs/workbench/contrib/chat/browser/contrib/chatDynamicVariables';
 import { ChatAgentLocation } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
 
@@ -43,12 +44,12 @@ class AttachContextAction extends Action2 {
 			},
 			menu: [
 				{
-					when: CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel), CONTEXT_IN_AIDE_CHAT_SESSION.negate()),
 					id: MenuId.ChatExecuteSecondary,
 					group: 'group_1',
 				},
 				{
-					when: CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel), CONTEXT_IN_AIDE_CHAT_SESSION.negate()),
 					id: MenuId.ChatExecute,
 					group: 'navigation',
 				},
