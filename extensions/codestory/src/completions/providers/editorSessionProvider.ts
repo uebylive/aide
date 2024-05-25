@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
-import { v4 as uuidv4 } from 'uuid';
 import { InEditorRequest, InLineAgentContextSelection } from '../../sidecar/types';
 import { parseDiagnosticsInformation, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
+import { shouldUseExactMatching } from '../../utilities/uniqueId';
 
 export enum IndentStyle {
 	Tabs = 'tabs',
@@ -175,228 +175,86 @@ export class IndentationHelper {
 	}
 }
 
-
-export class CSInteractiveEditorSession implements vscode.InteractiveEditorSession {
-	placeholder?: string;
-	input?: string;
-	slashCommands?: vscode.InteractiveEditorSlashCommand[];
-	wholeRange?: vscode.Range;
-	message?: string;
-
-	textDocument: vscode.TextDocument;
-	range: vscode.Range;
-	threadId: string;
-
-	constructor(textDocument: vscode.TextDocument, range: vscode.Range) {
-		this.placeholder = 'What would you like to change?';
-		this.slashCommands = [];
-		this.threadId = uuidv4();
-		this.textDocument = textDocument;
-		this.wholeRange = range;
-		this.message = '';
-		this.range = range;
+export async function provideInteractiveEditorResponse(
+	repoRef: RepoRef,
+	sidecarClient: SideCarClient,
+	workingDirectory: string,
+	request: vscode.ChatRequest,
+	progress: vscode.ChatResponseStream,
+	token: vscode.CancellationToken,
+): Promise<vscode.ChatResult> {
+	const variables = request.references;
+	if (!variables || variables.length === 0) {
+		return {};
 	}
 
-	getTextDocumentLanguage(): string {
-		return this.textDocument.languageId;
-	}
-}
-
-export class CSInteractiveEditorProgressItem implements vscode.InteractiveEditorProgressItem {
-	message?: string;
-	edits?: vscode.TextEdit[];
-	editsShouldBeInstant?: boolean;
-	slashCommand?: vscode.InteractiveEditorSlashCommand;
-	content?: string | vscode.MarkdownString;
-
-	static normalMessage(message: string): CSInteractiveEditorProgressItem {
-		return {
-			message: message,
-		};
+	// Find variable entry with name `_inlineChatContext`
+	const contextVariable = variables.find(variable => variable.id === '_inlineChatContext');
+	if (!contextVariable) {
+		return {};
 	}
 
-	static sendReplyMessage(message: string): CSInteractiveEditorProgressItem {
-		return {
-			content: message,
-			message,
-		};
-	}
-
-	static documentationGeneration(): CSInteractiveEditorProgressItem {
-		return {
-			slashCommand: {
-				command: 'doc',
-				refer: true,
-				detail: 'Generate documentation for the selected code',
-				executeImmediately: false,
-			}
-		};
-	}
-
-	static editGeneration(): CSInteractiveEditorProgressItem {
-		return {
-			slashCommand: {
-				command: 'edit',
-				refer: true,
-				detail: 'Edits the code as per the user request',
-				executeImmediately: false,
-			}
-		};
-	}
-
-	static fixGeneration(): CSInteractiveEditorProgressItem {
-		return {
-			slashCommand: {
-				command: 'fix',
-				refer: true,
-				detail: 'Fixes the code as per the user request',
-				executeImmediately: false,
-			}
-		};
-	}
-}
-
-export class CSInteractiveEditorMessageResponse implements vscode.InteractiveEditorMessageResponse {
-	contents: vscode.MarkdownString;
-	placeholder?: string;
-	wholeRange?: vscode.Range;
-
-	constructor(contents: vscode.MarkdownString, placeholder: string | undefined, wholeRange: vscode.Range | undefined) {
-		this.contents = contents;
-		this.placeholder = placeholder;
-		this.wholeRange = wholeRange;
-	}
-}
-
-
-export class CSInteractiveEditorResponse implements vscode.InteractiveEditorResponse {
-	edits: vscode.TextEdit[] | vscode.WorkspaceEdit;
-	contents?: vscode.MarkdownString | undefined;
-	placeholder?: string;
-	wholeRange?: vscode.Range | undefined;
-
-	constructor(edits: vscode.TextEdit[] | vscode.WorkspaceEdit, contents: vscode.MarkdownString | undefined, placeholder: string | undefined, wholeRange: vscode.Range) {
-		this.edits = edits;
-		this.contents = contents;
-		this.placeholder = placeholder;
-		this.wholeRange = wholeRange;
-	}
-}
-
-export type CSInteractiveEditorResponseMessage = CSInteractiveEditorResponse | CSInteractiveEditorMessageResponse;
-
-export class CSInteractiveEditorSessionProvider implements vscode.InteractiveEditorSessionProvider<CSInteractiveEditorSession> {
-	label: 'cs-chat-editor';
-	sidecarClient: SideCarClient;
-	repoRef: RepoRef;
-	workingDirectory: string;
-	shouldUseExactMatching: boolean;
-	constructor(
-		sidecarClient: SideCarClient,
-		repoRef: RepoRef,
-		workingDirectory: string,
-		shouldUseExactMatching: boolean,
-	) {
-		this.label = 'cs-chat-editor';
-		this.sidecarClient = sidecarClient;
-		this.repoRef = repoRef;
-		this.workingDirectory = workingDirectory;
-		this.shouldUseExactMatching = shouldUseExactMatching;
-	}
-
-	prepareInteractiveEditorSession(
-		context: vscode.TextDocumentContext,
-		_token: vscode.CancellationToken,
-	): vscode.ProviderResult<CSInteractiveEditorSession> {
-		if (vscode.window.activeTextEditor === undefined) {
-			throw Error('no active text editor');
+	const sessionString = contextVariable.value as string;
+	const session = JSON.parse(sessionString) as { uri: vscode.Uri; selection: vscode.Selection; wholeRange: vscode.Range };
+	const textDocumentUri = session.uri;
+	const textDocument = await vscode.workspace.openTextDocument(textDocumentUri);
+	// First get the more correct range for this selection
+	const text = textDocument.getText();
+	const lineCount = textDocument.lineCount;
+	const startOffset = textDocument.offsetAt(session.wholeRange.start);
+	const endOffset = textDocument.offsetAt(session.wholeRange.end);
+	const textEncoder = new TextEncoder();
+	const utf8Array = [...textEncoder.encode(text)];
+	// Now we want to prepare the data we have to send over the wire
+	const context: InEditorRequest = {
+		repoRef: repoRef.getRepresentation(),
+		query: request.prompt,
+		threadId: request.threadId,
+		language: textDocument.languageId,
+		snippetInformation: {
+			startPosition: {
+				line: session.wholeRange.start.line,
+				character: session.wholeRange.start.character,
+				byteOffset: startOffset,
+			},
+			endPosition: {
+				line: session.wholeRange.end.line,
+				character: session.wholeRange.end.character,
+				byteOffset: endOffset,
+			},
+			shouldUseExactMatching: shouldUseExactMatching(),
+		},
+		textDocumentWeb: {
+			text,
+			utf8Array,
+			language: textDocument.languageId,
+			fsFilePath: textDocument.fileName,
+			relativePath: vscode.workspace.asRelativePath(textDocument.fileName),
+			lineCount,
+		},
+		diagnosticsInformation: await parseDiagnosticsInformation(
+			vscode.languages.getDiagnostics(textDocument.uri),
+			textDocument,
+			session.wholeRange,
+		),
+		userContext: {
+			variables: [],
+			file_content_map: [],
+			terminal_selection: undefined,
+			folder_paths: [],
 		}
-		return new CSInteractiveEditorSession(context.document, context.selection);
-	}
+	};
+	const messages = await sidecarClient.getInLineEditorResponse(context);
+	await reportFromStreamToEditorSessionProgress(
+		messages,
+		progress,
+		token,
+		repoRef,
+		workingDirectory,
+		sidecarClient,
+		textDocument.languageId,
+		textDocument,
+	);
 
-	provideInteractiveEditorResponse(
-		session: CSInteractiveEditorSession,
-		request: vscode.InteractiveEditorRequest,
-		progress: vscode.Progress<CSInteractiveEditorProgressItem>,
-		token: vscode.CancellationToken,
-	): vscode.ProviderResult<CSInteractiveEditorResponseMessage> {
-		return (async () => {
-			progress.report({
-				message: 'Getting the response...',
-			});
-			const textDocument = session.textDocument;
-			// First get the more correct range for this selection
-			const text = session.textDocument.getText();
-			const lineCount = session.textDocument.lineCount;
-			const startOffset = session.textDocument.offsetAt(session.range.start);
-			const endOffset = session.textDocument.offsetAt(session.range.end);
-			const textEncoder = new TextEncoder();
-			const utf8Array = [...textEncoder.encode(text)];
-			// Now we want to prepare the data we have to send over the wire
-			const context: InEditorRequest = {
-				repoRef: this.repoRef.getRepresentation(),
-				query: request.prompt,
-				threadId: session.threadId,
-				language: session.getTextDocumentLanguage(),
-				snippetInformation: {
-					startPosition: {
-						line: session.range.start.line,
-						character: session.range.start.character,
-						byteOffset: startOffset,
-					},
-					endPosition: {
-						line: session.range.end.line,
-						character: session.range.end.character,
-						byteOffset: endOffset,
-					},
-					shouldUseExactMatching: this.shouldUseExactMatching,
-				},
-				textDocumentWeb: {
-					text,
-					utf8Array,
-					language: session.getTextDocumentLanguage(),
-					fsFilePath: session.textDocument.fileName,
-					relativePath: vscode.workspace.asRelativePath(session.textDocument.fileName),
-					lineCount,
-				},
-				diagnosticsInformation: await parseDiagnosticsInformation(
-					vscode.languages.getDiagnostics(textDocument.uri),
-					textDocument,
-					session.range,
-				),
-				userContext: {
-					variables: [],
-					file_content_map: [],
-					terminal_selection: undefined,
-					folder_paths: [],
-				}
-			};
-			const messages = await this.sidecarClient.getInLineEditorResponse(context);
-			const messageReply = await reportFromStreamToEditorSessionProgress(
-				messages,
-				progress,
-				token,
-				this.repoRef,
-				this.workingDirectory,
-				this.sidecarClient,
-				session.getTextDocumentLanguage(),
-				session.textDocument,
-			);
-			if (messageReply.message !== null) {
-				console.log(messageReply.message);
-				return new CSInteractiveEditorMessageResponse(
-					new vscode.MarkdownString(messageReply.message, true),
-					undefined,
-					undefined,
-				);
-			} else {
-				return new CSInteractiveEditorResponse(
-					[],
-					undefined,
-					'skcd waiting for something',
-					session.range,
-				);
-			}
-		})();
-	}
+	return {};
 }

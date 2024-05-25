@@ -11,7 +11,7 @@
 import * as vscode from 'vscode';
 import { DiagnosticCode, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
-import { CSInteractiveEditorProgressItem, IndentStyle, IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
+import { IndentStyle, IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 
 export interface EditMessage {
 	message: string | null;
@@ -19,7 +19,7 @@ export interface EditMessage {
 
 export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
-	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
+	progress: vscode.ChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	_currentRepoRef: RepoRef,
 	_workingDirectory: string,
@@ -27,22 +27,6 @@ export const reportFromStreamToEditorSessionProgress = async (
 	_language: string,
 	textDocument: vscode.TextDocument,
 ): Promise<EditMessage> => {
-	if (cancellationToken.isCancellationRequested) {
-		return {
-			message: null,
-		};
-	}
-	const firstPartOfMessage = async () => {
-		const firstPart = await stream.next();
-		if (firstPart.done) {
-			return CSInteractiveEditorProgressItem.normalMessage('Failed to fetch response');
-		}
-		const sessionId = firstPart.value.session_id;
-		return CSInteractiveEditorProgressItem.normalMessage(`Session ID: ${sessionId}`);
-	};
-
-	progress.report(await firstPartOfMessage());
-
 	if (cancellationToken.isCancellationRequested) {
 		return {
 			message: null,
@@ -75,6 +59,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 		}
 		modelReplying = inlineAgentMessage.answer?.model;
 		const messageState = inlineAgentMessage.message_state;
+		/*
 		if (messageState === 'Pending') {
 			// have a look at the steps here
 			const stepsTaken = inlineAgentMessage.steps_taken;
@@ -108,6 +93,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				}
 			}
 		}
+		*/
 
 
 		if (messageState === 'StreamingAnswer') {
@@ -317,7 +303,8 @@ class StreamProcessor {
 	documentLineIndex: number;
 	sentEdits: boolean;
 	documentLineLimit: number;
-	constructor(progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
+	constructor(
+		progress: vscode.ChatResponseStream,
 		document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
@@ -452,14 +439,14 @@ class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.Progress<vscode.InteractiveEditorProgressItem>;
+	progress: vscode.ChatResponseStream;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 
 	constructor(
-		progress: vscode.Progress<vscode.InteractiveEditorProgressItem>,
-		document: vscode.TextDocument,
+		progress: vscode.ChatResponseStream,
+		private document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
 		indentStyle: IndentStyleSpaces | undefined,
@@ -515,14 +502,15 @@ class DocumentManager {
 		console.log('sidecar.replaceLine');
 		console.log('sidecar.replaceLine', index, newLine.adjustedContent);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
-		this.progress.report({
-			edits: [
+		this.progress.textEdit(
+			this.document.uri,
+			[
 				{
 					range: new vscode.Range(index, 0, index, 1000),
 					newText: newLine.adjustedContent
 				}
 			]
-		});
+		);
 		return index + 1;
 	}
 
@@ -538,14 +526,15 @@ class DocumentManager {
 				endIndex - startIndex + 1,
 				new LineContent(newLine.adjustedContent, this.indentStyle)
 			);
-			this.progress.report({
-				edits: [
+			this.progress.textEdit(
+				this.document.uri,
+				[
 					{
 						range: new vscode.Range(startIndex, 0, endIndex, 1000),
 						newText: newLine.adjustedContent
 					}
 				]
-			});
+			);
 			return startIndex + 1;
 		}
 	}
@@ -555,14 +544,15 @@ class DocumentManager {
 		console.log('sidecar.appendLine');
 		console.log('sidecar.appendLine', this.lines.length, newLine.adjustedContent);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
-		this.progress.report({
-			edits: [
+		this.progress.textEdit(
+			this.document.uri,
+			[
 				{
 					range: new vscode.Range(this.lines.length - 1, 1000, this.lines.length - 1, 1000),
 					newText: '\n' + newLine.adjustedContent,
 				},
 			]
-		});
+		);
 		return this.lines.length;
 	}
 
@@ -571,14 +561,15 @@ class DocumentManager {
 		console.log('sidecar.insertLineAfter');
 		console.log('sidecar.insertLineAfter', index, newLine.adjustedContent);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
-		this.progress.report({
-			edits: [
+		this.progress.textEdit(
+			this.document.uri,
+			[
 				{
 					range: new vscode.Range(index, 1000, index, 1000),
 					newText: '\n' + newLine.adjustedContent,
 				}
 			]
-		});
+		);
 		return index + 2;
 	}
 }

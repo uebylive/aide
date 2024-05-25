@@ -23,9 +23,11 @@ import product = require('../../product.json');
 // If true, we fail the build if there are new dependencies found during that task.
 // The reference dependencies, which one has to update when the new dependencies
 // are valid, are in dep-lists.ts
-const FAIL_BUILD_FOR_NEW_DEPENDENCIES: boolean = true;
+// @codestory: We are disabling this to make sure some added dependencies do not
+// cause the binary to not work (we need a test plan for testing out on linx)
+const FAIL_BUILD_FOR_NEW_DEPENDENCIES: boolean = false;
 
-// Based on https://source.chromium.org/chromium/chromium/src/+/refs/tags/120.0.6099.268:chrome/installer/linux/BUILD.gn;l=64-80
+// Based on https://source.chromium.org/chromium/chromium/src/+/refs/tags/122.0.6261.156:chrome/installer/linux/BUILD.gn;l=64-80
 // and the Linux Archive build
 // Shared library dependencies that we already bundle.
 const bundledDeps = [

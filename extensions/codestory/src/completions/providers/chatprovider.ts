@@ -14,7 +14,7 @@ import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionCo
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { registerOpenFiles } from './openFiles';
-import { IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
+import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
 
@@ -96,7 +96,6 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 		this.chatAgent = vscode.chat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
-		this.chatAgent.fullName = 'Aide';
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
@@ -125,6 +124,18 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	defaultAgentRequestHandler: vscode.ChatRequestHandler = async (request, _context, response, token) => {
 		let requestType: UserMessageType = 'general';
 		const slashCommand = request.command;
+		if (request.location === vscode.ChatLocation.Editor) {
+			await provideInteractiveEditorResponse(
+				this._currentRepoRef,
+				this._sideCarClient,
+				this._workingDirectory,
+				request,
+				response,
+				token
+			);
+			return new CSChatResponseForProgress();
+		}
+
 		if (slashCommand) {
 			requestType = slashCommand as UserMessageType;
 		} else {
@@ -167,7 +178,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const projectLabels = this._projectContext.labels;
-			const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.variables, projectLabels);
+			const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels);
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}

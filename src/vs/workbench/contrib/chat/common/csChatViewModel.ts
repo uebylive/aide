@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ILogService } from 'vs/platform/log/common/log';
+import { IChatAgentNameService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { ChatResponseViewModel, ChatViewModel, IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { ICSChatResponseModel, IChatEditSummary } from 'vs/workbench/contrib/chat/common/csChatModel';
 
@@ -40,9 +41,10 @@ export class CSChatViewModel extends ChatViewModel implements ICSChatViewModel {
 export class CSChatResponseViewModel extends ChatResponseViewModel implements ICSChatResponseViewModel {
 	constructor(
 		protected override readonly _model: ICSChatResponseModel,
-		@ILogService protected override readonly logService: ILogService
+		@ILogService protected override readonly logService: ILogService,
+		@IChatAgentNameService protected override readonly chatAgentNameService: IChatAgentNameService,
 	) {
-		super(_model, logService);
+		super(_model, logService, chatAgentNameService);
 	}
 
 	get appliedEdits(): Map<number, IChatEditSummary> {
