@@ -14,6 +14,7 @@
     "interactive",
     "chatProvider",
     "chatParticipantAdditions",
+    "chatParticipantPrivate",
     "csevents",
     "defaultChatParticipant",
     "chatVariableResolver",

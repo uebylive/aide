@@ -47,6 +47,7 @@ import 'vs/workbench/contrib/chat/browser/contrib/csChatInputEditorContrib';
 import { KeybindingPillContribution } from 'vs/workbench/contrib/chat/browser/contrib/csChatKeybindingPillContrib';
 import { ChatEditSessionService, ICSChatEditSessionService } from 'vs/workbench/contrib/chat/browser/csChatEdits';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/chat/browser/csKeybindingPill';
+import 'vs/workbench/contrib/chat/browser/contrib/chatContextAttachments';
 import 'vs/workbench/contrib/chat/browser/contrib/chatInputCompletions';
 import { ChatAgentLocation, ChatAgentNameService, IChatAgentNameService, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';

@@ -12,7 +12,7 @@ import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/uti
 import { ProviderResult } from 'vs/editor/common/languages';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { MockContextKeyService } from 'vs/platform/keybinding/test/common/mockKeybindingService';
-import { ChatAgentLocation, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
+import { ChatAgentLocation, IChatAgent, IChatAgentCommand, IChatAgentCompletionItem, IChatAgentData, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatProgress, IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
 import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
@@ -71,6 +71,8 @@ suite('VoiceChat', () => {
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error('Method not implemented.'); }
 		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }
 		getAgentByFullyQualifiedId(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }
+		registerAgentCompletionProvider(id: string, provider: (query: string, token: CancellationToken) => Promise<IChatAgentCompletionItem[]>): IDisposable { throw new Error('Method not implemented.'); }
+		getAgentCompletionItems(id: string, query: string, token: CancellationToken): Promise<IChatAgentCompletionItem[]> { throw new Error('Method not implemented.'); }
 	}
 
 	class TestSpeechService implements ISpeechService {
