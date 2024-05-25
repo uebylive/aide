@@ -160,6 +160,11 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private handleAndRegisterChatExtensions(): void {
 		chatParticipantExtensionPoint.setHandler((extensions, delta) => {
 			for (const extension of delta.added) {
+				if (this.productService.quality === 'stable' && !isProposedApiEnabled(extension.description, 'chatParticipantPrivate')) {
+					this.logService.warn(`Chat participants are not yet enabled in VS Code Stable (${extension.description.identifier.value})`);
+					continue;
+				}
+
 				for (const providerDescriptor of extension.value) {
 					if (!providerDescriptor.name.match(/^[\w0-9_-]+$/)) {
 						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT register participant with invalid name: ${providerDescriptor.name}. Name must match /^[\\w0-9_-]+$/.`);
@@ -194,6 +199,11 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 					const store = new DisposableStore();
 
+					if (providerDescriptor.when && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
+						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
+						continue;
+					}
+
 					store.add(this._chatAgentService.registerAgent(
 						providerDescriptor.id,
 						{
@@ -203,6 +213,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 							extensionDisplayName: extension.description.displayName ?? extension.description.name,
 							id: providerDescriptor.id,
 							description: providerDescriptor.description,
+							when: providerDescriptor.when,
 							metadata: {
 								isSticky: providerDescriptor.isSticky,
 								sampleRequest: providerDescriptor.sampleRequest,

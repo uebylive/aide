@@ -80,34 +80,5 @@
 				"publisherDisplayName": "Microsoft"
 			}
 		}
-	],
-	"extensionEnabledApiProposals": {
-		"GitHub.copilot": ["inlineCompletionsAdditions"],
-		"GitHub.copilot-chat": [
-			"extensionsAny",
-			"newSymbolNamesProvider",
-			"chatProvider",
-			"codeActionAI",
-			"findTextInFiles",
-			"findFiles2",
-			"textSearchProvider",
-			"terminalDataWriteEvent",
-			"terminalExecuteCommandEvent",
-			"terminalSelection",
-			"terminalQuickFixProvider",
-			"mappedEditsProvider",
-			"aiRelatedInformation",
-			"chatParticipantAdditions",
-			"defaultChatParticipant",
-			"chatVariableResolver",
-			"contribSourceControlInputBoxMenu",
-			"authLearnMore",
-			"testObserver",
-			"aiTextSearchProvider",
-			"documentFiltersExclusive",
-			"embeddings",
-			"contribCommentsViewThreadMenus",
-			"contribCommentThreadAdditionalMenu"
-		]
-	}
+	]
 }
