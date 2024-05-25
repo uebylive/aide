@@ -79,6 +79,9 @@ export namespace Schemas {
 	/** Scheme used for the chat input editor. */
 	export const vscodeChatSesssion = 'vscode-chat-editor';
 
+	/** Scheme used for the aide chat input editor. */
+	export const vscodeAideChatSesssion = 'vscode-aidechat-editor';
+
 	/**
 	 * Scheme used internally for webviews that aren't linked to a resource (i.e. not custom editors)
 	 */
