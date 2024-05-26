@@ -16,7 +16,9 @@ import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contri
 import { clearChatEditor } from 'vs/workbench/contrib/chat/browser/actions/chatClear';
 import { CHAT_VIEW_ID, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatEditorInput } from 'vs/workbench/contrib/chat/browser/chatEditorInput';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
+import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const ACTION_ID_NEW_CHAT = `workbench.action.chat.newChat`;
 
@@ -52,7 +54,7 @@ export class ClearChatEditorAction extends Action2 {
 		if (!widget) {
 			return;
 		}
-		announceChatCleared(accessor);
+		announceChatCleared(accessor.get(IAccessibilitySignalService));
 		widget.clear();
 		widget.focusInput();
 	}
@@ -78,7 +80,7 @@ export function registerNewChatActions() {
 			});
 		}
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			announceChatCleared(accessor);
+			announceChatCleared(accessor.get(IAccessibilitySignalService));
 			await clearChatEditor(accessor);
 		}
 	});
@@ -113,22 +115,26 @@ export function registerNewChatActions() {
 			});
 		}
 
-		run(accessor: ServicesAccessor, ...args: any[]) {
+		async run(accessor: ServicesAccessor, ...args: any[]) {
 			const context = args[0];
+			const accessibilitySignalService = accessor.get(IAccessibilitySignalService);
 			if (isChatViewTitleActionContext(context)) {
 				// Is running in the Chat view title
-				announceChatCleared(accessor);
+				announceChatCleared(accessibilitySignalService);
 				context.chatView.clear();
 				context.chatView.widget.focusInput();
 			} else {
 				// Is running from f1 or keybinding
 				const widgetService = accessor.get(IChatWidgetService);
+				const viewsService = accessor.get(IViewsService);
 
-				const widget = widgetService.lastFocusedWidget;
+				let widget = widgetService.lastFocusedWidget;
 				if (!widget) {
-					return;
+					const chatView = await viewsService.openView(CHAT_VIEW_ID) as ChatViewPane;
+					widget = chatView.widget;
 				}
-				announceChatCleared(accessor);
+
+				announceChatCleared(accessibilitySignalService);
 				widget.clear();
 				widget.focusInput();
 			}
@@ -136,6 +142,6 @@ export function registerNewChatActions() {
 	});
 }
 
-function announceChatCleared(accessor: ServicesAccessor): void {
-	accessor.get(IAccessibilitySignalService).playSignal(AccessibilitySignal.clear);
+function announceChatCleared(accessibilitySignalService: IAccessibilitySignalService): void {
+	accessibilitySignalService.playSignal(AccessibilitySignal.clear);
 }
