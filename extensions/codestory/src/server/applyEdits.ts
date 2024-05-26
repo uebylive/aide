@@ -29,7 +29,7 @@ export async function applyEdits(request: SidecarApplyEditsRequest): Promise<Sid
 	// apply the edits to it
 	const success = await vscode.workspace.applyEdit(workspaceEdit);
 	// we also want to save the file at this point after applying the edit
-	const _ = await vscode.workspace.save(fileUri);
+	await vscode.workspace.save(fileUri);
 
 
 	// we calculate how many lines we get after replacing the text

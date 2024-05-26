@@ -183,7 +183,7 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/csChat",
+			"name": "vs/workbench/contrib/aideChat",
 			"project": "vscode-workbench"
 		},
 		{
