@@ -17,7 +17,6 @@
 	border-radius: 4px;
 	position: relative;
 	padding: 0 6px;
-	align-items: flex-end;
 	justify-content: space-between;
 }
 
@@ -36,10 +35,6 @@
 
 .aide-chat .aide-chat-input-toolbar .monaco-editor .cursors-layer {
 	padding-left: 4px;
-}
-
-.aide-chat .aide-chat-input-container .aide-chat-input-toolbar {
-	height: 38px;
 }
 
 .aide-chat .aide-chat-input-container {
