@@ -11,8 +11,8 @@ import { shouldTrackFile } from '../utilities/openTabs';
 export async function goToImplementation(request: SidecarGoToImplementationRequest): Promise<SidecarGoToImplementationResponse> {
 	const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
 		'vscode.executeImplementationProvider',
-		request.fs_file_path,
-		request.position,
+		vscode.Uri.file(request.fs_file_path),
+		new vscode.Position(request.position.line, request.position.character),
 	);
 	const implementations = await Promise.all(locations.map(async (location) => {
 		const uri = location.targetUri;
