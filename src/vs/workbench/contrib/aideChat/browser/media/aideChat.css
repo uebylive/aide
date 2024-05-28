@@ -1,0 +1,45 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.aide-chat {
+	max-width: 850px;
+	margin: auto;
+}
+
+.aide-chat .aide-chat-input-toolbar {
+	display: flex;
+	box-sizing: border-box;
+	cursor: text;
+	background-color: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 4px;
+	position: relative;
+	padding: 0 6px;
+	justify-content: space-between;
+}
+
+.aide-chat .aide-chat-input-toolbar.focused {
+	border-color: var(--vscode-focusBorder);
+}
+
+.aide-chat .aide-chat-input-toolbar .monaco-editor .mtk1 {
+	color: var(--vscode-input-foreground);
+}
+
+.aide-chat .aide-chat-input-toolbar .monaco-editor,
+.aide-chat .aide-chat-input-toolbar .monaco-editor .monaco-editor-background {
+	background-color: var(--vscode-input-background) !important;
+}
+
+.aide-chat .aide-chat-input-toolbar .monaco-editor .cursors-layer {
+	padding-left: 4px;
+}
+
+.aide-chat .aide-chat-input-container {
+	margin: 0px 20px;
+	padding: 12px 0px;
+	display: flex;
+	flex-direction: column;
+}
