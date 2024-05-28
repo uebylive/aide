@@ -178,7 +178,7 @@ interface ISerializedChatEditorInput {
 	resource: URI;
 }
 
-export class ChatEditorInputSerializer implements IEditorSerializer {
+export class AideChatEditorInputSerializer implements IEditorSerializer {
 	canSerialize(input: EditorInput): input is AideChatEditorInput & { readonly sessionId: string } {
 		return input instanceof AideChatEditorInput && typeof input.sessionId === 'string';
 	}

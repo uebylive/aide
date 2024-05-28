@@ -62,6 +62,7 @@ export class AideChatResponseModel extends Disposable implements IAideChatRespon
 
 export interface IAideChatModel {
 	readonly sessionId: string;
+	readonly initState: AideChatModelInitState;
 	readonly title: string;
 }
 

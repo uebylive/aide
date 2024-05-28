@@ -53,14 +53,22 @@ export class AideChatEditor extends EditorPane {
 
 		this.widget = this._register(scopedInstantiationService.createInstance(
 			AideChatWidget,
+			{},
 			{
 				listForeground: editorForeground,
 				listBackground: editorBackground,
 				inputEditorBackground: inputBackground,
 				resultEditorBackground: editorBackground
-			}
+			},
 		));
 		this.widget.render(parent);
+		this.widget.setVisible(true);
+	}
+
+	protected override setEditorVisible(visible: boolean): void {
+		super.setEditorVisible(visible);
+
+		this.widget?.setVisible(visible);
 	}
 
 	override async setInput(input: AideChatEditorInput, options: IAideChatEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
