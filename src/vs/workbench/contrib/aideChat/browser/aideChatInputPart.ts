@@ -10,7 +10,6 @@ import * as aria from 'vs/base/browser/ui/aria/aria';
 import { Emitter } from 'vs/base/common/event';
 import { HistoryNavigator } from 'vs/base/common/history';
 import { Disposable } from 'vs/base/common/lifecycle';
-import { isMacintosh } from 'vs/base/common/platform';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
@@ -21,7 +20,6 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
-import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/browser/contextScopedHistoryWidget';
@@ -63,11 +61,6 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	private inputEditorHeight = 0;
 	protected container!: HTMLElement;
 
-	private _inputPartHeight: number = 0;
-	get inputPartHeight() {
-		return this._inputPartHeight;
-	}
-
 	private _inputEditor!: CodeEditorWidget;
 	private _inputEditorElement!: HTMLElement;
 
@@ -95,7 +88,6 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IAccessibilityService private readonly accessibilityService: IAccessibilityService
 	) {
 		super();
 
@@ -185,25 +177,8 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 			this.history.add(element);
 		}
 
-		if (this.accessibilityService.isScreenReaderOptimized() && isMacintosh) {
-			this._acceptInputForVoiceover();
-		} else {
-			this._inputEditor.focus();
-			this._inputEditor.setValue('');
-		}
-	}
-
-	private _acceptInputForVoiceover(): void {
-		const domNode = this._inputEditor.getDomNode();
-		if (!domNode) {
-			return;
-		}
-		// Remove the input editor from the DOM temporarily to prevent VoiceOver
-		// from reading the cleared text (the request) to the user.
-		this._inputEditorElement.removeChild(domNode);
-		this._inputEditor.setValue('');
-		this._inputEditorElement.appendChild(domNode);
 		this._inputEditor.focus();
+		this._inputEditor.setValue('');
 	}
 
 	render(container: HTMLElement, initialValue: string, widget: IAideChatWidget) {
@@ -318,9 +293,6 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 		const data = this.getLayoutData();
 
 		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.inputPartVerticalPadding);
-
-		this._inputPartHeight = inputEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder;
-
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
 		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.editorPadding;
 		const newDimension = { width: newEditorWidth, height: inputEditorHeight };
@@ -338,6 +310,7 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	}
 
 	private getLayoutData() {
+		console.log('input editor content height:', this._inputEditor.getContentHeight());
 		return {
 			inputEditorBorder: 2,
 			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight),
