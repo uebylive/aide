@@ -310,7 +310,6 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	}
 
 	private getLayoutData() {
-		console.log('input editor content height:', this._inputEditor.getContentHeight());
 		return {
 			inputEditorBorder: 2,
 			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight),

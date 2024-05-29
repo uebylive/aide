@@ -42,7 +42,6 @@ export class AideChatWidgetHistoryService implements IAideChatWidgetHistoryServi
 	) {
 		this.memento = new Memento('aide-chat', storageService);
 		const loadedState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IAideChatHistory;
-		loadedState.history = loadedState.history.map(entry => typeof entry === 'string' ? { text: entry } : entry);
 
 		this.viewState = loadedState;
 	}
