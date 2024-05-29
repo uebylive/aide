@@ -9,11 +9,11 @@ import { shouldTrackFile } from '../utilities/openTabs';
 
 export async function goToDefinition(request: SidecarGoToDefinitionRequest): Promise<SidecarGoToDefinitionResponse> {
 	const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
-		'vscode.executeTypeDefinitionProvider',
-		request.fs_file_path,
-		request.position
+		'vscode.executeDefinitionProvider',
+		vscode.Uri.file(request.fs_file_path),
+		new vscode.Position(request.position.line, request.position.character),
 	);
-	const definitons = await Promise.all(locations.map(async (location) => {
+	const definitions = await Promise.all(locations.map(async (location) => {
 		const uri = location.targetUri;
 		const range = location.targetRange;
 		// we have to always open the text document first, this ends up sending
@@ -33,16 +33,18 @@ export async function goToDefinition(request: SidecarGoToDefinitionRequest): Pro
 				startPosition: {
 					line: range.start.line,
 					character: range.start.character,
+					byteOffset: 0,
 				},
 				endPosition: {
 					line: range.end.line,
 					character: range.end.character,
+					byteOffset: 0,
 				}
 			},
 		};
 	}));
 	// lets return all of them over here
 	return {
-		symbols: definitons,
+		definitions,
 	};
 }

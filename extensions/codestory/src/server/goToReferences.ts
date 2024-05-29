@@ -26,10 +26,12 @@ export async function goToReferences(request: SidecarGoToReferencesRequest): Pro
 				startPosition: {
 					line: range.start.line,
 					character: range.start.character,
+					byteOffset: 0,
 				},
 				endPosition: {
 					line: range.end.line,
 					character: range.end.character,
+					byteOffset: 0,
 				},
 			}
 		};
