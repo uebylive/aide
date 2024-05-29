@@ -106,7 +106,7 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 		} else {
 			console.log('HC request');
 			res.writeHead(200, { 'Content-Type': 'application/json' });
-			res.end(JSON.stringify({ reply: 'gg' }));
+			res.end(JSON.stringify({ reply: 'gg_testing' }));
 		}
 	} catch (err) {
 		console.error(err);

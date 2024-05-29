@@ -28,7 +28,7 @@ export type SidecarGoToDefinitionRequest = {
 };
 
 export type SidecarGoToDefinitionResponse = {
-	symbols: FileAndRange[];
+	definitions: FileAndRange[];
 };
 
 export type FileAndRange = {
@@ -37,10 +37,12 @@ export type FileAndRange = {
 		startPosition: {
 			line: number;
 			character: number;
+			byteOffset: number;
 		};
 		endPosition: {
 			line: number;
 			character: number;
+			byteOffset: number;
 		};
 	};
 };
