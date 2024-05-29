@@ -18525,12 +18525,12 @@ declare module 'vscode' {
 	 */
 	export enum ChatResultFeedbackKind {
 		/**
-		 * The user marked the result as helpful.
+		 * The user marked the result as unhelpful.
 		 */
 		Unhelpful = 0,
 
 		/**
-		 * The user marked the result as unhelpful.
+		 * The user marked the result as helpful.
 		 */
 		Helpful = 1,
 	}
@@ -19025,6 +19025,9 @@ declare module 'vscode' {
 		 * *Note* that this stream will error when during data receiving an error occurs. Consumers of
 		 * the stream should handle the errors accordingly.
 		 *
+		 * To cancel the stream, the consumer can {@link CancellationTokenSource.cancel cancel} the token that was used to make the request
+		 * or break from the for-loop.
+		 *
 		 * @example
 		 * ```ts
 		 * try {
@@ -19038,9 +19041,6 @@ declare module 'vscode' {
 		 *   console.error(e);
 		 * }
 		 * ```
-		 *
-		 * To cancel the stream, the consumer can {@link CancellationTokenSource.cancel cancel} the token that was used to make the request
-		 * or break from the for-loop.
 		 */
 		text: AsyncIterable<string>;
 	}
