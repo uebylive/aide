@@ -4,18 +4,22 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { Button } from 'vs/base/browser/ui/button/button';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideChat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { IResourceDiffEditorInput } from 'vs/workbench/common/editor';
 import { IAideChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { AideChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { AideChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
 import { IAideChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideChatViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { ACTIVE_GROUP, IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const $ = dom.$;
 
@@ -83,7 +87,8 @@ export class AideChatWidget extends Disposable implements IAideChatWidget {
 		protected readonly viewOptions: IAideChatWidgetViewOptions,
 		protected readonly styles: IAideChatWidgetStyles,
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
-		@IThemeService protected readonly themeService: IThemeService
+		@IThemeService protected readonly themeService: IThemeService,
+		@IEditorService protected readonly editorService: IEditorService
 	) {
 		super();
 	}
@@ -105,6 +110,23 @@ export class AideChatWidget extends Disposable implements IAideChatWidget {
 
 		this.container = dom.append(parent, $('.aide-chat'));
 		this.createInput(this.container);
+		// TODO: This is just for testing the multidiff editor invocation. Should be removed.
+		const button = new Button(this.container, defaultButtonStyles);
+		button.label = 'Show changes';
+		this._register(button.onDidClick(() => {
+			const multiDiffSource = URI.from({ scheme: 'aide-chat-review-changes' });
+			const label = 'Review changes';
+			this.editorService.openEditor({
+				multiDiffSource,
+				label,
+				isTransient: true,
+				description: label,
+				resources: [{
+					original: { resource: URI.file('/Users/nareshr/github/codestory/ide/src/vs/workbench/contrib/aideChat/browser/aideChatWidget.ts') },
+					modified: { resource: URI.file('/Users/nareshr/github/codestory/ide/src/vs/workbench/contrib/aideChat/browser/aideChatViewPane.ts') }
+				}] as IResourceDiffEditorInput[]
+			}, ACTIVE_GROUP);
+		}));
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
