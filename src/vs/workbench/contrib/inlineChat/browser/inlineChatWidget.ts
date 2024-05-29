@@ -11,7 +11,6 @@ import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
 import { DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 import { ISettableObservable, constObservable, derived, observableValue } from 'vs/base/common/observable';
 import 'vs/css!./media/inlineChat';
-import 'vs/css!./media/inlineCSChat';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AccessibleDiffViewer, IAccessibleDiffViewerModel } from 'vs/editor/browser/widget/diffEditor/components/accessibleDiffViewer';
 import { EditorOption, IComputedEditorOptions } from 'vs/editor/common/config/editorOptions';
