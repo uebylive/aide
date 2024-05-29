@@ -110,7 +110,6 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _welcomeViewDescriptor?: IViewDescriptor;
 	private _viewContainer: ViewContainer;
 	private _participantRegistrationDisposables = new DisposableMap<string>();
-	private readonly _defaultParticipantViewDisposable = new DisposableStore();
 
 	constructor(
 		@IChatAgentService private readonly _chatAgentService: IChatAgentService,
@@ -198,6 +197,9 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 					}
 
 					const store = new DisposableStore();
+					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(ChatAgentLocation.Panel))) {
+						store.add(this.registerDefaultParticipantView(providerDescriptor));
+					}
 
 					if (providerDescriptor.when && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
 						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
@@ -228,16 +230,6 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 							slashCommands: providerDescriptor.commands ?? []
 						} satisfies IChatAgentData));
 
-					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(ChatAgentLocation.Panel))) {
-						if (this._chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel)?.id === providerDescriptor.id) {
-							this._defaultParticipantViewDisposable.dispose();
-						}
-
-						const defaultParticipantViewDisposable = this.registerDefaultParticipantView(providerDescriptor);
-						this._defaultParticipantViewDisposable.add(defaultParticipantViewDisposable);
-						store.add(defaultParticipantViewDisposable);
-					}
-
 					this._participantRegistrationDisposables.set(
 						getParticipantKey(extension.description.identifier, providerDescriptor.id),
 						store
@@ -266,7 +258,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.AuxiliaryBar);
+		}, ViewContainerLocation.Sidebar);
 
 		return viewContainer;
 	}

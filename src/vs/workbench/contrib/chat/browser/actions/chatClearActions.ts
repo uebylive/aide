@@ -17,52 +17,12 @@ import { clearChatEditor } from 'vs/workbench/contrib/chat/browser/actions/chatC
 import { CHAT_VIEW_ID, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatEditorInput } from 'vs/workbench/contrib/chat/browser/chatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/chat/browser/chatViewPane';
-import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const ACTION_ID_NEW_CHAT = `workbench.action.chat.newChat`;
 
-export class ClearChatEditorAction extends Action2 {
-	static readonly ID = 'workbench.action.chatEditor.clearChat';
-
-	constructor() {
-		super({
-			id: ClearChatEditorAction.ID,
-			title: localize2('chat.clearChat.label', "Clear"),
-			f1: false,
-			precondition: CONTEXT_CHAT_ENABLED,
-			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
-				mac: {
-					primary: KeyMod.WinCtrl | KeyCode.KeyL
-				},
-				when: CONTEXT_IN_CHAT_SESSION
-			},
-			menu: [{
-				id: MenuId.ChatExecute,
-				when: ContextKeyExpr.and(CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
-				group: 'navigation',
-				order: -1
-			}]
-		});
-	}
-	async run(accessor: ServicesAccessor, ...args: any[]) {
-		const widgetService = accessor.get(IChatWidgetService);
-
-		const widget = widgetService.lastFocusedWidget;
-		if (!widget) {
-			return;
-		}
-		announceChatCleared(accessor.get(IAccessibilitySignalService));
-		widget.clear();
-		widget.focusInput();
-	}
-}
-
 export function registerNewChatActions() {
-	registerAction2(ClearChatEditorAction);
-
 	registerAction2(class NewChatEditorAction extends Action2 {
 		constructor() {
 			super({

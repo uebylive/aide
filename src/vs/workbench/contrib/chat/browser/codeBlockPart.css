@@ -8,11 +8,6 @@
 	position: relative;
 }
 
-.interactive-result-code-block .interactive-result-code-block-wrapper {
-	position: relative;
-	z-index: 1;
-}
-
 .interactive-result-code-block .interactive-result-code-block-toolbar {
 	display: none;
 }
@@ -20,15 +15,12 @@
 .interactive-result-code-block .interactive-result-code-block-toolbar > .monaco-action-bar,
 .interactive-result-code-block .interactive-result-code-block-toolbar > .monaco-toolbar {
 	position: absolute;
-	top: -2px;
-	right: 10px;
+	top: -13px;
 	height: 26px;
 	line-height: 26px;
 	background-color: var(--vscode-interactive-result-editor-background-color, var(--vscode-editor-background));
 	border: 1px solid var(--vscode-chat-requestBorder);
 	z-index: 100;
-	border-radius: 0 4px 4px 0;
-	box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
 	max-width: 70%;
 	text-overflow: ellipsis;
 	overflow: hidden;
@@ -79,7 +71,7 @@
 .interactive-result-code-block,
 .interactive-result-code-block .monaco-editor,
 .interactive-result-code-block .monaco-editor .overflow-guard {
-	border-radius: 4px 4px 0px 0px;
+	border-radius: 4px;
 }
 
 .interactive-result-code-block .interactive-result-vulns {
@@ -133,12 +125,6 @@
 
 .interactive-result-code-block .interactive-result-vulns-header .monaco-text-button:focus-visible {
 	outline: 1px solid var(--vscode-focusBorder);
-}
-
-.interactive-result-editor-location-ribbon .edit-summary {
-	display: flex;
-	justify-content: space-between;
-	padding: 4px 8px;
 }
 
 /* compare code block */

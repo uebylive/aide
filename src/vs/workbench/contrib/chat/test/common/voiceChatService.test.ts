@@ -15,7 +15,6 @@ import { MockContextKeyService } from 'vs/platform/keybinding/test/common/mockKe
 import { ChatAgentLocation, IChatAgent, IChatAgentCommand, IChatAgentCompletionItem, IChatAgentData, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatProgress, IChatFollowup } from 'vs/workbench/contrib/chat/common/chatService';
-import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IVoiceChatSessionOptions, IVoiceChatTextEvent, VoiceChatService } from 'vs/workbench/contrib/chat/common/voiceChatService';
 import { ISpeechProvider, ISpeechService, ISpeechToTextEvent, ISpeechToTextSession, ITextToSpeechSession, KeywordRecognitionStatus, SpeechToTextStatus } from 'vs/workbench/contrib/speech/common/speechService';
 import { nullExtensionDescription } from 'vs/workbench/services/extensions/common/extensions';
@@ -28,7 +27,6 @@ suite('VoiceChat', () => {
 
 	class TestChatAgent implements IChatAgent {
 
-		providerId: string = 'testProvider';
 		extensionId: ExtensionIdentifier = nullExtensionDescription.identifier;
 		extensionPublisher = '';
 		extensionDisplayName = '';
@@ -69,7 +67,6 @@ suite('VoiceChat', () => {
 		getAgent(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }
 		getAgentsByName(name: string): IChatAgentData[] { throw new Error('Method not implemented.'); }
 		updateAgent(id: string, updateMetadata: IChatAgentMetadata): void { throw new Error('Method not implemented.'); }
-		makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined> { throw new Error(); }
 		getAgentByFullyQualifiedId(id: string): IChatAgentData | undefined { throw new Error('Method not implemented.'); }
 		registerAgentCompletionProvider(id: string, provider: (query: string, token: CancellationToken) => Promise<IChatAgentCompletionItem[]>): IDisposable { throw new Error('Method not implemented.'); }
 		getAgentCompletionItems(id: string, query: string, token: CancellationToken): Promise<IChatAgentCompletionItem[]> { throw new Error('Method not implemented.'); }

@@ -59,11 +59,6 @@ export class ChatEditorOptions extends Disposable {
 		return this._config;
 	}
 
-	private _viewId: string | undefined;
-	public get viewId(): string | undefined {
-		return this._viewId;
-	}
-
 	private static readonly relevantSettingIds = [
 		'chat.editor.lineHeight',
 		'chat.editor.fontSize',
@@ -88,7 +83,6 @@ export class ChatEditorOptions extends Disposable {
 	) {
 		super();
 
-		this._viewId = viewId;
 		this._register(this.themeService.onDidColorThemeChange(e => this.update()));
 		this._register(this.viewDescriptorService.onDidChangeLocation(e => {
 			if (e.views.some(v => v.id === viewId)) {
