@@ -16,29 +16,34 @@ import { ILogService } from 'vs/platform/log/common/log';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { editorBackground } from 'vs/platform/theme/common/colors/editorColors';
+import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { Memento } from 'vs/workbench/common/memento';
 import { SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
-import { AideChatWidget, IAideChatViewState } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IAideChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
+import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
+import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 
-interface IViewPaneState extends IAideChatViewState {
+interface IViewPaneState extends IChatViewState {
 	sessionId?: string;
 }
 
-export const AIDE_CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.aideChatSidebar';
-
-export class AideChatViewPane extends ViewPane {
-	private _widget!: AideChatWidget;
-	get widget(): AideChatWidget { return this._widget; }
+export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.chatSidebar';
+export class ChatViewPane extends ViewPane implements IChatViewPane {
+	private _widget!: ChatWidget;
+	get widget(): ChatWidget { return this._widget; }
 
 	private readonly modelDisposables = this._register(new DisposableStore());
 	private memento: Memento;
 	private readonly viewState: IViewPaneState;
+	private didProviderRegistrationFail = false;
+	private didUnregisterProvider = false;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -53,29 +58,76 @@ export class AideChatViewPane extends ViewPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IAideChatService private readonly chatService: IAideChatService,
+		@IChatService private readonly chatService: IChatService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
-		this.memento = new Memento('aide-chat-session-view', this.storageService);
-		this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE);
+		// View state for the ViewPane is currently global per-provider basically, but some other strictly per-model state will require a separate memento.
+		this.memento = new Memento('interactive-session-view-' + CHAT_PROVIDER_ID, this.storageService);
+		this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IViewPaneState;
+		this._register(this.chatAgentService.onDidChangeAgents(() => {
+			if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)) {
+				if (!this._widget?.viewModel) {
+					const sessionId = this.getSessionId();
+					const model = sessionId ? this.chatService.getOrRestoreSession(sessionId) : undefined;
+
+					// The widget may be hidden at this point, because welcome views were allowed. Use setVisible to
+					// avoid doing a render while the widget is hidden. This is changing the condition in `shouldShowWelcome`
+					// so it should fire onDidChangeViewWelcomeState.
+					try {
+						this._widget.setVisible(false);
+						this.updateModel(model);
+						this.didProviderRegistrationFail = false;
+						this.didUnregisterProvider = false;
+						this._onDidChangeViewWelcomeState.fire();
+					} finally {
+						this.widget.setVisible(true);
+					}
+				}
+			} else if (this._widget?.viewModel?.initState === ChatModelInitState.Initialized) {
+				// Model is initialized, and the default agent disappeared, so show welcome view
+				this.didUnregisterProvider = true;
+				this._onDidChangeViewWelcomeState.fire();
+			}
+		}));
 	}
 
-	private updateModel(model?: IAideChatModel | undefined, viewState?: IViewPaneState): void {
+	override getActionsContext(): IChatViewTitleActionContext {
+		return {
+			chatView: this
+		};
+	}
+
+	private updateModel(model?: IChatModel | undefined, viewState?: IViewPaneState): void {
 		this.modelDisposables.clear();
 
-		model = model ?? this.chatService.startSession(CancellationToken.None);
+		model = model ?? (this.chatService.transferredSessionData?.sessionId
+			? this.chatService.getOrRestoreSession(this.chatService.transferredSessionData.sessionId)
+			: this.chatService.startSession(ChatAgentLocation.Panel, CancellationToken.None));
 		if (!model) {
-			throw new Error('Could not start Aide chat session');
+			throw new Error('Could not start chat session');
 		}
 
 		this._widget.setModel(model, { ...(viewState ?? this.viewState) });
 		this.viewState.sessionId = model.sessionId;
 	}
 
+	override shouldShowWelcome(): boolean {
+		const noPersistedSessions = !this.chatService.hasSessions();
+		return this.didUnregisterProvider || !this._widget?.viewModel && (noPersistedSessions || this.didProviderRegistrationFail);
+	}
+
 	private getSessionId() {
-		return this.viewState.sessionId;
+		let sessionId: string | undefined;
+		if (this.chatService.transferredSessionData) {
+			sessionId = this.chatService.transferredSessionData.sessionId;
+			this.viewState.inputValue = this.chatService.transferredSessionData.inputValue;
+		} else {
+			sessionId = this.viewState.sessionId;
+		}
+		return sessionId;
 	}
 
 	protected override renderBody(parent: HTMLElement): void {
@@ -85,23 +137,32 @@ export class AideChatViewPane extends ViewPane {
 			const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService]));
 			const locationBasedColors = this.getLocationBasedColors();
 			this._widget = this._register(scopedInstantiationService.createInstance(
-				AideChatWidget,
-				{},
+				ChatWidget,
+				ChatAgentLocation.Panel,
+				{ viewId: this.id },
+				{ supportsFileReferences: true },
 				{
 					listForeground: SIDE_BAR_FOREGROUND,
 					listBackground: locationBasedColors.background,
 					inputEditorBackground: locationBasedColors.background,
 					resultEditorBackground: editorBackground
-				}
-			));
+				}));
 			this._register(this.onDidChangeBodyVisibility(visible => {
-				if (visible) {
-					this._widget.setVisible(visible);
-				}
+				this._widget.setVisible(visible);
 			}));
+			this._register(this._widget.onDidClear(() => this.clear()));
 			this._widget.render(parent);
 
 			const sessionId = this.getSessionId();
+			// Render the welcome view if this session gets disposed at any point,
+			// including if the provider registration fails
+			const disposeListener = sessionId ? this._register(this.chatService.onDidDisposeSession((e) => {
+				if (e.reason === 'initializationFailed') {
+					this.didProviderRegistrationFail = true;
+					disposeListener?.dispose();
+					this._onDidChangeViewWelcomeState.fire();
+				}
+			})) : undefined;
 			const model = sessionId ? this.chatService.getOrRestoreSession(sessionId) : undefined;
 
 			this.updateModel(model);
@@ -109,6 +170,26 @@ export class AideChatViewPane extends ViewPane {
 			this.logService.error(e);
 			throw e;
 		}
+	}
+
+	acceptInput(query?: string): void {
+		this._widget.acceptInput(query);
+	}
+
+	clear(): void {
+		if (this.widget.viewModel) {
+			this.chatService.clearSession(this.widget.viewModel.sessionId);
+		}
+		this.updateModel(undefined, { ...this.viewState, inputValue: undefined });
+	}
+
+	loadSession(sessionId: string): void {
+		if (this.widget.viewModel) {
+			this.chatService.clearSession(this.widget.viewModel.sessionId);
+		}
+
+		const newModel = this.chatService.getOrRestoreSession(sessionId);
+		this.updateModel(newModel);
 	}
 
 	focusInput(): void {
@@ -123,5 +204,20 @@ export class AideChatViewPane extends ViewPane {
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
 		this._widget.layout(height, width);
+	}
+
+	override saveState(): void {
+		if (this._widget) {
+			// Since input history is per-provider, this is handled by a separate service and not the memento here.
+			// TODO multiple chat views will overwrite each other
+			this._widget.saveState();
+
+			const widgetViewState = this._widget.getViewState();
+			this.viewState.inputValue = widgetViewState.inputValue;
+			this.viewState.inputState = widgetViewState.inputState;
+			this.memento.saveMemento();
+		}
+
+		super.saveState();
 	}
 }

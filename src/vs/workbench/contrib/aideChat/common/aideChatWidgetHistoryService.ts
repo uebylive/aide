@@ -7,32 +7,34 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { Memento } from 'vs/workbench/common/memento';
+import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 
-export interface IAideChatHistoryEntry {
+export interface IChatHistoryEntry {
 	text: string;
 	state?: any;
 }
 
-export const IAideChatWidgetHistoryService = createDecorator<IAideChatWidgetHistoryService>('IAideChatWidgetHistoryService');
-export interface IAideChatWidgetHistoryService {
+export const IChatWidgetHistoryService = createDecorator<IChatWidgetHistoryService>('IChatWidgetHistoryService');
+export interface IChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	readonly onDidClearHistory: Event<void>;
 
 	clearHistory(): void;
-	getHistory(): IAideChatHistoryEntry[];
-	saveHistory(history: IAideChatHistoryEntry[]): void;
+	getHistory(location: ChatAgentLocation): IChatHistoryEntry[];
+	saveHistory(location: ChatAgentLocation, history: IChatHistoryEntry[]): void;
 }
 
-interface IAideChatHistory {
-	history: IAideChatHistoryEntry[];
+interface IChatHistory {
+	history: { [providerId: string]: IChatHistoryEntry[] };
 }
 
-export class AideChatWidgetHistoryService implements IAideChatWidgetHistoryService {
+export class ChatWidgetHistoryService implements IChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	private memento: Memento;
-	private viewState: IAideChatHistory;
+	private viewState: IChatHistory;
 
 	private readonly _onDidClearHistory = new Emitter<void>();
 	readonly onDidClearHistory: Event<void> = this._onDidClearHistory.event;
@@ -40,28 +42,38 @@ export class AideChatWidgetHistoryService implements IAideChatWidgetHistoryServi
 	constructor(
 		@IStorageService storageService: IStorageService
 	) {
-		this.memento = new Memento('aide-chat', storageService);
-		const loadedState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IAideChatHistory;
-		loadedState.history = loadedState.history.map(entry => typeof entry === 'string' ? { text: entry } : entry);
+		this.memento = new Memento('interactive-session', storageService);
+		const loadedState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IChatHistory;
+		for (const provider in loadedState.history) {
+			// Migration from old format
+			loadedState.history[provider] = loadedState.history[provider].map(entry => typeof entry === 'string' ? { text: entry } : entry);
+		}
 
 		this.viewState = loadedState;
 	}
 
-	getHistory(): IAideChatHistoryEntry[] {
-		return this.viewState.history || [];
+	getHistory(location: ChatAgentLocation): IChatHistoryEntry[] {
+		const key = this.getKey(location);
+		return this.viewState.history?.[key] ?? [];
 	}
 
-	saveHistory(history: IAideChatHistoryEntry[]): void {
+	private getKey(location: ChatAgentLocation): string {
+		// Preserve history for panel by continuing to use the same old provider id. Use the location as a key for other chat locations.
+		return location === ChatAgentLocation.Panel ? CHAT_PROVIDER_ID : location;
+	}
+
+	saveHistory(location: ChatAgentLocation, history: IChatHistoryEntry[]): void {
 		if (!this.viewState.history) {
-			this.viewState.history = [];
+			this.viewState.history = {};
 		}
 
-		this.viewState.history = history;
+		const key = this.getKey(location);
+		this.viewState.history[key] = history;
 		this.memento.saveMemento();
 	}
 
 	clearHistory(): void {
-		this.viewState.history = [];
+		this.viewState.history = {};
 		this.memento.saveMemento();
 		this._onDidClearHistory.fire();
 	}
