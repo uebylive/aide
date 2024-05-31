@@ -22,9 +22,9 @@ import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatP
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
-export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');
+export const IAideChatWidgetService = createDecorator<IAideChatWidgetService>('aideChatWidgetService');
 
-export interface IChatWidgetService {
+export interface IAideChatWidgetService {
 
 	readonly _serviceBrand: undefined;
 
@@ -57,8 +57,8 @@ export interface IQuickChatOpenOptions {
 	selection?: Selection;
 }
 
-export const IChatAccessibilityService = createDecorator<IChatAccessibilityService>('chatAccessibilityService');
-export interface IChatAccessibilityService {
+export const IAideChatAccessibilityService = createDecorator<IAideChatAccessibilityService>('aideChatAccessibilityService');
+export interface IAideChatAccessibilityService {
 	readonly _serviceBrand: undefined;
 	acceptRequest(): number;
 	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
@@ -159,8 +159,8 @@ export interface ICodeBlockActionContextProvider {
 	getCodeBlockContext(editor?: ICodeEditor): ICodeBlockActionContext | undefined;
 }
 
-export const IChatCodeBlockContextProviderService = createDecorator<IChatCodeBlockContextProviderService>('chatCodeBlockContextProviderService');
-export interface IChatCodeBlockContextProviderService {
+export const IAideChatCodeBlockContextProviderService = createDecorator<IAideChatCodeBlockContextProviderService>('aideChatCodeBlockContextProviderService');
+export interface IAideChatCodeBlockContextProviderService {
 	readonly _serviceBrand: undefined;
 	readonly providers: ICodeBlockActionContextProvider[];
 	registerProvider(provider: ICodeBlockActionContextProvider, id: string): IDisposable;

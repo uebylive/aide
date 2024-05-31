@@ -19,7 +19,7 @@ import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { TextEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, ChatAgentVoteDirection, isIUsedContext, IChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
@@ -641,7 +641,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
 		@ILogService private readonly logService: ILogService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -974,7 +974,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	constructor(
 		public readonly content: IChatWelcomeMessageContent[],
 		public readonly sampleQuestions: IChatFollowup[],
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		this._id = 'welcome_' + ChatWelcomeMessageModel.nextId++;
 	}

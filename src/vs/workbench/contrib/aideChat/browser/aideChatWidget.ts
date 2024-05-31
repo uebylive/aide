@@ -26,18 +26,18 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { ChatTreeItem, IChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetService, IChatWidgetViewContext, IChatWidgetViewOptions } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { ChatTreeItem, IAideChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IAideChatWidgetService, IChatWidgetViewContext, IChatWidgetViewOptions } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from 'vs/workbench/contrib/aideChat/browser/aideChatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { IChatFollowup, IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
+import { IChatFollowup, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { CodeBlockModelCollection } from 'vs/workbench/contrib/aideChat/common/codeBlockModelCollection';
 import { IChatListItemRendererOptions } from './aideChat';
@@ -179,14 +179,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@ICodeEditorService codeEditorService: ICodeEditorService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
-		@IChatWidgetService chatWidgetService: IChatWidgetService,
+		@IAideChatService private readonly chatService: IAideChatService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
+		@IAideChatWidgetService chatWidgetService: IAideChatWidgetService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
-		@IChatAccessibilityService private readonly chatAccessibilityService: IChatAccessibilityService,
+		@IAideChatAccessibilityService private readonly chatAccessibilityService: IAideChatAccessibilityService,
 		@ILogService private readonly logService: ILogService,
 		@IThemeService private readonly themeService: IThemeService,
-		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService,
+		@IAideChatSlashCommandService private readonly chatSlashCommandService: IAideChatSlashCommandService,
 	) {
 		super();
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
@@ -449,7 +449,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this.tree = <WorkbenchObjectTree<ChatTreeItem>>scopedInstantiationService.createInstance(
 			WorkbenchObjectTree,
-			'Chat',
+			'Aide',
 			listContainer,
 			delegate,
 			[this.renderer],
@@ -913,7 +913,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 }
 
-export class ChatWidgetService implements IChatWidgetService {
+export class ChatWidgetService implements IAideChatWidgetService {
 
 	declare readonly _serviceBrand: undefined;
 

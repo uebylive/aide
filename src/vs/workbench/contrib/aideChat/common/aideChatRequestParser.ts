@@ -6,10 +6,10 @@
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { ChatAgentLocation, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicVariablePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
+import { IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 const agentReg = /^@([\w_\-\.]+)(?=(\s|$|\b))/i; // An @-agent
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
@@ -22,9 +22,9 @@ export interface IChatParserContext {
 
 export class ChatRequestParser {
 	constructor(
-		@IChatAgentService private readonly agentService: IChatAgentService,
-		@IChatVariablesService private readonly variableService: IChatVariablesService,
-		@IChatSlashCommandService private readonly slashCommandService: IChatSlashCommandService
+		@IAideChatAgentService private readonly agentService: IAideChatAgentService,
+		@IAideChatVariablesService private readonly variableService: IAideChatVariablesService,
+		@IAideChatSlashCommandService private readonly slashCommandService: IAideChatSlashCommandService
 	) { }
 
 	parseChatRequest(sessionId: string, message: string, location: ChatAgentLocation = ChatAgentLocation.Panel, context?: IChatParserContext): IParsedChatRequest {

@@ -9,7 +9,7 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { CHAT_VIEW_ID, IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
 import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
@@ -28,7 +28,7 @@ export function registerMoveActions() {
 		constructor() {
 			super({
 				id: `workbench.action.chat.openInEditor`,
-				title: localize2('chat.openInEditor.label', "Open Chat in Editor"),
+				title: localize2('aideChat.openInEditor.label', "Open Chat in Editor"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -50,7 +50,7 @@ export function registerMoveActions() {
 		constructor() {
 			super({
 				id: `workbench.action.chat.openInNewWindow`,
-				title: localize2('chat.openInNewWindow.label', "Open Chat in New Window"),
+				title: localize2('aideChat.openInNewWindow.label', "Open Chat in New Window"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -72,7 +72,7 @@ export function registerMoveActions() {
 		constructor() {
 			super({
 				id: `workbench.action.chat.openInSidebar`,
-				title: localize2('interactiveSession.openInSidebar.label', "Open Chat in Side Bar"),
+				title: localize2('aideChat.openInSidebar.label', "Open Chat in Side Bar"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -91,7 +91,7 @@ export function registerMoveActions() {
 }
 
 async function executeMoveToAction(accessor: ServicesAccessor, moveTo: MoveToNewLocation, chatView?: ChatViewPane) {
-	const widgetService = accessor.get(IChatWidgetService);
+	const widgetService = accessor.get(IAideChatWidgetService);
 	const viewService = accessor.get(IViewsService);
 	const editorService = accessor.get(IEditorService);
 

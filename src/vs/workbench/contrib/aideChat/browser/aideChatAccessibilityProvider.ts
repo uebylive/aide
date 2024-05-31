@@ -28,7 +28,7 @@ export class ChatAccessibilityProvider implements IListAccessibilityProvider<Cha
 	}
 
 	getWidgetAriaLabel(): string {
-		return localize('chat', "Chat");
+		return localize('aidehat', "Aide");
 	}
 
 	getAriaLabel(element: ChatTreeItem): string {

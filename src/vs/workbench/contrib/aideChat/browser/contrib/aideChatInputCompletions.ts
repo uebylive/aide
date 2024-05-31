@@ -17,20 +17,20 @@ import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
-import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { SelectAndInsertFileAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { ChatAgentLocation, getFullyQualifiedId, IChatAgentData, IChatAgentNameService, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
+import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
 class SlashCommandCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@IAideChatSlashCommandService private readonly chatSlashCommandService: IAideChatSlashCommandService
 	) {
 		super();
 
@@ -84,9 +84,9 @@ Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).regi
 class AgentCompletions extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
-		@IChatAgentNameService private readonly chatAgentNameService: IChatAgentNameService,
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
+		@IAideChatAgentNameService private readonly chatAgentNameService: IAideChatAgentNameService,
 	) {
 		super();
 
@@ -288,7 +288,7 @@ class BuiltinDynamicCompletions extends Disposable {
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
 	) {
 		super();
 
@@ -352,8 +352,8 @@ class VariableCompletions extends Disposable {
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
 	) {
 		super();
 
@@ -402,7 +402,7 @@ class VariableCompletions extends Disposable {
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
 
-function getAgentCompletionDetails(agent: IChatAgentData, otherAgents: IChatAgentData[], chatAgentNameService: IChatAgentNameService): { label: string; isDupe: boolean } {
+function getAgentCompletionDetails(agent: IChatAgentData, otherAgents: IChatAgentData[], chatAgentNameService: IAideChatAgentNameService): { label: string; isDupe: boolean } {
 	const isAllowed = chatAgentNameService.getAgentNameRestriction(agent);
 	const agentLabel = `${chatAgentLeader}${isAllowed ? agent.name : getFullyQualifiedId(agent)}`;
 	const isDupe = isAllowed && !!otherAgents.find(other => other.name === agent.name && other.id !== agent.id);

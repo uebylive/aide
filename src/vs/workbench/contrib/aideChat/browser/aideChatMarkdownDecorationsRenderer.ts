@@ -15,11 +15,11 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { ILogService } from 'vs/platform/log/common/log';
 import { asCssVariable } from 'vs/platform/theme/common/colorUtils';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IChatAgentNameService, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
 import { chatAgentLeader, ChatRequestAgentPart, ChatRequestDynamicVariablePart, ChatRequestTextPart, chatSubcommandLeader, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { contentRefUrl } from '../common/annotations';
 
 /** For rendering slash commands, variables */
@@ -32,8 +32,8 @@ const agentRefUrl = `http://_chatagent_`;
 const agentSlashRefUrl = `http://_chatslash_`;
 
 export function agentToMarkdown(agent: IChatAgentData, isClickable: boolean, accessor: ServicesAccessor): string {
-	const chatAgentNameService = accessor.get(IChatAgentNameService);
-	const chatAgentService = accessor.get(IChatAgentService);
+	const chatAgentNameService = accessor.get(IAideChatAgentNameService);
+	const chatAgentService = accessor.get(IAideChatAgentService);
 
 	const isAllowed = chatAgentNameService.getAgentNameRestriction(agent);
 	let name = `${isAllowed ? agent.name : getFullyQualifiedId(agent)}`;
@@ -68,10 +68,10 @@ export class ChatMarkdownDecorationsRenderer {
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@ILabelService private readonly labelService: ILabelService,
 		@ILogService private readonly logService: ILogService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService,
+		@IAideChatService private readonly chatService: IAideChatService,
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
 	) { }
 
 	convertParsedRequestToMarkdown(parsedRequest: IParsedChatRequest): string {

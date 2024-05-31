@@ -8,25 +8,25 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { onUnexpectedExternalError } from 'vs/base/common/errors';
 import { Iterable } from 'vs/base/common/iterator';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatDynamicVariableModel } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
 import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestDynamicVariablePart, ChatRequestVariablePart, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 interface IChatData {
 	data: IChatVariableData;
 	resolver: IChatVariableResolver;
 }
 
-export class ChatVariablesService implements IChatVariablesService {
+export class ChatVariablesService implements IAideChatVariablesService {
 	declare _serviceBrand: undefined;
 
 	private _resolver = new Map<string, IChatData>();
 
 	constructor(
-		@IChatWidgetService private readonly chatWidgetService: IChatWidgetService
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService
 	) {
 	}
 

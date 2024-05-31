@@ -14,9 +14,9 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ResourceNotebookCellEdit } from 'vs/workbench/contrib/bulkEdit/browser/bulkCellEdits';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatService, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -28,7 +28,7 @@ export function registerChatTitleActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.markHelpful',
-				title: localize2('interactive.helpful.label', "Helpful"),
+				title: localize2('aideChat.helpful.label', "Helpful"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.thumbsup,
@@ -48,7 +48,7 @@ export function registerChatTitleActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 			chatService.notifyUserAction({
 				agentId: item.agent?.id,
 				sessionId: item.sessionId,
@@ -67,7 +67,7 @@ export function registerChatTitleActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.markUnhelpful',
-				title: localize2('interactive.unhelpful.label', "Unhelpful"),
+				title: localize2('aideChat.unhelpful.label', "Unhelpful"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.thumbsdown,
@@ -87,7 +87,7 @@ export function registerChatTitleActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 			chatService.notifyUserAction({
 				agentId: item.agent?.id,
 				sessionId: item.sessionId,
@@ -106,7 +106,7 @@ export function registerChatTitleActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.reportIssueForBug',
-				title: localize2('interactive.reportIssueForBug.label', "Report Issue"),
+				title: localize2('aideChat.reportIssueForBug.label', "Report Issue"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.report,
@@ -125,7 +125,7 @@ export function registerChatTitleActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 			chatService.notifyUserAction({
 				agentId: item.agent?.id,
 				sessionId: item.sessionId,
@@ -142,7 +142,7 @@ export function registerChatTitleActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.insertIntoNotebook',
-				title: localize2('interactive.insertIntoNotebook.label', "Insert into Notebook"),
+				title: localize2('aideChat.insertIntoNotebook.label', "Insert into Notebook"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.insert,
@@ -215,7 +215,7 @@ export function registerChatTitleActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.remove',
-				title: localize2('chat.remove.label', "Remove Request and Response"),
+				title: localize2('aideChat.remove.label', "Remove Request and Response"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.x,
@@ -239,7 +239,7 @@ export function registerChatTitleActions() {
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			let item = args[0];
 			if (!isRequestVM(item)) {
-				const chatWidgetService = accessor.get(IChatWidgetService);
+				const chatWidgetService = accessor.get(IAideChatWidgetService);
 				const widget = chatWidgetService.lastFocusedWidget;
 				item = widget?.getFocus();
 			}
@@ -248,7 +248,7 @@ export function registerChatTitleActions() {
 				isResponseVM(item) ? item.requestId : undefined;
 
 			if (requestId) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(IAideChatService);
 				chatService.removeRequest(item.sessionId, requestId);
 			}
 		}

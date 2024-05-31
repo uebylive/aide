@@ -9,7 +9,7 @@ import { localize2 } from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 
@@ -18,7 +18,7 @@ export function registerChatFileTreeActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.nextFileTree',
-				title: localize2('interactive.nextFileTree.label', "Next File Tree"),
+				title: localize2('aideChat.nextFileTree.label', "Next File Tree"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyCode.F9,
 					weight: KeybindingWeight.WorkbenchContrib,
@@ -39,7 +39,7 @@ export function registerChatFileTreeActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.previousFileTree',
-				title: localize2('interactive.previousFileTree.label', "Previous File Tree"),
+				title: localize2('aideChat.previousFileTree.label', "Previous File Tree"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.F9,
 					weight: KeybindingWeight.WorkbenchContrib,
@@ -58,7 +58,7 @@ export function registerChatFileTreeActions() {
 }
 
 function navigateTrees(accessor: ServicesAccessor, reverse: boolean) {
-	const chatWidgetService = accessor.get(IChatWidgetService);
+	const chatWidgetService = accessor.get(IAideChatWidgetService);
 	const widget = chatWidgetService.lastFocusedWidget;
 	if (!widget) {
 		return;

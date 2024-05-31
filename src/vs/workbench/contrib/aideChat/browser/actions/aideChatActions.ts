@@ -16,15 +16,15 @@ import { IsLinuxContext, IsWindowsContext } from 'vs/platform/contextkey/common/
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IQuickInputButton, IQuickInputService, IQuickPickItem } from 'vs/platform/quickinput/common/quickInput';
 import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
-import { CHAT_VIEW_ID, IChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { CHAT_VIEW_ID, IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
 import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatDetail, IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IChatDetail, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { IChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
+import { IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
 import { ACTIVE_GROUP, IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -36,7 +36,7 @@ export function isChatViewTitleActionContext(obj: unknown): obj is IChatViewTitl
 	return obj instanceof Object && 'chatView' in obj;
 }
 
-export const CHAT_CATEGORY = localize2('chat.category', 'Chat');
+export const CHAT_CATEGORY = localize2('aideChat.category', 'Aide');
 export const CHAT_OPEN_ACTION_ID = 'workbench.action.chat.open';
 
 export interface IChatViewOpenOptions {
@@ -80,7 +80,7 @@ class OpenChatGlobalAction extends Action2 {
 	override async run(accessor: ServicesAccessor, opts?: string | IChatViewOpenOptions): Promise<void> {
 		opts = typeof opts === 'string' ? { query: opts } : opts;
 
-		const chatService = accessor.get(IChatService);
+		const chatService = accessor.get(IAideChatService);
 		const chatWidget = await showChatView(accessor.get(IViewsService));
 		if (!chatWidget) {
 			return;
@@ -107,7 +107,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 		super({
 			viewId: CHAT_VIEW_ID,
 			id: `workbench.action.chat.history`,
-			title: localize2('chat.history.label', "Show Chats..."),
+			title: localize2('aideChat.history.label', "Show Chats..."),
 			menu: {
 				id: MenuId.ViewTitle,
 				when: ContextKeyExpr.equals('view', CHAT_VIEW_ID),
@@ -122,7 +122,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 	}
 
 	async runInView(accessor: ServicesAccessor, view: ChatViewPane) {
-		const chatService = accessor.get(IChatService);
+		const chatService = accessor.get(IAideChatService);
 		const quickInputService = accessor.get(IQuickInputService);
 		const viewsService = accessor.get(IViewsService);
 		const editorService = accessor.get(IEditorService);
@@ -130,11 +130,11 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 
 		const openInEditorButton: IQuickInputButton = {
 			iconClass: ThemeIcon.asClassName(Codicon.file),
-			tooltip: localize('interactiveSession.history.editor', "Open in Editor"),
+			tooltip: localize('aideChat.history.editor', "Open in Editor"),
 		};
 		const deleteButton: IQuickInputButton = {
 			iconClass: ThemeIcon.asClassName(Codicon.x),
-			tooltip: localize('interactiveSession.history.delete', "Delete"),
+			tooltip: localize('aideChat.history.delete', "Delete"),
 		};
 
 		interface IChatPickerItem extends IQuickPickItem {
@@ -150,7 +150,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 		}));
 		const store = new DisposableStore();
 		const picker = store.add(quickInputService.createQuickPick<IChatPickerItem>());
-		picker.placeholder = localize('interactiveSession.history.pick', "Switch to chat");
+		picker.placeholder = localize('aideChat.history.pick', "Switch to chat");
 		picker.items = picks;
 		store.add(picker.onDidTriggerItemButton(context => {
 			if (context.button === openInEditorButton) {
@@ -181,7 +181,7 @@ class OpenChatEditorAction extends Action2 {
 	constructor() {
 		super({
 			id: `workbench.action.openChat`,
-			title: localize2('interactiveSession.open', "Open Editor"),
+			title: localize2('aideChat.open', "Open Editor"),
 			f1: true,
 			category: CHAT_CATEGORY,
 			precondition: CONTEXT_CHAT_ENABLED
@@ -203,14 +203,14 @@ export function registerChatActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.clearInputHistory',
-				title: localize2('interactiveSession.clearHistory.label', "Clear Input History"),
+				title: localize2('aideChat.clearHistory.label', "Clear Input History"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				category: CHAT_CATEGORY,
 				f1: true,
 			});
 		}
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			const historyService = accessor.get(IChatWidgetHistoryService);
+			const historyService = accessor.get(IAideChatWidgetHistoryService);
 			historyService.clearHistory();
 		}
 	});
@@ -219,14 +219,14 @@ export function registerChatActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.clearHistory',
-				title: localize2('chat.clear.label', "Clear All Workspace Chats"),
+				title: localize2('aideChat.clear.label', "Clear All Workspace Chats"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				category: CHAT_CATEGORY,
 				f1: true,
 			});
 		}
 		async run(accessor: ServicesAccessor, ...args: any[]) {
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 			chatService.clearAllHistoryEntries();
 		}
 	});
@@ -234,8 +234,8 @@ export function registerChatActions() {
 	registerAction2(class FocusChatAction extends EditorAction2 {
 		constructor() {
 			super({
-				id: 'chat.action.focus',
-				title: localize2('actions.interactiveSession.focus', 'Focus Chat List'),
+				id: 'aideChat.action.focus',
+				title: localize2('actions.aideChat.focus', 'Focus Chat List'),
 				precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel)),
 				category: CHAT_CATEGORY,
 				keybinding: [
@@ -258,7 +258,7 @@ export function registerChatActions() {
 		runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): void | Promise<void> {
 			const editorUri = editor.getModel()?.uri;
 			if (editorUri) {
-				const widgetService = accessor.get(IChatWidgetService);
+				const widgetService = accessor.get(IAideChatWidgetService);
 				widgetService.getWidgetByInputUri(editorUri)?.focusLastMessage();
 			}
 		}
@@ -268,7 +268,7 @@ export function registerChatActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.focusInput',
-				title: localize2('interactiveSession.focusInput.label', "Focus Chat Input"),
+				title: localize2('aideChat.focusInput.label', "Focus Chat Input"),
 				f1: false,
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyCode.DownArrow,
@@ -278,7 +278,7 @@ export function registerChatActions() {
 			});
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const widgetService = accessor.get(IChatWidgetService);
+			const widgetService = accessor.get(IAideChatWidgetService);
 			widgetService.lastFocusedWidget?.focusInput();
 		}
 	});

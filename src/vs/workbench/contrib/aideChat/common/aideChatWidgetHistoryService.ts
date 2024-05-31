@@ -15,8 +15,8 @@ export interface IChatHistoryEntry {
 	state?: any;
 }
 
-export const IChatWidgetHistoryService = createDecorator<IChatWidgetHistoryService>('IChatWidgetHistoryService');
-export interface IChatWidgetHistoryService {
+export const IAideChatWidgetHistoryService = createDecorator<IAideChatWidgetHistoryService>('IAideChatWidgetHistoryService');
+export interface IAideChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	readonly onDidClearHistory: Event<void>;
@@ -30,7 +30,7 @@ interface IChatHistory {
 	history: { [providerId: string]: IChatHistoryEntry[] };
 }
 
-export class ChatWidgetHistoryService implements IChatWidgetHistoryService {
+export class ChatWidgetHistoryService implements IAideChatWidgetHistoryService {
 	_serviceBrand: undefined;
 
 	private memento: Memento;
@@ -42,7 +42,7 @@ export class ChatWidgetHistoryService implements IChatWidgetHistoryService {
 	constructor(
 		@IStorageService storageService: IStorageService
 	) {
-		this.memento = new Memento('interactive-session', storageService);
+		this.memento = new Memento('aide-chat-history', storageService);
 		const loadedState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IChatHistory;
 		for (const provider in loadedState.history) {
 			// Migration from old format

@@ -22,7 +22,7 @@ import { AnythingQuickAccessProviderRunOptions, IQuickAccessOptions } from 'vs/p
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IChatRequestVariableValue, IChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IChatRequestVariableValue, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
 
@@ -99,7 +99,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 	}
 
 	private updateDecorations(): void {
-		this.widget.inputEditor.setDecorationsByType('chat', dynamicVariableDecorationType, this._variables.map(r => (<IDecorationOptions>{
+		this.widget.inputEditor.setDecorationsByType('aideChat', dynamicVariableDecorationType, this._variables.map(r => (<IDecorationOptions>{
 			range: r.range,
 			hoverMessage: this.getHoverForReference(r)
 		})));
@@ -145,7 +145,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		const textModelService = accessor.get(ITextModelService);
 		const logService = accessor.get(ILogService);
 		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IChatVariablesService);
+		const chatVariablesService = accessor.get(IAideChatVariablesService);
 
 		const context = args[0];
 		if (!isSelectAndInsertFileActionContext(context)) {

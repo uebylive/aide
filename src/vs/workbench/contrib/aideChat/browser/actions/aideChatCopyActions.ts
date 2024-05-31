@@ -8,7 +8,7 @@ import { localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
 import { CHAT_CATEGORY, stringifyItem } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 
@@ -17,7 +17,7 @@ export function registerChatCopyActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.copyAll',
-				title: localize2('interactive.copyAll.label', "Copy All"),
+				title: localize2('aideChat.copyAll.label', "Copy All"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
@@ -30,7 +30,7 @@ export function registerChatCopyActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const clipboardService = accessor.get(IClipboardService);
-			const chatWidgetService = accessor.get(IChatWidgetService);
+			const chatWidgetService = accessor.get(IAideChatWidgetService);
 			const widget = chatWidgetService.lastFocusedWidget;
 			if (widget) {
 				const viewModel = widget.viewModel;
@@ -49,7 +49,7 @@ export function registerChatCopyActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.copyItem',
-				title: localize2('interactive.copyItem.label', "Copy"),
+				title: localize2('aideChat.copyItem.label', "Copy"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {

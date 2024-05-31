@@ -24,10 +24,10 @@ import { SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 
 interface IViewPaneState extends IChatViewState {
@@ -58,14 +58,14 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IChatService private readonly chatService: IChatService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatService private readonly chatService: IAideChatService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
 		// View state for the ViewPane is currently global per-provider basically, but some other strictly per-model state will require a separate memento.
-		this.memento = new Memento('interactive-session-view-' + CHAT_PROVIDER_ID, this.storageService);
+		this.memento = new Memento('aide-chat-view-' + CHAT_PROVIDER_ID, this.storageService);
 		this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IViewPaneState;
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
 			if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)) {

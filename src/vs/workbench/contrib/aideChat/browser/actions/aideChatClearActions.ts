@@ -14,7 +14,7 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { clearChatEditor } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClear';
-import { CHAT_VIEW_ID, IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
@@ -27,7 +27,7 @@ export function registerNewChatActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chatEditor.newChat',
-				title: localize2('chat.newChat.label', "New Chat"),
+				title: localize2('aideChat.newChat.label', "New Chat"),
 				icon: Codicon.plus,
 				f1: false,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -49,7 +49,7 @@ export function registerNewChatActions() {
 		constructor() {
 			super({
 				id: ACTION_ID_NEW_CHAT,
-				title: localize2('chat.newChat.label', "New Chat"),
+				title: localize2('aideChat.newChat.label', "New Chat"),
 				category: CHAT_CATEGORY,
 				icon: Codicon.plus,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -85,7 +85,7 @@ export function registerNewChatActions() {
 				context.chatView.widget.focusInput();
 			} else {
 				// Is running from f1 or keybinding
-				const widgetService = accessor.get(IChatWidgetService);
+				const widgetService = accessor.get(IAideChatWidgetService);
 				const viewsService = accessor.get(IViewsService);
 
 				let widget = widgetService.lastFocusedWidget;

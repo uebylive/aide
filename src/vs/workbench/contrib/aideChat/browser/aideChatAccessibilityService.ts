@@ -8,12 +8,12 @@ import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
 import { AccessibilitySignal, IAccessibilitySignalService } from 'vs/platform/accessibilitySignal/browser/accessibilitySignalService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AccessibilityProgressSignalScheduler } from 'vs/platform/accessibilitySignal/browser/progressAccessibilitySignalScheduler';
-import { IChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { renderStringAsPlaintext } from 'vs/base/browser/markdownRenderer';
 
 const CHAT_RESPONSE_PENDING_ALLOWANCE_MS = 4000;
-export class ChatAccessibilityService extends Disposable implements IChatAccessibilityService {
+export class ChatAccessibilityService extends Disposable implements IAideChatAccessibilityService {
 
 	declare readonly _serviceBrand: undefined;
 

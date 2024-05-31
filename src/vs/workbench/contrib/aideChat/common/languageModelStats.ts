@@ -12,9 +12,9 @@ import { Extensions, IExtensionFeaturesManagementService, IExtensionFeaturesRegi
 import { Registry } from 'vs/platform/registry/common/platform';
 import { localize } from 'vs/nls';
 
-export const ILanguageModelStatsService = createDecorator<ILanguageModelStatsService>('ILanguageModelStatsService');
+export const IAIModelStatsService = createDecorator<IAIModelStatsService>('IAIModelStatsService');
 
-export interface ILanguageModelStatsService {
+export interface IAIModelStatsService {
 	readonly _serviceBrand: undefined;
 
 	update(model: string, extensionId: ExtensionIdentifier, agent: string | undefined, tokenCount: number | undefined): Promise<void>;
@@ -33,7 +33,7 @@ interface LanguageModelStats {
 	}[];
 }
 
-export class LanguageModelStatsService extends Disposable implements ILanguageModelStatsService {
+export class LanguageModelStatsService extends Disposable implements IAIModelStatsService {
 
 	private static readonly MODEL_STATS_STORAGE_KEY_PREFIX = 'languageModelStats.';
 	private static readonly MODEL_ACCESS_STORAGE_KEY_PREFIX = 'languageModelAccess.';

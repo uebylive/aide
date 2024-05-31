@@ -12,7 +12,7 @@ import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IChatAgentNameService, IChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatAgentVoteDirection, IChatCommandButton, IChatConfirmation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatTask, IChatUsedContext, IChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -478,7 +478,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	constructor(
 		private readonly _model: IChatResponseModel,
 		@ILogService private readonly logService: ILogService,
-		@IChatAgentNameService private readonly chatAgentNameService: IChatAgentNameService,
+		@IAideChatAgentNameService private readonly chatAgentNameService: IAideChatAgentNameService,
 	) {
 		super();
 

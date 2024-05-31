@@ -67,7 +67,7 @@ export interface ILanguageModelChatSelector {
 	readonly extension?: ExtensionIdentifier;
 }
 
-export const ILanguageModelsService = createDecorator<ILanguageModelsService>('ILanguageModelsService');
+export const IAIModelsService = createDecorator<IAIModelsService>('IAIModelsService');
 
 export interface ILanguageModelsChangeEvent {
 	added?: {
@@ -77,7 +77,7 @@ export interface ILanguageModelsChangeEvent {
 	removed?: string[];
 }
 
-export interface ILanguageModelsService {
+export interface IAIModelsService {
 
 	readonly _serviceBrand: undefined;
 
@@ -129,7 +129,7 @@ export const languageModelExtensionPoint = ExtensionsRegistry.registerExtensionP
 	}
 });
 
-export class LanguageModelsService implements ILanguageModelsService {
+export class LanguageModelsService implements IAIModelsService {
 
 	readonly _serviceBrand: undefined;
 

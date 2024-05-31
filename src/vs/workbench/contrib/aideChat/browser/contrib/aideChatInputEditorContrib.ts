@@ -14,7 +14,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
 import { dynamicVariableDecorationType } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
@@ -40,7 +40,7 @@ class InputEditorDecorations extends Disposable {
 		private readonly widget: IChatWidget,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		super();
 

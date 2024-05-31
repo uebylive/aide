@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { ICodeBlockActionContextProvider, IChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { ICodeBlockActionContextProvider, IAideChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 
-export class ChatCodeBlockContextProviderService implements IChatCodeBlockContextProviderService {
+export class ChatCodeBlockContextProviderService implements IAideChatCodeBlockContextProviderService {
 	declare _serviceBrand: undefined;
 	private readonly _providers = new Map<string, ICodeBlockActionContextProvider>();
 

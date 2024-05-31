@@ -182,7 +182,7 @@ export class CodeBlockPart extends Disposable {
 				multipleDefinitions: 'goto',
 				multipleImplementations: 'goto',
 			},
-			ariaLabel: localize('chat.codeBlockHelp', 'Code block'),
+			ariaLabel: localize('aideChat.codeBlockHelp', 'Code block'),
 			overflowWidgetsDomNode,
 			...this.getEditorOptionsFromConfig(),
 		});
@@ -305,7 +305,7 @@ export class CodeBlockPart extends Disposable {
 		const toolbarElt = this.toolbar.getElement();
 		if (this.accessibilityService.isScreenReaderOptimized()) {
 			toolbarElt.style.display = 'block';
-			toolbarElt.ariaLabel = this.configurationService.getValue(AccessibilityVerbositySettingId.Chat) ? localize('chat.codeBlock.toolbarVerbose', 'Toolbar for code block which can be reached via tab') : localize('chat.codeBlock.toolbar', 'Code block toolbar');
+			toolbarElt.ariaLabel = this.configurationService.getValue(AccessibilityVerbositySettingId.Chat) ? localize('aideChat.codeBlock.toolbarVerbose', 'Toolbar for code block which can be reached via tab') : localize('aideChat.codeBlock.toolbar', 'Code block toolbar');
 		} else {
 			toolbarElt.style.display = '';
 		}
@@ -361,7 +361,7 @@ export class CodeBlockPart extends Disposable {
 			this.disposableStore.add(this.editor.onDidFocusEditorWidget(() => TabFocus.setTabFocusMode(true)));
 			this.disposableStore.add(this.editor.onDidBlurEditorWidget(() => TabFocus.setTabFocusMode(false)));
 		}
-		this.editor.updateOptions({ ariaLabel: localize('chat.codeBlockLabel', "Code block {0}", data.codeBlockIndex + 1), readOnly: !editable });
+		this.editor.updateOptions({ ariaLabel: localize('aideChat.codeBlockLabel', "Code block {0}", data.codeBlockIndex + 1), readOnly: !editable });
 
 		if (data.hideToolbar) {
 			dom.hide(this.toolbar.getElement());
@@ -520,7 +520,7 @@ export class CodeCompareBlockPart extends Disposable {
 				multipleDefinitions: 'goto',
 				multipleImplementations: 'goto',
 			},
-			ariaLabel: localize('chat.codeBlockHelp', 'Code block'),
+			ariaLabel: localize('aideChat.codeBlockHelp', 'Code block'),
 			overflowWidgetsDomNode,
 			...this.getEditorOptionsFromConfig(),
 		});
@@ -640,7 +640,7 @@ export class CodeCompareBlockPart extends Disposable {
 		const toolbarElt = this.toolbar2.getElement();
 		if (this.accessibilityService.isScreenReaderOptimized()) {
 			toolbarElt.style.display = 'block';
-			toolbarElt.ariaLabel = this.configurationService.getValue(AccessibilityVerbositySettingId.Chat) ? localize('chat.codeBlock.toolbarVerbose', 'Toolbar for code block which can be reached via tab') : localize('chat.codeBlock.toolbar', 'Code block toolbar');
+			toolbarElt.ariaLabel = this.configurationService.getValue(AccessibilityVerbositySettingId.Chat) ? localize('aideChat.codeBlock.toolbarVerbose', 'Toolbar for code block which can be reached via tab') : localize('aideChat.codeBlock.toolbar', 'Code block toolbar');
 		} else {
 			toolbarElt.style.display = '';
 		}
@@ -688,11 +688,11 @@ export class CodeCompareBlockPart extends Disposable {
 		await this.updateEditor(data, token);
 
 		this.layout(width);
-		this.diffEditor.updateOptions({ ariaLabel: localize('chat.compareCodeBlockLabel', "Code Edits") });
+		this.diffEditor.updateOptions({ ariaLabel: localize('aideChat.compareCodeBlockLabel', "Code Edits") });
 
 		this.toolbar1.push(toAction({
 			label: basename(data.edit.uri),
-			tooltip: localize('chat.edit.tooltip', "Open '{0}'", this.labelService.getUriLabel(data.edit.uri, { relative: true })),
+			tooltip: localize('aideChat.edit.tooltip', "Open '{0}'", this.labelService.getUriLabel(data.edit.uri, { relative: true })),
 			run: () => {
 				this.openerService.open(data.edit.uri, { fromUserGesture: true, allowCommands: false });
 			},
@@ -732,8 +732,8 @@ export class CodeCompareBlockPart extends Disposable {
 			const uriLabel = this.labelService.getUriLabel(data.edit.uri, { relative: true, noPrefix: true });
 
 			const template = data.edit.state.applied > 1
-				? localize('chat.edits.N', "Made {0} changes in [[``{1}``]]", data.edit.state.applied, uriLabel)
-				: localize('chat.edits.1', "Made 1 change in [[``{0}``]]", uriLabel);
+				? localize('aideChat.edits.N', "Made {0} changes in [[``{1}``]]", data.edit.state.applied, uriLabel)
+				: localize('aideChat.edits.1', "Made 1 change in [[``{0}``]]", uriLabel);
 
 
 			const message = renderFormattedText(template, {
@@ -877,8 +877,8 @@ export class DefaultChatTextEditor {
 	private async _checkSha1(model: ITextModel, item: IChatTextEditGroup) {
 		if (item.state?.sha1 && this._sha1.computeSHA1(model) && this._sha1.computeSHA1(model) !== item.state.sha1) {
 			const result = await this.dialogService.confirm({
-				message: localize('interactive.compare.apply.confirm', "The original file has been modified."),
-				detail: localize('interactive.compare.apply.confirm.detail', "Do you want to apply the changes anyway?"),
+				message: localize('aideChat.compare.apply.confirm', "The original file has been modified."),
+				detail: localize('aideChat.compare.apply.confirm.detail', "Do you want to apply the changes anyway?"),
 			});
 
 			if (!result.confirmed) {

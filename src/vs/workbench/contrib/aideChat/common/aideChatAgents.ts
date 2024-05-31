@@ -140,7 +140,7 @@ export interface IChatAgentResult {
 	readonly metadata?: { readonly [key: string]: any };
 }
 
-export const IChatAgentService = createDecorator<IChatAgentService>('chatAgentService');
+export const IAideChatAgentService = createDecorator<IAideChatAgentService>('aideChatAgentService');
 
 interface IChatAgentEntry {
 	data: IChatAgentData;
@@ -156,7 +156,7 @@ export interface IChatAgentCompletionItem {
 	command?: Command;
 }
 
-export interface IChatAgentService {
+export interface IAideChatAgentService {
 	_serviceBrand: undefined;
 	/**
 	 * undefined when an agent was removed IChatAgent
@@ -188,7 +188,7 @@ export interface IChatAgentService {
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
 
-export class ChatAgentService implements IChatAgentService {
+export class ChatAgentService implements IAideChatAgentService {
 
 	public static readonly AGENT_LEADER = '@';
 
@@ -417,7 +417,7 @@ export class MergedChatAgent implements IChatAgent {
 	}
 }
 
-export const IChatAgentNameService = createDecorator<IChatAgentNameService>('chatAgentNameService');
+export const IAideChatAgentNameService = createDecorator<IAideChatAgentNameService>('aideChatAgentNameService');
 
 type IChatParticipantRegistry = { [name: string]: string[] };
 
@@ -426,14 +426,14 @@ interface IChatParticipantRegistryResponse {
 	readonly restrictedChatParticipants: IChatParticipantRegistry;
 }
 
-export interface IChatAgentNameService {
+export interface IAideChatAgentNameService {
 	_serviceBrand: undefined;
 	getAgentNameRestriction(chatAgentData: IChatAgentData): boolean;
 }
 
-export class ChatAgentNameService implements IChatAgentNameService {
+export class ChatAgentNameService implements IAideChatAgentNameService {
 
-	private static readonly StorageKey = 'chat.participantNameRegistry';
+	private static readonly StorageKey = 'aideChat.participantNameRegistry';
 
 	declare _serviceBrand: undefined;
 

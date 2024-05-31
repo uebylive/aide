@@ -27,10 +27,10 @@ import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { accessibleViewInCodeBlock } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidgetService, IChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService, IAideChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { DefaultChatTextEditor, ICodeBlockActionContext, ICodeCompareBlockActionContext } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_EDIT_APPLIED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { ChatCopyKind, IChatService, IDocumentContext } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { ChatCopyKind, IAideChatService, IDocumentContext } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
@@ -86,7 +86,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.copyCodeBlock',
-				title: localize2('interactive.copyCodeBlock.label', "Copy"),
+				title: localize2('aideChat.copyCodeBlock.label', "Copy"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.copy,
@@ -107,7 +107,7 @@ export function registerChatCodeBlockActions() {
 			clipboardService.writeText(context.code);
 
 			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(IAideChatService);
 				chatService.notifyUserAction({
 					agentId: context.element.agent?.id,
 					sessionId: context.element.sessionId,
@@ -150,7 +150,7 @@ export function registerChatCodeBlockActions() {
 		const totalCharacters = editorModel.getValueLength();
 
 		// Report copy to extensions
-		const chatService = accessor.get(IChatService);
+		const chatService = accessor.get(IAideChatService);
 		const element = context.element as IChatResponseViewModel | undefined;
 		if (element) {
 			chatService.notifyUserAction({
@@ -182,7 +182,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.insertCodeBlock',
-				title: localize2('interactive.insertCodeBlock.label', "Insert at Cursor"),
+				title: localize2('aideChat.insertCodeBlock.label', "Insert at Cursor"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
 				category: CHAT_CATEGORY,
@@ -327,7 +327,7 @@ export function registerChatCodeBlockActions() {
 
 		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
 			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(IChatService);
+				const chatService = accessor.get(IAideChatService);
 				chatService.notifyUserAction({
 					agentId: context.element.agent?.id,
 					sessionId: context.element.sessionId,
@@ -348,7 +348,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.insertIntoNewFile',
-				title: localize2('interactive.insertIntoNewFile.label', "Insert into New File"),
+				title: localize2('aideChat.insertIntoNewFile.label', "Insert into New File"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
 				category: CHAT_CATEGORY,
@@ -368,7 +368,7 @@ export function registerChatCodeBlockActions() {
 			}
 
 			const editorService = accessor.get(IEditorService);
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 
 			editorService.openEditor({ contents: context.code, languageId: context.languageId, resource: undefined } satisfies IUntitledTextResourceEditorInput);
 
@@ -402,7 +402,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.runInTerminal',
-				title: localize2('interactive.runInTerminal.label', "Insert into Terminal"),
+				title: localize2('aideChat.runInTerminal.label', "Insert into Terminal"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
 				category: CHAT_CATEGORY,
@@ -441,7 +441,7 @@ export function registerChatCodeBlockActions() {
 				return;
 			}
 
-			const chatService = accessor.get(IChatService);
+			const chatService = accessor.get(IAideChatService);
 			const terminalService = accessor.get(ITerminalService);
 			const editorService = accessor.get(IEditorService);
 			const terminalEditorService = accessor.get(ITerminalEditorService);
@@ -482,7 +482,7 @@ export function registerChatCodeBlockActions() {
 
 	function navigateCodeBlocks(accessor: ServicesAccessor, reverse?: boolean): void {
 		const codeEditorService = accessor.get(ICodeEditorService);
-		const chatWidgetService = accessor.get(IChatWidgetService);
+		const chatWidgetService = accessor.get(IAideChatWidgetService);
 		const widget = chatWidgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
@@ -514,7 +514,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.nextCodeBlock',
-				title: localize2('interactive.nextCodeBlock.label', "Next Code Block"),
+				title: localize2('aideChat.nextCodeBlock.label', "Next Code Block"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageDown,
 					mac: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageDown, },
@@ -536,7 +536,7 @@ export function registerChatCodeBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.previousCodeBlock',
-				title: localize2('interactive.previousCodeBlock.label', "Previous Code Block"),
+				title: localize2('aideChat.previousCodeBlock.label', "Previous Code Block"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageUp,
 					mac: { primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageUp, },
@@ -556,8 +556,8 @@ export function registerChatCodeBlockActions() {
 }
 
 function getContextFromEditor(editor: ICodeEditor, accessor: ServicesAccessor): ICodeBlockActionContext | undefined {
-	const chatWidgetService = accessor.get(IChatWidgetService);
-	const chatCodeBlockContextProviderService = accessor.get(IChatCodeBlockContextProviderService);
+	const chatWidgetService = accessor.get(IAideChatWidgetService);
+	const chatCodeBlockContextProviderService = accessor.get(IAideChatCodeBlockContextProviderService);
 	const model = editor.getModel();
 	if (!model) {
 		return;
@@ -603,7 +603,7 @@ export function registerChatCodeCompareBlockActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.chat.applyCompareEdits',
-				title: localize2('interactive.compare.apply', "Apply Edits"),
+				title: localize2('aideChat.compare.apply', "Apply Edits"),
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.check,

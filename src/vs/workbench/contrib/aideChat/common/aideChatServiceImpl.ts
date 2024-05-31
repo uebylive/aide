@@ -23,19 +23,19 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ChatAgentLocation, IChatAgent, IChatAgentRequest, IChatAgentResult, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgent, IChatAgentRequest, IChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatService, IChatTransferredSessionData, IChatUserActionEvent, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IChatUserActionEvent, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
+import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
-const serializedChatKey = 'interactive.sessions';
+const serializedChatKey = 'aideChat.sessions';
 
-const globalChatKey = 'chat.workspaceTransfer';
+const globalChatKey = 'aideChat.workspaceTransfer';
 interface IChatTransfer {
 	toWorkspace: UriComponents;
 	timestampInMilliseconds: number;
@@ -128,7 +128,7 @@ type ChatTerminalClassification = {
 
 const maxPersistedSessions = 25;
 
-export class ChatService extends Disposable implements IChatService {
+export class ChatService extends Disposable implements IAideChatService {
 	declare _serviceBrand: undefined;
 
 	private readonly _sessionModels = this._register(new DisposableMap<string, ChatModel>());
@@ -156,9 +156,9 @@ export class ChatService extends Disposable implements IChatService {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
-		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
-		@IChatAgentService private readonly chatAgentService: IChatAgentService,
+		@IAideChatSlashCommandService private readonly chatSlashCommandService: IAideChatSlashCommandService,
+		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
+		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		super();
 
@@ -213,17 +213,17 @@ export class ChatService extends Disposable implements IChatService {
 
 	notifyUserAction(action: IChatUserActionEvent): void {
 		if (action.action.kind === 'vote') {
-			this.telemetryService.publicLog2<ChatVoteEvent, ChatVoteClassification>('interactiveSessionVote', {
+			this.telemetryService.publicLog2<ChatVoteEvent, ChatVoteClassification>('aideChatVote', {
 				direction: action.action.direction === ChatAgentVoteDirection.Up ? 'up' : 'down',
 				agentId: action.agentId ?? ''
 			});
 		} else if (action.action.kind === 'copy') {
-			this.telemetryService.publicLog2<ChatCopyEvent, ChatCopyClassification>('interactiveSessionCopy', {
+			this.telemetryService.publicLog2<ChatCopyEvent, ChatCopyClassification>('aideChatCopy', {
 				copyKind: action.action.copyKind === ChatCopyKind.Action ? 'action' : 'toolbar',
 				agentId: action.agentId ?? ''
 			});
 		} else if (action.action.kind === 'insert') {
-			this.telemetryService.publicLog2<ChatInsertEvent, ChatInsertClassification>('interactiveSessionInsert', {
+			this.telemetryService.publicLog2<ChatInsertEvent, ChatInsertClassification>('aideChatInsert', {
 				newFile: !!action.action.newFile,
 				agentId: action.agentId ?? ''
 			});
@@ -231,12 +231,12 @@ export class ChatService extends Disposable implements IChatService {
 			// TODO not currently called
 			const command = CommandsRegistry.getCommand(action.action.commandButton.command.id);
 			const commandId = command ? action.action.commandButton.command.id : 'INVALID';
-			this.telemetryService.publicLog2<ChatCommandEvent, ChatCommandClassification>('interactiveSessionCommand', {
+			this.telemetryService.publicLog2<ChatCommandEvent, ChatCommandClassification>('aideChatCommand', {
 				commandId,
 				agentId: action.agentId ?? ''
 			});
 		} else if (action.action.kind === 'runInTerminal') {
-			this.telemetryService.publicLog2<ChatTerminalEvent, ChatTerminalClassification>('interactiveSessionRunInTerminal', {
+			this.telemetryService.publicLog2<ChatTerminalEvent, ChatTerminalClassification>('aideChatRunInTerminal', {
 				languageId: action.action.languageId ?? ''
 			});
 		}
@@ -535,7 +535,7 @@ export class ChatService extends Disposable implements IChatService {
 			const stopWatch = new StopWatch(false);
 			const listener = token.onCancellationRequested(() => {
 				this.trace('sendRequest', `Request for session ${model.sessionId} was cancelled`);
-				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
+				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('aideChatProviderInvoked', {
 					timeToFirstProgress: undefined,
 					// Normally timings happen inside the EH around the actual provider. For cancellation we can measure how long the user waited before cancelling
 					totalTime: stopWatch.elapsed(),
@@ -636,7 +636,7 @@ export class ChatService extends Disposable implements IChatService {
 						rawResult.errorDetails && gotProgress ? 'errorWithOutput' :
 							rawResult.errorDetails ? 'error' :
 								'success';
-					this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
+					this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('aideChatProviderInvoked', {
 						timeToFirstProgress: rawResult.timings?.firstProgress,
 						totalTime: rawResult.timings?.totalElapsed,
 						result,
@@ -659,7 +659,7 @@ export class ChatService extends Disposable implements IChatService {
 				}
 			} catch (err) {
 				const result = 'error';
-				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
+				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('aideChatProviderInvoked', {
 					timeToFirstProgress: undefined,
 					totalTime: undefined,
 					result,

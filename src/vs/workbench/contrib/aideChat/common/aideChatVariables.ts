@@ -36,9 +36,9 @@ export interface IChatVariableResolver {
 	(messageText: string, arg: string | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableValue | undefined>;
 }
 
-export const IChatVariablesService = createDecorator<IChatVariablesService>('IChatVariablesService');
+export const IAideChatVariablesService = createDecorator<IAideChatVariablesService>('IAideChatVariablesService');
 
-export interface IChatVariablesService {
+export interface IAideChatVariablesService {
 	_serviceBrand: undefined;
 	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable;
 	hasVariable(name: string): boolean;

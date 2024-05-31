@@ -6,7 +6,7 @@
 import { localize } from 'vs/nls';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { AccessibleViewProviderId, AccessibleViewType } from 'vs/platform/accessibility/browser/accessibleView';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibleDiffViewerNext } from 'vs/editor/browser/widget/diffEditor/commands';
@@ -31,11 +31,11 @@ export class ChatAccessibilityHelp implements IAccessibleViewImplentation {
 export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat'): string {
 	const content = [];
 	if (type === 'panelChat') {
-		content.push(localize('chat.overview', 'The chat view is comprised of an input box and a request/response list. The input box is used to make requests and the list is used to display responses.'));
-		content.push(localize('chat.requestHistory', 'In the input box, use up and down arrows to navigate your request history. Edit input and use enter or the submit button to run a new request.'));
-		content.push(localize('chat.inspectResponse', 'In the input box, inspect the last response in the accessible view<keybinding:editor.action.accessibleView>'));
-		content.push(localize('chat.followUp', 'In the input box, navigate to the suggested follow up question (Shift+Tab) and press Enter to run it.'));
-		content.push(localize('chat.announcement', 'Chat responses will be announced as they come in. A response will indicate the number of code blocks, if any, and then the rest of the response.'));
+		content.push(localize('aideChat.overview', 'The chat view is comprised of an input box and a request/response list. The input box is used to make requests and the list is used to display responses.'));
+		content.push(localize('aideChat.requestHistory', 'In the input box, use up and down arrows to navigate your request history. Edit input and use enter or the submit button to run a new request.'));
+		content.push(localize('aideChat.inspectResponse', 'In the input box, inspect the last response in the accessible view<keybinding:editor.action.accessibleView>'));
+		content.push(localize('aideChat.followUp', 'In the input box, navigate to the suggested follow up question (Shift+Tab) and press Enter to run it.'));
+		content.push(localize('aideChat.announcement', 'Chat responses will be announced as they come in. A response will indicate the number of code blocks, if any, and then the rest of the response.'));
 		content.push(localize('workbench.action.chat.focus', 'To focus the chat request/response list, which can be navigated with up and down arrows, invoke the Focus Chat command<keybinding:chat.action.focus>.'));
 		content.push(localize('workbench.action.chat.focusInput', 'To focus the input box for chat requests, invoke the Focus Chat Input command<keybinding:workbench.action.chat.focusInput>.'));
 		content.push(localize('workbench.action.chat.nextCodeBlock', 'To focus the next code block within a response, invoke the Chat: Next Code Block command<keybinding:workbench.action.chat.nextCodeBlock>.'));
@@ -51,12 +51,12 @@ export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat'): stri
 		content.push(localize('inlineChat.diff', "Once in the diff editor, enter review mode with<keybinding:{0}>. Use up and down arrows to navigate lines with the proposed changes.", AccessibleDiffViewerNext.id));
 		content.push(localize('inlineChat.toolbar', "Use tab to reach conditional parts like commands, status, message responses and more."));
 	}
-	content.push(localize('chat.signals', "Accessibility Signals can be changed via settings with a prefix of signals.chat. By default, if a request takes more than 4 seconds, you will hear a sound indicating that progress is still occurring."));
+	content.push(localize('aideChat.signals', "Accessibility Signals can be changed via settings with a prefix of signals.chat. By default, if a request takes more than 4 seconds, you will hear a sound indicating that progress is still occurring."));
 	return content.join('\n\n');
 }
 
 export function getChatAccessibilityHelpProvider(accessor: ServicesAccessor, editor: ICodeEditor | undefined, type: 'panelChat' | 'inlineChat') {
-	const widgetService = accessor.get(IChatWidgetService);
+	const widgetService = accessor.get(IAideChatWidgetService);
 	const inputEditor: ICodeEditor | undefined = type === 'panelChat' ? widgetService.lastFocusedWidget?.inputEditor : editor;
 
 	if (!inputEditor) {

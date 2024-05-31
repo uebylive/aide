@@ -10,7 +10,7 @@ import { AccessibleViewProviderId, AccessibleViewType } from 'vs/platform/access
 import { alertAccessibleViewFocusChange, IAccessibleViewImplentation } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
-import { IChatWidgetService, IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatWidgetService, IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { ChatWelcomeMessageModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
@@ -21,10 +21,10 @@ export class ChatResponseAccessibleView implements IAccessibleViewImplentation {
 	readonly type = AccessibleViewType.View;
 	readonly when = CONTEXT_IN_CHAT_SESSION;
 	getProvider(accessor: ServicesAccessor) {
-		const widgetService = accessor.get(IChatWidgetService);
+		const widgetService = accessor.get(IAideChatWidgetService);
 		const codeEditorService = accessor.get(ICodeEditorService);
 		return resolveProvider(widgetService, codeEditorService, true);
-		function resolveProvider(widgetService: IChatWidgetService, codeEditorService: ICodeEditorService, initialRender?: boolean) {
+		function resolveProvider(widgetService: IAideChatWidgetService, codeEditorService: ICodeEditorService, initialRender?: boolean) {
 			const widget = widgetService.lastFocusedWidget;
 			if (!widget) {
 				return;

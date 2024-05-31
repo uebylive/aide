@@ -60,11 +60,11 @@ export class ChatEditorOptions extends Disposable {
 	}
 
 	private static readonly relevantSettingIds = [
-		'chat.editor.lineHeight',
-		'chat.editor.fontSize',
-		'chat.editor.fontFamily',
-		'chat.editor.fontWeight',
-		'chat.editor.wordWrap',
+		'aideChat.editor.lineHeight',
+		'aideChat.editor.fontSize',
+		'aideChat.editor.fontFamily',
+		'aideChat.editor.fontWeight',
+		'aideChat.editor.wordWrap',
 		'editor.cursorBlinking',
 		'editor.fontLigatures',
 		'editor.accessibilitySupport',
@@ -101,7 +101,7 @@ export class ChatEditorOptions extends Disposable {
 		const editorConfig = this.configurationService.getValue<IEditorOptions>('editor');
 
 		// TODO shouldn't the setting keys be more specific?
-		const chatEditorConfig = this.configurationService.getValue<IChatConfiguration>('chat')?.editor;
+		const chatEditorConfig = this.configurationService.getValue<IChatConfiguration>('aideChat')?.editor;
 		const accessibilitySupport = this.configurationService.getValue<'auto' | 'off' | 'on'>('editor.accessibilitySupport');
 		this._config = {
 			foreground: this.themeService.getColorTheme().getColor(this.foreground),

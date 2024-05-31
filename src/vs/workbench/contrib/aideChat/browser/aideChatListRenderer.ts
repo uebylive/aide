@@ -66,8 +66,8 @@ import { ChatAgentLocation, IChatAgentMetadata } from 'vs/workbench/contrib/aide
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatAgentVoteDirection, IChatCommandButton, IChatConfirmation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IChatService, IChatTask, IChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { ChatAgentVoteDirection, IChatCommandButton, IChatConfirmation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IAideChatService, IChatTask, IChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
@@ -155,7 +155,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		@ICommandService private readonly commandService: ICommandService,
 		@ITextModelService private readonly textModelService: ITextModelService,
 		@IModelService private readonly modelService: IModelService,
-		@IChatService private readonly chatService: IChatService,
+		@IAideChatService private readonly chatService: IAideChatService,
 	) {
 		super();
 
@@ -168,10 +168,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
 
-		this._usedReferencesEnabled = configService.getValue('chat.experimental.usedReferences') ?? true;
+		this._usedReferencesEnabled = configService.getValue('aideChat.experimental.usedReferences') ?? true;
 		this._register(configService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration('chat.experimental.usedReferences')) {
-				this._usedReferencesEnabled = configService.getValue('chat.experimental.usedReferences') ?? true;
+			if (e.affectsConfiguration('aideChat.experimental.usedReferences')) {
+				this._usedReferencesEnabled = configService.getValue('aideChat.experimental.usedReferences') ?? true;
 			}
 		}));
 	}
@@ -1482,7 +1482,7 @@ class ContentReferencesListRenderer implements IListRenderer<IChatContentReferen
 	constructor(
 		private labels: ResourceLabels,
 		@IThemeService private readonly themeService: IThemeService,
-		@IChatVariablesService private readonly chatVariablesService: IChatVariablesService,
+		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
 	) { }
 
 	renderTemplate(container: HTMLElement): IChatContentReferenceListTemplate {

@@ -31,12 +31,12 @@ export interface IChatSlashFragment {
 }
 export type IChatSlashCallback = { (prompt: string, progress: IProgress<IChatProgress>, history: IChatMessage[], token: CancellationToken): Promise<{ followUp: IChatFollowup[] } | void> };
 
-export const IChatSlashCommandService = createDecorator<IChatSlashCommandService>('chatSlashCommandService');
+export const IAideChatSlashCommandService = createDecorator<IAideChatSlashCommandService>('aideChatSlashCommandService');
 
 /**
  * This currently only exists to drive /clear and /help
  */
-export interface IChatSlashCommandService {
+export interface IAideChatSlashCommandService {
 	_serviceBrand: undefined;
 	readonly onDidChangeCommands: Event<void>;
 	registerSlashCommand(data: IChatSlashData, command: IChatSlashCallback): IDisposable;
@@ -47,7 +47,7 @@ export interface IChatSlashCommandService {
 
 type Tuple = { data: IChatSlashData; command?: IChatSlashCallback };
 
-export class ChatSlashCommandService extends Disposable implements IChatSlashCommandService {
+export class ChatSlashCommandService extends Disposable implements IAideChatSlashCommandService {
 
 	declare _serviceBrand: undefined;
 

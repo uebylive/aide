@@ -312,9 +312,9 @@ export interface IChatSendRequestOptions {
 	slashCommand?: string;
 }
 
-export const IChatService = createDecorator<IChatService>('IChatService');
+export const IAideChatService = createDecorator<IAideChatService>('IAideChatService');
 
-export interface IChatService {
+export interface IAideChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
 

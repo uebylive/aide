@@ -46,12 +46,12 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { CancelAction, ChatSubmitSecondaryAgentAction, IChatExecuteActionContext, SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
 import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatFollowups } from 'vs/workbench/contrib/aideChat/browser/aideChatFollowups';
-import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { IChatHistoryEntry, IChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
+import { IChatHistoryEntry, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { KeyCode } from 'vs/base/common/keyCodes';
@@ -149,7 +149,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		// private readonly editorOptions: ChatEditorOptions, // TODO this should be used
 		private readonly location: ChatAgentLocation,
 		private readonly options: IChatInputPartOptions,
-		@IChatWidgetHistoryService private readonly historyService: IChatWidgetHistoryService,
+		@IAideChatWidgetHistoryService private readonly historyService: IAideChatWidgetHistoryService,
 		@IModelService private readonly modelService: IModelService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -394,7 +394,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			actionViewItemProvider: (action, options) => {
 				if (this.location === ChatAgentLocation.Panel) {
 					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
-						const dropdownAction = this.instantiationService.createInstance(MenuItemAction, { id: 'chat.moreExecuteActions', title: localize('notebook.moreExecuteActionsLabel', "More..."), icon: Codicon.chevronDown }, undefined, undefined, undefined, undefined);
+						const dropdownAction = this.instantiationService.createInstance(MenuItemAction, { id: 'aideChat.moreExecuteActions', title: localize('notebook.moreExecuteActionsLabel', "More..."), icon: Codicon.chevronDown }, undefined, undefined, undefined, undefined);
 						return this.instantiationService.createInstance(ChatSubmitDropdownActionItem, action, dropdownAction);
 					}
 				}
@@ -454,7 +454,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				const fileBasename = basename(file.path);
 				const fileDirname = dirname(file.path);
 				const friendlyName = `${fileBasename} ${fileDirname}`;
-				const ariaLabel = range ? localize('chat.fileAttachmentWithRange', "Attached file, {0}, line {1} to line {2}", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.fileAttachment', "Attached file, {0}", friendlyName);
+				const ariaLabel = range ? localize('aideChat.fileAttachmentWithRange', "Attached file, {0}, line {1} to line {2}", friendlyName, range.startLineNumber, range.endLineNumber) : localize('aideChat.fileAttachment', "Attached file, {0}", friendlyName);
 
 				label.setFile(file, {
 					fileKind: FileKind.FILE,
@@ -467,7 +467,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				const attachmentLabel = attachment.fullName ?? attachment.name;
 				label.setLabel(attachmentLabel, undefined);
 
-				widget.ariaLabel = localize('chat.attachment', "Attached context, {0}", attachment.name);
+				widget.ariaLabel = localize('aideChat.attachment', "Attached context, {0}", attachment.name);
 				widget.tabIndex = 0;
 			}
 
@@ -582,7 +582,7 @@ class ChatSubmitDropdownActionItem extends DropdownWithPrimaryActionViewItem {
 		dropdownAction: IAction,
 		@IMenuService menuService: IMenuService,
 		@IContextMenuService contextMenuService: IContextMenuService,
-		@IChatAgentService chatAgentService: IChatAgentService,
+		@IAideChatAgentService chatAgentService: IAideChatAgentService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@INotificationService notificationService: INotificationService,
@@ -611,7 +611,7 @@ class ChatSubmitDropdownActionItem extends DropdownWithPrimaryActionViewItem {
 			if (secondaryAgent) {
 				secondary.forEach(a => {
 					if (a.id === ChatSubmitSecondaryAgentAction.ID) {
-						a.label = localize('chat.submitToSecondaryAgent', "Send to @{0}", secondaryAgent.name);
+						a.label = localize('aideChat.submitToSecondaryAgent', "Send to @{0}", secondaryAgent.name);
 					}
 
 					return a;

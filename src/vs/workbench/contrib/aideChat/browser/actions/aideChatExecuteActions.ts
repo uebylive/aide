@@ -11,11 +11,11 @@ import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/act
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { chatAgentLeader, extractAgentAndCommand } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 export interface IVoiceChatExecuteActionContext {
 	readonly disableTimeout?: boolean;
@@ -33,7 +33,7 @@ export class SubmitAction extends Action2 {
 	constructor() {
 		super({
 			id: SubmitAction.ID,
-			title: localize2('interactive.submit.label', "Send"),
+			title: localize2('aideChat.submit.label', "Send"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
@@ -60,7 +60,7 @@ export class SubmitAction extends Action2 {
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const context: IChatExecuteActionContext | undefined = args[0];
 
-		const widgetService = accessor.get(IChatWidgetService);
+		const widgetService = accessor.get(IAideChatWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		widget?.acceptInput(context?.inputValue);
 	}
@@ -89,13 +89,13 @@ export class ChatSubmitSecondaryAgentAction extends Action2 {
 
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const context: IChatExecuteActionContext | undefined = args[0];
-		const agentService = accessor.get(IChatAgentService);
+		const agentService = accessor.get(IAideChatAgentService);
 		const secondaryAgent = agentService.getSecondaryAgent();
 		if (!secondaryAgent) {
 			return;
 		}
 
-		const widgetService = accessor.get(IChatWidgetService);
+		const widgetService = accessor.get(IAideChatWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
@@ -114,7 +114,7 @@ class SendToNewChatAction extends Action2 {
 	constructor() {
 		super({
 			id: 'workbench.action.chat.sendToNewChat',
-			title: localize2('chat.newChat.label', "Send to New Chat"),
+			title: localize2('aideChat.newChat.label', "Send to New Chat"),
 			precondition: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_INPUT_HAS_TEXT),
 			category: CHAT_CATEGORY,
 			f1: false,
@@ -133,7 +133,7 @@ class SendToNewChatAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const context: IChatExecuteActionContext | undefined = args[0];
 
-		const widgetService = accessor.get(IChatWidgetService);
+		const widgetService = accessor.get(IAideChatWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
@@ -149,7 +149,7 @@ export class CancelAction extends Action2 {
 	constructor() {
 		super({
 			id: CancelAction.ID,
-			title: localize2('interactive.cancel.label', "Cancel"),
+			title: localize2('aideChat.cancel.label', "Cancel"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.debugStop,
@@ -168,13 +168,13 @@ export class CancelAction extends Action2 {
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		const context: IChatExecuteActionContext | undefined = args[0];
 
-		const widgetService = accessor.get(IChatWidgetService);
+		const widgetService = accessor.get(IAideChatWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		if (!widget) {
 			return;
 		}
 
-		const chatService = accessor.get(IChatService);
+		const chatService = accessor.get(IAideChatService);
 		if (widget.viewModel) {
 			chatService.cancelCurrentRequestForSession(widget.viewModel.sessionId);
 		}

@@ -19,7 +19,7 @@ import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { CHAT_VIEW_ID } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { ChatAgentLocation, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IRawChatParticipantContribution } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
@@ -112,7 +112,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private _participantRegistrationDisposables = new DisposableMap<string>();
 
 	constructor(
-		@IChatAgentService private readonly _chatAgentService: IChatAgentService,
+		@IAideChatAgentService private readonly _chatAgentService: IAideChatAgentService,
 		@IProductService private readonly productService: IProductService,
 		@IContextKeyService private readonly contextService: IContextKeyService,
 		@ILogService private readonly logService: ILogService,
@@ -247,7 +247,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 	private registerViewContainer(): ViewContainer {
 		// Register View Container
-		const title = localize2('chat.viewContainer.label', "Chat");
+		const title = localize2('aideChat.viewContainer.label', "Chat");
 		const icon = Codicon.commentDiscussion;
 		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({

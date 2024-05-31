@@ -18,7 +18,7 @@ import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import type { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
 import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 const ChatEditorIcon = registerIcon('chat-editor-label-icon', Codicon.commentDiscussion, nls.localize('chatEditorLabelIcon', 'Icon of the chat editor label.'));
 
@@ -50,7 +50,7 @@ export class ChatEditorInput extends EditorInput {
 	constructor(
 		readonly resource: URI,
 		readonly options: IChatEditorOptions,
-		@IChatService private readonly chatService: IChatService
+		@IAideChatService private readonly chatService: IAideChatService
 	) {
 		super();
 
