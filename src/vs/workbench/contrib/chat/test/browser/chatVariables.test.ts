@@ -20,6 +20,7 @@ import { CSChatAgentService as ChatAgentService } from 'vs/workbench/contrib/cha
 import { MockChatWidgetService } from 'vs/workbench/contrib/chat/test/browser/mockChatWidget';
 import { MockChatService } from 'vs/workbench/contrib/chat/test/common/mockChatService';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { TestViewsService } from 'vs/workbench/test/browser/workbenchTestServices';
 import { TestExtensionService, TestStorageService } from 'vs/workbench/test/common/workbenchTestServices';
 
 suite('ChatVariables', function () {
@@ -29,7 +30,7 @@ suite('ChatVariables', function () {
 	const testDisposables = ensureNoDisposablesAreLeakedInTestSuite();
 
 	setup(function () {
-		service = new ChatVariablesService(new MockChatWidgetService());
+		service = new ChatVariablesService(new MockChatWidgetService(), new TestViewsService());
 		instantiationService = testDisposables.add(new TestInstantiationService());
 		instantiationService.stub(IStorageService, testDisposables.add(new TestStorageService()));
 		instantiationService.stub(ILogService, new NullLogService());
