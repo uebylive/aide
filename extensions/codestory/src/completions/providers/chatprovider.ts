@@ -76,6 +76,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _currentRepoRef: RepoRef;
 	private _projectContext: ProjectContext;
+	// Pass this when talking to the agent
+	private _editorUrl: string;
 
 	constructor(
 		workingDirectory: string,
@@ -85,6 +87,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		sideCarClient: SideCarClient,
 		repoRef: RepoRef,
 		projectContext: ProjectContext,
+		editorUrl: string,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._repoHash = repoHash;
@@ -93,6 +96,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
+		this._editorUrl = editorUrl;
 
 		this.chatAgent = vscode.chat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
