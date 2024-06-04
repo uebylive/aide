@@ -28,7 +28,7 @@ export interface IChatExecuteActionContext {
 }
 
 export class SubmitAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.submit';
+	static readonly ID = 'workbench.action.aideChat.submit';
 
 	constructor() {
 		super({
@@ -68,7 +68,7 @@ export class SubmitAction extends Action2 {
 
 
 export class ChatSubmitSecondaryAgentAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.submitSecondaryAgent';
+	static readonly ID = 'workbench.action.aideChat.submitSecondaryAgent';
 
 	constructor() {
 		super({
@@ -113,7 +113,7 @@ export class ChatSubmitSecondaryAgentAction extends Action2 {
 class SendToNewChatAction extends Action2 {
 	constructor() {
 		super({
-			id: 'workbench.action.chat.sendToNewChat',
+			id: 'workbench.action.aideChat.sendToNewChat',
 			title: localize2('aideChat.newChat.label', "Send to New Chat"),
 			precondition: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_INPUT_HAS_TEXT),
 			category: CHAT_CATEGORY,
@@ -145,7 +145,7 @@ class SendToNewChatAction extends Action2 {
 }
 
 export class CancelAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.cancel';
+	static readonly ID = 'workbench.action.aideChat.cancel';
 	constructor() {
 		super({
 			id: CancelAction.ID,

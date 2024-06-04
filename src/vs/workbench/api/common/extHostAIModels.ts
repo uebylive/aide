@@ -24,7 +24,7 @@ import { INTERNAL_AUTH_PROVIDER_PREFIX } from 'vs/workbench/services/authenticat
 import { checkProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import type * as vscode from 'vscode';
 
-export interface IExtHostAIModels extends ExtHostLanguageModels { }
+export interface IExtHostAIModels extends ExtHostAIModels { }
 
 export const IExtHostAIModels = createDecorator<IExtHostAIModels>('IExtHostAIModels');
 
@@ -112,7 +112,7 @@ class LanguageModelResponse {
 	}
 }
 
-export class ExtHostLanguageModels implements ExtHostAIModelsShape {
+export class ExtHostAIModels implements ExtHostAIModelsShape {
 
 	declare _serviceBrand: undefined;
 
@@ -143,7 +143,7 @@ export class ExtHostLanguageModels implements ExtHostAIModelsShape {
 
 	registerLanguageModel(extension: IExtensionDescription, identifier: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata): IDisposable {
 
-		const handle = ExtHostLanguageModels._idPool++;
+		const handle = ExtHostAIModels._idPool++;
 		this._languageModels.set(handle, { extension: extension.identifier, provider, languageModelId: identifier });
 		let auth;
 		if (metadata.auth) {

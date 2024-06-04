@@ -41,7 +41,7 @@ declare module 'vscode' {
 		/**
 		 * The welcome message provider for this participant.
 		 */
-		readonly welcomeMessageProvider?: AideChatWelcomeMessageProvider;
+		welcomeMessageProvider?: AideChatWelcomeMessageProvider;
 
 		/**
 		 * An event that fires whenever feedback for a result is received, e.g. when a user up- or down-votes

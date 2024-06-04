@@ -8,7 +8,7 @@ import * as vscode from 'vscode';
 export const OPEN_FILES_VARIABLE = 'openFiles';
 
 export function registerOpenFiles() {
-	vscode.chat.registerChatVariableResolver(
+	vscode.aideChat.registerChatVariableResolver(
 		OPEN_FILES_VARIABLE,
 		OPEN_FILES_VARIABLE,
 		'Open files in the workspace',

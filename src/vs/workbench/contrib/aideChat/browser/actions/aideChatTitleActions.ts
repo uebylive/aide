@@ -27,7 +27,7 @@ export function registerChatTitleActions() {
 	registerAction2(class MarkHelpfulAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.markHelpful',
+				id: 'workbench.action.aideChat.markHelpful',
 				title: localize2('aideChat.helpful.label', "Helpful"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -66,7 +66,7 @@ export function registerChatTitleActions() {
 	registerAction2(class MarkUnhelpfulAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.markUnhelpful',
+				id: 'workbench.action.aideChat.markUnhelpful',
 				title: localize2('aideChat.unhelpful.label', "Unhelpful"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -105,7 +105,7 @@ export function registerChatTitleActions() {
 	registerAction2(class ReportIssueForBugAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.reportIssueForBug',
+				id: 'workbench.action.aideChat.reportIssueForBug',
 				title: localize2('aideChat.reportIssueForBug.label', "Report Issue"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -141,7 +141,7 @@ export function registerChatTitleActions() {
 	registerAction2(class InsertToNotebookAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertIntoNotebook',
+				id: 'workbench.action.aideChat.insertIntoNotebook',
 				title: localize2('aideChat.insertIntoNotebook.label', "Insert into Notebook"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -214,7 +214,7 @@ export function registerChatTitleActions() {
 	registerAction2(class RemoveAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.remove',
+				id: 'workbench.action.aideChat.remove',
 				title: localize2('aideChat.remove.label', "Remove Request and Response"),
 				f1: false,
 				category: CHAT_CATEGORY,

@@ -67,7 +67,7 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 }
 
 export class CSChatAgentProvider implements vscode.Disposable {
-	private chatAgent: vscode.ChatParticipant;
+	private chatAgent: vscode.AideChatParticipant;
 
 	private _workingDirectory: string;
 	private _repoName: string;
@@ -94,7 +94,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
 
-		this.chatAgent = vscode.chat.createChatParticipant('aide', this.defaultAgentRequestHandler);
+		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
@@ -121,10 +121,10 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
-	defaultAgentRequestHandler: vscode.ChatRequestHandler = async (request, _context, response, token) => {
+	defaultAgentRequestHandler: vscode.AideChatExtendedRequestHandler = async (request, _context, response, token) => {
 		let requestType: UserMessageType = 'general';
 		const slashCommand = request.command;
-		if (request.location === vscode.ChatLocation.Editor) {
+		if (request.location === vscode.AideChatLocation.Editor) {
 			await provideInteractiveEditorResponse(
 				this._currentRepoRef,
 				this._sideCarClient,

@@ -132,7 +132,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		label: localize('allFiles', 'All Files'),
 		description: localize('allFilesDescription', 'Search for relevant files in the workspace and provide context from them'),
 	};
-	static readonly ID = 'workbench.action.chat.selectAndInsertFile';
+	static readonly ID = 'workbench.action.aideChat.selectAndInsertFile';
 
 	constructor() {
 		super({
@@ -231,7 +231,7 @@ function isAddDynamicVariableContext(context: any): context is IAddDynamicVariab
 }
 
 export class AddDynamicVariableAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.addDynamicVariable';
+	static readonly ID = 'workbench.action.aideChat.addDynamicVariable';
 
 	constructor() {
 		super({

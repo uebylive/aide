@@ -17,7 +17,7 @@ export function registerChatFileTreeActions() {
 	registerAction2(class NextFileTreeAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.nextFileTree',
+				id: 'workbench.action.aideChat.nextFileTree',
 				title: localize2('aideChat.nextFileTree.label', "Next File Tree"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyCode.F9,
@@ -38,7 +38,7 @@ export function registerChatFileTreeActions() {
 	registerAction2(class PreviousFileTreeAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.previousFileTree',
+				id: 'workbench.action.aideChat.previousFileTree',
 				title: localize2('aideChat.previousFileTree.label', "Previous File Tree"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.F9,

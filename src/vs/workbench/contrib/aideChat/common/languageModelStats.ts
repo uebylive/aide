@@ -33,10 +33,10 @@ interface LanguageModelStats {
 	}[];
 }
 
-export class LanguageModelStatsService extends Disposable implements IAIModelStatsService {
+export class AIModelStatsService extends Disposable implements IAIModelStatsService {
 
-	private static readonly MODEL_STATS_STORAGE_KEY_PREFIX = 'languageModelStats.';
-	private static readonly MODEL_ACCESS_STORAGE_KEY_PREFIX = 'languageModelAccess.';
+	private static readonly MODEL_STATS_STORAGE_KEY_PREFIX = 'aiModelStats.';
+	private static readonly MODEL_ACCESS_STORAGE_KEY_PREFIX = 'aiModelAccess.';
 
 	declare _serviceBrand: undefined;
 
@@ -63,7 +63,7 @@ export class LanguageModelStatsService extends Disposable implements IAIModelSta
 	}
 
 	async update(model: string, extensionId: ExtensionIdentifier, agent: string | undefined, tokenCount: number | undefined): Promise<void> {
-		await this.extensionFeaturesManagementService.getAccess(extensionId, 'languageModels');
+		await this.extensionFeaturesManagementService.getAccess(extensionId, 'aiModels');
 
 		// update model access
 		this.addAccess(model, extensionId.value);
@@ -145,25 +145,25 @@ export class LanguageModelStatsService extends Disposable implements IAIModelSta
 	}
 
 	private getModel(key: string): string | undefined {
-		if (key.startsWith(LanguageModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX)) {
-			return key.substring(LanguageModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX.length);
+		if (key.startsWith(AIModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX)) {
+			return key.substring(AIModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX.length);
 		}
 		return undefined;
 	}
 
 	private getKey(model: string): string {
-		return `${LanguageModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX}${model}`;
+		return `${AIModelStatsService.MODEL_STATS_STORAGE_KEY_PREFIX}${model}`;
 	}
 
 	private getAccessKey(model: string): string {
-		return `${LanguageModelStatsService.MODEL_ACCESS_STORAGE_KEY_PREFIX}${model}`;
+		return `${AIModelStatsService.MODEL_ACCESS_STORAGE_KEY_PREFIX}${model}`;
 	}
 }
 
 Registry.as<IExtensionFeaturesRegistry>(Extensions.ExtensionFeaturesRegistry).registerExtensionFeature({
-	id: 'languageModels',
-	label: localize('Language Models', "Language Models"),
-	description: localize('languageModels', "Language models usage statistics of this extension."),
+	id: 'aiModels',
+	label: localize('AI Models', "AI Models"),
+	description: localize('aiModels', "AI models usage statistics of this extension."),
 	access: {
 		canToggle: false
 	},

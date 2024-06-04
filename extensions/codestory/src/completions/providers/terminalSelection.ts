@@ -8,7 +8,7 @@ export const TERMINAL_SELECTION_VARIABLE = 'terminalSelection';
 
 export function registerTerminalSelection() {
 	// TODO(skcd): This is not working, we are parsing the value as a JSON which makes sense maybe?
-	vscode.chat.registerChatVariableResolver(
+	vscode.aideChat.registerChatVariableResolver(
 		TERMINAL_SELECTION_VARIABLE,
 		TERMINAL_SELECTION_VARIABLE,
 		'User selection in the terminal',

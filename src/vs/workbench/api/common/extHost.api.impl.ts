@@ -1510,6 +1510,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				return extHostAideChatVariables.registerVariableResolver(extension, id, name, userDescription, modelDescription, isSlow, resolver, fullName, icon?.id);
 			},
 			createChatParticipant(id: string, handler: vscode.AideChatExtendedRequestHandler) {
+				checkProposedApiEnabled(extension, 'aideChatParticipant');
 				return extHostAideChatAgents2.createChatAgent(extension, id, handler);
 			},
 			createDynamicChatParticipant(id: string, dynamicProps: vscode.DynamicChatParticipantProps, handler: vscode.AideChatExtendedRequestHandler): vscode.AideChatParticipant {

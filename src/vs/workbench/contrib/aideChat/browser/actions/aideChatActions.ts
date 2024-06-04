@@ -37,7 +37,7 @@ export function isChatViewTitleActionContext(obj: unknown): obj is IChatViewTitl
 }
 
 export const CHAT_CATEGORY = localize2('aideChat.category', 'Aide');
-export const CHAT_OPEN_ACTION_ID = 'workbench.action.chat.open';
+export const CHAT_OPEN_ACTION_ID = 'workbench.action.aideChat.open';
 
 export interface IChatViewOpenOptions {
 	/**
@@ -106,7 +106,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 	constructor() {
 		super({
 			viewId: CHAT_VIEW_ID,
-			id: `workbench.action.chat.history`,
+			id: `workbench.action.aideChat.history`,
 			title: localize2('aideChat.history.label', "Show Chats..."),
 			menu: {
 				id: MenuId.ViewTitle,
@@ -202,7 +202,7 @@ export function registerChatActions() {
 	registerAction2(class ClearChatInputHistoryAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.clearInputHistory',
+				id: 'workbench.action.aideChat.clearInputHistory',
 				title: localize2('aideChat.clearHistory.label', "Clear Input History"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				category: CHAT_CATEGORY,
@@ -218,7 +218,7 @@ export function registerChatActions() {
 	registerAction2(class ClearChatHistoryAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.clearHistory',
+				id: 'workbench.action.aideChat.clearHistory',
 				title: localize2('aideChat.clear.label', "Clear All Workspace Chats"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				category: CHAT_CATEGORY,
@@ -267,7 +267,7 @@ export function registerChatActions() {
 	registerAction2(class FocusChatInputAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.focusInput',
+				id: 'workbench.action.aideChat.focusInput',
 				title: localize2('aideChat.focusInput.label', "Focus Chat Input"),
 				f1: false,
 				keybinding: {

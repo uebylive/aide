@@ -101,7 +101,7 @@ const languageModelType: IJSONSchema = {
 	properties: {
 		vendor: {
 			type: 'string',
-			description: localize('vscode.extension.contributes.languageModels.vendor', "A globally unique vendor of language models.")
+			description: localize('vscode.extension.contributes.aiModels.vendor', "A globally unique vendor of AI models.")
 		}
 	}
 };
@@ -111,9 +111,9 @@ interface IUserFriendlyLanguageModel {
 }
 
 export const languageModelExtensionPoint = ExtensionsRegistry.registerExtensionPoint<IUserFriendlyLanguageModel | IUserFriendlyLanguageModel[]>({
-	extensionPoint: 'languageModels',
+	extensionPoint: 'aiModels',
 	jsonSchema: {
-		description: localize('vscode.extension.contributes.languageModels', "Contribute language models of a specific vendor."),
+		description: localize('vscode.extension.contributes.aiModels', "Contribute AI models of a specific vendor."),
 		oneOf: [
 			languageModelType,
 			{
@@ -129,7 +129,7 @@ export const languageModelExtensionPoint = ExtensionsRegistry.registerExtensionP
 	}
 });
 
-export class LanguageModelsService implements IAIModelsService {
+export class AIModelsService implements IAIModelsService {
 
 	readonly _serviceBrand: undefined;
 
@@ -150,22 +150,22 @@ export class LanguageModelsService implements IAIModelsService {
 
 			for (const extension of extensions) {
 
-				if (!isProposedApiEnabled(extension.description, 'chatProvider')) {
-					extension.collector.error(localize('vscode.extension.contributes.languageModels.chatProviderRequired', "This contribution point requires the 'chatProvider' proposal."));
+				if (!isProposedApiEnabled(extension.description, 'aideChatProvider')) {
+					extension.collector.error(localize('vscode.extension.contributes.aiModels.aideChatProviderRequired', "This contribution point requires the 'aideChatProvider' proposal."));
 					continue;
 				}
 
 				for (const item of Iterable.wrap(extension.value)) {
 					if (this._vendors.has(item.vendor)) {
-						extension.collector.error(localize('vscode.extension.contributes.languageModels.vendorAlreadyRegistered', "The vendor '{0}' is already registered and cannot be registered twice", item.vendor));
+						extension.collector.error(localize('vscode.extension.contributes.aiModels.vendorAlreadyRegistered', "The vendor '{0}' is already registered and cannot be registered twice", item.vendor));
 						continue;
 					}
 					if (isFalsyOrWhitespace(item.vendor)) {
-						extension.collector.error(localize('vscode.extension.contributes.languageModels.emptyVendor', "The vendor field cannot be empty."));
+						extension.collector.error(localize('vscode.extension.contributes.aiModels.emptyVendor', "The vendor field cannot be empty."));
 						continue;
 					}
 					if (item.vendor.trim() !== item.vendor) {
-						extension.collector.error(localize('vscode.extension.contributes.languageModels.whitespaceVendor', "The vendor field cannot start or end with whitespace."));
+						extension.collector.error(localize('vscode.extension.contributes.aiModels.whitespaceVendor', "The vendor field cannot start or end with whitespace."));
 						continue;
 					}
 					this._vendors.add(item.vendor);
@@ -204,7 +204,7 @@ export class LanguageModelsService implements IAIModelsService {
 			// selective activation
 			await this._extensionService.activateByEvent(`onLanguageModelChat:${selector.vendor}}`);
 		} else {
-			// activate all extensions that do language models
+			// activate all extensions that do AI models
 			const all = Array.from(this._vendors).map(vendor => this._extensionService.activateByEvent(`onLanguageModelChat:${vendor}`));
 			await Promise.all(all);
 		}
@@ -233,14 +233,14 @@ export class LanguageModelsService implements IAIModelsService {
 			}
 		}
 
-		this._logService.trace('[LM] selected language models', selector, result);
+		this._logService.trace('[LM] selected AI models', selector, result);
 
 		return result;
 	}
 
 	registerLanguageModelChat(identifier: string, provider: ILanguageModelChat): IDisposable {
 
-		this._logService.trace('[LM] registering language model chat', identifier, provider.metadata);
+		this._logService.trace('[LM] registering AI model chat', identifier, provider.metadata);
 
 		if (!this._vendors.has(provider.metadata.vendor)) {
 			throw new Error(`Chat response provider uses UNKNOWN vendor ${provider.metadata.vendor}.`);
@@ -253,7 +253,7 @@ export class LanguageModelsService implements IAIModelsService {
 		return toDisposable(() => {
 			if (this._providers.delete(identifier)) {
 				this._onDidChangeProviders.fire({ removed: [identifier] });
-				this._logService.trace('[LM] UNregistered language model chat', identifier, provider.metadata);
+				this._logService.trace('[LM] UNregistered AI model chat', identifier, provider.metadata);
 			}
 		});
 	}

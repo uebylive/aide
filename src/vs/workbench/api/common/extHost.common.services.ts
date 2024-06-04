@@ -29,6 +29,7 @@ import { ExtHostVariableResolverProviderService, IExtHostVariableResolverProvide
 import { ExtHostLocalizationService, IExtHostLocalizationService } from 'vs/workbench/api/common/extHostLocalizationService';
 import { ExtHostManagedSockets, IExtHostManagedSockets } from 'vs/workbench/api/common/extHostManagedSockets';
 import { ExtHostAuthentication, IExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
+import { ExtHostAIModels, IExtHostAIModels } from 'vs/workbench/api/common/extHostAIModels';
 import { ExtHostLanguageModels, IExtHostLanguageModels } from 'vs/workbench/api/common/extHostLanguageModels';
 import { IExtHostTerminalShellIntegration, ExtHostTerminalShellIntegration } from 'vs/workbench/api/common/extHostTerminalShellIntegration';
 
@@ -37,6 +38,7 @@ registerSingleton(ILoggerService, ExtHostLoggerService, InstantiationType.Delaye
 registerSingleton(IExtHostApiDeprecationService, ExtHostApiDeprecationService, InstantiationType.Delayed);
 registerSingleton(IExtHostCommands, ExtHostCommands, InstantiationType.Eager);
 registerSingleton(IExtHostAuthentication, ExtHostAuthentication, InstantiationType.Eager);
+registerSingleton(IExtHostAIModels, ExtHostAIModels, InstantiationType.Eager);
 registerSingleton(IExtHostLanguageModels, ExtHostLanguageModels, InstantiationType.Eager);
 registerSingleton(IExtHostConfiguration, ExtHostConfiguration, InstantiationType.Eager);
 registerSingleton(IExtHostConsumerFileSystem, ExtHostConsumerFileSystem, InstantiationType.Eager);

@@ -263,7 +263,7 @@ interface AssignSelectedAgentActionArgs {
 }
 
 class AssignSelectedAgentAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.assignSelectedAgent';
+	static readonly ID = 'workbench.action.aideChat.assignSelectedAgent';
 
 	constructor() {
 		super({

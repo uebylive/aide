@@ -20,13 +20,13 @@ import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatView
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
-export const ACTION_ID_NEW_CHAT = `workbench.action.chat.newChat`;
+export const ACTION_ID_NEW_CHAT = `workbench.action.aideChat.newChat`;
 
 export function registerNewChatActions() {
 	registerAction2(class NewChatEditorAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chatEditor.newChat',
+				id: 'workbench.action.aideChatEditor.newChat',
 				title: localize2('aideChat.newChat.label', "New Chat"),
 				icon: Codicon.plus,
 				f1: false,

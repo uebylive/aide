@@ -287,7 +287,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					shouldInlineSubmenu: submenu => submenu.actions.length <= 1
 				},
 				actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
-					if (action instanceof MenuItemAction && (action.item.id === 'workbench.action.chat.voteDown' || action.item.id === 'workbench.action.chat.voteUp')) {
+					if (action instanceof MenuItemAction && (action.item.id === 'workbench.action.aideChat.voteDown' || action.item.id === 'workbench.action.aideChat.voteUp')) {
 						return scopedInstantiationService.createInstance(ChatVoteButton, action, options as IMenuEntryActionViewItemOptions);
 					}
 					return createActionViewItem(scopedInstantiationService, action, options);

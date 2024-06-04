@@ -36,11 +36,11 @@ export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat'): stri
 		content.push(localize('aideChat.inspectResponse', 'In the input box, inspect the last response in the accessible view<keybinding:editor.action.accessibleView>'));
 		content.push(localize('aideChat.followUp', 'In the input box, navigate to the suggested follow up question (Shift+Tab) and press Enter to run it.'));
 		content.push(localize('aideChat.announcement', 'Chat responses will be announced as they come in. A response will indicate the number of code blocks, if any, and then the rest of the response.'));
-		content.push(localize('workbench.action.chat.focus', 'To focus the chat request/response list, which can be navigated with up and down arrows, invoke the Focus Chat command<keybinding:chat.action.focus>.'));
-		content.push(localize('workbench.action.chat.focusInput', 'To focus the input box for chat requests, invoke the Focus Chat Input command<keybinding:workbench.action.chat.focusInput>.'));
-		content.push(localize('workbench.action.chat.nextCodeBlock', 'To focus the next code block within a response, invoke the Chat: Next Code Block command<keybinding:workbench.action.chat.nextCodeBlock>.'));
-		content.push(localize('workbench.action.chat.nextFileTree', 'To focus the next file tree within a response, invoke the Chat: Next File Tree command<keybinding:workbench.action.chat.nextFileTree>.'));
-		content.push(localize('workbench.action.chat.clear', 'To clear the request/response list, invoke the Chat Clear command<keybinding:workbench.action.chat.clear>.'));
+		content.push(localize('workbench.action.aideChat.focus', 'To focus the chat request/response list, which can be navigated with up and down arrows, invoke the Focus Chat command<keybinding:chat.action.focus>.'));
+		content.push(localize('workbench.action.aideChat.focusInput', 'To focus the input box for chat requests, invoke the Focus Chat Input command<keybinding:workbench.action.aideChat.focusInput>.'));
+		content.push(localize('workbench.action.aideChat.nextCodeBlock', 'To focus the next code block within a response, invoke the Chat: Next Code Block command<keybinding:workbench.action.aideChat.nextCodeBlock>.'));
+		content.push(localize('workbench.action.aideChat.nextFileTree', 'To focus the next file tree within a response, invoke the Chat: Next File Tree command<keybinding:workbench.action.aideChat.nextFileTree>.'));
+		content.push(localize('workbench.action.aideChat.clear', 'To clear the request/response list, invoke the Chat Clear command<keybinding:workbench.action.aideChat.clear>.'));
 	} else {
 		content.push(localize('inlineChat.overview', "Inline chat occurs within a code editor and takes into account the current selection. It is useful for making changes to the current editor. For example, fixing diagnostics, documenting or refactoring code. Keep in mind that AI generated code may be incorrect."));
 		content.push(localize('inlineChat.access', "It can be activated via code actions or directly using the command: Inline Chat: Start Inline Chat<keybinding:inlineChat.start>."));

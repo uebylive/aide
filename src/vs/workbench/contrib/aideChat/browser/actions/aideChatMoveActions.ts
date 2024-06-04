@@ -27,7 +27,7 @@ export function registerMoveActions() {
 	registerAction2(class GlobalMoveToEditorAction extends Action2 {
 		constructor() {
 			super({
-				id: `workbench.action.chat.openInEditor`,
+				id: `workbench.action.aideChat.openInEditor`,
 				title: localize2('aideChat.openInEditor.label', "Open Chat in Editor"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -49,7 +49,7 @@ export function registerMoveActions() {
 	registerAction2(class GlobalMoveToNewWindowAction extends Action2 {
 		constructor() {
 			super({
-				id: `workbench.action.chat.openInNewWindow`,
+				id: `workbench.action.aideChat.openInNewWindow`,
 				title: localize2('aideChat.openInNewWindow.label', "Open Chat in New Window"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -71,7 +71,7 @@ export function registerMoveActions() {
 	registerAction2(class GlobalMoveToSidebarAction extends Action2 {
 		constructor() {
 			super({
-				id: `workbench.action.chat.openInSidebar`,
+				id: `workbench.action.aideChat.openInSidebar`,
 				title: localize2('aideChat.openInSidebar.label', "Open Chat in Side Bar"),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,

@@ -85,7 +85,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class CopyCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.copyCodeBlock',
+				id: 'workbench.action.aideChat.copyCodeBlock',
 				title: localize2('aideChat.copyCodeBlock.label', "Copy"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -181,7 +181,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class InsertCodeBlockAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertCodeBlock',
+				id: 'workbench.action.aideChat.insertCodeBlock',
 				title: localize2('aideChat.insertCodeBlock.label', "Insert at Cursor"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -347,7 +347,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class InsertIntoNewFileAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.insertIntoNewFile',
+				id: 'workbench.action.aideChat.insertIntoNewFile',
 				title: localize2('aideChat.insertIntoNewFile.label', "Insert into New File"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -401,7 +401,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class RunInTerminalAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.runInTerminal',
+				id: 'workbench.action.aideChat.runInTerminal',
 				title: localize2('aideChat.runInTerminal.label', "Insert into Terminal"),
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
@@ -513,7 +513,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class NextCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.nextCodeBlock',
+				id: 'workbench.action.aideChat.nextCodeBlock',
 				title: localize2('aideChat.nextCodeBlock.label', "Next Code Block"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageDown,
@@ -535,7 +535,7 @@ export function registerChatCodeBlockActions() {
 	registerAction2(class PreviousCodeBlockAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.previousCodeBlock',
+				id: 'workbench.action.aideChat.previousCodeBlock',
 				title: localize2('aideChat.previousCodeBlock.label', "Previous Code Block"),
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.PageUp,
@@ -602,7 +602,7 @@ export function registerChatCodeCompareBlockActions() {
 	registerAction2(class ApplyEditsCompareBlockAction extends ChatCompareCodeBlockAction {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.applyCompareEdits',
+				id: 'workbench.action.aideChat.applyCompareEdits',
 				title: localize2('aideChat.compare.apply', "Apply Edits"),
 				f1: false,
 				category: CHAT_CATEGORY,

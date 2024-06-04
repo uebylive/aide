@@ -26,7 +26,7 @@ export function registerChatExportActions() {
 	registerAction2(class ExportChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.export',
+				id: 'workbench.action.aideChat.export',
 				category: CHAT_CATEGORY,
 				title: localize2('aideChat.export.label', "Export Chat..."),
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -67,7 +67,7 @@ export function registerChatExportActions() {
 	registerAction2(class ImportChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.chat.import',
+				id: 'workbench.action.aideChat.import',
 				title: localize2('aideChat.import.label', "Import Chat..."),
 				category: CHAT_CATEGORY,
 				precondition: CONTEXT_CHAT_ENABLED,
