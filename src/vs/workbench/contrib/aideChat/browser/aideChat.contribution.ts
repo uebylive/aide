@@ -52,6 +52,11 @@ import { IAIModelStatsService, AIModelStatsService } from 'vs/workbench/contrib/
 import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import '../common/aideChatColors';
+import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
+import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
+import { AideChatEditSessionService, IAideChatEditSessionService } from 'vs/workbench/contrib/aideChat/browser/aideChatEdits';
+import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
+import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -205,7 +210,8 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 
 				const variables = [
 					...chatVariablesService.getVariables(),
-					{ name: 'file', description: nls.localize('file', "Choose a file in the workspace") }
+					{ name: 'file', description: nls.localize('file', "Choose a file in the workspace") },
+					{ name: 'folder', description: nls.localize('folder', "Choose a folder in the workspace") },
 				];
 				const variableText = variables
 					.map(v => `* \`${chatVariableLeader}${v.name}\` - ${v.description}`)
@@ -232,6 +238,9 @@ workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlas
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(AideChatEditorInput.TypeID, ChatEditorInputSerializer);
 registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointHandler, WorkbenchPhase.BlockStartup);
 
+registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
+registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
+
 registerChatActions();
 registerChatCopyActions();
 registerChatCodeBlockActions();
@@ -242,6 +251,7 @@ registerChatExecuteActions();
 registerChatExportActions();
 registerMoveActions();
 registerNewChatActions();
+registerChatContextActions();
 
 registerSingleton(IAideChatService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
@@ -253,4 +263,5 @@ registerSingleton(IAideChatSlashCommandService, ChatSlashCommandService, Instant
 registerSingleton(IAideChatAgentService, ChatAgentService, InstantiationType.Delayed);
 registerSingleton(IAideChatAgentNameService, ChatAgentNameService, InstantiationType.Delayed);
 registerSingleton(IAideChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
+registerSingleton(IAideChatEditSessionService, AideChatEditSessionService, InstantiationType.Delayed);
 registerSingleton(IAideChatCodeBlockContextProviderService, ChatCodeBlockContextProviderService, InstantiationType.Delayed);

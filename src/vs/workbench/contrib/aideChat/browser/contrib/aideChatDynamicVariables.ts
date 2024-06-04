@@ -5,26 +5,39 @@
 
 import { coalesce } from 'vs/base/common/arrays';
 import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { EditorAction2 } from 'vs/editor/browser/editorExtensions';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
+import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import { Command } from 'vs/editor/common/languages';
+import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { localize } from 'vs/nls';
+import { SuggestController } from 'vs/editor/contrib/suggest/browser/suggestController';
+import { localize2 } from 'vs/nls';
 import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
+import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { ILogService } from 'vs/platform/log/common/log';
-import { AnythingQuickAccessProviderRunOptions, IQuickAccessOptions } from 'vs/platform/quickinput/common/quickAccess';
-import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
-import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IChatWidget, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IAideChatRequestVariableValue, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
+import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
+import { IAideChatRequestVariableValue, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
+
+export const FolderReferenceCompletionProviderName = 'chatInplaceFolderReferenceCompletionProvider';
+export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
+export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
 export class ChatDynamicVariableModel extends Disposable implements IChatWidgetContrib {
 	public static readonly ID = 'chatDynamicVariableModel';
@@ -117,22 +130,131 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
 
+interface MultiLevelCodeTriggerActionContext {
+	widget: IChatWidget;
+	range: IRange;
+	pick: 'file' | 'code' | 'folder';
+}
+
+function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
+	return 'widget' in context && 'range' in context && 'pick' in context;
+}
+
+export class MultiLevelCodeTriggerAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.multiLevelCodeTrigger';
+
+	constructor() {
+		super({
+			id: MultiLevelCodeTriggerAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const languageFeaturesService = accessor.get(ILanguageFeaturesService);
+
+		const context = args[0];
+		if (!isMultiLevelCodeTriggerActionContext(context)) {
+			return;
+		}
+
+		const inputEditor = context.widget.inputEditor;
+		const doCleanup = () => {
+			// Failed, remove the dangling prefix
+			inputEditor.executeEdits('chatMultiLevelCodeTrigger', [{ range: context.range, text: `` }]);
+		};
+
+		const suggestController = SuggestController.get(inputEditor);
+		if (!suggestController) {
+			doCleanup();
+			return;
+		}
+
+		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
+		const codeSymbolCompletionProvider = completionProviders.find(
+			provider => provider._debugDisplayName === (
+				context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'file' ? FileReferenceCompletionProviderName : FolderReferenceCompletionProviderName
+			));
+
+		if (!codeSymbolCompletionProvider) {
+			doCleanup();
+			return;
+		}
+
+		suggestController.triggerSuggest(new Set([codeSymbolCompletionProvider]));
+	}
+}
+registerAction2(MultiLevelCodeTriggerAction);
+
 interface SelectAndInsertFileActionContext {
 	widget: IChatWidget;
 	range: IRange;
+	uri: URI;
 }
 
 function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
-	return 'widget' in context && 'range' in context;
+	return 'widget' in context && 'range' in context && 'uri' in context;
 }
 
+export class SelectAndInsertFolderAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.csSelectAndInsertFolder';
+
+	constructor() {
+		super({
+			id: SelectAndInsertFolderAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const textModelService = accessor.get(ITextModelService);
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isSelectAndInsertFileActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `file`
+			context.widget.inputEditor.executeEdits('chatInsertFolder', [{ range: context.range, text: `` }]);
+		};
+
+		const resource = context.uri;
+		if (!resource) {
+			logService.trace('SelectAndInsertFolderAction: no resource selected');
+			doCleanup();
+			return;
+		}
+
+		const model = await textModelService.createModelReference(resource);
+		const fileRange = model.object.textEditorModel.getFullModelRange();
+		model.dispose();
+
+		const fileName = basename(resource);
+		const editor = context.widget.inputEditor;
+		const text = `${chatVariableLeader}folder:${fileName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertFolder', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertFolderAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		const valueObj = { uri: resource, range: fileRange };
+		const value = JSON.stringify(valueObj);
+		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+			id: 'vscode.folder',
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: [{ level: 'full', value, kind: 'folder' }]
+		});
+	}
+}
+registerAction2(SelectAndInsertFolderAction);
+
 export class SelectAndInsertFileAction extends Action2 {
-	static readonly Name = 'files';
-	static readonly Item = {
-		label: localize('allFiles', 'All Files'),
-		description: localize('allFilesDescription', 'Search for relevant files in the workspace and provide context from them'),
-	};
-	static readonly ID = 'workbench.action.aideChat.selectAndInsertFile';
+	static readonly ID = 'workbench.action.chat.csSelectAndInsertFile';
 
 	constructor() {
 		super({
@@ -144,8 +266,6 @@ export class SelectAndInsertFileAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const textModelService = accessor.get(ITextModelService);
 		const logService = accessor.get(ILogService);
-		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IAideChatVariablesService);
 
 		const context = args[0];
 		if (!isSelectAndInsertFileActionContext(context)) {
@@ -157,49 +277,21 @@ export class SelectAndInsertFileAction extends Action2 {
 			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
 		};
 
-		let options: IQuickAccessOptions | undefined;
-		// If we have a `files` variable, add an option to select all files in the picker.
-		// This of course assumes that the `files` variable has the behavior that it searches
-		// through files in the workspace.
-		if (chatVariablesService.hasVariable(SelectAndInsertFileAction.Name)) {
-			options = {
-				providerOptions: <AnythingQuickAccessProviderRunOptions>{
-					additionPicks: [SelectAndInsertFileAction.Item, { type: 'separator' }]
-				},
-			};
-		}
-		// TODO: have dedicated UX for this instead of using the quick access picker
-		const picks = await quickInputService.quickAccess.pick('', options);
-		if (!picks?.length) {
-			logService.trace('SelectAndInsertFileAction: no file selected');
+		const resource = context.uri;
+		if (!resource) {
+			logService.trace('SelectAndInsertFileAction: no resource selected');
 			doCleanup();
 			return;
 		}
 
-		const editor = context.widget.inputEditor;
-		const range = context.range;
-
-		// Handle the special case of selecting all files
-		if (picks[0] === SelectAndInsertFileAction.Item) {
-			const text = `#${SelectAndInsertFileAction.Name}`;
-			const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
-			if (!success) {
-				logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
-				doCleanup();
-			}
-			return;
-		}
-
-		// Handle the case of selecting a specific file
-		const resource = (picks[0] as unknown as { resource: unknown }).resource as URI;
-		if (!textModelService.canHandleResource(resource)) {
-			logService.trace('SelectAndInsertFileAction: non-text resource selected');
-			doCleanup();
-			return;
-		}
+		const model = await textModelService.createModelReference(resource);
+		const fileRange = model.object.textEditorModel.getFullModelRange();
+		model.dispose();
 
 		const fileName = basename(resource);
-		const text = `#file:${fileName}`;
+		const editor = context.widget.inputEditor;
+		const text = `${chatVariableLeader}file:${fileName}`;
+		const range = context.range;
 		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
 		if (!success) {
 			logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
@@ -207,14 +299,177 @@ export class SelectAndInsertFileAction extends Action2 {
 			return;
 		}
 
+		const valueObj = { uri: resource, range: fileRange };
+		const value = JSON.stringify(valueObj);
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			id: 'vscode.file',
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: resource
+			data: [{ level: 'full', value, kind: 'file' }]
 		});
 	}
 }
 registerAction2(SelectAndInsertFileAction);
+
+interface SelectAndInsertCodeActionContext {
+	widget: IChatWidget;
+	range: IRange;
+	pick: ISymbolQuickPickItem;
+}
+
+function isSelectAndInsertCodeActionContext(context: any): context is SelectAndInsertCodeActionContext {
+	return 'widget' in context && 'range' in context && 'pick' in context;
+}
+
+export class SelectAndInsertCodeAction extends Action2 {
+	static readonly ID = 'workbench.action.chat.selectAndInsertCode';
+
+	constructor() {
+		super({
+			id: SelectAndInsertCodeAction.ID,
+			title: '' // not displayed
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const logService = accessor.get(ILogService);
+
+		const context = args[0];
+		if (!isSelectAndInsertCodeActionContext(context)) {
+			return;
+		}
+
+		const doCleanup = () => {
+			// Failed, remove the dangling `code`
+			context.widget.inputEditor.executeEdits('chatInsertCode', [{ range: context.range, text: `` }]);
+		};
+
+		const pick = context.pick;
+		if (!pick || !pick.resource) {
+			logService.trace('SelectAndInsertCodeAction: no resource selected');
+			doCleanup();
+			return;
+		}
+
+		const selectionRange = pick.symbol?.location.range;
+		const result = parseVariableInfo(pick.label);
+		if (!result || !selectionRange) {
+			logService.trace('SelectAndInsertCodeAction: failed to parse code symbol');
+			doCleanup();
+			return;
+		}
+
+		const [symbolName, symbolType] = result;
+		const editor = context.widget.inputEditor;
+		const text = `${chatVariableLeader}${symbolType}:${symbolName}`;
+		const range = context.range;
+		const success = editor.executeEdits('chatInsertCode', [{ range, text: text + ' ' }]);
+		if (!success) {
+			logService.trace(`SelectAndInsertCodeAction: failed to insert "${text}"`);
+			doCleanup();
+			return;
+		}
+
+		const valueObj = { uri: pick.resource, range: selectionRange };
+		const value = JSON.stringify(valueObj);
+		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+			id: 'vscode.codeSymbol',
+			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
+			data: [{ level: 'full', value, kind: 'code' }]
+		});
+	}
+}
+registerAction2(SelectAndInsertCodeAction);
+
+export const parseVariableInfo = (input: string): [string, string] | null => {
+	// Define a regular expression pattern to match the variable declaration.
+	const pattern = /\$\(([^)]+)\)\s*(\w+)/;
+
+	// Use the regular expression to match and capture the variable type and name.
+	const match = input.match(pattern);
+
+	if (match) {
+		// The first captured group (match[1]) is the variable type.
+		// The second captured group (match[2]) is the variable name.
+		let variableType = match[1];
+		const variableName = match[2];
+
+		// Remove the "symbol-" part from the variable type.
+		variableType = variableType.replace(/^symbol-/, '');
+
+		return [variableName, variableType];
+	}
+
+	// Return null if no match is found.
+	return null;
+};
+
+class ChatAddContext extends EditorAction2 {
+	static readonly ID = 'workbench.action.chat.addContext';
+
+	constructor() {
+		super({
+			id: ChatAddContext.ID,
+			title: localize2({ key: 'actions.chat.addContext', comment: ['Add context to the chat input box'] }, "Add Context"),
+			precondition: CONTEXT_CHAT_ENABLED,
+			keybinding: {
+				when: EditorContextKeys.textInputFocus,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
+				weight: KeybindingWeight.EditorContrib
+			}
+		});
+	}
+
+	async runEditorCommand(accessor: ServicesAccessor, editor: ICodeEditor): Promise<void> {
+		const viewsService = accessor.get(IViewsService);
+
+		const chatWidget = await showChatView(viewsService);
+		const editorModel = editor.getModel();
+		if (!editorModel || !chatWidget) {
+			return;
+		}
+
+		// get the current position from chatWidget and insert the context
+		const position = chatWidget.inputEditor.getPosition();
+		if (!position) {
+			return;
+		}
+		const range = {
+			startLineNumber: position.lineNumber,
+			startColumn: position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: position.column
+		};
+
+		const editorUri = editorModel.uri;
+		const selectedRange = editor.getSelection();
+		if (editorUri && !selectedRange?.isEmpty() && selectedRange) {
+			const fileName = basename(editorUri);
+			let text = `${chatVariableLeader}file:${fileName}`;
+
+			if (selectedRange.startLineNumber === selectedRange.endLineNumber) {
+				text += `:${selectedRange.startLineNumber}`;
+			} else {
+				text += `:${selectedRange.startLineNumber}-${selectedRange.endLineNumber}`;
+			}
+
+			const success = chatWidget.inputEditor.executeEdits('chatAddContext', [{ range, text: text + ' ' }]);
+			if (!success) {
+				return;
+			}
+
+			const valueObj = { uri: editorUri, range: selectedRange };
+			const value = JSON.stringify(valueObj);
+			chatWidget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
+				id: 'vscode.chatContext',
+				range: { ...range, endColumn: range.endColumn + text.length },
+				data: [{ level: 'full', value, kind: 'selection' }]
+			});
+
+			chatWidget.focusInput();
+		}
+	}
+}
+registerAction2(ChatAddContext);
 
 export interface IAddDynamicVariableContext {
 	id: string;

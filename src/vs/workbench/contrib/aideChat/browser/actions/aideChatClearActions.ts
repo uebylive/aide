@@ -17,12 +17,52 @@ import { clearChatEditor } from 'vs/workbench/contrib/aideChat/browser/actions/a
 import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
+import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_CHAT_HAS_REQUESTS } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const ACTION_ID_NEW_CHAT = `workbench.action.aideChat.newChat`;
 
+export class ClearChatEditorAction extends Action2 {
+	static readonly ID = 'workbench.action.aideChatEditor.clearChat';
+
+	constructor() {
+		super({
+			id: ClearChatEditorAction.ID,
+			title: localize2('aideChat.clearChat.label', "Clear"),
+			f1: false,
+			precondition: CONTEXT_CHAT_ENABLED,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
+				mac: {
+					primary: KeyMod.WinCtrl | KeyCode.KeyL
+				},
+				when: CONTEXT_IN_CHAT_SESSION
+			},
+			menu: [{
+				id: MenuId.ChatExecute,
+				when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
+				group: 'navigation',
+				order: -1
+			}]
+		});
+	}
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const widgetService = accessor.get(IAideChatWidgetService);
+
+		const widget = widgetService.lastFocusedWidget;
+		if (!widget) {
+			return;
+		}
+		announceChatCleared(accessor.get(IAccessibilitySignalService));
+		widget.clear();
+		widget.focusInput();
+	}
+}
+
 export function registerNewChatActions() {
+	registerAction2(ClearChatEditorAction);
+
 	registerAction2(class NewChatEditorAction extends Action2 {
 		constructor() {
 			super({

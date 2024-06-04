@@ -13,7 +13,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { ILogService } from 'vs/platform/log/common/log';
 import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
 import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { ChatModelInitState, IAideChatEditSummary, IChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IChatResponseProgressFileTreeData, IAideChatTask, IChatUsedContext, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
@@ -144,6 +144,8 @@ export interface IChatResponseViewModel {
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): void;
+	readonly appliedEdits: Map<number, IAideChatEditSummary>;
+	recordEdits(codeblockIndex: number, edits: IAideChatEditSummary | undefined): void;
 }
 
 export class ChatViewModel extends Disposable implements IChatViewModel {
@@ -445,6 +447,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.isStale;
 	}
 
+	get appliedEdits(): Map<number, IAideChatEditSummary> {
+		return this._model.appliedEdits;
+	}
+
 	renderData: IChatResponseRenderData | undefined = undefined;
 	currentRenderedHeight: number | undefined;
 
@@ -528,6 +534,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	setEditApplied(edit: IChatTextEditGroup, editCount: number) {
 		this._modelChangeCount++;
 		this._model.setEditApplied(edit, editCount);
+	}
+
+	recordEdits(codeblockIndex: number, edits: IAideChatEditSummary | undefined): void {
+		this._modelChangeCount++;
+		this._model.recordEdits(codeblockIndex, edits);
 	}
 }
 

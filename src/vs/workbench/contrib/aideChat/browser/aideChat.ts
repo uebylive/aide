@@ -38,6 +38,11 @@ export interface IAideChatWidgetService {
 	getWidgetBySessionId(sessionId: string): IChatWidget | undefined;
 }
 
+export interface IChatRequester {
+	username: string;
+	avatarIconUri?: URI;
+}
+
 export async function showChatView(viewsService: IViewsService): Promise<IChatWidget | undefined> {
 	return (await viewsService.openView<ChatViewPane>(CHAT_VIEW_ID))?.widget;
 }

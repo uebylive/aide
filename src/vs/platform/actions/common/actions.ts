@@ -222,6 +222,7 @@ export class MenuId {
 	static readonly AideChatCompareBlock = new MenuId('AideChatCompareBlock');
 	static readonly AideChatMessageTitle = new MenuId('AideChatMessageTitle');
 	static readonly AideChatExecute = new MenuId('AideChatExecute');
+	static readonly AideChatExecutePrimary = new MenuId('AideChatExecutePrimary');
 	static readonly AideChatExecuteSecondary = new MenuId('AideChatExecuteSecondary');
 	static readonly AideChatInputSide = new MenuId('AideChatInputSide');
 	static readonly ChatContext = new MenuId('ChatContext');

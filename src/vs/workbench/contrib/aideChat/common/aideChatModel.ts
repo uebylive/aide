@@ -16,7 +16,7 @@ import { ThemeIcon } from 'vs/base/common/themables';
 import { URI, UriComponents, UriDto, isUriComponents } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { TextEdit } from 'vs/editor/common/languages';
+import { Location, TextEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
@@ -83,6 +83,11 @@ export interface IResponse {
 	asString(): string;
 }
 
+export interface IAideChatEditSummary {
+	summary: string;
+	location: Location;
+}
+
 export interface IChatResponseModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
@@ -104,8 +109,10 @@ export interface IChatResponseModel {
 	readonly vote: AideChatAgentVoteDirection | undefined;
 	readonly followups?: IAideChatFollowup[] | undefined;
 	readonly result?: IAideChatAgentResult;
+	readonly appliedEdits: Map<number, IAideChatEditSummary>;
 	setVote(vote: AideChatAgentVoteDirection): void;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): boolean;
+	recordEdits(codeblockIndex: number, edits: IAideChatEditSummary | undefined): void;
 }
 
 export class ChatRequestModel implements IChatRequestModel {
@@ -350,6 +357,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._isStale;
 	}
 
+	private readonly _appliedEdits: Map<number, IAideChatEditSummary> = new Map();
+	public get appliedEdits(): Map<number, IAideChatEditSummary> {
+		return this._appliedEdits;
+	}
+
 	constructor(
 		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IAideChatContentInlineReference | IAideChatAgentMarkdownContentWithVulnerability>,
 		private _session: ChatModel,
@@ -445,6 +457,15 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._session = session;
 		this._onDidChange.fire();
 	}
+
+	recordEdits(codeblockIndex: number, edits: IAideChatEditSummary | undefined): void {
+		if (edits) {
+			this._appliedEdits.set(codeblockIndex, edits);
+		} else {
+			this._appliedEdits.delete(codeblockIndex);
+		}
+		this._onDidChange.fire();
+	}
 }
 
 export interface IChatModel {
@@ -457,6 +478,9 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
+	readonly requesterUsername: string;
+	readonly requesterAvatarIconUri: URI | undefined;
+	getRequest(requestId: string): IChatRequestModel | undefined;
 	getRequests(): IChatRequestModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -775,6 +799,10 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._isInitializedDeferred.p;
 	}
 
+	getRequest(requestId: string): IChatRequestModel | undefined {
+		return this._requests.find(request => request.id === requestId);
+	}
+
 	getRequests(): ChatRequestModel[] {
 		return this._requests;
 	}
@@ -959,7 +987,7 @@ export interface IChatWelcomeMessageModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IAideChatFollowup[];
 	readonly username: string;
-	readonly avatarIcon?: ThemeIcon;
+	readonly avatarIcon?: ThemeIcon | URI;
 
 }
 
@@ -983,7 +1011,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 		return this.chatAgentService.getContributedDefaultAgent(AideChatAgentLocation.Panel)?.fullName ?? '';
 	}
 
-	public get avatarIcon(): ThemeIcon | undefined {
+	public get avatarIcon(): ThemeIcon | URI | undefined {
 		return this.chatAgentService.getDefaultAgent(AideChatAgentLocation.Panel)?.metadata.themeIcon;
 	}
 }
