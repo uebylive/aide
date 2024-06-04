@@ -180,7 +180,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 class OpenChatEditorAction extends Action2 {
 	constructor() {
 		super({
-			id: `workbench.action.openChat`,
+			id: `workbench.action.openAideChat`,
 			title: localize2('aideChat.open', "Open Editor"),
 			f1: true,
 			category: CHAT_CATEGORY,

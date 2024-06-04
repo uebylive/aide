@@ -63,7 +63,7 @@ export function registerNewChatActions() {
 					when: CONTEXT_IN_CHAT_SESSION
 				},
 				menu: [{
-					id: MenuId.ChatContext,
+					id: MenuId.AideChatContext,
 					group: 'z_clear'
 				},
 				{

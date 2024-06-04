@@ -25,8 +25,8 @@ const ChatEditorIcon = registerIcon('chat-editor-label-icon', Codicon.commentDis
 export class AideChatEditorInput extends EditorInput {
 	static readonly countsInUse = new Set<number>();
 
-	static readonly TypeID: string = 'workbench.input.chatSession';
-	static readonly EditorID: string = 'workbench.editor.chatSession';
+	static readonly TypeID: string = 'workbench.input.aideChatSession';
+	static readonly EditorID: string = 'workbench.editor.aideChatSession';
 
 	private readonly inputCount: number;
 	public sessionId: string | undefined;

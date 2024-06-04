@@ -45,11 +45,11 @@ export class SubmitAction extends Action2 {
 			},
 			menu: [
 				{
-					id: MenuId.ChatExecuteSecondary,
+					id: MenuId.AideChatExecuteSecondary,
 					group: 'group_1',
 				},
 				{
-					id: MenuId.ChatExecute,
+					id: MenuId.AideChatExecute,
 					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
 					group: 'navigation',
 				},
@@ -81,7 +81,7 @@ export class ChatSubmitSecondaryAgentAction extends Action2 {
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: {
-				id: MenuId.ChatExecuteSecondary,
+				id: MenuId.AideChatExecuteSecondary,
 				group: 'group_1'
 			}
 		});
@@ -119,7 +119,7 @@ class SendToNewChatAction extends Action2 {
 			category: CHAT_CATEGORY,
 			f1: false,
 			menu: {
-				id: MenuId.ChatExecuteSecondary,
+				id: MenuId.AideChatExecuteSecondary,
 				group: 'group_2'
 			},
 			keybinding: {
@@ -154,7 +154,7 @@ export class CancelAction extends Action2 {
 			category: CHAT_CATEGORY,
 			icon: Codicon.debugStop,
 			menu: {
-				id: MenuId.ChatExecute,
+				id: MenuId.AideChatExecute,
 				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
 				group: 'navigation',
 			},

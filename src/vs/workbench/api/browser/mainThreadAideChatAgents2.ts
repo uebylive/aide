@@ -69,8 +69,8 @@ class MainThreadChatTask implements IAideChatTask {
 	}
 }
 
-@extHostNamedCustomer(MainContext.MainThreadChatAgents2)
-export class MainThreadChatAgents2 extends Disposable implements MainThreadAideChatAgentsShape2 {
+@extHostNamedCustomer(MainContext.MainThreadAideChatAgents2)
+export class MainThreadAideChatAgents2 extends Disposable implements MainThreadAideChatAgentsShape2 {
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _agentCompletionProviders = this._register(new DisposableMap<number, IDisposable>());

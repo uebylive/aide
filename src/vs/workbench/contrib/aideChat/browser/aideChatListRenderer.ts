@@ -279,7 +279,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (this.rendererOptions.noHeader) {
 			header.classList.add('hidden');
 		} else {
-			titleToolbar = templateDisposables.add(scopedInstantiationService.createInstance(MenuWorkbenchToolBar, header, MenuId.ChatMessageTitle, {
+			titleToolbar = templateDisposables.add(scopedInstantiationService.createInstance(MenuWorkbenchToolBar, header, MenuId.AideChatMessageTitle, {
 				menuOptions: {
 					shouldForwardArgs: true
 				},
@@ -1261,7 +1261,7 @@ class EditorPool extends Disposable {
 	) {
 		super();
 		this._pool = this._register(new ResourcePool(() => {
-			return instantiationService.createInstance(CodeBlockPart, options, MenuId.ChatCodeBlock, delegate, overflowWidgetsDomNode);
+			return instantiationService.createInstance(CodeBlockPart, options, MenuId.AideChatCodeBlock, delegate, overflowWidgetsDomNode);
 		}));
 	}
 
@@ -1296,7 +1296,7 @@ class DiffEditorPool extends Disposable {
 	) {
 		super();
 		this._pool = this._register(new ResourcePool(() => {
-			return instantiationService.createInstance(CodeCompareBlockPart, options, MenuId.ChatCompareBlock, delegate, overflowWidgetsDomNode);
+			return instantiationService.createInstance(CodeCompareBlockPart, options, MenuId.AideChatCompareBlock, delegate, overflowWidgetsDomNode);
 		}));
 	}
 

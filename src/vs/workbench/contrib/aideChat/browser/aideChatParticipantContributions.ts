@@ -104,7 +104,7 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 
 export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
-	static readonly ID = 'workbench.contrib.chatExtensionPointHandler';
+	static readonly ID = 'workbench.contrib.aideChatExtensionPointHandler';
 
 	private readonly disposables = new DisposableStore();
 	private _welcomeViewDescriptor?: IViewDescriptor;

@@ -266,7 +266,7 @@ export class ExtHostAideChatAgents2 extends Disposable implements ExtHostAideCha
 		private readonly quality: string | undefined
 	) {
 		super();
-		this._proxy = mainContext.getProxy(MainContext.MainThreadChatAgents2);
+		this._proxy = mainContext.getProxy(MainContext.MainThreadAideChatAgents2);
 	}
 
 	transferActiveChat(newWorkspace: vscode.Uri): void {

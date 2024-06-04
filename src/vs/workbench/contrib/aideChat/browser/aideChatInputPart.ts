@@ -603,7 +603,7 @@ class ChatSubmitDropdownActionItem extends DropdownWithPrimaryActionViewItem {
 			contextKeyService,
 			themeService,
 			accessibilityService);
-		const menu = menuService.createMenu(MenuId.ChatExecuteSecondary, contextKeyService);
+		const menu = menuService.createMenu(MenuId.AideChatExecuteSecondary, contextKeyService);
 		const setActions = () => {
 			const secondary: IAction[] = [];
 			createAndFillInActionBarActions(menu, { shouldForwardArgs: true }, secondary);

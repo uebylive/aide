@@ -21,7 +21,7 @@ export function registerChatCopyActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
-					id: MenuId.ChatContext,
+					id: MenuId.AideChatContext,
 					when: CONTEXT_RESPONSE_FILTERED.toNegated(),
 					group: 'copy',
 				}
@@ -53,7 +53,7 @@ export function registerChatCopyActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				menu: {
-					id: MenuId.ChatContext,
+					id: MenuId.AideChatContext,
 					when: CONTEXT_RESPONSE_FILTERED.toNegated(),
 					group: 'copy',
 				}

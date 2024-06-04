@@ -39,7 +39,7 @@ import { ChatVariablesService } from 'vs/workbench/contrib/aideChat/browser/aide
 import { ChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
 import { ChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/codeBlockContextProviderService';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
-import 'vs/workbench/contrib/aideChat/browser/contrib/chatInputEditorContrib';
+import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
 import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -109,7 +109,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 
 class ChatResolverContribution extends Disposable {
 
-	static readonly ID = 'workbench.contrib.chatResolver';
+	static readonly ID = 'workbench.contrib.aideChatResolver';
 
 	constructor(
 		@IEditorResolverService editorResolverService: IEditorResolverService,

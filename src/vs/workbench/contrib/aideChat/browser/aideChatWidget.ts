@@ -504,7 +504,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			[CONTEXT_RESPONSE_FILTERED.key, isResponseVM(selected) && !!selected.errorDetails?.responseIsFiltered]
 		]);
 		this.contextMenuService.showContextMenu({
-			menuId: MenuId.ChatContext,
+			menuId: MenuId.AideChatContext,
 			menuActionOptions: { shouldForwardArgs: true },
 			contextKeyService: scopedContextKeyService,
 			getAnchor: () => e.anchor,
@@ -535,7 +535,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			{
 				renderFollowups: options?.renderFollowups ?? true,
 				renderStyle: options?.renderStyle,
-				menus: { executeToolbar: MenuId.ChatExecute, ...this.viewOptions.menus },
+				menus: { executeToolbar: MenuId.AideChatExecute, ...this.viewOptions.menus },
 				editorOverflowWidgetsDomNode: this.viewOptions.editorOverflowWidgetsDomNode,
 			}
 		));
