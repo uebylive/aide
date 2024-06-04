@@ -7,6 +7,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
@@ -25,7 +26,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IAideChatWidgetService, IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { CodeSymbolCompletionProviderName, dynamicVariableDecorationType, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, dynamicVariableDecorationType, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
 import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
@@ -496,8 +497,7 @@ class FolderReferenceCompletions extends Disposable {
 					endColumn: varWord ? varWord.endColumn : position.column
 				};
 
-				const files = await this.doGetFolderSearchResults(_token);
-				const completionURIs = files.results.map(result => result.resource);
+				const completionURIs = await this.doGetFolderSearchResults(_token);
 
 				const editRange: IRange = {
 					startLineNumber: position.lineNumber,
@@ -507,14 +507,12 @@ class FolderReferenceCompletions extends Disposable {
 				};
 
 				const completionItems = completionURIs.map(uri => {
-					const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
 					return <CompletionItem>{
-						label: basenameOrAuthority(uri),
+						label: this.labelService.getUriLabel(uri, { relative: true }),
 						insertText: '',
-						detail,
 						kind: CompletionItemKind.Folder,
 						range,
-						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
+						command: { id: SelectAndInsertFolderAction.ID, title: SelectAndInsertFolderAction.ID, arguments: [{ widget, range: editRange, uri }] },
 						sortText: 'z'
 					};
 				});
@@ -526,16 +524,22 @@ class FolderReferenceCompletions extends Disposable {
 		}));
 	}
 
-	private doGetFolderSearchResults(token: CancellationToken): Promise<ISearchComplete> {
-		return this.searchService.fileSearch(
+	private async doGetFolderSearchResults(token: CancellationToken): Promise<URI[]> {
+		const response = await this.searchService.fileSearch(
 			this.fileQueryBuilder.file(
 				this.contextService.getWorkspace().folders,
 				{
 					extraFileResources: this.instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
 					sortByScore: true,
-					filePattern: '*/',
 				}
 			), token);
+
+		const dirUris = new Map<string, URI>();
+		response.results.forEach(result => {
+			const dirUri = dirname(result.resource);
+			dirUris.set(dirUri.toString(), dirUri);
+		});
+		return Array.from(dirUris.values());
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FolderReferenceCompletions, LifecyclePhase.Eventually);
