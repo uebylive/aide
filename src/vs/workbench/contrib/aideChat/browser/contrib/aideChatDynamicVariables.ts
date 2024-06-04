@@ -141,7 +141,7 @@ function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLev
 }
 
 export class MultiLevelCodeTriggerAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.multiLevelCodeTrigger';
+	static readonly ID = 'workbench.action.aideChat.multiLevelCodeTrigger';
 
 	constructor() {
 		super({
@@ -171,17 +171,17 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const codeSymbolCompletionProvider = completionProviders.find(
+		const completionProvider = completionProviders.find(
 			provider => provider._debugDisplayName === (
 				context.pick === 'code' ? CodeSymbolCompletionProviderName : context.pick === 'file' ? FileReferenceCompletionProviderName : FolderReferenceCompletionProviderName
 			));
 
-		if (!codeSymbolCompletionProvider) {
+		if (!completionProvider) {
 			doCleanup();
 			return;
 		}
 
-		suggestController.triggerSuggest(new Set([codeSymbolCompletionProvider]));
+		suggestController.triggerSuggest(new Set([completionProvider]));
 	}
 }
 registerAction2(MultiLevelCodeTriggerAction);
@@ -197,7 +197,7 @@ function isSelectAndInsertFileActionContext(context: any): context is SelectAndI
 }
 
 export class SelectAndInsertFolderAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.csSelectAndInsertFolder';
+	static readonly ID = 'workbench.action.aideChat.selectAndInsertFolder';
 
 	constructor() {
 		super({
@@ -254,7 +254,7 @@ export class SelectAndInsertFolderAction extends Action2 {
 registerAction2(SelectAndInsertFolderAction);
 
 export class SelectAndInsertFileAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.csSelectAndInsertFile';
+	static readonly ID = 'workbench.action.aideChat.selectAndInsertFile';
 
 	constructor() {
 		super({
@@ -321,7 +321,7 @@ function isSelectAndInsertCodeActionContext(context: any): context is SelectAndI
 }
 
 export class SelectAndInsertCodeAction extends Action2 {
-	static readonly ID = 'workbench.action.chat.selectAndInsertCode';
+	static readonly ID = 'workbench.action.aideChat.selectAndInsertCode';
 
 	constructor() {
 		super({
@@ -404,7 +404,7 @@ export const parseVariableInfo = (input: string): [string, string] | null => {
 };
 
 class ChatAddContext extends EditorAction2 {
-	static readonly ID = 'workbench.action.chat.addContext';
+	static readonly ID = 'workbench.action.aideChat.addContext';
 
 	constructor() {
 		super({

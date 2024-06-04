@@ -8,7 +8,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { IWordAtPosition, getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { CompletionContext, CompletionItem, CompletionItemKind } from 'vs/editor/common/languages';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { localize } from 'vs/nls';
@@ -19,7 +19,7 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
 import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
-import { SelectAndInsertFileAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
+import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
 import { AideChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
@@ -307,17 +307,35 @@ class BuiltinDynamicCompletions extends Disposable {
 				}
 
 				const afterRange = new Range(position.lineNumber, range.replace.startColumn, position.lineNumber, range.replace.startColumn + '#file:'.length);
-				return {
+				return <CompletionList>{
 					suggestions: [
-						{
+						<CompletionItem>{
 							label: `${chatVariableLeader}file`,
 							insertText: `${chatVariableLeader}file:`,
-							detail: localize('pickFileLabel', "Pick a file"),
+							detail: localize('pickFileReferenceLabel', "Pick a file"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: afterRange }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'file' }] },
 							sortText: 'z'
-						} satisfies CompletionItem
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}code`,
+							insertText: `${chatVariableLeader}code:`,
+							detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
+							sortText: 'z'
+						},
+						<CompletionItem>{
+							label: `${chatVariableLeader}folder`,
+							insertText: `${chatVariableLeader}folder:`,
+							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
+							range,
+							kind: CompletionItemKind.Text,
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'folder' }] },
+							sortText: 'z'
+						}
 					]
 				};
 			}
