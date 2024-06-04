@@ -25,34 +25,34 @@ import { IProductService } from 'vs/platform/product/common/productService';
 import { asJson, IRequestService } from 'vs/platform/request/common/request';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IAideChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
-import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTaskDto } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTaskDto } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 //#region agent service, commands etc
 
 export interface IChatAgentHistoryEntry {
-	request: IChatAgentRequest;
-	response: ReadonlyArray<IChatProgressResponseContent | IChatTaskDto>;
-	result: IChatAgentResult;
+	request: IAideChatAgentRequest;
+	response: ReadonlyArray<IAideChatProgressResponseContent | IAideChatTaskDto>;
+	result: IAideChatAgentResult;
 }
 
-export enum ChatAgentLocation {
+export enum AideChatAgentLocation {
 	Panel = 'panel',
 	Terminal = 'terminal',
 	Notebook = 'notebook',
 	Editor = 'editor'
 }
 
-export namespace ChatAgentLocation {
-	export function fromRaw(value: RawChatParticipantLocation | string): ChatAgentLocation {
+export namespace AideChatAgentLocation {
+	export function fromRaw(value: RawChatParticipantLocation | string): AideChatAgentLocation {
 		switch (value) {
-			case 'panel': return ChatAgentLocation.Panel;
-			case 'terminal': return ChatAgentLocation.Terminal;
-			case 'notebook': return ChatAgentLocation.Notebook;
-			case 'editor': return ChatAgentLocation.Editor;
+			case 'panel': return AideChatAgentLocation.Panel;
+			case 'terminal': return AideChatAgentLocation.Terminal;
+			case 'notebook': return AideChatAgentLocation.Notebook;
+			case 'editor': return AideChatAgentLocation.Editor;
 		}
-		return ChatAgentLocation.Panel;
+		return AideChatAgentLocation.Panel;
 	}
 }
 
@@ -71,17 +71,17 @@ export interface IChatAgentData {
 	isDefault?: boolean;
 	/** This agent is not contributed in package.json, but is registered dynamically */
 	isDynamic?: boolean;
-	metadata: IChatAgentMetadata;
+	metadata: IAideChatAgentMetadata;
 	slashCommands: IChatAgentCommand[];
 	defaultImplicitVariables?: string[];
-	locations: ChatAgentLocation[];
+	locations: AideChatAgentLocation[];
 }
 
 export interface IChatAgentImplementation {
-	invoke(request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult>;
-	provideFollowups?(request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]>;
-	provideWelcomeMessage?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
-	provideSampleQuestions?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
+	invoke(request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult>;
+	provideFollowups?(request: IAideChatAgentRequest, result: IAideChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatFollowup[]>;
+	provideWelcomeMessage?(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
+	provideSampleQuestions?(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<IAideChatFollowup[] | undefined>;
 }
 
 export type IChatAgent = IChatAgentData & IChatAgentImplementation;
@@ -99,7 +99,7 @@ export interface IChatRequesterInformation {
 	icon?: URI;
 }
 
-export interface IChatAgentMetadata {
+export interface IAideChatAgentMetadata {
 	helpTextPrefix?: string | IMarkdownString;
 	helpTextVariablesPrefix?: string | IMarkdownString;
 	helpTextPostfix?: string | IMarkdownString;
@@ -116,7 +116,7 @@ export interface IChatAgentMetadata {
 }
 
 
-export interface IChatAgentRequest {
+export interface IAideChatAgentRequest {
 	sessionId: string;
 	requestId: string;
 	agentId: string;
@@ -125,13 +125,13 @@ export interface IChatAgentRequest {
 	attempt?: number;
 	enableCommandDetection?: boolean;
 	variables: IChatRequestVariableData;
-	location: ChatAgentLocation;
+	location: AideChatAgentLocation;
 	acceptedConfirmationData?: any[];
 	rejectedConfirmationData?: any[];
 }
 
-export interface IChatAgentResult {
-	errorDetails?: IChatResponseErrorDetails;
+export interface IAideChatAgentResult {
+	errorDetails?: IAideChatResponseErrorDetails;
 	timings?: {
 		firstProgress?: number;
 		totalElapsed: number;
@@ -167,8 +167,8 @@ export interface IAideChatAgentService {
 	registerDynamicAgent(data: IChatAgentData, agentImpl: IChatAgentImplementation): IDisposable;
 	registerAgentCompletionProvider(id: string, provider: (query: string, token: CancellationToken) => Promise<IChatAgentCompletionItem[]>): IDisposable;
 	getAgentCompletionItems(id: string, query: string, token: CancellationToken): Promise<IChatAgentCompletionItem[]>;
-	invokeAgent(agent: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult>;
-	getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]>;
+	invokeAgent(agent: string, request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult>;
+	getFollowups(id: string, request: IAideChatAgentRequest, result: IAideChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatFollowup[]>;
 	getAgent(id: string): IChatAgentData | undefined;
 	getAgentByFullyQualifiedId(id: string): IChatAgentData | undefined;
 	getAgents(): IChatAgentData[];
@@ -178,14 +178,14 @@ export interface IAideChatAgentService {
 	/**
 	 * Get the default agent (only if activated)
 	 */
-	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined;
+	getDefaultAgent(location: AideChatAgentLocation): IChatAgent | undefined;
 
 	/**
 	 * Get the default agent data that has been contributed (may not be activated yet)
 	 */
-	getContributedDefaultAgent(location: ChatAgentLocation): IChatAgentData | undefined;
+	getContributedDefaultAgent(location: AideChatAgentLocation): IChatAgentData | undefined;
 	getSecondaryAgent(): IChatAgentData | undefined;
-	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
+	updateAgent(id: string, updateMetadata: IAideChatAgentMetadata): void;
 }
 
 export class ChatAgentService implements IAideChatAgentService {
@@ -281,7 +281,7 @@ export class ChatAgentService implements IAideChatAgentService {
 		return await this._agentCompletionProviders.get(id)?.(query, token) ?? [];
 	}
 
-	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void {
+	updateAgent(id: string, updateMetadata: IAideChatAgentMetadata): void {
 		const agent = this._agents.get(id);
 		if (!agent?.impl) {
 			throw new Error(`No activated agent with id ${JSON.stringify(id)} registered`);
@@ -290,11 +290,11 @@ export class ChatAgentService implements IAideChatAgentService {
 		this._onDidChangeAgents.fire(new MergedChatAgent(agent.data, agent.impl));
 	}
 
-	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined {
+	getDefaultAgent(location: AideChatAgentLocation): IChatAgent | undefined {
 		return findLast(this.getActivatedAgents(), a => !!a.isDefault && a.locations.includes(location));
 	}
 
-	getContributedDefaultAgent(location: ChatAgentLocation): IChatAgentData | undefined {
+	getContributedDefaultAgent(location: AideChatAgentLocation): IChatAgentData | undefined {
 		return this.getAgents().find(a => !!a.isDefault && a.locations.includes(location));
 	}
 
@@ -345,7 +345,7 @@ export class ChatAgentService implements IAideChatAgentService {
 		return this.getAgents().filter(a => a.name === name);
 	}
 
-	async invokeAgent(id: string, request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> {
+	async invokeAgent(id: string, request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult> {
 		const data = this._agents.get(id);
 		if (!data?.impl) {
 			throw new Error(`No activated agent with id "${id}"`);
@@ -354,7 +354,7 @@ export class ChatAgentService implements IAideChatAgentService {
 		return await data.impl.invoke(request, progress, history, token);
 	}
 
-	async getFollowups(id: string, request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]> {
+	async getFollowups(id: string, request: IAideChatAgentRequest, result: IAideChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatFollowup[]> {
 		const data = this._agents.get(id);
 		if (!data?.impl) {
 			throw new Error(`No activated agent with id "${id}"`);
@@ -383,16 +383,16 @@ export class MergedChatAgent implements IChatAgent {
 	get extensionPublisherDisplayName() { return this.data.publisherDisplayName; }
 	get extensionDisplayName(): string { return this.data.extensionDisplayName; }
 	get isDefault(): boolean | undefined { return this.data.isDefault; }
-	get metadata(): IChatAgentMetadata { return this.data.metadata; }
+	get metadata(): IAideChatAgentMetadata { return this.data.metadata; }
 	get slashCommands(): IChatAgentCommand[] { return this.data.slashCommands; }
 	get defaultImplicitVariables(): string[] | undefined { return this.data.defaultImplicitVariables; }
-	get locations(): ChatAgentLocation[] { return this.data.locations; }
+	get locations(): AideChatAgentLocation[] { return this.data.locations; }
 
-	async invoke(request: IChatAgentRequest, progress: (part: IChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatAgentResult> {
+	async invoke(request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult> {
 		return this.impl.invoke(request, progress, history, token);
 	}
 
-	async provideFollowups(request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]> {
+	async provideFollowups(request: IAideChatAgentRequest, result: IAideChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatFollowup[]> {
 		if (this.impl.provideFollowups) {
 			return this.impl.provideFollowups(request, result, history, token);
 		}
@@ -400,7 +400,7 @@ export class MergedChatAgent implements IChatAgent {
 		return [];
 	}
 
-	provideWelcomeMessage(location: ChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined> {
+	provideWelcomeMessage(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined> {
 		if (this.impl.provideWelcomeMessage) {
 			return this.impl.provideWelcomeMessage(location, token);
 		}
@@ -408,7 +408,7 @@ export class MergedChatAgent implements IChatAgent {
 		return undefined;
 	}
 
-	provideSampleQuestions(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined> {
+	provideSampleQuestions(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<IAideChatFollowup[] | undefined> {
 		if (this.impl.provideSampleQuestions) {
 			return this.impl.provideSampleQuestions(location, token);
 		}

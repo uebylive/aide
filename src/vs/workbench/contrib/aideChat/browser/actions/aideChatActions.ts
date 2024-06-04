@@ -18,9 +18,9 @@ import { IQuickInputButton, IQuickInputService, IQuickPickItem } from 'vs/platfo
 import { ViewAction } from 'vs/workbench/browser/parts/views/viewPane';
 import { CHAT_VIEW_ID, IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatDetail, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
@@ -154,7 +154,7 @@ class ChatHistoryAction extends ViewAction<ChatViewPane> {
 		picker.items = picks;
 		store.add(picker.onDidTriggerItemButton(context => {
 			if (context.button === openInEditorButton) {
-				editorService.openEditor({ resource: ChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ target: { sessionId: context.item.chat.sessionId }, pinned: true } }, ACTIVE_GROUP);
+				editorService.openEditor({ resource: AideChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ target: { sessionId: context.item.chat.sessionId }, pinned: true } }, ACTIVE_GROUP);
 				picker.hide();
 			} else if (context.button === deleteButton) {
 				chatService.removeHistoryEntry(context.item.chat.sessionId);
@@ -190,7 +190,7 @@ class OpenChatEditorAction extends Action2 {
 
 	async run(accessor: ServicesAccessor) {
 		const editorService = accessor.get(IEditorService);
-		await editorService.openEditor({ resource: ChatEditorInput.getNewEditorUri(), options: { pinned: true } satisfies IChatEditorOptions });
+		await editorService.openEditor({ resource: AideChatEditorInput.getNewEditorUri(), options: { pinned: true } satisfies IChatEditorOptions });
 	}
 }
 
@@ -236,7 +236,7 @@ export function registerChatActions() {
 			super({
 				id: 'aideChat.action.focus',
 				title: localize2('actions.aideChat.focus', 'Focus Chat List'),
-				precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel)),
+				precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_LOCATION.isEqualTo(AideChatAgentLocation.Panel)),
 				category: CHAT_CATEGORY,
 				keybinding: [
 					// On mac, require that the cursor is at the top of the input, to avoid stealing cmd+up to move the cursor to the top

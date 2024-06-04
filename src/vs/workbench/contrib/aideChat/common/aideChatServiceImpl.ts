@@ -23,14 +23,14 @@ import { Progress } from 'vs/platform/progress/common/progress';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ChatAgentLocation, IChatAgent, IChatAgentRequest, IChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IChatUserActionEvent, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatMessageRole, IChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
+import { ChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'aideChat.sessions';
@@ -52,7 +52,7 @@ type ChatProviderInvokedEvent = {
 	chatSessionId: string;
 	agent: string;
 	slashCommand: string | undefined;
-	location: ChatAgentLocation;
+	location: AideChatAgentLocation;
 };
 
 type ChatProviderInvokedClassification = {
@@ -141,8 +141,8 @@ export class ChatService extends Disposable implements IAideChatService {
 		return this._transferredSessionData;
 	}
 
-	private readonly _onDidPerformUserAction = this._register(new Emitter<IChatUserActionEvent>());
-	public readonly onDidPerformUserAction: Event<IChatUserActionEvent> = this._onDidPerformUserAction.event;
+	private readonly _onDidPerformUserAction = this._register(new Emitter<IAideChatUserActionEvent>());
+	public readonly onDidPerformUserAction: Event<IAideChatUserActionEvent> = this._onDidPerformUserAction.event;
 
 	private readonly _onDidDisposeSession = this._register(new Emitter<{ sessionId: string; reason: 'initializationFailed' | 'cleared' }>());
 	public readonly onDidDisposeSession = this._onDidDisposeSession.event;
@@ -184,13 +184,13 @@ export class ChatService extends Disposable implements IAideChatService {
 		this._register(storageService.onWillSaveState(() => this.saveState()));
 	}
 
-	isEnabled(location: ChatAgentLocation): boolean {
+	isEnabled(location: AideChatAgentLocation): boolean {
 		return this.chatAgentService.getContributedDefaultAgent(location) !== undefined;
 	}
 
 	private saveState(): void {
 		let allSessions: (ChatModel | ISerializableChatData)[] = Array.from(this._sessionModels.values())
-			.filter(session => session.initialLocation === ChatAgentLocation.Panel)
+			.filter(session => session.initialLocation === AideChatAgentLocation.Panel)
 			.filter(session => session.getRequests().length > 0);
 		allSessions = allSessions.concat(
 			Object.values(this._persistedSessions)
@@ -211,10 +211,10 @@ export class ChatService extends Disposable implements IAideChatService {
 		this.storageService.store(serializedChatKey, serialized, StorageScope.WORKSPACE, StorageTarget.MACHINE);
 	}
 
-	notifyUserAction(action: IChatUserActionEvent): void {
+	notifyUserAction(action: IAideChatUserActionEvent): void {
 		if (action.action.kind === 'vote') {
 			this.telemetryService.publicLog2<ChatVoteEvent, ChatVoteClassification>('aideChatVote', {
-				direction: action.action.direction === ChatAgentVoteDirection.Up ? 'up' : 'down',
+				direction: action.action.direction === AideChatAgentVoteDirection.Up ? 'up' : 'down',
 				agentId: action.agentId ?? ''
 			});
 		} else if (action.action.kind === 'copy') {
@@ -338,12 +338,12 @@ export class ChatService extends Disposable implements IAideChatService {
 		this.saveState();
 	}
 
-	startSession(location: ChatAgentLocation, token: CancellationToken): ChatModel {
+	startSession(location: AideChatAgentLocation, token: CancellationToken): ChatModel {
 		this.trace('startSession');
 		return this._startSession(undefined, location, token);
 	}
 
-	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, token: CancellationToken): ChatModel {
+	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: AideChatAgentLocation, token: CancellationToken): ChatModel {
 		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location);
 		this._sessionModels.set(model.sessionId, model);
 		this.initializeSession(model, token);
@@ -356,7 +356,7 @@ export class ChatService extends Disposable implements IAideChatService {
 			model.startInitialize();
 
 			await this.extensionService.whenInstalledExtensionsRegistered();
-			const defaultAgentData = this.chatAgentService.getContributedDefaultAgent(model.initialLocation) ?? this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel);
+			const defaultAgentData = this.chatAgentService.getContributedDefaultAgent(model.initialLocation) ?? this.chatAgentService.getContributedDefaultAgent(AideChatAgentLocation.Panel);
 			if (!defaultAgentData) {
 				throw new ErrorNoTelemetry('No default agent contributed');
 			}
@@ -403,11 +403,11 @@ export class ChatService extends Disposable implements IAideChatService {
 			this._transferredSessionData = undefined;
 		}
 
-		return this._startSession(sessionData, sessionData.initialLocation ?? ChatAgentLocation.Panel, CancellationToken.None);
+		return this._startSession(sessionData, sessionData.initialLocation ?? AideChatAgentLocation.Panel, CancellationToken.None);
 	}
 
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModel | undefined {
-		return this._startSession(data, data.initialLocation ?? ChatAgentLocation.Panel, CancellationToken.None);
+		return this._startSession(data, data.initialLocation ?? AideChatAgentLocation.Panel, CancellationToken.None);
 	}
 
 	async resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void> {
@@ -469,7 +469,7 @@ export class ChatService extends Disposable implements IAideChatService {
 		};
 	}
 
-	private parseChatRequest(sessionId: string, request: string, location: ChatAgentLocation, options: IChatSendRequestOptions | undefined): IParsedChatRequest {
+	private parseChatRequest(sessionId: string, request: string, location: AideChatAgentLocation, options: IChatSendRequestOptions | undefined): IParsedChatRequest {
 		let parserContext = options?.parserContext;
 		if (options?.agentId) {
 			const agent = this.chatAgentService.getAgent(options.agentId);
@@ -493,7 +493,7 @@ export class ChatService extends Disposable implements IAideChatService {
 		return newTokenSource.token;
 	}
 
-	private _sendRequestAsync(model: ChatModel, sessionId: string, parsedRequest: IParsedChatRequest, attempt: number, enableCommandDetection: boolean, defaultAgent: IChatAgent, location: ChatAgentLocation, options?: IChatSendRequestOptions): IChatSendRequestResponseState {
+	private _sendRequestAsync(model: ChatModel, sessionId: string, parsedRequest: IParsedChatRequest, attempt: number, enableCommandDetection: boolean, defaultAgent: IChatAgent, location: AideChatAgentLocation, options?: IChatSendRequestOptions): IChatSendRequestResponseState {
 		const followupsCancelToken = this.refreshFollowupsCancellationToken(sessionId);
 		let request: ChatRequestModel;
 		const agentPart = 'kind' in parsedRequest ? undefined : parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart);
@@ -515,7 +515,7 @@ export class ChatService extends Disposable implements IAideChatService {
 		const source = new CancellationTokenSource();
 		const token = source.token;
 		const sendRequestInternal = async () => {
-			const progressCallback = (progress: IChatProgress) => {
+			const progressCallback = (progress: IAideChatProgress) => {
 				if (token.isCancellationRequested) {
 					return;
 				}
@@ -551,8 +551,8 @@ export class ChatService extends Disposable implements IAideChatService {
 			});
 
 			try {
-				let rawResult: IChatAgentResult | null | undefined;
-				let agentOrCommandFollowups: Promise<IChatFollowup[] | undefined> | undefined = undefined;
+				let rawResult: IAideChatAgentResult | null | undefined;
+				let agentOrCommandFollowups: Promise<IAideChatFollowup[] | undefined> | undefined = undefined;
 
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
@@ -569,21 +569,21 @@ export class ChatService extends Disposable implements IAideChatService {
 					const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
 
 					// TODO- should figure out how to get rid of implicit variables for inline chat
-					const implicitVariablesEnabled = (location === ChatAgentLocation.Editor || location === ChatAgentLocation.Notebook);
+					const implicitVariablesEnabled = (location === AideChatAgentLocation.Editor || location === AideChatAgentLocation.Notebook);
 					if (implicitVariablesEnabled) {
 						const implicitVariables = agent.defaultImplicitVariables;
 						if (implicitVariables) {
 							const resolvedImplicitVariables = await Promise.all(implicitVariables.map(async v => {
 								const id = this.chatVariablesService.getVariable(v)?.id ?? '';
 								const value = await this.chatVariablesService.resolveVariable(v, parsedRequest.text, model, progressCallback, token);
-								return value ? { id, name: v, value } satisfies IChatRequestVariableEntry :
+								return value ? { id, name: v, value } satisfies IAideChatRequestVariableEntry :
 									undefined;
 							}));
 							updatedVariableData.variables.push(...coalesce(resolvedImplicitVariables));
 						}
 					}
 
-					const requestProps: IChatAgentRequest = {
+					const requestProps: IAideChatAgentRequest = {
 						sessionId,
 						requestId: request.id,
 						agentId: agent.id,
@@ -605,7 +605,7 @@ export class ChatService extends Disposable implements IAideChatService {
 					completeResponseCreated();
 					// contributed slash commands
 					// TODO: spell this out in the UI
-					const history: IChatMessage[] = [];
+					const history: IAideChatMessage[] = [];
 					for (const request of model.getRequests()) {
 						if (!request.response) {
 							continue;
@@ -614,7 +614,7 @@ export class ChatService extends Disposable implements IAideChatService {
 						history.push({ role: ChatMessageRole.Assistant, content: request.response.response.asString() });
 					}
 					const message = parsedRequest.text;
-					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<IChatProgress>(p => {
+					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<IAideChatProgress>(p => {
 						progressCallback(p);
 					}), history, token);
 					agentOrCommandFollowups = Promise.resolve(commandResult?.followUp);
@@ -669,7 +669,7 @@ export class ChatService extends Disposable implements IAideChatService {
 					chatSessionId: model.sessionId,
 					location
 				});
-				const rawResult: IChatAgentResult = { errorDetails: { message: err.message } };
+				const rawResult: IAideChatAgentResult = { errorDetails: { message: err.message } };
 				model.setResponse(request, rawResult);
 				completeResponseCreated();
 				this.trace('sendRequest', `Error while handling request: ${toErrorMessage(err)}`);
@@ -763,7 +763,7 @@ export class ChatService extends Disposable implements IAideChatService {
 			throw new Error(`Unknown session: ${sessionId}`);
 		}
 
-		if (model.initialLocation === ChatAgentLocation.Panel) {
+		if (model.initialLocation === AideChatAgentLocation.Panel) {
 			// Turn all the real objects into actual JSON, otherwise, calling 'revive' may fail when it tries to
 			// assign values to properties that are getters- microsoft/vscode-copilot-release#1233
 			this._persistedSessions[sessionId] = JSON.parse(JSON.stringify(model));

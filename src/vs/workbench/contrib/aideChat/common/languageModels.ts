@@ -23,17 +23,17 @@ export const enum ChatMessageRole {
 	Assistant,
 }
 
-export interface IChatMessage {
+export interface IAideChatMessage {
 	readonly role: ChatMessageRole;
 	readonly content: string;
 }
 
-export interface IChatResponseFragment {
+export interface IAideChatResponseFragment {
 	index: number;
 	part: string;
 }
 
-export interface ILanguageModelChatMetadata {
+export interface IAIModelChatMetadata {
 	readonly extension: ExtensionIdentifier;
 
 	readonly name: string;
@@ -52,12 +52,12 @@ export interface ILanguageModelChatMetadata {
 }
 
 export interface ILanguageModelChat {
-	metadata: ILanguageModelChatMetadata;
-	provideChatResponse(messages: IChatMessage[], from: ExtensionIdentifier, options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
-	provideTokenCount(message: string | IChatMessage, token: CancellationToken): Promise<number>;
+	metadata: IAIModelChatMetadata;
+	provideChatResponse(messages: IAideChatMessage[], from: ExtensionIdentifier, options: { [name: string]: any }, progress: IProgress<IAideChatResponseFragment>, token: CancellationToken): Promise<any>;
+	provideTokenCount(message: string | IAideChatMessage, token: CancellationToken): Promise<number>;
 }
 
-export interface ILanguageModelChatSelector {
+export interface ILanguageModelAideChatSelector {
 	readonly name?: string;
 	readonly identifier?: string;
 	readonly vendor?: string;
@@ -72,7 +72,7 @@ export const IAIModelsService = createDecorator<IAIModelsService>('IAIModelsServ
 export interface ILanguageModelsChangeEvent {
 	added?: {
 		identifier: string;
-		metadata: ILanguageModelChatMetadata;
+		metadata: IAIModelChatMetadata;
 	}[];
 	removed?: string[];
 }
@@ -85,15 +85,15 @@ export interface IAIModelsService {
 
 	getLanguageModelIds(): string[];
 
-	lookupLanguageModel(identifier: string): ILanguageModelChatMetadata | undefined;
+	lookupLanguageModel(identifier: string): IAIModelChatMetadata | undefined;
 
-	selectLanguageModels(selector: ILanguageModelChatSelector): Promise<string[]>;
+	selectLanguageModels(selector: ILanguageModelAideChatSelector): Promise<string[]>;
 
 	registerLanguageModelChat(identifier: string, provider: ILanguageModelChat): IDisposable;
 
-	makeLanguageModelChatRequest(identifier: string, from: ExtensionIdentifier, messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any>;
+	makeLanguageModelChatRequest(identifier: string, from: ExtensionIdentifier, messages: IAideChatMessage[], options: { [name: string]: any }, progress: IProgress<IAideChatResponseFragment>, token: CancellationToken): Promise<any>;
 
-	computeTokenLength(identifier: string, message: string | IChatMessage, token: CancellationToken): Promise<number>;
+	computeTokenLength(identifier: string, message: string | IAideChatMessage, token: CancellationToken): Promise<number>;
 }
 
 const languageModelType: IJSONSchema = {
@@ -194,11 +194,11 @@ export class LanguageModelsService implements IAIModelsService {
 		return Array.from(this._providers.keys());
 	}
 
-	lookupLanguageModel(identifier: string): ILanguageModelChatMetadata | undefined {
+	lookupLanguageModel(identifier: string): IAIModelChatMetadata | undefined {
 		return this._providers.get(identifier)?.metadata;
 	}
 
-	async selectLanguageModels(selector: ILanguageModelChatSelector): Promise<string[]> {
+	async selectLanguageModels(selector: ILanguageModelAideChatSelector): Promise<string[]> {
 
 		if (selector.vendor) {
 			// selective activation
@@ -258,7 +258,7 @@ export class LanguageModelsService implements IAIModelsService {
 		});
 	}
 
-	makeLanguageModelChatRequest(identifier: string, from: ExtensionIdentifier, messages: IChatMessage[], options: { [name: string]: any }, progress: IProgress<IChatResponseFragment>, token: CancellationToken): Promise<any> {
+	makeLanguageModelChatRequest(identifier: string, from: ExtensionIdentifier, messages: IAideChatMessage[], options: { [name: string]: any }, progress: IProgress<IAideChatResponseFragment>, token: CancellationToken): Promise<any> {
 		const provider = this._providers.get(identifier);
 		if (!provider) {
 			throw new Error(`Chat response provider with identifier ${identifier} is not registered.`);
@@ -266,7 +266,7 @@ export class LanguageModelsService implements IAIModelsService {
 		return provider.provideChatResponse(messages, from, options, progress, token);
 	}
 
-	computeTokenLength(identifier: string, message: string | IChatMessage, token: CancellationToken): Promise<number> {
+	computeTokenLength(identifier: string, message: string | IAideChatMessage, token: CancellationToken): Promise<number> {
 		const provider = this._providers.get(identifier);
 		if (!provider) {
 			throw new Error(`Chat response provider with identifier ${identifier} is not registered.`);

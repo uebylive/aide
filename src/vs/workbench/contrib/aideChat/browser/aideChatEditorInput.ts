@@ -16,13 +16,13 @@ import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { EditorInputCapabilities, IEditorSerializer, IUntypedEditorInput } from 'vs/workbench/common/editor';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import type { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 const ChatEditorIcon = registerIcon('chat-editor-label-icon', Codicon.commentDiscussion, nls.localize('chatEditorLabelIcon', 'Icon of the chat editor label.'));
 
-export class ChatEditorInput extends EditorInput {
+export class AideChatEditorInput extends EditorInput {
 	static readonly countsInUse = new Set<number>();
 
 	static readonly TypeID: string = 'workbench.input.chatSession';
@@ -40,7 +40,7 @@ export class ChatEditorInput extends EditorInput {
 
 	static getNextCount(): number {
 		let count = 0;
-		while (ChatEditorInput.countsInUse.has(count)) {
+		while (AideChatEditorInput.countsInUse.has(count)) {
 			count++;
 		}
 
@@ -62,13 +62,13 @@ export class ChatEditorInput extends EditorInput {
 		this.sessionId = (options.target && 'sessionId' in options.target) ?
 			options.target.sessionId :
 			undefined;
-		this.inputCount = ChatEditorInput.getNextCount();
-		ChatEditorInput.countsInUse.add(this.inputCount);
-		this._register(toDisposable(() => ChatEditorInput.countsInUse.delete(this.inputCount)));
+		this.inputCount = AideChatEditorInput.getNextCount();
+		AideChatEditorInput.countsInUse.add(this.inputCount);
+		this._register(toDisposable(() => AideChatEditorInput.countsInUse.delete(this.inputCount)));
 	}
 
 	override get editorId(): string | undefined {
-		return ChatEditorInput.EditorID;
+		return AideChatEditorInput.EditorID;
 	}
 
 	override get capabilities(): EditorInputCapabilities {
@@ -76,11 +76,11 @@ export class ChatEditorInput extends EditorInput {
 	}
 
 	override matches(otherInput: EditorInput | IUntypedEditorInput): boolean {
-		return otherInput instanceof ChatEditorInput && otherInput.resource.toString() === this.resource.toString();
+		return otherInput instanceof AideChatEditorInput && otherInput.resource.toString() === this.resource.toString();
 	}
 
 	override get typeId(): string {
-		return ChatEditorInput.TypeID;
+		return AideChatEditorInput.TypeID;
 	}
 
 	override getName(): string {
@@ -95,7 +95,7 @@ export class ChatEditorInput extends EditorInput {
 		if (typeof this.sessionId === 'string') {
 			this.model = this.chatService.getOrRestoreSession(this.sessionId);
 		} else if (!this.options.target) {
-			this.model = this.chatService.startSession(ChatAgentLocation.Panel, CancellationToken.None);
+			this.model = this.chatService.startSession(AideChatAgentLocation.Panel, CancellationToken.None);
 		} else if ('data' in this.options.target) {
 			this.model = this.chatService.loadSessionFromContent(this.options.target.data);
 		}
@@ -183,8 +183,8 @@ interface ISerializedChatEditorInput {
 }
 
 export class ChatEditorInputSerializer implements IEditorSerializer {
-	canSerialize(input: EditorInput): input is ChatEditorInput & { readonly sessionId: string } {
-		return input instanceof ChatEditorInput && typeof input.sessionId === 'string';
+	canSerialize(input: EditorInput): input is AideChatEditorInput & { readonly sessionId: string } {
+		return input instanceof AideChatEditorInput && typeof input.sessionId === 'string';
 	}
 
 	serialize(input: EditorInput): string | undefined {
@@ -204,7 +204,7 @@ export class ChatEditorInputSerializer implements IEditorSerializer {
 		try {
 			const parsed: ISerializedChatEditorInput = JSON.parse(serializedEditor);
 			const resource = URI.revive(parsed.resource);
-			return instantiationService.createInstance(ChatEditorInput, resource, { ...parsed.options, target: { sessionId: parsed.sessionId } });
+			return instantiationService.createInstance(AideChatEditorInput, resource, { ...parsed.options, target: { sessionId: parsed.sessionId } });
 		} catch (err) {
 			return undefined;
 		}

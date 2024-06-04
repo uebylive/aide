@@ -19,26 +19,26 @@ import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { TextEdit } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, ChatAgentVoteDirection, isIUsedContext, IChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
-export interface IChatRequestVariableEntry {
+export interface IAideChatRequestVariableEntry {
 	id: string;
 	fullName?: string;
 	icon?: ThemeIcon;
 	name: string;
 	modelDescription?: string;
 	range?: IOffsetRange;
-	value: IChatRequestVariableValue;
-	references?: IChatContentReference[];
+	value: IAideChatRequestVariableValue;
+	references?: IAideChatContentReference[];
 	isDynamic?: boolean;
 	isFile?: boolean;
 }
 
 export interface IChatRequestVariableData {
-	variables: IChatRequestVariableEntry[];
+	variables: IAideChatRequestVariableEntry[];
 }
 
 export interface IChatRequestModel {
@@ -64,22 +64,22 @@ export interface IChatTextEditGroup {
 	kind: 'textEditGroup';
 }
 
-export type IChatProgressResponseContent =
-	| IChatMarkdownContent
-	| IChatAgentMarkdownContentWithVulnerability
+export type IAideChatProgressResponseContent =
+	| IAideChatMarkdownContent
+	| IAideChatAgentMarkdownContentWithVulnerability
 	| IChatTreeData
-	| IChatContentInlineReference
-	| IChatProgressMessage
-	| IChatCommandButton
-	| IChatWarningMessage
-	| IChatTask
+	| IAideChatContentInlineReference
+	| IAideChatProgressMessage
+	| IAideChatCommandButton
+	| IAideChatWarningMessage
+	| IAideChatTask
 	| IChatTextEditGroup
-	| IChatConfirmation;
+	| IAideChatConfirmation;
 
-export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability>;
+export type IChatProgressRenderableResponseContent = Exclude<IAideChatProgressResponseContent, IAideChatContentInlineReference | IAideChatAgentMarkdownContentWithVulnerability>;
 
 export interface IResponse {
-	readonly value: ReadonlyArray<IChatProgressResponseContent>;
+	readonly value: ReadonlyArray<IAideChatProgressResponseContent>;
 	asString(): string;
 }
 
@@ -92,8 +92,8 @@ export interface IChatResponseModel {
 	readonly session: IChatModel;
 	readonly agent?: IChatAgentData;
 	readonly usedContext: IChatUsedContext | undefined;
-	readonly contentReferences: ReadonlyArray<IChatContentReference>;
-	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
+	readonly contentReferences: ReadonlyArray<IAideChatContentReference>;
+	readonly progressMessages: ReadonlyArray<IAideChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
 	readonly response: IResponse;
@@ -101,10 +101,10 @@ export interface IChatResponseModel {
 	readonly isCanceled: boolean;
 	/** A stale response is one that has been persisted and rehydrated, so e.g. Commands that have their arguments stored in the EH are gone. */
 	readonly isStale: boolean;
-	readonly vote: ChatAgentVoteDirection | undefined;
-	readonly followups?: IChatFollowup[] | undefined;
-	readonly result?: IChatAgentResult;
-	setVote(vote: ChatAgentVoteDirection): void;
+	readonly vote: AideChatAgentVoteDirection | undefined;
+	readonly followups?: IAideChatFollowup[] | undefined;
+	readonly result?: IAideChatAgentResult;
+	setVote(vote: AideChatAgentVoteDirection): void;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): boolean;
 }
 
@@ -160,17 +160,17 @@ export class Response implements IResponse {
 	}
 
 	// responseParts internally tracks all the response parts, including strings which are currently resolving, so that they can be updated when they do resolve
-	private _responseParts: IChatProgressResponseContent[];
+	private _responseParts: IAideChatProgressResponseContent[];
 	// responseRepr externally presents the response parts with consolidated contiguous strings (excluding tree data)
 	private _responseRepr!: string;
 
-	get value(): IChatProgressResponseContent[] {
+	get value(): IAideChatProgressResponseContent[] {
 		return this._responseParts;
 	}
 
-	constructor(value: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability>) {
+	constructor(value: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IAideChatContentInlineReference | IAideChatAgentMarkdownContentWithVulnerability>) {
 		this._responseParts = asArray(value).map((v) => (isMarkdownString(v) ?
-			{ content: v, kind: 'markdownContent' } satisfies IChatMarkdownContent :
+			{ content: v, kind: 'markdownContent' } satisfies IAideChatMarkdownContent :
 			'kind' in v ? v : { kind: 'treeData', treeData: v }));
 
 		this._updateRepr(true);
@@ -185,7 +185,7 @@ export class Response implements IResponse {
 		this._updateRepr(true);
 	}
 
-	updateContent(progress: IChatProgressResponseContent | IChatTextEdit | IChatTask, quiet?: boolean): void {
+	updateContent(progress: IAideChatProgressResponseContent | IAideChatTextEdit | IAideChatTask, quiet?: boolean): void {
 		if (progress.kind === 'markdownContent') {
 			const responsePartLength = this._responseParts.length - 1;
 			const lastResponsePart = this._responseParts[responsePartLength];
@@ -290,11 +290,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._isCanceled;
 	}
 
-	public get vote(): ChatAgentVoteDirection | undefined {
+	public get vote(): AideChatAgentVoteDirection | undefined {
 		return this._vote;
 	}
 
-	public get followups(): IChatFollowup[] | undefined {
+	public get followups(): IAideChatFollowup[] | undefined {
 		return this._followups;
 	}
 
@@ -303,7 +303,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._response;
 	}
 
-	public get result(): IChatAgentResult | undefined {
+	public get result(): IAideChatAgentResult | undefined {
 		return this._result;
 	}
 
@@ -315,7 +315,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this.session.responderAvatarIcon;
 	}
 
-	private _followups?: IChatFollowup[];
+	private _followups?: IAideChatFollowup[];
 
 	public get agent(): IChatAgentData | undefined {
 		return this._agent;
@@ -335,13 +335,13 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._usedContext;
 	}
 
-	private readonly _contentReferences: IChatContentReference[] = [];
-	public get contentReferences(): ReadonlyArray<IChatContentReference> {
+	private readonly _contentReferences: IAideChatContentReference[] = [];
+	public get contentReferences(): ReadonlyArray<IAideChatContentReference> {
 		return this._contentReferences;
 	}
 
-	private readonly _progressMessages: IChatProgressMessage[] = [];
-	public get progressMessages(): ReadonlyArray<IChatProgressMessage> {
+	private readonly _progressMessages: IAideChatProgressMessage[] = [];
+	public get progressMessages(): ReadonlyArray<IAideChatProgressMessage> {
 		return this._progressMessages;
 	}
 
@@ -351,16 +351,16 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	constructor(
-		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability>,
+		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IAideChatContentInlineReference | IAideChatAgentMarkdownContentWithVulnerability>,
 		private _session: ChatModel,
 		private _agent: IChatAgentData | undefined,
 		private _slashCommand: IChatAgentCommand | undefined,
 		public readonly requestId: string,
 		private _isComplete: boolean = false,
 		private _isCanceled = false,
-		private _vote?: ChatAgentVoteDirection,
-		private _result?: IChatAgentResult,
-		followups?: ReadonlyArray<IChatFollowup>
+		private _vote?: AideChatAgentVoteDirection,
+		private _result?: IAideChatAgentResult,
+		followups?: ReadonlyArray<IAideChatFollowup>
 	) {
 		super();
 
@@ -376,14 +376,14 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	/**
 	 * Apply a progress update to the actual response content.
 	 */
-	updateContent(responsePart: IChatProgressResponseContent | IChatTextEdit, quiet?: boolean) {
+	updateContent(responsePart: IAideChatProgressResponseContent | IAideChatTextEdit, quiet?: boolean) {
 		this._response.updateContent(responsePart, quiet);
 	}
 
 	/**
 	 * Apply one of the progress updates that are not part of the actual response content.
 	 */
-	applyReference(progress: IChatUsedContext | IChatContentReference) {
+	applyReference(progress: IChatUsedContext | IAideChatContentReference) {
 		if (progress.kind === 'usedContext') {
 			this._usedContext = progress;
 		} else if (progress.kind === 'reference') {
@@ -399,7 +399,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	setResult(result: IChatAgentResult): void {
+	setResult(result: IAideChatAgentResult): void {
 		this._result = result;
 		this._onDidChange.fire();
 	}
@@ -419,12 +419,12 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 	}
 
-	setFollowups(followups: IChatFollowup[] | undefined): void {
+	setFollowups(followups: IAideChatFollowup[] | undefined): void {
 		this._followups = followups;
 		this._onDidChange.fire(); // Fire so that command followups get rendered on the row
 	}
 
-	setVote(vote: ChatAgentVoteDirection): void {
+	setVote(vote: AideChatAgentVoteDirection): void {
 		this._vote = vote;
 		this._onDidChange.fire();
 	}
@@ -452,7 +452,7 @@ export interface IChatModel {
 	readonly onDidChange: Event<IChatChangeEvent>;
 	readonly sessionId: string;
 	readonly initState: ChatModelInitState;
-	readonly initialLocation: ChatAgentLocation;
+	readonly initialLocation: AideChatAgentLocation;
 	readonly title: string;
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
@@ -472,22 +472,22 @@ export interface ISerializableChatRequestData {
 	message: string | IParsedChatRequest; // string => old format
 	/** Is really like "prompt data". This is the message in the format in which the agent gets it + variable values. */
 	variableData: IChatRequestVariableData;
-	response: ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability> | undefined;
+	response: ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IAideChatContentInlineReference | IAideChatAgentMarkdownContentWithVulnerability> | undefined;
 	agent?: ISerializableChatAgentData;
 	slashCommand?: IChatAgentCommand;
 	// responseErrorDetails: IChatResponseErrorDetails | undefined;
-	result?: IChatAgentResult; // Optional for backcompat
-	followups: ReadonlyArray<IChatFollowup> | undefined;
+	result?: IAideChatAgentResult; // Optional for backcompat
+	followups: ReadonlyArray<IAideChatFollowup> | undefined;
 	isCanceled: boolean | undefined;
-	vote: ChatAgentVoteDirection | undefined;
+	vote: AideChatAgentVoteDirection | undefined;
 	/** For backward compat: should be optional */
 	usedContext?: IChatUsedContext;
-	contentReferences?: ReadonlyArray<IChatContentReference>;
+	contentReferences?: ReadonlyArray<IAideChatContentReference>;
 }
 
 export interface IExportableChatData {
-	initialLocation: ChatAgentLocation | undefined;
-	welcomeMessage: (string | IChatFollowup[])[] | undefined;
+	initialLocation: AideChatAgentLocation | undefined;
+	welcomeMessage: (string | IAideChatFollowup[])[] | undefined;
 	requests: ISerializableChatRequestData[];
 	requesterUsername: string;
 	responderUsername: string;
@@ -591,7 +591,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	private get _defaultAgent() {
-		return this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel);
+		return this.chatAgentService.getDefaultAgent(AideChatAgentLocation.Panel);
 	}
 
 	get requesterUsername(): string {
@@ -639,7 +639,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	constructor(
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
-		private readonly _initialLocation: ChatAgentLocation,
+		private readonly _initialLocation: AideChatAgentLocation,
 		@ILogService private readonly logService: ILogService,
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -683,7 +683,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 					// Port entries from old format
 					const result = 'responseErrorDetails' in raw ?
-						{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
+						{ errorDetails: raw.responseErrorDetails } as IAideChatAgentResult : raw.result;
 					request.response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, request.id, true, raw.isCanceled, raw.vote, result, raw.followups);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
 						request.response.applyReference(revive(raw.usedContext));
@@ -706,7 +706,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			? raw :
 			{ variables: [] };
 
-		variableData.variables = variableData.variables.map<IChatRequestVariableEntry>((v): IChatRequestVariableEntry => {
+		variableData.variables = variableData.variables.map<IAideChatRequestVariableEntry>((v): IAideChatRequestVariableEntry => {
 			if ('values' in v && Array.isArray(v.values)) {
 				return {
 					id: v.id ?? '',
@@ -808,7 +808,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidChange.fire({ kind: 'addRequest', request });
 	}
 
-	acceptResponseProgress(request: ChatRequestModel, progress: IChatProgress, quiet?: boolean): void {
+	acceptResponseProgress(request: ChatRequestModel, progress: IAideChatProgress, quiet?: boolean): void {
 		if (!request.response) {
 			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
 		}
@@ -858,7 +858,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 	}
 
-	setResponse(request: ChatRequestModel, result: IChatAgentResult): void {
+	setResponse(request: ChatRequestModel, result: IAideChatAgentResult): void {
 		if (!request.response) {
 			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
 		}
@@ -874,7 +874,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		request.response.complete();
 	}
 
-	setFollowups(request: ChatRequestModel, followups: IChatFollowup[] | undefined): void {
+	setFollowups(request: ChatRequestModel, followups: IAideChatFollowup[] | undefined): void {
 		if (!request.response) {
 			// Maybe something went wrong?
 			return;
@@ -952,12 +952,12 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 }
 
-export type IChatWelcomeMessageContent = IMarkdownString | IChatFollowup[];
+export type IChatWelcomeMessageContent = IMarkdownString | IAideChatFollowup[];
 
 export interface IChatWelcomeMessageModel {
 	readonly id: string;
 	readonly content: IChatWelcomeMessageContent[];
-	readonly sampleQuestions: IChatFollowup[];
+	readonly sampleQuestions: IAideChatFollowup[];
 	readonly username: string;
 	readonly avatarIcon?: ThemeIcon;
 
@@ -973,18 +973,18 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 
 	constructor(
 		public readonly content: IChatWelcomeMessageContent[],
-		public readonly sampleQuestions: IChatFollowup[],
+		public readonly sampleQuestions: IAideChatFollowup[],
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		this._id = 'welcome_' + ChatWelcomeMessageModel.nextId++;
 	}
 
 	public get username(): string {
-		return this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel)?.fullName ?? '';
+		return this.chatAgentService.getContributedDefaultAgent(AideChatAgentLocation.Panel)?.fullName ?? '';
 	}
 
 	public get avatarIcon(): ThemeIcon | undefined {
-		return this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.metadata.themeIcon;
+		return this.chatAgentService.getDefaultAgent(AideChatAgentLocation.Panel)?.metadata.themeIcon;
 	}
 }
 
@@ -1002,14 +1002,14 @@ export function getHistoryEntriesFromModel(model: IChatModel, forAgentId: string
 		}
 
 		const promptTextResult = getPromptText(request.message);
-		const historyRequest: IChatAgentRequest = {
+		const historyRequest: IAideChatAgentRequest = {
 			sessionId: model.sessionId,
 			requestId: request.id,
 			agentId: request.response.agent?.id ?? '',
 			message: promptTextResult.message,
 			command: request.response.slashCommand?.name,
 			variables: updateRanges(request.variableData, promptTextResult.diff), // TODO bit of a hack
-			location: ChatAgentLocation.Panel
+			location: AideChatAgentLocation.Panel
 		};
 		history.push({ request: historyRequest, response: request.response.response.value, result: request.response.result ?? {} });
 	}

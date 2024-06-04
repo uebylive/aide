@@ -11,7 +11,7 @@ import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
@@ -79,7 +79,7 @@ export function registerMoveActions() {
 				menu: [{
 					id: MenuId.EditorTitle,
 					order: 0,
-					when: ActiveEditorContext.isEqualTo(ChatEditorInput.EditorID),
+					when: ActiveEditorContext.isEqualTo(AideChatEditorInput.EditorID),
 				}]
 			});
 		}
@@ -97,7 +97,7 @@ async function executeMoveToAction(accessor: ServicesAccessor, moveTo: MoveToNew
 
 	const widget = chatView?.widget ?? widgetService.lastFocusedWidget;
 	if (!widget || !('viewId' in widget.viewContext)) {
-		await editorService.openEditor({ resource: ChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ pinned: true } }, moveTo === MoveToNewLocation.Window ? AUX_WINDOW_GROUP : ACTIVE_GROUP);
+		await editorService.openEditor({ resource: AideChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ pinned: true } }, moveTo === MoveToNewLocation.Window ? AUX_WINDOW_GROUP : ACTIVE_GROUP);
 		return;
 	}
 
@@ -111,7 +111,7 @@ async function executeMoveToAction(accessor: ServicesAccessor, moveTo: MoveToNew
 	const viewState = view.widget.getViewState();
 	view.clear();
 
-	await editorService.openEditor({ resource: ChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ target: { sessionId }, pinned: true, viewState: viewState } }, moveTo === MoveToNewLocation.Window ? AUX_WINDOW_GROUP : ACTIVE_GROUP);
+	await editorService.openEditor({ resource: AideChatEditorInput.getNewEditorUri(), options: <IChatEditorOptions>{ target: { sessionId }, pinned: true, viewState: viewState } }, moveTo === MoveToNewLocation.Window ? AUX_WINDOW_GROUP : ACTIVE_GROUP);
 }
 
 async function moveToSidebar(accessor: ServicesAccessor): Promise<void> {
@@ -120,7 +120,7 @@ async function moveToSidebar(accessor: ServicesAccessor): Promise<void> {
 	const editorGroupService = accessor.get(IEditorGroupsService);
 
 	const chatEditorInput = editorService.activeEditor;
-	if (chatEditorInput instanceof ChatEditorInput && chatEditorInput.sessionId) {
+	if (chatEditorInput instanceof AideChatEditorInput && chatEditorInput.sessionId) {
 		await editorService.closeEditor({ editor: chatEditorInput, groupId: editorGroupService.activeGroup.id });
 		const view = await viewsService.openView(CHAT_VIEW_ID) as ChatViewPane;
 		view.loadSession(chatEditorInput.sessionId);

@@ -62,11 +62,11 @@ import { ChatFollowups } from 'vs/workbench/contrib/aideChat/browser/aideChatFol
 import { ChatMarkdownDecorationsRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
 import { ChatCodeBlockContentProvider, CodeBlockPart, CodeCompareBlockPart, ICodeBlockData, ICodeCompareBlockData, ICodeCompareBlockDiffData, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { ChatAgentLocation, IChatAgentMetadata } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentMetadata } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatAgentVoteDirection, IChatCommandButton, IChatConfirmation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IAideChatService, IChatTask, IChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IAideChatService, IAideChatTask, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
@@ -119,8 +119,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly renderer: MarkdownRenderer;
 	private readonly markdownDecorationsRenderer: ChatMarkdownDecorationsRenderer;
 
-	protected readonly _onDidClickFollowup = this._register(new Emitter<IChatFollowup>());
-	readonly onDidClickFollowup: Event<IChatFollowup> = this._onDidClickFollowup.event;
+	protected readonly _onDidClickFollowup = this._register(new Emitter<IAideChatFollowup>());
+	readonly onDidClickFollowup: Event<IAideChatFollowup> = this._onDidClickFollowup.event;
 
 	private readonly _onDidClickRerunWithAgentOrCommandDetection = new Emitter<IChatResponseViewModel>();
 	readonly onDidClickRerunWithAgentOrCommandDetection: Event<IChatResponseViewModel> = this._onDidClickRerunWithAgentOrCommandDetection.event;
@@ -141,7 +141,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	constructor(
 		editorOptions: ChatEditorOptions,
-		private readonly location: ChatAgentLocation,
+		private readonly location: AideChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
 		private readonly delegate: IChatRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
@@ -315,7 +315,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND.bindTo(templateData.contextKeyService).set(isResponseVM(element) && element.agentOrSlashCommandDetected);
 		if (isResponseVM(element)) {
 			CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING.bindTo(templateData.contextKeyService).set(!!element.agent?.metadata.supportIssueReporting);
-			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set(element.vote === ChatAgentVoteDirection.Up ? 'up' : element.vote === ChatAgentVoteDirection.Down ? 'down' : '');
+			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set(element.vote === AideChatAgentVoteDirection.Up ? 'up' : element.vote === AideChatAgentVoteDirection.Down ? 'down' : '');
 		} else {
 			CONTEXT_RESPONSE_VOTE.bindTo(templateData.contextKeyService).set('');
 		}
@@ -427,7 +427,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
-	private getAgentIcon(agent: IChatAgentMetadata | undefined): URI | ThemeIcon {
+	private getAgentIcon(agent: IAideChatAgentMetadata | undefined): URI | ThemeIcon {
 		if (agent?.themeIcon) {
 			return agent.themeIcon;
 		} else if (agent?.iconDark && this.themeService.getColorTheme().type === ColorScheme.DARK) {
@@ -510,7 +510,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (Array.isArray(item)) {
 				const scopedInstaService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, templateData.contextKeyService]));
 				templateData.elementDisposables.add(
-					scopedInstaService.createInstance<typeof ChatFollowups<IChatFollowup>, ChatFollowups<IChatFollowup>>(
+					scopedInstaService.createInstance<typeof ChatFollowups<IAideChatFollowup>, ChatFollowups<IAideChatFollowup>>(
 						ChatFollowups,
 						templateData.value,
 						item,
@@ -790,7 +790,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
-	private renderContentReferencesListData(task: IChatTask | null, data: ReadonlyArray<IChatContentReference | IChatWarningMessage>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): { element: HTMLElement; dispose: () => void } {
+	private renderContentReferencesListData(task: IAideChatTask | null, data: ReadonlyArray<IAideChatContentReference | IAideChatWarningMessage>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): { element: HTMLElement; dispose: () => void } {
 		const listDisposables = new DisposableStore();
 		const referencesLabel = task?.content.value ?? (data.length > 1 ?
 			localize('usedReferencesPlural', "Used {0} references", data.length) :
@@ -872,7 +872,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		element.ariaLabel = expanded ? localize('usedReferencesExpanded', "{0}, expanded", label) : localize('usedReferencesCollapsed', "{0}, collapsed", label);
 	}
 
-	private renderProgressTask(task: IChatTask, showSpinner: boolean, element: ChatTreeItem, templateData: IChatListItemTemplate): IMarkdownRenderResult | undefined {
+	private renderProgressTask(task: IAideChatTask, showSpinner: boolean, element: ChatTreeItem, templateData: IChatListItemTemplate): IMarkdownRenderResult | undefined {
 		if (!isResponseVM(element)) {
 			return;
 		}
@@ -887,7 +887,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return this.renderProgressMessage(task, showSpinner);
 	}
 
-	private renderProgressMessage(progress: IChatProgressMessage | IChatTask, showSpinner: boolean): IMarkdownRenderResult {
+	private renderProgressMessage(progress: IAideChatProgressMessage | IAideChatTask, showSpinner: boolean): IMarkdownRenderResult {
 		if (showSpinner) {
 			// this step is in progress, communicate it to SR users
 			alert(progress.content.value);
@@ -901,7 +901,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return result;
 	}
 
-	private renderCommandButton(element: ChatTreeItem, commandButton: IChatCommandButton): IMarkdownRenderResult {
+	private renderCommandButton(element: ChatTreeItem, commandButton: IAideChatCommandButton): IMarkdownRenderResult {
 		const container = $('.chat-command-button');
 		const disposables = new DisposableStore();
 		const enabled = !isResponseVM(element) || !element.isStale;
@@ -949,7 +949,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		};
 	}
 
-	private renderConfirmation(element: ChatTreeItem, confirmation: IChatConfirmation, templateData: IChatListItemTemplate): IMarkdownRenderResult | undefined {
+	private renderConfirmation(element: ChatTreeItem, confirmation: IAideChatConfirmation, templateData: IChatListItemTemplate): IMarkdownRenderResult | undefined {
 		const store = new DisposableStore();
 		const confirmationWidget = store.add(this.instantiationService.createInstance(ChatConfirmationWidget, confirmation.title, confirmation.message, [
 			{ label: localize('accept', "Accept"), data: confirmation.data },
@@ -1377,9 +1377,9 @@ class TreePool extends Disposable {
 }
 
 class ContentReferencesListPool extends Disposable {
-	private _pool: ResourcePool<WorkbenchList<IChatContentReference | IChatWarningMessage>>;
+	private _pool: ResourcePool<WorkbenchList<IAideChatContentReference | IAideChatWarningMessage>>;
 
-	public get inUse(): ReadonlySet<WorkbenchList<IChatContentReference | IChatWarningMessage>> {
+	public get inUse(): ReadonlySet<WorkbenchList<IAideChatContentReference | IAideChatWarningMessage>> {
 		return this._pool.inUse;
 	}
 
@@ -1392,14 +1392,14 @@ class ContentReferencesListPool extends Disposable {
 		this._pool = this._register(new ResourcePool(() => this.listFactory()));
 	}
 
-	private listFactory(): WorkbenchList<IChatContentReference | IChatWarningMessage> {
+	private listFactory(): WorkbenchList<IAideChatContentReference | IAideChatWarningMessage> {
 		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
 
 		const container = $('.chat-used-context-list');
 		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
 
 		const list = this.instantiationService.createInstance(
-			WorkbenchList<IChatContentReference | IChatWarningMessage>,
+			WorkbenchList<IAideChatContentReference | IAideChatWarningMessage>,
 			'ChatListRenderer',
 			container,
 			new ContentReferencesListDelegate(),
@@ -1407,7 +1407,7 @@ class ContentReferencesListPool extends Disposable {
 			{
 				alwaysConsumeMouseWheel: false,
 				accessibilityProvider: {
-					getAriaLabel: (element: IChatContentReference | IChatWarningMessage) => {
+					getAriaLabel: (element: IAideChatContentReference | IAideChatWarningMessage) => {
 						if (element.kind === 'warning') {
 							return element.content.value;
 						}
@@ -1424,7 +1424,7 @@ class ContentReferencesListPool extends Disposable {
 					getWidgetAriaLabel: () => localize('usedReferences', "Used References")
 				},
 				dnd: {
-					getDragURI: (element: IChatContentReference | IChatWarningMessage) => {
+					getDragURI: (element: IAideChatContentReference | IAideChatWarningMessage) => {
 						if (element.kind === 'warning') {
 							return null;
 						}
@@ -1446,7 +1446,7 @@ class ContentReferencesListPool extends Disposable {
 		return list;
 	}
 
-	get(): IDisposableReference<WorkbenchList<IChatContentReference | IChatWarningMessage>> {
+	get(): IDisposableReference<WorkbenchList<IAideChatContentReference | IAideChatWarningMessage>> {
 		const object = this._pool.get();
 		let stale = false;
 		return {
@@ -1460,12 +1460,12 @@ class ContentReferencesListPool extends Disposable {
 	}
 }
 
-class ContentReferencesListDelegate implements IListVirtualDelegate<IChatContentReference | IChatWarningMessage> {
-	getHeight(element: IChatContentReference): number {
+class ContentReferencesListDelegate implements IListVirtualDelegate<IAideChatContentReference | IAideChatWarningMessage> {
+	getHeight(element: IAideChatContentReference): number {
 		return 22;
 	}
 
-	getTemplateId(element: IChatContentReference): string {
+	getTemplateId(element: IAideChatContentReference): string {
 		return ContentReferencesListRenderer.TEMPLATE_ID;
 	}
 }
@@ -1475,7 +1475,7 @@ interface IChatContentReferenceListTemplate {
 	templateDisposables: IDisposable;
 }
 
-class ContentReferencesListRenderer implements IListRenderer<IChatContentReference | IChatWarningMessage, IChatContentReferenceListTemplate> {
+class ContentReferencesListRenderer implements IListRenderer<IAideChatContentReference | IAideChatWarningMessage, IChatContentReferenceListTemplate> {
 	static TEMPLATE_ID = 'contentReferencesListRenderer';
 	readonly templateId: string = ContentReferencesListRenderer.TEMPLATE_ID;
 
@@ -1492,7 +1492,7 @@ class ContentReferencesListRenderer implements IListRenderer<IChatContentReferen
 	}
 
 
-	private getReferenceIcon(data: IChatContentReference): URI | ThemeIcon | undefined {
+	private getReferenceIcon(data: IAideChatContentReference): URI | ThemeIcon | undefined {
 		if (ThemeIcon.isThemeIcon(data.iconPath)) {
 			return data.iconPath;
 		} else {
@@ -1502,7 +1502,7 @@ class ContentReferencesListRenderer implements IListRenderer<IChatContentReferen
 		}
 	}
 
-	renderElement(data: IChatContentReference | IChatWarningMessage, index: number, templateData: IChatContentReferenceListTemplate, height: number | undefined): void {
+	renderElement(data: IAideChatContentReference | IAideChatWarningMessage, index: number, templateData: IChatContentReferenceListTemplate, height: number | undefined): void {
 		if (data.kind === 'warning') {
 			templateData.label.setResource({ name: data.content.value }, { icon: Codicon.warning });
 			return;
@@ -1666,7 +1666,7 @@ function contentToMarkdown(str: string | IMarkdownString): IMarkdownString {
 	return typeof str === 'string' ? { value: str } : str;
 }
 
-function isProgressMessage(item: any): item is IChatProgressMessage {
+function isProgressMessage(item: any): item is IAideChatProgressMessage {
 	return item && 'kind' in item && item.kind === 'progressMessage';
 }
 
@@ -1674,7 +1674,7 @@ function isProgressTaskRenderData(item: any): item is IChatTaskRenderData {
 	return item && 'isSettled' in item;
 }
 
-function isWarningRenderData(item: any): item is IChatWarningMessage {
+function isWarningRenderData(item: any): item is IAideChatWarningMessage {
 	return item && 'kind' in item && item.kind === 'warning';
 }
 
@@ -1682,7 +1682,7 @@ function isProgressMessageRenderData(item: IChatRenderData): item is IChatProgre
 	return item && 'isAtEndOfResponse' in item;
 }
 
-function isCommandButtonRenderData(item: IChatRenderData): item is IChatCommandButton {
+function isCommandButtonRenderData(item: IChatRenderData): item is IAideChatCommandButton {
 	return item && 'kind' in item && item.kind === 'command';
 }
 
@@ -1690,7 +1690,7 @@ function isTextEditRenderData(item: IChatRenderData): item is IChatTextEditGroup
 	return item && 'kind' in item && item.kind === 'textEditGroup';
 }
 
-function isConfirmationRenderData(item: IChatRenderData): item is IChatConfirmation {
+function isConfirmationRenderData(item: IChatRenderData): item is IAideChatConfirmation {
 	return item && 'kind' in item && item.kind === 'confirmation';
 }
 

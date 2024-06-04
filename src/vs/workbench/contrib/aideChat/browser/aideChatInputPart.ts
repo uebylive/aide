@@ -46,10 +46,10 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { CancelAction, ChatSubmitSecondaryAgentAction, IChatExecuteActionContext, SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
 import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatFollowups } from 'vs/workbench/contrib/aideChat/browser/aideChatFollowups';
-import { ChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IAideChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IChatHistoryEntry, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
@@ -88,10 +88,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-	private _onDidDeleteContext = this._register(new Emitter<IChatRequestVariableEntry>());
+	private _onDidDeleteContext = this._register(new Emitter<IAideChatRequestVariableEntry>());
 	readonly onDidDeleteContext = this._onDidDeleteContext.event;
 
-	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: IChatFollowup; response: IChatResponseViewModel | undefined }>());
+	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: IAideChatFollowup; response: IChatResponseViewModel | undefined }>());
 	readonly onDidAcceptFollowup = this._onDidAcceptFollowup.event;
 
 	public get attachedContext() {
@@ -99,7 +99,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private _indexOfLastAttachedContextDeletedWithKeyboard: number = -1;
-	private readonly _attachedContext = new Set<IChatRequestVariableEntry>();
+	private readonly _attachedContext = new Set<IAideChatRequestVariableEntry>();
 
 	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	private readonly _contextResourceLabels = this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event });
@@ -147,7 +147,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	constructor(
 		// private readonly editorOptions: ChatEditorOptions, // TODO this should be used
-		private readonly location: ChatAgentLocation,
+		private readonly location: AideChatAgentLocation,
 		private readonly options: IChatInputPartOptions,
 		@IAideChatWidgetHistoryService private readonly historyService: IAideChatWidgetHistoryService,
 		@IModelService private readonly modelService: IModelService,
@@ -285,7 +285,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._inputEditor.focus();
 	}
 
-	attachContext(...contentReferences: IChatRequestVariableEntry[]): void {
+	attachContext(...contentReferences: IAideChatRequestVariableEntry[]): void {
 		for (const reference of contentReferences) {
 			this.attachedContext.add(reference);
 		}
@@ -392,7 +392,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				if (this.location === ChatAgentLocation.Panel) {
+				if (this.location === AideChatAgentLocation.Panel) {
 					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 						const dropdownAction = this.instantiationService.createInstance(MenuItemAction, { id: 'aideChat.moreExecuteActions', title: localize('notebook.moreExecuteActionsLabel', "More..."), icon: Codicon.chevronDown }, undefined, undefined, undefined, undefined);
 						return this.instantiationService.createInstance(ChatSubmitDropdownActionItem, action, dropdownAction);
@@ -499,7 +499,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		});
 	}
 
-	async renderFollowups(items: IChatFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
+	async renderFollowups(items: IAideChatFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
 		if (!this.options.renderFollowups) {
 			return;
 		}
@@ -507,7 +507,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		dom.clearNode(this.followupsContainer);
 
 		if (items && items.length > 0) {
-			this.followupsDisposables.add(this.instantiationService.createInstance<typeof ChatFollowups<IChatFollowup>, ChatFollowups<IChatFollowup>>(ChatFollowups, this.followupsContainer, items, this.location, undefined, followup => this._onDidAcceptFollowup.fire({ followup, response })));
+			this.followupsDisposables.add(this.instantiationService.createInstance<typeof ChatFollowups<IAideChatFollowup>, ChatFollowups<IAideChatFollowup>>(ChatFollowups, this.followupsContainer, items, this.location, undefined, followup => this._onDidAcceptFollowup.fire({ followup, response })));
 		}
 	}
 

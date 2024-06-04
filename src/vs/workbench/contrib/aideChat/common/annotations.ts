@@ -6,12 +6,12 @@ import { MarkdownString } from 'vs/base/common/htmlContent';
 import { basename } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
-import { IChatProgressRenderableResponseContent, IChatProgressResponseContent, appendMarkdownString, canMergeMarkdownStrings } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IChatAgentVulnerabilityDetails, IChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IChatProgressRenderableResponseContent, IAideChatProgressResponseContent, appendMarkdownString, canMergeMarkdownStrings } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatAgentVulnerabilityDetails, IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 export const contentRefUrl = 'http://_vscodecontentref_'; // must be lowercase for URI
 
-export function annotateSpecialMarkdownContent(response: ReadonlyArray<IChatProgressResponseContent>): ReadonlyArray<IChatProgressRenderableResponseContent> {
+export function annotateSpecialMarkdownContent(response: ReadonlyArray<IAideChatProgressResponseContent>): ReadonlyArray<IChatProgressRenderableResponseContent> {
 	const result: IChatProgressRenderableResponseContent[] = [];
 	for (const item of response) {
 		const previousItem = result[result.length - 1];
@@ -52,8 +52,8 @@ export interface IMarkdownVulnerability {
 	readonly range: IRange;
 }
 
-export function annotateVulnerabilitiesInText(response: ReadonlyArray<IChatProgressResponseContent>): readonly IChatMarkdownContent[] {
-	const result: IChatMarkdownContent[] = [];
+export function annotateVulnerabilitiesInText(response: ReadonlyArray<IAideChatProgressResponseContent>): readonly IAideChatMarkdownContent[] {
+	const result: IAideChatMarkdownContent[] = [];
 	for (const item of response) {
 		const previousItem = result[result.length - 1];
 		if (item.kind === 'markdownContent') {

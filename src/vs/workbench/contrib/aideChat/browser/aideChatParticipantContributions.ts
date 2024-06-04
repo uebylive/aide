@@ -19,7 +19,7 @@ import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { CHAT_VIEW_ID } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { ChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IRawChatParticipantContribution } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
@@ -197,7 +197,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 					}
 
 					const store = new DisposableStore();
-					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(ChatAgentLocation.Panel))) {
+					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(AideChatAgentLocation.Panel))) {
 						store.add(this.registerDefaultParticipantView(providerDescriptor));
 					}
 
@@ -225,8 +225,8 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 							isDefault: providerDescriptor.isDefault,
 							defaultImplicitVariables: providerDescriptor.defaultImplicitVariables,
 							locations: isNonEmptyArray(providerDescriptor.locations) ?
-								providerDescriptor.locations.map(ChatAgentLocation.fromRaw) :
-								[ChatAgentLocation.Panel],
+								providerDescriptor.locations.map(AideChatAgentLocation.fromRaw) :
+								[AideChatAgentLocation.Panel],
 							slashCommands: providerDescriptor.commands ?? []
 						} satisfies IChatAgentData));
 

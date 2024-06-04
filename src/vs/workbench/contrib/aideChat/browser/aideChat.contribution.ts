@@ -31,7 +31,7 @@ import { registerChatTitleActions } from 'vs/workbench/contrib/aideChat/browser/
 import { IAideChatAccessibilityService, IAideChatCodeBlockContextProviderService, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityService';
 import { ChatEditor, IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { ChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
 import { ChatExtensionPointHandler } from 'vs/workbench/contrib/aideChat/browser/aideChatParticipantContributions';
 import { ChatResponseAccessibleView } from 'vs/workbench/contrib/aideChat/browser/aideChatResponseAccessibleView';
@@ -40,7 +40,7 @@ import { ChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideCha
 import { ChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/codeBlockContextProviderService';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
 import 'vs/workbench/contrib/aideChat/browser/contrib/chatInputEditorContrib';
-import { ChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { ChatService } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
@@ -99,11 +99,11 @@ configurationRegistry.registerConfiguration({
 Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
 	EditorPaneDescriptor.create(
 		ChatEditor,
-		ChatEditorInput.EditorID,
+		AideChatEditorInput.EditorID,
 		nls.localize('aideChat', "Aide")
 	),
 	[
-		new SyncDescriptor(ChatEditorInput)
+		new SyncDescriptor(AideChatEditorInput)
 	]
 );
 
@@ -120,7 +120,7 @@ class ChatResolverContribution extends Disposable {
 		this._register(editorResolverService.registerEditor(
 			`${Schemas.vscodeChatSesssion}:**/**`,
 			{
-				id: ChatEditorInput.EditorID,
+				id: AideChatEditorInput.EditorID,
 				label: nls.localize('aidehat', "Aide"),
 				priority: RegisteredEditorPriority.builtin
 			},
@@ -130,7 +130,7 @@ class ChatResolverContribution extends Disposable {
 			},
 			{
 				createEditorInput: ({ resource, options }) => {
-					return { editor: instantiationService.createInstance(ChatEditorInput, resource, options as IChatEditorOptions), options };
+					return { editor: instantiationService.createInstance(AideChatEditorInput, resource, options as IChatEditorOptions), options };
 				}
 			}
 		));
@@ -164,7 +164,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 			sortText: 'z1_help',
 			executeImmediately: true
 		}, async (prompt, progress) => {
-			const defaultAgent = chatAgentService.getDefaultAgent(ChatAgentLocation.Panel);
+			const defaultAgent = chatAgentService.getDefaultAgent(AideChatAgentLocation.Panel);
 			const agents = chatAgentService.getAgents();
 
 			// Report prefix
@@ -180,7 +180,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 			// Report agent list
 			const agentText = (await Promise.all(agents
 				.filter(a => a.id !== defaultAgent?.id)
-				.filter(a => a.locations.includes(ChatAgentLocation.Panel))
+				.filter(a => a.locations.includes(AideChatAgentLocation.Panel))
 				.map(async a => {
 					const description = a.description ? `- ${a.description}` : '';
 					const agentMarkdown = instantiationService.invokeFunction(accessor => agentToMarkdown(a, true, accessor));
@@ -229,7 +229,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 const workbenchContributionsRegistry = Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench);
 registerWorkbenchContribution2(ChatResolverContribution.ID, ChatResolverContribution, WorkbenchPhase.BlockStartup);
 workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlashCommandsContribution, LifecyclePhase.Eventually);
-Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(ChatEditorInput.TypeID, ChatEditorInputSerializer);
+Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(AideChatEditorInput.TypeID, ChatEditorInputSerializer);
 registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointHandler, WorkbenchPhase.BlockStartup);
 
 registerChatActions();

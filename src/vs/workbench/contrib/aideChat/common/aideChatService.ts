@@ -13,18 +13,18 @@ import { IRange, Range } from 'vs/editor/common/core/range';
 import { Command, Location, TextEdit } from 'vs/editor/common/languages';
 import { FileType } from 'vs/platform/files/common/files';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IChatParserContext } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export interface IChatRequest {
 	message: string;
-	variables: Record<string, IChatRequestVariableValue[]>;
+	variables: Record<string, IAideChatRequestVariableValue[]>;
 }
 
-export interface IChatResponseErrorDetails {
+export interface IAideChatResponseErrorDetails {
 	message: string;
 	responseIsIncomplete?: boolean;
 	responseIsFiltered?: boolean;
@@ -74,25 +74,25 @@ export interface IChatContentVariableReference {
 	value?: URI | Location;
 }
 
-export interface IChatContentReference {
+export interface IAideChatContentReference {
 	reference: URI | Location | IChatContentVariableReference;
 	iconPath?: ThemeIcon | { light: URI; dark?: URI };
 	kind: 'reference';
 }
 
-export interface IChatContentInlineReference {
+export interface IAideChatContentInlineReference {
 	inlineReference: URI | Location;
 	name?: string;
 	kind: 'inlineReference';
 }
 
-export interface IChatAgentDetection {
+export interface IAideChatAgentDetection {
 	agentId: string;
 	command?: IChatAgentCommand;
 	kind: 'agentDetection';
 }
 
-export interface IChatMarkdownContent {
+export interface IAideChatMarkdownContent {
 	content: IMarkdownString;
 	kind: 'markdownContent';
 }
@@ -102,33 +102,33 @@ export interface IChatTreeData {
 	kind: 'treeData';
 }
 
-export interface IChatProgressMessage {
+export interface IAideChatProgressMessage {
 	content: IMarkdownString;
 	kind: 'progressMessage';
 }
 
-export interface IChatTask extends IChatTaskDto {
+export interface IAideChatTask extends IAideChatTaskDto {
 	deferred: DeferredPromise<string | void>;
-	progress: (IChatWarningMessage | IChatContentReference)[];
-	onDidAddProgress: Event<IChatWarningMessage | IChatContentReference>;
-	add(progress: IChatWarningMessage | IChatContentReference): void;
+	progress: (IAideChatWarningMessage | IAideChatContentReference)[];
+	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference>;
+	add(progress: IAideChatWarningMessage | IAideChatContentReference): void;
 
 	complete: (result: string | void) => void;
 	task: () => Promise<string | void>;
 	isSettled: () => boolean;
 }
 
-export interface IChatTaskDto {
+export interface IAideChatTaskDto {
 	content: IMarkdownString;
 	kind: 'progressTask';
 }
 
-export interface IChatTaskResult {
+export interface IAideChatTaskResult {
 	content: IMarkdownString | void;
 	kind: 'progressTaskResult';
 }
 
-export interface IChatWarningMessage {
+export interface IAideChatWarningMessage {
 	content: IMarkdownString;
 	kind: 'warning';
 }
@@ -138,24 +138,24 @@ export interface IChatAgentVulnerabilityDetails {
 	description: string;
 }
 
-export interface IChatAgentMarkdownContentWithVulnerability {
+export interface IAideChatAgentMarkdownContentWithVulnerability {
 	content: IMarkdownString;
 	vulnerabilities: IChatAgentVulnerabilityDetails[];
 	kind: 'markdownVuln';
 }
 
-export interface IChatCommandButton {
+export interface IAideChatCommandButton {
 	command: Command;
 	kind: 'command';
 }
 
-export interface IChatTextEdit {
+export interface IAideChatTextEdit {
 	uri: URI;
 	edits: TextEdit[];
 	kind: 'textEdit';
 }
 
-export interface IChatConfirmation {
+export interface IAideChatConfirmation {
 	title: string;
 	message: string;
 	data: any;
@@ -163,23 +163,23 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
-export type IChatProgress =
-	| IChatMarkdownContent
-	| IChatAgentMarkdownContentWithVulnerability
+export type IAideChatProgress =
+	| IAideChatMarkdownContent
+	| IAideChatAgentMarkdownContentWithVulnerability
 	| IChatTreeData
 	| IChatUsedContext
-	| IChatContentReference
-	| IChatContentInlineReference
-	| IChatAgentDetection
-	| IChatProgressMessage
-	| IChatTask
-	| IChatTaskResult
-	| IChatCommandButton
-	| IChatWarningMessage
-	| IChatTextEdit
-	| IChatConfirmation;
+	| IAideChatContentReference
+	| IAideChatContentInlineReference
+	| IAideChatAgentDetection
+	| IAideChatProgressMessage
+	| IAideChatTask
+	| IAideChatTaskResult
+	| IAideChatCommandButton
+	| IAideChatWarningMessage
+	| IAideChatTextEdit
+	| IAideChatConfirmation;
 
-export interface IChatFollowup {
+export interface IAideChatFollowup {
 	kind: 'reply';
 	message: string;
 	agentId: string;
@@ -188,14 +188,14 @@ export interface IChatFollowup {
 	tooltip?: string;
 }
 
-export enum ChatAgentVoteDirection {
+export enum AideChatAgentVoteDirection {
 	Down = 0,
 	Up = 1
 }
 
 export interface IChatVoteAction {
 	kind: 'vote';
-	direction: ChatAgentVoteDirection;
+	direction: AideChatAgentVoteDirection;
 	reportIssue?: boolean;
 }
 
@@ -229,12 +229,12 @@ export interface IChatTerminalAction {
 
 export interface IChatCommandAction {
 	kind: 'command';
-	commandButton: IChatCommandButton;
+	commandButton: IAideChatCommandButton;
 }
 
 export interface IChatFollowupAction {
 	kind: 'followUp';
-	followup: IChatFollowup;
+	followup: IAideChatFollowup;
 }
 
 export interface IChatBugReportAction {
@@ -248,12 +248,12 @@ export interface IChatInlineChatCodeAction {
 
 export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IChatFollowupAction | IChatBugReportAction | IChatInlineChatCodeAction;
 
-export interface IChatUserActionEvent {
+export interface IAideChatUserActionEvent {
 	action: ChatUserAction;
 	agentId: string | undefined;
 	sessionId: string;
 	requestId: string;
-	result: IChatAgentResult | undefined;
+	result: IAideChatAgentResult | undefined;
 }
 
 export interface IChatDynamicRequest {
@@ -269,9 +269,9 @@ export interface IChatDynamicRequest {
 }
 
 export interface IChatCompleteResponse {
-	message: string | ReadonlyArray<IChatProgress>;
-	result?: IChatAgentResult;
-	followups?: IChatFollowup[];
+	message: string | ReadonlyArray<IAideChatProgress>;
+	result?: IAideChatAgentResult;
+	followups?: IAideChatFollowup[];
 }
 
 export interface IChatDetail {
@@ -299,13 +299,13 @@ export interface IChatSendRequestData extends IChatSendRequestResponseState {
 }
 
 export interface IChatSendRequestOptions {
-	location?: ChatAgentLocation;
+	location?: AideChatAgentLocation;
 	parserContext?: IChatParserContext;
 	attempt?: number;
 	noCommandDetection?: boolean;
 	acceptedConfirmationData?: any[];
 	rejectedConfirmationData?: any[];
-	attachedContext?: IChatRequestVariableEntry[];
+	attachedContext?: IAideChatRequestVariableEntry[];
 
 	/** The target agent ID can be specified with this property instead of using @ in 'message' */
 	agentId?: string;
@@ -318,9 +318,9 @@ export interface IAideChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
 
-	isEnabled(location: ChatAgentLocation): boolean;
+	isEnabled(location: AideChatAgentLocation): boolean;
 	hasSessions(): boolean;
-	startSession(location: ChatAgentLocation, token: CancellationToken): ChatModel | undefined;
+	startSession(location: AideChatAgentLocation, token: CancellationToken): ChatModel | undefined;
 	getSession(sessionId: string): IChatModel | undefined;
 	getOrRestoreSession(sessionId: string): IChatModel | undefined;
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModel | undefined;
@@ -340,8 +340,8 @@ export interface IAideChatService {
 	clearAllHistoryEntries(): void;
 	removeHistoryEntry(sessionId: string): void;
 
-	onDidPerformUserAction: Event<IChatUserActionEvent>;
-	notifyUserAction(event: IChatUserActionEvent): void;
+	onDidPerformUserAction: Event<IAideChatUserActionEvent>;
+	notifyUserAction(event: IAideChatUserActionEvent): void;
 	onDidDisposeSession: Event<{ sessionId: string; reason: 'initializationFailed' | 'cleared' }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;

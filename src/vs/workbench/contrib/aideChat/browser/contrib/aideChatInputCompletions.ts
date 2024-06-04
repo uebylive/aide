@@ -20,7 +20,7 @@ import { SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aide
 import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { SelectAndInsertFileAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { ChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
@@ -39,7 +39,7 @@ class SlashCommandCompletions extends Disposable {
 			triggerCharacters: ['/'],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.viewModel || (widget.location !== ChatAgentLocation.Panel && widget.location !== ChatAgentLocation.Notebook) /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || !widget.viewModel || (widget.location !== AideChatAgentLocation.Panel && widget.location !== AideChatAgentLocation.Notebook) /* TODO@jrieken - enable when agents are adopted*/) {
 					return null;
 				}
 
@@ -95,7 +95,7 @@ class AgentCompletions extends Disposable {
 			triggerCharacters: ['@'],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.viewModel || (widget.location !== ChatAgentLocation.Panel && widget.location !== ChatAgentLocation.Notebook) /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || !widget.viewModel || (widget.location !== AideChatAgentLocation.Panel && widget.location !== AideChatAgentLocation.Notebook) /* TODO@jrieken - enable when agents are adopted*/) {
 					return null;
 				}
 
@@ -139,7 +139,7 @@ class AgentCompletions extends Disposable {
 			triggerCharacters: ['/'],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.viewModel || widget.location !== ChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || !widget.viewModel || widget.location !== AideChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
 					return;
 				}
 
@@ -191,7 +191,7 @@ class AgentCompletions extends Disposable {
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				const viewModel = widget?.viewModel;
-				if (!widget || !viewModel || widget.location !== ChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || !viewModel || widget.location !== AideChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
 					return;
 				}
 
@@ -297,7 +297,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || !widget.supportsFileReferences || widget.location !== ChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || !widget.supportsFileReferences || widget.location !== AideChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
 					return null;
 				}
 
@@ -363,7 +363,7 @@ class VariableCompletions extends Disposable {
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget || widget.location !== ChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
+				if (!widget || widget.location !== AideChatAgentLocation.Panel /* TODO@jrieken - enable when agents are adopted*/) {
 					return null;
 				}
 

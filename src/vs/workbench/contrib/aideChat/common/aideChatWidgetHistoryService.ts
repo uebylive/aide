@@ -7,7 +7,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { Memento } from 'vs/workbench/common/memento';
-import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 
 export interface IChatHistoryEntry {
@@ -22,8 +22,8 @@ export interface IAideChatWidgetHistoryService {
 	readonly onDidClearHistory: Event<void>;
 
 	clearHistory(): void;
-	getHistory(location: ChatAgentLocation): IChatHistoryEntry[];
-	saveHistory(location: ChatAgentLocation, history: IChatHistoryEntry[]): void;
+	getHistory(location: AideChatAgentLocation): IChatHistoryEntry[];
+	saveHistory(location: AideChatAgentLocation, history: IChatHistoryEntry[]): void;
 }
 
 interface IChatHistory {
@@ -52,17 +52,17 @@ export class ChatWidgetHistoryService implements IAideChatWidgetHistoryService {
 		this.viewState = loadedState;
 	}
 
-	getHistory(location: ChatAgentLocation): IChatHistoryEntry[] {
+	getHistory(location: AideChatAgentLocation): IChatHistoryEntry[] {
 		const key = this.getKey(location);
 		return this.viewState.history?.[key] ?? [];
 	}
 
-	private getKey(location: ChatAgentLocation): string {
+	private getKey(location: AideChatAgentLocation): string {
 		// Preserve history for panel by continuing to use the same old provider id. Use the location as a key for other chat locations.
-		return location === ChatAgentLocation.Panel ? CHAT_PROVIDER_ID : location;
+		return location === AideChatAgentLocation.Panel ? CHAT_PROVIDER_ID : location;
 	}
 
-	saveHistory(location: ChatAgentLocation, history: IChatHistoryEntry[]): void {
+	saveHistory(location: AideChatAgentLocation, history: IChatHistoryEntry[]): void {
 		if (!this.viewState.history) {
 			this.viewState.history = {};
 		}

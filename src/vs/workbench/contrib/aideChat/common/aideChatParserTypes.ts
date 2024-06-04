@@ -8,7 +8,7 @@ import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IRange } from 'vs/editor/common/core/range';
 import { IChatAgentCommand, IChatAgentData, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IChatSlashData } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
 
@@ -123,7 +123,7 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 export class ChatRequestDynamicVariablePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
 	readonly kind = ChatRequestDynamicVariablePart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly text: string, readonly id: string, readonly modelDescription: string | undefined, readonly data: IChatRequestVariableValue) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly text: string, readonly id: string, readonly modelDescription: string | undefined, readonly data: IAideChatRequestVariableValue) { }
 
 	get referenceText(): string {
 		return this.text.replace(chatVariableLeader, '');

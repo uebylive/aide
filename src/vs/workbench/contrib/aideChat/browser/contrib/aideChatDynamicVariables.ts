@@ -22,7 +22,7 @@ import { AnythingQuickAccessProviderRunOptions, IQuickAccessOptions } from 'vs/p
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IChatRequestVariableValue, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatRequestVariableValue, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
 
@@ -220,7 +220,7 @@ export interface IAddDynamicVariableContext {
 	id: string;
 	widget: IChatWidget;
 	range: IRange;
-	variableData: IChatRequestVariableValue;
+	variableData: IAideChatRequestVariableValue;
 	command?: Command;
 }
 

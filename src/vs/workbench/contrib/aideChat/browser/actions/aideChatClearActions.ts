@@ -15,7 +15,7 @@ import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
 import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { clearChatEditor } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClear';
 import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
@@ -35,7 +35,7 @@ export function registerNewChatActions() {
 					id: MenuId.EditorTitle,
 					group: 'navigation',
 					order: 0,
-					when: ActiveEditorContext.isEqualTo(ChatEditorInput.EditorID),
+					when: ActiveEditorContext.isEqualTo(AideChatEditorInput.EditorID),
 				}]
 			});
 		}

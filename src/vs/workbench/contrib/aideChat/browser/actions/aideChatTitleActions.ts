@@ -16,7 +16,7 @@ import { ResourceNotebookCellEdit } from 'vs/workbench/contrib/bulkEdit/browser/
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IAideChatService, ChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatService, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -56,10 +56,10 @@ export function registerChatTitleActions() {
 				result: item.result,
 				action: {
 					kind: 'vote',
-					direction: ChatAgentVoteDirection.Up,
+					direction: AideChatAgentVoteDirection.Up,
 				}
 			});
-			item.setVote(ChatAgentVoteDirection.Up);
+			item.setVote(AideChatAgentVoteDirection.Up);
 		}
 	});
 
@@ -95,10 +95,10 @@ export function registerChatTitleActions() {
 				result: item.result,
 				action: {
 					kind: 'vote',
-					direction: ChatAgentVoteDirection.Down,
+					direction: AideChatAgentVoteDirection.Down,
 				}
 			});
-			item.setVote(ChatAgentVoteDirection.Down);
+			item.setVote(AideChatAgentVoteDirection.Down);
 		}
 	});
 

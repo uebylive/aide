@@ -15,8 +15,8 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
 import { ICodeBlockActionContext } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { IAideChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
@@ -118,8 +118,8 @@ export interface IChatWidget {
 	readonly onDidHide: Event<void>;
 	readonly onDidSubmitAgent: Event<{ agent: IChatAgentData; slashCommand?: IChatAgentCommand }>;
 	readonly onDidChangeParsedInput: Event<void>;
-	readonly onDidDeleteContext: Event<IChatRequestVariableEntry>;
-	readonly location: ChatAgentLocation;
+	readonly onDidDeleteContext: Event<IAideChatRequestVariableEntry>;
+	readonly location: AideChatAgentLocation;
 	readonly viewContext: IChatWidgetViewContext;
 	readonly viewModel: IChatViewModel | undefined;
 	readonly inputEditor: ICodeEditor;
@@ -146,7 +146,7 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
-	setContext(overwrite: boolean, ...context: IChatRequestVariableEntry[]): void;
+	setContext(overwrite: boolean, ...context: IAideChatRequestVariableEntry[]): void;
 	clear(): void;
 }
 

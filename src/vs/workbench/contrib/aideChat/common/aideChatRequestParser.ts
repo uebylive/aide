@@ -6,7 +6,7 @@
 import { OffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
-import { ChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicVariablePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
@@ -27,7 +27,7 @@ export class ChatRequestParser {
 		@IAideChatSlashCommandService private readonly slashCommandService: IAideChatSlashCommandService
 	) { }
 
-	parseChatRequest(sessionId: string, message: string, location: ChatAgentLocation = ChatAgentLocation.Panel, context?: IChatParserContext): IParsedChatRequest {
+	parseChatRequest(sessionId: string, message: string, location: AideChatAgentLocation = AideChatAgentLocation.Panel, context?: IChatParserContext): IParsedChatRequest {
 		const parts: IParsedChatRequestPart[] = [];
 		const references = this.variableService.getDynamicVariables(sessionId); // must access this list before any async calls
 
@@ -90,7 +90,7 @@ export class ChatRequestParser {
 		};
 	}
 
-	private tryToParseAgent(message: string, fullMessage: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>, location: ChatAgentLocation, context: IChatParserContext | undefined): ChatRequestAgentPart | ChatRequestVariablePart | undefined {
+	private tryToParseAgent(message: string, fullMessage: string, offset: number, position: IPosition, parts: ReadonlyArray<IParsedChatRequestPart>, location: AideChatAgentLocation, context: IChatParserContext | undefined): ChatRequestAgentPart | ChatRequestVariablePart | undefined {
 		const nextAgentMatch = message.match(agentReg);
 		if (!nextAgentMatch) {
 			return;

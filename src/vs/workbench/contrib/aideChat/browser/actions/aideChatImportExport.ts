@@ -13,7 +13,7 @@ import { IFileService } from 'vs/platform/files/common/files';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { isExportableSessionData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -96,7 +96,7 @@ export function registerChatExportActions() {
 					throw new Error('Invalid chat session data');
 				}
 
-				await editorService.openEditor({ resource: ChatEditorInput.getNewEditorUri(), options: { target: { data }, pinned: true } as IChatEditorOptions });
+				await editorService.openEditor({ resource: AideChatEditorInput.getNewEditorUri(), options: { target: { data }, pinned: true } as IChatEditorOptions });
 			} catch (err) {
 				throw err;
 			}

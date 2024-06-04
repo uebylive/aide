@@ -12,10 +12,10 @@ import { URI } from 'vs/base/common/uri';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatModelInitState, IChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatAgentVoteDirection, IChatCommandButton, IChatConfirmation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatResponseProgressFileTreeData, IChatTask, IChatUsedContext, IChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IChatResponseProgressFileTreeData, IAideChatTask, IChatUsedContext, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { CodeBlockModelCollection } from './codeBlockModelCollection';
 
@@ -65,7 +65,7 @@ export interface IChatRequestViewModel {
 	readonly dataId: string;
 	readonly username: string;
 	readonly avatarIcon?: URI | ThemeIcon;
-	readonly message: IParsedChatRequest | IChatFollowup;
+	readonly message: IParsedChatRequest | IAideChatFollowup;
 	readonly messageText: string;
 	readonly attempt: number;
 	currentRenderedHeight: number | undefined;
@@ -79,7 +79,7 @@ export interface IChatResponseMarkdownRenderData {
 }
 
 export interface IChatProgressMessageRenderData {
-	progressMessage: IChatProgressMessage;
+	progressMessage: IAideChatProgressMessage;
 
 	/**
 	 * Indicates whether this is part of a group of progress messages that are at the end of the response.
@@ -96,12 +96,12 @@ export interface IChatProgressMessageRenderData {
 }
 
 export interface IChatTaskRenderData {
-	task: IChatTask;
+	task: IAideChatTask;
 	isSettled: boolean;
 	progressLength: number;
 }
 
-export type IChatRenderData = IChatResponseProgressFileTreeData | IChatResponseMarkdownRenderData | IChatProgressMessageRenderData | IChatCommandButton | IChatTextEditGroup | IChatConfirmation | IChatTaskRenderData | IChatWarningMessage;
+export type IChatRenderData = IChatResponseProgressFileTreeData | IChatResponseMarkdownRenderData | IChatProgressMessageRenderData | IAideChatCommandButton | IChatTextEditGroup | IAideChatConfirmation | IChatTaskRenderData | IAideChatWarningMessage;
 export interface IChatResponseRenderData {
 	renderedParts: IChatRenderData[];
 }
@@ -128,19 +128,19 @@ export interface IChatResponseViewModel {
 	readonly agentOrSlashCommandDetected: boolean;
 	readonly response: IResponse;
 	readonly usedContext: IChatUsedContext | undefined;
-	readonly contentReferences: ReadonlyArray<IChatContentReference>;
-	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
+	readonly contentReferences: ReadonlyArray<IAideChatContentReference>;
+	readonly progressMessages: ReadonlyArray<IAideChatProgressMessage>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly isStale: boolean;
-	readonly vote: ChatAgentVoteDirection | undefined;
-	readonly replyFollowups?: IChatFollowup[];
-	readonly errorDetails?: IChatResponseErrorDetails;
-	readonly result?: IChatAgentResult;
+	readonly vote: AideChatAgentVoteDirection | undefined;
+	readonly replyFollowups?: IAideChatFollowup[];
+	readonly errorDetails?: IAideChatResponseErrorDetails;
+	readonly result?: IAideChatAgentResult;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
 	renderData?: IChatResponseRenderData;
 	currentRenderedHeight: number | undefined;
-	setVote(vote: ChatAgentVoteDirection): void;
+	setVote(vote: AideChatAgentVoteDirection): void;
 	usedReferencesExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): void;
@@ -405,11 +405,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.usedContext;
 	}
 
-	get contentReferences(): ReadonlyArray<IChatContentReference> {
+	get contentReferences(): ReadonlyArray<IAideChatContentReference> {
 		return this._model.contentReferences;
 	}
 
-	get progressMessages(): ReadonlyArray<IChatProgressMessage> {
+	get progressMessages(): ReadonlyArray<IAideChatProgressMessage> {
 		return this._model.progressMessages;
 	}
 
@@ -422,14 +422,14 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	}
 
 	get replyFollowups() {
-		return this._model.followups?.filter((f): f is IChatFollowup => f.kind === 'reply');
+		return this._model.followups?.filter((f): f is IAideChatFollowup => f.kind === 'reply');
 	}
 
 	get result() {
 		return this._model.result;
 	}
 
-	get errorDetails(): IChatResponseErrorDetails | undefined {
+	get errorDetails(): IAideChatResponseErrorDetails | undefined {
 		return this.result?.errorDetails;
 	}
 
@@ -520,7 +520,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		this.logService.trace(`ChatResponseViewModel#${tag}: ${message}`);
 	}
 
-	setVote(vote: ChatAgentVoteDirection): void {
+	setVote(vote: AideChatAgentVoteDirection): void {
 		this._modelChangeCount++;
 		this._model.setVote(vote);
 	}
@@ -536,6 +536,6 @@ export interface IChatWelcomeMessageViewModel {
 	readonly username: string;
 	readonly avatarIcon?: URI | ThemeIcon;
 	readonly content: IChatWelcomeMessageContent[];
-	readonly sampleQuestions: IChatFollowup[];
+	readonly sampleQuestions: IAideChatFollowup[];
 	currentRenderedHeight?: number;
 }

@@ -8,17 +8,17 @@ import { Button, IButtonStyles } from 'vs/base/browser/ui/button/button';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { localize } from 'vs/nls';
-import { ChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 const $ = dom.$;
 
-export class ChatFollowups<T extends IChatFollowup> extends Disposable {
+export class ChatFollowups<T extends IAideChatFollowup> extends Disposable {
 	constructor(
 		container: HTMLElement,
 		followups: T[],
-		private readonly location: ChatAgentLocation,
+		private readonly location: AideChatAgentLocation,
 		private readonly options: IButtonStyles | undefined,
 		private readonly clickHandler: (followup: T) => void,
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService

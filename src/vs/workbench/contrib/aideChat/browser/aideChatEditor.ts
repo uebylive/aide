@@ -16,12 +16,12 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
 import { IEditorOpenContext } from 'vs/workbench/common/editor';
 import { Memento } from 'vs/workbench/common/memento';
-import { ChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
 import { IChatModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { clearChatEditor } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClear';
 import { IEditorGroup } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { ChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 
 export interface IChatEditorOptions extends IEditorOptions {
@@ -47,7 +47,7 @@ export class ChatEditor extends EditorPane {
 		@IStorageService private readonly storageService: IStorageService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 	) {
-		super(ChatEditorInput.EditorID, group, telemetryService, themeService, storageService);
+		super(AideChatEditorInput.EditorID, group, telemetryService, themeService, storageService);
 	}
 
 	public async clear() {
@@ -61,7 +61,7 @@ export class ChatEditor extends EditorPane {
 		this.widget = this._register(
 			scopedInstantiationService.createInstance(
 				ChatWidget,
-				ChatAgentLocation.Panel,
+				AideChatAgentLocation.Panel,
 				{ resource: true },
 				{ supportsFileReferences: true },
 				{
@@ -92,7 +92,7 @@ export class ChatEditor extends EditorPane {
 		super.clearInput();
 	}
 
-	override async setInput(input: ChatEditorInput, options: IChatEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
+	override async setInput(input: AideChatEditorInput, options: IChatEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
 		super.setInput(input, options, context, token);
 
 		const editorModel = await input.resolve();

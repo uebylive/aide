@@ -10,13 +10,13 @@ import { Iterable } from 'vs/base/common/iterator';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatDynamicVariableModel } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestDynamicVariablePart, ChatRequestVariablePart, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatRequestVariableValue, IAideChatVariableData, IChatVariableResolver, IAideChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 interface IChatData {
-	data: IChatVariableData;
+	data: IAideChatVariableData;
 	resolver: IChatVariableResolver;
 }
 
@@ -30,8 +30,8 @@ export class ChatVariablesService implements IAideChatVariablesService {
 	) {
 	}
 
-	async resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData> {
-		let resolvedVariables: IChatRequestVariableEntry[] = [];
+	async resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IAideChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IAideChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData> {
+		let resolvedVariables: IAideChatRequestVariableEntry[] = [];
 		const jobs: Promise<any>[] = [];
 
 		prompt.parts
@@ -39,8 +39,8 @@ export class ChatVariablesService implements IAideChatVariablesService {
 				if (part instanceof ChatRequestVariablePart) {
 					const data = this._resolver.get(part.variableName.toLowerCase());
 					if (data) {
-						const references: IChatContentReference[] = [];
-						const variableProgressCallback = (item: IChatVariableResolverProgress) => {
+						const references: IAideChatContentReference[] = [];
+						const variableProgressCallback = (item: IAideChatVariableResolverProgress) => {
 							if (item.kind === 'reference') {
 								references.push(item);
 								return;
@@ -58,13 +58,13 @@ export class ChatVariablesService implements IAideChatVariablesService {
 				}
 			});
 
-		const resolvedAttachedContext: IChatRequestVariableEntry[] = [];
+		const resolvedAttachedContext: IAideChatRequestVariableEntry[] = [];
 		attachedContextVariables
 			?.forEach((attachment, i) => {
 				const data = this._resolver.get(attachment.name?.toLowerCase());
 				if (data) {
-					const references: IChatContentReference[] = [];
-					const variableProgressCallback = (item: IChatVariableResolverProgress) => {
+					const references: IAideChatContentReference[] = [];
+					const variableProgressCallback = (item: IAideChatVariableResolverProgress) => {
 						if (item.kind === 'reference') {
 							references.push(item);
 							return;
@@ -83,7 +83,7 @@ export class ChatVariablesService implements IAideChatVariablesService {
 
 		await Promise.allSettled(jobs);
 
-		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);
+		resolvedVariables = coalesce<IAideChatRequestVariableEntry>(resolvedVariables);
 
 		// "reverse", high index first so that replacement is simple
 		resolvedVariables.sort((a, b) => b.range!.start - a.range!.start);
@@ -94,7 +94,7 @@ export class ChatVariablesService implements IAideChatVariablesService {
 		};
 	}
 
-	async resolveVariable(variableName: string, promptText: string, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableValue | undefined> {
+	async resolveVariable(variableName: string, promptText: string, model: IChatModel, progress: (part: IAideChatVariableResolverProgress) => void, token: CancellationToken): Promise<IAideChatRequestVariableValue | undefined> {
 		const data = this._resolver.get(variableName.toLowerCase());
 		if (!data) {
 			return undefined;
@@ -107,11 +107,11 @@ export class ChatVariablesService implements IAideChatVariablesService {
 		return this._resolver.has(name.toLowerCase());
 	}
 
-	getVariable(name: string): IChatVariableData | undefined {
+	getVariable(name: string): IAideChatVariableData | undefined {
 		return this._resolver.get(name.toLowerCase())?.data;
 	}
 
-	getVariables(): Iterable<Readonly<IChatVariableData>> {
+	getVariables(): Iterable<Readonly<IAideChatVariableData>> {
 		const all = Iterable.map(this._resolver.values(), data => data.data);
 		return Iterable.filter(all, data => !data.hidden);
 	}
@@ -134,7 +134,7 @@ export class ChatVariablesService implements IAideChatVariablesService {
 		return model.variables;
 	}
 
-	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable {
+	registerVariable(data: IAideChatVariableData, resolver: IChatVariableResolver): IDisposable {
 		const key = data.name.toLowerCase();
 		if (this._resolver.has(key)) {
 			throw new Error(`A chat variable with the name '${data.name}' already exists.`);

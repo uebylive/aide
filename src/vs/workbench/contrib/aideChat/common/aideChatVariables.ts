@@ -10,11 +10,11 @@ import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
 import { Location } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IChatContentReference, IChatProgressMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatContentReference, IAideChatProgressMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
-export interface IChatVariableData {
+export interface IAideChatVariableData {
 	id: string;
 	name: string;
 	icon?: ThemeIcon;
@@ -26,31 +26,31 @@ export interface IChatVariableData {
 	canTakeArgument?: boolean;
 }
 
-export type IChatRequestVariableValue = string | URI | Location | unknown;
+export type IAideChatRequestVariableValue = string | URI | Location | unknown;
 
-export type IChatVariableResolverProgress =
-	| IChatContentReference
-	| IChatProgressMessage;
+export type IAideChatVariableResolverProgress =
+	| IAideChatContentReference
+	| IAideChatProgressMessage;
 
 export interface IChatVariableResolver {
-	(messageText: string, arg: string | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableValue | undefined>;
+	(messageText: string, arg: string | undefined, model: IChatModel, progress: (part: IAideChatVariableResolverProgress) => void, token: CancellationToken): Promise<IAideChatRequestVariableValue | undefined>;
 }
 
 export const IAideChatVariablesService = createDecorator<IAideChatVariablesService>('IAideChatVariablesService');
 
 export interface IAideChatVariablesService {
 	_serviceBrand: undefined;
-	registerVariable(data: IChatVariableData, resolver: IChatVariableResolver): IDisposable;
+	registerVariable(data: IAideChatVariableData, resolver: IChatVariableResolver): IDisposable;
 	hasVariable(name: string): boolean;
-	getVariable(name: string): IChatVariableData | undefined;
-	getVariables(): Iterable<Readonly<IChatVariableData>>;
+	getVariable(name: string): IAideChatVariableData | undefined;
+	getVariables(): Iterable<Readonly<IAideChatVariableData>>;
 	getDynamicVariables(sessionId: string): ReadonlyArray<IDynamicVariable>; // should be its own service?
 
 	/**
 	 * Resolves all variables that occur in `prompt`
 	 */
-	resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData>;
-	resolveVariable(variableName: string, promptText: string, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableValue | undefined>;
+	resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IAideChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IAideChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData>;
+	resolveVariable(variableName: string, promptText: string, model: IChatModel, progress: (part: IAideChatVariableResolverProgress) => void, token: CancellationToken): Promise<IAideChatRequestVariableValue | undefined>;
 }
 
 export interface IDynamicVariable {
@@ -60,5 +60,5 @@ export interface IDynamicVariable {
 	icon?: ThemeIcon;
 	prefix?: string;
 	modelDescription?: string;
-	data: IChatRequestVariableValue;
+	data: IAideChatRequestVariableValue;
 }

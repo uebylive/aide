@@ -31,12 +31,12 @@ import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from 'vs/workbench/contrib/aideChat/browser/aideChatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { ChatModelInitState, IChatModel, IAideChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { IChatFollowup, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatFollowup, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { CodeBlockModelCollection } from 'vs/workbench/contrib/aideChat/common/codeBlockModelCollection';
@@ -96,7 +96,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidAcceptInput = this._register(new Emitter<void>());
 	readonly onDidAcceptInput = this._onDidAcceptInput.event;
 
-	private _onDidDeleteContext = this._register(new Emitter<IChatRequestVariableEntry>());
+	private _onDidDeleteContext = this._register(new Emitter<IAideChatRequestVariableEntry>());
 	readonly onDidDeleteContext = this._onDidDeleteContext.event;
 
 	private _onDidHide = this._register(new Emitter<void>());
@@ -172,7 +172,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	constructor(
-		readonly location: ChatAgentLocation,
+		readonly location: AideChatAgentLocation,
 		readonly viewContext: IChatWidgetViewContext,
 		private readonly viewOptions: IChatWidgetViewOptions,
 		private readonly styles: IChatWidgetStyles,
@@ -386,7 +386,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	private async renderFollowups(items: IChatFollowup[] | undefined, response?: IChatResponseViewModel): Promise<void> {
+	private async renderFollowups(items: IAideChatFollowup[] | undefined, response?: IChatResponseViewModel): Promise<void> {
 		this.inputPart.renderFollowups(items, response);
 
 		if (this.bodyDimension) {
@@ -737,7 +737,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 
-	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {
+	setContext(overwrite: boolean, ...contentReferences: IAideChatRequestVariableEntry[]) {
 		if (overwrite) {
 			this.inputPart.attachedContext.clear();
 		}

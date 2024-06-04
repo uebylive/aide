@@ -24,7 +24,7 @@ import { SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { ChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { ChatModelInitState, IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -68,7 +68,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 		this.memento = new Memento('aide-chat-view-' + CHAT_PROVIDER_ID, this.storageService);
 		this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IViewPaneState;
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
-			if (this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)) {
+			if (this.chatAgentService.getDefaultAgent(AideChatAgentLocation.Panel)) {
 				if (!this._widget?.viewModel) {
 					const sessionId = this.getSessionId();
 					const model = sessionId ? this.chatService.getOrRestoreSession(sessionId) : undefined;
@@ -105,7 +105,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 
 		model = model ?? (this.chatService.transferredSessionData?.sessionId
 			? this.chatService.getOrRestoreSession(this.chatService.transferredSessionData.sessionId)
-			: this.chatService.startSession(ChatAgentLocation.Panel, CancellationToken.None));
+			: this.chatService.startSession(AideChatAgentLocation.Panel, CancellationToken.None));
 		if (!model) {
 			throw new Error('Could not start chat session');
 		}
@@ -138,7 +138,7 @@ export class ChatViewPane extends ViewPane implements IChatViewPane {
 			const locationBasedColors = this.getLocationBasedColors();
 			this._widget = this._register(scopedInstantiationService.createInstance(
 				ChatWidget,
-				ChatAgentLocation.Panel,
+				AideChatAgentLocation.Panel,
 				{ viewId: this.id },
 				{ supportsFileReferences: true },
 				{
