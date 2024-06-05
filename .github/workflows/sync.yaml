@@ -1,8 +1,6 @@
 name: Sync fork with upstream
 
 on:
-  schedule:
-    - cron: "0 8 * * *" # Runs every day at 8 AM GMT
   workflow_dispatch:
 
 permissions:
