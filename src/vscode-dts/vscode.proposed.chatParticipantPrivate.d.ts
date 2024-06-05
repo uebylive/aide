@@ -28,8 +28,6 @@ declare module 'vscode' {
 	}
 
 	export interface ChatRequest {
-		readonly threadId: string;
-
 		/**
 		 * The attempt number of the request. The first request has attempt number 0.
 		 */

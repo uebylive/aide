@@ -7,9 +7,13 @@ import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { IHistoryNavigationWidget } from 'vs/base/browser/history';
 import * as aria from 'vs/base/browser/ui/aria/aria';
+import { Range } from 'vs/editor/common/core/range';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { Codicon } from 'vs/base/common/codicons';
 import { Emitter } from 'vs/base/common/event';
 import { HistoryNavigator } from 'vs/base/common/history';
-import { Disposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
+import { isMacintosh } from 'vs/base/common/platform';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
@@ -20,28 +24,56 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
+import { IAccessibilityService } from 'vs/platform/accessibility/common/accessibility';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { FileKind } from 'vs/platform/files/common/files';
 import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/browser/contextScopedHistoryWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { IAideChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { CONTEXT_AIDE_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_AIDE_CHAT_INPUT_HAS_FOCUS, CONTEXT_AIDE_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_AIDE_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IAideChatHistoryEntry, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
+import { CancelAction, IChatExecuteActionContext, SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
+import { IChatRequester, IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { ChatFollowups } from 'vs/workbench/contrib/aideChat/browser/aideChatFollowups';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
+import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IAideChatFollowup } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IChatHistoryEntry, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
+import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
+import { KeyCode } from 'vs/base/common/keyCodes';
+import { basename, dirname } from 'vs/base/common/path';
+import { IAIModelSelectionService } from 'vs/platform/aiModel/common/aiModels';
+import { FileAccess } from 'vs/base/common/network';
+import { ThemeIcon } from 'vs/base/common/themables';
+import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
+import { ClearChatEditorAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
+import { ActionViewItemWithKb } from 'vs/workbench/contrib/aideChat/browser/contrib/actionViewItemWithKb';
 
 const $ = dom.$;
 
-const INPUT_EDITOR_MAX_HEIGHT = 250;
+const INPUT_EDITOR_MIN_HEIGHT = 100;
 
-interface IAideChatInputPartOptions {
+interface IChatInputPartOptions {
+	renderFollowups: boolean;
+	renderStyle?: 'default' | 'compact';
+	menus: {
+		executeToolbar: MenuId;
+		primaryToolbar: MenuId;
+		inputSideToolbar?: MenuId;
+		telemetrySource?: string;
+	};
 	editorOverflowWidgetsDomNode?: HTMLElement;
 }
 
-export class AideChatInputPart extends Disposable implements IHistoryNavigationWidget {
+export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
 	static readonly INPUT_SCHEME = 'aideChatSessionInput';
 	private static _counter = 0;
 
@@ -57,18 +89,52 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-	private readonly inputEditorMaxHeight: number;
+	private _onDidDeleteContext = this._register(new Emitter<IAideChatRequestVariableEntry>());
+	readonly onDidDeleteContext = this._onDidDeleteContext.event;
+
+	private _onDidAcceptFollowup = this._register(new Emitter<{ followup: IAideChatFollowup; response: IChatResponseViewModel | undefined }>());
+	readonly onDidAcceptFollowup = this._onDidAcceptFollowup.event;
+
+	public get attachedContext() {
+		return this._attachedContext;
+	}
+
+	private _indexOfLastAttachedContextDeletedWithKeyboard: number = -1;
+	private readonly _attachedContext = new Set<IAideChatRequestVariableEntry>();
+
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	private readonly _contextResourceLabels = this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event });
+
 	private inputEditorHeight = 0;
-	protected container!: HTMLElement;
+	private container!: HTMLElement;
+
+	private inputSideToolbarContainer?: HTMLElement;
+
+	private followupsContainer!: HTMLElement;
+	private readonly followupsDisposables = this._register(new DisposableStore());
+
+	private attachedContextContainer!: HTMLElement;
+	private readonly attachedContextDisposables = this._register(new DisposableStore());
+
+	private _inputPartHeight: number = 0;
+	get inputPartHeight() {
+		return this._inputPartHeight;
+	}
 
 	private _inputEditor!: CodeEditorWidget;
 	private _inputEditorElement!: HTMLElement;
+
+	protected requesterContainer: HTMLElement | undefined;
+	protected modelNameContainer: HTMLElement | undefined;
+
+	private toolbar!: MenuWorkbenchToolBar;
+	private primaryToolbar!: MenuWorkbenchToolBar;
 
 	get inputEditor() {
 		return this._inputEditor;
 	}
 
-	private history: HistoryNavigator<IAideChatHistoryEntry>;
+	private history: HistoryNavigator<IChatHistoryEntry>;
 	private historyNavigationBackwardsEnablement!: IContextKey<boolean>;
 	private historyNavigationForewardsEnablement!: IContextKey<boolean>;
 	private onHistoryEntry = false;
@@ -78,36 +144,84 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	private chatCursorAtTop: IContextKey<boolean>;
 	private inputEditorHasFocus: IContextKey<boolean>;
 
-	readonly inputUri = URI.parse(`${AideChatInputPart.INPUT_SCHEME}:input-${AideChatInputPart._counter++}`);
+	private cachedDimensions: dom.Dimension | undefined;
+	private cachedToolbarWidth: number | undefined;
+
+	readonly inputUri = URI.parse(`${ChatInputPart.INPUT_SCHEME}:input-${ChatInputPart._counter++}`);
 
 	constructor(
-		protected readonly options: IAideChatInputPartOptions,
+		// private readonly editorOptions: ChatEditorOptions, // TODO this should be used
+		private readonly location: AideChatAgentLocation,
+		private readonly options: IChatInputPartOptions,
 		@IAideChatWidgetHistoryService private readonly historyService: IAideChatWidgetHistoryService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 	) {
 		super();
 
-		this.inputEditorMaxHeight = INPUT_EDITOR_MAX_HEIGHT;
-
-		this.inputEditorHasText = CONTEXT_AIDE_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
-		this.chatCursorAtTop = CONTEXT_AIDE_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
-		this.inputEditorHasFocus = CONTEXT_AIDE_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.inputEditorHasText = CONTEXT_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
+		this.chatCursorAtTop = CONTEXT_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
+		this.inputEditorHasFocus = CONTEXT_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 
 		this.history = new HistoryNavigator([], 5);
 		this._register(this.historyService.onDidClearHistory(() => this.history.clear()));
+
+		this._register(this.configurationService.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration(AccessibilityVerbositySettingId.Chat)) {
+				this.inputEditor.updateOptions({ ariaLabel: this._getAriaLabel() });
+			}
+		}));
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection(() => {
+			this._renderModelName();
+		}));
 	}
 
-	protected _getAriaLabel(): string {
-		const verbose = this.configurationService.getValue<boolean>(AccessibilityVerbositySettingId.AideChat);
+	private _getAriaLabel(): string {
+		const verbose = this.configurationService.getValue<boolean>(AccessibilityVerbositySettingId.Chat);
 		if (verbose) {
 			const kbLabel = this.keybindingService.lookupKeybinding(AccessibilityCommandId.OpenAccessibilityHelp)?.getLabel();
-			return kbLabel ? localize('actions.aideChat.accessibiltyHelp', "Aide Chat Input,  Type to ask questions or type / for topics, press enter to send out the request. Use {0} for Aide Chat Accessibility Help.", kbLabel) : localize('aideChatInput.accessibilityHelpNoKb', "Aide Chat Input,  Type code here and press Enter to run. Use the Aide Chat Accessibility Help command for more information.");
+			return kbLabel ? localize('actions.chat.accessibiltyHelp', "Chat Input,  Type to ask questions or type / for topics, press enter to send out the request. Use {0} for Chat Accessibility Help.", kbLabel) : localize('chatInput.accessibilityHelpNoKb', "Chat Input,  Type code here and press Enter to run. Use the Chat Accessibility Help command for more information.");
 		}
-		return localize('aideChatInput', "Aide Chat Input");
+		return localize('chatInput', "Chat Input");
+	}
+
+	setState(inputValue: string | undefined, requester: IChatRequester): void {
+		const history = this.historyService.getHistory(this.location);
+		this.history = new HistoryNavigator(history, 50);
+
+		if (typeof inputValue === 'string') {
+			this.setValue(inputValue);
+		}
+
+		if (!this.requesterContainer) {
+			const secondChild = this.container.childNodes[1];
+			const header = $('.header');
+			this.container.insertBefore(header, secondChild);
+			const user = dom.append(header, $('.user'));
+			const model = dom.append(header, $('.slow-model'));
+			dom.append(user, $('.avatar-container'));
+			dom.append(user, $('h3.username'));
+			this.requesterContainer = user;
+			this.modelNameContainer = model;
+			this.modelNameContainer.style.display = 'none';
+
+			this.inputEditor.updateOptions({
+				fontFamily: EDITOR_FONT_DEFAULTS.fontFamily,
+				cursorWidth: 3,
+			});
+		}
+
+		this._renderRequester(requester);
+		this._renderModelName();
+	}
+
+	setVisible(visible: boolean): void {
+		this._onDidChangeVisibility.fire(visible);
 	}
 
 	get element(): HTMLElement {
@@ -119,7 +233,7 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	}
 
 	showNextValue(): void {
-		this.navigateHistory(true);
+		this.navigateHistory(false);
 	}
 
 	private navigateHistory(previous: boolean): void {
@@ -177,17 +291,47 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 			this.history.add(element);
 		}
 
-		this._inputEditor.focus();
-		this._inputEditor.setValue('');
+		if (this.accessibilityService.isScreenReaderOptimized() && isMacintosh) {
+			this._acceptInputForVoiceover();
+		} else {
+			this._inputEditor.focus();
+			this._inputEditor.setValue('');
+		}
 	}
 
-	render(container: HTMLElement, initialValue: string, widget: IAideChatWidget) {
-		this.container = dom.append(container, $('.aide-chat-input-container'));
+	private _acceptInputForVoiceover(): void {
+		const domNode = this._inputEditor.getDomNode();
+		if (!domNode) {
+			return;
+		}
+		// Remove the input editor from the DOM temporarily to prevent VoiceOver
+		// from reading the cleared text (the request) to the user.
+		this._inputEditorElement.removeChild(domNode);
+		this._inputEditor.setValue('');
+		this._inputEditorElement.appendChild(domNode);
+		this._inputEditor.focus();
+	}
 
-		const inputContainer = dom.append(this.container, $('.aide-chat-input-toolbar'));
+	attachContext(...contentReferences: IAideChatRequestVariableEntry[]): void {
+		for (const reference of contentReferences) {
+			this.attachedContext.add(reference);
+		}
+
+		this.initAttachedContext(this.attachedContextContainer);
+	}
+
+	render(container: HTMLElement, initialValue: string, widget: IChatWidget) {
+		this.container = dom.append(container, $('.cschat-input-part'));
+		this.container.classList.toggle('compact', this.options.renderStyle === 'compact');
+
+		this.followupsContainer = dom.append(this.container, $('.interactive-input-followups'));
+		this.attachedContextContainer = dom.append(this.container, $('.chat-attached-context'));
+		this.initAttachedContext(this.attachedContextContainer);
+		const inputAndSideToolbar = dom.append(this.container, $('.interactive-input-and-side-toolbar'));
+		const inputContainer = dom.append(inputAndSideToolbar, $('.interactive-input-and-execute-toolbar'));
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(inputContainer));
-		CONTEXT_IN_AIDE_CHAT_INPUT.bindTo(inputScopedContextKeyService).set(true);
+		CONTEXT_IN_CHAT_INPUT.bindTo(inputScopedContextKeyService).set(true);
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, inputScopedContextKeyService]));
 
 		const { historyNavigationBackwardsEnablement, historyNavigationForwardsEnablement } = this._register(registerAndCreateHistoryNavigationContext(inputScopedContextKeyService, this));
@@ -201,7 +345,7 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 		options.fontFamily = DEFAULT_FONT_FAMILY;
 		options.fontSize = 13;
 		options.lineHeight = 20;
-		options.padding = { top: 8, bottom: 8 };
+		options.padding = this.options.renderStyle === 'compact' ? { top: 2, bottom: 2 } : { top: 8, bottom: 8 };
 		options.cursorWidth = 1;
 		options.wrappingStrategy = 'advanced';
 		options.bracketPairColorization = { enabled: false };
@@ -214,13 +358,13 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 		};
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 
-		this._inputEditorElement = dom.append(inputContainer, $('.aide-chat-input-editor'));
+		this._inputEditorElement = dom.append(inputContainer, $('.interactive-input-editor'));
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
-			const currentHeight = Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight);
+			const currentHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 			if (currentHeight !== this.inputEditorHeight) {
 				this.inputEditorHeight = currentHeight;
 				this._onDidChangeHeight.fire();
@@ -268,6 +412,53 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 			}
 		}));
 
+		const toolbarsContainer = dom.append(inputContainer, $('.interactive-input-toolbars'));
+
+		this.primaryToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarsContainer, this.options.menus.primaryToolbar, {
+			telemetrySource: this.options.menus.telemetrySource,
+			menuOptions: {
+				shouldForwardArgs: true
+			}
+		}));
+		this.primaryToolbar.getElement().classList.add('interactive-aide-toolbar');
+		this.primaryToolbar.context = { widget } satisfies IChatExecuteActionContext;
+
+		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarsContainer, this.options.menus.executeToolbar, {
+			telemetrySource: this.options.menus.telemetrySource,
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
+			actionViewItemProvider: (action, options) => {
+				if (this.location === AideChatAgentLocation.Panel) {
+					if ((action.id === SubmitAction.ID || action.id === CancelAction.ID || action.id === ClearChatEditorAction.ID) && action instanceof MenuItemAction) {
+						return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+					}
+				}
+
+				return undefined;
+			}
+		}));
+		this.toolbar.getElement().classList.add('interactive-execute-toolbar');
+		this.toolbar.context = { widget } satisfies IChatExecuteActionContext;
+		this._register(this.toolbar.onDidChangeMenuItems(() => {
+			if (this.cachedDimensions && typeof this.cachedToolbarWidth === 'number' && this.cachedToolbarWidth !== this.toolbar.getItemsWidth()) {
+				this.layout(this.cachedDimensions.height, this.cachedDimensions.width);
+			}
+		}));
+
+		if (this.options.menus.inputSideToolbar) {
+			const toolbarSide = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, inputAndSideToolbar, this.options.menus.inputSideToolbar, {
+				telemetrySource: this.options.menus.telemetrySource,
+				menuOptions: {
+					shouldForwardArgs: true
+				}
+			}));
+			this.inputSideToolbarContainer = toolbarSide.getElement();
+			toolbarSide.getElement().classList.add('chat-side-toolbar');
+			toolbarSide.context = { widget } satisfies IChatExecuteActionContext;
+		}
+
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, this.inputUri, true);
@@ -284,17 +475,102 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 		}
 	}
 
+	private initAttachedContext(container: HTMLElement) {
+		dom.clearNode(container);
+		this.attachedContextDisposables.clear();
+		dom.setVisibility(Boolean(this.attachedContext.size), this.attachedContextContainer);
+		if (!this.attachedContext.size) {
+			this._indexOfLastAttachedContextDeletedWithKeyboard = -1;
+		}
+		[...this.attachedContext.values()].forEach((attachment, index) => {
+			const widget = dom.append(container, $('.chat-attached-context-attachment.show-file-icons'));
+			const label = this._contextResourceLabels.create(widget, { supportIcons: true });
+			const file = URI.isUri(attachment.value) ? attachment.value : attachment.value && typeof attachment.value === 'object' && 'uri' in attachment.value && URI.isUri(attachment.value.uri) ? attachment.value.uri : undefined;
+			const range = attachment.value && typeof attachment.value === 'object' && 'range' in attachment.value && Range.isIRange(attachment.value.range) ? attachment.value.range : undefined;
+			if (file && attachment.isFile) {
+				const fileBasename = basename(file.path);
+				const fileDirname = dirname(file.path);
+				const friendlyName = `${fileBasename} ${fileDirname}`;
+				const ariaLabel = range ? localize('aideChat.fileAttachmentWithRange', "Attached file, {0}, line {1} to line {2}", friendlyName, range.startLineNumber, range.endLineNumber) : localize('aideChat.fileAttachment', "Attached file, {0}", friendlyName);
+
+				label.setFile(file, {
+					fileKind: FileKind.FILE,
+					hidePath: true,
+					range,
+				});
+				widget.ariaLabel = ariaLabel;
+				widget.tabIndex = 0;
+			} else {
+				const attachmentLabel = attachment.fullName ?? attachment.name;
+				label.setLabel(attachmentLabel, undefined);
+
+				widget.ariaLabel = localize('aideChat.attachment', "Attached context, {0}", attachment.name);
+				widget.tabIndex = 0;
+			}
+
+			const clearButton = new Button(widget, { supportIcons: true });
+
+			// If this item is rendering in place of the last attached context item, focus the clear button so the user can continue deleting attached context items with the keyboard
+			if (index === Math.min(this._indexOfLastAttachedContextDeletedWithKeyboard, this.attachedContext.size - 1)) {
+				clearButton.focus();
+			}
+
+			this.attachedContextDisposables.add(clearButton);
+			clearButton.icon = Codicon.close;
+			const disp = clearButton.onDidClick((e) => {
+				this.attachedContext.delete(attachment);
+				disp.dispose();
+
+				// Set focus to the next attached context item if deletion was triggered by a keystroke (vs a mouse click)
+				if (dom.isKeyboardEvent(e)) {
+					const event = new StandardKeyboardEvent(e);
+					if (event.equals(KeyCode.Enter) || event.equals(KeyCode.Space)) {
+						this._indexOfLastAttachedContextDeletedWithKeyboard = index;
+					}
+				}
+
+				this._onDidChangeHeight.fire();
+				this._onDidDeleteContext.fire(attachment);
+			});
+			this.attachedContextDisposables.add(disp);
+		});
+	}
+
+	async renderFollowups(items: IAideChatFollowup[] | undefined, response: IChatResponseViewModel | undefined): Promise<void> {
+		if (!this.options.renderFollowups) {
+			return;
+		}
+		this.followupsDisposables.clear();
+		dom.clearNode(this.followupsContainer);
+
+		if (items && items.length > 0) {
+			this.followupsDisposables.add(this.instantiationService.createInstance<typeof ChatFollowups<IAideChatFollowup>, ChatFollowups<IAideChatFollowup>>(ChatFollowups, this.followupsContainer, items, this.location, undefined, followup => this._onDidAcceptFollowup.fire({ followup, response })));
+		}
+	}
+
+	get contentHeight(): number {
+		const data = this.getLayoutData();
+		return data.followupsHeight + data.inputPartEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.implicitContextHeight;
+	}
+
 	layout(height: number, width: number) {
+		this.cachedDimensions = new dom.Dimension(width, height);
+
 		return this._layout(height, width);
 	}
 
 	private previousInputEditorDimension: IDimension | undefined;
 	private _layout(height: number, width: number, allowRecurse = true): void {
+		this.initAttachedContext(this.attachedContextContainer);
+
 		const data = this.getLayoutData();
 
-		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.inputPartVerticalPadding);
+		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.followupsHeight - data.inputPartVerticalPadding);
+
+		this._inputPartHeight = data.followupsHeight + inputEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.implicitContextHeight + data.executeToolbarHeight;
+
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
-		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.editorPadding;
+		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.editorPadding - data.executeToolbarWidth - data.sideToolbarWidth - data.toolbarPadding;
 		const newDimension = { width: newEditorWidth, height: inputEditorHeight };
 		if (!this.previousInputEditorDimension || (this.previousInputEditorDimension.width !== newDimension.width || this.previousInputEditorDimension.height !== newDimension.height)) {
 			// This layout call has side-effects that are hard to understand. eg if we are calling this inside a onDidChangeContent handler, this can trigger the next onDidChangeContent handler
@@ -310,20 +586,61 @@ export class AideChatInputPart extends Disposable implements IHistoryNavigationW
 	}
 
 	private getLayoutData() {
-		console.log('input editor content height:', this._inputEditor.getContentHeight());
 		return {
-			inputEditorBorder: 2,
-			inputPartEditorHeight: Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight),
-			inputPartHorizontalPadding: 40,
-			inputPartVerticalPadding: 24,
-			editorBorder: 2,
-			editorPadding: 12
+			inputEditorBorder: 0,
+			followupsHeight: this.followupsContainer.offsetHeight,
+			inputPartEditorHeight: Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT),
+			inputPartHorizontalPadding: 24,
+			inputPartVerticalPadding: 46,
+			implicitContextHeight: this.attachedContextContainer.offsetHeight,
+			editorBorder: 0,
+			editorPadding: 12,
+			toolbarPadding: 4,
+			executeToolbarHeight: dom.getTotalHeight(this.toolbar.getElement()),
+			executeToolbarWidth: 0,
+			sideToolbarWidth: this.inputSideToolbarContainer ? dom.getTotalWidth(this.inputSideToolbarContainer) + 4 /*gap*/ : 0,
 		};
 	}
 
 	saveState(): void {
 		const inputHistory = this.history.getHistory();
-		this.historyService.saveHistory(inputHistory);
+		this.historyService.saveHistory(this.location, inputHistory);
+	}
+
+	private _renderRequester(requester: IChatRequester): void {
+		const username = requester.username || localize('requester', "You");
+		if (!this.requesterContainer) {
+			return;
+		}
+
+		this.requesterContainer.querySelector('h3.username')!.textContent = username;
+
+		const avatarContainer = this.requesterContainer.querySelector('.avatar-container')!;
+		if (requester.avatarIconUri) {
+			const avatarImgIcon = $<HTMLImageElement>('img.icon');
+			avatarImgIcon.src = FileAccess.uriToBrowserUri(requester.avatarIconUri).toString(true);
+			avatarContainer.replaceChildren($('.avatar', undefined, avatarImgIcon));
+		} else {
+			const defaultIcon = Codicon.account;
+			const avatarIcon = $(ThemeIcon.asCSSSelector(defaultIcon));
+			avatarContainer.replaceChildren($('.avatar.codicon-avatar', undefined, avatarIcon));
+		}
+	}
+
+	private async _renderModelName(): Promise<void> {
+		if (!this.modelNameContainer) {
+			return;
+		}
+
+		const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();
+		const modelName = modelSelectionSettings.models[modelSelectionSettings.slowModel].name;
+
+		if (modelName) {
+			this.modelNameContainer.textContent = modelName;
+			this.modelNameContainer.style.display = 'block';
+		} else {
+			this.modelNameContainer.style.display = 'none';
+		}
 	}
 }
 

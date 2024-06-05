@@ -14,7 +14,6 @@ import { isEqual } from 'vs/base/common/resources';
 import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
-import 'vs/css!./media/cschat';
 import 'vs/css!./media/chatAgentHover';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
@@ -33,15 +32,14 @@ import { ChatInputPart } from 'vs/workbench/contrib/chat/browser/chatInputPart';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/chat/common/chatRequestParser';
 import { IChatFollowup, IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatSlashCommandService } from 'vs/workbench/contrib/chat/common/chatSlashCommands';
-import { isRequestVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
+import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { CodeBlockModelCollection } from 'vs/workbench/contrib/chat/common/codeBlockModelCollection';
-import { CSChatViewModel as ChatViewModel, ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
 import { IChatListItemRendererOptions } from './chat';
 
 const $ = dom.$;
@@ -128,9 +126,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private bodyDimension: dom.Dimension | undefined;
 	private visibleChangeCount = 0;
 	private requestInProgress: IContextKey<boolean>;
-	private hasRequests: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
-	private isAideAgent: IContextKey<boolean>;
 
 	private _visible = false;
 	public get visible() {
@@ -178,28 +174,26 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	constructor(
 		readonly location: ChatAgentLocation,
 		readonly viewContext: IChatWidgetViewContext,
-		protected readonly viewOptions: IChatWidgetViewOptions,
-		protected readonly styles: IChatWidgetStyles,
+		private readonly viewOptions: IChatWidgetViewOptions,
+		private readonly styles: IChatWidgetStyles,
 		@ICodeEditorService codeEditorService: ICodeEditorService,
-		@IContextKeyService protected readonly contextKeyService: IContextKeyService,
-		@IInstantiationService protected readonly instantiationService: IInstantiationService,
-		@IChatService protected readonly chatService: IChatService,
-		@IChatAgentService protected readonly chatAgentService: IChatAgentService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IChatService private readonly chatService: IChatService,
+		@IChatAgentService private readonly chatAgentService: IChatAgentService,
 		@IChatWidgetService chatWidgetService: IChatWidgetService,
-		@IContextMenuService protected readonly contextMenuService: IContextMenuService,
-		@IChatAccessibilityService protected readonly chatAccessibilityService: IChatAccessibilityService,
-		@ILogService protected readonly logService: ILogService,
-		@IThemeService protected readonly themeService: IThemeService,
-		@IChatSlashCommandService protected readonly chatSlashCommandService: IChatSlashCommandService,
+		@IContextMenuService private readonly contextMenuService: IContextMenuService,
+		@IChatAccessibilityService private readonly chatAccessibilityService: IChatAccessibilityService,
+		@ILogService private readonly logService: ILogService,
+		@IThemeService private readonly themeService: IThemeService,
+		@IChatSlashCommandService private readonly chatSlashCommandService: IChatSlashCommandService,
 	) {
 		super();
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
 		CONTEXT_CHAT_LOCATION.bindTo(contextKeyService).set(location);
 		CONTEXT_IN_QUICK_CHAT.bindTo(contextKeyService).set('resource' in viewContext);
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
-		this.isAideAgent = CONTEXT_IN_AIDE_CHAT_SESSION.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
-		this.hasRequests = CONTEXT_CHAT_HAS_REQUESTS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
 
@@ -541,7 +535,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			{
 				renderFollowups: options?.renderFollowups ?? true,
 				renderStyle: options?.renderStyle,
-				menus: { executeToolbar: MenuId.ChatExecute, aideToolbar: MenuId.ChatAideActions, ...this.viewOptions.menus },
+				menus: { executeToolbar: MenuId.ChatExecute, ...this.viewOptions.menus },
 				editorOverflowWidgetsDomNode: this.viewOptions.editorOverflowWidgetsDomNode,
 			}
 		));
@@ -603,23 +597,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 			this._onDidChangeContentHeight.fire();
 		}));
-		this._register(this.inputEditor.onDidChangeModelContent(() => {
-			this.parsedChatRequest = undefined;
-		}));
-		this._register(this.chatAgentService.onDidChangeAgents(() => {
-			this.parsedChatRequest = undefined;
-
-			if (this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide') {
-				this.listContainer.classList.replace('interactive-list', 'cschat-list');
-			} else {
-				this.listContainer.classList.replace('cschat-list', 'interactive-list');
-			}
-			if (this.viewModel) {
-				// TODO(@ghostwriternr): This is a hack to reload the widgets when default agent preference is changed.
-				// Maybe figure out what the original intention of this callback was later. I'm okay with this for now.
-				this.clear();
-			}
-		}));
+		this._register(this.inputEditor.onDidChangeModelContent(() => this.parsedChatRequest = undefined));
+		this._register(this.chatAgentService.onDidChangeAgents(() => this.parsedChatRequest = undefined));
 	}
 
 	private onDidStyleChange(): void {
@@ -633,21 +612,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			throw new Error('Call render() before setModel()');
 		}
 
-		if (this.chatAgentService.getContributedDefaultAgent(this.location)?.id === 'aide') {
-			this.isAideAgent.set(true);
-			this.container.classList.replace('interactive-session', 'cschat-session');
-		} else {
-			this.isAideAgent.set(false);
-			this.container.classList.replace('cschat-session', 'interactive-session');
-		}
-
-		this._register(model.onDidChange(e => {
-			if (e.kind === 'initialize') {
-				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
-				this.inputPart.setState(viewState.inputValue ?? '', requester);
-			}
-		}));
-
 		this._codeBlockModelCollection.clear();
 
 		this.container.setAttribute('data-session-id', model.sessionId);
@@ -658,11 +622,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			this.requestInProgress.set(this.viewModel.requestInProgress);
-			if (this.viewModel.getItems().length > 1) {
-				this.hasRequests.set(true);
-			} else {
-				this.hasRequests.set(false);
-			}
 
 			this.onDidChangeItems();
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
@@ -678,8 +637,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
-		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
-		this.inputPart.setState(viewState.inputValue, requester);
+		this.inputPart.setState(viewState.inputValue);
 		this.contribs.forEach(c => {
 			if (c.setInputState && viewState.inputState?.[c.id]) {
 				c.setInputState(viewState.inputState?.[c.id]);

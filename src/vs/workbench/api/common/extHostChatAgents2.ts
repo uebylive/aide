@@ -17,14 +17,12 @@ import { URI } from 'vs/base/common/uri';
 import { Location } from 'vs/editor/common/languages';
 import { ExtensionIdentifier, IExtensionDescription } from 'vs/platform/extensions/common/extensions';
 import { ILogService } from 'vs/platform/log/common/log';
-import { Progress } from 'vs/platform/progress/common/progress';
-import { ExtHostChatAgentsShape2, ICSChatAgentEditResponseDto, IChatAgentCompletionItem, IChatAgentHistoryEntryDto, IChatProgressDto, IExtensionChatAgentMetadata, IMainContext, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
+import { ExtHostChatAgentsShape2, IChatAgentCompletionItem, IChatAgentHistoryEntryDto, IChatProgressDto, IExtensionChatAgentMetadata, IMainContext, MainContext, MainThreadChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
 import { CommandsConverter, ExtHostCommands } from 'vs/workbench/api/common/extHostCommands';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatContentReference, IChatFollowup, IChatUserActionEvent, ChatAgentVoteDirection, IChatResponseErrorDetails } from 'vs/workbench/contrib/chat/common/chatService';
-import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { checkProposedApiEnabled, isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
@@ -381,42 +379,6 @@ export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsS
 		this._sessionDisposables.deleteAndDispose(sessionId);
 	}
 
-	async $provideEdits(handle: number, sessionId: string, request: IChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined> {
-		const agent = this._agents.get(handle);
-		if (!agent) {
-			return undefined;
-		}
-
-		const requestObj: vscode.CSChatAgentEditRequest = {
-			threadId: sessionId,
-			response: request.response,
-			context: request.context
-		};
-
-		try {
-			const task = agent.provideEdits(
-				requestObj,
-				new Progress<vscode.CSChatAgentEditResponse>(progress => {
-					if (!progress.edits) {
-						this._logService.error('Unknown progress type: ' + JSON.stringify(progress));
-						return;
-					}
-					const edits = typeConvert.WorkspaceEdit.from(progress.edits);
-					this._proxy.$handleEditProgressChunk(request.responseId, { ...progress, edits });
-				}),
-				token
-			);
-
-			return await raceCancellation(Promise.resolve(task).then(() => {
-				return undefined;
-			}), token);
-		} catch (e) {
-			this._logService.error(e, agent.extension);
-		}
-
-		return undefined;
-	}
-
 	async $provideFollowups(request: IChatAgentRequest, handle: number, result: IChatAgentResult, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
@@ -520,7 +482,6 @@ export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsS
 class ExtHostChatAgent {
 
 	private _followupProvider: vscode.ChatFollowupProvider | undefined;
-	private _editsProvider: vscode.ChatEditsProvider | undefined;
 	private _iconPath: vscode.Uri | { light: vscode.Uri; dark: vscode.Uri } | vscode.ThemeIcon | undefined;
 	private _isDefault: boolean | undefined;
 	private _helpTextPrefix: string | vscode.MarkdownString | undefined;
@@ -634,7 +595,7 @@ class ExtHostChatAgent {
 					iconDark: !this._iconPath ? undefined :
 						'dark' in this._iconPath ? this._iconPath.dark :
 							undefined,
-					themeIcon: this._iconPath instanceof extHostTypes.ThemeIcon ? this._iconPath : this._iconPath instanceof URI ? this._iconPath : undefined,
+					themeIcon: this._iconPath instanceof extHostTypes.ThemeIcon ? this._iconPath : undefined,
 					hasFollowups: this._followupProvider !== undefined,
 					isSecondary: this._isSecondary,
 					helpTextPrefix: (!this._helpTextPrefix || typeof this._helpTextPrefix === 'string') ? this._helpTextPrefix : typeConvert.MarkdownString.from(this._helpTextPrefix),
@@ -672,13 +633,6 @@ class ExtHostChatAgent {
 			},
 			set followupProvider(v) {
 				that._followupProvider = v;
-				updateMetadataSoon();
-			},
-			get editsProvider() {
-				return that._editsProvider;
-			},
-			set editsProvider(v) {
-				that._editsProvider = v;
 				updateMetadataSoon();
 			},
 			get isDefault() {
@@ -795,12 +749,5 @@ class ExtHostChatAgent {
 
 	invoke(request: vscode.ChatRequest, context: vscode.ChatContext, response: vscode.ChatResponseStream, token: CancellationToken): vscode.ProviderResult<vscode.ChatResult | void> {
 		return this._requestHandler(request, context, response, token);
-	}
-
-	provideEdits(request: vscode.CSChatAgentEditRequest, progress: vscode.Progress<vscode.CSChatAgentEditResponse>, token: CancellationToken): vscode.ProviderResult<vscode.CSChatAgentEditResponse> {
-		if (!this._editsProvider) {
-			return Promise.resolve(undefined);
-		}
-		return this._editsProvider.provideEdits(request, progress, token);
 	}
 }

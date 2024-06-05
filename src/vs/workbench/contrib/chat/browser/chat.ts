@@ -19,8 +19,7 @@ import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from 'vs/workben
 import { IChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/chat/common/chatParticipantContribTypes';
-import { IChatRequestViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
-import { ICSChatResponseViewModel as IChatResponseViewModel, ICSChatViewModel as IChatViewModel } from 'vs/workbench/contrib/chat/common/csChatViewModel';
+import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 export const IChatWidgetService = createDecorator<IChatWidgetService>('chatWidgetService');

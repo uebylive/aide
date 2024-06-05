@@ -7,8 +7,7 @@ import { MockObject, mockObject } from 'vs/base/test/common/mock';
 import { ensureNoDisposablesAreLeakedInTestSuite } from 'vs/base/test/common/utils';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { IChatAgentData, IChatAgentImplementation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { CSChatAgentService as ChatAgentService } from 'vs/workbench/contrib/chat/common/csChatAgents';
+import { ChatAgentService, IChatAgentData, IChatAgentImplementation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
 import * as assert from 'assert';
 
 const testAgentId = 'testAgent';
@@ -28,10 +27,9 @@ suite('ChatAgents', function () {
 
 	let chatAgentService: IChatAgentService;
 	let contextKeyService: MockObject<IContextKeyService>;
-	let configurationService: MockObject<IContextKeyService>;
 	setup(() => {
 		contextKeyService = mockObject<IContextKeyService>()();
-		chatAgentService = new ChatAgentService(contextKeyService as any, configurationService as any);
+		chatAgentService = new ChatAgentService(contextKeyService as any);
 	});
 
 	test('registerAgent', async () => {

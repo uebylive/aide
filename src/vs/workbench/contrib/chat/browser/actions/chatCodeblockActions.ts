@@ -31,7 +31,7 @@ import { IChatWidgetService, IChatCodeBlockContextProviderService } from 'vs/wor
 import { DefaultChatTextEditor, ICodeBlockActionContext, ICodeCompareBlockActionContext } from 'vs/workbench/contrib/chat/browser/codeBlockPart';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_EDIT_APPLIED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { ChatCopyKind, IChatService, IDocumentContext } from 'vs/workbench/contrib/chat/common/chatService';
-import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
+import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
 import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
 import { CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -51,7 +51,7 @@ export function isCodeCompareBlockActionContext(thing: unknown): thing is ICodeC
 	return typeof thing === 'object' && thing !== null && 'element' in thing;
 }
 
-export function isResponseFiltered(context: ICodeBlockActionContext) {
+function isResponseFiltered(context: ICodeBlockActionContext) {
 	return isResponseVM(context.element) && context.element.errorDetails?.responseIsFiltered;
 }
 
@@ -59,7 +59,7 @@ function getUsedDocuments(context: ICodeBlockActionContext): IDocumentContext[] 
 	return isResponseVM(context.element) ? context.element.usedContext?.documents : undefined;
 }
 
-export abstract class ChatCodeBlockAction extends Action2 {
+abstract class ChatCodeBlockAction extends Action2 {
 	run(accessor: ServicesAccessor, ...args: any[]) {
 		let context = args[0];
 		if (!isCodeBlockActionContext(context)) {

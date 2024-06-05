@@ -220,7 +220,7 @@ class QuickChat extends Disposable {
 				ChatWidget,
 				ChatAgentLocation.Panel,
 				{ resource: true },
-				{ renderInputOnTop: false, renderStyle: 'compact', menus: { inputSideToolbar: MenuId.ChatInputSide } },
+				{ renderInputOnTop: true, renderStyle: 'compact', menus: { inputSideToolbar: MenuId.ChatInputSide } },
 				{
 					listForeground: quickInputForeground,
 					listBackground: quickInputBackground,

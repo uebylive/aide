@@ -179,7 +179,7 @@ export async function provideInteractiveEditorResponse(
 	repoRef: RepoRef,
 	sidecarClient: SideCarClient,
 	workingDirectory: string,
-	request: vscode.ChatRequest,
+	request: vscode.AideChatRequest,
 	progress: vscode.ChatResponseStream,
 	token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {

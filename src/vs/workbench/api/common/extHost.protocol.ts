@@ -57,8 +57,8 @@ import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentRes
 import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTask, IChatTaskDto, IChatUserActionEvent, ChatAgentVoteDirection } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from 'vs/workbench/contrib/chat/common/chatVariables';
-import { IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 import { IChatMessage, IChatResponseFragment, ILanguageModelChatMetadata, ILanguageModelChatSelector, ILanguageModelsChangeEvent } from 'vs/workbench/contrib/chat/common/languageModels';
+import { IAideChatMessage, IAideChatResponseFragment, IAIModelChatMetadata, ILanguageModelAideChatSelector } from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { DebugConfigurationProviderTriggerKind, IAdapterDescriptor, IConfig, IDebugSessionReplMode, IDebugVisualization, IDebugVisualizationContext, IDebugVisualizationTreeItem, MainThreadDebugVisualization } from 'vs/workbench/contrib/debug/common/debug';
 import * as notebookCommon from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { CellExecutionUpdateType } from 'vs/workbench/contrib/notebook/common/notebookExecutionService';
@@ -85,6 +85,10 @@ import { IFileQueryBuilderOptions, ITextQueryBuilderOptions } from 'vs/workbench
 import * as search from 'vs/workbench/services/search/common/search';
 import { ISaveProfileResult } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import type { TerminalShellExecutionCommandLineConfidence } from 'vscode';
+import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -712,6 +716,7 @@ export const enum TabInputKind {
 	TerminalEditorInput,
 	InteractiveEditorInput,
 	ChatEditorInput,
+	AideChatEditorInput,
 	MultiDiffEditorInput
 }
 
@@ -779,6 +784,10 @@ export interface ChatEditorInputDto {
 	kind: TabInputKind.ChatEditorInput;
 }
 
+export interface AideChatEditorInputDto {
+	kind: TabInputKind.AideChatEditorInput;
+}
+
 export interface MultiDiffEditorInputDto {
 	kind: TabInputKind.MultiDiffEditorInput;
 	diffEditors: TextDiffInputDto[];
@@ -788,7 +797,7 @@ export interface TabInputDto {
 	kind: TabInputKind.TerminalEditorInput;
 }
 
-export type AnyInputDto = UnknownInputDto | TextInputDto | TextDiffInputDto | MultiDiffEditorInputDto | TextMergeInputDto | NotebookInputDto | NotebookDiffInputDto | CustomInputDto | WebviewInputDto | InteractiveEditorInputDto | ChatEditorInputDto | TabInputDto;
+export type AnyInputDto = UnknownInputDto | TextInputDto | TextDiffInputDto | MultiDiffEditorInputDto | TextMergeInputDto | NotebookInputDto | NotebookDiffInputDto | CustomInputDto | WebviewInputDto | InteractiveEditorInputDto | ChatEditorInputDto | AideChatEditorInputDto | TabInputDto;
 
 export interface MainThreadEditorTabsShape extends IDisposable {
 	// manage tabs: move, close, rearrange etc
@@ -1204,6 +1213,7 @@ export interface ExtHostSpeechShape {
 	$cancelKeywordRecognitionSession(session: number): Promise<void>;
 }
 
+///////////////////////// START CHAT /////////////////////////
 export interface MainThreadLanguageModelsShape extends IDisposable {
 	$registerLanguageModelProvider(handle: number, identifier: string, metadata: ILanguageModelChatMetadata): void;
 	$unregisterProvider(handle: number): void;
@@ -1240,11 +1250,6 @@ export interface IExtensionChatAgentMetadata extends Dto<IChatAgentMetadata> {
 	hasFollowups?: boolean;
 }
 
-export interface ICSChatAgentEditResponseDto {
-	edits: IWorkspaceEditDto;
-	codeBlockIndex: number;
-}
-
 export interface IDynamicChatAgentProps {
 	name: string;
 	publisherName: string;
@@ -1259,7 +1264,6 @@ export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void;
 	$unregisterAgent(handle: number): void;
 	$handleProgressChunk(requestId: string, chunk: IChatProgressDto, handle?: number): Promise<number | void>;
-	$handleEditProgressChunk(responseId: string, chunk: ICSChatAgentEditResponseDto): Promise<number | void>;
 
 	$transferActiveChatSession(toWorkspace: UriComponents): void;
 }
@@ -1288,7 +1292,6 @@ export type IChatAgentHistoryEntryDto = {
 
 export interface ExtHostChatAgentsShape2 {
 	$invokeAgent(handle: number, request: IChatAgentRequest, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
-	$provideEdits(handle: number, sessionId: string, request: IChatAgentEditRequest, token: CancellationToken): Promise<ICSChatAgentEditResponseDto | undefined>;
 	$provideFollowups(request: IChatAgentRequest, handle: number, result: IChatAgentResult, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
 	$acceptFeedback(handle: number, result: IChatAgentResult, vote: ChatAgentVoteDirection, reportIssue?: boolean): void;
 	$acceptAction(handle: number, result: IChatAgentResult, action: IChatUserActionEvent): void;
@@ -1351,6 +1354,139 @@ export type IDocumentContextDto = {
 export type IChatProgressDto =
 	| Dto<Exclude<IChatProgress, IChatTask>>
 	| IChatTaskDto;
+
+///////////////////////// END CHAT /////////////////////////
+
+///////////////////////// START AIDE /////////////////////////
+export interface MainThreadAIModelsShape extends IDisposable {
+	$registerLanguageModelProvider(handle: number, identifier: string, metadata: IAIModelChatMetadata): void;
+	$unregisterProvider(handle: number): void;
+	$handleProgressChunk(requestId: number, chunk: IAideChatResponseFragment): Promise<void>;
+
+	$selectChatModels(selector: ILanguageModelAideChatSelector): Promise<string[]>;
+
+	$fetchResponse(extension: ExtensionIdentifier, provider: string, requestId: number, messages: IAideChatMessage[], options: {}, token: CancellationToken): Promise<any>;
+
+	$whenLanguageModelChatRequestMade(identifier: string, extension: ExtensionIdentifier, participant?: string, tokenCount?: number): void;
+	$countTokens(provider: string, value: string | IAideChatMessage, token: CancellationToken): Promise<number>;
+}
+
+export interface ExtHostAIModelsShape {
+	$acceptChatModelMetadata(data: ILanguageModelsChangeEvent): void;
+	$updateModelAccesslist(data: { from: ExtensionIdentifier; to: ExtensionIdentifier; enabled: boolean }[]): void;
+	$provideLanguageModelResponse(handle: number, requestId: number, from: ExtensionIdentifier, messages: IAideChatMessage[], options: { [name: string]: any }, token: CancellationToken): Promise<any>;
+	$handleResponseFragment(requestId: number, chunk: IAideChatResponseFragment): Promise<void>;
+	$provideTokenLength(handle: number, value: string | IAideChatMessage, token: CancellationToken): Promise<number>;
+}
+
+export interface IExtensionAideChatAgentMetadata extends Dto<IAideChatAgentMetadata> {
+	hasFollowups?: boolean;
+}
+
+export interface IDynamicAideChatAgentProps {
+	name: string;
+	publisherName: string;
+	description?: string;
+	fullName?: string;
+}
+
+export interface MainThreadAideChatAgentsShape2 extends IDisposable {
+	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionAideChatAgentMetadata, dynamicProps: IDynamicAideChatAgentProps | undefined): void;
+	$registerAgentCompletionsProvider(handle: number, id: string, triggerCharacters: string[]): void;
+	$unregisterAgentCompletionsProvider(handle: number, id: string): void;
+	$updateAgent(handle: number, metadataUpdate: IExtensionAideChatAgentMetadata): void;
+	$unregisterAgent(handle: number): void;
+	$handleProgressChunk(requestId: string, chunk: IAideChatProgressDto, handle?: number): Promise<number | void>;
+
+	$transferActiveChatSession(toWorkspace: UriComponents): void;
+}
+
+export interface IAideChatAgentCompletionItem {
+	id: string;
+	fullName?: string;
+	icon?: string;
+	insertText?: string;
+	label: string | languages.CompletionItemLabel;
+	value: IAideChatRequestVariableValueDto;
+	detail?: string;
+	documentation?: string | IMarkdownString;
+	command?: ICommandDto;
+}
+
+export type IAideChatContentProgressDto =
+	| Dto<Exclude<IAideChatProgressResponseContent, IAideChatTask>>
+	| IAideChatTaskDto;
+
+export type IAideChatAgentHistoryEntryDto = {
+	request: IAideChatAgentRequest;
+	response: ReadonlyArray<IAideChatContentProgressDto>;
+	result: IAideChatAgentResult;
+};
+
+export interface ExtHostAideChatAgentsShape2 {
+	$invokeAgent(handle: number, request: IAideChatAgentRequest, context: { history: IAideChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IAideChatAgentResult | undefined>;
+	$provideFollowups(request: IAideChatAgentRequest, handle: number, result: IAideChatAgentResult, context: { history: IAideChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IAideChatFollowup[]>;
+	$acceptFeedback(handle: number, result: IAideChatAgentResult, vote: AideChatAgentVoteDirection, reportIssue?: boolean): void;
+	$acceptAction(handle: number, result: IAideChatAgentResult, action: IAideChatUserActionEvent): void;
+	$invokeCompletionProvider(handle: number, query: string, token: CancellationToken): Promise<IAideChatAgentCompletionItem[]>;
+	$provideWelcomeMessage(handle: number, location: AideChatAgentLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined>;
+	$provideSampleQuestions(handle: number, location: AideChatAgentLocation, token: CancellationToken): Promise<IAideChatFollowup[] | undefined>;
+	$releaseSession(sessionId: string): void;
+}
+
+export type IAideChatVariableResolverProgressDto =
+	| Dto<IAideChatVariableResolverProgress>;
+
+export interface MainThreadAideChatVariablesShape extends IDisposable {
+	$registerVariable(handle: number, data: IAideChatVariableData): void;
+	$handleProgressChunk(requestId: string, progress: IAideChatVariableResolverProgressDto): Promise<number | void>;
+	$unregisterVariable(handle: number): void;
+}
+
+export type IAideChatRequestVariableValueDto = Dto<IAideChatRequestVariableValue>;
+
+export interface ExtHostAideChatVariablesShape {
+	$resolveVariable(handle: number, requestId: string, messageText: string, token: CancellationToken): Promise<IAideChatRequestVariableValueDto | undefined>;
+}
+
+export interface MainThreadUrlsShape extends IDisposable {
+	$registerUriHandler(handle: number, extensionId: ExtensionIdentifier, extensionDisplayName: string): Promise<void>;
+	$unregisterUriHandler(handle: number): Promise<void>;
+	$createAppUri(uri: UriComponents): Promise<UriComponents>;
+}
+
+export interface IAideChatDto {
+}
+
+export interface IAideChatRequestDto {
+	message: string;
+	variables?: Record<string, IAideChatRequestVariableValue[]>;
+}
+
+export interface IAideChatResponseDto {
+	errorDetails?: IAideChatResponseErrorDetails;
+	timings: {
+		firstProgress: number;
+		totalElapsed: number;
+	};
+}
+
+export interface IAideChatResponseProgressFileTreeData {
+	label: string;
+	uri: URI;
+	children?: IAideChatResponseProgressFileTreeData[];
+}
+
+// export type IDocumentContextDto = {
+// 	uri: UriComponents;
+// 	version: number;
+// 	ranges: IRange[];
+// };
+
+export type IAideChatProgressDto =
+	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
+	| IAideChatTaskDto;
+///////////////////////// END AIDE /////////////////////////
 
 export interface ExtHostUrlsShape {
 	$handleExternalUri(handle: number, uri: UriComponents): Promise<void>;
@@ -2835,8 +2971,11 @@ export interface MainThreadCSEventsShape extends IDisposable {
 export const MainContext = {
 	MainThreadAuthentication: createProxyIdentifier<MainThreadAuthenticationShape>('MainThreadAuthentication'),
 	MainThreadBulkEdits: createProxyIdentifier<MainThreadBulkEditsShape>('MainThreadBulkEdits'),
+	MainThreadAIModels: createProxyIdentifier<MainThreadAIModelsShape>('MainThreadAIModels'),
 	MainThreadLanguageModels: createProxyIdentifier<MainThreadLanguageModelsShape>('MainThreadLanguageModels'),
 	MainThreadEmbeddings: createProxyIdentifier<MainThreadEmbeddingsShape>('MainThreadEmbeddings'),
+	MainThreadAideChatAgents2: createProxyIdentifier<MainThreadAideChatAgentsShape2>('MainThreadAideChatAgents2'),
+	MainThreadAideChatVariables: createProxyIdentifier<MainThreadAideChatVariablesShape>('MainThreadAideChatVariables'),
 	MainThreadChatAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadChatAgents2'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
 	MainThreadClipboard: createProxyIdentifier<MainThreadClipboardShape>('MainThreadClipboard'),
@@ -2961,6 +3100,9 @@ export const ExtHostContext = {
 	ExtHostChatAgents2: createProxyIdentifier<ExtHostChatAgentsShape2>('ExtHostChatAgents'),
 	ExtHostChatVariables: createProxyIdentifier<ExtHostChatVariablesShape>('ExtHostChatVariables'),
 	ExtHostChatProvider: createProxyIdentifier<ExtHostLanguageModelsShape>('ExtHostChatProvider'),
+	ExtHostAideChatAgents2: createProxyIdentifier<ExtHostAideChatAgentsShape2>('ExtHostAideChatAgents'),
+	ExtHostAideChatVariables: createProxyIdentifier<ExtHostAideChatVariablesShape>('ExtHostAideChatVariables'),
+	ExtHostAideChatProvider: createProxyIdentifier<ExtHostAIModelsShape>('ExtHostAideChatProvider'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostEmbeddings: createProxyIdentifier<ExtHostEmbeddingsShape>('ExtHostEmbeddings'),
 	ExtHostAiRelatedInformation: createProxyIdentifier<ExtHostAiRelatedInformationShape>('ExtHostAiRelatedInformation'),

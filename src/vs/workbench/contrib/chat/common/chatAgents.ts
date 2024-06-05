@@ -3,12 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { findLast } from 'vs/base/common/arraysFind';
 import { timeout } from 'vs/base/common/async';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Iterable } from 'vs/base/common/iterator';
-import { IDisposable, toDisposable, Disposable } from 'vs/base/common/lifecycle';
+import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { IObservable } from 'vs/base/common/observable';
 import { observableValue } from 'vs/base/common/observableInternal/base';
@@ -16,21 +17,17 @@ import { equalsIgnoreCase } from 'vs/base/common/strings';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { Command, ProviderResult } from 'vs/editor/common/languages';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IConfigurationRegistry, Extensions as ConfigurationExtensions } from 'vs/platform/configuration/common/configurationRegistry';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IProductService } from 'vs/platform/product/common/productService';
-import { Registry } from 'vs/platform/registry/common/platform';
 import { asJson, IRequestService } from 'vs/platform/request/common/request';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from 'vs/workbench/contrib/chat/common/chatParticipantContribTypes';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTaskDto } from 'vs/workbench/contrib/chat/common/chatService';
-import { ICSChatAgentEditResponse, IChatAgentEditRequest } from 'vs/workbench/contrib/chat/common/csChatAgents';
 
 //#region agent service, commands etc
 
@@ -85,7 +82,6 @@ export interface IChatAgentImplementation {
 	provideFollowups?(request: IChatAgentRequest, result: IChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IChatFollowup[]>;
 	provideWelcomeMessage?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
 	provideSampleQuestions?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
-	provideEdits?(request: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
 }
 
 export type IChatAgent = IChatAgentData & IChatAgentImplementation;
@@ -110,7 +106,7 @@ export interface IChatAgentMetadata {
 	isSecondary?: boolean; // Invoked by ctrl/cmd+enter
 	icon?: URI;
 	iconDark?: URI;
-	themeIcon?: ThemeIcon | URI;
+	themeIcon?: ThemeIcon;
 	sampleRequest?: string;
 	supportIssueReporting?: boolean;
 	followupPlaceholder?: string;
@@ -160,7 +156,7 @@ export interface IChatAgentCompletionItem {
 	command?: Command;
 }
 
-export interface IBaseChatAgentService {
+export interface IChatAgentService {
 	_serviceBrand: undefined;
 	/**
 	 * undefined when an agent was removed IChatAgent
@@ -192,11 +188,7 @@ export interface IBaseChatAgentService {
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 }
 
-export interface IChatAgentService extends IBaseChatAgentService {
-	makeEdits(context: IChatAgentEditRequest, progress: (part: ICSChatAgentEditResponse) => void, token: CancellationToken): Promise<ICSChatAgentEditResponse | undefined>;
-}
-
-export class ChatAgentService extends Disposable implements IBaseChatAgentService {
+export class ChatAgentService implements IChatAgentService {
 
 	public static readonly AGENT_LEADER = '@';
 
@@ -208,23 +200,11 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 	readonly onDidChangeAgents: Event<IChatAgent | undefined> = this._onDidChangeAgents.event;
 
 	private readonly _hasDefaultAgent: IContextKey<boolean>;
-	private _defaultAgent = new Map<ChatAgentLocation, IChatAgent>();
-	private _contributedDefaultAgent = new Map<ChatAgentLocation, IChatAgentData>();
-
-	private readonly configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
 
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
-		super();
 		this._hasDefaultAgent = CONTEXT_CHAT_ENABLED.bindTo(this.contextKeyService);
-
-		this._register(this.configurationService.onDidChangeConfiguration(e => {
-			if (e.affectsConfiguration('chat.defaultAgent')) {
-				this._updateDefaultAgents();
-			}
-		}));
 	}
 
 	registerAgent(id: string, data: IChatAgentData): IDisposable {
@@ -243,7 +223,6 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		};
 		const entry = { data };
 		this._agents.set(id, entry);
-		this._updateDefaultAgents();
 		return toDisposable(() => {
 			this._agents.delete(id);
 			this._onDidChangeAgents.fire(undefined);
@@ -260,7 +239,9 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 			throw new Error(`Agent already has implementation: ${JSON.stringify(id)}`);
 		}
 
-		this._updateDefaultAgents();
+		if (entry.data.isDefault) {
+			this._hasDefaultAgent.set(true);
+		}
 
 		entry.impl = agentImpl;
 		this._onDidChangeAgents.fire(new MergedChatAgent(entry.data, agentImpl));
@@ -269,7 +250,9 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 			entry.impl = undefined;
 			this._onDidChangeAgents.fire(undefined);
 
-			this._updateDefaultAgents();
+			if (entry.data.isDefault) {
+				this._hasDefaultAgent.set(false);
+			}
 		});
 	}
 
@@ -278,13 +261,10 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		const agent = { data, impl: agentImpl };
 		this._agents.set(data.id, agent);
 		this._onDidChangeAgents.fire(new MergedChatAgent(data, agentImpl));
-		this._updateDefaultAgents();
 
 		return toDisposable(() => {
 			this._agents.delete(data.id);
 			this._onDidChangeAgents.fire(undefined);
-
-			this._updateDefaultAgents();
 		});
 	}
 
@@ -308,16 +288,14 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		}
 		agent.data.metadata = { ...agent.data.metadata, ...updateMetadata };
 		this._onDidChangeAgents.fire(new MergedChatAgent(agent.data, agent.impl));
-
-		this._updateDefaultAgents();
 	}
 
 	getDefaultAgent(location: ChatAgentLocation): IChatAgent | undefined {
-		return this._defaultAgent.get(location);
+		return findLast(this.getActivatedAgents(), a => !!a.isDefault && a.locations.includes(location));
 	}
 
 	getContributedDefaultAgent(location: ChatAgentLocation): IChatAgentData | undefined {
-		return this._contributedDefaultAgent.get(location);
+		return this.getAgents().find(a => !!a.isDefault && a.locations.includes(location));
 	}
 
 	getSecondaryAgent(): IChatAgentData | undefined {
@@ -387,64 +365,6 @@ export class ChatAgentService extends Disposable implements IBaseChatAgentServic
 		}
 
 		return data.impl.provideFollowups(request, result, history, token);
-	}
-
-	private _updateDefaults<T extends IChatAgent | IChatAgentData>(
-		defaultAgents: T[],
-		defaultAgentMap: Map<ChatAgentLocation, T>
-	): typeof defaultAgentMap {
-		const defaultAgentsByLocation = new Map<ChatAgentLocation, T[]>();
-
-		for (const agent of defaultAgents) {
-			agent.locations.forEach(location => {
-				if (!defaultAgentsByLocation.has(location)) {
-					defaultAgentsByLocation.set(location, []);
-				}
-				defaultAgentsByLocation.get(location)!.push(agent);
-			});
-		}
-
-		defaultAgentsByLocation.forEach((defaultAgentsForLocation, location) => {
-			const aideAgent = defaultAgentsForLocation.find(agent => agent.id === 'aide');
-			if (defaultAgentsForLocation.length === 0) {
-				defaultAgentMap.delete(location);
-				return;
-			} else if (defaultAgentsForLocation.length === 1) {
-				defaultAgentMap.set(location, aideAgent ?? defaultAgentsForLocation[0]);
-				return;
-			} else if (defaultAgentsForLocation.length > 1) {
-				const preferenceKey = `chat.defaultAgent.${location}`;
-				const configuredDefaultAgentId = this.configurationService.getValue<string>(preferenceKey);
-				const configuredDefaultAgent = defaultAgentsForLocation.find(agent => agent.id === configuredDefaultAgentId);
-				const defaultAgentForLocation = configuredDefaultAgent ?? aideAgent ?? defaultAgentsForLocation[0];
-				defaultAgentMap.set(location, defaultAgentForLocation);
-				this.configurationRegistry.registerConfiguration({
-					properties: {
-						[preferenceKey]: {
-							type: 'string',
-							description: `The default chat participant to use in the ${location}.`,
-							default: defaultAgentForLocation.id,
-							enum: defaultAgentsForLocation.map(agent => agent.id),
-							enumItemLabels: defaultAgentsForLocation.map(agent => agent.name),
-						}
-					}
-				});
-			}
-		});
-
-		return defaultAgentMap;
-	}
-
-	private _updateDefaultAgents() {
-		const defaultAgents = this.getActivatedAgents().filter(a => a.isDefault);
-		const contributedDefaultAgents = this.getAgents().filter(a => a.isDefault);
-		if (defaultAgents.length > 0) {
-			this._hasDefaultAgent.set(true);
-		}
-
-		this._defaultAgent = this._updateDefaults(defaultAgents, this._defaultAgent);
-		this._contributedDefaultAgent = this._updateDefaults(contributedDefaultAgents, this._contributedDefaultAgent);
-		this._onDidChangeAgents.fire(undefined);
 	}
 }
 

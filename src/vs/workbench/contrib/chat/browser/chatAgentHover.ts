@@ -81,7 +81,7 @@ export class ChatAgentHover extends Disposable {
 			avatarIcon.src = FileAccess.uriToBrowserUri(agent.metadata.icon).toString(true);
 			this.icon.replaceChildren(dom.$('.avatar', undefined, avatarIcon));
 		} else if (agent.metadata.themeIcon) {
-			const avatarIcon = dom.$(ThemeIcon.asCSSSelector(agent.metadata.themeIcon as ThemeIcon));
+			const avatarIcon = dom.$(ThemeIcon.asCSSSelector(agent.metadata.themeIcon));
 			this.icon.replaceChildren(dom.$('.avatar.codicon-avatar', undefined, avatarIcon));
 		}
 

@@ -15,6 +15,9 @@
     "chatProvider",
     "chatParticipantAdditions",
     "chatParticipantPrivate",
+    "aideChatParticipant",
+    "aideChatProvider",
+    "aideChatVariableResolver",
     "csevents",
     "defaultChatParticipant",
     "chatVariableResolver",
@@ -63,13 +66,13 @@
         }
       ]
     },
-    "chatParticipants": [
+    "aideChatParticipants": [
       {
         "id": "aide",
         "name": "Aide",
         "description": "What can I help you with today?",
         "isDefault": true,
-        "locations": ["panel", "terminal"]
+        "locations": ["panel"]
       }
     ],
     "menus": {

@@ -11,7 +11,7 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatActions';
 import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/chat/common/chatContextKeys';
-import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
+import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 
 export function registerChatFileTreeActions() {
 	registerAction2(class NextFileTreeAction extends Action2 {

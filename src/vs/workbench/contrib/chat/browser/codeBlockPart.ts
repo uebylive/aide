@@ -38,7 +38,7 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { IChatRendererDelegate } from 'vs/workbench/contrib/chat/browser/chatListRenderer';
 import { ChatEditorOptions } from 'vs/workbench/contrib/chat/browser/chatOptions';
-import { ICSChatResponseViewModel as IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/csChatViewModel';
+import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/chat/common/chatViewModel';
 import { MenuPreventer } from 'vs/workbench/contrib/codeEditor/browser/menuPreventer';
 import { SelectionClipboardContributionID } from 'vs/workbench/contrib/codeEditor/browser/selectionClipboard';
 import { getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
@@ -132,7 +132,7 @@ export class CodeBlockPart extends Disposable {
 
 	public readonly editor: CodeEditorWidget;
 	protected readonly toolbar: MenuWorkbenchToolBar;
-	protected contextKeyService: IContextKeyService;
+	private readonly contextKeyService: IContextKeyService;
 
 	public readonly element: HTMLElement;
 

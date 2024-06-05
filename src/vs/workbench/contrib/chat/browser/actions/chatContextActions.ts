@@ -16,7 +16,6 @@ import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from 
 import { localize, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
 import { IQuickInputService, IQuickPickItem, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
@@ -24,12 +23,13 @@ import { CHAT_CATEGORY } from 'vs/workbench/contrib/chat/browser/actions/chatAct
 import { IChatWidget, IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
 import { ChatContextAttachments } from 'vs/workbench/contrib/chat/browser/contrib/chatContextAttachments';
 import { ChatAgentLocation, IChatAgentService } from 'vs/workbench/contrib/chat/common/chatAgents';
-import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_AIDE_CHAT_SESSION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_QUICK_CHAT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
+import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_QUICK_CHAT } from 'vs/workbench/contrib/chat/common/chatContextKeys';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { ChatRequestAgentPart } from 'vs/workbench/contrib/chat/common/chatParserTypes';
 import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
 import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
+import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 
 export function registerChatContextActions() {
 	registerAction2(AttachContextAction);
@@ -94,7 +94,7 @@ class AttachContextAction extends Action2 {
 			},
 			menu: [
 				{
-					when: ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel), CONTEXT_IN_QUICK_CHAT.isEqualTo(false), CONTEXT_IN_AIDE_CHAT_SESSION.negate()),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel), CONTEXT_IN_QUICK_CHAT.isEqualTo(false)),
 					id: MenuId.ChatExecute,
 					group: 'navigation',
 				},

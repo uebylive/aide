@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { InlineVoiceChatAction, QuickVoiceChatAction, VoiceChatInChatViewAction, StopListeningAction, StopListeningAndSubmitAction, KeywordActivationContribution, InstallSpeechProviderForSynthesizeChatAction, HoldToVoiceChatInChatViewAction, ReadChatResponseAloud, StopReadAloud, StopReadChatItemAloud } from 'vs/workbench/contrib/chat/electron-sandbox/actions/voiceChatActions';
+import { InlineVoiceChatAction, QuickVoiceChatAction, StartVoiceChatAction, VoiceChatInChatViewAction, StopListeningAction, StopListeningAndSubmitAction, KeywordActivationContribution, InstallSpeechProviderForSynthesizeChatAction, InstallSpeechProviderForVoiceChatAction, HoldToVoiceChatInChatViewAction, ReadChatResponseAloud, StopReadAloud, StopReadChatItemAloud } from 'vs/workbench/contrib/chat/electron-sandbox/actions/voiceChatActions';
 import { registerAction2 } from 'vs/platform/actions/common/actions';
 import { WorkbenchPhase, registerWorkbenchContribution2 } from 'vs/workbench/common/contributions';
 
-// registerAction2(StartVoiceChatAction);
-// registerAction2(InstallSpeechProviderForVoiceChatAction);
+registerAction2(StartVoiceChatAction);
+registerAction2(InstallSpeechProviderForVoiceChatAction);
 
 registerAction2(VoiceChatInChatViewAction);
 registerAction2(HoldToVoiceChatInChatViewAction);

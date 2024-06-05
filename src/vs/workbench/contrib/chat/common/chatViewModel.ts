@@ -151,10 +151,10 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	private readonly _onDidDisposeModel = this._register(new Emitter<void>());
 	readonly onDidDisposeModel = this._onDidDisposeModel.event;
 
-	protected readonly _onDidChange = this._register(new Emitter<IChatViewModelChangeEvent>());
+	private readonly _onDidChange = this._register(new Emitter<IChatViewModelChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	protected readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
+	private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
 
 	private _inputPlaceholder: string | undefined = undefined;
 	get inputPlaceholder(): string | undefined {
@@ -190,7 +190,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	constructor(
 		private readonly _model: IChatModel,
 		public readonly codeBlockModelCollection: CodeBlockModelCollection,
-		@IInstantiationService protected readonly instantiationService: IInstantiationService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
@@ -239,7 +239,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		}));
 	}
 
-	protected onAddResponse(responseModel: IChatResponseModel) {
+	private onAddResponse(responseModel: IChatResponseModel) {
 		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel);
 		this._register(response.onDidChange(() => {
 			if (response.isComplete) {
@@ -262,7 +262,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 			.forEach((item: ChatResponseViewModel) => item.dispose());
 	}
 
-	protected updateCodeBlockTextModels(model: IChatRequestViewModel | IChatResponseViewModel) {
+	updateCodeBlockTextModels(model: IChatRequestViewModel | IChatResponseViewModel) {
 		let content: string;
 		if (isRequestVM(model)) {
 			content = model.messageText;
@@ -347,7 +347,7 @@ export class ChatRequestViewModel implements IChatRequestViewModel {
 }
 
 export class ChatResponseViewModel extends Disposable implements IChatResponseViewModel {
-	protected _modelChangeCount = 0;
+	private _modelChangeCount = 0;
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
@@ -476,9 +476,9 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	}
 
 	constructor(
-		protected readonly _model: IChatResponseModel,
-		@ILogService protected readonly logService: ILogService,
-		@IChatAgentNameService protected readonly chatAgentNameService: IChatAgentNameService,
+		private readonly _model: IChatResponseModel,
+		@ILogService private readonly logService: ILogService,
+		@IChatAgentNameService private readonly chatAgentNameService: IChatAgentNameService,
 	) {
 		super();
 

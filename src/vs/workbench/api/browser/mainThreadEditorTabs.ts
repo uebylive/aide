@@ -16,6 +16,7 @@ import { isGroupEditorMoveEvent } from 'vs/workbench/common/editor/editorGroupMo
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
 import { SideBySideEditorInput } from 'vs/workbench/common/editor/sideBySideEditorInput';
 import { AbstractTextResourceEditorInput } from 'vs/workbench/common/editor/textResourceEditorInput';
+import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatEditorInput } from 'vs/workbench/contrib/chat/browser/chatEditorInput';
 import { CustomEditorInput } from 'vs/workbench/contrib/customEditor/browser/customEditorInput';
 import { InteractiveEditorInput } from 'vs/workbench/contrib/interactive/browser/interactiveEditorInput';
@@ -201,6 +202,12 @@ export class MainThreadEditorTabs implements MainThreadEditorTabsShape {
 		if (editor instanceof ChatEditorInput) {
 			return {
 				kind: TabInputKind.ChatEditorInput,
+			};
+		}
+
+		if (editor instanceof AideChatEditorInput) {
+			return {
+				kind: TabInputKind.AideChatEditorInput,
 			};
 		}
 

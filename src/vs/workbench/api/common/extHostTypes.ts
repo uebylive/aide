@@ -4246,6 +4246,10 @@ export class ChatEditorTabInput {
 	constructor() { }
 }
 
+export class AideChatEditorTabInput {
+	constructor() { }
+}
+
 export class TextMultiDiffTabInput {
 	constructor(readonly textDiffs: TextDiffTabInput[]) { }
 }
@@ -4449,33 +4453,6 @@ export enum ChatLocation {
 	Editor = 4,
 }
 
-export enum LanguageModelChatMessageRole {
-	User = 1,
-	Assistant = 2,
-	System = 3
-}
-
-export class LanguageModelChatMessage implements vscode.LanguageModelChatMessage {
-
-	static User(content: string, name?: string): LanguageModelChatMessage {
-		return new LanguageModelChatMessage(LanguageModelChatMessageRole.User, content, name);
-	}
-
-	static Assistant(content: string, name?: string): LanguageModelChatMessage {
-		return new LanguageModelChatMessage(LanguageModelChatMessageRole.Assistant, content, name);
-	}
-
-	role: vscode.LanguageModelChatMessageRole;
-	content: string;
-	name: string | undefined;
-
-	constructor(role: vscode.LanguageModelChatMessageRole, content: string, name?: string) {
-		this.role = role;
-		this.content = content;
-		this.name = name;
-	}
-}
-
 /**
  * @deprecated
  */
@@ -4532,6 +4509,240 @@ export class LanguageModelError extends Error {
 	constructor(message?: string, code?: string, cause?: Error) {
 		super(message, { cause });
 		this.name = 'LanguageModelError';
+		this.code = code ?? '';
+	}
+
+}
+
+//#endregion
+
+//#region AideChat
+
+export enum AideChatCopyKind {
+	Action = 1,
+	Toolbar = 2
+}
+
+export enum AideChatVariableLevel {
+	Short = 1,
+	Medium = 2,
+	Full = 3
+}
+
+export class AideChatCompletionItem implements vscode.ChatCompletionItem {
+	id: string;
+	label: string | CompletionItemLabel;
+	fullName?: string | undefined;
+	icon?: vscode.ThemeIcon;
+	insertText?: string;
+	values: vscode.ChatVariableValue[];
+	detail?: string;
+	documentation?: string | MarkdownString;
+	command?: vscode.Command;
+
+	constructor(id: string, label: string | CompletionItemLabel, values: vscode.ChatVariableValue[]) {
+		this.id = id;
+		this.label = label;
+		this.values = values;
+	}
+}
+
+export enum AideChatResultFeedbackKind {
+	Unhelpful = 0,
+	Helpful = 1,
+}
+
+export class AideChatResponseMarkdownPart {
+	value: vscode.MarkdownString;
+	constructor(value: string | vscode.MarkdownString) {
+		if (typeof value !== 'string' && value.isTrusted === true) {
+			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
+		}
+
+		this.value = typeof value === 'string' ? new MarkdownString(value) : value;
+	}
+}
+
+/**
+ * TODO if 'vulnerabilities' is finalized, this should be merged with the base ChatResponseMarkdownPart. I just don't see how to do that while keeping
+ * vulnerabilities in a seperate API proposal in a clean way.
+ */
+export class AideChatResponseMarkdownWithVulnerabilitiesPart {
+	value: vscode.MarkdownString;
+	vulnerabilities: vscode.ChatVulnerability[];
+	constructor(value: string | vscode.MarkdownString, vulnerabilities: vscode.ChatVulnerability[]) {
+		if (typeof value !== 'string' && value.isTrusted === true) {
+			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
+		}
+
+		this.value = typeof value === 'string' ? new MarkdownString(value) : value;
+		this.vulnerabilities = vulnerabilities;
+	}
+}
+
+export class AideChatResponseDetectedParticipantPart {
+	participant: string;
+	// TODO@API validate this against statically-declared slash commands?
+	command?: vscode.ChatCommand;
+	constructor(participant: string, command?: vscode.ChatCommand) {
+		this.participant = participant;
+		this.command = command;
+	}
+}
+
+export class AideChatResponseConfirmationPart {
+	title: string;
+	message: string;
+	data: any;
+	constructor(title: string, message: string, data: any) {
+		this.title = title;
+		this.message = message;
+		this.data = data;
+	}
+}
+
+export class AideChatResponseFileTreePart {
+	value: vscode.ChatResponseFileTree[];
+	baseUri: vscode.Uri;
+	constructor(value: vscode.ChatResponseFileTree[], baseUri: vscode.Uri) {
+		this.value = value;
+		this.baseUri = baseUri;
+	}
+}
+
+export class AideChatResponseAnchorPart {
+	value: vscode.Uri | vscode.Location;
+	title?: string;
+	constructor(value: vscode.Uri | vscode.Location, title?: string) {
+		this.value = value;
+		this.title = title;
+	}
+}
+
+export class AideChatResponseProgressPart {
+	value: string;
+	constructor(value: string) {
+		this.value = value;
+	}
+}
+
+export class AideChatResponseProgressPart2 {
+	value: string;
+	task?: (progress: vscode.Progress<vscode.ChatResponseWarningPart>) => Thenable<string | void>;
+	constructor(value: string, task?: (progress: vscode.Progress<vscode.ChatResponseWarningPart>) => Thenable<string | void>) {
+		this.value = value;
+		this.task = task;
+	}
+}
+
+export class AideChatResponseWarningPart {
+	value: vscode.MarkdownString;
+	constructor(value: string | vscode.MarkdownString) {
+		if (typeof value !== 'string' && value.isTrusted === true) {
+			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
+		}
+
+		this.value = typeof value === 'string' ? new MarkdownString(value) : value;
+	}
+}
+
+export class AideChatResponseCommandButtonPart {
+	value: vscode.Command;
+	constructor(value: vscode.Command) {
+		this.value = value;
+	}
+}
+
+export class AideChatResponseReferencePart {
+	value: vscode.Uri | vscode.Location | { variableName: string; value?: vscode.Uri | vscode.Location };
+	iconPath?: vscode.Uri | vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri };
+	constructor(value: vscode.Uri | vscode.Location | { variableName: string; value?: vscode.Uri | vscode.Location }, iconPath?: vscode.Uri | vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri }) {
+		this.value = value;
+		this.iconPath = iconPath;
+	}
+}
+
+export class AideChatResponseTextEditPart {
+	uri: vscode.Uri;
+	edits: vscode.TextEdit[];
+	constructor(uri: vscode.Uri, edits: vscode.TextEdit | vscode.TextEdit[]) {
+		this.uri = uri;
+		this.edits = Array.isArray(edits) ? edits : [edits];
+	}
+}
+
+export class AideChatRequestTurn implements vscode.ChatRequestTurn {
+	constructor(
+		readonly prompt: string,
+		readonly command: string | undefined,
+		readonly references: vscode.ChatPromptReference[],
+		readonly participant: string,
+	) { }
+}
+
+export class AideChatResponseTurn implements vscode.ChatResponseTurn {
+
+	constructor(
+		readonly response: ReadonlyArray<AideChatResponseMarkdownPart | AideChatResponseFileTreePart | AideChatResponseAnchorPart | AideChatResponseCommandButtonPart>,
+		readonly result: vscode.ChatResult,
+		readonly participant: string,
+		readonly command?: string
+	) { }
+}
+
+export enum AideChatLocation {
+	Panel = 1,
+	Terminal = 2,
+	Notebook = 3,
+	Editor = 4,
+}
+
+export enum LanguageModelChatMessageRole {
+	User = 1,
+	Assistant = 2,
+	System = 3
+}
+
+export class LanguageModelChatMessage implements vscode.LanguageModelChatMessage {
+
+	static User(content: string, name?: string): LanguageModelChatMessage {
+		return new LanguageModelChatMessage(LanguageModelChatMessageRole.User, content, name);
+	}
+
+	static Assistant(content: string, name?: string): LanguageModelChatMessage {
+		return new LanguageModelChatMessage(LanguageModelChatMessageRole.Assistant, content, name);
+	}
+
+	role: vscode.LanguageModelChatMessageRole;
+	content: string;
+	name: string | undefined;
+
+	constructor(role: vscode.LanguageModelChatMessageRole, content: string, name?: string) {
+		this.role = role;
+		this.content = content;
+		this.name = name;
+	}
+}
+
+export class AIModelError extends Error {
+
+	static NotFound(message?: string): AIModelError {
+		return new AIModelError(message, AIModelError.NotFound.name);
+	}
+
+	static NoPermissions(message?: string): AIModelError {
+		return new AIModelError(message, AIModelError.NoPermissions.name);
+	}
+
+	static Blocked(message?: string): AIModelError {
+		return new AIModelError(message, AIModelError.Blocked.name);
+	}
+
+	readonly code: string;
+
+	constructor(message?: string, code?: string, cause?: Error) {
+		super(message, { cause });
+		this.name = 'AIModelError';
 		this.code = code ?? '';
 	}
 
