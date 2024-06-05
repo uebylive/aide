@@ -793,7 +793,7 @@ interface CodeSelectionUriRange {
 
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatPromptReference[],
-): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined }> {
+): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined; folder_paths: string[] }> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	let terminalSelection: string | undefined = undefined;
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
@@ -840,9 +840,11 @@ async function convertVSCodeVariableToSidecar(
 		}
 	};
 
+	const folders: string[] = [];
 	for (const variable of variables) {
-		const name = variable.name;
+		const variableName = variable.name;
 		const value = variable.value;
+		const name = variableName.split(':')[0];
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
@@ -851,22 +853,11 @@ async function convertVSCodeVariableToSidecar(
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
-			// Get the files in the folder
-			const parsedJson = JSON.parse(value as string) as vscode.Uri;
-			const folderPath = vscode.Uri.parse(parsedJson.path);
-			const folderFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(folderPath.fsPath, '**/*'));
-			for (const filePath of folderFiles) {
-				resolveFileReference(
-					'file',
-					{
-						level: vscode.ChatVariableLevel.Full,
-						value: JSON.stringify({ uri: filePath }),
-						kind: 'file'
-					}
-				);
-			}
+			const folderPath = value as vscode.Uri;
+			folders.push(folderPath.fsPath);
 		}
 	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -877,6 +868,7 @@ async function convertVSCodeVariableToSidecar(
 			};
 		}),
 		terminal_selection: terminalSelection,
+		folder_paths: folders,
 	};
 }
 
