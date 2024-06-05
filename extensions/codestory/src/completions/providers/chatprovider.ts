@@ -126,7 +126,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	}
 
 	defaultAgentRequestHandler: vscode.AideChatExtendedRequestHandler = async (request, _context, response, token) => {
-		let requestType: UserMessageType = 'general';
+		let requestType: UserMessageType = 'probeAgent';
 		const slashCommand = request.command;
 		if (request.location === vscode.AideChatLocation.Editor) {
 			await provideInteractiveEditorResponse(
@@ -173,7 +173,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
-		} else {
+		} else if (requestType === 'general') {
 			const query = request.prompt.toString().trim();
 			logChatPrompt(
 				request.prompt.toString(),
@@ -183,6 +183,11 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			);
 			const projectLabels = this._projectContext.labels;
 			const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels);
+			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
+			return new CSChatResponseForProgress();
+		} else {
+			const query = request.prompt.toString().trim();
+			const followupResponse = await this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl);
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}

@@ -111,7 +111,7 @@ class ChatAgentResponseStream {
 				markdownWithVulnerabilities(value, vulnerabilities) {
 					throwIfDone(this.markdown);
 					if (vulnerabilities) {
-						checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+						checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 					}
 
 					const part = new extHostTypes.AideChatResponseMarkdownWithVulnerabilitiesPart(value, vulnerabilities);
@@ -149,7 +149,7 @@ class ChatAgentResponseStream {
 				},
 				warning(value) {
 					throwIfDone(this.progress);
-					checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 					const part = new extHostTypes.ChatResponseWarningPart(value);
 					const dto = typeConvert.AideChatResponseWarningPart.from(part);
 					_report(dto);
@@ -159,7 +159,7 @@ class ChatAgentResponseStream {
 					throwIfDone(this.reference);
 
 					if ('variableName' in value) {
-						checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+						checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 					}
 
 					if ('variableName' in value && !value.value) {
@@ -194,7 +194,7 @@ class ChatAgentResponseStream {
 				},
 				textEdit(target, edits) {
 					throwIfDone(this.textEdit);
-					checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 
 					const part = new extHostTypes.AideChatResponseTextEditPart(target, edits);
 					const dto = typeConvert.AideChatResponseTextEditPart.from(part);
@@ -203,7 +203,7 @@ class ChatAgentResponseStream {
 				},
 				detectedParticipant(participant, command) {
 					throwIfDone(this.detectedParticipant);
-					checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 
 					const part = new extHostTypes.AideChatResponseDetectedParticipantPart(participant, command);
 					const dto = typeConvert.AideChatResponseDetectedParticipantPart.from(part);
@@ -212,7 +212,7 @@ class ChatAgentResponseStream {
 				},
 				confirmation(title, message, data) {
 					throwIfDone(this.confirmation);
-					checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 
 					const part = new extHostTypes.AideChatResponseConfirmationPart(title, message, data);
 					const dto = typeConvert.AideChatResponseConfirmationPart.from(part);
@@ -229,7 +229,7 @@ class ChatAgentResponseStream {
 						part instanceof extHostTypes.ChatResponseWarningPart ||
 						part instanceof extHostTypes.ChatResponseConfirmationPart
 					) {
-						checkProposedApiEnabled(that._extension, 'chatParticipantAdditions');
+						checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 					}
 
 					if (part instanceof extHostTypes.ChatResponseReferencePart) {
@@ -335,7 +335,7 @@ export class ExtHostAideChatAgents2 extends Disposable implements ExtHostAideCha
 					};
 				}
 				if (errorDetails?.responseIsRedacted) {
-					checkProposedApiEnabled(agent.extension, 'chatParticipantPrivate');
+					checkProposedApiEnabled(agent.extension, 'aideChatParticipant');
 				}
 
 				return { errorDetails, timings: stream.timings, metadata: result?.metadata } satisfies IAideChatAgentResult;
@@ -523,7 +523,7 @@ class ExtHostChatAgent {
 
 	public isAgentEnabled() {
 		// If in stable and this extension doesn't have the right proposed API, then don't register the agent
-		return !(this.quality === 'stable' && !isProposedApiEnabled(this.extension, 'chatParticipantPrivate'));
+		return !(this.quality === 'stable' && !isProposedApiEnabled(this.extension, 'aideChatParticipant'));
 	}
 
 	async provideFollowups(result: vscode.ChatResult, context: vscode.ChatContext, token: CancellationToken): Promise<vscode.ChatFollowup[]> {
@@ -636,56 +636,56 @@ class ExtHostChatAgent {
 				updateMetadataSoon();
 			},
 			get isDefault() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._isDefault;
 			},
 			set isDefault(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._isDefault = v;
 				updateMetadataSoon();
 			},
 			get helpTextPrefix() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._helpTextPrefix;
 			},
 			set helpTextPrefix(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._helpTextPrefix = v;
 				updateMetadataSoon();
 			},
 			get helpTextVariablesPrefix() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._helpTextVariablesPrefix;
 			},
 			set helpTextVariablesPrefix(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._helpTextVariablesPrefix = v;
 				updateMetadataSoon();
 			},
 			get helpTextPostfix() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._helpTextPostfix;
 			},
 			set helpTextPostfix(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._helpTextPostfix = v;
 				updateMetadataSoon();
 			},
 			get isSecondary() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._isSecondary;
 			},
 			set isSecondary(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._isSecondary = v;
 				updateMetadataSoon();
 			},
 			get supportIssueReporting() {
-				checkProposedApiEnabled(that.extension, 'chatParticipantPrivate');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._supportIssueReporting;
 			},
 			set supportIssueReporting(v) {
-				checkProposedApiEnabled(that.extension, 'chatParticipantPrivate');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._supportIssueReporting = v;
 				updateMetadataSoon();
 			},
@@ -693,7 +693,7 @@ class ExtHostChatAgent {
 				return that._onDidReceiveFeedback.event;
 			},
 			set participantVariableProvider(v) {
-				checkProposedApiEnabled(that.extension, 'chatParticipantAdditions');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._agentVariableProvider = v;
 				if (v) {
 					if (!v.triggerCharacters.length) {
@@ -706,19 +706,19 @@ class ExtHostChatAgent {
 				}
 			},
 			get participantVariableProvider() {
-				checkProposedApiEnabled(that.extension, 'chatParticipantAdditions');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._agentVariableProvider;
 			},
 			set welcomeMessageProvider(v) {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._welcomeMessageProvider = v;
 				updateMetadataSoon();
 			},
 			get welcomeMessageProvider() {
-				checkProposedApiEnabled(that.extension, 'defaultChatParticipant');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._welcomeMessageProvider;
 			},
-			onDidPerformAction: !isProposedApiEnabled(this.extension, 'chatParticipantAdditions')
+			onDidPerformAction: !isProposedApiEnabled(this.extension, 'aideChatParticipant')
 				? undefined!
 				: this._onDidPerformAction.event
 			,
@@ -730,12 +730,12 @@ class ExtHostChatAgent {
 				return that._requester;
 			},
 			set supportsSlowReferences(v) {
-				checkProposedApiEnabled(that.extension, 'chatParticipantPrivate');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				that._supportsSlowReferences = v;
 				updateMetadataSoon();
 			},
 			get supportsSlowReferences() {
-				checkProposedApiEnabled(that.extension, 'chatParticipantPrivate');
+				checkProposedApiEnabled(that.extension, 'aideChatParticipant');
 				return that._supportsSlowReferences;
 			},
 			dispose() {

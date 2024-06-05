@@ -24,7 +24,7 @@
 // that through the classifier to figure out what sub-instruction to use
 
 
-export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help';
+export type UserMessageType = 'explain' | 'general' | 'instruction' | 'search' | 'help' | 'probeAgent';
 
 export const deterministicClassifier = (userMessage: string): UserMessageType | null => {
 	if (userMessage.startsWith('/help')) {

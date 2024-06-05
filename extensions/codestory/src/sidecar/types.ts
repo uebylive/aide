@@ -234,7 +234,7 @@ export interface InEditorRequest {
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
 	diagnosticsInformation: DiagnosticInformationFromEditor | null;
-	userContext: { variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined; folder_paths: string[] };
+	userContext: SidecarUserContext;
 }
 
 export interface DiagnosticInformationFromEditor {
@@ -653,3 +653,29 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	return null;
 }
+
+type SidecarFileContent = {
+	file_path: string;
+	file_content: string;
+	language: string;
+};
+
+export type SidecarUserContext = {
+	variables: SidecarVariableTypes[];
+	file_content_map: SidecarFileContent[];
+	terminal_selection: string | undefined;
+	folder_paths: string[];
+};
+
+type ProbeSymbolIdentifier = {
+	symbol_name: string;
+	fs_file_path?: string;
+};
+
+export type ProbeAgentBody = {
+	editor_url: string;
+	model_config: Record<string, any>;
+	user_context: SidecarUserContext;
+	symbol_identifier: ProbeSymbolIdentifier;
+	query: string;
+};
