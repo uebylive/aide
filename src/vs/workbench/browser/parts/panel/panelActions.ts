@@ -6,16 +6,15 @@
 import 'vs/css!./media/panelpart';
 import { localize, localize2 } from 'vs/nls';
 import { KeyMod, KeyCode } from 'vs/base/common/keyCodes';
-import { MenuId, MenuRegistry, registerAction2, Action2, IAction2Options } from 'vs/platform/actions/common/actions';
+import { MenuId, MenuRegistry, registerAction2, Action2 } from 'vs/platform/actions/common/actions';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
-import { ActivityBarPosition, IWorkbenchLayoutService, LayoutSettings, PanelAlignment, Parts, Position, positionToString } from 'vs/workbench/services/layout/browser/layoutService';
-import { AuxiliaryBarVisibleContext, PanelAlignmentContext, PanelMaximizedContext, PanelPositionContext, PanelVisibleContext } from 'vs/workbench/common/contextkeys';
+import { IWorkbenchLayoutService, PanelAlignment, Parts, Position, positionToString } from 'vs/workbench/services/layout/browser/layoutService';
+import { PanelAlignmentContext, PanelMaximizedContext, PanelPositionContext, PanelVisibleContext } from 'vs/workbench/common/contextkeys';
 import { ContextKeyExpr, ContextKeyExpression } from 'vs/platform/contextkey/common/contextkey';
 import { Codicon } from 'vs/base/common/codicons';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { ViewContainerLocationToString, ViewContainerLocation, IViewDescriptorService } from 'vs/workbench/common/views';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { ViewContainerLocationToString, ViewContainerLocation } from 'vs/workbench/common/views';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 import { INotificationService } from 'vs/platform/notification/common/notification';
 import { ICommandActionTitle } from 'vs/platform/action/common/action';
@@ -336,6 +335,7 @@ registerAction2(class extends Action2 {
 	}
 });
 
+/*
 registerAction2(class extends Action2 {
 	constructor() {
 		super({
@@ -362,6 +362,7 @@ registerAction2(class extends Action2 {
 		accessor.get(IWorkbenchLayoutService).setPartHidden(true, Parts.AUXILIARYBAR_PART);
 	}
 });
+*/
 
 MenuRegistry.appendMenuItems([
 	{
@@ -391,6 +392,7 @@ MenuRegistry.appendMenuItems([
 	}
 ]);
 
+/*
 class MoveViewsBetweenPanelsAction extends Action2 {
 	constructor(private readonly source: ViewContainerLocation, private readonly destination: ViewContainerLocation, desc: Readonly<IAction2Options>) {
 		super(desc);
@@ -475,3 +477,4 @@ export class MoveSecondarySideBarToPanelAction extends MoveViewsBetweenPanelsAct
 }
 registerAction2(MoveSidePanelToPanelAction);
 registerAction2(MoveSecondarySideBarToPanelAction);
+*/

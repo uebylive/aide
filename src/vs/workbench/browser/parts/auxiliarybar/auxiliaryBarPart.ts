@@ -20,7 +20,6 @@ import { IExtensionService } from 'vs/workbench/services/extensions/common/exten
 import { ActivityBarPosition, IWorkbenchLayoutService, LayoutSettings, Parts, Position } from 'vs/workbench/services/layout/browser/layoutService';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
 import { IAction, Separator, SubmenuAction, toAction } from 'vs/base/common/actions';
-import { ToggleAuxiliaryBarAction } from 'vs/workbench/browser/parts/auxiliarybar/auxiliaryBarActions';
 import { assertIsDefined } from 'vs/base/common/types';
 import { LayoutPriority } from 'vs/base/browser/ui/splitview/splitview';
 import { ToggleSidebarPositionAction } from 'vs/workbench/browser/actions/layoutActions';
@@ -33,7 +32,7 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { $ } from 'vs/base/browser/dom';
 import { HiddenItemStrategy, WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { ActionViewItem, IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
+import { IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
 import { CompositeMenuActions } from 'vs/workbench/browser/actions';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
@@ -218,12 +217,12 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			new Separator(),
 			new SubmenuAction('workbench.action.panel.position', localize('activity bar position', "Activity Bar Position"), positionActions),
 			toAction({ id: ToggleSidebarPositionAction.ID, label: currentPositionRight ? localize('move second side bar left', "Move Secondary Side Bar Left") : localize('move second side bar right', "Move Secondary Side Bar Right"), run: () => this.commandService.executeCommand(ToggleSidebarPositionAction.ID) }),
-			toAction({ id: ToggleAuxiliaryBarAction.ID, label: localize('hide second side bar', "Hide Secondary Side Bar"), run: () => this.commandService.executeCommand(ToggleAuxiliaryBarAction.ID) })
+			// toAction({ id: ToggleAuxiliaryBarAction.ID, label: localize('hide second side bar', "Hide Secondary Side Bar"), run: () => this.commandService.executeCommand(ToggleAuxiliaryBarAction.ID) })
 		]);
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		return this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION) !== ActivityBarPosition.HIDDEN;
+		return false;
 	}
 
 	// TODO@benibenj chache this
@@ -268,9 +267,9 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	private headerActionViewItemProvider(action: IAction, options: IActionViewItemOptions): IActionViewItem | undefined {
-		if (action.id === ToggleAuxiliaryBarAction.ID) {
-			return this.instantiationService.createInstance(ActionViewItem, undefined, action, options);
-		}
+		// if (action.id === ToggleAuxiliaryBarAction.ID) {
+		// 	return this.instantiationService.createInstance(ActionViewItem, undefined, action, options);
+		// }
 
 		return undefined;
 	}

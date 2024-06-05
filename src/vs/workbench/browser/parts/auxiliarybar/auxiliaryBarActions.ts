@@ -3,26 +3,22 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { localize, localize2 } from 'vs/nls';
-import { Action2, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
+import { localize2 } from 'vs/nls';
+import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
-import { AuxiliaryBarVisibleContext } from 'vs/workbench/common/contextkeys';
-import { ViewContainerLocation, ViewContainerLocationToString } from 'vs/workbench/common/views';
+import { ViewContainerLocation } from 'vs/workbench/common/views';
 import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 
-
+/*
 const auxiliaryBarRightIcon = registerIcon('auxiliarybar-right-layout-icon', Codicon.layoutSidebarRight, localize('toggleAuxiliaryIconRight', 'Icon to toggle the auxiliary bar off in its right position.'));
 const auxiliaryBarRightOffIcon = registerIcon('auxiliarybar-right-off-layout-icon', Codicon.layoutSidebarRightOff, localize('toggleAuxiliaryIconRightOn', 'Icon to toggle the auxiliary bar on in its right position.'));
 const auxiliaryBarLeftIcon = registerIcon('auxiliarybar-left-layout-icon', Codicon.layoutSidebarLeft, localize('toggleAuxiliaryIconLeft', 'Icon to toggle the auxiliary bar in its left position.'));
 const auxiliaryBarLeftOffIcon = registerIcon('auxiliarybar-left-off-layout-icon', Codicon.layoutSidebarLeftOff, localize('toggleAuxiliaryIconLeftOn', 'Icon to toggle the auxiliary bar on in its left position.'));
+*/
 
+/*
 export class ToggleAuxiliaryBarAction extends Action2 {
 
 	static readonly ID = 'workbench.action.toggleAuxiliaryBar';
@@ -66,6 +62,7 @@ export class ToggleAuxiliaryBarAction extends Action2 {
 }
 
 registerAction2(ToggleAuxiliaryBarAction);
+*/
 
 registerAction2(class FocusAuxiliaryBarAction extends Action2 {
 
@@ -96,6 +93,7 @@ registerAction2(class FocusAuxiliaryBarAction extends Action2 {
 	}
 });
 
+/*
 MenuRegistry.appendMenuItems([
 	{
 		id: MenuId.LayoutControlMenu,
@@ -136,3 +134,4 @@ MenuRegistry.appendMenuItems([
 		}
 	}
 ]);
+*/
