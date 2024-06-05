@@ -5,6 +5,7 @@
 import { commands, ExtensionContext, window, workspace, languages, modelSelection, env, csevents, } from 'vscode';
 import * as os from 'os';
 import * as http from 'http';
+import * as net from 'net';
 
 import { loadOrSaveToStorage } from './storage/types';
 import logger from './logger';
@@ -25,7 +26,6 @@ import { createInlineCompletionItemProvider } from './completions/create-inline-
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { handleRequest } from './server/requestHandler';
-import { AddressInfo } from 'net';
 import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 import { AideQuickFix } from './quickActions/fix';
 import { copySettings } from './utilities/copySettings';
@@ -138,31 +138,47 @@ export async function activate(context: ExtensionContext) {
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
 	SIDECAR_CLIENT = sidecarClient;
 
+	const isPortOpen = async (port: number): Promise<boolean> => {
+		return new Promise((resolve, _) => {
+			const s = net.createServer();
+			s.once('error', (err) => {
+				s.close();
+				// @ts-ignore
+				if (err['code'] === 'EADDRINUSE') {
+					resolve(false);
+				} else {
+					resolve(false); // or throw error!!
+					// reject(err);
+				}
+			});
+			s.once('listening', () => {
+				resolve(true);
+				s.close();
+			});
+			s.listen(port);
+		});
+	};
+
+	const getNextOpenPort = async (startFrom: number = 42423) => {
+		let openPort: number | null = null;
+		while (startFrom < 65535 || !!openPort) {
+			if (await isPortOpen(startFrom)) {
+				openPort = startFrom;
+				break;
+			}
+			startFrom++;
+		}
+		return openPort;
+	};
+
 	// Server for the sidecar to talk to the editor
 	const server = http.createServer(handleRequest);
-	let port = 42423; // Default chooses 42423, but if its not available then we
+	const port = await getNextOpenPort();
 	// can still grab it by listenting to port 0
-	server.listen(port, () => {
-		console.log(`Server for talking to sidecar is running at http://localhost:${port}/`);
-	})
-		.on('error', (err: NodeJS.ErrnoException) => {
-			if (err.code === 'EADDRINUSE') {
-				console.error(`Port ${port} is already in use, trying another port...`);
-				server.listen(0, () => {
-					const serverAddress = server.address();
-					if (serverAddress) {
-						const newAddress: AddressInfo = serverAddress as AddressInfo;
-						port = newAddress.port;
-					}
-					console.log(serverAddress);
-					console.log(`Server for talking to sidecar is running at http://localhost:${server.address()}/`);
-				}); // Use 0 to let the OS pick an available port
-			} else {
-				console.error(`Failed to start server: ${err.message}`);
-			}
-		});
+	server.listen(port);
 
 	const editorUrl = `http://localhost:${port}`;
+	console.log('Editor url:' + editorUrl);
 
 	// Register a disposable to stop the server when the extension is deactivated
 	context.subscriptions.push({

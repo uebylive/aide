@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
-import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat, reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
 import logger from '../../logger';
 import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
@@ -157,7 +157,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				response.progress('Selecting code on the editor can help us explain it better');
 				return new CSChatResponseForProgress();
 			} else {
-				const explainResponse = await this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
+				const explainResponse = this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
 				await reportFromStreamToSearchProgress(explainResponse, response, token, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
@@ -169,11 +169,11 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const searchString = request.prompt.toString().slice('/search'.length).trim();
-			const searchResponse = await this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
+			const searchResponse = this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
 			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
-		} else {
+		} else if (requestType === 'general') {
 			const query = request.prompt.toString().trim();
 			logChatPrompt(
 				request.prompt.toString(),
@@ -182,8 +182,13 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const projectLabels = this._projectContext.labels;
-			const followupResponse = await this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels);
+			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels);
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
+			return new CSChatResponseForProgress();
+		} else {
+			const query = request.prompt.toString().trim();
+			const followupResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl);
+			await reportAgentEventsToChat(followupResponse);
 			return new CSChatResponseForProgress();
 		}
 	};
@@ -217,14 +222,14 @@ export class CSChatAgentProvider implements vscode.Disposable {
 					const codeBlockIndex = codeblock.codeBlockIndex;
 					const messageContent = request.response;
 					const sessionId = request.threadId;
-					const editFileResponseStream = await this._sideCarClient.editFileRequest(
+					const editFileResponseStream = this._sideCarClient.editFileRequest(
 						filePath,
 						fileContent,
 						language,
 						llmContent,
 						messageContent,
 						codeBlockIndex,
-						sessionId,
+						sessionId
 					);
 					let enteredTextEdit = false;
 					let startOfEdit = false;

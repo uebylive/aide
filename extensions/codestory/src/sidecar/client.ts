@@ -18,7 +18,7 @@ import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, ProbeAgentBody, RepoStatus, SemanticSearchResponse, SidecarUserContext, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 
 export enum CompletionStopReason {
 	/**
@@ -779,6 +779,42 @@ export class SideCarClient {
 		});
 		return codeSymbolInformationEmbeddings;
 	}
+
+	async *startAgentProbe(
+		query: string,
+		variables: readonly vscode.ChatPromptReference[],
+		_editorUrl: string,
+	): AsyncIterableIterator<ConversationMessage> {
+		console.log('Starting probe request');
+		console.log(query);
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/probe_request';
+		const url = baseUrl.toString();
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const body: ProbeAgentBody = {
+			editor_url: _editorUrl,
+			model_config: sideCarModelConfiguration,
+			user_context: await convertVSCodeVariableToSidecar(variables),
+			symbol_identifier: {
+				symbol_name: 'agent_router',
+				fs_file_path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs'
+			},
+			query
+		};
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				console.log(conversationMessage);
+				yield conversationMessage;
+			}
+		}
+	}
 }
 
 interface CodeSelectionUriRange {
@@ -793,7 +829,7 @@ interface CodeSelectionUriRange {
 
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatPromptReference[],
-): Promise<{ variables: SidecarVariableTypes[]; file_content_map: { file_path: string; file_content: string; language: string }[]; terminal_selection: string | undefined }> {
+): Promise<SidecarUserContext> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	let terminalSelection: string | undefined = undefined;
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
@@ -840,9 +876,11 @@ async function convertVSCodeVariableToSidecar(
 		}
 	};
 
+	const folders: string[] = [];
 	for (const variable of variables) {
-		const name = variable.name;
+		const variableName = variable.name;
 		const value = variable.value;
+		const name = variableName.split(':')[0];
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
@@ -851,22 +889,11 @@ async function convertVSCodeVariableToSidecar(
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
-			// Get the files in the folder
-			const parsedJson = JSON.parse(value as string) as vscode.Uri;
-			const folderPath = vscode.Uri.parse(parsedJson.path);
-			const folderFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(folderPath.fsPath, '**/*'));
-			for (const filePath of folderFiles) {
-				resolveFileReference(
-					'file',
-					{
-						level: vscode.ChatVariableLevel.Full,
-						value: JSON.stringify({ uri: filePath }),
-						kind: 'file'
-					}
-				);
-			}
+			const folderPath = value as vscode.Uri;
+			folders.push(folderPath.fsPath);
 		}
 	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -877,6 +904,7 @@ async function convertVSCodeVariableToSidecar(
 			};
 		}),
 		terminal_selection: terminalSelection,
+		folder_paths: folders,
 	};
 }
 

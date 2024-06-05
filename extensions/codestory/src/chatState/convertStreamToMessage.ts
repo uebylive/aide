@@ -233,3 +233,16 @@ export const reportProcUpdateToChat = (
 		}
 	}
 };
+
+export const reportAgentEventsToChat = async (
+	stream: AsyncIterator<ConversationMessage>
+): Promise<void> => {
+	const asyncIterable = {
+		[Symbol.asyncIterator]: () => stream
+	};
+
+	for await (const conversationMessage of asyncIterable) {
+		console.log('Received an event from the agent');
+		console.log(conversationMessage);
+	}
+};

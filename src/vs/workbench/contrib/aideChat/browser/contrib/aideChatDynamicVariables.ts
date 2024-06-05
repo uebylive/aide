@@ -237,12 +237,10 @@ export class SelectAndInsertFolderAction extends Action2 {
 			return;
 		}
 
-		const valueObj = { uri: resource };
-		const value = JSON.stringify(valueObj);
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			id: 'vscode.folder',
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: [{ level: 'full', value, kind: 'folder' }]
+			data: resource
 		});
 	}
 }
@@ -299,7 +297,7 @@ export class SelectAndInsertFileAction extends Action2 {
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			id: 'vscode.file',
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: [{ level: 'full', value, kind: 'file' }]
+			data: value
 		});
 	}
 }
@@ -369,7 +367,7 @@ export class SelectAndInsertCodeAction extends Action2 {
 		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 			id: 'vscode.codeSymbol',
 			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: [{ level: 'full', value, kind: 'code' }]
+			data: value
 		});
 	}
 }
@@ -457,7 +455,7 @@ class ChatAddContext extends EditorAction2 {
 			chatWidget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
 				id: 'vscode.chatContext',
 				range: { ...range, endColumn: range.endColumn + text.length },
-				data: [{ level: 'full', value, kind: 'selection' }]
+				data: value
 			});
 
 			chatWidget.focusInput();
