@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarDiagnostics } from './types';
+import { SidecarDiagnosticsResponse } from './types';
 
-export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): SidecarDiagnostics[] {
+export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): SidecarDiagnosticsResponse[] {
 	const fileUri = vscode.Uri.file(filePath);
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
 	const sidecarDiagnostics = diagnostics.filter((diagnostic) => {

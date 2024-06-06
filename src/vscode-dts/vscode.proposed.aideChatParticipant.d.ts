@@ -27,6 +27,20 @@ declare module 'vscode' {
 		Editor = 4
 	}
 
+	/**
+	 * The mode in which this request was initiated
+	 */
+	export enum AideMode {
+		/**
+		 * The request was made in edit mode.
+		 */
+		Edit = 1,
+		/**
+		 * The request was made in chat mode.
+		 */
+		Chat = 2
+	}
+
 	export interface AideChatWelcomeMessageProvider {
 		provideWelcomeMessage(location: AideChatLocation, token: CancellationToken): ProviderResult<ChatWelcomeMessageContent[]>;
 		provideSampleQuestions?(location: AideChatLocation, token: CancellationToken): ProviderResult<ChatFollowup[]>;
@@ -55,6 +69,7 @@ declare module 'vscode' {
 
 	export interface AideChatRequest extends Omit<ChatRequest, 'location'> {
 		readonly threadId: string;
+		readonly mode: AideMode;
 
 		/**
 		 * The location at which the chat is happening. This will always be one of the supported values

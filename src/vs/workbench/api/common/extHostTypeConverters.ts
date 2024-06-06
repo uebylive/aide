@@ -57,6 +57,7 @@ import * as types from './extHostTypes';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 
 export namespace Command {
 
@@ -2979,6 +2980,7 @@ export namespace AideChatResponsePart {
 export namespace AideChatAgentRequest {
 	export function to(request: IAideChatAgentRequest): vscode.AideChatRequest {
 		return {
+			mode: AideChatMode.to(request.mode),
 			threadId: request.sessionId,
 			prompt: request.message,
 			command: request.command,
@@ -2989,6 +2991,22 @@ export namespace AideChatAgentRequest {
 			acceptedConfirmationData: request.acceptedConfirmationData,
 			rejectedConfirmationData: request.rejectedConfirmationData
 		};
+	}
+}
+
+export namespace AideChatMode {
+	export function to(mode: AideMode): types.AideMode {
+		switch (mode) {
+			case AideMode.Chat: return types.AideMode.Chat;
+			case AideMode.Edit: return types.AideMode.Edit;
+		}
+	}
+
+	export function from(mode: types.AideMode): AideMode {
+		switch (mode) {
+			case types.AideMode.Chat: return AideMode.Chat;
+			case types.AideMode.Edit: return AideMode.Edit;
+		}
 	}
 }
 

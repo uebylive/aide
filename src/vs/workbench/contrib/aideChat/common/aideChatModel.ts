@@ -23,6 +23,7 @@ import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHis
 import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 
 export interface IAideChatRequestVariableEntry {
 	id: string;
@@ -1016,7 +1017,7 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 	}
 }
 
-export function getHistoryEntriesFromModel(model: IChatModel, forAgentId: string | undefined): IChatAgentHistoryEntry[] {
+export function getHistoryEntriesFromModel(model: IChatModel, forAgentId: string | undefined, mode: AideMode): IChatAgentHistoryEntry[] {
 	const history: IChatAgentHistoryEntry[] = [];
 	for (const request of model.getRequests()) {
 		if (!request.response) {
@@ -1031,6 +1032,7 @@ export function getHistoryEntriesFromModel(model: IChatModel, forAgentId: string
 
 		const promptTextResult = getPromptText(request.message);
 		const historyRequest: IAideChatAgentRequest = {
+			mode,
 			sessionId: model.sessionId,
 			requestId: request.id,
 			agentId: request.response.agent?.id ?? '',

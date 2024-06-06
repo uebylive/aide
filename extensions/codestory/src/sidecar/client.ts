@@ -18,7 +18,8 @@ import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, ProbeAgentBody, RepoStatus, SemanticSearchResponse, SidecarUserContext, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
 
 export enum CompletionStopReason {
 	/**
@@ -784,7 +785,7 @@ export class SideCarClient {
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],
 		_editorUrl: string,
-	): AsyncIterableIterator<ConversationMessage> {
+	): AsyncIterableIterator<SideCarAgentEvent> {
 		console.log('Starting probe request');
 		console.log(query);
 		const baseUrl = new URL(this._url);
@@ -809,8 +810,7 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				console.log(conversationMessage);
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
 				yield conversationMessage;
 			}
 		}
@@ -829,7 +829,7 @@ interface CodeSelectionUriRange {
 
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatPromptReference[],
-): Promise<SidecarUserContext> {
+): Promise<UserContext> {
 	const sidecarVariables: SidecarVariableTypes[] = [];
 	let terminalSelection: string | undefined = undefined;
 	const fileCache: Map<string, vscode.TextDocument> = new Map();

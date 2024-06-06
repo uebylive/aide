@@ -579,7 +579,7 @@ export class ChatService extends Disposable implements IAideChatService {
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
 					await this.extensionService.activateByEvent(`onChatParticipant:${agent.id}`);
-					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id);
+					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id, this.aideMode);
 
 					const initVariableData: IChatRequestVariableData = { variables: [] };
 					request = model.addRequest(parsedRequest, initVariableData, attempt, agent, agentSlashCommandPart?.command);
@@ -606,6 +606,7 @@ export class ChatService extends Disposable implements IAideChatService {
 					}
 
 					const requestProps: IAideChatAgentRequest = {
+						mode: this.aideMode,
 						sessionId,
 						requestId: request.id,
 						agentId: agent.id,

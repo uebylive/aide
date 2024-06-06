@@ -4453,6 +4453,11 @@ export enum ChatLocation {
 	Editor = 4,
 }
 
+export enum AideMode {
+	Edit = 1,
+	Chat = 2,
+}
+
 /**
  * @deprecated
  */

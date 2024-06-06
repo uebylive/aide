@@ -8,6 +8,7 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
+import { SideCarAgentEvent } from '../server/types';
 
 
 export const reportFromStreamToSearchProgress = async (
@@ -235,14 +236,15 @@ export const reportProcUpdateToChat = (
 };
 
 export const reportAgentEventsToChat = async (
-	stream: AsyncIterator<ConversationMessage>
+	stream: AsyncIterator<SideCarAgentEvent>,
+	response: vscode.ChatResponseStream,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
 
-	for await (const conversationMessage of asyncIterable) {
-		console.log('Received an event from the agent');
-		console.log(conversationMessage);
+	for await (const event of asyncIterable) {
+		response.markdown(event.request_id);
+		response.markdown('\n');
 	}
 };
