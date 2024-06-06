@@ -595,7 +595,7 @@ class ExtHostChatAgent {
 					iconDark: !this._iconPath ? undefined :
 						'dark' in this._iconPath ? this._iconPath.dark :
 							undefined,
-					themeIcon: this._iconPath instanceof extHostTypes.ThemeIcon ? this._iconPath : undefined,
+					themeIcon: this._iconPath instanceof extHostTypes.ThemeIcon || this._iconPath instanceof URI ? this._iconPath : undefined,
 					hasFollowups: this._followupProvider !== undefined,
 					isSecondary: this._isSecondary,
 					helpTextPrefix: (!this._helpTextPrefix || typeof this._helpTextPrefix === 'string') ? this._helpTextPrefix : typeConvert.MarkdownString.from(this._helpTextPrefix),
