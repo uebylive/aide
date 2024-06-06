@@ -21,8 +21,9 @@ import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideCh
 import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
 import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_MODE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IChatDetail, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
 import { ACTIVE_GROUP, IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -217,14 +218,15 @@ export class SwitchAideModeAction extends Action2 {
 				}
 			],
 			toggled: {
-				condition: ContextKeyExpr.false(),
+				condition: ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, AideMode.Edit),
 				title: 'Chat mode'
 			}
 		});
 	}
 
 	async run(accessor: ServicesAccessor) {
-		console.log('Switching mode');
+		const chatService = accessor.get(IAideChatService);
+		chatService.switchMode();
 	}
 }
 

@@ -17,6 +17,7 @@ import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgen
 import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IChatParserContext } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export interface IChatRequest {
@@ -317,6 +318,8 @@ export const IAideChatService = createDecorator<IAideChatService>('IAideChatServ
 export interface IAideChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
+	aideMode: AideMode;
+	switchMode(): AideMode;
 
 	isEnabled(location: AideChatAgentLocation): boolean;
 	hasSessions(): boolean;

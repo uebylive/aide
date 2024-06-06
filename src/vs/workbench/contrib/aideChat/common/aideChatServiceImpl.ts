@@ -17,6 +17,7 @@ import { StopWatch } from 'vs/base/common/stopwatch';
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { localize } from 'vs/nls';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { Progress } from 'vs/platform/progress/common/progress';
@@ -24,6 +25,7 @@ import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storag
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { CONTEXT_CHAT_MODE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
@@ -126,10 +128,21 @@ type ChatTerminalClassification = {
 	comment: 'Provides insight into the usage of Chat features.';
 };
 
+export enum AideMode {
+	Edit = 'Edit',
+	Chat = 'Chat'
+}
+type AideModeType = `${AideMode}`;
+
 const maxPersistedSessions = 25;
 
 export class ChatService extends Disposable implements IAideChatService {
 	declare _serviceBrand: undefined;
+
+	private _aideMode: IContextKey<AideModeType>;
+	public get aideMode(): AideMode {
+		return this._aideMode.get() as AideMode;
+	}
 
 	private readonly _sessionModels = this._register(new DisposableMap<string, ChatModel>());
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
@@ -150,6 +163,7 @@ export class ChatService extends Disposable implements IAideChatService {
 	private readonly _sessionFollowupCancelTokens = this._register(new DisposableMap<string, CancellationTokenSource>());
 
 	constructor(
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IStorageService private readonly storageService: IStorageService,
 		@ILogService private readonly logService: ILogService,
 		@IExtensionService private readonly extensionService: IExtensionService,
@@ -161,6 +175,8 @@ export class ChatService extends Disposable implements IAideChatService {
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		super();
+
+		this._aideMode = CONTEXT_CHAT_MODE.bindTo(this.contextKeyService);
 
 		const sessionData = storageService.get(serializedChatKey, StorageScope.WORKSPACE, '');
 		if (sessionData) {
@@ -182,6 +198,12 @@ export class ChatService extends Disposable implements IAideChatService {
 		}
 
 		this._register(storageService.onWillSaveState(() => this.saveState()));
+	}
+
+	switchMode(): AideMode {
+		const newMode = this.aideMode === AideMode.Edit ? AideMode.Chat : AideMode.Edit;
+		this._aideMode.set(newMode);
+		return newMode;
 	}
 
 	isEnabled(location: AideChatAgentLocation): boolean {
