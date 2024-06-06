@@ -201,7 +201,7 @@ export class SwitchAideModeAction extends Action2 {
 	constructor() {
 		super({
 			id: SwitchAideModeAction.ID,
-			title: 'Edit mode',
+			title: 'Chat mode',
 			f1: false,
 			category: CHAT_CATEGORY,
 			keybinding: {
@@ -219,7 +219,7 @@ export class SwitchAideModeAction extends Action2 {
 			],
 			toggled: {
 				condition: ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, AideMode.Edit),
-				title: 'Chat mode'
+				title: 'Aide mode'
 			}
 		});
 	}
