@@ -55,7 +55,7 @@ import { FileAccess } from 'vs/base/common/network';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
 import { ClearChatEditorAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
-import { ActionViewItemWithKb } from 'vs/workbench/contrib/aideChat/browser/contrib/actionViewItemWithKb';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 
 const $ = dom.$;
 

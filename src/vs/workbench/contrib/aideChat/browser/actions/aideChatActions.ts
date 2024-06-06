@@ -194,10 +194,45 @@ class OpenChatEditorAction extends Action2 {
 	}
 }
 
+export class SwitchAideModeAction extends Action2 {
+	static readonly ID = 'workbench.action.aideChat.switchMode';
+
+	constructor() {
+		super({
+			id: SwitchAideModeAction.ID,
+			title: 'Edit mode',
+			f1: false,
+			category: CHAT_CATEGORY,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyS,
+				mac: {
+					primary: KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyS
+				}
+			},
+			menu: [
+				{
+					id: MenuId.AideChatModeToolbar,
+					group: 'navigation',
+				}
+			],
+			toggled: {
+				condition: ContextKeyExpr.false(),
+				title: 'Chat mode'
+			}
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		console.log('Switching mode');
+	}
+}
+
 export function registerChatActions() {
 	registerAction2(OpenChatGlobalAction);
 	registerAction2(ChatHistoryAction);
 	registerAction2(OpenChatEditorAction);
+	registerAction2(SwitchAideModeAction);
 
 	registerAction2(class ClearChatInputHistoryAction extends Action2 {
 		constructor() {

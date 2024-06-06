@@ -30,6 +30,16 @@
 	flex: 1;
 }
 
+.monaco-workbench .part.auxiliarybar > .title > .title-label a {
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.monaco-workbench .part.auxiliarybar > .title > .title-label .action-with-kb .monaco-keybinding-key {
+	font-size: 9px;
+	padding: 2px 3px;
+}
+
 .monaco-workbench .part.auxiliarybar > .title > .title-label h2 {
 	text-transform: uppercase;
 }
