@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ModelProviderConfiguration, ModelSelection, ProviderSpecificConfiguration } from 'vscode';
+import { UserContext } from '../server/types';
 
 
 export type OptionString =
@@ -234,7 +235,7 @@ export interface InEditorRequest {
 	snippetInformation: SnippetInformation;
 	textDocumentWeb: TextDocument;
 	diagnosticsInformation: DiagnosticInformationFromEditor | null;
-	userContext: SidecarUserContext;
+	userContext: UserContext;
 }
 
 export interface DiagnosticInformationFromEditor {
@@ -458,7 +459,33 @@ export enum LLMType {
 	Gpt4,
 	GPT3_5_16k,
 	Gpt4_32k,
-	Gpt4Turbo
+	Gpt4O,
+	Gpt4Turbo,
+	DeepSeekCoder1_3BInstruct,
+	DeepSeekCoder33BInstruct,
+	DeepSeekCoder6BInstruct,
+	CodeLLama70BInstruct,
+	CodeLlama13BInstruct,
+	CodeLlama7BInstruct,
+	Llama3_8bInstruct,
+	ClaudeOpus,
+	ClaudeSonnet,
+	ClaudeHaiku,
+	PPLXSonnetSmall,
+	CohereRerankV3,
+	GeminiPro,
+	GeminiProFlash
+}
+
+export enum LLMProvider {
+	OpenAI,
+	TogetherAI,
+	Ollama,
+	LMStudio,
+	OpenAICompatible,
+	Anthropic,
+	FireworksAI,
+	GeminiPro,
 }
 
 export type CustomLLMType = {
@@ -653,29 +680,3 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	return null;
 }
-
-type SidecarFileContent = {
-	file_path: string;
-	file_content: string;
-	language: string;
-};
-
-export type SidecarUserContext = {
-	variables: SidecarVariableTypes[];
-	file_content_map: SidecarFileContent[];
-	terminal_selection: string | undefined;
-	folder_paths: string[];
-};
-
-type ProbeSymbolIdentifier = {
-	symbol_name: string;
-	fs_file_path?: string;
-};
-
-export type ProbeAgentBody = {
-	editor_url: string;
-	model_config: Record<string, any>;
-	user_context: SidecarUserContext;
-	symbol_identifier: ProbeSymbolIdentifier;
-	query: string;
-};

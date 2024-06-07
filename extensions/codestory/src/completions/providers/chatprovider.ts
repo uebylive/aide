@@ -148,6 +148,11 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				requestType = deterministicRequestType;
 			}
 		}
+
+		if (request.mode === vscode.AideMode.Edit) {
+			requestType = 'probeAgent';
+		}
+
 		logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
 		if (requestType === 'explain') {
 			// Implement the explain feature here
@@ -188,7 +193,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		} else {
 			const query = request.prompt.toString().trim();
 			const followupResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl);
-			await reportAgentEventsToChat(followupResponse);
+			await reportAgentEventsToChat(followupResponse, response);
 			return new CSChatResponseForProgress();
 		}
 	};

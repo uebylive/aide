@@ -7,6 +7,8 @@ import { localize } from 'vs/nls';
 import { RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 
+export const CONTEXT_CHAT_MODE = new RawContextKey<'Edit' | 'Chat'>('aideChatMode', 'Edit', { type: 'string', description: localize('aideChatMode', "The current aide mode.") });
+
 export const CONTEXT_RESPONSE_VOTE = new RawContextKey<string>('aideChatSessionResponseVote', '', { type: 'string', description: localize('aideChatResponseVote', "When the response has been voted up, is set to 'up'. When voted down, is set to 'down'. Otherwise an empty string.") });
 export const CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND = new RawContextKey<boolean>('aideChatSessionResponseDetectedAgentOrCommand', false, { type: 'boolean', description: localize('aideChatSessionResponseDetectedAgentOrCommand', "When the agent or command was automatically detected") });
 export const CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING = new RawContextKey<boolean>('aideChatResponseSupportsIssueReporting', false, { type: 'boolean', description: localize('aideChatResponseSupportsIssueReporting', "True when the current chat response supports issue reporting.") });

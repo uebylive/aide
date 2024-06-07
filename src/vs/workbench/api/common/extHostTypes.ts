@@ -4453,6 +4453,11 @@ export enum ChatLocation {
 	Editor = 4,
 }
 
+export enum AideMode {
+	Edit = 1,
+	Chat = 2,
+}
+
 /**
  * @deprecated
  */
@@ -4659,6 +4664,19 @@ export class AideChatResponseReferencePart {
 	constructor(value: vscode.Uri | vscode.Location | { variableName: string; value?: vscode.Uri | vscode.Location }, iconPath?: vscode.Uri | vscode.ThemeIcon | { light: vscode.Uri; dark: vscode.Uri }) {
 		this.value = value;
 		this.iconPath = iconPath;
+	}
+}
+
+export class AideChatResponseBreakdownPart {
+	content: vscode.MarkdownString;
+	reference?: vscode.Uri | vscode.Location;
+	constructor(content: string | vscode.MarkdownString, reference?: vscode.Uri | vscode.Location) {
+		if (typeof content !== 'string' && content.isTrusted === true) {
+			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
+		}
+
+		this.content = typeof content === 'string' ? new MarkdownString(content) : content;
+		this.reference = reference;
 	}
 }
 

@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, SidecarDiagnosticsRequest, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, SidecarQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -38,7 +38,7 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 			console.log('body from post request for diagnostics');
 			console.log(body);
 			console.log('log after post for diagnostics');
-			const diagnosticsBody: SidecarDiagnosticsRequest = JSON.parse(body);
+			const diagnosticsBody: LSPDiagnostics = JSON.parse(body);
 			const selectionRange = new Range(new Position(diagnosticsBody.range.startPosition.line, diagnosticsBody.range.startPosition.character), new Position(diagnosticsBody.range.endPosition.line, diagnosticsBody.range.endPosition.character));
 			const diagnosticsFromEditor = getDiagnosticsFromEditor(diagnosticsBody.fs_file_path, selectionRange);
 			// Process the diagnostics request asynchronously
@@ -85,7 +85,7 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 		} else if (req.method === 'POST' && req.url === '/invoke_quick_fix') {
 			console.log('invoke-quick-fix');
 			const body = await readRequestBody(req);
-			const request: SidecarQuickFixInvocationRequest = JSON.parse(body);
+			const request: LSPQuickFixInvocationRequest = JSON.parse(body);
 			const response = await quickFixInvocation(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));

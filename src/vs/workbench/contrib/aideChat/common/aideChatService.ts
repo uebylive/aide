@@ -17,6 +17,7 @@ import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgen
 import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IChatParserContext } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 export interface IChatRequest {
@@ -80,6 +81,12 @@ export interface IAideChatContentReference {
 	kind: 'reference';
 }
 
+export interface IAideChatBreakdown {
+	content: IMarkdownString;
+	reference?: URI | Location;
+	kind: 'breakdown';
+}
+
 export interface IAideChatContentInlineReference {
 	inlineReference: URI | Location;
 	name?: string;
@@ -109,9 +116,9 @@ export interface IAideChatProgressMessage {
 
 export interface IAideChatTask extends IAideChatTaskDto {
 	deferred: DeferredPromise<string | void>;
-	progress: (IAideChatWarningMessage | IAideChatContentReference)[];
-	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference>;
-	add(progress: IAideChatWarningMessage | IAideChatContentReference): void;
+	progress: (IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown)[];
+	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown>;
+	add(progress: IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown): void;
 
 	complete: (result: string | void) => void;
 	task: () => Promise<string | void>;
@@ -169,6 +176,7 @@ export type IAideChatProgress =
 	| IChatTreeData
 	| IChatUsedContext
 	| IAideChatContentReference
+	| IAideChatBreakdown
 	| IAideChatContentInlineReference
 	| IAideChatAgentDetection
 	| IAideChatProgressMessage
@@ -317,6 +325,8 @@ export const IAideChatService = createDecorator<IAideChatService>('IAideChatServ
 export interface IAideChatService {
 	_serviceBrand: undefined;
 	transferredSessionData: IChatTransferredSessionData | undefined;
+	aideMode: AideMode;
+	switchMode(): AideMode;
 
 	isEnabled(location: AideChatAgentLocation): boolean;
 	hasSessions(): boolean;

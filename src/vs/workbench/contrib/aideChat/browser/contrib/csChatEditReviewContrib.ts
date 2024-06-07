@@ -11,7 +11,7 @@ import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeat
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
 import { EditConfirmationAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
-import { IChatWidgetService } from 'vs/workbench/contrib/chat/browser/chat';
+import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IAideChatEditSessionService } from 'vs/workbench/contrib/aideChat/browser/aideChatEdits';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 
@@ -21,7 +21,7 @@ class AideChatEditReviewLens extends Disposable {
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IAideChatEditSessionService private readonly csChatEditSessionService: IAideChatEditSessionService,
-		@IChatWidgetService private readonly csChatWidgetService: IChatWidgetService,
+		@IAideChatWidgetService private readonly csChatWidgetService: IAideChatWidgetService,
 	) {
 		super();
 

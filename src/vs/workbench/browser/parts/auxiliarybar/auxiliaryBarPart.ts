@@ -28,15 +28,18 @@ import { ICommandService } from 'vs/platform/commands/common/commands';
 import { AbstractPaneCompositePart, CompositeBarPosition } from 'vs/workbench/browser/parts/paneCompositePart';
 import { ActionsOrientation, IActionViewItem, prepareActions } from 'vs/base/browser/ui/actionbar/actionbar';
 import { IPaneCompositeBarOptions } from 'vs/workbench/browser/parts/paneCompositeBar';
-import { IMenuService, MenuId } from 'vs/platform/actions/common/actions';
+import { IMenuService, MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
-import { $ } from 'vs/base/browser/dom';
-import { HiddenItemStrategy, WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { $, append } from 'vs/base/browser/dom';
+import { HiddenItemStrategy, MenuWorkbenchToolBar, WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { ActionViewItem, IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
 import { CompositeMenuActions } from 'vs/workbench/browser/actions';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
+import { ICompositeTitleLabel } from 'vs/workbench/browser/parts/compositePart';
+import { AnchorAlignment } from 'vs/base/browser/ui/contextview/contextview';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 
 export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 
@@ -223,7 +226,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 	}
 
 	protected shouldShowCompositeBar(): boolean {
-		return this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION) !== ActivityBarPosition.HIDDEN;
+		return false;
 	}
 
 	// TODO@benibenj chache this
@@ -257,6 +260,28 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 
 		headerArea.appendChild(globalHeaderContainer);
 		return headerArea;
+	}
+
+	protected override createTitleLabel(parent: HTMLElement): ICompositeTitleLabel {
+		const titleContainer = append(parent, $('.title-label'));
+
+		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, titleContainer, MenuId.AideChatModeToolbar, {
+			orientation: ActionsOrientation.HORIZONTAL,
+			anchorAlignmentProvider: () => AnchorAlignment.LEFT,
+			hiddenItemStrategy: HiddenItemStrategy.NoHide,
+			actionViewItemProvider: (action) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+
+				return undefined;
+			},
+		}));
+
+		return {
+			updateTitle() { },
+			updateStyles() { },
+		};
 	}
 
 	protected override getToolbarWidth(): number {

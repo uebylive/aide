@@ -27,6 +27,20 @@ declare module 'vscode' {
 		Editor = 4
 	}
 
+	/**
+	 * The mode in which this request was initiated
+	 */
+	export enum AideMode {
+		/**
+		 * The request was made in edit mode.
+		 */
+		Edit = 1,
+		/**
+		 * The request was made in chat mode.
+		 */
+		Chat = 2
+	}
+
 	export interface AideChatWelcomeMessageProvider {
 		provideWelcomeMessage(location: AideChatLocation, token: CancellationToken): ProviderResult<ChatWelcomeMessageContent[]>;
 		provideSampleQuestions?(location: AideChatLocation, token: CancellationToken): ProviderResult<ChatFollowup[]>;
@@ -55,6 +69,7 @@ declare module 'vscode' {
 
 	export interface AideChatRequest extends Omit<ChatRequest, 'location'> {
 		readonly threadId: string;
+		readonly mode: AideMode;
 
 		/**
 		 * The location at which the chat is happening. This will always be one of the supported values
@@ -62,7 +77,23 @@ declare module 'vscode' {
 		readonly location: AideChatLocation;
 	}
 
-	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: ChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;
+	export interface AideChatResponseBreakdown {
+		/**
+		 * The content of the breakdown.
+		 */
+		readonly content: MarkdownString;
+
+		/**
+		 * Code references that are relevant to the breakdown.
+		 */
+		readonly reference?: Uri | Location;
+	}
+
+	export interface AideChatResponseStream extends ChatResponseStream {
+		breakdown(value: AideChatResponseBreakdown): void;
+	}
+
+	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: AideChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;
 
 	/**
 	 * Represents the type of user feedback received.

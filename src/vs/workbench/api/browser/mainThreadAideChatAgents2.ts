@@ -44,10 +44,10 @@ class MainThreadChatTask implements IAideChatTask {
 
 	public readonly deferred = new DeferredPromise<string | void>();
 
-	private readonly _onDidAddProgress = new Emitter<IAideChatWarningMessage | IAideChatContentReference>();
-	public get onDidAddProgress(): Event<IAideChatWarningMessage | IAideChatContentReference> { return this._onDidAddProgress.event; }
+	private readonly _onDidAddProgress = new Emitter<IAideChatWarningMessage | IAideChatContentReference | IAideChatWarningMessage>();
+	public get onDidAddProgress(): Event<IAideChatWarningMessage | IAideChatContentReference | IAideChatWarningMessage> { return this._onDidAddProgress.event; }
 
-	public readonly progress: (IAideChatWarningMessage | IAideChatContentReference)[] = [];
+	public readonly progress: (IAideChatWarningMessage | IAideChatContentReference | IAideChatWarningMessage)[] = [];
 
 	constructor(public content: IMarkdownString) { }
 
@@ -63,7 +63,7 @@ class MainThreadChatTask implements IAideChatTask {
 		this.deferred.complete(v);
 	}
 
-	add(progress: IAideChatWarningMessage | IAideChatContentReference): void {
+	add(progress: IAideChatWarningMessage | IAideChatContentReference | IAideChatWarningMessage): void {
 		this.progress.push(progress);
 		this._onDidAddProgress.fire(progress);
 	}
@@ -230,6 +230,7 @@ export class MainThreadAideChatAgents2 extends Disposable implements MainThreadA
 					return responsePartHandle;
 				case 'warning':
 				case 'reference':
+				case 'breakdown':
 					task?.add(revivedProgress);
 					return;
 			}

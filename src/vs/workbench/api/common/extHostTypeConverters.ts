@@ -54,9 +54,10 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
-import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatBreakdown, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 
 export namespace Command {
 
@@ -2919,6 +2920,30 @@ export namespace AideChatResponseReferencePart {
 	}
 }
 
+export namespace AideChatResponseBreakdownPart {
+	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideChatBreakdown> {
+		return {
+			kind: 'breakdown',
+			content: MarkdownString.from(part.content),
+			reference: part.reference ?
+				(URI.isUri(part.reference) ? part.reference : Location.from(<vscode.Location>part.reference)) :
+				undefined
+		};
+	}
+	export function to(part: Dto<IAideChatBreakdown>): vscode.AideChatResponseBreakdown {
+		const value = revive<IAideChatBreakdown>(part);
+
+		const mapValue = (value: URI | languages.Location): vscode.Uri | vscode.Location => URI.isUri(value) ?
+			value :
+			Location.to(value);
+
+		return new types.AideChatResponseBreakdownPart(
+			MarkdownString.to(part.content),
+			value.reference && mapValue(value.reference)
+		);
+	}
+}
+
 export namespace AideChatResponsePart {
 
 	export function from(part: vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseMarkdownWithVulnerabilitiesPart | vscode.ChatResponseDetectedParticipantPart | vscode.ChatResponseWarningPart | vscode.ChatResponseConfirmationPart | vscode.ChatResponseWarningPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IChatProgressDto {
@@ -2979,6 +3004,7 @@ export namespace AideChatResponsePart {
 export namespace AideChatAgentRequest {
 	export function to(request: IAideChatAgentRequest): vscode.AideChatRequest {
 		return {
+			mode: AideChatMode.to(request.mode),
 			threadId: request.sessionId,
 			prompt: request.message,
 			command: request.command,
@@ -2989,6 +3015,22 @@ export namespace AideChatAgentRequest {
 			acceptedConfirmationData: request.acceptedConfirmationData,
 			rejectedConfirmationData: request.rejectedConfirmationData
 		};
+	}
+}
+
+export namespace AideChatMode {
+	export function to(mode: AideMode): types.AideMode {
+		switch (mode) {
+			case AideMode.Chat: return types.AideMode.Chat;
+			case AideMode.Edit: return types.AideMode.Edit;
+		}
+	}
+
+	export function from(mode: types.AideMode): AideMode {
+		switch (mode) {
+			case types.AideMode.Chat: return AideMode.Chat;
+			case types.AideMode.Edit: return AideMode.Edit;
+		}
 	}
 }
 

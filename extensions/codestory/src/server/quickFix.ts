@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarQuickFixInvocationRequest, SidecarQuickFixInvocationResponse, SidecarQuickFixRequest, SidecarQuickFixResponse } from './types';
+import { LSPQuickFixInvocationRequest, SidecarQuickFixInvocationResponse, SidecarQuickFixRequest, SidecarQuickFixResponse } from './types';
 
 class QuickFixList {
 	request_ids: Map<string, { label: string; arguments: any; command: string; id: number }[]>;
@@ -32,7 +32,7 @@ class QuickFixList {
 
 const QUICK_FIX_LIST = new QuickFixList();
 
-export async function quickFixInvocation(request: SidecarQuickFixInvocationRequest): Promise<SidecarQuickFixInvocationResponse> {
+export async function quickFixInvocation(request: LSPQuickFixInvocationRequest): Promise<SidecarQuickFixInvocationResponse> {
 	const requestId = request.request_id;
 	const actionId = request.index;
 	const file_path = request.fs_file_path;

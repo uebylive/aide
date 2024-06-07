@@ -28,6 +28,7 @@ import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideC
 import { IAideChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTaskDto } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 
 //#region agent service, commands etc
 
@@ -137,6 +138,7 @@ export interface IAideChatAgentMetadata {
 
 
 export interface IAideChatAgentRequest {
+	mode: AideMode;
 	sessionId: string;
 	requestId: string;
 	agentId: string;
