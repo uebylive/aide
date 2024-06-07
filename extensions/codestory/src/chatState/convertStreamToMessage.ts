@@ -244,6 +244,14 @@ export const reportAgentEventsToChat = async (
 	};
 
 	const openFiles = new Set<string>();
+	const addReference = (fsFilePath: string, response: vscode.AideChatResponseStream) => {
+		if (openFiles.has(fsFilePath)) {
+			return;
+		}
+
+		openFiles.add(fsFilePath);
+		response.reference(vscode.Uri.file(fsFilePath));
+	};
 
 	for await (const event of asyncIterable) {
 		if ('keep_alive' in event) {
@@ -256,28 +264,64 @@ export const reportAgentEventsToChat = async (
 				continue;
 			}
 
-			const toolEventKey = toolEventKeys[0];
-			if (toolEventKey === 'OpenFile') {
+			const toolEventKey = toolEventKeys[0] as keyof typeof event.event.ToolEvent;
+			if (toolEventKey === 'OpenFile' && event.event.ToolEvent.OpenFile !== undefined) {
 				const openFileEvent = event.event.ToolEvent.OpenFile;
-				if (openFileEvent?.fs_file_path === undefined) {
+				if (openFileEvent.fs_file_path === undefined) {
 					continue;
 				}
 
 				const fsFilePath = openFileEvent.fs_file_path;
-				if (openFiles.has(fsFilePath)) {
-					continue;
+				addReference(fsFilePath, response);
+			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
+				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
+				response.markdown(`\n\n## Probing with question: ${probeQuestionAskRequest.symbol_identifier}\n\n`);
+				const probeReasonPrefix = 'We also belive this symbol needs to be probed because of: ';
+				const prefixIndex = probeQuestionAskRequest.query.indexOf(probeReasonPrefix);
+				if (prefixIndex !== -1) {
+					const reasonForProbe = probeQuestionAskRequest.query.slice(prefixIndex + probeReasonPrefix.length).trim();
+					response.markdown(`${reasonForProbe}\n\n`);
+				} else {
+					response.markdown(`${probeQuestionAskRequest.query}\n\n`);
 				}
-
-				openFiles.add(fsFilePath);
-				response.reference(vscode.Uri.file(fsFilePath));
+			} else if (toolEventKey === 'ProbeSummarizeAnswerRequest' && event.event.ToolEvent.ProbeSummarizeAnswerRequest !== undefined) {
+				const probeSummarizeAnswerRequest = event.event.ToolEvent.ProbeSummarizeAnswerRequest;
+				response.markdown(`\n\n## Probe summarize answer request\n\n`);
+				response.markdown(`${probeSummarizeAnswerRequest.symbol_identifier}\n`);
+				response.markdown(`${probeSummarizeAnswerRequest.query}\n`);
+			}
+		} else if (event.event.SymbolEvent) {
+			const { symbol, event: symbolEvent } = event.event.SymbolEvent;
+			const symbolEventKeys = Object.keys(symbolEvent);
+			if (symbolEventKeys.length === 0) {
+				continue;
 			}
 
-			response.breakdown({
-				content: new vscode.MarkdownString('cool init?\n\n'),
-			});
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
+			if (symbolEventKey === 'AskQuestion') {
+				response.markdown(`\n\n## Ask question: ${symbol}\n\n`);
+				response.markdown(symbolEvent.AskQuestion.question);
+			} else if (symbolEventKey === 'Probe') {
+				const probeEvent = symbolEvent.Probe;
+				response.markdown(`\n\n## Probing ${probeEvent.symbol_identifier.symbol_name}\n\n`);
+				if (probeEvent.symbol_identifier.fs_file_path !== undefined) {
+					addReference(probeEvent.symbol_identifier.fs_file_path, response);
+				}
+				response.markdown(`${probeEvent.original_request}\n\n`);
+			}
+		} else if (event.event.SymbolEventSubStep) {
+			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			response.markdown(`\n\n## Probe answer for ${symbol_identifier.symbol_name}\n\n`);
+			const probeRequestKeys = Object.keys(symbolEventSubStep.Probe) as (keyof typeof symbolEventSubStep.Probe)[];
+			if (probeRequestKeys.length === 0) {
+				continue;
+			}
 
-			response.markdown(toolEventKey);
-			response.markdown('  \n');
+			const subStepType = probeRequestKeys[0];
+			if (subStepType === 'ProbeAnswer' && symbolEventSubStep.Probe.ProbeAnswer !== undefined) {
+				const probeAnswer = symbolEventSubStep.Probe.ProbeAnswer;
+				response.markdown(`${probeAnswer}\n\n`);
+			}
 		}
 	}
 };
