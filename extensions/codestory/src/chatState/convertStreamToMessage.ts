@@ -13,7 +13,7 @@ import { SideCarAgentEvent } from '../server/types';
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	response: vscode.ChatResponseStream,
+	response: vscode.AideChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -189,7 +189,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -221,7 +221,7 @@ export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, 
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.ChatResponseStream,
+	progress: vscode.AideChatResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {
@@ -237,14 +237,47 @@ export const reportProcUpdateToChat = (
 
 export const reportAgentEventsToChat = async (
 	stream: AsyncIterator<SideCarAgentEvent>,
-	response: vscode.ChatResponseStream,
+	response: vscode.AideChatResponseStream,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
 
+	const openFiles = new Set<string>();
+
 	for await (const event of asyncIterable) {
-		response.markdown(event.request_id);
-		response.markdown('\n');
+		if ('keep_alive' in event) {
+			continue;
+		}
+
+		if (event.event.ToolEvent) {
+			const toolEventKeys = Object.keys(event.event.ToolEvent);
+			if (toolEventKeys.length === 0) {
+				continue;
+			}
+
+			const toolEventKey = toolEventKeys[0];
+			if (toolEventKey === 'OpenFile') {
+				const openFileEvent = event.event.ToolEvent.OpenFile;
+				if (openFileEvent?.fs_file_path === undefined) {
+					continue;
+				}
+
+				const fsFilePath = openFileEvent.fs_file_path;
+				if (openFiles.has(fsFilePath)) {
+					continue;
+				}
+
+				openFiles.add(fsFilePath);
+				response.reference(vscode.Uri.file(fsFilePath));
+			}
+
+			response.breakdown({
+				content: new vscode.MarkdownString('cool init?\n\n'),
+			});
+
+			response.markdown(toolEventKey);
+			response.markdown('  \n');
+		}
 	}
 };

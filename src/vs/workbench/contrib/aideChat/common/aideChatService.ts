@@ -81,6 +81,12 @@ export interface IAideChatContentReference {
 	kind: 'reference';
 }
 
+export interface IAideChatBreakdown {
+	content: IMarkdownString;
+	reference?: URI | Location;
+	kind: 'breakdown';
+}
+
 export interface IAideChatContentInlineReference {
 	inlineReference: URI | Location;
 	name?: string;
@@ -170,6 +176,7 @@ export type IAideChatProgress =
 	| IChatTreeData
 	| IChatUsedContext
 	| IAideChatContentReference
+	| IAideChatBreakdown
 	| IAideChatContentInlineReference
 	| IAideChatAgentDetection
 	| IAideChatProgressMessage

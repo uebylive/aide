@@ -32,7 +32,13 @@ export type ProbeAgentBody = {
 	query: string;
 };
 
-export interface SideCarAgentEvent {
+export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
+
+interface SideCarAgentKeepAliveEvent {
+	keep_alive: 'alive';
+}
+
+interface SideCarAgentUIEvent {
 	request_id: string;
 	event: UIEvent;
 }

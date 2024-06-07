@@ -4667,6 +4667,19 @@ export class AideChatResponseReferencePart {
 	}
 }
 
+export class AideChatResponseBreakdownPart {
+	content: vscode.MarkdownString;
+	reference?: vscode.Uri | vscode.Location;
+	constructor(content: string | vscode.MarkdownString, reference?: vscode.Uri | vscode.Location) {
+		if (typeof content !== 'string' && content.isTrusted === true) {
+			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
+		}
+
+		this.content = typeof content === 'string' ? new MarkdownString(content) : content;
+		this.reference = reference;
+	}
+}
+
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];
