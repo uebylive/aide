@@ -685,6 +685,30 @@
 	margin: 0 0 0 4px;
 }
 
+.chat-breakdown-list .monaco-list {
+	border: none;
+	border-radius: 4px;
+	width: auto;
+}
+
+.cschat-session .chat-breakdowns {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.interactive-response-progress-tree,
+.cschat-session .chat-breakdowns-list {
+	border: 1px solid var(--vscode-chat-requestBorder);
+	border-radius: 4px;
+	margin-bottom: 8px;
+	padding: 4px;
+}
+
+.cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
+	border-radius: 2px;
+}
+
 .cschat-item-container .rendered-markdown.progress-step {
 	display: flex;
 	margin-left: 4px;

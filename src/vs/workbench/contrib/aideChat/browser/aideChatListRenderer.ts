@@ -274,7 +274,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		dom.append(detailContainer, $('span.chat-animated-ellipsis'));
 		const referencesListContainer = dom.append(rowContainer, $('.referencesListContainer'));
 		const value = dom.append(rowContainer, $('.value'));
-		const breakdownContainer = dom.append(rowContainer, $('.breakdown'));
+		const breakdownContainer = dom.append(rowContainer, $('.breakdownListContainer'));
 		const elementDisposables = new DisposableStore();
 
 		const contextKeyService = templateDisposables.add(this.contextKeyService.createScoped(rowContainer));
@@ -448,6 +448,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		dom.clearNode(templateData.value);
 		dom.clearNode(templateData.referencesListContainer);
+		dom.clearNode(templateData.breakdownContainer);
 
 		if (isResponseVM(element)) {
 			this.renderDetail(element, templateData);
@@ -510,6 +511,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		dom.clearNode(templateData.value);
 		dom.clearNode(templateData.referencesListContainer);
 		dom.hide(templateData.referencesListContainer);
+		dom.clearNode(templateData.breakdownContainer);
+		dom.hide(templateData.breakdownContainer);
 
 		for (const item of element.content) {
 			if (Array.isArray(item)) {
@@ -653,6 +656,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			} else if (!isFullyRendered) {
 				disposables.clear();
 				this.renderContentReferencesIfNeeded(element, templateData, disposables);
+				this.renderBreakdowns(element, templateData, disposables);
 				let hasRenderedOneMarkdownBlock = false;
 				partsToRender.forEach((partToRender, index) => {
 					if (!partToRender) {
@@ -876,7 +880,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderBreakdowns(element: ChatTreeItem, templateData: IChatListItemTemplate, disposables: DisposableStore): void {
 		if (isResponseVM(element) && element.breakdowns.length) {
 			dom.show(templateData.breakdownContainer);
-			const breakdownsListResult = this.renderBreakdownsListData(null, element.breakdowns, element, templateData);
+			const breakdownsListResult = this.renderBreakdownsListData(element.breakdowns, element, templateData);
 			if (templateData.breakdownContainer.firstChild) {
 				templateData.breakdownContainer.replaceChild(breakdownsListResult.element, templateData.breakdownContainer.firstChild!);
 			} else {
@@ -888,7 +892,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
-	private renderBreakdownsListData(task: IAideChatTask | null, data: ReadonlyArray<IAideChatBreakdown>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): { element: HTMLElement; dispose: () => void } {
+	private renderBreakdownsListData(data: ReadonlyArray<IAideChatBreakdown>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): { element: HTMLElement; dispose: () => void } {
 		const listDisposables = new DisposableStore();
 		const container = $('.chat-breakdowns');
 		const ref = listDisposables.add(this._breakdownsListPool.get());
@@ -901,6 +905,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}));
 
 		list.layout();
+		list.splice(0, list.length, data);
+
 		return {
 			element: container,
 			dispose: () => {
@@ -918,8 +924,19 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return;
 		}
 
-		if (task.progress.length) {
-			const refs = this.renderContentReferencesListData(task, task.progress, element, templateData);
+		const taskProgress = task.progress;
+
+		const breakdownTasks = taskProgress.filter(p => p.kind === 'breakdown');
+		if (breakdownTasks.length) {
+			const breakdowns = this.renderBreakdownsListData(breakdownTasks, element, templateData);
+			const node = dom.$('.chat-breakdowns-task');
+			node.appendChild(breakdowns.element);
+			return { element: node, dispose: breakdowns.dispose };
+		}
+
+		const referenceListTasks = taskProgress.filter(p => p.kind !== 'breakdown');
+		if (referenceListTasks.length) {
+			const refs = this.renderContentReferencesListData(task, referenceListTasks, element, templateData);
 			const node = dom.$('.chat-progress-task');
 			node.appendChild(refs.element);
 			return { element: node, dispose: refs.dispose };

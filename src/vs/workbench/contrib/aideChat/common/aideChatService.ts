@@ -116,9 +116,9 @@ export interface IAideChatProgressMessage {
 
 export interface IAideChatTask extends IAideChatTaskDto {
 	deferred: DeferredPromise<string | void>;
-	progress: (IAideChatWarningMessage | IAideChatContentReference)[];
-	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference>;
-	add(progress: IAideChatWarningMessage | IAideChatContentReference): void;
+	progress: (IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown)[];
+	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown>;
+	add(progress: IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown): void;
 
 	complete: (result: string | void) => void;
 	task: () => Promise<string | void>;
