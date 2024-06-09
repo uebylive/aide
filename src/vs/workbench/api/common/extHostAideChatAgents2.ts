@@ -196,7 +196,7 @@ class ChatAgentResponseStream {
 					throwIfDone(this.breakdown);
 					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
 
-					const part = new extHostTypes.AideChatResponseBreakdownPart(value.content, value.reference);
+					const part = new extHostTypes.AideChatResponseBreakdownPart(value.reference, value.query, value.reason, value.response);
 					const dto = typeConvert.AideChatResponseBreakdownPart.from(part);
 					_report(dto);
 					return this;

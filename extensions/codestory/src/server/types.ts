@@ -19,7 +19,7 @@ export type UserContext = {
 	folder_paths: string[];
 };
 
-type SymbolIdentifier = {
+export type SymbolIdentifier = {
 	symbol_name: string;
 	fs_file_path?: string;
 };

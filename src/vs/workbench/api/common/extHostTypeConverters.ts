@@ -2924,10 +2924,10 @@ export namespace AideChatResponseBreakdownPart {
 	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideChatBreakdown> {
 		return {
 			kind: 'breakdown',
-			content: MarkdownString.from(part.content),
-			reference: part.reference ?
-				(URI.isUri(part.reference) ? part.reference : Location.from(<vscode.Location>part.reference)) :
-				undefined
+			reference: URI.isUri(part.reference) ? part.reference : Location.from(<vscode.Location>part.reference),
+			query: part.query && MarkdownString.from(part.query),
+			reason: part.reason && MarkdownString.from(part.reason),
+			response: part.response && MarkdownString.from(part.response)
 		};
 	}
 	export function to(part: Dto<IAideChatBreakdown>): vscode.AideChatResponseBreakdown {
@@ -2938,8 +2938,10 @@ export namespace AideChatResponseBreakdownPart {
 			Location.to(value);
 
 		return new types.AideChatResponseBreakdownPart(
-			MarkdownString.to(part.content),
-			value.reference && mapValue(value.reference)
+			mapValue(value.reference),
+			part.query && MarkdownString.to(part.query),
+			part.reason && MarkdownString.to(part.reason),
+			part.response && MarkdownString.to(part.response),
 		);
 	}
 }

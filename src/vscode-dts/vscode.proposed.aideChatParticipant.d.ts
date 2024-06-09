@@ -79,14 +79,24 @@ declare module 'vscode' {
 
 	export interface AideChatResponseBreakdown {
 		/**
-		 * The content of the breakdown.
+		 * Code reference relevant to this breakdown.
 		 */
-		readonly content: MarkdownString;
+		readonly reference: Uri | Location;
 
 		/**
-		 * Code references that are relevant to the breakdown.
+		 * The query made to AI for this breakdown.
 		 */
-		readonly reference?: Uri | Location;
+		readonly query?: MarkdownString;
+
+		/**
+		 * The reason this query was made.
+		 */
+		readonly reason?: MarkdownString;
+
+		/**
+		 * The response from AI for this breakdown.
+		 */
+		readonly response?: MarkdownString;
 	}
 
 	export interface AideChatResponseStream extends ChatResponseStream {

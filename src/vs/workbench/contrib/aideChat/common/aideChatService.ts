@@ -82,8 +82,10 @@ export interface IAideChatContentReference {
 }
 
 export interface IAideChatBreakdown {
-	content: IMarkdownString;
-	reference?: URI | Location;
+	reference: URI | Location;
+	query?: IMarkdownString;
+	reason?: IMarkdownString;
+	response?: IMarkdownString;
 	kind: 'breakdown';
 }
 

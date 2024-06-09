@@ -519,7 +519,7 @@ export class ToolingEventCollection {
 	public async addThinkingEvent(userQuery: string, thinkingContext: string) {
 		const event = thinkingEvent(userQuery, thinkingContext, []);
 		this.events.push(event);
-		this.chatProgress?.response.progress(`${event.eventContext ?? ''}\n\n---\n`);
+		this.chatProgress?.response.markdown(`${event.eventContext ?? ''}\n\n---\n`);
 		await this.save();
 	}
 
@@ -544,9 +544,9 @@ export class ToolingEventCollection {
 		const event = relevantSearchResults(queries, codeSymbolInformationList);
 		this.events.push(event);
 		for (const codeSnippet of event.codeSnippetInformationList?.slice(0, 5) ?? []) {
-			this.chatProgress?.response.progress(`${codeSnippet.filePath}\n`);
+			this.chatProgress?.response.markdown(`${codeSnippet.filePath}\n`);
 		}
-		this.chatProgress?.response.progress(`\n---\n`);
+		this.chatProgress?.response.markdown(`\n---\n`);
 		await this.save();
 	}
 
@@ -599,7 +599,7 @@ export class ToolingEventCollection {
 	) {
 		const event = testExecutionEvent(codeSymbolName, fileLocation, testPlan, executionEventId);
 		this.events.push(event);
-		this.chatProgress?.response.progress(`${event.testExecutionHarness?.planForTestScriptGeneration ?? ''}
+		this.chatProgress?.response.markdown(`${event.testExecutionHarness?.planForTestScriptGeneration ?? ''}
 \`\`\`\n\n${event.testExecutionHarness?.testScript ?? ''}\n\`\`\`
 \n---\n
 					`);
@@ -628,8 +628,8 @@ export class ToolingEventCollection {
 	) {
 		const event = executionBranchFinishEvent(executionEventId, codeSymbolName, executionBranchFinishReason);
 		this.events.push(event);
-		this.chatProgress?.response.progress(event.executionBranchFinishReason ?? '');
-		this.chatProgress?.response.progress(`\n---\n`);
+		this.chatProgress?.response.markdown(event.executionBranchFinishReason ?? '');
+		this.chatProgress?.response.markdown(`\n---\n`);
 		await this.save();
 	}
 

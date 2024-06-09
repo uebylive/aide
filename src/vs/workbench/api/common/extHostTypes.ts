@@ -4668,15 +4668,26 @@ export class AideChatResponseReferencePart {
 }
 
 export class AideChatResponseBreakdownPart {
-	content: vscode.MarkdownString;
-	reference?: vscode.Uri | vscode.Location;
-	constructor(content: string | vscode.MarkdownString, reference?: vscode.Uri | vscode.Location) {
-		if (typeof content !== 'string' && content.isTrusted === true) {
+	reference: vscode.Uri | vscode.Location;
+	query?: vscode.MarkdownString;
+	reason?: vscode.MarkdownString;
+	response?: vscode.MarkdownString;
+	constructor(
+		reference: vscode.Uri | vscode.Location,
+		query?: vscode.MarkdownString,
+		reason?: vscode.MarkdownString,
+		response?: vscode.MarkdownString,
+	) {
+		if ((typeof query !== 'string' && query?.isTrusted === true)
+			|| (typeof reason !== 'string' && reason?.isTrusted === true)
+			|| (typeof response !== 'string' && response?.isTrusted === true)) {
 			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
 		}
 
-		this.content = typeof content === 'string' ? new MarkdownString(content) : content;
 		this.reference = reference;
+		this.query = typeof query === 'string' ? new MarkdownString(query) : query;
+		this.reason = typeof reason === 'string' ? new MarkdownString(reason) : reason;
+		this.response = typeof response === 'string' ? new MarkdownString(response) : response;
 	}
 }
 

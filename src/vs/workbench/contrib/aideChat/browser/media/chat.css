@@ -682,13 +682,17 @@
 }
 
 .cschat-session .chat-used-context .chat-used-context-label .monaco-button .codicon {
-	margin: 0 0 0 4px;
+	margin: 0 0 0 -4px;
 }
 
-.chat-breakdown-list .monaco-list {
+.chat-breakdowns-list .monaco-list {
 	border: none;
 	border-radius: 4px;
 	width: auto;
+}
+
+.cschat-session .chat-breakdowns.chat-breakdowns-collapsed .chat-breakdowns-list {
+	display: none;
 }
 
 .cschat-session .chat-breakdowns {
@@ -707,6 +711,39 @@
 
 .cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
 	border-radius: 2px;
+}
+
+.cschat-session .chat-breakdowns-label {
+	font-size: 12px;
+	color: var(--vscode-foreground);
+	opacity: 0.8;
+	user-select: none;
+}
+
+.cschat-session .chat-breakdowns-label:hover {
+	opacity: unset;
+}
+
+.cschat-session .chat-breakdowns-label .monaco-button {
+	/* unset Button styles */
+	display: inline-flex;
+	width: 100%;
+	border: none;
+	padding: 0;
+	text-align: initial;
+	justify-content: initial;
+}
+
+.cschat-session .chat-breakdowns-label .monaco-text-button:focus {
+	outline: none;
+}
+
+.cschat-session .chat-breakdowns-label .monaco-text-button:focus-visible {
+	outline: 1px solid var(--vscode-focusBorder);
+}
+
+.cschat-session .chat-breakdowns .chat-breakdowns-label .monaco-button .codicon {
+	margin: 0 0 0 -4px;
 }
 
 .cschat-item-container .rendered-markdown.progress-step {
