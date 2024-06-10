@@ -56,6 +56,8 @@ import { ThemeIcon } from 'vs/base/common/themables';
 import { EDITOR_FONT_DEFAULTS } from 'vs/editor/common/config/editorOptions';
 import { ClearChatEditorAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { ICommandService } from 'vs/platform/commands/common/commands';
+import { ModelSelectionIndicator } from 'vs/workbench/contrib/preferences/browser/modelSelectionIndicator';
 
 const $ = dom.$;
 
@@ -161,6 +163,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 
@@ -203,11 +206,27 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			const header = $('.header');
 			this.container.insertBefore(header, secondChild);
 			const user = dom.append(header, $('.user'));
-			const model = dom.append(header, $('.slow-model'));
+
+			const model = new Button($('.slow-model'), {
+				buttonBackground: undefined,
+				buttonBorder: undefined,
+				buttonForeground: undefined,
+				buttonHoverBackground: undefined,
+				buttonSecondaryBackground: undefined,
+				buttonSecondaryForeground: undefined,
+				buttonSecondaryHoverBackground: undefined,
+				buttonSeparator: undefined
+			});
+
+			model.onDidClick(() => {
+				this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID);
+			});
+
+			dom.append(header, model.element);
 			dom.append(user, $('.avatar-container'));
 			dom.append(user, $('h3.username'));
 			this.requesterContainer = user;
-			this.modelNameContainer = model;
+			this.modelNameContainer = model.element;
 			this.modelNameContainer.style.display = 'none';
 
 			this.inputEditor.updateOptions({

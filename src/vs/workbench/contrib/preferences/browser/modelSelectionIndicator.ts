@@ -22,7 +22,8 @@ import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/com
 import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
-	private static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
+	static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
+	static readonly SWITCH_SLOW_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch.slow';
 
 	private modelSelectionStatusEntry: IStatusbarEntryAccessor | undefined;
 
@@ -60,6 +61,22 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 				});
 			}
 			run = () => that.showModelSwitcher();
+		});
+
+		registerAction2(class extends Action2 {
+			constructor() {
+				super({
+					id: ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID,
+					category,
+					title: nls.localize2('modelSelection.switch.slow', "Switch Slow Model"),
+					f1: true,
+					keybinding: {
+						weight: KeybindingWeight.WorkbenchContrib,
+						primary: KeyChord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyM),
+					}
+				});
+			}
+			run = () => that.showModelPicker('slowModel');
 		});
 	}
 
