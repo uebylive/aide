@@ -896,7 +896,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const listDisposables = new DisposableStore();
 		const breakdownsLabel = data.length > 1 ?
 			localize('breakdownsPlural', "Looking through {0} symbols", data.length) :
-			localize('breakdownsSingular', "Looking through {0} symbols", 1);
+			localize('breakdownsSingular', "Looking through {0} symbol", 1);
 		const iconElement = $('.chat-breakdowns-icon');
 		const icon = (element: IChatResponseViewModel) => element.breakdownsExpanded ? Codicon.chevronDown : Codicon.chevronRight;
 		iconElement.classList.add(...ThemeIcon.asClassNameArray(icon(element)));
@@ -1713,6 +1713,10 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown>
 
 	getTemplateId(element: IAideChatBreakdown): string {
 		return BreakdownsListRenderer.TEMPLATE_ID;
+	}
+
+	hasDynamicHeight(element: IAideChatBreakdown): boolean {
+		return true;
 	}
 }
 
