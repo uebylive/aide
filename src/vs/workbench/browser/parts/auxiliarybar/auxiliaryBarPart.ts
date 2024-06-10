@@ -124,7 +124,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			const csExtensionID = 'codestory-ghost.codestoryai';
 			const csExtension = extensionService.extensions.find(ext => ext.identifier.value === csExtensionID);
 			if (csExtension) {
-				this.paneCompositeService.openPaneComposite('workbench.panel.chatSidebar', ViewContainerLocation.AuxiliaryBar, true);
+				this.paneCompositeService.openPaneComposite('workbench.panel.aideChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
 			}
 		}));
 
@@ -132,7 +132,7 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			const csExtensionID = 'codestory-ghost.codestoryai';
 			const csExtension = e.added.find(ext => ext.identifier.value === csExtensionID);
 			if (csExtension) {
-				this.paneCompositeService.openPaneComposite('workbench.panel.chatSidebar', ViewContainerLocation.AuxiliaryBar, true);
+				this.paneCompositeService.openPaneComposite('workbench.panel.aideChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
 			}
 		}));
 
