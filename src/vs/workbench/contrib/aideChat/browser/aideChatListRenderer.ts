@@ -68,7 +68,7 @@ import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/w
 import { chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IAideChatService, IAideChatTask, IAideChatWarningMessage, IAideChatBreakdown } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideChatBreakdownViewModel, IAideChatBreakdownViewModel, IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
@@ -133,9 +133,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _diffEditorPool: DiffEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: ContentReferencesListPool;
-
-	private listData: Array<IAideChatBreakdownViewModel> = [];
-	private readonly _breakdownsRenderer: BreakdownsListRenderer;
 	private readonly _breakdownsListPool: BreakdownsListPool;
 
 	private _currentLayoutWidth: number = 0;
@@ -170,10 +167,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(ContentReferencesListPool, this._onDidChangeVisibility.event));
-
-		const breakdownResourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event }));
-		this._breakdownsRenderer = this.instantiationService.createInstance(BreakdownsListRenderer, breakdownResourceLabels);
-		this._breakdownsListPool = this._register(this.instantiationService.createInstance(BreakdownsListPool, this._breakdownsRenderer));
+		this._breakdownsListPool = this._register(this.instantiationService.createInstance(BreakdownsListPool, this._onDidChangeVisibility.event));
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
 
@@ -959,20 +953,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			e.browserEvent.preventDefault();
 			e.browserEvent.stopPropagation();
 		}));
-		listDisposables.add(this._breakdownsRenderer.onDidChangeItemHeight(e => {
-			list.updateElementHeight(e.index, e.height);
-			this.listData[e.index].currentRenderedHeight = e.height;
-			const totalListHeight = this.listData.reduce((acc, item) => acc + (item.currentRenderedHeight ?? 0), 0);
-			list.getHTMLElement().style.height = `${totalListHeight}px`;
-			list.layout(totalListHeight);
-		}));
 
-		this.listData = data.map((item) => {
-			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
-			listDisposables.add(viewItem);
-			return viewItem;
-		});
-		list.splice(0, list.length, this.listData);
+		list.layout(data.length * 22);
+		list.splice(0, list.length, data);
 
 		return {
 			element: container,
@@ -1671,14 +1654,14 @@ class ContentReferencesListRenderer implements IListRenderer<IAideChatContentRef
 }
 
 class BreakdownsListPool extends Disposable {
-	private _pool: ResourcePool<WorkbenchList<IAideChatBreakdownViewModel>>;
+	private _pool: ResourcePool<WorkbenchList<IAideChatBreakdown>>;
 
-	public get inUse(): ReadonlySet<WorkbenchList<IAideChatBreakdownViewModel>> {
+	public get inUse(): ReadonlySet<WorkbenchList<IAideChatBreakdown>> {
 		return this._pool.inUse;
 	}
 
 	constructor(
-		private _breakdownsListRenderer: BreakdownsListRenderer,
+		private _onDidChangeVisibility: Event<boolean>,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -1686,19 +1669,21 @@ class BreakdownsListPool extends Disposable {
 		this._pool = this._register(new ResourcePool(() => this.listFactory()));
 	}
 
-	private listFactory(): WorkbenchList<IAideChatBreakdownViewModel> {
+	private listFactory(): WorkbenchList<IAideChatBreakdown> {
+		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
+
 		const container = $('.chat-breakdowns-list');
 
 		const list = this.instantiationService.createInstance(
-			WorkbenchList<IAideChatBreakdownViewModel>,
+			WorkbenchList<IAideChatBreakdown>,
 			'ChatListRenderer',
 			container,
 			new BreakdownsListDelegate(),
-			[this._breakdownsListRenderer],
+			[this.instantiationService.createInstance(BreakdownsListRenderer, resourceLabels)],
 			{
 				alwaysConsumeMouseWheel: false,
 				accessibilityProvider: {
-					getAriaLabel: (element: IAideChatBreakdownViewModel) => element.response?.value ?? element.query?.value ?? '',
+					getAriaLabel: (element: IAideChatBreakdown) => element.response?.value ?? element.query?.value ?? '',
 					getWidgetAriaLabel: () => localize('breakdowns', "Breakdowns")
 				}
 			}
@@ -1707,7 +1692,7 @@ class BreakdownsListPool extends Disposable {
 		return list;
 	}
 
-	get(): IDisposableReference<WorkbenchList<IAideChatBreakdownViewModel>> {
+	get(): IDisposableReference<WorkbenchList<IAideChatBreakdown>> {
 		const object = this._pool.get();
 		let stale = false;
 		return {
@@ -1721,41 +1706,31 @@ class BreakdownsListPool extends Disposable {
 	}
 }
 
-class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownViewModel> {
-	getHeight(element: IAideChatBreakdownViewModel): number {
-		return element.currentRenderedHeight ?? 22;
+class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown> {
+	getHeight(element: IAideChatBreakdown): number {
+		return 22;
 	}
 
-	getTemplateId(_element: IAideChatBreakdownViewModel): string {
+	getTemplateId(element: IAideChatBreakdown): string {
 		return BreakdownsListRenderer.TEMPLATE_ID;
 	}
 
-	hasDynamicHeight(_element: IAideChatBreakdownViewModel): boolean {
+	hasDynamicHeight(element: IAideChatBreakdown): boolean {
 		return true;
 	}
 }
 
 interface IBreakdownsListTemplate {
-	readonly label: IResourceLabel;
-	readonly rowContainer: HTMLElement;
-	readonly query: HTMLElement;
-	readonly reason: HTMLElement;
-	readonly response: HTMLElement;
-	readonly templateDisposables: IDisposable;
-	readonly elementDisposables: DisposableStore;
+	label: IResourceLabel;
+	query: HTMLElement;
+	reason: HTMLElement;
+	response: HTMLElement;
+	templateDisposables: IDisposable;
 }
 
-interface IBreakdownItemHeightChangeParams {
-	index: number;
-	height: number;
-}
-
-class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideChatBreakdownViewModel, IBreakdownsListTemplate> {
+class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideChatBreakdown, IBreakdownsListTemplate> {
 	static TEMPLATE_ID = 'breakdownsListRenderer';
 	readonly templateId: string = BreakdownsListRenderer.TEMPLATE_ID;
-
-	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IBreakdownItemHeightChangeParams>());
-	readonly onDidChangeItemHeight: Event<IBreakdownItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	private readonly renderer: MarkdownRenderer;
 
@@ -1770,25 +1745,22 @@ class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideCh
 
 	renderTemplate(container: HTMLElement): IBreakdownsListTemplate {
 		const templateDisposables = new DisposableStore();
-		const elementDisposables = new DisposableStore();
-
-		const rowContainer = dom.append(container, $('.chat-breakdown-row'));
-		const label = templateDisposables.add(this.labels.create(rowContainer, { supportHighlights: true }));
+		const label = templateDisposables.add(this.labels.create(container, { supportHighlights: true }));
 		const query = $('.chat-breakdown-query');
-		rowContainer.appendChild(query);
+		container.appendChild(query);
 		const reason = $('.chat-breakdown-reason');
-		rowContainer.appendChild(reason);
+		container.appendChild(reason);
 		const response = $('.chat-breakdown-response');
-		rowContainer.appendChild(response);
-		return { templateDisposables, elementDisposables, rowContainer, label, query, reason, response };
+		container.appendChild(response);
+		return { templateDisposables, label, query, reason, response };
 	}
 
-	renderElement(element: IAideChatBreakdownViewModel, index: number, templateData: IBreakdownsListTemplate, _height: number | undefined): void {
-		const { query, reason, response } = element;
+	renderElement(data: IAideChatBreakdown, index: number, templateData: IBreakdownsListTemplate, height: number | undefined): void {
+		const { query, reason, response } = data;
 		const icon = Codicon.info;
 		templateData.label.element.style.display = 'flex';
-		if ('reference' in element && element.reference) {
-			const reference = element.reference;
+		if ('reference' in data && data.reference) {
+			const reference = data.reference;
 			const uri = URI.isUri(reference) ? reference : reference.uri;
 			templateData.label.setResource(
 				{
@@ -1799,29 +1771,15 @@ class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideCh
 
 		if (query) {
 			const markdownResult = this.renderer.render(query);
-			templateData.query.replaceChildren();
 			templateData.query.appendChild(markdownResult.element);
 		}
 		if (reason) {
 			const markdownResult = this.renderer.render(reason);
-			templateData.reason.replaceChildren();
 			templateData.reason.appendChild(markdownResult.element);
 		}
 		if (response) {
 			const markdownResult = this.renderer.render(response);
-			templateData.response.replaceChildren();
 			templateData.response.appendChild(markdownResult.element);
-		}
-
-		const newHeight = templateData.rowContainer.clientHeight;
-		templateData.rowContainer.style.height = `${newHeight}px`;
-		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
-		if (fireEvent) {
-			const disposable = templateData.elementDisposables.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.rowContainer), () => {
-				element.currentRenderedHeight = templateData.rowContainer.clientHeight;
-				disposable.dispose();
-				this._onDidChangeItemHeight.fire({ index, height: element.currentRenderedHeight });
-			}));
 		}
 	}
 
@@ -1872,11 +1830,11 @@ class ChatVoteButton extends MenuEntryActionViewItem {
 class ChatListTreeDelegate implements IListVirtualDelegate<IChatResponseProgressFileTreeData> {
 	static readonly ITEM_HEIGHT = 22;
 
-	getHeight(_element: IChatResponseProgressFileTreeData): number {
+	getHeight(element: IChatResponseProgressFileTreeData): number {
 		return ChatListTreeDelegate.ITEM_HEIGHT;
 	}
 
-	getTemplateId(_element: IChatResponseProgressFileTreeData): string {
+	getTemplateId(element: IChatResponseProgressFileTreeData): string {
 		return 'chatListTreeTemplate';
 	}
 }
