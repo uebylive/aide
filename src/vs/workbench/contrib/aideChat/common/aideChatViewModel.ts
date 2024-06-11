@@ -18,6 +18,7 @@ import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideCha
 import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IChatResponseProgressFileTreeData, IAideChatTask, IChatUsedContext, IAideChatWarningMessage, IAideChatBreakdown } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { CodeBlockModelCollection } from './codeBlockModelCollection';
+import { Location } from 'vs/editor/common/languages';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
 	return !!item && typeof item === 'object' && 'message' in item;
@@ -111,6 +112,14 @@ export interface IChatLiveUpdateData {
 	lastUpdateTime: number;
 	impliedWordLoadRate: number;
 	lastWordCount: number;
+}
+
+export interface IAideChatBreakdownViewModel {
+	readonly reference: URI | Location;
+	readonly query?: IMarkdownString;
+	readonly reason?: IMarkdownString;
+	readonly response?: IMarkdownString;
+	currentRenderedHeight: number | undefined;
 }
 
 export interface IChatResponseViewModel {
@@ -564,4 +573,30 @@ export interface IChatWelcomeMessageViewModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IAideChatFollowup[];
 	currentRenderedHeight?: number;
+}
+
+export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
+	get reference() {
+		return this._breakdown.reference;
+	}
+
+	get query() {
+		return this._breakdown.query;
+	}
+
+	get reason() {
+		return this._breakdown.reason;
+	}
+
+	get response() {
+		return this._breakdown.response;
+	}
+
+	currentRenderedHeight: number | undefined;
+
+	constructor(
+		private readonly _breakdown: IAideChatBreakdown
+	) {
+		super();
+	}
 }
