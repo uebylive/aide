@@ -929,20 +929,16 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		const ref = listDisposables.add(this._breakdownsListPool.get());
 		const list = ref.object;
-		list.show();
 		container.appendChild(list.getHTMLElement());
-		list.layout(this._currentLayoutWidth - 10);
-		this._register(list.onDidChangeContentHeight(() => {
-			this.updateItemHeight(templateData);
-		}));
 
 		const listData = data.map((item) => {
 			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
 			listDisposables.add(viewItem);
 			return viewItem;
 		});
-
+		list.show();
 		list.updateBreakdowns(listData);
+		list.layout();
 
 		return {
 			element: container,
