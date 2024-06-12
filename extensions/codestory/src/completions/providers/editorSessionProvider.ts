@@ -180,7 +180,7 @@ export async function provideInteractiveEditorResponse(
 	sidecarClient: SideCarClient,
 	workingDirectory: string,
 	request: vscode.AideChatRequest,
-	progress: vscode.AideChatResponseStream,
+	progress: vscode.ChatResponseStream,
 	token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
 	const variables = request.references;
