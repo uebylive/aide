@@ -5,6 +5,7 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
@@ -16,21 +17,23 @@ import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideChat/commo
 const $ = dom.$;
 
 export class AideChatBreakdowns extends Disposable {
-	private listContainer: HTMLElement | undefined;
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
 	private listDelegate: BreakdownsListDelegate | undefined;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 
+	private readonly _onDidChangeContentHeight = this._register(new Emitter<void>());
+	readonly onDidChangeContentHeight: Event<void> = this._onDidChangeContentHeight.event;
+
 	constructor(
-		private readonly container: HTMLElement,
+		private readonly listContainer: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
 	}
 
 	getHTMLElement(): HTMLElement {
-		return this.container;
+		return this.listContainer;
 	}
 
 	show(): void {
@@ -48,16 +51,12 @@ export class AideChatBreakdowns extends Disposable {
 	}
 
 	private createBreakdownsList(): void {
-		// List Container
-		this.listContainer = document.createElement('div');
-		this.listContainer.classList.add('breakdowns-list-container');
-
 		// Breakdown renderer
 		const renderer = this.instantiationService.createInstance(BreakdownRenderer);
 
 		// List
 		const listDelegate = this.listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate, this.listContainer);
-		this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
+		const list = this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
 			this.listContainer,
@@ -65,15 +64,26 @@ export class AideChatBreakdowns extends Disposable {
 			[renderer],
 			{
 				setRowLineHeight: false,
+				supportDynamicHeights: true,
 				horizontalScrolling: false,
 			}
 		);
 
-		this.container.appendChild(this.listContainer);
+		this._register(renderer.onDidChangeItemHeight(e => {
+			list.updateElementHeight(e.index, e.height);
+			this.updateBreakdownHeight(e.element);
+		}));
+		this._register(list.onDidChangeContentHeight(() => {
+			this._onDidChangeContentHeight.fire();
+		}));
 	}
 
 	updateBreakdowns(breakdowns: IAideChatBreakdownViewModel[]): void {
 		const list = assertIsDefined(this.list);
+
+		if (breakdowns.length === 0) {
+			return;
+		}
 
 		this.viewModel = breakdowns;
 		list.splice(0, list.length, breakdowns);
@@ -106,8 +116,10 @@ export class AideChatBreakdowns extends Disposable {
 		this.viewModel = [];
 	}
 
-	layout(): void {
-		if (this.list) {
+	layout(width: number): void {
+		if (this.listContainer && this.list) {
+			this.listContainer.style.width = `${width}px`;
+
 			this.list.layout();
 		}
 	}
@@ -116,10 +128,20 @@ export class AideChatBreakdowns extends Disposable {
 interface IBreakdownTemplateData {
 	container: HTMLElement;
 	toDispose: DisposableStore;
+	elementDisposables: DisposableStore;
+}
+
+interface IItemHeightChangeParams {
+	element: IAideChatBreakdownViewModel;
+	index: number;
+	height: number;
 }
 
 class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownsListRenderer';
+
+	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
+	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	private readonly markdownRenderer: MarkdownRenderer;
 
@@ -148,6 +170,21 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	renderElement(element: IAideChatBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
 		dom.clearNode(templateData.container);
 		templateData.container.appendChild(BreakdownItemRenderer.render(element, this.markdownRenderer));
+
+		const newHeight = templateData.container.offsetHeight;
+		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
+		element.currentRenderedHeight = newHeight;
+		if (fireEvent) {
+			const disposable = templateData.elementDisposables.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
+				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
+				// If it becomes properly sync, then this could be removed.
+				element.currentRenderedHeight = templateData.container.offsetHeight;
+				disposable.dispose();
+				this._onDidChangeItemHeight.fire(
+					{ element, index, height: element.currentRenderedHeight }
+				);
+			}));
+		}
 	}
 
 	disposeTemplate(templateData: IBreakdownTemplateData): void {
@@ -208,8 +245,13 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 	}
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
+		const parentWidth = this.offsetHelper.parentElement?.clientWidth || 0;
+		this.offsetHelper.style.width = `${parentWidth}px`;
+
 		const renderedRow = BreakdownItemRenderer.render(element, this.markdownRenderer);
 		this.offsetHelper.appendChild(renderedRow);
+		const newHeight = this.offsetHelper.offsetHeight;
+		element.currentRenderedHeight = newHeight;
 
 		const height = Math.max(this.offsetHelper.offsetHeight, this.offsetHelper.scrollHeight);
 
@@ -220,5 +262,9 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {
 		return BreakdownRenderer.TEMPLATE_ID;
+	}
+
+	hasDynamicHeight(element: IAideChatBreakdownViewModel): boolean {
+		return true;
 	}
 }

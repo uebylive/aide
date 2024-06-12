@@ -119,6 +119,7 @@ export interface IAideChatBreakdownViewModel {
 	readonly query?: IMarkdownString;
 	readonly reason?: IMarkdownString;
 	readonly response?: IMarkdownString;
+	currentRenderedHeight: number | undefined;
 }
 
 export interface IChatResponseViewModel {
@@ -590,6 +591,8 @@ export class AideChatBreakdownViewModel extends Disposable implements IAideChatB
 	get response() {
 		return this._breakdown.response;
 	}
+
+	currentRenderedHeight: number | undefined;
 
 	constructor(
 		private readonly _breakdown: IAideChatBreakdown
