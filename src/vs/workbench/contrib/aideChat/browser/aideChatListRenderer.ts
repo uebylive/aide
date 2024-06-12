@@ -273,8 +273,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const detail = dom.append(detailContainer, $('span.detail'));
 		dom.append(detailContainer, $('span.chat-animated-ellipsis'));
 		const referencesListContainer = dom.append(rowContainer, $('.referencesListContainer'));
-		const breakdownContainer = dom.append(rowContainer, $('.breakdownListContainer'));
 		const value = dom.append(rowContainer, $('.value'));
+		const breakdownContainer = dom.append(rowContainer, $('.breakdownListContainer'));
 		const elementDisposables = new DisposableStore();
 
 		const contextKeyService = templateDisposables.add(this.contextKeyService.createScoped(rowContainer));
@@ -894,67 +894,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private renderBreakdownsListData(data: ReadonlyArray<IAideChatBreakdown>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): { element: HTMLElement; dispose: () => void } {
 		const listDisposables = new DisposableStore();
-		const breakdownsLabel = data.length > 1 ?
-			localize('breakdownsPlural', "Looking through {0} symbols", data.length) :
-			localize('breakdownsSingular', "Looking through {0} symbols", 1);
-		const iconElement = $('.chat-breakdowns-icon');
-		const icon = (element: IChatResponseViewModel) => element.breakdownsExpanded ? Codicon.chevronDown : Codicon.chevronRight;
-		iconElement.classList.add(...ThemeIcon.asClassNameArray(icon(element)));
-		const buttonElement = $('.chat-breakdowns-label', undefined);
-
-		const collapseButton = listDisposables.add(new Button(buttonElement, {
-			buttonBackground: undefined,
-			buttonBorder: undefined,
-			buttonForeground: undefined,
-			buttonHoverBackground: undefined,
-			buttonSecondaryBackground: undefined,
-			buttonSecondaryForeground: undefined,
-			buttonSecondaryHoverBackground: undefined,
-			buttonSeparator: undefined
-		}));
-		const container = $('.chat-breakdowns', undefined, buttonElement);
-		collapseButton.label = breakdownsLabel;
-		collapseButton.element.prepend(iconElement);
-		this.updateAriaLabel(collapseButton.element, breakdownsLabel, element.breakdownsExpanded);
-		container.classList.toggle('chat-breakdowns-collapsed', !element.breakdownsExpanded);
-		listDisposables.add(collapseButton.onDidClick(() => {
-			iconElement.classList.remove(...ThemeIcon.asClassNameArray(icon(element)));
-			element.breakdownsExpanded = !element.breakdownsExpanded;
-			iconElement.classList.add(...ThemeIcon.asClassNameArray(icon(element)));
-			container.classList.toggle('chat-breakdowns-collapsed', !element.breakdownsExpanded);
-			this.updateItemHeight(templateData);
-			this.updateAriaLabel(collapseButton.element, breakdownsLabel, element.breakdownsExpanded);
-		}));
-
+		const container = $('.chat-breakdowns');
 		const ref = listDisposables.add(this._breakdownsListPool.get());
 		const list = ref.object;
 		container.appendChild(list.getHTMLElement().parentElement!);
 
-		listDisposables.add(list.onDidOpen((e) => {
-			if (e.element && 'reference' in e.element) {
-				const uriOrLocation = e.element.reference;
-				const uri = URI.isUri(uriOrLocation) ? uriOrLocation : uriOrLocation?.uri;
-				if (uri) {
-					this.openerService.open(
-						uri,
-						{
-							fromUserGesture: true,
-							editorOptions: {
-								...e.editorOptions,
-								...{
-									selection: uriOrLocation && 'range' in uriOrLocation ? uriOrLocation.range : undefined
-								}
-							}
-						});
-				}
-			}
-		}));
 		listDisposables.add(list.onContextMenu((e) => {
 			e.browserEvent.preventDefault();
 			e.browserEvent.stopPropagation();
 		}));
 
-		list.layout(data.length * 22);
+		list.layout(data.length * 44);
 		list.splice(0, list.length, data);
 
 		return {
@@ -1672,7 +1622,7 @@ class BreakdownsListPool extends Disposable {
 	private listFactory(): WorkbenchList<IAideChatBreakdown> {
 		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
 
-		const container = $('.chat-breakdowns-list');
+		const container = $('.chat-breakdown-list');
 
 		const list = this.instantiationService.createInstance(
 			WorkbenchList<IAideChatBreakdown>,
@@ -1683,7 +1633,7 @@ class BreakdownsListPool extends Disposable {
 			{
 				alwaysConsumeMouseWheel: false,
 				accessibilityProvider: {
-					getAriaLabel: (element: IAideChatBreakdown) => element.response?.value ?? element.query?.value ?? '',
+					getAriaLabel: (element: IAideChatBreakdown) => element.content.value,
 					getWidgetAriaLabel: () => localize('breakdowns', "Breakdowns")
 				}
 			}
@@ -1708,7 +1658,7 @@ class BreakdownsListPool extends Disposable {
 
 class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown> {
 	getHeight(element: IAideChatBreakdown): number {
-		return 22;
+		return 44;
 	}
 
 	getTemplateId(element: IAideChatBreakdown): string {
@@ -1718,9 +1668,7 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown>
 
 interface IBreakdownsListTemplate {
 	label: IResourceLabel;
-	query: HTMLElement;
-	reason: HTMLElement;
-	response: HTMLElement;
+	content: HTMLElement;
 	templateDisposables: IDisposable;
 }
 
@@ -1742,17 +1690,13 @@ class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideCh
 	renderTemplate(container: HTMLElement): IBreakdownsListTemplate {
 		const templateDisposables = new DisposableStore();
 		const label = templateDisposables.add(this.labels.create(container, { supportHighlights: true }));
-		const query = $('.chat-breakdown-query');
-		container.appendChild(query);
-		const reason = $('.chat-breakdown-reason');
-		container.appendChild(reason);
-		const response = $('.chat-breakdown-response');
-		container.appendChild(response);
-		return { templateDisposables, label, query, reason, response };
+		const content = $('.chat-breakdown-content');
+		container.appendChild(content);
+		return { templateDisposables, label, content };
 	}
 
 	renderElement(data: IAideChatBreakdown, index: number, templateData: IBreakdownsListTemplate, height: number | undefined): void {
-		const { query, reason, response } = data;
+		const content = data.content;
 		const icon = Codicon.info;
 		templateData.label.element.style.display = 'flex';
 		if ('reference' in data && data.reference) {
@@ -1765,18 +1709,8 @@ class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideCh
 				}, { icon });
 		}
 
-		if (query) {
-			const markdownResult = this.renderer.render(query);
-			templateData.query.appendChild(markdownResult.element);
-		}
-		if (reason) {
-			const markdownResult = this.renderer.render(reason);
-			templateData.reason.appendChild(markdownResult.element);
-		}
-		if (response) {
-			const markdownResult = this.renderer.render(response);
-			templateData.response.appendChild(markdownResult.element);
-		}
+		const markdownResult = this.renderer.render(content);
+		templateData.content.appendChild(markdownResult.element);
 	}
 
 	disposeTemplate(templateData: IBreakdownsListTemplate): void {

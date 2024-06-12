@@ -143,7 +143,6 @@ export interface IChatResponseViewModel {
 	currentRenderedHeight: number | undefined;
 	setVote(vote: AideChatAgentVoteDirection): void;
 	usedReferencesExpanded?: boolean;
-	breakdownsExpanded?: boolean;
 	vulnerabilitiesListExpanded: boolean;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): void;
 	readonly appliedEdits: Map<number, IAideChatEditSummary>;
@@ -471,15 +470,6 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	set usedReferencesExpanded(v: boolean) {
 		this._usedReferencesExpanded = v;
-	}
-
-	private _breakdownsExpanded: boolean = true;
-	get breakdownsExpanded(): boolean {
-		return this.breakdowns.length === 0 || this._breakdownsExpanded;
-	}
-
-	set breakdownsExpanded(v: boolean) {
-		this._breakdownsExpanded = v;
 	}
 
 	private _vulnerabilitiesListExpanded: boolean = false;
