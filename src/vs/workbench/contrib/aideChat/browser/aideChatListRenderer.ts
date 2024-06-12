@@ -904,7 +904,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			e.browserEvent.stopPropagation();
 		}));
 
-		list.layout(data.length * 44);
+		list.layout();
 		list.splice(0, list.length, data);
 
 		return {
@@ -1658,7 +1658,7 @@ class BreakdownsListPool extends Disposable {
 
 class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown> {
 	getHeight(element: IAideChatBreakdown): number {
-		return 44;
+		return 22;
 	}
 
 	getTemplateId(element: IAideChatBreakdown): string {

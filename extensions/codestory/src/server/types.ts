@@ -59,7 +59,6 @@ interface SymbolEventSubStepRequest {
 interface SymbolEventProbeRequest {
 	SubSymbolSelection: {};
 	ProbeDeeperSymbol: {};
-	ProbeAnswer: string;
 }
 
 interface SymbolEventSubStep {
