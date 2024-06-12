@@ -5,7 +5,6 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
@@ -20,7 +19,6 @@ export class AideChatBreakdowns extends Disposable {
 	private listContainer: HTMLElement | undefined;
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
 	private listDelegate: BreakdownsListDelegate | undefined;
-	private renderer: BreakdownRenderer | undefined;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 
@@ -51,13 +49,14 @@ export class AideChatBreakdowns extends Disposable {
 
 	private createBreakdownsList(): void {
 		// List Container
-		this.listContainer = $('.chat-breakdowns-list');
+		this.listContainer = document.createElement('div');
+		this.listContainer.classList.add('breakdowns-list-container');
 
 		// Breakdown renderer
-		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer);
+		const renderer = this.instantiationService.createInstance(BreakdownRenderer);
 
 		// List
-		const listDelegate = this.listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
+		const listDelegate = this.listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate, this.listContainer);
 		this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
@@ -69,10 +68,6 @@ export class AideChatBreakdowns extends Disposable {
 				horizontalScrolling: false,
 			}
 		);
-
-		this._register(this.renderer.onDidChangeItemHeight(e => {
-			this.list?.updateElementHeight(e.index, e.height);
-		}));
 
 		this.container.appendChild(this.listContainer);
 	}
@@ -119,23 +114,12 @@ export class AideChatBreakdowns extends Disposable {
 }
 
 interface IBreakdownTemplateData {
-	currentItem?: IAideChatBreakdownViewModel;
-	currentItemIndex?: number;
 	container: HTMLElement;
 	toDispose: DisposableStore;
 }
 
-interface IItemHeightChangeParams {
-	element: IAideChatBreakdownViewModel;
-	index: number;
-	height: number;
-}
-
 class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownsListRenderer';
-
-	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
-	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	private readonly markdownRenderer: MarkdownRenderer;
 
@@ -162,24 +146,12 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	}
 
 	renderElement(element: IAideChatBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
-		templateData.currentItem = element;
-		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 		templateData.container.appendChild(BreakdownItemRenderer.render(element, this.markdownRenderer));
-		this.updateItemHeight(templateData);
 	}
 
 	disposeTemplate(templateData: IBreakdownTemplateData): void {
 		dispose(templateData.toDispose);
-	}
-
-	private updateItemHeight(templateData: IBreakdownTemplateData): void {
-		if (!templateData.currentItem || typeof templateData.currentItemIndex !== 'number') {
-			return;
-		}
-
-		const newHeight = templateData.container.offsetHeight;
-		templateData.currentItem.currentRenderedHeight = newHeight;
 	}
 }
 
@@ -217,17 +189,36 @@ class BreakdownItemRenderer {
 }
 
 class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownViewModel> {
-	private defaultElementHeight: number = 22;
+	private offsetHelper: HTMLElement;
+	private markdownRenderer: MarkdownRenderer;
+
+	constructor(
+		container: HTMLElement,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
+	) {
+		this.offsetHelper = this.createOffsetHelper(container);
+		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+	}
+
+	private createOffsetHelper(container: HTMLElement): HTMLElement {
+		const offsetHelper = $('div.breakdown-offset-helper');
+		container.appendChild(offsetHelper);
+
+		return offsetHelper;
+	}
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
-		return element.currentRenderedHeight ?? this.defaultElementHeight;
+		const renderedRow = BreakdownItemRenderer.render(element, this.markdownRenderer);
+		this.offsetHelper.appendChild(renderedRow);
+
+		const height = Math.max(this.offsetHelper.offsetHeight, this.offsetHelper.scrollHeight);
+
+		dom.clearNode(this.offsetHelper);
+
+		return height;
 	}
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {
 		return BreakdownRenderer.TEMPLATE_ID;
-	}
-
-	hasDynamicHeight(element: IAideChatBreakdownViewModel): boolean {
-		return true;
 	}
 }

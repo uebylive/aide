@@ -701,6 +701,7 @@
 	gap: 6px;
 }
 
+.interactive-response-progress-tree,
 .cschat-session .chat-breakdowns-list {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 4px;

@@ -938,6 +938,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		});
 		list.show();
 		list.updateBreakdowns(listData);
+		list.layout();
 
 		return {
 			element: container,
@@ -1651,7 +1652,7 @@ class BreakdownsListPool extends Disposable {
 	}
 
 	private listFactory(): AideChatBreakdowns {
-		const container = $('.breakdowns-list-container');
+		const container = $('.chat-breakdowns-list');
 		const list = this.instantiationService.createInstance(AideChatBreakdowns, container);
 		return list;
 	}
