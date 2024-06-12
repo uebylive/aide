@@ -68,7 +68,7 @@ import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/w
 import { chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions, IAideChatService, IAideChatTask, IAideChatWarningMessage, IAideChatBreakdown } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideChatBreakdownViewModel, IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
@@ -77,7 +77,6 @@ import { CodeBlockModelCollection } from '../common/codeBlockModelCollection';
 import { IChatListItemRendererOptions } from './aideChat';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { AideChatBreakdowns } from 'vs/workbench/contrib/aideChat/browser/aideChatBreakdowns';
 
 const $ = dom.$;
 
@@ -168,7 +167,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(ContentReferencesListPool, this._onDidChangeVisibility.event));
-		this._breakdownsListPool = this._register(this.instantiationService.createInstance(BreakdownsListPool));
+		this._breakdownsListPool = this._register(this.instantiationService.createInstance(BreakdownsListPool, this._onDidChangeVisibility.event));
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
 
@@ -929,16 +928,34 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		const ref = listDisposables.add(this._breakdownsListPool.get());
 		const list = ref.object;
-		container.appendChild(list.getHTMLElement());
+		container.appendChild(list.getHTMLElement().parentElement!);
 
-		const listData = data.map((item) => {
-			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
-			listDisposables.add(viewItem);
-			return viewItem;
-		});
-		list.show();
-		list.updateBreakdowns(listData);
-		list.layout();
+		listDisposables.add(list.onDidOpen((e) => {
+			if (e.element && 'reference' in e.element) {
+				const uriOrLocation = e.element.reference;
+				const uri = URI.isUri(uriOrLocation) ? uriOrLocation : uriOrLocation?.uri;
+				if (uri) {
+					this.openerService.open(
+						uri,
+						{
+							fromUserGesture: true,
+							editorOptions: {
+								...e.editorOptions,
+								...{
+									selection: uriOrLocation && 'range' in uriOrLocation ? uriOrLocation.range : undefined
+								}
+							}
+						});
+				}
+			}
+		}));
+		listDisposables.add(list.onContextMenu((e) => {
+			e.browserEvent.preventDefault();
+			e.browserEvent.stopPropagation();
+		}));
+
+		list.layout(data.length * 22);
+		list.splice(0, list.length, data);
 
 		return {
 			element: container,
@@ -1637,13 +1654,14 @@ class ContentReferencesListRenderer implements IListRenderer<IAideChatContentRef
 }
 
 class BreakdownsListPool extends Disposable {
-	private _pool: ResourcePool<AideChatBreakdowns>;
+	private _pool: ResourcePool<WorkbenchList<IAideChatBreakdown>>;
 
-	public get inUse(): ReadonlySet<AideChatBreakdowns> {
+	public get inUse(): ReadonlySet<WorkbenchList<IAideChatBreakdown>> {
 		return this._pool.inUse;
 	}
 
 	constructor(
+		private _onDidChangeVisibility: Event<boolean>,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -1651,13 +1669,30 @@ class BreakdownsListPool extends Disposable {
 		this._pool = this._register(new ResourcePool(() => this.listFactory()));
 	}
 
-	private listFactory(): AideChatBreakdowns {
+	private listFactory(): WorkbenchList<IAideChatBreakdown> {
+		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
+
 		const container = $('.chat-breakdowns-list');
-		const list = this.instantiationService.createInstance(AideChatBreakdowns, container);
+
+		const list = this.instantiationService.createInstance(
+			WorkbenchList<IAideChatBreakdown>,
+			'ChatListRenderer',
+			container,
+			new BreakdownsListDelegate(),
+			[this.instantiationService.createInstance(BreakdownsListRenderer, resourceLabels)],
+			{
+				alwaysConsumeMouseWheel: false,
+				accessibilityProvider: {
+					getAriaLabel: (element: IAideChatBreakdown) => element.response?.value ?? element.query?.value ?? '',
+					getWidgetAriaLabel: () => localize('breakdowns', "Breakdowns")
+				}
+			}
+		);
+
 		return list;
 	}
 
-	get(): IDisposableReference<AideChatBreakdowns> {
+	get(): IDisposableReference<WorkbenchList<IAideChatBreakdown>> {
 		const object = this._pool.get();
 		let stale = false;
 		return {
@@ -1668,6 +1703,88 @@ class BreakdownsListPool extends Disposable {
 				this._pool.release(object);
 			}
 		};
+	}
+}
+
+class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdown> {
+	getHeight(element: IAideChatBreakdown): number {
+		return 22;
+	}
+
+	getTemplateId(element: IAideChatBreakdown): string {
+		return BreakdownsListRenderer.TEMPLATE_ID;
+	}
+
+	hasDynamicHeight(element: IAideChatBreakdown): boolean {
+		return true;
+	}
+}
+
+interface IBreakdownsListTemplate {
+	label: IResourceLabel;
+	query: HTMLElement;
+	reason: HTMLElement;
+	response: HTMLElement;
+	templateDisposables: IDisposable;
+}
+
+class BreakdownsListRenderer extends Disposable implements IListRenderer<IAideChatBreakdown, IBreakdownsListTemplate> {
+	static TEMPLATE_ID = 'breakdownsListRenderer';
+	readonly templateId: string = BreakdownsListRenderer.TEMPLATE_ID;
+
+	private readonly renderer: MarkdownRenderer;
+
+	constructor(
+		private labels: ResourceLabels,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
+		super();
+
+		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
+	}
+
+	renderTemplate(container: HTMLElement): IBreakdownsListTemplate {
+		const templateDisposables = new DisposableStore();
+		const label = templateDisposables.add(this.labels.create(container, { supportHighlights: true }));
+		const query = $('.chat-breakdown-query');
+		container.appendChild(query);
+		const reason = $('.chat-breakdown-reason');
+		container.appendChild(reason);
+		const response = $('.chat-breakdown-response');
+		container.appendChild(response);
+		return { templateDisposables, label, query, reason, response };
+	}
+
+	renderElement(data: IAideChatBreakdown, index: number, templateData: IBreakdownsListTemplate, height: number | undefined): void {
+		const { query, reason, response } = data;
+		const icon = Codicon.info;
+		templateData.label.element.style.display = 'flex';
+		if ('reference' in data && data.reference) {
+			const reference = data.reference;
+			const uri = URI.isUri(reference) ? reference : reference.uri;
+			templateData.label.setResource(
+				{
+					resource: uri,
+					name: basenameOrAuthority(uri)
+				}, { icon });
+		}
+
+		if (query) {
+			const markdownResult = this.renderer.render(query);
+			templateData.query.appendChild(markdownResult.element);
+		}
+		if (reason) {
+			const markdownResult = this.renderer.render(reason);
+			templateData.reason.appendChild(markdownResult.element);
+		}
+		if (response) {
+			const markdownResult = this.renderer.render(response);
+			templateData.response.appendChild(markdownResult.element);
+		}
+	}
+
+	disposeTemplate(templateData: IBreakdownsListTemplate): void {
+		templateData.templateDisposables.dispose();
 	}
 }
 
