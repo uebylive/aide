@@ -256,13 +256,25 @@ export const reportDummyEventsToChat = async (
 			symbol_name: 'agent_router',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
 			query: 'How does the LLM ccommunicaet with the agent?',
-			reason: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
+		},
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the LLM ccommunicate with the agent?',
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
+		},
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the agent communicate with the LLM? Why is the agent important?',
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
 		},
 		{
 			symbol_name: 'ExplainRequest',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
 			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
-			reason: 'The agent acts as a central hub for coordinating the communication with LLMs. It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
+			reason: 'It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
 		},
 		{
 			symbol_name: 'trim_utter_history',
@@ -278,11 +290,36 @@ export const reportDummyEventsToChat = async (
 			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
 		},
 		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			response: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
+		},
+		{
 			symbol_name: 'generate_agent_stream',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
 			query: 'How does the agent stream responses to the user?',
 			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
 			response: 'The agent sends partial responses and updates to the user as they become available to stream responses.'
+		},
+		{
+			symbol_name: 'ExplainRequest',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
+			response: 'The agent acts as a central hub for coordinating the communication with LLMs.'
+		},
+		{
+			symbol_name: 'trim_utter_history',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
+			response: 'The agent orchestrates different search algorithms and combines their results by communicating with the LLMs.'
+		},
+		{
+			symbol_name: 'ConversationMessage',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
+			response: 'The agent uses various types to represent different data structures and entities.'
+		},
+		{
+			symbol_name: 'generate_agent_stream',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
+			response: 'The agent streams responses to the user by sending partial responses and updates.'
 		}
 	];
 
