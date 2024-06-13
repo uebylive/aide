@@ -364,29 +364,8 @@ export const reportAgentEventsToChat = async (
 					});
 				}
 			}
-		} else if (event.event.SymbolEvent) {
-			const { event: symbolEvent } = event.event.SymbolEvent;
-			const symbolEventKeys = Object.keys(symbolEvent);
-			if (symbolEventKeys.length === 0) {
-				continue;
-			}
-
-			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
-			if (symbolEventKey === 'Probe') {
-				const probeEvent = symbolEvent.Probe;
-				if (probeEvent.symbol_identifier.fs_file_path !== undefined) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(probeEvent.symbol_identifier.fs_file_path),
-							name: probeEvent.symbol_identifier.symbol_name
-						},
-						query: new vscode.MarkdownString(probeEvent.probe_request),
-					});
-				}
-			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
-			response.markdown(`\n\n## Probe answer for ${symbol_identifier.symbol_name}\n\n`);
 			const probeRequestKeys = Object.keys(symbolEventSubStep.Probe) as (keyof typeof symbolEventSubStep.Probe)[];
 			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
 				continue;

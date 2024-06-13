@@ -252,7 +252,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		for (const diffEditor of this._diffEditorPool.inUse()) {
 			diffEditor.layout(this._currentLayoutWidth);
 		}
-		this._breakdownsList.layout(width);
+
+		if (this._breakdownsList) {
+			this._breakdownsList.layout(width);
+		}
 	}
 
 	renderTemplate(container: HTMLElement): IChatListItemTemplate {
