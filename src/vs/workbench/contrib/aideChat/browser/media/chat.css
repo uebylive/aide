@@ -699,7 +699,6 @@
 
 .cschat-session .breakdown-list-item {
 	border: 1px solid var(--vscode-chat-requestBorder);
-	margin-bottom: 8px;
 	padding: 4px;
 }
 

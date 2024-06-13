@@ -105,9 +105,9 @@ export class AideChatBreakdowns extends Disposable {
 		this.viewModel = [];
 	}
 
-	layout(): void {
+	layout(width?: number): void {
 		if (this.list) {
-			this.list.layout();
+			this.list.layout(undefined, width);
 		}
 	}
 }

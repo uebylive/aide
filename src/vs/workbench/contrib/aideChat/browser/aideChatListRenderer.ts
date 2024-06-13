@@ -134,6 +134,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _diffEditorPool: DiffEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: ContentReferencesListPool;
+	private _breakdownsList!: AideChatBreakdowns;
 
 	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
@@ -251,6 +252,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		for (const diffEditor of this._diffEditorPool.inUse()) {
 			diffEditor.layout(this._currentLayoutWidth);
 		}
+		this._breakdownsList.layout(width);
 	}
 
 	renderTemplate(container: HTMLElement): IChatListItemTemplate {
@@ -893,7 +895,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private renderBreakdownsListData(element: IChatResponseViewModel, container: HTMLElement): IDisposable {
 		const listDisposables = new DisposableStore();
-		const list = this.instantiationService.createInstance(AideChatBreakdowns);
+		const list = this._breakdownsList = this.instantiationService.createInstance(AideChatBreakdowns);
 		listDisposables.add(list);
 
 		list.show(container);
