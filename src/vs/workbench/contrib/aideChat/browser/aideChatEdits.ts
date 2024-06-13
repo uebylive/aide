@@ -31,11 +31,11 @@ import { IInstantiationService, createDecorator } from 'vs/platform/instantiatio
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { ILogService } from 'vs/platform/log/common/log';
 import { IStorageService } from 'vs/platform/storage/common/storage';
-import { countWords } from 'vs/workbench/contrib/chat/common/chatWordCounter';
 import { IAideChatAgentEditResponse, IAideChatAgentEditRequest, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { CONTEXT_CHAT_EDIT_CODEBLOCK_NUMBER_IN_PROGRESS, CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { IAideChatEditSummary } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { ProgressingEditsOptions } from 'vs/workbench/contrib/inlineChat/browser/inlineChatStrategies';
 import { AsyncTextEdit, asProgressiveEdit } from 'vs/workbench/contrib/inlineChat/browser/utils';
 

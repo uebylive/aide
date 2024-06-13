@@ -19,7 +19,7 @@ export type UserContext = {
 	folder_paths: string[];
 };
 
-type SymbolIdentifier = {
+export type SymbolIdentifier = {
 	symbol_name: string;
 	fs_file_path?: string;
 };
@@ -32,7 +32,13 @@ export type ProbeAgentBody = {
 	query: string;
 };
 
-export interface SideCarAgentEvent {
+export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
+
+interface SideCarAgentKeepAliveEvent {
+	keep_alive: 'alive';
+}
+
+interface SideCarAgentUIEvent {
 	request_id: string;
 	event: UIEvent;
 }
@@ -53,6 +59,7 @@ interface SymbolEventSubStepRequest {
 interface SymbolEventProbeRequest {
 	SubSymbolSelection: {};
 	ProbeDeeperSymbol: {};
+	ProbeAnswer: string;
 }
 
 interface SymbolEventSubStep {

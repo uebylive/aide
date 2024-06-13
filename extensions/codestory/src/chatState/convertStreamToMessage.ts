@@ -8,12 +8,12 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import { SideCarAgentEvent } from '../server/types';
+import { SideCarAgentEvent, SymbolIdentifier } from '../server/types';
 
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	response: vscode.ChatResponseStream,
+	response: vscode.AideChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -189,7 +189,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -221,7 +221,7 @@ export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, 
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.ChatResponseStream,
+	progress: vscode.AideChatResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {
@@ -235,16 +235,157 @@ export const reportProcUpdateToChat = (
 	}
 };
 
+const parseProbeQuestionAskRequest = (query: string): { userQuery: string; probeReason: string } => {
+	const userQueryRegex = /(?:The original user query is:|The user has asked the following query:)\s*(.+?)(?:\n|$)/;
+	const probeReasonRegex = /We also (?:believe|belive) this symbol needs to be probed because of:\s*(.+)/s;
+
+	const userQueryMatch = query.match(userQueryRegex);
+	const probeReasonMatch = query.match(probeReasonRegex);
+
+	const userQuery = userQueryMatch ? userQueryMatch[1].trim() : '';
+	const probeReason = probeReasonMatch ? probeReasonMatch[1].trim() : '';
+
+	return { userQuery, probeReason };
+};
+
+export const reportDummyEventsToChat = async (
+	response: vscode.AideChatResponseStream,
+): Promise<void> => {
+	const paths = [
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs'
+		},
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs'
+		},
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs'
+		},
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs'
+		},
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/user_context.rs'
+		},
+		{
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs'
+		}
+	];
+
+	for (const { path } of paths) {
+		response.breakdown({
+			reference: vscode.Uri.file(path),
+			query: new vscode.MarkdownString('dummy query'),
+			reason: new vscode.MarkdownString('dummy reason')
+		});
+		await new Promise(resolve => setTimeout(resolve, 1000));
+	}
+
+	// Wait 5 seconds
+	await new Promise(resolve => setTimeout(resolve, 5000));
+
+	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
+1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
+2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
+3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
+4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
+5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
+So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`)
+	);
+};
+
 export const reportAgentEventsToChat = async (
+	query_symbol_identifier: SymbolIdentifier,
 	stream: AsyncIterator<SideCarAgentEvent>,
-	response: vscode.ChatResponseStream,
+	response: vscode.AideChatResponseStream,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
 
+	const openFiles = new Set<string>();
+	const addReference = (fsFilePath: string, response: vscode.AideChatResponseStream) => {
+		if (openFiles.has(fsFilePath)) {
+			return;
+		}
+
+		openFiles.add(fsFilePath);
+		response.reference(vscode.Uri.file(fsFilePath));
+	};
+
 	for await (const event of asyncIterable) {
-		response.markdown(event.request_id);
-		response.markdown('\n');
+		if ('keep_alive' in event) {
+			continue;
+		}
+
+		if (event.event.ToolEvent) {
+			const toolEventKeys = Object.keys(event.event.ToolEvent);
+			if (toolEventKeys.length === 0) {
+				continue;
+			}
+
+			const toolEventKey = toolEventKeys[0] as keyof typeof event.event.ToolEvent;
+			if (toolEventKey === 'OpenFile' && event.event.ToolEvent.OpenFile !== undefined) {
+				const openFileEvent = event.event.ToolEvent.OpenFile;
+				if (openFileEvent.fs_file_path === undefined) {
+					continue;
+				}
+
+				const fsFilePath = openFileEvent.fs_file_path;
+				addReference(fsFilePath, response);
+			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
+				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
+				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
+				if (
+					probeQuestionAskRequest.fs_file_path !== query_symbol_identifier.fs_file_path
+					|| probeQuestionAskRequest.symbol_identifier !== query_symbol_identifier.symbol_name) {
+					response.breakdown({
+						reference: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+						query: new vscode.MarkdownString(userQuery),
+						reason: new vscode.MarkdownString(probeReason)
+					});
+				}
+			}
+		} else if (event.event.SymbolEvent) {
+			const { event: symbolEvent } = event.event.SymbolEvent;
+			const symbolEventKeys = Object.keys(symbolEvent);
+			if (symbolEventKeys.length === 0) {
+				continue;
+			}
+
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
+			if (symbolEventKey === 'Probe') {
+				const probeEvent = symbolEvent.Probe;
+				if (probeEvent.symbol_identifier.fs_file_path !== undefined) {
+					response.breakdown({
+						reference: vscode.Uri.file(probeEvent.symbol_identifier.fs_file_path),
+						query: new vscode.MarkdownString(probeEvent.probe_request),
+					});
+				}
+			}
+		} else if (event.event.SymbolEventSubStep) {
+			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			response.markdown(`\n\n## Probe answer for ${symbol_identifier.symbol_name}\n\n`);
+			const probeRequestKeys = Object.keys(symbolEventSubStep.Probe) as (keyof typeof symbolEventSubStep.Probe)[];
+			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
+				continue;
+			}
+
+			const subStepType = probeRequestKeys[0];
+			if (subStepType === 'ProbeAnswer' && symbolEventSubStep.Probe.ProbeAnswer !== undefined) {
+				const probeAnswer = symbolEventSubStep.Probe.ProbeAnswer;
+				if (
+					symbol_identifier.fs_file_path === query_symbol_identifier.fs_file_path
+					&& symbol_identifier.symbol_name === query_symbol_identifier.symbol_name
+				) {
+					response.markdown(probeAnswer);
+				} else {
+					response.breakdown({
+						reference: vscode.Uri.file(symbol_identifier.fs_file_path),
+						response: new vscode.MarkdownString(probeAnswer)
+					});
+				}
+			}
+		}
 	}
 };

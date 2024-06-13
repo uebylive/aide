@@ -15,7 +15,7 @@ import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/com
 import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatModelInitState, IAideChatEditSummary, IChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IChatResponseProgressFileTreeData, IAideChatTask, IChatUsedContext, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IChatResponseProgressFileTreeData, IAideChatTask, IChatUsedContext, IAideChatWarningMessage, IAideChatBreakdown } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { CodeBlockModelCollection } from './codeBlockModelCollection';
 
@@ -129,6 +129,7 @@ export interface IChatResponseViewModel {
 	readonly response: IResponse;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IAideChatContentReference>;
+	readonly breakdowns: ReadonlyArray<IAideChatBreakdown>;
 	readonly progressMessages: ReadonlyArray<IAideChatProgressMessage>;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
@@ -409,6 +410,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	get contentReferences(): ReadonlyArray<IAideChatContentReference> {
 		return this._model.contentReferences;
+	}
+
+	get breakdowns(): ReadonlyArray<IAideChatBreakdown> {
+		return this._model.breakdowns;
 	}
 
 	get progressMessages(): ReadonlyArray<IAideChatProgressMessage> {

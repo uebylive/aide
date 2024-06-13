@@ -77,7 +77,33 @@ declare module 'vscode' {
 		readonly location: AideChatLocation;
 	}
 
-	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: ChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;
+	export interface AideChatResponseBreakdown {
+		/**
+		 * Code reference relevant to this breakdown.
+		 */
+		readonly reference: Uri | Location;
+
+		/**
+		 * The query made to AI for this breakdown.
+		 */
+		readonly query?: MarkdownString;
+
+		/**
+		 * The reason this query was made.
+		 */
+		readonly reason?: MarkdownString;
+
+		/**
+		 * The response from AI for this breakdown.
+		 */
+		readonly response?: MarkdownString;
+	}
+
+	export interface AideChatResponseStream extends ChatResponseStream {
+		breakdown(value: AideChatResponseBreakdown): void;
+	}
+
+	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: AideChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;
 
 	/**
 	 * Represents the type of user feedback received.

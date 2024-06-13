@@ -23,7 +23,7 @@ export class ExtHostAideChatVariables implements ExtHostAideChatVariablesShape {
 	private readonly _proxy: MainThreadAideChatVariablesShape;
 
 	constructor(mainContext: IMainContext) {
-		this._proxy = mainContext.getProxy(MainContext.MainThreadChatVariables);
+		this._proxy = mainContext.getProxy(MainContext.MainThreadAideChatVariables);
 	}
 
 	async $resolveVariable(handle: number, requestId: string, messageText: string, token: CancellationToken): Promise<IAideChatRequestVariableValue | undefined> {

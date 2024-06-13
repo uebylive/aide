@@ -19,7 +19,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { ProbeAgentBody, SideCarAgentEvent, SymbolIdentifier, UserContext } from '../server/types';
 
 export enum CompletionStopReason {
 	/**
@@ -783,11 +783,10 @@ export class SideCarClient {
 
 	async *startAgentProbe(
 		query: string,
+		symbol_identifier: SymbolIdentifier,
 		variables: readonly vscode.ChatPromptReference[],
 		_editorUrl: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		console.log('Starting probe request');
-		console.log(query);
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
@@ -796,10 +795,7 @@ export class SideCarClient {
 			editor_url: _editorUrl,
 			model_config: sideCarModelConfiguration,
 			user_context: await convertVSCodeVariableToSidecar(variables),
-			symbol_identifier: {
-				symbol_name: 'agent_router',
-				fs_file_path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs'
-			},
+			symbol_identifier,
 			query
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
