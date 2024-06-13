@@ -8,11 +8,14 @@ import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/lis
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
+import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { Location } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const $ = dom.$;
 
@@ -24,7 +27,8 @@ export class AideChatBreakdowns extends Disposable {
 	private isVisible: boolean | undefined;
 
 	constructor(
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
 	}
@@ -49,7 +53,7 @@ export class AideChatBreakdowns extends Disposable {
 
 		// List
 		const listDelegate = this.listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
-		this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
+		const list = this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
 			listContainer,
@@ -63,12 +67,40 @@ export class AideChatBreakdowns extends Disposable {
 			}
 		);
 
-		this._register(this.list.onDidChangeContentHeight(height => {
-			this.list?.layout(height);
+		this._register(list.onDidChangeContentHeight(height => {
+			list.layout(height);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
-			this.list?.updateElementHeight(e.index, e.height);
+			list.updateElementHeight(e.index, e.height);
 		}));
+		this._register(list.onDidChangeFocus(e => {
+			if (e.indexes.length === 1) {
+				const index = e.indexes[0];
+				list.setSelection([index]);
+				const element = list.element(index);
+				if (element) {
+					this.openBreakdownReference(element.reference);
+				}
+			}
+		}));
+		this._register(list.onDidOpen(async e => {
+			if (e.element && e.element.reference) {
+				this.openBreakdownReference(e.element.reference);
+			}
+		}));
+	}
+
+	private openBreakdownReference(reference: URI | Location): void {
+		if (URI.isUri(reference)) {
+			this.editorService.openEditor({ resource: reference, options: { pinned: false, preserveFocus: true } });
+		} else if (reference.range) {
+			this.editorService.openEditor({ resource: reference.uri, options: { pinned: false, preserveFocus: true } });
+			const activeEditor = this.editorService.activeTextEditorControl;
+			if (activeEditor) {
+				activeEditor.setSelection(reference.range);
+				activeEditor.revealRangeInCenter(reference.range);
+			}
+		}
 	}
 
 	updateBreakdowns(breakdowns: IAideChatBreakdownViewModel[]): void {
