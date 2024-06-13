@@ -289,7 +289,7 @@ export const reportDummyEventsToChat = async (
 
 	for (const { path, query, reason, response: agentResponse } of paths) {
 		response.breakdown({
-			reference: new vscode.Location(vscode.Uri.file(path), new vscode.Position(0, 0)),
+			reference: new vscode.Location(vscode.Uri.file(path), new vscode.Range(new vscode.Position(0, 0), new vscode.Position(3, 0))),
 			query: new vscode.MarkdownString(query),
 			reason: new vscode.MarkdownString(reason),
 			response: response ? new vscode.MarkdownString(agentResponse) : undefined

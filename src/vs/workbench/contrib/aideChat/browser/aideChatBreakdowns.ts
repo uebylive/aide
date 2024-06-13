@@ -11,6 +11,7 @@ import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { Location } from 'vs/editor/common/languages';
+import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
@@ -94,12 +95,15 @@ export class AideChatBreakdowns extends Disposable {
 		if (URI.isUri(reference)) {
 			this.editorService.openEditor({ resource: reference, options: { pinned: false, preserveFocus: true } });
 		} else if (reference.range) {
-			this.editorService.openEditor({ resource: reference.uri, options: { pinned: false, preserveFocus: true } });
-			const activeEditor = this.editorService.activeTextEditorControl;
-			if (activeEditor) {
-				activeEditor.setSelection(reference.range);
-				activeEditor.revealRangeInCenter(reference.range);
-			}
+			this.editorService.openEditor({
+				resource: reference.uri,
+				options: {
+					pinned: false,
+					preserveFocus: true,
+					selection: reference.range,
+					selectionRevealType: TextEditorSelectionRevealType.NearTop
+				}
+			});
 		}
 	}
 
