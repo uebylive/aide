@@ -14,12 +14,12 @@
 }
 
 .cschat-item-container {
-	padding: 16px 20px;
+	padding-block: 16px;
+	padding-inline: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 	color: var(--vscode-interactive-session-foreground);
-
 	cursor: default;
 	user-select: text;
 	-webkit-user-select: text;
@@ -27,6 +27,7 @@
 
 .cschat-input-part .header,
 .cschat-item-container .header {
+	padding-inline: 10px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -193,6 +194,7 @@
 }
 
 .cschat-item-container .value {
+	padding-inline: 10px;
 	width: 100%;
 }
 
@@ -689,17 +691,23 @@
 	border: none;
 	border-radius: 4px;
 	width: auto;
+	white-space: normal;
 }
 
 .cschat-session .breakdown-list-item {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 10px;
+	border-left: 2px solid var(--vscode-chat-requestBorder);
+	padding: 10px;
+	margin-bottom: 24px;
 }
 
-.cschat-session .breakdown-list-item {
-	border: 1px solid var(--vscode-chat-requestBorder);
-	padding: 4px;
+.cschat-session
+	.breakdown-list-item
+	.rendered-markdown
+	p:is(:first-child, :last-child) {
+	margin: 0;
 }
 
 .cschat-item-container .rendered-markdown.progress-step {
