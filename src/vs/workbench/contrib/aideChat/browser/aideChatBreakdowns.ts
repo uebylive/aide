@@ -5,12 +5,17 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Location } from 'vs/editor/common/languages';
+import { ILanguageService } from 'vs/editor/common/languages/language';
+import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
+import { IModelService } from 'vs/editor/common/services/model';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
@@ -29,6 +34,10 @@ export class AideChatBreakdowns extends Disposable {
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IModelService private readonly modelService: IModelService,
+		@ITextModelService private readonly textModelResolverService: ITextModelService,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
+		@ILanguageService private readonly languageService: ILanguageService,
 		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
@@ -79,29 +88,54 @@ export class AideChatBreakdowns extends Disposable {
 				const index = e.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
-				if (element) {
-					this.openBreakdownReference(element.reference);
+				if (element && element.uri && element.name) {
+					this.openBreakdownReference(element.uri, element.name);
 				}
 			}
 		}));
 		this._register(list.onDidOpen(async e => {
-			if (e.element && e.element.reference) {
-				this.openBreakdownReference(e.element.reference);
+			if (e.element && e.element.uri && e.element.name) {
+				this.openBreakdownReference(e.element.uri, e.element.name);
 			}
 		}));
 	}
 
-	private openBreakdownReference(reference: URI | Location): void {
-		if (URI.isUri(reference)) {
-			this.editorService.openEditor({ resource: reference, options: { pinned: false, preserveFocus: true } });
-		} else if (reference.range) {
+	private async openBreakdownReference(uri: URI, name: string): Promise<void> {
+		try {
+			let document = this.modelService.getModel(uri);
+			if (!document) {
+				const ref = await this.textModelResolverService.createModelReference(uri);
+				const sourceModel = ref.object.textEditorModel;
+				document = this.modelService.createModel(
+					createTextBufferFactoryFromSnapshot(sourceModel.createSnapshot()),
+					this.languageService.createById(sourceModel.getLanguageId()),
+					uri
+				);
+				ref.dispose();
+			}
+
+			const model = await this.outlineModelService.getOrCreate(document, CancellationToken.None);
+			const symbols = model.getTopLevelSymbols();
+			const symbol = symbols.find(s => s.name === name);
+			if (!symbol) {
+				return;
+			}
+
 			this.editorService.openEditor({
-				resource: reference.uri,
+				resource: uri,
 				options: {
 					pinned: false,
 					preserveFocus: true,
-					selection: reference.range,
+					selection: symbol.range,
 					selectionRevealType: TextEditorSelectionRevealType.NearTop
+				}
+			});
+		} catch (e) {
+			this.editorService.openEditor({
+				resource: uri,
+				options: {
+					pinned: false,
+					preserveFocus: true,
 				}
 			});
 		}

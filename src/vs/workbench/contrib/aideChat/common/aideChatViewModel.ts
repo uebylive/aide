@@ -9,7 +9,6 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { marked } from 'vs/base/common/marked/marked';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
-import { Location } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
@@ -47,7 +46,8 @@ export interface IChatSessionInitEvent {
 }
 
 export interface IAideChatBreakdownViewModel {
-	readonly reference: URI | Location;
+	readonly uri: URI;
+	readonly name: string;
 	readonly query?: IMarkdownString;
 	readonly reason?: IMarkdownString;
 	readonly response?: IMarkdownString;
@@ -566,8 +566,12 @@ export interface IChatWelcomeMessageViewModel {
 }
 
 export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
-	get reference() {
-		return this._breakdown.reference;
+	get uri() {
+		return this._breakdown.reference.uri;
+	}
+
+	get name() {
+		return this._breakdown.reference.name;
 	}
 
 	get query() {

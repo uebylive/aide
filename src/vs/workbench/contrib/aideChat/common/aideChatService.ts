@@ -81,8 +81,13 @@ export interface IAideChatContentReference {
 	kind: 'reference';
 }
 
+interface IReferenceByName {
+	name: string;
+	uri: URI;
+}
+
 export interface IAideChatBreakdown {
-	reference: URI | Location;
+	reference: IReferenceByName;
 	query?: IMarkdownString;
 	reason?: IMarkdownString;
 	response?: IMarkdownString;

@@ -4668,12 +4668,13 @@ export class AideChatResponseReferencePart {
 }
 
 export class AideChatResponseBreakdownPart {
-	reference: vscode.Uri | vscode.Location;
+	reference: vscode.CodeReferenceByName;
 	query?: vscode.MarkdownString;
 	reason?: vscode.MarkdownString;
 	response?: vscode.MarkdownString;
 	constructor(
-		reference: vscode.Uri | vscode.Location,
+		uri: vscode.Uri,
+		name: string,
 		query?: vscode.MarkdownString,
 		reason?: vscode.MarkdownString,
 		response?: vscode.MarkdownString,
@@ -4684,7 +4685,7 @@ export class AideChatResponseBreakdownPart {
 			throw new Error('The boolean form of MarkdownString.isTrusted is NOT supported for chat participants.');
 		}
 
-		this.reference = reference;
+		this.reference = { uri, name };
 		this.query = typeof query === 'string' ? new MarkdownString(query) : query;
 		this.reason = typeof reason === 'string' ? new MarkdownString(reason) : reason;
 		this.response = typeof response === 'string' ? new MarkdownString(response) : response;

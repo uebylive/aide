@@ -77,11 +77,16 @@ declare module 'vscode' {
 		readonly location: AideChatLocation;
 	}
 
+	interface CodeReferenceByName {
+		readonly name: string;
+		readonly uri: Uri;
+	}
+
 	export interface AideChatResponseBreakdown {
 		/**
 		 * Code reference relevant to this breakdown.
 		 */
-		readonly reference: Uri | Location;
+		readonly reference: CodeReferenceByName;
 
 		/**
 		 * The query made to AI for this breakdown.

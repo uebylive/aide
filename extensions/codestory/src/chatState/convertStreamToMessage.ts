@@ -253,33 +253,32 @@ export const reportDummyEventsToChat = async (
 ): Promise<void> => {
 	const paths = [
 		{
+			symbol_name: 'agent_router',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
 			query: 'How does the LLM ccommunicaet with the agent?',
 			reason: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
 		},
 		{
+			symbol_name: 'ExplainRequest',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
 			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
 			reason: 'The agent acts as a central hub for coordinating the communication with LLMs. It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
 		},
 		{
+			symbol_name: 'trim_utter_history',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
 			query: 'What are the different search algorithms used by the agent?',
 			reason: 'The agent likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.',
 			response: 'The agent uses various search algorithms like semantic search, lexical search, and git log analysis to find relevant code snippets and explanations.'
 		},
 		{
+			symbol_name: 'ConversationMessage',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
 			query: 'What are the different types used by the agent?',
 			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/user_context.rs',
-			query: 'How does the agent manage user context and conversation history?',
-			reason: 'The agent manages user context and conversation history by storing and updating conversation messages, user queries, and conversation state.',
-			response: 'The agent stores and updates conversation messages, user queries, and conversation state to manage user context and conversation history.'
-		},
-		{
+			symbol_name: 'generate_agent_stream',
 			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
 			query: 'How does the agent stream responses to the user?',
 			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
@@ -287,12 +286,12 @@ export const reportDummyEventsToChat = async (
 		}
 	];
 
-	for (const { path, query, reason, response: agentResponse } of paths) {
+	for (const path of paths) {
 		response.breakdown({
-			reference: new vscode.Location(vscode.Uri.file(path), new vscode.Range(new vscode.Position(0, 0), new vscode.Position(3, 0))),
-			query: new vscode.MarkdownString(query),
-			reason: new vscode.MarkdownString(reason),
-			response: response ? new vscode.MarkdownString(agentResponse) : undefined
+			reference: { uri: vscode.Uri.file(path.path), name: path.symbol_name },
+			query: new vscode.MarkdownString(path.query),
+			reason: new vscode.MarkdownString(path.reason),
+			response: response ? new vscode.MarkdownString(path.response) : undefined
 		});
 		await new Promise(resolve => setTimeout(resolve, 1000));
 	}
@@ -356,7 +355,10 @@ export const reportAgentEventsToChat = async (
 					probeQuestionAskRequest.fs_file_path !== query_symbol_identifier.fs_file_path
 					|| probeQuestionAskRequest.symbol_identifier !== query_symbol_identifier.symbol_name) {
 					response.breakdown({
-						reference: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+						reference: {
+							uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+							name: probeQuestionAskRequest.symbol_identifier
+						},
 						query: new vscode.MarkdownString(userQuery),
 						reason: new vscode.MarkdownString(probeReason)
 					});
@@ -374,7 +376,10 @@ export const reportAgentEventsToChat = async (
 				const probeEvent = symbolEvent.Probe;
 				if (probeEvent.symbol_identifier.fs_file_path !== undefined) {
 					response.breakdown({
-						reference: vscode.Uri.file(probeEvent.symbol_identifier.fs_file_path),
+						reference: {
+							uri: vscode.Uri.file(probeEvent.symbol_identifier.fs_file_path),
+							name: probeEvent.symbol_identifier.symbol_name
+						},
 						query: new vscode.MarkdownString(probeEvent.probe_request),
 					});
 				}
@@ -397,7 +402,10 @@ export const reportAgentEventsToChat = async (
 					response.markdown(probeAnswer);
 				} else {
 					response.breakdown({
-						reference: vscode.Uri.file(symbol_identifier.fs_file_path),
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
 						response: new vscode.MarkdownString(probeAnswer)
 					});
 				}
