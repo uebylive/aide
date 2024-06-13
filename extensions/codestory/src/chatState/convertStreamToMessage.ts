@@ -253,36 +253,52 @@ export const reportDummyEventsToChat = async (
 ): Promise<void> => {
 	const paths = [
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the LLM ccommunicaet with the agent?',
+			reason: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
+			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
+			reason: 'The agent acts as a central hub for coordinating the communication with LLMs. It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
+			query: 'What are the different search algorithms used by the agent?',
+			reason: 'The agent likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.',
+			response: 'The agent uses various search algorithms like semantic search, lexical search, and git log analysis to find relevant code snippets and explanations.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
+			query: 'What are the different types used by the agent?',
+			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/user_context.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/user_context.rs',
+			query: 'How does the agent manage user context and conversation history?',
+			reason: 'The agent manages user context and conversation history by storing and updating conversation messages, user queries, and conversation state.',
+			response: 'The agent stores and updates conversation messages, user queries, and conversation state to manage user context and conversation history.'
 		},
 		{
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs'
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
+			query: 'How does the agent stream responses to the user?',
+			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
+			response: 'The agent sends partial responses and updates to the user as they become available to stream responses.'
 		}
 	];
 
-	for (const { path } of paths) {
+	for (const { path, query, reason, response: agentResponse } of paths) {
 		response.breakdown({
-			reference: vscode.Uri.file(path),
-			query: new vscode.MarkdownString('dummy query'),
-			reason: new vscode.MarkdownString('dummy reason')
+			reference: new vscode.Location(vscode.Uri.file(path), new vscode.Position(0, 0)),
+			query: new vscode.MarkdownString(query),
+			reason: new vscode.MarkdownString(reason),
+			response: response ? new vscode.MarkdownString(agentResponse) : undefined
 		});
 		await new Promise(resolve => setTimeout(resolve, 1000));
 	}
 
 	// Wait 5 seconds
-	await new Promise(resolve => setTimeout(resolve, 5000));
+	await new Promise(resolve => setTimeout(resolve, 1000));
 
 	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
 1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
