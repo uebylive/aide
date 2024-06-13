@@ -705,6 +705,15 @@
 	padding: 10px;
 }
 
+.cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
+	font-size: 14px;
+	color: var(--vscode-icon-foreground) !important;
+}
+
+.cschat-session .breakdown-list-item .rendered-markdown > p .codicon.codicon-check {
+	color: var(--vscode-debugIcon-startForeground) !important;
+}
+
 .cschat-session
 	.breakdown-list-item
 	.rendered-markdown

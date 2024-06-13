@@ -6,8 +6,11 @@
 import * as dom from 'vs/base/browser/dom';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
+import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
@@ -226,26 +229,30 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { query, reason, response, uri } = element;
-		if (query && query.value.trim().length > 0) {
-			const rowQuery = $('div.breakdown-query');
-			const renderedContent = this.markdownRenderer.render(query);
-			rowQuery.appendChild(renderedContent.element);
-			templateData.container.appendChild(rowQuery);
-		}
-
-		if (reason && reason.value.trim().length > 0) {
-			const rowReason = $('div.breakdown-reason');
-			const renderedContent = this.markdownRenderer.render(reason);
-			rowReason.appendChild(renderedContent.element);
-			templateData.container.appendChild(rowReason);
-		}
-
+		let { query, reason, response, uri } = element;
 		if (response && response.value.trim().length > 0) {
 			const rowResponse = $('div.breakdown-response');
+			// const codicon = Codicon.check.id;
+			// response = new MarkdownString(`$(${codicon}) ${response.value}`, { supportThemeIcons: true });
 			const renderedContent = this.markdownRenderer.render(response);
 			rowResponse.appendChild(renderedContent.element);
 			templateData.container.appendChild(rowResponse);
+		} else {
+			if (query && query.value.trim().length > 0) {
+				const rowQuery = $('div.breakdown-query');
+				const codicon = ThemeIcon.modify(Codicon.loading, 'spin').id;
+				query = new MarkdownString(`$(${codicon}) ${query.value}`, { supportThemeIcons: true });
+				const renderedContent = this.markdownRenderer.render(query);
+				rowQuery.appendChild(renderedContent.element);
+				templateData.container.appendChild(rowQuery);
+			}
+
+			if (reason && reason.value.trim().length > 0) {
+				const rowReason = $('div.breakdown-reason');
+				const renderedContent = this.markdownRenderer.render(reason);
+				rowReason.appendChild(renderedContent.element);
+				templateData.container.appendChild(rowReason);
+			}
 		}
 
 		if (uri) {
