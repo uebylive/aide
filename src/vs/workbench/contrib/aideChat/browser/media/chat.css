@@ -685,6 +685,24 @@
 	margin: 0 0 0 4px;
 }
 
+.chat-breakdowns-list .monaco-list {
+	border: none;
+	border-radius: 4px;
+	width: auto;
+}
+
+.cschat-session .breakdown-list-item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.cschat-session .breakdown-list-item {
+	border: 1px solid var(--vscode-chat-requestBorder);
+	margin-bottom: 8px;
+	padding: 4px;
+}
+
 .cschat-item-container .rendered-markdown.progress-step {
 	display: flex;
 	margin-left: 4px;

@@ -9,6 +9,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { marked } from 'vs/base/common/marked/marked';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
+import { Location } from 'vs/editor/common/languages';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
@@ -43,6 +44,14 @@ export interface IChangePlaceholderEvent {
 
 export interface IChatSessionInitEvent {
 	kind: 'initialize';
+}
+
+export interface IAideChatBreakdownViewModel {
+	readonly reference: URI | Location;
+	readonly query?: IMarkdownString;
+	readonly reason?: IMarkdownString;
+	readonly response?: IMarkdownString;
+	currentRenderedHeight: number | undefined;
 }
 
 export interface IChatViewModel {
@@ -554,4 +563,30 @@ export interface IChatWelcomeMessageViewModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IAideChatFollowup[];
 	currentRenderedHeight?: number;
+}
+
+export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
+	get reference() {
+		return this._breakdown.reference;
+	}
+
+	get query() {
+		return this._breakdown.query;
+	}
+
+	get reason() {
+		return this._breakdown.reason;
+	}
+
+	get response() {
+		return this._breakdown.response;
+	}
+
+	currentRenderedHeight: number | undefined;
+
+	constructor(
+		private readonly _breakdown: IAideChatBreakdown,
+	) {
+		super();
+	}
 }
