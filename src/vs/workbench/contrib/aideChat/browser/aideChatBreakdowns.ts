@@ -22,6 +22,7 @@ import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 
 const $ = dom.$;
 
@@ -189,7 +190,11 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
+
 	private readonly markdownRenderer: MarkdownRenderer;
+	private resourceLabels: ResourceLabels;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService
@@ -197,6 +202,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 	}
 
 	get templateId(): string {
@@ -214,11 +220,13 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	}
 
 	renderElement(element: IAideChatBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
+		const templateDisposables = new DisposableStore();
+
 		templateData.currentItem = element;
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { query, reason, response } = element;
+		const { query, reason, response, uri } = element;
 		if (query && query.value.trim().length > 0) {
 			const rowQuery = $('div.breakdown-query');
 			const renderedContent = this.markdownRenderer.render(query);
@@ -238,6 +246,15 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 			const renderedContent = this.markdownRenderer.render(response);
 			rowResponse.appendChild(renderedContent.element);
 			templateData.container.appendChild(rowResponse);
+		}
+
+		if (uri) {
+			const rowResource = $('div.breakdown-resource');
+			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
+			templateDisposables.add(label);
+			label.setLabel(uri.path.split('/').at(-1));
+			label.setFile(uri);
+			templateData.container.appendChild(rowResource);
 		}
 
 		this.updateItemHeight(templateData);

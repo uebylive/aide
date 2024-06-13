@@ -4,7 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
-import { reportDummyEventsToChat, reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
+import {
+	//reportAgentEventsToChat,
+	reportDummyEventsToChat,
+	reportFromStreamToSearchProgress
+} from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
 import logger from '../../logger';
 import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
@@ -17,6 +21,7 @@ import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
+//import { SymbolIdentifier } from '../../server/types';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -191,13 +196,13 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		} else {
-			// const query = request.prompt.toString().trim();
-			// const symbolIdentifier: SymbolIdentifier = {
-			// 	symbol_name: 'agent_router',
-			// 	fs_file_path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs'
-			// };
-			// const followupResponse = this._sideCarClient.startAgentProbe(query, symbolIdentifier, request.references, this._editorUrl);
-			// await reportAgentEventsToChat(symbolIdentifier, followupResponse, response);
+			//const query = request.prompt.toString().trim();
+			//const symbolIdentifier: SymbolIdentifier = {
+			//	symbol_name: 'agent_router',
+			//	fs_file_path: '/Users/guglielmodanna/Codestory/sidecar/sidecar/src/bin/webserver.rs'
+			//};
+			//const followupResponse = this._sideCarClient.startAgentProbe(query, symbolIdentifier, request.references, this._editorUrl);
+			//await reportAgentEventsToChat(symbolIdentifier, followupResponse, response);
 			console.log(this._editorUrl);
 			await reportDummyEventsToChat(response);
 			return new CSChatResponseForProgress();
