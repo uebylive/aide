@@ -694,15 +694,16 @@
 }
 
 .cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
-	margin-bottom: 12px;
+	display: flex;
+	align-items: center;
 }
 
 .cschat-session .breakdown-list-item {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
-	border-left: 2px solid var(--vscode-chat-requestBorder);
-	padding: 10px;
+	border-left: 1px solid var(--vscode-chat-requestBorder);
+	padding: 4px 10px;
 }
 
 .cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
@@ -719,6 +720,21 @@
 	.rendered-markdown
 	p:is(:first-child, :last-child) {
 	margin: 0;
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource {
+	background-color: var(--vscode-textPreformat-background);
+	color: var(--vscode-textPreformat-foreground);
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label-container {
+	display: flex;
+	align-items: center;
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label::before {
+	line-height: 22px !important;
+	padding-left: 5px;
 }
 
 .cschat-item-container .rendered-markdown.progress-step {

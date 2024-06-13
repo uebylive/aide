@@ -26,6 +26,9 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
+import { FileKind } from 'vs/platform/files/common/files';
+import { basenameOrAuthority } from 'vs/base/common/resources';
+import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 
 const $ = dom.$;
 
@@ -200,7 +203,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	private resourceLabels: ResourceLabels;
 
 	constructor(
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
@@ -229,7 +232,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		let { query, reason, response, uri } = element;
+		let { query, reason, response, uri, name } = element;
 		if (response && response.value.trim().length > 0) {
 			const rowResponse = $('div.breakdown-response');
 			// const codicon = Codicon.check.id;
@@ -258,9 +261,12 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		if (uri) {
 			const rowResource = $('div.breakdown-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
+			label.element.style.display = 'flex';
+			label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+				fileKind: FileKind.FILE,
+				icon: SymbolKinds.toIcon(SymbolKind.Method),
+			});
 			templateDisposables.add(label);
-			label.setLabel(uri.path.split('/').at(-1));
-			label.setFile(uri);
 			templateData.container.appendChild(rowResource);
 		}
 
@@ -297,7 +303,7 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 	private defaultElementHeight: number = 22;
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
-		return (element.currentRenderedHeight ?? this.defaultElementHeight) + 12;
+		return (element.currentRenderedHeight ?? this.defaultElementHeight);
 	}
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {
