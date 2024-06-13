@@ -8,7 +8,7 @@ import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/lis
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
-import { assertAllDefined, assertIsDefined } from 'vs/base/common/types';
+import { assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ILanguageService } from 'vs/editor/common/languages/language';
@@ -27,7 +27,6 @@ const $ = dom.$;
 
 export class AideChatBreakdowns extends Disposable {
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
-	private listDelegate: BreakdownsListDelegate | undefined;
 	private renderer: BreakdownRenderer | undefined;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
@@ -62,7 +61,7 @@ export class AideChatBreakdowns extends Disposable {
 		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer);
 
 		// List
-		const listDelegate = this.listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
+		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
 		const list = this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
@@ -81,7 +80,7 @@ export class AideChatBreakdowns extends Disposable {
 			list.layout(height);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
-			list.updateElementHeight(e.index, e.height);
+			list.updateElementHeight(e.index, e.height + 12);
 		}));
 		this._register(list.onDidChangeFocus(e => {
 			if (e.indexes.length === 1) {
@@ -146,17 +145,6 @@ export class AideChatBreakdowns extends Disposable {
 
 		this.viewModel = breakdowns;
 		list.splice(0, list.length, breakdowns);
-		list.layout();
-	}
-
-	updateBreakdownHeight(breakdown: IAideChatBreakdownViewModel): void {
-		const index = this.viewModel.indexOf(breakdown);
-		if (index === -1) {
-			return;
-		}
-
-		const [list, listDelegate] = assertAllDefined(this.list, this.listDelegate);
-		list.updateElementHeight(index, listDelegate.getHeight(breakdown));
 		list.layout();
 	}
 
@@ -231,21 +219,21 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		dom.clearNode(templateData.container);
 
 		const { query, reason, response } = element;
-		if (query) {
+		if (query && query.value.trim().length > 0) {
 			const rowQuery = $('div.breakdown-query');
 			const renderedContent = this.markdownRenderer.render(query);
 			rowQuery.appendChild(renderedContent.element);
 			templateData.container.appendChild(rowQuery);
 		}
 
-		if (reason) {
+		if (reason && reason.value.trim().length > 0) {
 			const rowReason = $('div.breakdown-reason');
 			const renderedContent = this.markdownRenderer.render(reason);
 			rowReason.appendChild(renderedContent.element);
 			templateData.container.appendChild(rowReason);
 		}
 
-		if (response) {
+		if (response && response.value.trim().length > 0) {
 			const rowResponse = $('div.breakdown-response');
 			const renderedContent = this.markdownRenderer.render(response);
 			rowResponse.appendChild(renderedContent.element);
@@ -285,7 +273,7 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 	private defaultElementHeight: number = 22;
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
-		return element.currentRenderedHeight ?? this.defaultElementHeight;
+		return (element.currentRenderedHeight ?? this.defaultElementHeight) + 12;
 	}
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {

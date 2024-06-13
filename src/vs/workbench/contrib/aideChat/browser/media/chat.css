@@ -694,13 +694,16 @@
 	white-space: normal;
 }
 
+.cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
+	margin-bottom: 12px;
+}
+
 .cschat-session .breakdown-list-item {
 	display: flex;
 	flex-direction: column;
 	gap: 10px;
 	border-left: 2px solid var(--vscode-chat-requestBorder);
 	padding: 10px;
-	margin-bottom: 24px;
 }
 
 .cschat-session
