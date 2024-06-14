@@ -32,6 +32,36 @@ import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 
 const $ = dom.$;
 
+async function getSymbol(
+	uri: URI,
+	name: string,
+	modelService: IModelService,
+	textModelResolverService: ITextModelService,
+	outlineModelService: IOutlineModelService,
+	languageService: ILanguageService
+) {
+	let document = modelService.getModel(uri);
+	if (!document) {
+		const ref = await textModelResolverService.createModelReference(uri);
+		const sourceModel = ref.object.textEditorModel;
+		document = modelService.createModel(
+			createTextBufferFactoryFromSnapshot(sourceModel.createSnapshot()),
+			languageService.createById(sourceModel.getLanguageId()),
+			uri
+		);
+		ref.dispose();
+	}
+
+	const model = await outlineModelService.getOrCreate(document, CancellationToken.None);
+	const symbols = model.getTopLevelSymbols();
+	const symbol = symbols.find(s => s.name === name);
+	if (!symbol) {
+		return;
+	}
+
+	return symbol;
+}
+
 export class AideChatBreakdowns extends Disposable {
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
 	private renderer: BreakdownRenderer | undefined;
@@ -108,22 +138,16 @@ export class AideChatBreakdowns extends Disposable {
 
 	private async openBreakdownReference(uri: URI, name: string): Promise<void> {
 		try {
-			let document = this.modelService.getModel(uri);
-			if (!document) {
-				const ref = await this.textModelResolverService.createModelReference(uri);
-				const sourceModel = ref.object.textEditorModel;
-				document = this.modelService.createModel(
-					createTextBufferFactoryFromSnapshot(sourceModel.createSnapshot()),
-					this.languageService.createById(sourceModel.getLanguageId()),
-					uri
-				);
-				ref.dispose();
-			}
-
-			const model = await this.outlineModelService.getOrCreate(document, CancellationToken.None);
-			const symbols = model.getTopLevelSymbols();
-			const symbol = symbols.find(s => s.name === name);
+			const symbol = await getSymbol(
+				uri, name, this.modelService, this.textModelResolverService, this.outlineModelService, this.languageService);
 			if (!symbol) {
+				this.editorService.openEditor({
+					resource: uri,
+					options: {
+						pinned: false,
+						preserveFocus: true,
+					}
+				});
 				return;
 			}
 
@@ -204,6 +228,10 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IModelService private readonly modelService: IModelService,
+		@ITextModelService private readonly textModelResolverService: ITextModelService,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
+		@ILanguageService private readonly languageService: ILanguageService,
 	) {
 		super();
 
@@ -268,9 +296,28 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 			});
 			templateDisposables.add(label);
 			templateData.container.appendChild(rowResource);
+
+			this.getSymbolKind(uri, name).then(kind => {
+				if (kind) {
+					label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+						fileKind: FileKind.FILE,
+						icon: SymbolKinds.toIcon(kind),
+					});
+				}
+			});
 		}
 
 		this.updateItemHeight(templateData);
+	}
+
+	private async getSymbolKind(uri: URI, name: string): Promise<SymbolKind | undefined> {
+		const symbol = await getSymbol(
+			uri, name, this.modelService, this.textModelResolverService, this.outlineModelService, this.languageService);
+		if (!symbol) {
+			return;
+		}
+
+		return symbol.kind;
 	}
 
 	disposeTemplate(templateData: IBreakdownTemplateData): void {
@@ -303,7 +350,7 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 	private defaultElementHeight: number = 22;
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
-		return (element.currentRenderedHeight ?? this.defaultElementHeight);
+		return (element.currentRenderedHeight ?? this.defaultElementHeight) + 12;
 	}
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {

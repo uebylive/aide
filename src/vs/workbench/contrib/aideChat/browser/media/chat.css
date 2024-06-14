@@ -704,6 +704,7 @@
 	gap: 10px;
 	border-left: 1px solid var(--vscode-chat-requestBorder);
 	padding: 4px 10px;
+	margin: 6px 0;
 }
 
 .cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
