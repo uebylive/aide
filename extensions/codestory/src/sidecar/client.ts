@@ -783,20 +783,28 @@ export class SideCarClient {
 
 	async *startAgentProbe(
 		query: string,
-		symbol_identifier: SymbolIdentifier,
 		variables: readonly vscode.ChatPromptReference[],
-		_editorUrl: string,
+		editorUrl: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
+		const activeWindowData = getCurrentActiveWindow();
+		let activeWindowDataForProbing = null;
+		if (activeWindowData !== undefined) {
+			activeWindowDataForProbing = {
+				file_path: activeWindowData.file_path,
+				file_content: activeWindowData.file_content,
+				language: activeWindowData.language,
+			};
+		}
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body: ProbeAgentBody = {
-			editor_url: _editorUrl,
+			editor_url: editorUrl,
 			model_config: sideCarModelConfiguration,
 			user_context: await convertVSCodeVariableToSidecar(variables),
-			symbol_identifier,
-			query
+			query,
+			active_window_data: activeWindowDataForProbing,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {

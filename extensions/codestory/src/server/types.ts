@@ -28,8 +28,12 @@ export type ProbeAgentBody = {
 	editor_url: string;
 	model_config: Record<string, any>;
 	user_context: UserContext;
-	symbol_identifier: SymbolIdentifier;
 	query: string;
+	active_window_data: {
+		file_path: string;
+		file_content: string;
+		language: string;
+	} | null;
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;

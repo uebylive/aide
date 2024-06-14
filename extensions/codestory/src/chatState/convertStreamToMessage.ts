@@ -347,7 +347,6 @@ So in summary, the \`Agent\` struct acts as an intermediary that coordinates the
 };
 
 export const reportAgentEventsToChat = async (
-	query_symbol_identifier: SymbolIdentifier,
 	stream: AsyncIterator<SideCarAgentEvent>,
 	response: vscode.AideChatResponseStream,
 ): Promise<void> => {
@@ -388,18 +387,15 @@ export const reportAgentEventsToChat = async (
 			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
 				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
 				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
-				if (
-					probeQuestionAskRequest.fs_file_path !== query_symbol_identifier.fs_file_path
-					|| probeQuestionAskRequest.symbol_identifier !== query_symbol_identifier.symbol_name) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
-							name: probeQuestionAskRequest.symbol_identifier
-						},
-						query: new vscode.MarkdownString(userQuery),
-						reason: new vscode.MarkdownString(probeReason)
-					});
-				}
+				// TODO(codestory): We were guarding here based on the initial symbol identifier which was being passed
+				response.breakdown({
+					reference: {
+						uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+						name: probeQuestionAskRequest.symbol_identifier
+					},
+					query: new vscode.MarkdownString(userQuery),
+					reason: new vscode.MarkdownString(probeReason)
+				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
@@ -411,20 +407,20 @@ export const reportAgentEventsToChat = async (
 			const subStepType = probeRequestKeys[0];
 			if (subStepType === 'ProbeAnswer' && symbolEventSubStep.Probe.ProbeAnswer !== undefined) {
 				const probeAnswer = symbolEventSubStep.Probe.ProbeAnswer;
-				if (
-					symbol_identifier.fs_file_path === query_symbol_identifier.fs_file_path
-					&& symbol_identifier.symbol_name === query_symbol_identifier.symbol_name
-				) {
-					response.markdown(probeAnswer);
-				} else {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						response: new vscode.MarkdownString(probeAnswer)
-					});
-				}
+				// if (
+				// 	symbol_identifier.fs_file_path === query_symbol_identifier.fs_file_path
+				// 	&& symbol_identifier.symbol_name === query_symbol_identifier.symbol_name
+				// ) {
+				// 	response.markdown(probeAnswer);
+				// } else {
+				response.breakdown({
+					reference: {
+						uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+						name: symbol_identifier.symbol_name
+					},
+					response: new vscode.MarkdownString(probeAnswer)
+				});
+				// }
 			}
 		}
 	}
