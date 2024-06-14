@@ -15,6 +15,7 @@ import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
 import 'vs/css!./media/chatAgentHover';
+import 'vs/css!./media/chatBreakdownHover';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { MenuId } from 'vs/platform/actions/common/actions';

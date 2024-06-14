@@ -29,6 +29,12 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { AideChatBreakdownHover } from 'vs/workbench/contrib/aideChat/browser/aideChatBreakdownHover';
+import { IHoverService } from 'vs/platform/hover/browser/hover';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
+import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
+import { KeyCode } from 'vs/base/common/keyCodes';
+import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
 
 const $ = dom.$;
 
@@ -205,6 +211,7 @@ interface IBreakdownTemplateData {
 	currentItem?: IAideChatBreakdownViewModel;
 	currentItemIndex?: number;
 	container: HTMLElement;
+	breakdownHover: AideChatBreakdownHover;
 	toDispose: DisposableStore;
 }
 
@@ -232,6 +239,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ILanguageService private readonly languageService: ILanguageService,
+		@IHoverService private readonly hoverService: IHoverService,
 	) {
 		super();
 
@@ -249,6 +257,25 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 
 		data.container = $('.breakdown-list-item');
 		container.appendChild(data.container);
+
+		const breakdownHover = data.toDispose.add(this.instantiationService.createInstance(AideChatBreakdownHover));
+		const hoverContent = () => {
+			breakdownHover.setHoverContent(
+				data.currentItem?.query ?? new MarkdownString(),
+				data.currentItem?.reason ?? new MarkdownString()
+			);
+			return breakdownHover.domNode;
+		};
+		const hoverDelegate = getDefaultHoverDelegate('element');
+		hoverDelegate.showHover = (options, focus?) => this.hoverService.showHover({ ...options, position: { hoverPosition: HoverPosition.ABOVE } }, focus);
+		data.toDispose.add(this.hoverService.setupUpdatableHover(hoverDelegate, data.container, hoverContent));
+		data.toDispose.add(dom.addDisposableListener(data.container, dom.EventType.KEY_DOWN, e => {
+			const ev = new StandardKeyboardEvent(e);
+			if (ev.equals(KeyCode.Escape)) {
+				this.hoverService.hideHover();
+			}
+		}));
+		data.breakdownHover = breakdownHover;
 
 		return data;
 	}
