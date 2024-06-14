@@ -1,0 +1,20 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.aide-probe-view .aide-probe-input-part {
+	display: flex;
+	box-sizing: border-box;
+	cursor: text;
+	border: 1px solid var(--vscode-chat-requestBorder, transparent);
+	position: relative;
+	margin: 0 12px;
+	padding: 0 8px;
+	align-items: flex-end;
+	justify-content: space-between;
+}
+
+.aide-probe-view .aide-probe-input-part .monaco-editor-background {
+	background-color: var(--vscode-sideBar-background);
+}

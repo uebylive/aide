@@ -187,6 +187,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/aideProbe",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/services/aiModel",
 			"project": "vscode-workbench"
 		},
