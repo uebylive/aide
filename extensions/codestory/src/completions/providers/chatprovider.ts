@@ -4,12 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
 
-import {
-	reportAgentEventsToChat,
-	//reportAgentEventsToChat,
-	reportDummyEventsToChat,
-	reportFromStreamToSearchProgress
-} from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat, reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
 import logger from '../../logger';
 import { logChatPrompt, logSearchPrompt } from '../../posthog/logChatPrompt';
@@ -22,7 +17,6 @@ import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
-//import { SymbolIdentifier } from '../../server/types';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;

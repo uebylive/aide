@@ -700,6 +700,7 @@
 
 .cschat-session .breakdown-list-item-wrapper {
 	display: flex;
+	flex-grow: 1;
 	gap: 8px;
 	border-left: 1px solid var(--vscode-chat-requestBorder);
 	padding: 4px 10px;
@@ -708,6 +709,7 @@
 
 .cschat-session .breakdown-list-item {
 	display: flex;
+	flex-grow: 1;
 	flex-direction: column;
 	gap: 10px;
 }
@@ -715,10 +717,6 @@
 .cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
 	font-size: 14px;
 	color: var(--vscode-icon-foreground) !important;
-}
-
-.cschat-session .breakdown-list-item .rendered-markdown > p .codicon.codicon-check {
-	color: var(--vscode-debugIcon-startForeground) !important;
 }
 
 .cschat-session

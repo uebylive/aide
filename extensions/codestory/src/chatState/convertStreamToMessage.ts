@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import { SideCarAgentEvent, SymbolIdentifier } from '../server/types';
+import { SideCarAgentEvent } from '../server/types';
 
 
 export const reportFromStreamToSearchProgress = async (

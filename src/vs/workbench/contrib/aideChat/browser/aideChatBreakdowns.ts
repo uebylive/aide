@@ -300,30 +300,19 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		let { query, reason, response, uri, name } = element;
+		let { query, response, uri, name } = element;
 		if (response && response.value.trim().length > 0) {
 			const rowResponse = $('div.breakdown-response');
-			// const codicon = Codicon.check.id;
-			// response = new MarkdownString(`$(${codicon}) ${response.value}`, { supportThemeIcons: true });
 			const renderedContent = this.markdownRenderer.render(response);
 			rowResponse.appendChild(renderedContent.element);
 			templateData.container.appendChild(rowResponse);
-		} else {
-			if (query && query.value.trim().length > 0) {
-				const rowQuery = $('div.breakdown-query');
-				const codicon = ThemeIcon.modify(Codicon.loading, 'spin').id;
-				query = new MarkdownString(`$(${codicon}) ${query.value}`, { supportThemeIcons: true });
-				const renderedContent = this.markdownRenderer.render(query);
-				rowQuery.appendChild(renderedContent.element);
-				templateData.container.appendChild(rowQuery);
-			}
-
-			if (reason && reason.value.trim().length > 0) {
-				const rowReason = $('div.breakdown-reason');
-				const renderedContent = this.markdownRenderer.render(reason);
-				rowReason.appendChild(renderedContent.element);
-				templateData.container.appendChild(rowReason);
-			}
+		} else if (query && query.value.trim().length > 0) {
+			const rowQuery = $('div.breakdown-query');
+			const codicon = ThemeIcon.modify(Codicon.loading, 'spin').id;
+			query = new MarkdownString(`$(${codicon}) ${query.value}`, { supportThemeIcons: true });
+			const renderedContent = this.markdownRenderer.render(query);
+			rowQuery.appendChild(renderedContent.element);
+			templateData.container.appendChild(rowQuery);
 		}
 
 		if (uri) {
