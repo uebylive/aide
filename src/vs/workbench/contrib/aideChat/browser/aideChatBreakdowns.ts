@@ -210,6 +210,7 @@ export class AideChatBreakdowns extends Disposable {
 interface IBreakdownTemplateData {
 	currentItem?: IAideChatBreakdownViewModel;
 	currentItemIndex?: number;
+	wrapper: HTMLElement;
 	container: HTMLElement;
 	breakdownHover: AideChatBreakdownHover;
 	toDispose: DisposableStore;
@@ -255,8 +256,15 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		const data: IBreakdownTemplateData = Object.create(null);
 		data.toDispose = new DisposableStore();
 
+		data.wrapper = dom.append(container, $('.breakdown-list-item-wrapper'));
+		// Content
 		data.container = $('.breakdown-list-item');
-		container.appendChild(data.container);
+		data.wrapper.appendChild(data.container);
+		// Hover trigger
+		const detailsTrigger = $('.breakdown-list-item-details');
+		const triggerIcon = Codicon.question;
+		detailsTrigger.classList.add(...ThemeIcon.asClassNameArray(triggerIcon));
+		data.wrapper.appendChild(detailsTrigger);
 
 		const breakdownHover = data.toDispose.add(this.instantiationService.createInstance(AideChatBreakdownHover));
 		const hoverContent = () => {
@@ -268,10 +276,15 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		};
 		const hoverDelegate = getDefaultHoverDelegate('element');
 		hoverDelegate.showHover = (options, focus?) => this.hoverService.showHover({ ...options, position: { hoverPosition: HoverPosition.ABOVE } }, focus);
-		data.toDispose.add(this.hoverService.setupUpdatableHover(hoverDelegate, data.container, hoverContent));
-		data.toDispose.add(dom.addDisposableListener(data.container, dom.EventType.KEY_DOWN, e => {
+		data.toDispose.add(this.hoverService.setupUpdatableHover(hoverDelegate, detailsTrigger, hoverContent));
+		data.toDispose.add(dom.addDisposableListener(detailsTrigger, dom.EventType.KEY_DOWN, e => {
 			const ev = new StandardKeyboardEvent(e);
-			if (ev.equals(KeyCode.Escape)) {
+			if (ev.equals(KeyCode.Space) || ev.equals(KeyCode.Enter)) {
+				const content = hoverContent();
+				if (content) {
+					this.hoverService.showHover({ content, target: detailsTrigger });
+				}
+			} else if (ev.equals(KeyCode.Escape)) {
 				this.hoverService.hideHover();
 			}
 		}));
@@ -358,14 +371,14 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.container.offsetHeight;
+		const newHeight = templateData.wrapper.offsetHeight;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
-			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
+			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
 				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
 				// If it becomes properly sync, then this could be removed.
-				element.currentRenderedHeight = templateData.container.offsetHeight;
+				element.currentRenderedHeight = templateData.wrapper.offsetHeight;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));
