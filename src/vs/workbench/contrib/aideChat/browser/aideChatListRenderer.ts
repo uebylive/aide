@@ -88,6 +88,7 @@ interface IChatListItemTemplate {
 	readonly avatarContainer: HTMLElement;
 	readonly username: HTMLElement;
 	readonly detail: HTMLElement;
+	readonly explorationDetail: HTMLElement;
 	readonly value: HTMLElement;
 	readonly referencesListContainer: HTMLElement;
 	readonly breakdownsListContainer: HTMLElement;
@@ -277,7 +278,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const detail = dom.append(detailContainer, $('span.detail'));
 		dom.append(detailContainer, $('span.chat-animated-ellipsis'));
 		const referencesListContainer = dom.append(rowContainer, $('.referencesListContainer'));
-		const breakdownsListContainer = dom.append(rowContainer, $('.breakdownsListContainer'));
+		const breakdownsWrapper = dom.append(rowContainer, $('.breakdownsWrapper'));
+		const explorationDetail = dom.append(breakdownsWrapper, $('span.exploration-detail'));
+		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
+		const breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 		const value = dom.append(rowContainer, $('.value'));
 		const elementDisposables = new DisposableStore();
 
@@ -303,7 +307,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}));
 		}
 
-		const template: IChatListItemTemplate = { avatarContainer, username, detail, referencesListContainer, breakdownsListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
+		const template: IChatListItemTemplate = { avatarContainer, username, detail, referencesListContainer, explorationDetail, breakdownsListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
 		return template;
 	}
 
@@ -882,6 +886,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderBreakdowns(element: ChatTreeItem, templateData: IChatListItemTemplate, disposables: DisposableStore): void {
+		templateData.explorationDetail.textContent = isResponseVM(element) ?
+			(element.isComplete || element.isCanceled ?
+				localize('exploredCodebased', "Codebase exploration") :
+				localize('exploringCodebased', "Exploring the codebase")) :
+			'';
+
 		if (isResponseVM(element) && element.breakdowns.length) {
 			dom.show(templateData.breakdownsListContainer);
 			const breakdownsList = $('.chat-breakdowns-list');

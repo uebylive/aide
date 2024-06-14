@@ -47,12 +47,22 @@ interface SideCarAgentUIEvent {
 	event: UIEvent;
 }
 
+interface RequestEventProbeFinished {
+	reply: string;
+}
+
+interface RequestEvents {
+	ProbingStart?: {};
+	ProbeFinished?: RequestEventProbeFinished;
+}
+
 interface UIEvent {
 	SymbolEvent: SymbolEventRequest;
 	ToolEvent: ToolInput;
 	CodebaseEvent: SymbolInputEvent;
 	SymbolLoctationUpdate: SymbolLocation;
 	SymbolEventSubStep: SymbolEventSubStepRequest;
+	RequestEvent: RequestEvents;
 }
 
 interface SymbolEventSubStepRequest {
@@ -66,8 +76,14 @@ interface SymbolEventProbeRequest {
 	ProbeAnswer: string;
 }
 
+interface SymbolEventGoToDefinitionRequest {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+}
+
 interface SymbolEventSubStep {
-	Probe: SymbolEventProbeRequest;
+	Probe?: SymbolEventProbeRequest;
+	GoToDefinition?: SymbolEventGoToDefinitionRequest;
 }
 
 interface SymbolLocation {
@@ -87,11 +103,26 @@ interface SymbolInputEvent {
 	gcloud_access_token?: string;
 	swe_bench_id?: string;
 	swe_bench_git_dname?: string;
+	swe_bench_code_editing?: LLMProperties;
+	swe_bench_gemini_api_keys?: LLMProperties;
+}
+
+interface LLMProperties {
+	llm: LLMTypeVariant;
+	provider: LLMProvider;
+	api_keys: LLMProviderAPIKeys;
+}
+
+interface ToolProperties {
+	swe_bench_test_endpoint?: string;
+	swe_bench_code_editing_llm?: LLMProperties;
+	swe_bench_reranking_llm?: LLMProperties;
 }
 
 interface SymbolEventRequest {
 	symbol: SymbolIdentifier;
 	event: SymbolEvent;
+	tool_properties: ToolProperties;
 }
 
 interface SymbolEvent {
@@ -162,6 +193,9 @@ interface ToolInput {
 	ProbeFollowAlongSymbol?: CodeSymbolFollowAlongForProbing;
 	ProbeSummarizeAnswerRequest?: CodeSymbolProbingSummarize;
 	RepoMapSearch?: RepoMapSearchQuery;
+	SWEBenchTest?: SWEBenchTestRequest;
+	TestOutputCorrection?: TestOutputCorrectionRequest;
+	CodeSymbolFollowInitialRequest?: CodeSymbolFollowInitialRequest;
 }
 
 interface CodeEdit {
@@ -408,6 +442,34 @@ export type RepoMapSearchQuery = {
 	llm: LLMTypeVariant;
 	provider: LLMProvider;
 	api_key: LLMProviderAPIKeys;
+};
+
+export type SWEBenchTestRequest = {
+	swe_bench_test_endpoint: string;
+};
+
+export type TestOutputCorrectionRequest = {
+	fs_file_path: string;
+	file_contents: string;
+	user_instructions: string;
+	code_above: string | undefined;
+	code_below: string | undefined;
+	code_in_selection: string;
+	original_code: string;
+	language: string;
+	test_output_logs: string;
+	llm: LLMTypeVariant;
+	provider: LLMProvider;
+	api_keys: LLMProviderAPIKeys;
+	extra_code_context: string;
+};
+
+export type CodeSymbolFollowInitialRequest = {
+	code_symbol_content: string[];
+	user_query: string;
+	llm: LLMTypeVariant;
+	provider: LLMProvider;
+	api_keys: LLMProviderAPIKeys;
 };
 
 export type CodeToEditSymbolRequest = {

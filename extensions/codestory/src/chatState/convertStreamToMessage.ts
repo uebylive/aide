@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import { SideCarAgentEvent, SymbolIdentifier } from '../server/types';
+import { SideCarAgentEvent } from '../server/types';
 
 
 export const reportFromStreamToSearchProgress = async (
@@ -387,7 +387,6 @@ export const reportAgentEventsToChat = async (
 			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
 				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
 				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
-				// TODO(codestory): We were guarding here based on the initial symbol identifier which was being passed
 				response.breakdown({
 					reference: {
 						uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
@@ -399,20 +398,19 @@ export const reportAgentEventsToChat = async (
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
-			const probeRequestKeys = Object.keys(symbolEventSubStep.Probe) as (keyof typeof symbolEventSubStep.Probe)[];
+			if ('Probe' in symbolEventSubStep === false) {
+				continue;
+			}
+
+			const probeSubStep = symbolEventSubStep.Probe!;
+			const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
 			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
 				continue;
 			}
 
 			const subStepType = probeRequestKeys[0];
-			if (subStepType === 'ProbeAnswer' && symbolEventSubStep.Probe.ProbeAnswer !== undefined) {
-				const probeAnswer = symbolEventSubStep.Probe.ProbeAnswer;
-				// if (
-				// 	symbol_identifier.fs_file_path === query_symbol_identifier.fs_file_path
-				// 	&& symbol_identifier.symbol_name === query_symbol_identifier.symbol_name
-				// ) {
-				// 	response.markdown(probeAnswer);
-				// } else {
+			if (subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
+				const probeAnswer = probeSubStep.ProbeAnswer;
 				response.breakdown({
 					reference: {
 						uri: vscode.Uri.file(symbol_identifier.fs_file_path),
@@ -420,7 +418,6 @@ export const reportAgentEventsToChat = async (
 					},
 					response: new vscode.MarkdownString(probeAnswer)
 				});
-				// }
 			}
 		}
 	}

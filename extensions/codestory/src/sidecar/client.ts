@@ -19,7 +19,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { ProbeAgentBody, SideCarAgentEvent, SymbolIdentifier, UserContext } from '../server/types';
+import { ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
 
 export enum CompletionStopReason {
 	/**
