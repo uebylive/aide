@@ -419,13 +419,13 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
 		const { query, reason, response } = breakdown;
 		if (this._breakdownsBySymbol.has(mapKey)) {
-			if (query) {
+			if (query && query.value.length > 0) {
 				this._breakdownsBySymbol.get(mapKey)!.query = query;
 			}
-			if (reason) {
+			if (reason && reason.value.length > 0) {
 				this._breakdownsBySymbol.get(mapKey)!.reason = reason;
 			}
-			if (response) {
+			if (response && response.value.length > 0) {
 				this._breakdownsBySymbol.get(mapKey)!.response = response;
 			}
 			// Update the breakdown in the list
