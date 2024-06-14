@@ -14,9 +14,6 @@ import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { ILanguageService } from 'vs/editor/common/languages/language';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
-import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
@@ -28,7 +25,7 @@ import { IEditorService } from 'vs/workbench/services/editor/common/editorServic
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
-import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { AideChatBreakdownHover } from 'vs/workbench/contrib/aideChat/browser/aideChatBreakdownHover';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
@@ -41,31 +38,21 @@ const $ = dom.$;
 async function getSymbol(
 	uri: URI,
 	name: string,
-	modelService: IModelService,
 	textModelResolverService: ITextModelService,
 	outlineModelService: IOutlineModelService,
-	languageService: ILanguageService
-) {
-	let document = modelService.getModel(uri);
-	if (!document) {
-		const ref = await textModelResolverService.createModelReference(uri);
-		const sourceModel = ref.object.textEditorModel;
-		document = modelService.createModel(
-			createTextBufferFactoryFromSnapshot(sourceModel.createSnapshot()),
-			languageService.createById(sourceModel.getLanguageId()),
-			uri
-		);
-		ref.dispose();
-	}
+): Promise<DocumentSymbol | undefined> {
+	const reference = await textModelResolverService.createModelReference(uri);
+	try {
+		const symbols = (await outlineModelService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
+		const symbol = symbols.find(s => s.name === name);
+		if (!symbol) {
+			return;
+		}
 
-	const model = await outlineModelService.getOrCreate(document, CancellationToken.None);
-	const symbols = model.getTopLevelSymbols();
-	const symbol = symbols.find(s => s.name === name);
-	if (!symbol) {
-		return;
+		return symbol;
+	} finally {
+		reference.dispose();
 	}
-
-	return symbol;
 }
 
 export class AideChatBreakdowns extends Disposable {
@@ -76,10 +63,8 @@ export class AideChatBreakdowns extends Disposable {
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IModelService private readonly modelService: IModelService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
-		@ILanguageService private readonly languageService: ILanguageService,
 		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
@@ -144,8 +129,7 @@ export class AideChatBreakdowns extends Disposable {
 
 	private async openBreakdownReference(uri: URI, name: string): Promise<void> {
 		try {
-			const symbol = await getSymbol(
-				uri, name, this.modelService, this.textModelResolverService, this.outlineModelService, this.languageService);
+			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
 			if (!symbol) {
 				this.editorService.openEditor({
 					resource: uri,
@@ -236,10 +220,8 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IModelService private readonly modelService: IModelService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
-		@ILanguageService private readonly languageService: ILanguageService,
 		@IHoverService private readonly hoverService: IHoverService,
 	) {
 		super();
@@ -340,8 +322,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	}
 
 	private async getSymbolKind(uri: URI, name: string): Promise<SymbolKind | undefined> {
-		const symbol = await getSymbol(
-			uri, name, this.modelService, this.textModelResolverService, this.outlineModelService, this.languageService);
+		const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
 		if (!symbol) {
 			return;
 		}
