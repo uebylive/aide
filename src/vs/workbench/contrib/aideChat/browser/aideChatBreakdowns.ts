@@ -56,10 +56,16 @@ async function getSymbol(
 }
 
 export class AideChatBreakdowns extends Disposable {
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
+
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
 	private renderer: BreakdownRenderer | undefined;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
+
+	private readonly markdownRenderer: MarkdownRenderer;
+	private readonly resourceLabels: ResourceLabels;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -68,6 +74,9 @@ export class AideChatBreakdowns extends Disposable {
 		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
+
+		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 	}
 
 	show(container: HTMLElement): void {
@@ -86,7 +95,7 @@ export class AideChatBreakdowns extends Disposable {
 
 	private createBreakdownsList(listContainer: HTMLElement): void {
 		// Breakdown renderer
-		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer);
+		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer, this.markdownRenderer, this.resourceLabels);
 
 		// List
 		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
@@ -212,22 +221,15 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
-	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
-
-	private readonly markdownRenderer: MarkdownRenderer;
-	private resourceLabels: ResourceLabels;
-
 	constructor(
+		private readonly markdownRenderer: MarkdownRenderer,
+		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@IHoverService private readonly hoverService: IHoverService,
 	) {
 		super();
-
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
-		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 	}
 
 	get templateId(): string {
