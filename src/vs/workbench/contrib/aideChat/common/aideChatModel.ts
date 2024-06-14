@@ -349,6 +349,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
+	private readonly _breakdownsBySymbol: Map<string, IAideChatBreakdown> = new Map();
 	private readonly _breakdowns: IAideChatBreakdown[] = [];
 	public get breakdowns(): ReadonlyArray<IAideChatBreakdown> {
 		return this._breakdowns;
@@ -415,7 +416,27 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	 * Apply a breakdown to the response content.
 	*/
 	applyBreakdown(breakdown: IAideChatBreakdown) {
-		this._breakdowns.push(breakdown);
+		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
+		const { query, reason, response } = breakdown;
+		if (this._breakdownsBySymbol.has(mapKey)) {
+			if (query) {
+				this._breakdownsBySymbol.get(mapKey)!.query = query;
+			}
+			if (reason) {
+				this._breakdownsBySymbol.get(mapKey)!.reason = reason;
+			}
+			if (response) {
+				this._breakdownsBySymbol.get(mapKey)!.response = response;
+			}
+			// Update the breakdown in the list
+			const index = this._breakdowns.findIndex(b => equals(b.reference, breakdown.reference));
+			if (index !== -1) {
+				this._breakdowns[index] = this._breakdownsBySymbol.get(mapKey)!;
+			}
+		} else {
+			this._breakdownsBySymbol.set(mapKey, breakdown);
+			this._breakdowns.push(breakdown);
+		}
 		this._onDidChange.fire();
 	}
 

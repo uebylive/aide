@@ -14,12 +14,12 @@
 }
 
 .cschat-item-container {
-	padding: 16px 20px;
+	padding-block: 16px;
+	padding-inline: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
 	color: var(--vscode-interactive-session-foreground);
-
 	cursor: default;
 	user-select: text;
 	-webkit-user-select: text;
@@ -27,6 +27,7 @@
 
 .cschat-input-part .header,
 .cschat-item-container .header {
+	padding-inline: 10px;
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -193,7 +194,7 @@
 }
 
 .cschat-item-container .value {
-	width: 100%;
+	padding-inline: 10px;
 }
 
 .cschat-item-container .value .rendered-markdown table {
@@ -685,28 +686,56 @@
 	margin: 0 0 0 4px;
 }
 
-.chat-breakdown-list .monaco-list {
+.chat-breakdowns-list .monaco-list {
 	border: none;
 	border-radius: 4px;
 	width: auto;
-}
-
-.cschat-session .chat-breakdowns {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.interactive-response-progress-tree,
-.cschat-session .chat-breakdowns-list {
-	border: 1px solid var(--vscode-chat-requestBorder);
-	border-radius: 4px;
-	margin-bottom: 8px;
-	padding: 4px;
+	white-space: normal;
 }
 
 .cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
-	border-radius: 2px;
+	display: flex;
+	align-items: center;
+}
+
+.cschat-session .breakdown-list-item {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	border-left: 1px solid var(--vscode-chat-requestBorder);
+	padding: 4px 10px;
+	margin: 6px 0;
+}
+
+.cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
+	font-size: 14px;
+	color: var(--vscode-icon-foreground) !important;
+}
+
+.cschat-session .breakdown-list-item .rendered-markdown > p .codicon.codicon-check {
+	color: var(--vscode-debugIcon-startForeground) !important;
+}
+
+.cschat-session
+	.breakdown-list-item
+	.rendered-markdown
+	p:is(:first-child, :last-child) {
+	margin: 0;
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource {
+	background-color: var(--vscode-textPreformat-background);
+	color: var(--vscode-textPreformat-foreground);
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label-container {
+	display: flex;
+	align-items: center;
+}
+
+.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label::before {
+	line-height: 22px !important;
+	padding-left: 5px;
 }
 
 .cschat-item-container .rendered-markdown.progress-step {

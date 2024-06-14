@@ -81,9 +81,16 @@ export interface IAideChatContentReference {
 	kind: 'reference';
 }
 
+interface IReferenceByName {
+	name: string;
+	uri: URI;
+}
+
 export interface IAideChatBreakdown {
-	content: IMarkdownString;
-	reference?: URI | Location;
+	reference: IReferenceByName;
+	query?: IMarkdownString;
+	reason?: IMarkdownString;
+	response?: IMarkdownString;
 	kind: 'breakdown';
 }
 
@@ -116,9 +123,9 @@ export interface IAideChatProgressMessage {
 
 export interface IAideChatTask extends IAideChatTaskDto {
 	deferred: DeferredPromise<string | void>;
-	progress: (IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown)[];
-	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown>;
-	add(progress: IAideChatWarningMessage | IAideChatContentReference | IAideChatBreakdown): void;
+	progress: (IAideChatWarningMessage | IAideChatContentReference)[];
+	onDidAddProgress: Event<IAideChatWarningMessage | IAideChatContentReference>;
+	add(progress: IAideChatWarningMessage | IAideChatContentReference): void;
 
 	complete: (result: string | void) => void;
 	task: () => Promise<string | void>;

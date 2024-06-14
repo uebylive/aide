@@ -604,12 +604,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}));
 		this._register(this.chatAgentService.onDidChangeAgents(() => {
 			this.parsedChatRequest = undefined;
-
-			if (this.viewModel) {
-				// TODO(@ghostwriternr): This is a hack to reload the widgets when default agent preference is changed.
-				// Maybe figure out what the original intention of this callback was later. I'm okay with this for now.
-				this.clear();
-			}
 		}));
 	}
 

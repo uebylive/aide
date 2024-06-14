@@ -38,7 +38,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 	};
 
 	let enteredGenerationLoop = false;
-	let skillUsed: InLineAgentAction | undefined = undefined;
+	const skillUsed: InLineAgentAction | undefined = undefined;
 	let generatedAnswer: InLineAgentAnswer | null = null;
 	const answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 	let finalAnswer = '';

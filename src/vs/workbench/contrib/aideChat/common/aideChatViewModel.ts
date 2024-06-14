@@ -45,6 +45,15 @@ export interface IChatSessionInitEvent {
 	kind: 'initialize';
 }
 
+export interface IAideChatBreakdownViewModel {
+	readonly uri: URI;
+	readonly name: string;
+	readonly query?: IMarkdownString;
+	readonly reason?: IMarkdownString;
+	readonly response?: IMarkdownString;
+	currentRenderedHeight: number | undefined;
+}
+
 export interface IChatViewModel {
 	readonly model: IChatModel;
 	readonly initState: ChatModelInitState;
@@ -554,4 +563,34 @@ export interface IChatWelcomeMessageViewModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IAideChatFollowup[];
 	currentRenderedHeight?: number;
+}
+
+export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
+	get uri() {
+		return this._breakdown.reference.uri;
+	}
+
+	get name() {
+		return this._breakdown.reference.name;
+	}
+
+	get query() {
+		return this._breakdown.query;
+	}
+
+	get reason() {
+		return this._breakdown.reason;
+	}
+
+	get response() {
+		return this._breakdown.response;
+	}
+
+	currentRenderedHeight: number | undefined;
+
+	constructor(
+		private readonly _breakdown: IAideChatBreakdown,
+	) {
+		super();
+	}
 }

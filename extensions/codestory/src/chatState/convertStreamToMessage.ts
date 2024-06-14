@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef } from '../sidecar/client';
-import { SideCarAgentEvent } from '../server/types';
+import { SideCarAgentEvent, SymbolIdentifier } from '../server/types';
 
 
 export const reportFromStreamToSearchProgress = async (
@@ -235,7 +235,119 @@ export const reportProcUpdateToChat = (
 	}
 };
 
+const parseProbeQuestionAskRequest = (query: string): { userQuery: string; probeReason: string } => {
+	const userQueryRegex = /(?:The original user query is:|The user has asked the following query:)\s*(.+?)(?:\n|$)/;
+	const probeReasonRegex = /We also (?:believe|belive) this symbol needs to be probed because of:\s*(.+)/s;
+
+	const userQueryMatch = query.match(userQueryRegex);
+	const probeReasonMatch = query.match(probeReasonRegex);
+
+	const userQuery = userQueryMatch ? userQueryMatch[1].trim() : '';
+	const probeReason = probeReasonMatch ? probeReasonMatch[1].trim() : '';
+
+	return { userQuery, probeReason };
+};
+
+export const reportDummyEventsToChat = async (
+	response: vscode.AideChatResponseStream,
+): Promise<void> => {
+	const paths = [
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the LLM ccommunicaet with the agent?',
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
+		},
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the LLM ccommunicate with the agent?',
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
+		},
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			query: 'How does the agent communicate with the LLM? Why is the agent important?',
+			reason: 'What are the different components of the agent? What are the different methods of the agent?',
+		},
+		{
+			symbol_name: 'ExplainRequest',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
+			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
+			reason: 'It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
+		},
+		{
+			symbol_name: 'trim_utter_history',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
+			query: 'What are the different search algorithms used by the agent?',
+			reason: 'The agent likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.',
+			response: 'The agent uses various search algorithms like semantic search, lexical search, and git log analysis to find relevant code snippets and explanations.'
+		},
+		{
+			symbol_name: 'ConversationMessage',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
+			query: 'What are the different types used by the agent?',
+			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
+		},
+		{
+			symbol_name: 'agent_router',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
+			response: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
+		},
+		{
+			symbol_name: 'generate_agent_stream',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
+			query: 'How does the agent stream responses to the user?',
+			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
+			response: 'The agent sends partial responses and updates to the user as they become available to stream responses.'
+		},
+		{
+			symbol_name: 'ExplainRequest',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
+			response: 'The agent acts as a central hub for coordinating the communication with LLMs.'
+		},
+		{
+			symbol_name: 'trim_utter_history',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
+			response: 'The agent orchestrates different search algorithms and combines their results by communicating with the LLMs.'
+		},
+		{
+			symbol_name: 'ConversationMessage',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
+			response: 'The agent uses various types to represent different data structures and entities.'
+		},
+		{
+			symbol_name: 'generate_agent_stream',
+			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
+			response: 'The agent streams responses to the user by sending partial responses and updates.'
+		}
+	];
+
+	for (const path of paths) {
+		response.breakdown({
+			reference: { uri: vscode.Uri.file(path.path), name: path.symbol_name },
+			query: new vscode.MarkdownString(path.query),
+			reason: new vscode.MarkdownString(path.reason),
+			response: response ? new vscode.MarkdownString(path.response) : undefined
+		});
+		await new Promise(resolve => setTimeout(resolve, 1000));
+	}
+
+	// Wait 5 seconds
+	await new Promise(resolve => setTimeout(resolve, 1000));
+
+	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
+1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
+2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
+3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
+4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
+5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
+So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`)
+	);
+};
+
 export const reportAgentEventsToChat = async (
+	query_symbol_identifier: SymbolIdentifier,
 	stream: AsyncIterator<SideCarAgentEvent>,
 	response: vscode.AideChatResponseStream,
 ): Promise<void> => {
@@ -275,52 +387,44 @@ export const reportAgentEventsToChat = async (
 				addReference(fsFilePath, response);
 			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
 				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
-				response.markdown(`\n\n## Probing with question: ${probeQuestionAskRequest.symbol_identifier}\n\n`);
-				const probeReasonPrefix = 'We also belive this symbol needs to be probed because of: ';
-				const prefixIndex = probeQuestionAskRequest.query.indexOf(probeReasonPrefix);
-				if (prefixIndex !== -1) {
-					const reasonForProbe = probeQuestionAskRequest.query.slice(prefixIndex + probeReasonPrefix.length).trim();
-					response.markdown(`${reasonForProbe}\n\n`);
-				} else {
-					response.markdown(`${probeQuestionAskRequest.query}\n\n`);
+				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
+				if (
+					probeQuestionAskRequest.fs_file_path !== query_symbol_identifier.fs_file_path
+					|| probeQuestionAskRequest.symbol_identifier !== query_symbol_identifier.symbol_name) {
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+							name: probeQuestionAskRequest.symbol_identifier
+						},
+						query: new vscode.MarkdownString(userQuery),
+						reason: new vscode.MarkdownString(probeReason)
+					});
 				}
-			} else if (toolEventKey === 'ProbeSummarizeAnswerRequest' && event.event.ToolEvent.ProbeSummarizeAnswerRequest !== undefined) {
-				const probeSummarizeAnswerRequest = event.event.ToolEvent.ProbeSummarizeAnswerRequest;
-				response.markdown(`\n\n## Probe summarize answer request\n\n`);
-				response.markdown(`${probeSummarizeAnswerRequest.symbol_identifier}\n`);
-				response.markdown(`${probeSummarizeAnswerRequest.query}\n`);
-			}
-		} else if (event.event.SymbolEvent) {
-			const { symbol, event: symbolEvent } = event.event.SymbolEvent;
-			const symbolEventKeys = Object.keys(symbolEvent);
-			if (symbolEventKeys.length === 0) {
-				continue;
-			}
-
-			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
-			if (symbolEventKey === 'AskQuestion') {
-				response.markdown(`\n\n## Ask question: ${symbol}\n\n`);
-				response.markdown(symbolEvent.AskQuestion.question);
-			} else if (symbolEventKey === 'Probe') {
-				const probeEvent = symbolEvent.Probe;
-				response.markdown(`\n\n## Probing ${probeEvent.symbol_identifier.symbol_name}\n\n`);
-				if (probeEvent.symbol_identifier.fs_file_path !== undefined) {
-					addReference(probeEvent.symbol_identifier.fs_file_path, response);
-				}
-				response.markdown(`${probeEvent.original_request}\n\n`);
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
-			response.markdown(`\n\n## Probe answer for ${symbol_identifier.symbol_name}\n\n`);
 			const probeRequestKeys = Object.keys(symbolEventSubStep.Probe) as (keyof typeof symbolEventSubStep.Probe)[];
-			if (probeRequestKeys.length === 0) {
+			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
 				continue;
 			}
 
 			const subStepType = probeRequestKeys[0];
 			if (subStepType === 'ProbeAnswer' && symbolEventSubStep.Probe.ProbeAnswer !== undefined) {
 				const probeAnswer = symbolEventSubStep.Probe.ProbeAnswer;
-				response.markdown(`${probeAnswer}\n\n`);
+				if (
+					symbol_identifier.fs_file_path === query_symbol_identifier.fs_file_path
+					&& symbol_identifier.symbol_name === query_symbol_identifier.symbol_name
+				) {
+					response.markdown(probeAnswer);
+				} else {
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						response: new vscode.MarkdownString(probeAnswer)
+					});
+				}
 			}
 		}
 	}

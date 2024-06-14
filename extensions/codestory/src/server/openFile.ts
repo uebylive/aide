@@ -5,9 +5,15 @@
 
 import * as vscode from 'vscode';
 import { SidecarOpenFileToolRequest, SidecarOpenFileToolResponse } from './types';
+import path from 'path';
 
 export async function openFileEditor(request: SidecarOpenFileToolRequest): Promise<SidecarOpenFileToolResponse> {
-	const filePath = request.fs_file_path;
+	let filePath = request.fs_file_path;
+	const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+	if (workspaceFolder && !path.isAbsolute(filePath)) {
+		filePath = path.join(workspaceFolder.uri.fsPath, filePath);
+	}
+
 	try {
 		const stat = await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
 		console.log(stat);
