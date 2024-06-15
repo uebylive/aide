@@ -10,6 +10,7 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
+import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { AideProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
@@ -39,3 +40,6 @@ const viewDescriptor: IViewDescriptor = {
 
 // Register search default location to sidebar
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDescriptor], viewContainer);
+
+// Register actions
+registerProbeActions();

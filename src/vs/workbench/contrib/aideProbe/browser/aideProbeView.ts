@@ -46,7 +46,7 @@ export class AideProbeView extends ViewPane {
 		this.container = dom.append(container, $('.aide-probe-view'));
 
 		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
-		this.inputPart.render(this.container);
+		this.inputPart.render(this.container, this);
 	}
 
 	override focus(): void {

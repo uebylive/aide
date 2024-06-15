@@ -5,6 +5,7 @@
 
 .aide-probe-view .aide-probe-input-part {
 	display: flex;
+	flex-direction: column;
 	box-sizing: border-box;
 	cursor: text;
 	border: 1px solid var(--vscode-chat-requestBorder, transparent);
@@ -17,4 +18,20 @@
 
 .aide-probe-view .aide-probe-input-part .monaco-editor-background {
 	background-color: var(--vscode-sideBar-background);
+}
+
+.aide-probe-view .probe-input-toolbar-container {
+	display: flex;
+	flex-direction: row;
+	justify-content: end;
+	width: 100%;
+	padding-bottom: 6px;
+}
+
+.aide-probe-view .has-text .action-label:has(> .action-with-kb) {
+	cursor: pointer;
+}
+
+.aide-probe-view .has-text .action-label:has(> .action-with-kb):hover {
+	background-color: var(--vscode-toolbar-hoverBackground);
 }

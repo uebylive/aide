@@ -16,11 +16,16 @@ import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditor
 import { IPosition } from 'vs/editor/common/core/position';
 import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/browser/contextScopedHistoryWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { IView } from 'vs/workbench/common/views';
+import { IProbeActionContext, SubmitAction } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 
@@ -52,6 +57,8 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 
 	private _inputEditor!: CodeEditorWidget;
 	private _inputEditorElement!: HTMLElement;
+
+	private toolbar!: MenuWorkbenchToolBar;
 
 	get inputEditor() {
 		return this._inputEditor;
@@ -134,7 +141,7 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 		return this._inputEditor.hasWidgetFocus();
 	}
 
-	render(container: HTMLElement) {
+	render(container: HTMLElement, view: IView) {
 		this.container = dom.append(container, $('.aide-probe-input-part'));
 		const inputContainer = dom.append(this.container, $('.aide-probe-input-container'));
 
@@ -178,6 +185,7 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 			// (If this model change happened as a result of a history navigation, this is canceled out by a call in this.navigateHistory)
 			const model = this._inputEditor.getModel();
 			const inputHasText = !!model && model.getValue().trim().length > 0;
+			inputContainer.classList.toggle('has-text', inputHasText);
 			this.inputEditorHasText.set(inputHasText);
 
 			// If the user is typing on a history entry, then reset the onHistoryEntry flag so that history navigation can be disabled
@@ -202,6 +210,23 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 			this._onDidBlur.fire();
 		}));
 
+		const toolbarContainer = dom.append(inputContainer, $('.probe-input-toolbar-container'));
+		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideProbePrimary, {
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action, options) => {
+				if ((action.id === SubmitAction.ID) && action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+
+				return undefined;
+			}
+		}));
+		this.toolbar.getElement().classList.add('probe-input-toolbar');
+		this.toolbar.context = { view } satisfies IProbeActionContext;
+
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, this.inputUri, true);
@@ -215,7 +240,7 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 
 	layout(_height: number, width: number): void {
 		const horizontalMargin = 12 * 2;
-		const horizontalPadding = 12 * 2;
+		const horizontalPadding = 8 * 2;
 		const border = 1 * 2;
 
 		const inputHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT) - border;
