@@ -398,6 +398,12 @@ export const reportAgentEventsToChat = async (
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			if ('GoToDefinition' in symbolEventSubStep) {
+				// add decoration for now
+				// const goToDefinition = symbolEventSubStep.GoToDefinition!;
+				// await addDecoration(goToDefinition.fs_file_path, goToDefinition.range);
+				continue;
+			}
 			if ('Probe' in symbolEventSubStep === false) {
 				continue;
 			}
