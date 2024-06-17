@@ -11,12 +11,15 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
+import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
 export interface IProbeActionContext {
 	view?: IView;
+	inputValue?: string;
 }
 
 export class SubmitAction extends Action2 {
@@ -44,8 +47,13 @@ export class SubmitAction extends Action2 {
 		});
 	}
 
-	run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log('SubmitAction.run');
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const aideProbeView = await showProbeView(accessor.get(IViewsService));
+		if (!aideProbeView) {
+			return;
+		}
+
+		aideProbeView.acceptInput();
 	}
 }
 

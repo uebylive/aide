@@ -4,17 +4,20 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Codicon } from 'vs/base/common/codicons';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import * as nls from 'vs/nls';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
-import { AideProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
-import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
+import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
-const probeViewIcon = registerIcon('probe-view-icon', Codicon.searchFuzzy, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
+const probeViewIcon = registerIcon('probe-view-icon', Codicon.telescope, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
 
 const viewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: VIEWLET_ID,
@@ -29,11 +32,14 @@ const viewDescriptor: IViewDescriptor = {
 	id: VIEW_ID,
 	containerIcon: probeViewIcon,
 	name: nls.localize2('probe', "Search with AI"),
-	ctorDescriptor: new SyncDescriptor(AideProbeView),
+	ctorDescriptor: new SyncDescriptor(AideProbeViewPane),
 	canToggleVisibility: false,
 	canMoveView: true,
 	openCommandActionDescriptor: {
 		id: viewContainer.id,
+		keybindings: {
+			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyG,
+		},
 		order: 1
 	}
 };
@@ -43,3 +49,6 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDes
 
 // Register actions
 registerProbeActions();
+
+// Register services
+registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);

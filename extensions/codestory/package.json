@@ -18,6 +18,7 @@
     "aideChatParticipant",
     "aideChatProvider",
     "aideChatVariableResolver",
+    "aideProbe",
     "csevents",
     "defaultChatParticipant",
     "chatVariableResolver",

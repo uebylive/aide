@@ -29,6 +29,7 @@ import { handleRequest } from './server/requestHandler';
 import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 import { AideQuickFix } from './quickActions/fix';
 import { copySettings } from './utilities/copySettings';
+import { AideProbeProvider } from './completions/providers/probeProvider';
 
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
@@ -264,6 +265,9 @@ export async function activate(context: ExtensionContext) {
 		sidecarClient, currentRepo, projectContext, editorUrl,
 	);
 	context.subscriptions.push(chatAgentProvider);
+
+	const probeProvider = new AideProbeProvider();
+	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands
 	context.subscriptions.push(

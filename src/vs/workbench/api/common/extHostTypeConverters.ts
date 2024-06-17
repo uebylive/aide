@@ -2924,22 +2924,11 @@ export namespace AideChatResponseBreakdownPart {
 	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideChatBreakdown> {
 		return {
 			kind: 'breakdown',
-			reference: part.reference,
+			reference: { name: part.reference.name, uri: part.reference.uri },
 			query: part.query && MarkdownString.from(part.query),
 			reason: part.reason && MarkdownString.from(part.reason),
 			response: part.response && MarkdownString.from(part.response)
 		};
-	}
-	export function to(part: Dto<IAideChatBreakdown>): vscode.AideChatResponseBreakdown {
-		const value = revive<IAideChatBreakdown>(part);
-
-		return new types.AideChatResponseBreakdownPart(
-			value.reference.uri,
-			value.reference.name,
-			part.query && MarkdownString.to(part.query),
-			part.reason && MarkdownString.to(part.reason),
-			part.response && MarkdownString.to(part.response),
-		);
 	}
 }
 

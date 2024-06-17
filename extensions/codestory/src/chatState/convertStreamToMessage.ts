@@ -249,7 +249,7 @@ const parseProbeQuestionAskRequest = (query: string): { userQuery: string; probe
 };
 
 export const reportDummyEventsToChat = async (
-	response: vscode.AideChatResponseStream,
+	response: vscode.ProbeResponseStream,
 ): Promise<void> => {
 	const paths = [
 		{

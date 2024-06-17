@@ -248,6 +248,14 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 
 		this._inputEditor.layout(new dom.Dimension(inputWidth, inputHeight));
 	}
+
+	async acceptInput(query: string): Promise<void> {
+		let element = this.history.getHistory().find(e => e.text === query);
+		if (!element) {
+			element = { text: query };
+			this.history.add(element);
+		}
+	}
 }
 
 function getLastPosition(model: ITextModel): IPosition {
