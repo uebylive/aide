@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
-import { RepoRef } from '../sidecar/client';
+import { RepoRef, SideCarClient } from '../sidecar/client';
 import { SideCarAgentEvent } from '../server/types';
 
 
@@ -349,6 +349,9 @@ So in summary, the \`Agent\` struct acts as an intermediary that coordinates the
 export const reportAgentEventsToChat = async (
 	stream: AsyncIterator<SideCarAgentEvent>,
 	response: vscode.AideChatResponseStream,
+	threadId: string,
+	token: vscode.CancellationToken,
+	sidecarClient: SideCarClient,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
@@ -364,7 +367,18 @@ export const reportAgentEventsToChat = async (
 		response.reference(vscode.Uri.file(fsFilePath));
 	};
 
+	// now we ping the sidecar that the probing needs to stop
+	if (token.isCancellationRequested) {
+		await sidecarClient.stopAgentProbe(threadId);
+		return;
+	}
+
 	for await (const event of asyncIterable) {
+		// now we ping the sidecar that the probing needs to stop
+		if (token.isCancellationRequested) {
+			await sidecarClient.stopAgentProbe(threadId);
+			return;
+		}
 		if ('keep_alive' in event) {
 			continue;
 		}

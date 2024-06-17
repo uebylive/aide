@@ -781,6 +781,22 @@ export class SideCarClient {
 		return codeSymbolInformationEmbeddings;
 	}
 
+	async stopAgentProbe(threadId: string): Promise<void> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/probe_request_stop';
+		const url = baseUrl.toString();
+		const body = {
+			request_id: threadId,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+	}
+
 	async *startAgentProbe(
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],
