@@ -315,7 +315,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickFileReferenceLabel', "Pick a file"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'file' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: widget.inputEditor, range: afterRange, pick: 'file' }] },
 							sortText: 'z'
 						},
 						<CompletionItem>{
@@ -324,7 +324,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'code' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: widget.inputEditor, range: afterRange, pick: 'code' }] },
 							sortText: 'z'
 						},
 						<CompletionItem>{
@@ -333,7 +333,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ widget, range: afterRange, pick: 'folder' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: widget.inputEditor, range: afterRange, pick: 'folder' }] },
 							sortText: 'z'
 						}
 					]
@@ -345,7 +345,7 @@ class BuiltinDynamicCompletions extends Disposable {
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
 
-function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp): { insert: Range; replace: Range; varWord: IWordAtPosition | null } | undefined {
+export function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp): { insert: Range; replace: Range; varWord: IWordAtPosition | null } | undefined {
 	const varWord = getWordAtText(position.column, reg, model.getLineContent(position.lineNumber), 0);
 	if (!varWord && model.getWordUntilPosition(position).word) {
 		// inside a "normal" word
