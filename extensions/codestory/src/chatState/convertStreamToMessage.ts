@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
-import { RepoRef } from '../sidecar/client';
+import { RepoRef, SideCarClient } from '../sidecar/client';
 import { SideCarAgentEvent } from '../server/types';
 
 
@@ -349,12 +349,26 @@ So in summary, the \`Agent\` struct acts as an intermediary that coordinates the
 export const reportAgentEventsToChat = async (
 	stream: AsyncIterator<SideCarAgentEvent>,
 	response: vscode.ProbeResponseStream,
+	threadId: string,
+	token: vscode.CancellationToken,
+	sidecarClient: SideCarClient,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
 
+	// now we ping the sidecar that the probing needs to stop
+	if (token.isCancellationRequested) {
+		await sidecarClient.stopAgentProbe(threadId);
+		return;
+	}
+
 	for await (const event of asyncIterable) {
+		// now we ping the sidecar that the probing needs to stop
+		if (token.isCancellationRequested) {
+			await sidecarClient.stopAgentProbe(threadId);
+			return;
+		}
 		if ('keep_alive' in event) {
 			continue;
 		}
@@ -380,6 +394,12 @@ export const reportAgentEventsToChat = async (
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			if ('GoToDefinition' in symbolEventSubStep) {
+				// add decoration for now
+				// const goToDefinition = symbolEventSubStep.GoToDefinition!;
+				// await addDecoration(goToDefinition.fs_file_path, goToDefinition.range);
+				continue;
+			}
 			if ('Probe' in symbolEventSubStep === false) {
 				continue;
 			}
