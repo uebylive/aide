@@ -785,6 +785,7 @@ export class SideCarClient {
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
+		threadId: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
@@ -805,6 +806,7 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			query,
 			active_window_data: activeWindowDataForProbing,
+			request_id: threadId,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
