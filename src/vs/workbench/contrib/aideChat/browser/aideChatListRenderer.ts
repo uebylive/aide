@@ -58,7 +58,6 @@ import { ColorScheme } from 'vs/platform/theme/common/theme';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IResourceLabel, ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { AideChatBreakdowns } from 'vs/workbench/contrib/aideChat/browser/aideChatBreakdowns';
 import { ChatConfirmationWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatConfirmationWidget';
 import { ChatFollowups } from 'vs/workbench/contrib/aideChat/browser/aideChatFollowups';
 import { ChatMarkdownDecorationsRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
@@ -71,7 +70,7 @@ import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/w
 import { chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { AideChatAgentVoteDirection, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatService, IAideChatTask, IAideChatWarningMessage, IChatResponseProgressFileTreeData, IChatSendRequestOptions } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideChatBreakdownViewModel, IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IChatProgressMessageRenderData, IChatRenderData, IChatResponseMarkdownRenderData, IChatResponseViewModel, IChatTaskRenderData, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IWordCountResult, getNWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
 import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
@@ -88,10 +87,8 @@ interface IChatListItemTemplate {
 	readonly avatarContainer: HTMLElement;
 	readonly username: HTMLElement;
 	readonly detail: HTMLElement;
-	readonly explorationDetail: HTMLElement;
 	readonly value: HTMLElement;
 	readonly referencesListContainer: HTMLElement;
-	readonly breakdownsListContainer: HTMLElement;
 	readonly contextKeyService: IContextKeyService;
 	readonly templateDisposables: IDisposable;
 	readonly elementDisposables: DisposableStore;
@@ -135,7 +132,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _diffEditorPool: DiffEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: ContentReferencesListPool;
-	private _breakdownsList!: AideChatBreakdowns;
 
 	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
@@ -253,10 +249,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		for (const diffEditor of this._diffEditorPool.inUse()) {
 			diffEditor.layout(this._currentLayoutWidth);
 		}
-
-		if (this._breakdownsList) {
-			this._breakdownsList.layout(width);
-		}
 	}
 
 	renderTemplate(container: HTMLElement): IChatListItemTemplate {
@@ -278,10 +270,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const detail = dom.append(detailContainer, $('span.detail'));
 		dom.append(detailContainer, $('span.chat-animated-ellipsis'));
 		const referencesListContainer = dom.append(rowContainer, $('.referencesListContainer'));
-		const breakdownsWrapper = dom.append(rowContainer, $('.breakdownsWrapper'));
-		const explorationDetail = dom.append(breakdownsWrapper, $('span.exploration-detail'));
-		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
-		const breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 		const value = dom.append(rowContainer, $('.value'));
 		const elementDisposables = new DisposableStore();
 
@@ -307,7 +295,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}));
 		}
 
-		const template: IChatListItemTemplate = { avatarContainer, username, detail, referencesListContainer, explorationDetail, breakdownsListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
+		const template: IChatListItemTemplate = { avatarContainer, username, detail, referencesListContainer, value, rowContainer, elementDisposables, titleToolbar, templateDisposables, contextKeyService };
 		return template;
 	}
 
@@ -392,7 +380,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderDetail(element: IChatResponseViewModel, templateData: IChatListItemTemplate): void {
-		templateData.elementDisposables.add(autorun(reader => {
+		templateData.elementDisposables.add(autorun(() => {
 			this._renderDetail(element, templateData);
 		}));
 	}
@@ -414,7 +402,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				inline: true,
 				actionHandler: {
 					disposables: templateData.elementDisposables,
-					callback: (content) => {
+					callback: () => {
 						this._onDidClickRerunWithAgentOrCommandDetection.fire(element);
 					},
 				}
@@ -456,14 +444,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		dom.clearNode(templateData.value);
 		dom.clearNode(templateData.referencesListContainer);
-		dom.clearNode(templateData.breakdownsListContainer);
 
 		if (isResponseVM(element)) {
 			this.renderDetail(element, templateData);
 		}
 
 		this.renderContentReferencesIfNeeded(element, templateData, templateData.elementDisposables);
-		this.renderBreakdowns(element, templateData, templateData.elementDisposables);
 
 		let fileTreeIndex = 0;
 		value.forEach((data, index) => {
@@ -518,9 +504,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderWelcomeMessage(element: IChatWelcomeMessageViewModel, templateData: IChatListItemTemplate) {
 		dom.clearNode(templateData.value);
 		dom.clearNode(templateData.referencesListContainer);
-		dom.clearNode(templateData.breakdownsListContainer);
 		dom.hide(templateData.referencesListContainer);
-		dom.hide(templateData.breakdownsListContainer);
 
 		for (const item of element.content) {
 			if (Array.isArray(item)) {
@@ -664,7 +648,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			} else if (!isFullyRendered) {
 				disposables.clear();
 				this.renderContentReferencesIfNeeded(element, templateData, disposables);
-				this.renderBreakdowns(element, templateData, disposables);
 				let hasRenderedOneMarkdownBlock = false;
 				partsToRender.forEach((partToRender, index) => {
 					if (!partToRender) {
@@ -883,43 +866,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				listDisposables.dispose();
 			}
 		};
-	}
-
-	private renderBreakdowns(element: ChatTreeItem, templateData: IChatListItemTemplate, disposables: DisposableStore): void {
-		templateData.explorationDetail.textContent = isResponseVM(element) ?
-			(element.isComplete || element.isCanceled ?
-				localize('exploredCodebased', "Codebase exploration") :
-				localize('exploringCodebased', "Exploring the codebase")) :
-			'';
-
-		if (isResponseVM(element) && element.breakdowns.length) {
-			dom.show(templateData.breakdownsListContainer);
-			const breakdownsList = $('.chat-breakdowns-list');
-			if (templateData.breakdownsListContainer.firstChild) {
-				templateData.breakdownsListContainer.replaceChild(breakdownsList, templateData.breakdownsListContainer.firstChild!);
-			} else {
-				templateData.breakdownsListContainer.appendChild(breakdownsList);
-			}
-			disposables.add(this.renderBreakdownsListData(element, breakdownsList));
-		} else {
-			dom.hide(templateData.breakdownsListContainer);
-		}
-	}
-
-	private renderBreakdownsListData(element: IChatResponseViewModel, container: HTMLElement): IDisposable {
-		const listDisposables = new DisposableStore();
-		const list = this._breakdownsList = this.instantiationService.createInstance(AideChatBreakdowns);
-		listDisposables.add(list);
-
-		list.show(container);
-		const listData = element.breakdowns.map((item) => {
-			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
-			listDisposables.add(viewItem);
-			return viewItem;
-		});
-		list.updateBreakdowns(listData);
-
-		return listDisposables;
 	}
 
 	private updateAriaLabel(element: HTMLElement, label: string, expanded?: boolean): void {

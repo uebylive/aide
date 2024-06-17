@@ -5,13 +5,28 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken } from 'vs/base/common/cancellation';
+import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { URI } from 'vs/base/common/uri';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideChatBreakdown, IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export interface IAideProbeData {
 	id: string;
+}
+
+interface IReferenceByName {
+	name: string;
+	uri: URI;
+}
+
+export interface IAideChatBreakdown {
+	reference: IReferenceByName;
+	query?: IMarkdownString;
+	reason?: IMarkdownString;
+	response?: IMarkdownString;
+	kind: 'breakdown';
 }
 
 export type IAideProbeProgress =

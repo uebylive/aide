@@ -105,7 +105,6 @@ declare module 'vscode' {
 	}
 
 	export interface AideChatResponseStream extends ChatResponseStream {
-		breakdown(value: AideChatResponseBreakdown): void;
 	}
 
 	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: AideChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;

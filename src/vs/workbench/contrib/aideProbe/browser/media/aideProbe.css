@@ -35,3 +35,63 @@
 .aide-probe-view .has-text .action-label:has(> .action-with-kb):hover {
 	background-color: var(--vscode-toolbar-hoverBackground);
 }
+
+.chat-breakdowns-list .monaco-list {
+	border: none;
+	border-radius: 4px;
+	width: auto;
+	white-space: normal;
+}
+
+.aide-probe-view .chat-breakdowns-list .monaco-list .monaco-list-row {
+	display: flex;
+	align-items: center;
+}
+
+.aide-probe-view .breakdown-list-item-wrapper {
+	display: flex;
+	flex-grow: 1;
+	gap: 8px;
+	border-left: 1px solid var(--vscode-chat-requestBorder);
+	padding: 4px 10px;
+	margin: 6px 0;
+}
+
+.aide-probe-view .breakdown-list-item {
+	display: flex;
+	flex-grow: 1;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.aide-probe-view .breakdown-list-item .rendered-markdown > p .codicon {
+	font-size: 14px;
+	color: var(--vscode-icon-foreground) !important;
+}
+
+.aide-probe-view
+	.breakdown-list-item
+	.rendered-markdown
+	p:is(:first-child, :last-child) {
+	margin: 0;
+}
+
+.aide-probe-view .breakdown-list-item .breakdown-resource {
+	background-color: var(--vscode-textPreformat-background);
+	color: var(--vscode-textPreformat-foreground);
+}
+
+.aide-probe-view .breakdown-list-item .breakdown-resource .monaco-icon-label-container {
+	display: flex;
+	align-items: center;
+}
+
+.aide-probe-view .breakdown-list-item .breakdown-resource .monaco-icon-label::before {
+	line-height: 22px !important;
+	padding-left: 5px;
+}
+
+.aide-probe-view .breakdown-list-item-details.codicon.codicon-question {
+	font-size: 20px;
+	color: var(--vscode-editorGhostText-foreground);
+}

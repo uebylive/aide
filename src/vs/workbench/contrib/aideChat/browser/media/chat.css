@@ -686,66 +686,6 @@
 	margin: 0 0 0 4px;
 }
 
-.chat-breakdowns-list .monaco-list {
-	border: none;
-	border-radius: 4px;
-	width: auto;
-	white-space: normal;
-}
-
-.cschat-session .chat-breakdowns-list .monaco-list .monaco-list-row {
-	display: flex;
-	align-items: center;
-}
-
-.cschat-session .breakdown-list-item-wrapper {
-	display: flex;
-	flex-grow: 1;
-	gap: 8px;
-	border-left: 1px solid var(--vscode-chat-requestBorder);
-	padding: 4px 10px;
-	margin: 6px 0;
-}
-
-.cschat-session .breakdown-list-item {
-	display: flex;
-	flex-grow: 1;
-	flex-direction: column;
-	gap: 10px;
-}
-
-.cschat-session .breakdown-list-item .rendered-markdown > p .codicon {
-	font-size: 14px;
-	color: var(--vscode-icon-foreground) !important;
-}
-
-.cschat-session
-	.breakdown-list-item
-	.rendered-markdown
-	p:is(:first-child, :last-child) {
-	margin: 0;
-}
-
-.cschat-session .breakdown-list-item .breakdown-resource {
-	background-color: var(--vscode-textPreformat-background);
-	color: var(--vscode-textPreformat-foreground);
-}
-
-.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label-container {
-	display: flex;
-	align-items: center;
-}
-
-.cschat-session .breakdown-list-item .breakdown-resource .monaco-icon-label::before {
-	line-height: 22px !important;
-	padding-left: 5px;
-}
-
-.cschat-session .breakdown-list-item-details.codicon.codicon-question {
-	font-size: 20px;
-	color: var(--vscode-editorGhostText-foreground);
-}
-
 .cschat-item-container .rendered-markdown.progress-step {
 	display: flex;
 	margin-left: 4px;

@@ -20,18 +20,18 @@ import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor'
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { AideChatBreakdownHover } from 'vs/workbench/contrib/aideChat/browser/aideChatBreakdownHover';
+import { AideChatBreakdownHover } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdownHover';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
+import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 const $ = dom.$;
 

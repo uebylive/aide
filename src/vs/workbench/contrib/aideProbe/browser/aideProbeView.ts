@@ -6,6 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
+import 'vs/css!./media/probeBreakdownHover';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
