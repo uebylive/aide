@@ -21,7 +21,7 @@ interface IReferenceByName {
 	uri: URI;
 }
 
-export interface IAideChatBreakdown {
+export interface IAideProbeBreakdownContent {
 	reference: IReferenceByName;
 	query?: IMarkdownString;
 	reason?: IMarkdownString;
@@ -31,7 +31,7 @@ export interface IAideChatBreakdown {
 
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
-	| IAideChatBreakdown;
+	| IAideProbeBreakdownContent;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;

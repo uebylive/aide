@@ -58,7 +58,7 @@ import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
-import { IAideChatBreakdown } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export namespace Command {
 
@@ -2922,7 +2922,7 @@ export namespace AideChatResponseReferencePart {
 }
 
 export namespace AideChatResponseBreakdownPart {
-	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideChatBreakdown> {
+	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideProbeBreakdownContent> {
 		return {
 			kind: 'breakdown',
 			reference: { name: part.reference.name, uri: part.reference.uri },

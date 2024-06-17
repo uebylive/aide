@@ -262,11 +262,11 @@ export async function activate(context: ExtensionContext) {
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		uniqueUserId,
-		sidecarClient, currentRepo, projectContext, editorUrl,
+		sidecarClient, currentRepo, projectContext
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	const probeProvider = new AideProbeProvider();
+	const probeProvider = new AideProbeProvider(sidecarClient, editorUrl);
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands

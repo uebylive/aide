@@ -4,27 +4,40 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
+import { SideCarClient } from '../../sidecar/client';
 import { reportDummyEventsToChat } from '../../chatState/convertStreamToMessage';
 
-export class AideProbeProvider extends vscode.Disposable {
-	private _disposables: vscode.Disposable[] = [];
+export class AideProbeProvider implements vscode.Disposable {
+	private _sideCarClient: SideCarClient;
+	private _editorUrl: string;
 
-	constructor() {
-		super(() => this.dispose());
+	constructor(
+		sideCarClient: SideCarClient,
+		editorUrl: string,
+	) {
+		console.log('AideProbeProvider');
+		console.log(sideCarClient);
+		this._sideCarClient = sideCarClient;
+		this._editorUrl = editorUrl;
+		console.log(this._sideCarClient);
 
-		this._disposables.push(vscode.aideProbe.registerProbeResponseProvider(
+		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
-			{ provideProbeResponse: this.provideProbeResponse }
-		));
+			{ provideProbeResponse: this.provideProbeResponse.bind(this) }
+		);
 	}
 
-	private provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken): vscode.ProviderResult<vscode.ProbeResult | void> {
-		reportDummyEventsToChat(response);
+	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		// console.log('provideProbeResponse');
+		// const query = _request.trim();
+		// const followupResponse = this._sideCarClient.startAgentProbe(query, [], this._editorUrl);
+		// await reportAgentEventsToChat(followupResponse, response);
+		console.log(this._editorUrl);
+		await reportDummyEventsToChat(response);
+		return {};
 	}
 
-	override dispose() {
-		super.dispose();
-		this._disposables.forEach(d => d.dispose());
-		this._disposables = [];
+	dispose() {
+		console.log('AideProbeProvider.dispose');
 	}
 }

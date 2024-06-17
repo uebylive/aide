@@ -8,7 +8,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
-import { IAideChatBreakdown, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
 	readonly message: string;
@@ -16,7 +16,7 @@ export interface IAideProbeRequestModel {
 
 export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
-	readonly breakdowns: ReadonlyArray<IAideChatBreakdown>;
+	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 }
 
 export interface IAideProbeModel {
@@ -45,9 +45,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._result = value;
 	}
 
-	private readonly _breakdownsBySymbol: Map<string, IAideChatBreakdown> = new Map();
-	private readonly _breakdowns: IAideChatBreakdown[] = [];
-	public get breakdowns(): ReadonlyArray<IAideChatBreakdown> {
+	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
+	private readonly _breakdowns: IAideProbeBreakdownContent[] = [];
+	public get breakdowns(): ReadonlyArray<IAideProbeBreakdownContent> {
 		return this._breakdowns;
 	}
 
@@ -58,7 +58,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	/**
 	 * Apply a breakdown to the response content.
 	*/
-	applyBreakdown(breakdown: IAideChatBreakdown) {
+	applyBreakdown(breakdown: IAideProbeBreakdownContent) {
 		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
 		const { query, reason, response } = breakdown;
 		if (this._breakdownsBySymbol.has(mapKey)) {
@@ -169,7 +169,7 @@ export class AideChatBreakdownViewModel extends Disposable implements IAideChatB
 	currentRenderedHeight: number | undefined;
 
 	constructor(
-		private readonly _breakdown: IAideChatBreakdown,
+		private readonly _breakdown: IAideProbeBreakdownContent,
 	) {
 		super();
 	}

@@ -348,20 +348,10 @@ So in summary, the \`Agent\` struct acts as an intermediary that coordinates the
 
 export const reportAgentEventsToChat = async (
 	stream: AsyncIterator<SideCarAgentEvent>,
-	response: vscode.AideChatResponseStream,
+	response: vscode.ProbeResponseStream,
 ): Promise<void> => {
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
-	};
-
-	const openFiles = new Set<string>();
-	const addReference = (fsFilePath: string, response: vscode.AideChatResponseStream) => {
-		if (openFiles.has(fsFilePath)) {
-			return;
-		}
-
-		openFiles.add(fsFilePath);
-		response.reference(vscode.Uri.file(fsFilePath));
 	};
 
 	for await (const event of asyncIterable) {
@@ -376,15 +366,7 @@ export const reportAgentEventsToChat = async (
 			}
 
 			const toolEventKey = toolEventKeys[0] as keyof typeof event.event.ToolEvent;
-			if (toolEventKey === 'OpenFile' && event.event.ToolEvent.OpenFile !== undefined) {
-				const openFileEvent = event.event.ToolEvent.OpenFile;
-				if (openFileEvent.fs_file_path === undefined) {
-					continue;
-				}
-
-				const fsFilePath = openFileEvent.fs_file_path;
-				addReference(fsFilePath, response);
-			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
+			if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
 				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
 				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
 				response.breakdown({

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { DisposableStore } from 'vs/base/common/lifecycle';
+import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/probeBreakdownHover';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
@@ -18,15 +18,19 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
+import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdowns';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
-import { AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { AideChatBreakdownViewModel, AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { IAideProbeBreakdownContent, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 const $ = dom.$;
 
 export class AideProbeViewPane extends ViewPane {
 	private container!: HTMLElement;
+	private breakdownsListContainer!: HTMLElement;
+
 	private inputPart!: AideProbeInputPart;
+	private _breakdownsList!: AideChatBreakdowns;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeModel | undefined;
@@ -71,14 +75,16 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
 		this.inputPart.render(this.container, this);
 
+		const breakdownsWrapper = dom.append(this.container, $('.breakdownsWrapper'));
+		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
+
 		this.viewModel = this.aideProbeService.startSession();
 		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
 			if (!this.viewModel) {
 				return;
 			}
 
-			console.log('probeView populated!');
-			console.log(this.viewModel);
+			this.onDidChangeItems();
 		}));
 	}
 
@@ -108,10 +114,44 @@ export class AideProbeViewPane extends ViewPane {
 		return undefined;
 	}
 
+	private onDidChangeItems(): void {
+		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
+			dom.show(this.breakdownsListContainer);
+			const breakdownsList = $('.chat-breakdowns-list');
+			if (this.breakdownsListContainer.firstChild) {
+				this.breakdownsListContainer.replaceChild(breakdownsList, this.breakdownsListContainer.firstChild!);
+			} else {
+				this.breakdownsListContainer.appendChild(breakdownsList);
+			}
+			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], breakdownsList));
+		} else {
+			dom.hide(this.breakdownsListContainer);
+		}
+	}
+
+	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownContent>, container: HTMLElement): IDisposable {
+		const listDisposables = new DisposableStore();
+		const list = this._breakdownsList = this.instantiationService.createInstance(AideChatBreakdowns);
+		listDisposables.add(list);
+
+		list.show(container);
+		const listData = breakdowns.map((item) => {
+			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
+			listDisposables.add(viewItem);
+			return viewItem;
+		});
+		list.updateBreakdowns(listData);
+
+		return listDisposables;
+	}
+
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
 
 		this.inputPart.layout(height, width);
+		if (this._breakdownsList) {
+			this._breakdownsList.layout(width);
+		}
 	}
 
 	override dispose(): void {
