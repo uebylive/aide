@@ -20,7 +20,6 @@ import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor'
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
@@ -32,6 +31,10 @@ import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
+import { Position } from 'vs/editor/common/core/position';
 
 const $ = dom.$;
 
@@ -71,7 +74,7 @@ export class AideChatBreakdowns extends Disposable {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
-		@IEditorService private readonly editorService: IEditorService,
+		@ICodeEditorService private readonly editorService: ICodeEditorService,
 	) {
 		super();
 
@@ -137,36 +140,44 @@ export class AideChatBreakdowns extends Disposable {
 	}
 
 	private async openBreakdownReference(uri: URI, name: string): Promise<void> {
+		let codeEditor: ICodeEditor | null;
+		let decorationPosition: Position = new Position(1, 1);
+
 		try {
 			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
 			if (!symbol) {
-				this.editorService.openEditor({
+				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
 					options: {
 						pinned: false,
 						preserveFocus: true,
 					}
-				});
-				return;
+				}, null);
+			} else {
+				decorationPosition = new Position(symbol.range.startLineNumber, symbol.range.startColumn);
+				codeEditor = await this.editorService.openCodeEditor({
+					resource: uri,
+					options: {
+						pinned: false,
+						preserveFocus: true,
+						selection: symbol.range,
+						selectionRevealType: TextEditorSelectionRevealType.NearTop
+					}
+				}, null);
 			}
-
-			this.editorService.openEditor({
-				resource: uri,
-				options: {
-					pinned: false,
-					preserveFocus: true,
-					selection: symbol.range,
-					selectionRevealType: TextEditorSelectionRevealType.NearTop
-				}
-			});
 		} catch (e) {
-			this.editorService.openEditor({
+			codeEditor = await this.editorService.openCodeEditor({
 				resource: uri,
 				options: {
 					pinned: false,
 					preserveFocus: true,
 				}
-			});
+			}, null);
+		}
+
+		if (codeEditor) {
+			const widget = this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor);
+			widget.showAt(decorationPosition);
 		}
 	}
 
