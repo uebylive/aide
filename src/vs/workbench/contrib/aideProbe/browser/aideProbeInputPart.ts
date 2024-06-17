@@ -25,7 +25,7 @@ import { registerAndCreateHistoryNavigationContext } from 'vs/platform/history/b
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IView } from 'vs/workbench/common/views';
-import { IProbeActionContext, SubmitAction } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
+import { CancelAction, IProbeActionContext, SubmitAction } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 
@@ -217,7 +217,7 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
-				if ((action.id === SubmitAction.ID) && action instanceof MenuItemAction) {
+				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
 

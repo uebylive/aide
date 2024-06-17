@@ -95,6 +95,10 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._request;
 	}
 
+	get requestInProgress(): boolean {
+		return !!this._request && !this._isComplete;
+	}
+
 	set request(value: AideProbeRequestModel) {
 		this._request = value;
 	}

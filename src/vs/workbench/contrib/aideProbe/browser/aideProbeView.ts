@@ -8,7 +8,7 @@ import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/probeBreakdownHover';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -18,6 +18,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
+import { CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdowns';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { AideChatBreakdownViewModel, AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
@@ -30,6 +31,8 @@ export class AideProbeViewPane extends ViewPane {
 	private breakdownsListContainer!: HTMLElement;
 
 	private inputPart!: AideProbeInputPart;
+
+	private requestInProgress: IContextKey<boolean>;
 	private _breakdownsList!: AideChatBreakdowns;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
@@ -66,6 +69,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IAideProbeService private readonly aideProbeService: IAideProbeService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
+		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -83,8 +87,8 @@ export class AideProbeViewPane extends ViewPane {
 			if (!this.viewModel) {
 				return;
 			}
-
 			this.onDidChangeItems();
+			this.requestInProgress.set(this.viewModel.requestInProgress);
 		}));
 	}
 
@@ -93,6 +97,9 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	getInput(): string {
+		if (this.viewModel) {
+			this.requestInProgress.set(this.viewModel.requestInProgress);
+		}
 		return this.inputPart.inputEditor.getValue();
 	}
 
