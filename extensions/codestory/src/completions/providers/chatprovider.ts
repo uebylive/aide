@@ -193,7 +193,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		} else {
 			const query = request.prompt.toString().trim();
 			const followupResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.threadId);
-			await reportAgentEventsToChat(followupResponse, response);
+			await reportAgentEventsToChat(followupResponse, response, request.threadId, token, this._sideCarClient);
 			// console.log(this._editorUrl);
 			// await reportDummyEventsToChat(response);
 			return new CSChatResponseForProgress();
