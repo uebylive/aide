@@ -34,6 +34,7 @@ export type ProbeAgentBody = {
 		file_content: string;
 		language: string;
 	} | null;
+	request_id: string;
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
