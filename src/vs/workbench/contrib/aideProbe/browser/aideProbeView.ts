@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { Event } from 'vs/base/common/event';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
@@ -19,20 +18,18 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { AideProbeViewModel, IAideProbeViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 const $ = dom.$;
 
 export class AideProbeViewPane extends ViewPane {
 	private container!: HTMLElement;
-
 	private inputPart!: AideProbeInputPart;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
-	private _viewModel: AideProbeViewModel | undefined;
-	private set viewModel(viewModel: AideProbeViewModel | undefined) {
+	private _viewModel: AideProbeModel | undefined;
+	private set viewModel(viewModel: AideProbeModel | undefined) {
 		if (this._viewModel === viewModel) {
 			return;
 		}
@@ -45,7 +42,7 @@ export class AideProbeViewPane extends ViewPane {
 		}
 	}
 
-	get viewModel(): IAideProbeViewModel | undefined {
+	get viewModel(): AideProbeModel | undefined {
 		return this._viewModel;
 	}
 
@@ -73,9 +70,8 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
 		this.inputPart.render(this.container, this);
 
-		const model = this.instantiationService.createInstance(AideProbeModel);
-		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
-		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(events => {
+		this.viewModel = this.aideProbeService.startSession();
+		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
 			if (!this.viewModel) {
 				return;
 			}
@@ -93,15 +89,22 @@ export class AideProbeViewPane extends ViewPane {
 		return this.inputPart.inputEditor.getValue();
 	}
 
-	async acceptInput() {
+	acceptInput() {
 		this._acceptInput();
 	}
 
-	private async _acceptInput() {
+	private _acceptInput() {
 		if (this.viewModel) {
 			const editorValue = this.getInput();
-			await this.aideProbeService.initiateProbe(editorValue);
+			const result = this.aideProbeService.initiateProbe(this.viewModel, editorValue);
+
+			if (result) {
+				this.inputPart.acceptInput(editorValue);
+				return result.responseCreatedPromise;
+			}
 		}
+
+		return undefined;
 	}
 
 	protected override layoutBody(height: number, width: number): void {
