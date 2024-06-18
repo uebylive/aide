@@ -7,7 +7,6 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
-import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { IAideProbeBreakdownContent, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
@@ -26,7 +25,9 @@ export interface IAideProbeModel {
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
+
 	isComplete: boolean;
+	requestInProgress: boolean;
 }
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
@@ -154,44 +155,5 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._isComplete = false;
 
 		this._onDidChange.fire();
-	}
-}
-
-export interface IAideChatBreakdownViewModel {
-	readonly uri: URI;
-	readonly name: string;
-	readonly query?: IMarkdownString;
-	readonly reason?: IMarkdownString;
-	readonly response?: IMarkdownString;
-	currentRenderedHeight: number | undefined;
-}
-
-export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
-	get uri() {
-		return this._breakdown.reference.uri;
-	}
-
-	get name() {
-		return this._breakdown.reference.name;
-	}
-
-	get query() {
-		return this._breakdown.query;
-	}
-
-	get reason() {
-		return this._breakdown.reason;
-	}
-
-	get response() {
-		return this._breakdown.response;
-	}
-
-	currentRenderedHeight: number | undefined;
-
-	constructor(
-		private readonly _breakdown: IAideProbeBreakdownContent,
-	) {
-		super();
 	}
 }

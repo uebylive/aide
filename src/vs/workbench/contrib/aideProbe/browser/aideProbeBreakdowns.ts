@@ -21,11 +21,11 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
+import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 
 const $ = dom.$;
 

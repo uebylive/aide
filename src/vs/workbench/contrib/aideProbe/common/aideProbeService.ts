@@ -10,7 +10,7 @@ import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/co
 import { URI } from 'vs/base/common/uri';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export interface IAideProbeData {
 	id: string;
@@ -52,7 +52,7 @@ export interface IAideProbeService {
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
 
 	startSession(): AideProbeModel;
-	initiateProbe(model: AideProbeModel, request: string): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(sessionId: string): void;
 }

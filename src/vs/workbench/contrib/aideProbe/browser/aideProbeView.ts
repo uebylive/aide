@@ -5,7 +5,6 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import 'vs/css!./media/probeBreakdownHover';
@@ -24,13 +23,12 @@ import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdowns';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
-import { AideChatBreakdownViewModel, AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { IAideProbeBreakdownContent, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { basenameOrAuthority } from 'vs/base/common/resources';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { AideChatBreakdownViewModel, AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { Event } from 'vs/base/common/event';
 
 const $ = dom.$;
 
@@ -41,7 +39,6 @@ export class AideProbeViewPane extends ViewPane {
 	private responseWrapper!: HTMLElement;
 
 	private inputPart!: AideProbeInputPart;
-	private startingFile: URI | undefined;
 
 	private readonly markdownRenderer: MarkdownRenderer;
 	private requestInProgress: IContextKey<boolean>;
@@ -49,8 +46,8 @@ export class AideProbeViewPane extends ViewPane {
 	private readonly _resourceLabels: ResourceLabels;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
-	private _viewModel: AideProbeModel | undefined;
-	private set viewModel(viewModel: AideProbeModel | undefined) {
+	private _viewModel: AideProbeViewModel | undefined;
+	private set viewModel(viewModel: AideProbeViewModel | undefined) {
 		if (this._viewModel === viewModel) {
 			return;
 		}
@@ -66,7 +63,7 @@ export class AideProbeViewPane extends ViewPane {
 		}
 	}
 
-	get viewModel(): AideProbeModel | undefined {
+	get viewModel(): AideProbeViewModel | undefined {
 		return this._viewModel;
 	}
 
@@ -82,7 +79,6 @@ export class AideProbeViewPane extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
-		@IEditorService private readonly editorService: IEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
@@ -91,12 +87,6 @@ export class AideProbeViewPane extends ViewPane {
 		this._resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeBodyVisibility }));
 		this._breakdownsList = this._register(this.instantiationService.createInstance(AideChatBreakdowns, this._resourceLabels));
 		this.markdownRenderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
-
-		this.startingFile = this.editorService.activeEditor?.resource;
-		this._register(this.editorService.onDidActiveEditorChange(() => {
-			this.startingFile = this.editorService.activeEditor?.resource;
-			this.updateExplorationDetail();
-		}));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -142,8 +132,9 @@ export class AideProbeViewPane extends ViewPane {
 			this.clear();
 		}
 
-		this.viewModel = this._register(this.aideProbeService.startSession());
-		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
+		const model = this.aideProbeService.startSession();
+		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			if (!this.viewModel) {
 				return;
 			}
@@ -153,7 +144,7 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 
 		const editorValue = this.getInput();
-		const result = this.aideProbeService.initiateProbe(this.viewModel, editorValue);
+		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
 
 		if (result) {
 			this.inputPart.acceptInput(editorValue);
@@ -165,8 +156,8 @@ export class AideProbeViewPane extends ViewPane {
 
 	private onDidChangeItems(): void {
 		this.updateExplorationDetail();
-		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
-			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], this.breakdownsListContainer));
+		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
+			this._register(this.renderBreakdownsListData(this.viewModel?.model.response?.breakdowns ?? [], this.breakdownsListContainer));
 			dom.show(this.breakdownsListContainer);
 		} else {
 			this._breakdownsList.hide();
@@ -179,16 +170,6 @@ export class AideProbeViewPane extends ViewPane {
 		dom.clearNode(this.explorationDetail);
 		if (this.requestInProgress.get()) {
 			this.explorationDetail.textContent = 'Exploring the codebase';
-		} else {
-			if (this.startingFile) {
-				const description = $('span');
-				description.textContent = 'Starting point:';
-				this.explorationDetail.appendChild(description);
-				const label = this._resourceLabels.create(this.explorationDetail, { supportHighlights: true });
-				label.element.style.display = 'flex';
-				label.setResource({ resource: this.startingFile, description: basenameOrAuthority(this.startingFile) });
-				this._register(label);
-			}
 		}
 	}
 
@@ -207,8 +188,8 @@ export class AideProbeViewPane extends ViewPane {
 
 	private renderFinalAnswer(): void {
 		dom.clearNode(this.responseWrapper);
-		if (this.viewModel?.response?.result) {
-			const result = this.viewModel.response.result;
+		if (this.viewModel?.model.response?.result) {
+			const result = this.viewModel.model.response.result;
 			this.responseWrapper.appendChild(this.markdownRenderer.render(result).element);
 		}
 	}
