@@ -63,6 +63,11 @@
 	padding: 0 12px;
 }
 
+.aide-probe-view .chat-breakdowns-list .monaco-list .monaco-list-row.focused.selected {
+	border-left: 4px solid var(--vscode-statusBarItem-remoteBackground);
+	padding: 0 12px 0 8px;
+}
+
 .aide-probe-view .breakdown-list-item-wrapper {
 	display: flex;
 	flex-grow: 1;
