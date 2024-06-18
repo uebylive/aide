@@ -8,7 +8,6 @@ import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/lis
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
-import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
@@ -22,12 +21,6 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { AideChatBreakdownHover } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdownHover';
-import { IHoverService } from 'vs/platform/hover/browser/hover';
-import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
-import { KeyCode } from 'vs/base/common/keyCodes';
-import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
@@ -232,7 +225,7 @@ interface IBreakdownTemplateData {
 	currentItemIndex?: number;
 	wrapper: HTMLElement;
 	container: HTMLElement;
-	breakdownHover: AideChatBreakdownHover;
+	progressIndicator: HTMLElement;
 	toDispose: DisposableStore;
 }
 
@@ -250,10 +243,8 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
-		@IHoverService private readonly hoverService: IHoverService,
 	) {
 		super();
 	}
@@ -270,35 +261,10 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		// Content
 		data.container = $('.breakdown-list-item');
 		data.wrapper.appendChild(data.container);
-		// Hover trigger
-		const detailsTrigger = $('.breakdown-list-item-details');
-		const triggerIcon = Codicon.question;
-		detailsTrigger.classList.add(...ThemeIcon.asClassNameArray(triggerIcon));
-		data.wrapper.appendChild(detailsTrigger);
 
-		const breakdownHover = data.toDispose.add(this.instantiationService.createInstance(AideChatBreakdownHover));
-		const hoverContent = () => {
-			breakdownHover.setHoverContent(
-				data.currentItem?.query ?? new MarkdownString(),
-				data.currentItem?.reason ?? new MarkdownString()
-			);
-			return breakdownHover.domNode;
-		};
-		const hoverDelegate = getDefaultHoverDelegate('element');
-		hoverDelegate.showHover = (options, focus?) => this.hoverService.showHover({ ...options, position: { hoverPosition: HoverPosition.ABOVE } }, focus);
-		data.toDispose.add(this.hoverService.setupUpdatableHover(hoverDelegate, detailsTrigger, hoverContent));
-		data.toDispose.add(dom.addDisposableListener(detailsTrigger, dom.EventType.KEY_DOWN, e => {
-			const ev = new StandardKeyboardEvent(e);
-			if (ev.equals(KeyCode.Space) || ev.equals(KeyCode.Enter)) {
-				const content = hoverContent();
-				if (content) {
-					this.hoverService.showHover({ content, target: detailsTrigger });
-				}
-			} else if (ev.equals(KeyCode.Escape)) {
-				this.hoverService.hideHover();
-			}
-		}));
-		data.breakdownHover = breakdownHover;
+		// Progress indicator
+		data.progressIndicator = $('.breakdown-list-item-details');
+		data.wrapper.appendChild(data.progressIndicator);
 
 		return data;
 	}
@@ -310,7 +276,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name } = element;
+		const { uri, name, response } = element;
 		if (uri) {
 			const rowResource = $('div.breakdown-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
@@ -330,6 +296,14 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 					});
 				}
 			});
+		}
+
+		if (response && response.value.length > 0) {
+			const progressIcon = Codicon.arrowRight;
+			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
+		} else {
+			const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
+			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
 		}
 
 		this.updateItemHeight(templateData);
