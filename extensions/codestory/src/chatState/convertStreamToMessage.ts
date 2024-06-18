@@ -408,6 +408,19 @@ export const reportAgentEventsToChat = async (
 					response: new vscode.MarkdownString(probeAnswer)
 				});
 			}
+		} else if (event.event.RequestEvent) {
+			const { ProbeFinished } = event.event.RequestEvent;
+			if (!ProbeFinished) {
+				return;
+			}
+
+			const { reply } = ProbeFinished;
+			if (reply === null) {
+				return;
+			}
+
+			response.markdown(reply);
+			return;
 		}
 	}
 };
