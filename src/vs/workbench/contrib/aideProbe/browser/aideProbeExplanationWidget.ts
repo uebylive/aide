@@ -43,24 +43,26 @@ export class AideProbeExplanationWidget extends Disposable implements IContentWi
 		this.positionPreference = [ContentWidgetPositionPreference.ABOVE, ContentWidgetPositionPreference.BELOW];
 	}
 
-	private create(): void {
-		this.domNode = $('.aide-probe-explanation-widget');
+	private create(content: HTMLElement): void {
+		this.domNode = $('.aide-probe-explanation-widget.monaco-hover');
+		this.domNode.appendChild(content);
 
 		this.editor.addContentWidget(this);
 	}
 
-	async showAt(position: Position): Promise<void> {
+	async showAt(position: Position, content: HTMLElement): Promise<void> {
 		if (!this.editor.hasModel()) {
 			this.hide();
 			return;
 		}
 
 		if (!this.domNode) {
-			this.create();
+			this.create(content);
 		}
 
 		this.showAtPosition = position;
 		this._isVisible = true;
+		this.editor.layoutContentWidget(this);
 	}
 
 	hide(): void {

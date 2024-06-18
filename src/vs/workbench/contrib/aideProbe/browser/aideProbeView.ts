@@ -6,6 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
+import 'vs/css!./media/aideProbeExplanationWidget';
 import 'vs/css!./media/probeBreakdownHover';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';

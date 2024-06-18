@@ -33,6 +33,8 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
+import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 
 const $ = dom.$;
 
@@ -61,10 +63,11 @@ export class AideChatBreakdowns extends Disposable {
 	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
-	private renderer: BreakdownRenderer | undefined;
+	private renderer: BreakdownRenderer;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 
+	private readonly markdownRenderer: MarkdownRenderer;
 	private readonly resourceLabels: ResourceLabels;
 
 	constructor(
@@ -75,7 +78,9 @@ export class AideChatBreakdowns extends Disposable {
 	) {
 		super();
 
+		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 	}
 
 	show(container: HTMLElement): void {
@@ -93,24 +98,21 @@ export class AideChatBreakdowns extends Disposable {
 	}
 
 	private createBreakdownsList(listContainer: HTMLElement): void {
-		// Breakdown renderer
-		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels);
-
 		// List
 		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
-		const list = this.list = <WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
+		const list = this.list = this._register(<WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
 			listContainer,
 			listDelegate,
-			[renderer],
+			[this.renderer],
 			{
 				setRowLineHeight: false,
 				supportDynamicHeights: true,
 				horizontalScrolling: false,
 				alwaysConsumeMouseWheel: false
 			}
-		);
+		));
 
 		this._register(list.onDidChangeContentHeight(height => {
 			list.layout(height);
@@ -124,21 +126,22 @@ export class AideChatBreakdowns extends Disposable {
 				list.setSelection([index]);
 				const element = list.element(index);
 				if (element && element.uri && element.name) {
-					this.openBreakdownReference(element.uri, element.name);
+					this.openBreakdownReference(element);
 				}
 			}
 		}));
 		this._register(list.onDidOpen(async e => {
 			if (e.element && e.element.uri && e.element.name) {
-				this.openBreakdownReference(e.element.uri, e.element.name);
+				this.openBreakdownReference(e.element);
 			}
 		}));
 	}
 
-	private async openBreakdownReference(uri: URI, name: string): Promise<void> {
+	private async openBreakdownReference(element: IAideChatBreakdownViewModel): Promise<void> {
 		let codeEditor: ICodeEditor | null;
-		let decorationPosition: Position = new Position(1, 1);
+		let decorationPosition: Position = new Position(1, Number.MAX_SAFE_INTEGER);
 
+		const { query, reason, response, uri, name } = element;
 		try {
 			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
 			if (!symbol) {
@@ -150,7 +153,7 @@ export class AideChatBreakdowns extends Disposable {
 					}
 				}, null);
 			} else {
-				decorationPosition = new Position(symbol.range.startLineNumber, symbol.range.startColumn);
+				decorationPosition = new Position(symbol.range.startLineNumber, Number.MAX_SAFE_INTEGER);
 				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
 					options: {
@@ -172,8 +175,21 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		if (codeEditor) {
+			const rowResponse = $('div.breakdown-content');
+			const content = new MarkdownString();
+			if (query) {
+				content.appendMarkdown(query.value);
+			}
+			if (response) {
+				content.appendMarkdown(response.value);
+			} else if (reason) {
+				content.appendMarkdown(reason.value);
+			}
+			const renderedContent = this.markdownRenderer.render(content);
+			rowResponse.appendChild(renderedContent.element);
+
 			const widget = this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor);
-			widget.showAt(decorationPosition);
+			widget.showAt(decorationPosition, rowResponse);
 		}
 	}
 
