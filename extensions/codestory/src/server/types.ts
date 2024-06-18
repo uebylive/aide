@@ -164,6 +164,7 @@ interface SymbolToProbeRequest {
 	symbol_identifier: SymbolIdentifier;
 	probe_request: string;
 	original_request: string;
+	original_request_id: string;
 	history: SymbolToProbeHistory[];
 }
 
