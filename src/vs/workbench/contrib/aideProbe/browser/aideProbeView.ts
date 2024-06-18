@@ -8,6 +8,7 @@ import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
+import * as nls from 'vs/nls';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -28,6 +29,10 @@ import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/brow
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideChatBreakdownViewModel, AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 import { Event } from 'vs/base/common/event';
+import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
+import { Codicon } from 'vs/base/common/codicons';
+import { defaultToggleStyles } from 'vs/platform/theme/browser/defaultStyles';
+import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 
 const $ = dom.$;
 
@@ -96,10 +101,26 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart.render(this.container, this);
 
 		const breakdownsWrapper = dom.append(this.container, $('.breakdownsWrapper'));
-		this.explorationDetail = dom.append(breakdownsWrapper, $('span.exploration-detail'));
+		this.explorationDetail = dom.append(breakdownsWrapper, $('div.exploration-detail'));
 		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
+		const text = $('span', undefined, 'Exploring the codebase');
+		this.explorationDetail.appendChild(text);
+		const hoverDelegate = this._register(createInstantHoverDelegate());
+		const toggle = this._register(new Toggle({
+			...defaultToggleStyles,
+			icon: Codicon.eyeClosed,
+			title: nls.localize('followAlong', "Follow Along"),
+			isChecked: false,
+			hoverDelegate,
+		}));
+		this._register(toggle.onChange(() => {
+			const checked = toggle.checked;
+			this.aideProbeService.followAlong(checked);
+			toggle.setIcon(checked ? Codicon.eyeClosed : Codicon.eye);
+			toggle.checked = checked;
+		}));
+		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
-
 		this.responseWrapper = dom.append(this.container, $('.responseWrapper'));
 
 		this.onDidChangeItems();
@@ -114,9 +135,6 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	getInput(): string {
-		if (this.viewModel) {
-			this.requestInProgress.set(this.viewModel.requestInProgress);
-		}
 		return this.inputPart.inputEditor.getValue();
 	}
 
@@ -166,9 +184,10 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private updateExplorationDetail(): void {
-		dom.clearNode(this.explorationDetail);
 		if (this.requestInProgress.get()) {
-			this.explorationDetail.textContent = 'Exploring the codebase';
+			this.explorationDetail.style.display = 'flex';
+		} else {
+			this.explorationDetail.style.display = 'none';
 		}
 	}
 

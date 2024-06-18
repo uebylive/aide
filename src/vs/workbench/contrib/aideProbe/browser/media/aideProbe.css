@@ -46,6 +46,10 @@
 	margin: 0 20px;
 }
 
+.aide-probe-view .exploration-detail .monaco-custom-toggle {
+	margin-left: 4px;
+}
+
 .aide-probe-view .breakdownsWrapper .breakdownsListContainer {
 	margin-top: 8px;
 }

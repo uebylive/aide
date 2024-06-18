@@ -55,6 +55,8 @@ export interface IAideProbeService {
 	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(sessionId: string): void;
+
+	followAlong(follow: boolean): void;
 }
 
 export interface IInitiateProbeResponseState {
@@ -162,5 +164,9 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	clearSession(sessionId: string): void {
 		this._model?.dispose();
 		this.cancelCurrentRequestForSession(sessionId);
+	}
+
+	followAlong(follow: boolean): void {
+		this._model?.followAlong(follow);
 	}
 }

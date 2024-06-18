@@ -27,6 +27,7 @@ export interface IAideProbeModel {
 	response: IAideProbeResponseModel | undefined;
 
 	isComplete: boolean;
+	isTailing: boolean;
 	requestInProgress: boolean;
 }
 
@@ -93,6 +94,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
 	private _isComplete = false;
+	private _isTailing = false;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -117,6 +119,10 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	get isComplete(): boolean {
 		return this._isComplete;
+	}
+
+	get isTailing(): boolean {
+		return this._isTailing;
 	}
 
 	constructor() {
@@ -155,5 +161,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._isComplete = false;
 
 		this._onDidChange.fire();
+	}
+
+	followAlong(follow: boolean): void {
+		this._isTailing = follow;
 	}
 }
