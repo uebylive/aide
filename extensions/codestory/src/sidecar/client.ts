@@ -870,10 +870,12 @@ async function convertVSCodeVariableToSidecar(
 		const startRange = {
 			line: parsedJson.range.startLineNumber,
 			character: parsedJson.range.startColumn,
+			byteOffset: 0,
 		};
 		const endRange = {
 			line: parsedJson.range.endLineNumber,
 			character: parsedJson.range.endColumn,
+			byteOffset: 0,
 		};
 		const variableType = getVariableType(
 			variableName,

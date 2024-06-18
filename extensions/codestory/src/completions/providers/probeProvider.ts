@@ -53,12 +53,12 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		// console.log('threadId', threadId);
+		console.log('threadId', threadId);
 		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		// console.log('probeResponse', probeResponse);
 		// await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
 		// console.log('reportAgentEventsToChat done');
-		console.log(this._editorUrl, query, threadId);
+		// console.log(this._editorUrl, query, threadId);
 		await reportDummyEventsToChat(response);
 		return {};
 	}
