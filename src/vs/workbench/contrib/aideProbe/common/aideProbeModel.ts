@@ -8,6 +8,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
+import { generateUuid } from 'vs/base/common/uuid';
 import { IAideProbeBreakdownContent, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
@@ -22,6 +23,7 @@ export interface IAideProbeResponseModel {
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
 
+	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
 	isComplete: boolean;
@@ -91,6 +93,11 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private _response: AideProbeResponseModel | undefined;
 	private _isComplete = false;
 
+	private _sessionId: string;
+	get sessionId(): string {
+		return this._sessionId;
+	}
+
 	get request(): IAideProbeRequestModel | undefined {
 		return this._request;
 	}
@@ -113,6 +120,8 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	constructor() {
 		super();
+
+		this._sessionId = generateUuid();
 	}
 
 	acceptResponseProgress(progress: IAideProbeProgress): void {
@@ -135,6 +144,14 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	completeResponse(): void {
 		this._isComplete = true;
+
+		this._onDidChange.fire();
+	}
+
+	cancelRequest(): void {
+		this._request = undefined;
+		this._response = undefined;
+		this._isComplete = false;
 
 		this._onDidChange.fire();
 	}

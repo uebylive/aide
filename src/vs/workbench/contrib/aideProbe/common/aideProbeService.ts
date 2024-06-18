@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { DeferredPromise } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -53,6 +53,8 @@ export interface IAideProbeService {
 
 	startSession(): AideProbeModel;
 	initiateProbe(model: AideProbeModel, request: string): IInitiateProbeResponseState;
+	cancelCurrentRequestForSession(sessionId: string): void;
+	clearSession(sessionId: string): void;
 }
 
 export interface IInitiateProbeResponseState {
@@ -63,8 +65,9 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
+	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private readonly probeProviders = new Map<string, IAideProbeResolver>();
-	private _session: AideProbeModel | undefined;
+	private _model: AideProbeModel | undefined;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService
@@ -85,12 +88,12 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	startSession(): AideProbeModel {
-		if (this._session) {
-			this._session.dispose();
+		if (this._model) {
+			this._model.dispose();
 		}
 
-		this._session = this.instantiationService.createInstance(AideProbeModel);
-		return this._session;
+		this._model = this.instantiationService.createInstance(AideProbeModel);
+		return this._model;
 	}
 
 	initiateProbe(probeModel: AideProbeModel, request: string): IInitiateProbeResponseState {
@@ -103,13 +106,21 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			}
 		}
 
+		const source = new CancellationTokenSource();
+		const token = source.token;
 		const initiateProbeInternal = async () => {
-			let rawResult: IAideProbeResult | null | undefined;
-
 			const progressCallback = (progress: IAideProbeProgress) => {
+				if (token.isCancellationRequested) {
+					return;
+				}
+
 				probeModel.acceptResponseProgress(progress);
 				completeResponseCreated();
 			};
+
+			const listener = token.onCancellationRequested(() => {
+				probeModel.cancelRequest();
+			});
 
 			try {
 				probeModel.request = new AideProbeRequestModel(request);
@@ -119,21 +130,37 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					throw new Error('No probe provider registered.');
 				}
 
-				const result = await resolver.initiate(request, progressCallback, CancellationToken.None);
-				rawResult = result;
+				const result = await resolver.initiate(request, progressCallback, token);
+				if (token.isCancellationRequested) {
+					return;
+				} else if (result) {
+					probeModel.completeResponse();
+				}
 			} catch (error) {
 				console.log(error);
-			}
-
-			if (rawResult) {
-				probeModel.completeResponse();
+			} finally {
+				listener.dispose();
 			}
 		};
 
 		const rawResponsePromise = initiateProbeInternal();
+		this._pendingRequests.set(probeModel.sessionId, source);
+		rawResponsePromise.finally(() => {
+			this._pendingRequests.deleteAndDispose(probeModel.sessionId);
+		});
 		return {
 			responseCreatedPromise: responseCreated.p,
 			responseCompletePromise: rawResponsePromise,
 		};
+	}
+
+	cancelCurrentRequestForSession(sessionId: string): void {
+		this._pendingRequests.get(sessionId)?.cancel();
+		this._pendingRequests.deleteAndDispose(sessionId);
+	}
+
+	clearSession(sessionId: string): void {
+		this._model?.dispose();
+		this.cancelCurrentRequestForSession(sessionId);
 	}
 }

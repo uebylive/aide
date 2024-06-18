@@ -90,7 +90,7 @@ export class CancelAction extends Action2 {
 			return;
 		}
 
-		console.log('Cancel probe request');
+		aideProbeView.cancelRequest();
 	}
 }
 

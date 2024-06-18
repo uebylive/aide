@@ -213,6 +213,12 @@ export class AideProbeViewPane extends ViewPane {
 		}
 	}
 
+	cancelRequest(): void {
+		if (this.viewModel?.sessionId) {
+			this.aideProbeService.cancelCurrentRequestForSession(this.viewModel.sessionId);
+		}
+	}
+
 	clear(): void {
 		this.viewModel?.dispose();
 		this.viewModel = undefined;

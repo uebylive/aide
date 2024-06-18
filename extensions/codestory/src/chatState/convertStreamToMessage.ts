@@ -355,8 +355,10 @@ export const reportAgentEventsToChat = async (
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
+			console.log('Stopped the agent probe');
 			return;
 		}
+
 		if ('keep_alive' in event) {
 			continue;
 		}
@@ -374,9 +376,7 @@ export const reportAgentEventsToChat = async (
 						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
 						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
 					},
-					// setting both of these to be the same thing, figure out if this is really necessary??
-					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
-					reason: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
+					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request)
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {

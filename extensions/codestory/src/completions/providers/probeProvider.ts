@@ -6,7 +6,7 @@
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
-import { reportDummyEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -28,7 +28,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		);
 	}
 
-	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
 		const query = _request.trim();
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
@@ -53,13 +53,13 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		console.log('threadId', threadId);
-		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		// console.log('probeResponse', probeResponse);
-		// await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
-		// console.log('reportAgentEventsToChat done');
+		// console.log('threadId', threadId);
+		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		console.log('probeResponse', probeResponse);
+		await reportAgentEventsToChat(probeResponse, response, threadId, token, this._sideCarClient);
+		console.log('reportAgentEventsToChat done');
 		// console.log(this._editorUrl, query, threadId);
-		await reportDummyEventsToChat(response);
+		// await reportDummyEventsToChat(response);
 		return {};
 	}
 
