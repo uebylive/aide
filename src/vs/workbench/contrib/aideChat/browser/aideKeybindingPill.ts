@@ -24,7 +24,6 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	private isVisible: boolean = false;
 	private addContextButton: Button | undefined;
 	private inlineChatButton: Button | undefined;
-	private position: IPosition | undefined;
 
 	private addContextLabel?: string;
 	private inlineChatLabel?: string;
@@ -80,7 +79,6 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 		super.dispose();
 		this._toDispose.dispose();
 
-		this.position = undefined;
 		this.addContextButton = undefined;
 
 		this._editor.removeContentWidget(this);
@@ -125,7 +123,6 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	}
 
 	showAt(position: IPosition) {
-		this.position = position;
 		if (this.isVisible) {
 			this._editor.layoutContentWidget(this);
 		} else {
@@ -134,7 +131,6 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	}
 
 	hide() {
-		this.position = undefined;
 		this._editor.removeContentWidget(this);
 		this.isVisible = false;
 	}

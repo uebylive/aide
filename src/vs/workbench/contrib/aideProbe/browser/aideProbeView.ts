@@ -29,8 +29,6 @@ import { IAideProbeBreakdownContent, IAideProbeService } from 'vs/workbench/cont
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { basenameOrAuthority } from 'vs/base/common/resources';
-import { FileKind } from 'vs/platform/files/common/files';
-import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 
 const $ = dom.$;
 
