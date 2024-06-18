@@ -85,10 +85,11 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	startSession(): AideProbeModel {
-		if (!this._session) {
-			this._session = this.instantiationService.createInstance(AideProbeModel);
+		if (this._session) {
+			this._session.dispose();
 		}
 
+		this._session = this.instantiationService.createInstance(AideProbeModel);
 		return this._session;
 	}
 

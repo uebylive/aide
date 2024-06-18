@@ -60,6 +60,9 @@ export class AideProbeViewPane extends ViewPane {
 		this._viewModel = viewModel;
 		if (viewModel) {
 			this.viewModelDisposables.add(viewModel);
+		} else {
+			this.viewModel?.dispose();
+			this.viewModelDisposables.clear();
 		}
 	}
 
@@ -110,15 +113,7 @@ export class AideProbeViewPane extends ViewPane {
 
 		this.responseWrapper = dom.append(this.container, $('.responseWrapper'));
 
-		this.viewModel = this.aideProbeService.startSession();
 		this.onDidChangeItems();
-		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
-			if (!this.viewModel) {
-				return;
-			}
-			this.onDidChangeItems();
-			this.requestInProgress.set(this.viewModel.requestInProgress);
-		}));
 	}
 
 	override focus(): void {
@@ -141,17 +136,43 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private _acceptInput() {
-		if (this.viewModel) {
-			const editorValue = this.getInput();
-			const result = this.aideProbeService.initiateProbe(this.viewModel, editorValue);
+		if (this.viewModel?.requestInProgress) {
+			return;
+		} else if (this.viewModel) {
+			this.clear();
+		}
 
-			if (result) {
-				this.inputPart.acceptInput(editorValue);
-				return result.responseCreatedPromise;
+		this.viewModel = this._register(this.aideProbeService.startSession());
+		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
+			if (!this.viewModel) {
+				return;
 			}
+
+			this.onDidChangeItems();
+			this.requestInProgress.set(this.viewModel.requestInProgress);
+		}));
+
+		const editorValue = this.getInput();
+		const result = this.aideProbeService.initiateProbe(this.viewModel, editorValue);
+
+		if (result) {
+			this.inputPart.acceptInput(editorValue);
+			return result.responseCreatedPromise;
 		}
 
 		return undefined;
+	}
+
+	private onDidChangeItems(): void {
+		this.updateExplorationDetail();
+		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
+			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], this.breakdownsListContainer));
+			dom.show(this.breakdownsListContainer);
+		} else {
+			this._breakdownsList.hide();
+			dom.hide(this.breakdownsListContainer);
+		}
+		this.renderFinalAnswer();
 	}
 
 	private updateExplorationDetail(): void {
@@ -169,18 +190,6 @@ export class AideProbeViewPane extends ViewPane {
 				this._register(label);
 			}
 		}
-	}
-
-	private onDidChangeItems(): void {
-		this.updateExplorationDetail();
-		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
-			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], this.breakdownsListContainer));
-			dom.show(this.breakdownsListContainer);
-		} else {
-			this._breakdownsList.hide();
-			dom.hide(this.breakdownsListContainer);
-		}
-		this.renderFinalAnswer();
 	}
 
 	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownContent>, container: HTMLElement): IDisposable {
@@ -205,7 +214,7 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	clear(): void {
-		this.inputPart.setValue('');
+		this.viewModel?.dispose();
 		this.viewModel = undefined;
 		this.requestInProgress.set(false);
 		this._breakdownsList.hide();
