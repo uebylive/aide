@@ -3,6 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.aide-probe-explanation-widget {
-	padding: 6px;
+.breakdown-header {
+	font-weight: 600;
+}
+
+.breakdown-body {
+	font-style: italic;
 }

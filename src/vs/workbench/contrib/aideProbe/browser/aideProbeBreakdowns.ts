@@ -33,8 +33,6 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 
 const $ = dom.$;
 
@@ -62,12 +60,14 @@ export class AideChatBreakdowns extends Disposable {
 	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 
+	private activeBreakdown: IAideChatBreakdownViewModel | undefined;
+
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
 	private renderer: BreakdownRenderer;
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
+	private explanationWidget: AideProbeExplanationWidget | undefined;
 
-	private readonly markdownRenderer: MarkdownRenderer;
 	private readonly resourceLabels: ResourceLabels;
 
 	constructor(
@@ -78,7 +78,6 @@ export class AideChatBreakdowns extends Disposable {
 	) {
 		super();
 
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 	}
@@ -138,10 +137,22 @@ export class AideChatBreakdowns extends Disposable {
 	}
 
 	private async openBreakdownReference(element: IAideChatBreakdownViewModel): Promise<void> {
-		let codeEditor: ICodeEditor | null;
-		let decorationPosition: Position = new Position(1, Number.MAX_SAFE_INTEGER);
+		if (this.activeBreakdown === element) {
+			return;
+		} else {
+			this.activeBreakdown = element;
+		}
 
-		const { query, reason, response, uri, name } = element;
+		if (this.explanationWidget) {
+			this.explanationWidget.hide();
+			this.explanationWidget.dispose();
+			this.explanationWidget = undefined;
+		}
+
+		let codeEditor: ICodeEditor | null;
+		let decorationPosition: Position = new Position(1, 1);
+
+		const { uri, name } = element;
 		try {
 			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
 			if (!symbol) {
@@ -153,7 +164,7 @@ export class AideChatBreakdowns extends Disposable {
 					}
 				}, null);
 			} else {
-				decorationPosition = new Position(symbol.range.startLineNumber, Number.MAX_SAFE_INTEGER);
+				decorationPosition = new Position(symbol.range.startLineNumber, symbol.range.startColumn);
 				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
 					options: {
@@ -175,29 +186,26 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		if (codeEditor) {
-			const rowResponse = $('div.breakdown-content');
-			const content = new MarkdownString();
-			if (query) {
-				content.appendMarkdown(query.value);
-			}
-			if (response) {
-				content.appendMarkdown(response.value);
-			} else if (reason) {
-				content.appendMarkdown(reason.value);
-			}
-			const renderedContent = this.markdownRenderer.render(content);
-			rowResponse.appendChild(renderedContent.element);
-
-			const widget = this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor);
-			widget.showAt(decorationPosition, rowResponse);
+			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
+			this.explanationWidget.show(decorationPosition, 5);
 		}
 	}
 
 	updateBreakdowns(breakdowns: IAideChatBreakdownViewModel[]): void {
 		const list = assertIsDefined(this.list);
 
-		this.viewModel = breakdowns;
-		list.splice(0, list.length, breakdowns);
+		const newBreakdown = breakdowns[breakdowns.length - 1];
+		const lastBreakdown = this.viewModel[this.viewModel.length - 1];
+		if (lastBreakdown && lastBreakdown.uri === newBreakdown.uri && lastBreakdown.name === newBreakdown.name) {
+			// Update last breakdown
+			this.viewModel[this.viewModel.length - 1] = newBreakdown;
+			list.splice(this.viewModel.length - 1, 1, [newBreakdown]);
+		} else {
+			// Add new breakdown
+			this.viewModel.push(newBreakdown);
+			list.splice(this.viewModel.length - 1, 0, [newBreakdown]);
+		}
+
 		this.layout();
 	}
 

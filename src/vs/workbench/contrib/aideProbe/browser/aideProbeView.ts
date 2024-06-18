@@ -36,7 +36,7 @@ export class AideProbeViewPane extends ViewPane {
 	private inputPart!: AideProbeInputPart;
 
 	private requestInProgress: IContextKey<boolean>;
-	private _breakdownsList!: AideChatBreakdowns;
+	private _breakdownsList: AideChatBreakdowns;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeModel | undefined;
@@ -73,6 +73,8 @@ export class AideProbeViewPane extends ViewPane {
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+
+		this._breakdownsList = this._register(this.instantiationService.createInstance(AideChatBreakdowns));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -134,31 +136,23 @@ export class AideProbeViewPane extends ViewPane {
 		this.explorationDetail.textContent = 'Exploring the codebase';
 
 		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
+			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], this.breakdownsListContainer));
 			dom.show(this.breakdownsListContainer);
-			const breakdownsList = $('.chat-breakdowns-list');
-			if (this.breakdownsListContainer.firstChild) {
-				this.breakdownsListContainer.replaceChild(breakdownsList, this.breakdownsListContainer.firstChild!);
-			} else {
-				this.breakdownsListContainer.appendChild(breakdownsList);
-			}
-			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], breakdownsList));
 		} else {
+			this._breakdownsList.hide();
 			dom.hide(this.breakdownsListContainer);
 		}
 	}
 
 	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownContent>, container: HTMLElement): IDisposable {
 		const listDisposables = new DisposableStore();
-		const list = this._breakdownsList = this.instantiationService.createInstance(AideChatBreakdowns);
-		listDisposables.add(list);
-
-		list.show(container);
+		this._breakdownsList.show(container);
 		const listData = breakdowns.map((item) => {
 			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
 			listDisposables.add(viewItem);
 			return viewItem;
 		});
-		list.updateBreakdowns(listData);
+		this._breakdownsList.updateBreakdowns(listData);
 
 		return listDisposables;
 	}
@@ -167,9 +161,8 @@ export class AideProbeViewPane extends ViewPane {
 		super.layoutBody(height, width);
 
 		this.inputPart.layout(height, width);
-		if (this._breakdownsList) {
-			this._breakdownsList.layout(width);
-		}
+		this._breakdownsList.layout(width);
+
 	}
 
 	override dispose(): void {
