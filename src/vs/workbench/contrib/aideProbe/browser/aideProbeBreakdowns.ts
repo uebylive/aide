@@ -25,7 +25,11 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
+import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
+import { MarkdownString } from 'vs/base/common/htmlContent';
+import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 
 const $ = dom.$;
 
@@ -57,6 +61,9 @@ export class AideChatBreakdowns extends Disposable {
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
+	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
+
+	private readonly markdownRenderer: MarkdownRenderer;
 
 
 	constructor(
@@ -68,6 +75,7 @@ export class AideChatBreakdowns extends Disposable {
 	) {
 		super();
 
+		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 	}
 
@@ -138,8 +146,15 @@ export class AideChatBreakdowns extends Disposable {
 			this.explanationWidget = undefined;
 		}
 
+		if (this.goToDefinitionWidget) {
+			this.goToDefinitionWidget.hide();
+			this.goToDefinitionWidget.dispose();
+			this.goToDefinitionWidget = undefined;
+		}
+
 		let codeEditor: ICodeEditor | null;
 		let decorationPosition: Position = new Position(1, 1);
+		// let goToDefinitionPosition: Position = new Position(1, 1);
 
 		const { uri, name } = element;
 		try {
@@ -154,6 +169,7 @@ export class AideChatBreakdowns extends Disposable {
 				}, null);
 			} else {
 				decorationPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+				// goToDefinitionPosition = new Position(symbol.range.startLineNumber + 1, symbol.range.startColumn + 10);
 				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
 					options: {
@@ -177,6 +193,16 @@ export class AideChatBreakdowns extends Disposable {
 		if (codeEditor) {
 			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
 			this.explanationWidget.show(decorationPosition, 5);
+
+			// show the go-to-definition information
+			const rowResponse = $('div.breakdown-content');
+			const content = new MarkdownString();
+			content.appendMarkdown('[testing-skcd]');
+			const renderedContent = this.markdownRenderer.render(content);
+			rowResponse.appendChild(renderedContent.element);
+			// TODO(skcd): pass the data over here
+			// this.goToDefinitionWidget = this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionWidget, codeEditor));
+			// this.goToDefinitionWidget.showAt(goToDefinitionPosition, rowResponse);
 		}
 	}
 
