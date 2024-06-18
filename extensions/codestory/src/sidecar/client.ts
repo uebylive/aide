@@ -803,6 +803,7 @@ export class SideCarClient {
 		editorUrl: string,
 		threadId: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
+		console.log('starting agent probe');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
@@ -839,7 +840,7 @@ export class SideCarClient {
 	}
 }
 
-export interface CodeSelectionUriRange {
+interface CodeSelectionUriRange {
 	uri: vscode.Uri;
 	range: {
 		startLineNumber: number;

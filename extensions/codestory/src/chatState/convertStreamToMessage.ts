@@ -340,6 +340,7 @@ export const reportAgentEventsToChat = async (
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
+	console.log('reportAgentEventsToChat starting');
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};

@@ -3,8 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as uuid from 'uuid';
 import * as vscode from 'vscode';
-import { CodeSelectionUriRange, SideCarClient } from '../../sidecar/client';
+import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
@@ -35,7 +36,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			const fileName = activeEditor.document.fileName.split('/').pop();
 			const firstLine = activeEditor.document.lineAt(0);
 			const lastLine = activeEditor.document.lineAt(activeEditor.document.lineCount - 1);
-			const codeSelection: CodeSelectionUriRange = {
+			const codeSelection = {
 				uri: activeEditor.document.uri,
 				range: {
 					startLineNumber: firstLine.lineNumber,
@@ -51,8 +52,12 @@ export class AideProbeProvider implements vscode.Disposable {
 			});
 		}
 
-		const probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, '');
-		await reportAgentEventsToChat(probeResponse, response, '', _token, this._sideCarClient);
+		const threadId = uuid.v4();
+		console.log('threadId', threadId);
+		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		console.log('probeResponse', probeResponse);
+		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		console.log('reportAgentEventsToChat done');
 		// console.log(this._editorUrl);
 		// await reportDummyEventsToChat(response);
 		return {};

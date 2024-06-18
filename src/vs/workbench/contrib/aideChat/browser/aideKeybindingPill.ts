@@ -96,13 +96,10 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 
 	getPosition(): IContentWidgetPosition | null {
 		const selection = this._editor.getSelection();
-		console.log('csKeybinding.keybinding');
-		console.log(selection);
-		console.log('csKeybindings.position');
-		console.log(this.position);
 		if (!selection) {
 			return null;
 		}
+
 		const selectionStartLine = selection.selectionStartLineNumber;
 		if (selection.startLineNumber === selectionStartLine) {
 			// this is from a top-to-bottom-selection
