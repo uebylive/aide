@@ -11,7 +11,7 @@ import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { showProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -94,7 +94,40 @@ export class CancelAction extends Action2 {
 	}
 }
 
+export class ClearAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.clear';
+
+	constructor() {
+		super({
+			id: ClearAction.ID,
+			title: localize2('aideProbe.clear.label', "Clear"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.clearAll,
+			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(),
+			menu: [
+				{
+					id: MenuId.ViewTitle,
+					group: 'navigation',
+					order: 1,
+					when: ContextKeyExpr.equals('view', VIEW_ID)
+				}
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const aideProbeView = await showProbeView(accessor.get(IViewsService));
+		if (!aideProbeView) {
+			return;
+		}
+
+		aideProbeView.clear();
+	}
+}
+
 export function registerProbeActions() {
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
+	registerAction2(ClearAction);
 }

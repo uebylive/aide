@@ -188,6 +188,14 @@ export class AideProbeViewPane extends ViewPane {
 		return listDisposables;
 	}
 
+	clear(): void {
+		this.inputPart.setValue('');
+		this.viewModel = undefined;
+		this.requestInProgress.set(false);
+		this._breakdownsList.hide();
+		this.onDidChangeItems();
+	}
+
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
 
