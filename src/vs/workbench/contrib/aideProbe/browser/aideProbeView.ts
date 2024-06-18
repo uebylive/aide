@@ -29,6 +29,7 @@ const $ = dom.$;
 
 export class AideProbeViewPane extends ViewPane {
 	private container!: HTMLElement;
+	private explorationDetail!: HTMLElement;
 	private breakdownsListContainer!: HTMLElement;
 
 	private inputPart!: AideProbeInputPart;
@@ -81,6 +82,8 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart.render(this.container, this);
 
 		const breakdownsWrapper = dom.append(this.container, $('.breakdownsWrapper'));
+		this.explorationDetail = dom.append(breakdownsWrapper, $('span.exploration-detail'));
+		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 
 		this.viewModel = this.aideProbeService.startSession();
@@ -127,6 +130,8 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private onDidChangeItems(): void {
+		this.explorationDetail.textContent = 'Exploring the codebase';
+
 		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
 			dom.show(this.breakdownsListContainer);
 			const breakdownsList = $('.chat-breakdowns-list');

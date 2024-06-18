@@ -64,7 +64,7 @@ export class CancelAction extends Action2 {
 	constructor() {
 		super({
 			id: CancelAction.ID,
-			title: localize2('aideProbe.cancel.label', "Cancel search"),
+			title: localize2('aideProbe.cancel.label', "Cancel"),
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,

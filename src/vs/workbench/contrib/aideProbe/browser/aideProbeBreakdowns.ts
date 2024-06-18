@@ -13,13 +13,11 @@ import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
@@ -67,7 +65,6 @@ export class AideChatBreakdowns extends Disposable {
 	private viewModel: IAideChatBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 
-	private readonly markdownRenderer: MarkdownRenderer;
 	private readonly resourceLabels: ResourceLabels;
 
 	constructor(
@@ -78,7 +75,6 @@ export class AideChatBreakdowns extends Disposable {
 	) {
 		super();
 
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 	}
 
@@ -98,7 +94,7 @@ export class AideChatBreakdowns extends Disposable {
 
 	private createBreakdownsList(listContainer: HTMLElement): void {
 		// Breakdown renderer
-		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer, this.markdownRenderer, this.resourceLabels);
+		const renderer = this.renderer = this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels);
 
 		// List
 		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
@@ -120,7 +116,7 @@ export class AideChatBreakdowns extends Disposable {
 			list.layout(height);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
-			list.updateElementHeight(e.index, e.height + 12);
+			list.updateElementHeight(e.index, e.height);
 		}));
 		this._register(list.onDidChangeFocus(e => {
 			if (e.indexes.length === 1) {
@@ -186,7 +182,7 @@ export class AideChatBreakdowns extends Disposable {
 
 		this.viewModel = breakdowns;
 		list.splice(0, list.length, breakdowns);
-		list.layout();
+		this.layout();
 	}
 
 	hide(): void {
@@ -233,7 +229,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	constructor(
-		private readonly markdownRenderer: MarkdownRenderer,
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
@@ -295,21 +290,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		let { query, response, uri, name } = element;
-		if (response && response.value.trim().length > 0) {
-			const rowResponse = $('div.breakdown-response');
-			const renderedContent = this.markdownRenderer.render(response);
-			rowResponse.appendChild(renderedContent.element);
-			templateData.container.appendChild(rowResponse);
-		} else if (query && query.value.trim().length > 0) {
-			const rowQuery = $('div.breakdown-query');
-			const codicon = ThemeIcon.modify(Codicon.loading, 'spin').id;
-			query = new MarkdownString(`$(${codicon}) ${query.value}`, { supportThemeIcons: true });
-			const renderedContent = this.markdownRenderer.render(query);
-			rowQuery.appendChild(renderedContent.element);
-			templateData.container.appendChild(rowQuery);
-		}
-
+		const { uri, name } = element;
 		if (uri) {
 			const rowResource = $('div.breakdown-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
@@ -373,7 +354,7 @@ class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownV
 	private defaultElementHeight: number = 22;
 
 	getHeight(element: IAideChatBreakdownViewModel): number {
-		return (element.currentRenderedHeight ?? this.defaultElementHeight) + 12;
+		return (element.currentRenderedHeight ?? this.defaultElementHeight);
 	}
 
 	getTemplateId(element: IAideChatBreakdownViewModel): string {
