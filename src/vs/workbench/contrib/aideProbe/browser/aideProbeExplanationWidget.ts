@@ -46,23 +46,17 @@ export class AideProbeExplanationWidget extends ZoneWidget {
 	}
 
 	private renderContent(container: HTMLElement): void {
-		const { query, reason, response } = this.content;
-		if (query) {
-			const header = $('div.breakdown-header');
-			const renderedContent = this.markdownRenderer.render(query);
-			header.appendChild(renderedContent.element);
-			container.appendChild(header);
-		}
+		const { query, response } = this.content;
 		if (response) {
 			const body = $('div.breakdown-body');
 			const renderedContent = this.markdownRenderer.render(response);
 			body.appendChild(renderedContent.element);
 			container.appendChild(body);
-		} else if (reason) {
-			const body = $('div.breakdown-body');
-			const renderedContent = this.markdownRenderer.render(reason);
-			body.appendChild(renderedContent.element);
-			container.appendChild(body);
+		} else if (query) {
+			const header = $('div.breakdown-header');
+			const renderedContent = this.markdownRenderer.render(query);
+			header.appendChild(renderedContent.element);
+			container.appendChild(header);
 		}
 	}
 

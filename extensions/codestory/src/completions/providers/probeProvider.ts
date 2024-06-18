@@ -6,7 +6,7 @@
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
-import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportDummyEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -54,12 +54,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 		console.log('threadId', threadId);
-		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		console.log('probeResponse', probeResponse);
-		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
-		console.log('reportAgentEventsToChat done');
-		// console.log(this._editorUrl, query, threadId);
-		// await reportDummyEventsToChat(response);
+		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		// console.log('probeResponse', probeResponse);
+		// await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		// console.log('reportAgentEventsToChat done');
+		console.log(this._editorUrl, query, threadId);
+		await reportDummyEventsToChat(response);
 		return {};
 	}
 

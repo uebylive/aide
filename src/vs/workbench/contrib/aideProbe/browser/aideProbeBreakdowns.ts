@@ -54,6 +54,9 @@ async function getSymbol(
 }
 
 export class AideChatBreakdowns extends Disposable {
+	private readonly _onDidChangeFocus = this._register(new Emitter<IAideChatBreakdownViewModel>());
+	readonly onDidChangeFocus = this._onDidChangeFocus.event;
+
 	private activeBreakdown: IAideChatBreakdownViewModel | undefined;
 
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
@@ -121,6 +124,7 @@ export class AideChatBreakdowns extends Disposable {
 				const index = e.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
+				this._onDidChangeFocus.fire(element);
 				if (element && element.uri && element.name) {
 					this.openBreakdownReference(element);
 				}
@@ -128,6 +132,7 @@ export class AideChatBreakdowns extends Disposable {
 		}));
 		this._register(list.onDidOpen(async e => {
 			if (e.element && e.element.uri && e.element.name) {
+				this._onDidChangeFocus.fire(e.element);
 				this.openBreakdownReference(e.element);
 			}
 		}));
@@ -153,7 +158,7 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		let codeEditor: ICodeEditor | null;
-		let decorationPosition: Position = new Position(1, 1);
+		let explanationWidgetPosition: Position = new Position(1, 1);
 		// let goToDefinitionPosition: Position = new Position(1, 1);
 
 		const { uri, name } = element;
@@ -168,7 +173,7 @@ export class AideChatBreakdowns extends Disposable {
 					}
 				}, null);
 			} else {
-				decorationPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+				explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
 				// goToDefinitionPosition = new Position(symbol.range.startLineNumber + 1, symbol.range.startColumn + 10);
 				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
@@ -192,7 +197,7 @@ export class AideChatBreakdowns extends Disposable {
 
 		if (codeEditor) {
 			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-			this.explanationWidget.show(decorationPosition, 5);
+			this.explanationWidget.show(explanationWidgetPosition, 5);
 
 			// show the go-to-definition information
 			const rowResponse = $('div.breakdown-content');

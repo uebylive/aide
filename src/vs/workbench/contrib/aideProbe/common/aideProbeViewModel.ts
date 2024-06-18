@@ -16,11 +16,14 @@ export interface IAideProbeViewModel {
 	readonly requestInProgress: boolean;
 	readonly isTailing: boolean;
 	readonly onDidChange: Event<void>;
+	setActiveBreakdown(breakdown: IAideChatBreakdownViewModel | undefined): void;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
+
+	private _activeBreakdown: IAideChatBreakdownViewModel | undefined;
 
 	get model(): IAideProbeModel {
 		return this._model;
@@ -34,9 +37,13 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.requestInProgress;
 	}
 
-	private _isTailing: boolean = false;
 	get isTailing(): boolean {
-		return this._isTailing;
+		return this._model.isTailing;
+	}
+
+	// TODO(@ghostwriternr): Do we need this?
+	get activeBreakdown(): IAideChatBreakdownViewModel | undefined {
+		return this._activeBreakdown;
 	}
 
 	constructor(
@@ -45,8 +52,18 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(() => {
+			if (_model.response && this.isTailing) {
+				const latestBreakdown = _model.response.breakdowns[_model.response.breakdowns.length - 1];
+				if (latestBreakdown) {
+					this.setActiveBreakdown(new AideChatBreakdownViewModel(latestBreakdown));
+				}
+			}
 			this._onDidChange.fire();
 		}));
+	}
+
+	setActiveBreakdown(breakdown: IAideChatBreakdownViewModel | undefined) {
+		this._activeBreakdown = breakdown;
 	}
 }
 
