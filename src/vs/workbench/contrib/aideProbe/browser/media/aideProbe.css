@@ -115,3 +115,101 @@
 	color: var(--vscode-editorGhostText-foreground);
 	padding: 0 6px;
 }
+
+.aide-probe-view .responseWrapper {
+	margin: 0 20px;
+}
+
+@keyframes fadeInFromBottom {
+	0% {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.aide-probe-view .rendered-markdown {
+	animation: fadeInFromBottom 0.7s ease-out;
+}
+
+.aide-probe-view .rendered-markdown table {
+	width: 100%;
+	text-align: left;
+	margin-bottom: 16px;
+}
+
+.aide-probe-view .rendered-markdown table,
+.aide-probe-view .rendered-markdown table td,
+.aide-probe-view .rendered-markdown table th {
+	border: 1px solid var(--vscode-chat-requestBorder);
+	border-collapse: collapse;
+	padding: 4px 6px;
+}
+
+.aide-probe-view .rendered-markdown a,
+.aide-probe-view .interactive-session-followups,
+.aide-probe-view .rendered-markdown a code {
+	color: var(--vscode-textLink-foreground);
+}
+
+.aide-probe-view .rendered-markdown a:hover,
+.aide-probe-view .rendered-markdown a:active {
+	color: var(--vscode-textLink-activeForeground);
+}
+
+.hc-black .aide-probe-view .rendered-markdown a code,
+.hc-light .aide-probe-view .rendered-markdown a code {
+	color: var(--vscode-textPreformat-foreground);
+}
+
+.aide-probe-view > :last-child.rendered-markdown > :last-child {
+	margin-bottom: 0px;
+}
+
+.aide-probe-view .rendered-markdown h1 {
+	font-size: 20px;
+	font-weight: 600;
+	margin: 16px 0;
+}
+
+.aide-probe-view .rendered-markdown h2 {
+	font-size: 16px;
+	font-weight: 600;
+	margin: 16px 0;
+}
+
+.aide-probe-view .rendered-markdown h3 {
+	font-size: 14px;
+	font-weight: 600;
+	margin: 16px 0;
+}
+
+.aide-probe-view .rendered-markdown p {
+	margin: 0 0 16px 0;
+	line-height: 1.5em;
+}
+
+.aide-probe-view .rendered-markdown ul {
+	padding-inline-start: 24px;
+}
+
+.aide-probe-view .rendered-markdown ol {
+	padding-inline-start: 28px;
+}
+
+.aide-probe-view .rendered-markdown li {
+	line-height: 1.3rem;
+}
+
+.aide-probe-view .monaco-tokenized-source,
+.aide-probe-view code {
+	font-family: var(--monaco-monospace-font);
+	font-size: 12px;
+	color: var(--vscode-textPreformat-foreground);
+	background-color: var(--vscode-textPreformat-background);
+	padding: 1px 3px;
+	border-radius: 4px;
+}
