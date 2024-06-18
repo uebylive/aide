@@ -399,15 +399,33 @@ export const reportAgentEventsToChat = async (
 				const fsFilePath = openFileEvent.fs_file_path;
 				addReference(fsFilePath, response);
 			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
-				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
-				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
+				// const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
+				// const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
+				// response.breakdown({
+				// 	reference: {
+				// 		uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
+				// 		name: probeQuestionAskRequest.symbol_identifier
+				// 	},
+				// 	query: new vscode.MarkdownString(userQuery),
+				// 	reason: new vscode.MarkdownString(probeReason)
+				// });
+			}
+		} else if (event.event.SymbolEvent) {
+			const symbolEventKeys = Object.keys(event.event.SymbolEvent.event);
+			if (symbolEventKeys.length === 0) {
+				continue;
+			}
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof event.event.SymbolEvent.event;
+			// If this is a symbol event then we have to make sure that we are getting the probe request over here
+			if (symbolEventKey === 'Probe' && event.event.SymbolEvent.event.Probe !== undefined) {
 				response.breakdown({
 					reference: {
-						uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
-						name: probeQuestionAskRequest.symbol_identifier
+						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
 					},
-					query: new vscode.MarkdownString(userQuery),
-					reason: new vscode.MarkdownString(probeReason)
+					// setting both of these to be the same thing, figure out if this is really necessary??
+					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
+					reason: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
