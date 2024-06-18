@@ -160,7 +160,7 @@ export class AideChatBreakdowns extends Disposable {
 					}
 				}, null);
 			} else {
-				decorationPosition = new Position(symbol.range.startLineNumber, symbol.range.startColumn);
+				decorationPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
 				codeEditor = await this.editorService.openCodeEditor({
 					resource: uri,
 					options: {
