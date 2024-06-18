@@ -5,6 +5,7 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import 'vs/css!./media/probeBreakdownHover';
@@ -25,6 +26,11 @@ import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { AideChatBreakdownViewModel, AideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { IAideProbeBreakdownContent, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
+import { basenameOrAuthority } from 'vs/base/common/resources';
+import { FileKind } from 'vs/platform/files/common/files';
+import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 
 const $ = dom.$;
 
@@ -34,9 +40,11 @@ export class AideProbeViewPane extends ViewPane {
 	private breakdownsListContainer!: HTMLElement;
 
 	private inputPart!: AideProbeInputPart;
+	private startingFile: URI | undefined;
 
 	private requestInProgress: IContextKey<boolean>;
 	private _breakdownsList: AideChatBreakdowns;
+	private readonly _resourceLabels: ResourceLabels;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeModel | undefined;
@@ -69,12 +77,20 @@ export class AideProbeViewPane extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
+		@IEditorService private readonly editorService: IEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
-		this._breakdownsList = this._register(this.instantiationService.createInstance(AideChatBreakdowns));
+		this._resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeBodyVisibility }));
+		this._breakdownsList = this._register(this.instantiationService.createInstance(AideChatBreakdowns, this._resourceLabels));
+
+		this.startingFile = this.editorService.activeEditor?.resource;
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.startingFile = this.editorService.activeEditor?.resource;
+			this.updateExplorationDetail();
+		}));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -90,6 +106,7 @@ export class AideProbeViewPane extends ViewPane {
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 
 		this.viewModel = this.aideProbeService.startSession();
+		this.onDidChangeItems();
 		this.viewModelDisposables.add(this.viewModel.onDidChange(() => {
 			if (!this.viewModel) {
 				return;
@@ -132,9 +149,25 @@ export class AideProbeViewPane extends ViewPane {
 		return undefined;
 	}
 
-	private onDidChangeItems(): void {
-		this.explorationDetail.textContent = 'Exploring the codebase';
+	private updateExplorationDetail(): void {
+		dom.clearNode(this.explorationDetail);
+		if (this.requestInProgress.get()) {
+			this.explorationDetail.textContent = 'Exploring the codebase';
+		} else {
+			if (this.startingFile) {
+				const description = $('span');
+				description.textContent = 'Starting point:';
+				this.explorationDetail.appendChild(description);
+				const label = this._resourceLabels.create(this.explorationDetail, { supportHighlights: true });
+				label.element.style.display = 'flex';
+				label.setResource({ resource: this.startingFile, description: basenameOrAuthority(this.startingFile) });
+				this._register(label);
+			}
+		}
+	}
 
+	private onDidChangeItems(): void {
+		this.updateExplorationDetail();
 		if ((this.viewModel?.response?.breakdowns.length) ?? 0 > 0) {
 			this._register(this.renderBreakdownsListData(this.viewModel?.response?.breakdowns ?? [], this.breakdownsListContainer));
 			dom.show(this.breakdownsListContainer);

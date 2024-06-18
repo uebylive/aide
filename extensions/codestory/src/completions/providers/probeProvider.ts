@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SideCarClient } from '../../sidecar/client';
-import { reportDummyEventsToChat } from '../../chatState/convertStreamToMessage';
+import { CodeSelectionUriRange, SideCarClient } from '../../sidecar/client';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -28,12 +28,33 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 
 	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
-		// console.log('provideProbeResponse');
-		// const query = _request.trim();
-		// const followupResponse = this._sideCarClient.startAgentProbe(query, [], this._editorUrl);
-		// await reportAgentEventsToChat(followupResponse, response);
-		console.log(this._editorUrl);
-		await reportDummyEventsToChat(response);
+		const query = _request.trim();
+		const variables: vscode.ChatPromptReference[] = [];
+		const activeEditor = vscode.window.activeTextEditor;
+		if (activeEditor) {
+			const fileName = activeEditor.document.fileName.split('/').pop();
+			const firstLine = activeEditor.document.lineAt(0);
+			const lastLine = activeEditor.document.lineAt(activeEditor.document.lineCount - 1);
+			const codeSelection: CodeSelectionUriRange = {
+				uri: activeEditor.document.uri,
+				range: {
+					startLineNumber: firstLine.lineNumber,
+					startColumn: firstLine.range.start.character,
+					endLineNumber: lastLine.lineNumber,
+					endColumn: lastLine.range.end.character
+				}
+			};
+			variables.push({
+				id: 'vscode.file',
+				name: `file:${fileName}`,
+				value: JSON.stringify(codeSelection)
+			});
+		}
+
+		const probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, '');
+		await reportAgentEventsToChat(probeResponse, response, '', _token, this._sideCarClient);
+		// console.log(this._editorUrl);
+		// await reportDummyEventsToChat(response);
 		return {};
 	}
 

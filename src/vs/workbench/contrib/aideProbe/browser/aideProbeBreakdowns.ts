@@ -57,9 +57,6 @@ async function getSymbol(
 }
 
 export class AideChatBreakdowns extends Disposable {
-	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
-
 	private activeBreakdown: IAideChatBreakdownViewModel | undefined;
 
 	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
@@ -68,9 +65,9 @@ export class AideChatBreakdowns extends Disposable {
 	private isVisible: boolean | undefined;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
 
-	private readonly resourceLabels: ResourceLabels;
 
 	constructor(
+		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
@@ -78,7 +75,6 @@ export class AideChatBreakdowns extends Disposable {
 	) {
 		super();
 
-		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 	}
 

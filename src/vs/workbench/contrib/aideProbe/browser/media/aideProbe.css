@@ -41,7 +41,7 @@
 }
 
 .aide-probe-view .exploration-detail {
-	font-size: 14px;
+	display: flex;
 	font-weight: 600;
 	margin: 0 20px;
 }

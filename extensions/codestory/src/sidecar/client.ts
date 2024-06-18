@@ -839,7 +839,7 @@ export class SideCarClient {
 	}
 }
 
-interface CodeSelectionUriRange {
+export interface CodeSelectionUriRange {
 	uri: vscode.Uri;
 	range: {
 		startLineNumber: number;
