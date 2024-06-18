@@ -235,19 +235,6 @@ export const reportProcUpdateToChat = (
 	}
 };
 
-const parseProbeQuestionAskRequest = (query: string): { userQuery: string; probeReason: string } => {
-	const userQueryRegex = /(?:The original user query is:|The user has asked the following query:)\s*(.+?)(?:\n|$)/;
-	const probeReasonRegex = /We also (?:believe|belive) this symbol needs to be probed because of:\s*(.+)/s;
-
-	const userQueryMatch = query.match(userQueryRegex);
-	const probeReasonMatch = query.match(probeReasonRegex);
-
-	const userQuery = userQueryMatch ? userQueryMatch[1].trim() : '';
-	const probeReason = probeReasonMatch ? probeReasonMatch[1].trim() : '';
-
-	return { userQuery, probeReason };
-};
-
 export const reportDummyEventsToChat = async (
 	response: vscode.ProbeResponseStream,
 ): Promise<void> => {
@@ -373,23 +360,22 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
-		if (event.event.ToolEvent) {
-			const toolEventKeys = Object.keys(event.event.ToolEvent);
-			if (toolEventKeys.length === 0) {
+		if (event.event.SymbolEvent) {
+			const symbolEventKeys = Object.keys(event.event.SymbolEvent.event);
+			if (symbolEventKeys.length === 0) {
 				continue;
 			}
-
-			const toolEventKey = toolEventKeys[0] as keyof typeof event.event.ToolEvent;
-			if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
-				const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
-				const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof event.event.SymbolEvent.event;
+			// If this is a symbol event then we have to make sure that we are getting the probe request over here
+			if (symbolEventKey === 'Probe' && event.event.SymbolEvent.event.Probe !== undefined) {
 				response.breakdown({
 					reference: {
-						uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
-						name: probeQuestionAskRequest.symbol_identifier
+						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
 					},
-					query: new vscode.MarkdownString(userQuery),
-					reason: new vscode.MarkdownString(probeReason)
+					// setting both of these to be the same thing, figure out if this is really necessary??
+					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
+					reason: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
