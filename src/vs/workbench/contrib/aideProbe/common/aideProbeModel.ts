@@ -8,7 +8,6 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { generateUuid } from 'vs/base/common/uuid';
-import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 import { IAideProbeBreakdownContent, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
@@ -100,7 +99,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private _response: AideProbeResponseModel | undefined;
 	private _isComplete = false;
 	private _isTailing = false;
-	private _progressResolve: (() => void) | undefined;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -131,9 +129,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._isTailing;
 	}
 
-	constructor(
-		@IProgressService private readonly _progressService: IProgressService,
-	) {
+	constructor() {
 		super();
 
 		this._sessionId = generateUuid();
@@ -173,17 +169,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	followAlong(follow: boolean): void {
 		this._isTailing = follow;
-		this._onDidChangeTailing.fire(follow);
 
-		if (follow && !this._progressResolve) {
-			this._progressService.withProgress({ location: ProgressLocation.Window }, () => {
-				return new Promise<void>((resolve) => {
-					this._progressResolve = resolve;
-				});
-			});
-		} else if (!follow && this._progressResolve) {
-			this._progressResolve();
-			this._progressResolve = undefined;
-		}
+		this._onDidChangeTailing.fire(follow);
 	}
 }

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { DisposableStore } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -23,11 +23,11 @@ import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdowns';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
-import { IAideProbeBreakdownContent, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { AideChatBreakdownViewModel, AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 import { Event } from 'vs/base/common/event';
 import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { Codicon } from 'vs/base/common/codicons';
@@ -115,9 +115,9 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 		this._register(toggle.onChange(() => {
 			const checked = toggle.checked;
+			toggle.setIcon(checked ? Codicon.eye : Codicon.eyeClosed);
+			toggle.setTitle(checked ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
 			this.aideProbeService.followAlong(checked);
-			toggle.setIcon(checked ? Codicon.eyeClosed : Codicon.eye);
-			toggle.checked = checked;
 		}));
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
@@ -159,6 +159,9 @@ export class AideProbeViewPane extends ViewPane {
 			this.onDidChangeItems();
 			this.requestInProgress.set(this.viewModel.requestInProgress);
 		}));
+		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
+			this._breakdownsList.openBreakdownReference(breakdown);
+		}));
 
 		const editorValue = this.getInput();
 		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
@@ -174,7 +177,7 @@ export class AideProbeViewPane extends ViewPane {
 	private onDidChangeItems(): void {
 		this.updateExplorationDetail();
 		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
-			this._register(this.renderBreakdownsListData(this.viewModel?.model.response?.breakdowns ?? [], this.breakdownsListContainer));
+			this.renderBreakdownsListData(this.viewModel?.breakdowns ?? [], this.breakdownsListContainer);
 			dom.show(this.breakdownsListContainer);
 		} else {
 			this._breakdownsList.hide();
@@ -191,17 +194,9 @@ export class AideProbeViewPane extends ViewPane {
 		}
 	}
 
-	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownContent>, container: HTMLElement): IDisposable {
-		const listDisposables = new DisposableStore();
+	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>, container: HTMLElement) {
 		this._breakdownsList.show(container);
-		const listData = breakdowns.map((item) => {
-			const viewItem = this.instantiationService.createInstance(AideChatBreakdownViewModel, item);
-			listDisposables.add(viewItem);
-			return viewItem;
-		});
-		this._breakdownsList.updateBreakdowns(listData);
-
-		return listDisposables;
+		this._breakdownsList.updateBreakdowns(breakdowns);
 	}
 
 	private renderFinalAnswer(): void {

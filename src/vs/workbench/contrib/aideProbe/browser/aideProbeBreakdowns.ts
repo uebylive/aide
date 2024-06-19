@@ -26,7 +26,7 @@ import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
@@ -54,20 +54,19 @@ async function getSymbol(
 }
 
 export class AideChatBreakdowns extends Disposable {
-	private readonly _onDidChangeFocus = this._register(new Emitter<IAideChatBreakdownViewModel>());
+	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
-	private activeBreakdown: IAideChatBreakdownViewModel | undefined;
+	private activeBreakdown: IAideProbeBreakdownViewModel | undefined;
 
-	private list: WorkbenchList<IAideChatBreakdownViewModel> | undefined;
+	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
 	private renderer: BreakdownRenderer;
-	private viewModel: IAideChatBreakdownViewModel[] = [];
+	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
 	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
 
 	private readonly markdownRenderer: MarkdownRenderer;
-
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
@@ -99,7 +98,7 @@ export class AideChatBreakdowns extends Disposable {
 	private createBreakdownsList(listContainer: HTMLElement): void {
 		// List
 		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
-		const list = this.list = this._register(<WorkbenchList<IAideChatBreakdownViewModel>>this.instantiationService.createInstance(
+		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
 			listContainer,
@@ -138,11 +137,25 @@ export class AideChatBreakdowns extends Disposable {
 		}));
 	}
 
-	private async openBreakdownReference(element: IAideChatBreakdownViewModel): Promise<void> {
+	private getBreakdownListIndex(element: IAideProbeBreakdownViewModel): number {
+		let matchIndex = -1;
+		this.viewModel.forEach((item, index) => {
+			if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
+				matchIndex = index;
+			}
+		});
+		return matchIndex;
+	}
+
+	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
 			this.activeBreakdown = element;
+			const index = this.getBreakdownListIndex(element);
+			if (this.list && index !== -1) {
+				this.list.setFocus([index]);
+			}
 		}
 
 		if (this.explanationWidget) {
@@ -211,7 +224,7 @@ export class AideChatBreakdowns extends Disposable {
 		}
 	}
 
-	updateBreakdowns(breakdowns: IAideChatBreakdownViewModel[]): void {
+	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
 		const list = assertIsDefined(this.list);
 
 		const newBreakdown = breakdowns[breakdowns.length - 1];
@@ -252,7 +265,7 @@ export class AideChatBreakdowns extends Disposable {
 }
 
 interface IBreakdownTemplateData {
-	currentItem?: IAideChatBreakdownViewModel;
+	currentItem?: IAideProbeBreakdownViewModel;
 	currentItemIndex?: number;
 	wrapper: HTMLElement;
 	container: HTMLElement;
@@ -261,12 +274,12 @@ interface IBreakdownTemplateData {
 }
 
 interface IItemHeightChangeParams {
-	element: IAideChatBreakdownViewModel;
+	element: IAideProbeBreakdownViewModel;
 	index: number;
 	height: number;
 }
 
-class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBreakdownViewModel, IBreakdownTemplateData> {
+class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownsListRenderer';
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
@@ -300,7 +313,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 		return data;
 	}
 
-	renderElement(element: IAideChatBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
+	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
@@ -375,18 +388,18 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideChatBre
 	}
 }
 
-class BreakdownsListDelegate implements IListVirtualDelegate<IAideChatBreakdownViewModel> {
+class BreakdownsListDelegate implements IListVirtualDelegate<IAideProbeBreakdownViewModel> {
 	private defaultElementHeight: number = 22;
 
-	getHeight(element: IAideChatBreakdownViewModel): number {
+	getHeight(element: IAideProbeBreakdownViewModel): number {
 		return (element.currentRenderedHeight ?? this.defaultElementHeight);
 	}
 
-	getTemplateId(element: IAideChatBreakdownViewModel): string {
+	getTemplateId(element: IAideProbeBreakdownViewModel): string {
 		return BreakdownRenderer.TEMPLATE_ID;
 	}
 
-	hasDynamicHeight(element: IAideChatBreakdownViewModel): boolean {
+	hasDynamicHeight(element: IAideProbeBreakdownViewModel): boolean {
 		return true;
 	}
 }

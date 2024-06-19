@@ -7,6 +7,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
@@ -16,14 +17,15 @@ export interface IAideProbeViewModel {
 	readonly requestInProgress: boolean;
 	readonly isTailing: boolean;
 	readonly onDidChange: Event<void>;
-	setActiveBreakdown(breakdown: IAideChatBreakdownViewModel | undefined): void;
+	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private _activeBreakdown: IAideChatBreakdownViewModel | undefined;
+	private readonly _onChangeActiveBreakdown = this._register(new Emitter<IAideProbeBreakdownViewModel>());
+	readonly onChangeActiveBreakdown = this._onChangeActiveBreakdown.event;
 
 	get model(): IAideProbeModel {
 		return this._model;
@@ -41,33 +43,40 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.isTailing;
 	}
 
-	// TODO(@ghostwriternr): Do we need this?
-	get activeBreakdown(): IAideChatBreakdownViewModel | undefined {
-		return this._activeBreakdown;
+	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
+	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
+		return this._breakdowns;
 	}
 
 	constructor(
 		private readonly _model: IAideProbeModel,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
 		this._register(_model.onDidChange(() => {
-			if (_model.response && this.isTailing) {
-				const latestBreakdown = _model.response.breakdowns[_model.response.breakdowns.length - 1];
-				if (latestBreakdown) {
-					this.setActiveBreakdown(new AideChatBreakdownViewModel(latestBreakdown));
-				}
+			this._breakdowns = _model.response?.breakdowns.map((item) => {
+				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item));
+				return viewItem;
+			}) ?? [];
+
+			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
+				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
+				this._onChangeActiveBreakdown.fire(latestBreakdown);
 			}
+
 			this._onDidChange.fire();
 		}));
-	}
-
-	setActiveBreakdown(breakdown: IAideChatBreakdownViewModel | undefined) {
-		this._activeBreakdown = breakdown;
+		this._register(_model.onDidChangeTailing((isTailing) => {
+			if (isTailing && this._breakdowns.length > 0) {
+				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
+				this._onChangeActiveBreakdown.fire(latestBreakdown);
+			}
+		}));
 	}
 }
 
-export interface IAideChatBreakdownViewModel {
+export interface IAideProbeBreakdownViewModel {
 	readonly uri: URI;
 	readonly name: string;
 	readonly query?: IMarkdownString;
@@ -76,7 +85,7 @@ export interface IAideChatBreakdownViewModel {
 	currentRenderedHeight: number | undefined;
 }
 
-export class AideChatBreakdownViewModel extends Disposable implements IAideChatBreakdownViewModel {
+export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
 	get uri() {
 		return this._breakdown.reference.uri;
 	}

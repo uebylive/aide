@@ -317,7 +317,7 @@ export const reportDummyEventsToChat = async (
 			reason: new vscode.MarkdownString(path.reason),
 			response: response ? new vscode.MarkdownString(path.response) : undefined
 		});
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		await new Promise(resolve => setTimeout(resolve, 4000));
 	}
 
 	// Wait 5 seconds

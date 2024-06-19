@@ -10,7 +10,7 @@ import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/brow
 import { ZoneWidget } from 'vs/editor/contrib/zoneWidget/browser/zoneWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IAideChatBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 
 const $ = dom.$;
 
@@ -20,7 +20,7 @@ export class AideProbeExplanationWidget extends ZoneWidget {
 
 	constructor(
 		private parentEditor: ICodeEditor,
-		private readonly content: IAideChatBreakdownViewModel,
+		private readonly content: IAideProbeBreakdownViewModel,
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super(parentEditor, {
