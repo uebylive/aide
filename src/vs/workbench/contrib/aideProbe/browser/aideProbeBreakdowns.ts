@@ -272,16 +272,29 @@ export class AideChatBreakdowns extends Disposable {
 	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
 		const list = assertIsDefined(this.list);
 
-		const newBreakdown = breakdowns[breakdowns.length - 1];
-		const lastBreakdown = this.viewModel[this.viewModel.length - 1];
-		if (lastBreakdown && lastBreakdown.uri === newBreakdown.uri && lastBreakdown.name === newBreakdown.name) {
-			// Update last breakdown
-			this.viewModel[this.viewModel.length - 1] = newBreakdown;
-			list.splice(this.viewModel.length - 1, 1, [newBreakdown]);
+		if (this.viewModel.length === 0) {
+			this.viewModel = [...breakdowns];
+			list.splice(0, 0, breakdowns);
 		} else {
-			// Add new breakdown
-			this.viewModel.push(newBreakdown);
-			list.splice(this.viewModel.length - 1, 0, [newBreakdown]);
+			breakdowns.forEach((breakdown) => {
+				const matchIndex = this.getBreakdownListIndex(breakdown);
+				if (matchIndex === -1) {
+					this.viewModel.push(breakdown);
+					list.splice(this.viewModel.length - 1, 0, [breakdown]);
+				} else {
+					const match = this.viewModel[matchIndex];
+					const shouldUpdate = match.query?.value !== breakdown.query?.value
+						|| match.reason?.value !== breakdown.reason?.value
+						|| match.response?.value !== breakdown.response?.value;
+					if (shouldUpdate) {
+						this.viewModel[matchIndex] = breakdown;
+						list.splice(matchIndex, 1, [breakdown]);
+						if (this.activeBreakdown?.uri.fsPath === breakdown.uri.fsPath && this.activeBreakdown?.name === breakdown.name) {
+							this.list?.setFocus([matchIndex]);
+						}
+					}
+				}
+			});
 		}
 
 		this.layout();
@@ -418,14 +431,14 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.wrapper.offsetHeight;
+		const newHeight = templateData.wrapper.offsetHeight || 22;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
 			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
 				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
 				// If it becomes properly sync, then this could be removed.
-				element.currentRenderedHeight = templateData.wrapper.offsetHeight;
+				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));

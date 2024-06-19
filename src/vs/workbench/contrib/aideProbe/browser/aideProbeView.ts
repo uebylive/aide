@@ -156,8 +156,8 @@ export class AideProbeViewPane extends ViewPane {
 				return;
 			}
 
-			this.onDidChangeItems();
 			this.requestInProgress.set(this.viewModel.requestInProgress);
+			this.onDidChangeItems();
 		}));
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
 			this._breakdownsList.openBreakdownReference(breakdown);
