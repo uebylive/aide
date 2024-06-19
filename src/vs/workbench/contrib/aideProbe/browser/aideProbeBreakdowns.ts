@@ -4,10 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { ITreeElement, ITreeNode, ITreeRenderer } from 'vs/base/browser/ui/tree/tree';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
+import { FuzzyScore } from 'vs/base/common/filters';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
@@ -16,7 +18,7 @@ import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
+import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
@@ -30,7 +32,9 @@ import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/com
 import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
 const $ = dom.$;
 
 async function getSymbol(
@@ -59,8 +63,8 @@ export class AideChatBreakdowns extends Disposable {
 
 	private activeBreakdown: IAideProbeBreakdownViewModel | undefined;
 
-	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
-	private renderer: BreakdownRenderer;
+	private list: WorkbenchObjectTree<IAideProbeBreakdownViewModel> | undefined;
+	private renderer: BreakdownRenderer | undefined;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
@@ -74,11 +78,11 @@ export class AideChatBreakdowns extends Disposable {
 		@ITextModelService private readonly textModelResolverService: ITextModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 	) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
-		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 	}
 
 	show(container: HTMLElement): void {
@@ -97,32 +101,37 @@ export class AideChatBreakdowns extends Disposable {
 
 	private createBreakdownsList(listContainer: HTMLElement): void {
 		// List
-		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
-		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
-			WorkbenchList,
+		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService])));
+		const listDelegate = scopedInstantiationService.createInstance(BreakdownsListDelegate);
+
+		this.renderer = this._register(new BreakdownRenderer(this.resourceLabels, this.textModelResolverService, this.outlineModelService));
+		const list = this.list = <WorkbenchObjectTree<IAideProbeBreakdownViewModel>>scopedInstantiationService.createInstance(
+			WorkbenchObjectTree,
 			'BreakdownsList',
 			listContainer,
 			listDelegate,
 			[this.renderer],
 			{
-				setRowLineHeight: false,
-				supportDynamicHeights: true,
+				identityProvider: { getId: (e: IAideProbeBreakdownViewModel) => `${e.uri.fsPath}_${e.name}` },
 				horizontalScrolling: false,
-				alwaysConsumeMouseWheel: false
+				alwaysConsumeMouseWheel: false,
+				supportDynamicHeights: true,
+				hideTwistiesOfChildlessElements: true,
+				accessibilityProvider: this.instantiationService.createInstance(ChatAccessibilityProvider),
+				setRowLineHeight: false,
 			}
-		));
+		);
 
 		this._register(list.onDidChangeContentHeight(height => {
 			list.layout(height);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
-			list.updateElementHeight(e.index, e.height);
+			list.updateElementHeight(e.element, e.height);
 		}));
 		this._register(list.onDidChangeFocus(e => {
-			if (e.indexes.length === 1) {
-				const index = e.indexes[0];
-				list.setSelection([index]);
-				const element = list.element(index);
+			if (e.elements.length === 1) {
+				const element = e.elements[0]!;
+				list.setSelection([element]);
 				this._onDidChangeFocus.fire(element);
 				if (element && element.uri && element.name) {
 					this.openBreakdownReference(element);
@@ -137,25 +146,12 @@ export class AideChatBreakdowns extends Disposable {
 		}));
 	}
 
-	private getBreakdownListIndex(element: IAideProbeBreakdownViewModel): number {
-		let matchIndex = -1;
-		this.viewModel.forEach((item, index) => {
-			if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
-				matchIndex = index;
-			}
-		});
-		return matchIndex;
-	}
-
 	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
 			this.activeBreakdown = element;
-			const index = this.getBreakdownListIndex(element);
-			if (this.list && index !== -1) {
-				this.list.setFocus([index]);
-			}
+			this.list?.setFocus([element]);
 		}
 
 		if (this.explanationWidget) {
@@ -224,20 +220,25 @@ export class AideChatBreakdowns extends Disposable {
 		}
 	}
 
-	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
+	updateBreakdowns(breakdowns: IAideProbeBreakdownViewModel[]): void {
 		const list = assertIsDefined(this.list);
 
-		const newBreakdown = breakdowns[breakdowns.length - 1];
-		const lastBreakdown = this.viewModel[this.viewModel.length - 1];
-		if (lastBreakdown && lastBreakdown.uri === newBreakdown.uri && lastBreakdown.name === newBreakdown.name) {
-			// Update last breakdown
-			this.viewModel[this.viewModel.length - 1] = newBreakdown;
-			list.splice(this.viewModel.length - 1, 1, [newBreakdown]);
-		} else {
-			// Add new breakdown
-			this.viewModel.push(newBreakdown);
-			list.splice(this.viewModel.length - 1, 0, [newBreakdown]);
-		}
+		this.viewModel = breakdowns;
+		const treeItems = (this.viewModel ?? [])
+			.map((item): ITreeElement<IAideProbeBreakdownViewModel> => {
+				return {
+					element: item,
+					children: [],
+					collapsible: false
+				};
+			});
+		list.setChildren(null, treeItems, {
+			diffIdentityProvider: {
+				getId(element) {
+					return `${element.uri.fsPath}_${element.name}`;
+				},
+			}
+		});
 
 		this.layout();
 	}
@@ -251,7 +252,7 @@ export class AideChatBreakdowns extends Disposable {
 		this.isVisible = false;
 
 		// Clear list
-		this.list.splice(0, this.viewModel.length);
+		this.updateBreakdowns([]);
 
 		// Clear view model
 		this.viewModel = [];
@@ -279,7 +280,7 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
-class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, IBreakdownTemplateData> {
+class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBreakdownViewModel, FuzzyScore, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownsListRenderer';
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
@@ -313,7 +314,8 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 		return data;
 	}
 
-	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
+	renderElement(node: ITreeNode<IAideProbeBreakdownViewModel, FuzzyScore>, index: number, templateData: IBreakdownTemplateData): void {
+		const element = node.element;
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
