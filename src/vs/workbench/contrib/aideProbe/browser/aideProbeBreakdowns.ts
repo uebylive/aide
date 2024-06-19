@@ -145,6 +145,9 @@ export class AideChatBreakdowns extends Disposable {
 	}
 
 	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
+		const { uri, name } = element;
+		const symbolKey = `${uri.fsPath}:${name}`;
+
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
@@ -152,6 +155,16 @@ export class AideChatBreakdowns extends Disposable {
 			const index = this.getBreakdownListIndex(element);
 			if (this.list && index !== -1) {
 				this.list.setFocus([index]);
+			}
+
+			const keys = this.explanationWidget.keys();
+			for (const key of keys) {
+				if (key === symbolKey) {
+					continue;
+				}
+
+				const existingWidget = this.explanationWidget.get(key);
+				existingWidget?.hide();
 			}
 		}
 
@@ -164,7 +177,6 @@ export class AideChatBreakdowns extends Disposable {
 		let codeEditor: ICodeEditor | null;
 		let explanationWidgetPosition: Position = new Position(1, 1);
 
-		const { uri, name } = element;
 		const symbol = await element.symbol;
 		if (!symbol) {
 			codeEditor = await this.editorService.openCodeEditor({
@@ -188,7 +200,6 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		if (codeEditor && symbol && explanationWidgetPosition) {
-			const symbolKey = `${uri.fsPath}:${symbol.name}`;
 			if (this.explanationWidget.get(symbolKey)) {
 				const existingWidget = this.explanationWidget.get(symbolKey)!;
 				existingWidget.setContent(element);
@@ -229,14 +240,6 @@ export class AideChatBreakdowns extends Disposable {
 				});
 
 			codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, definitionsToHighlight);
-		} else if (!symbol) {
-			const symbolKey = `${uri.fsPath}:${name}`;
-			if (this.explanationWidget.get(symbolKey)) {
-				const existingWidget = this.explanationWidget.get(symbolKey)!;
-				existingWidget.hide();
-				existingWidget.dispose();
-				this.explanationWidget.delete(symbolKey);
-			}
 		}
 	}
 
