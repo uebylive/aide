@@ -115,8 +115,7 @@ export class AideProbeViewPane extends ViewPane {
 			hoverDelegate,
 		}));
 		this._register(toggle.onChange(() => {
-			const checked = toggle.checked;
-			this.toggleTailing(checked);
+			this.toggleTailing(toggle.checked);
 		}));
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
@@ -126,9 +125,14 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private toggleTailing(tailing: boolean, silent?: boolean) {
-		this.tailingToggle?.setIcon(tailing ? Codicon.eye : Codicon.eyeClosed);
-		this.tailingToggle?.setTitle(tailing ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
+		if (!this.tailingToggle) {
+			return;
+		}
+
+		this.tailingToggle.setIcon(tailing ? Codicon.eye : Codicon.eyeClosed);
+		this.tailingToggle.setTitle(tailing ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
 		if (silent) {
+			this.tailingToggle.checked = tailing;
 			return;
 		}
 

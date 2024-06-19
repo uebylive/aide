@@ -286,7 +286,6 @@ export const reportDummyEventsToChat = async (
 			symbol_name: 'agent_router',
 			path: `${workspaceRoot}/sidecar/src/bin/webserver.rs`,
 			response: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.',
-
 		},
 		{
 			symbol_name: 'generate_agent_stream',

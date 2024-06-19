@@ -377,11 +377,13 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 			});
 		}
 
+		const completeIcon = Codicon.arrowRight;
+		const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
 		if (response && response.value.length > 0) {
-			const progressIcon = Codicon.arrowRight;
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
+			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(progressIcon));
+			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(completeIcon));
 		} else {
-			const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
+			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(completeIcon));
 			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
 		}
 
