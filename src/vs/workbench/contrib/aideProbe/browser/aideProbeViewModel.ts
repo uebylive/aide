@@ -6,11 +6,11 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
+import { Disposable, IReference } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol } from 'vs/editor/common/languages';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
@@ -37,6 +37,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	private readonly _onChangeGoToDefinition = this._register(new Emitter<IAideProbeGoToDefinitionViewModel[]>());
 	readonly onChangeGoToDefinition = this._onChangeGoToDefinition.event;
 
+	private _references: Map<string, IReference<IResolvedTextEditorModel>> = new Map();
+
 	get model(): IAideProbeModel {
 		return this._model;
 	}
@@ -54,10 +56,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
-	private _goToDefinitions: IAideProbeGoToDefinitionViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
 	}
+
+	private _goToDefinitions: IAideProbeGoToDefinitionViewModel[] = [];
 	get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinitionViewModel> {
 		return this._goToDefinitions;
 	}
@@ -65,14 +68,21 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	constructor(
 		private readonly _model: IAideProbeModel,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ITextModelService private readonly textModelResolverService: ITextModelService,
 	) {
 		super();
 
-		this._register(_model.onDidChange(() => {
-			this._breakdowns = _model.response?.breakdowns.map((item) => {
-				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item));
+		this._register(_model.onDidChange(async () => {
+			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
+				let reference = this._references.get(item.reference.uri.toString());
+				if (!reference) {
+					reference = await this.textModelResolverService.createModelReference(item.reference.uri);
+				}
+
+				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
+				await viewItem.symbol;
 				return viewItem;
-			}) ?? [];
+			}) ?? []);
 
 			if (_model.response) {
 				// TODO(willis+skcd): Not sure if this is really correct.. but yolo
@@ -163,37 +173,31 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,
-		@ITextModelService textModelResolverService: ITextModelService,
-		@IOutlineModelService outlineModelService: IOutlineModelService,
+		private readonly reference: IReference<IResolvedTextEditorModel>,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 	) {
 		super();
 
 		if (_breakdown.reference.uri && _breakdown.reference.name) {
 			this._symbolResolver = async () => {
-				this._symbol = await this.resolveSymbol(_breakdown.reference.uri, _breakdown.reference.name, textModelResolverService, outlineModelService);
+				this._symbol = await this.resolveSymbol();
 				return this._symbol;
 			};
 			this._symbolResolver();
 		}
 	}
 
-	async resolveSymbol(
-		uri: URI,
-		name: string,
-		textModelResolverService: ITextModelService,
-		outlineModelService: IOutlineModelService,
-	): Promise<DocumentSymbol | undefined> {
-		const reference = await textModelResolverService.createModelReference(uri);
+	async resolveSymbol(): Promise<DocumentSymbol | undefined> {
 		try {
-			const symbols = (await outlineModelService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
-			const symbol = symbols.find(s => s.name === name);
+			const symbols = (await this.outlineModelService.getOrCreate(this.reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
+			const symbol = symbols.find(s => s.name === this.name);
 			if (!symbol) {
 				return;
 			}
 
 			return symbol;
-		} finally {
-			reference.dispose();
+		} catch (e) {
+			return;
 		}
 	}
 }
