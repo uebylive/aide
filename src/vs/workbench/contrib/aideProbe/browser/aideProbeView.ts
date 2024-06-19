@@ -27,12 +27,12 @@ import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aidePro
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { Event } from 'vs/base/common/event';
 import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { Codicon } from 'vs/base/common/codicons';
 import { defaultToggleStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
+import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
 
@@ -41,6 +41,7 @@ export class AideProbeViewPane extends ViewPane {
 	private explorationDetail!: HTMLElement;
 	private breakdownsListContainer!: HTMLElement;
 	private responseWrapper!: HTMLElement;
+	private tailingToggle: Toggle | undefined;
 
 	private inputPart!: AideProbeInputPart;
 
@@ -106,7 +107,7 @@ export class AideProbeViewPane extends ViewPane {
 		const text = $('span', undefined, 'Exploring the codebase');
 		this.explorationDetail.appendChild(text);
 		const hoverDelegate = this._register(createInstantHoverDelegate());
-		const toggle = this._register(new Toggle({
+		const toggle = this.tailingToggle = this._register(new Toggle({
 			...defaultToggleStyles,
 			icon: Codicon.eyeClosed,
 			title: nls.localize('followAlong', "Follow Along"),
@@ -115,15 +116,23 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 		this._register(toggle.onChange(() => {
 			const checked = toggle.checked;
-			toggle.setIcon(checked ? Codicon.eye : Codicon.eyeClosed);
-			toggle.setTitle(checked ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
-			this.aideProbeService.followAlong(checked);
+			this.toggleTailing(checked);
 		}));
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 		this.responseWrapper = dom.append(this.container, $('.responseWrapper'));
 
 		this.onDidChangeItems();
+	}
+
+	private toggleTailing(tailing: boolean, silent?: boolean) {
+		this.tailingToggle?.setIcon(tailing ? Codicon.eye : Codicon.eyeClosed);
+		this.tailingToggle?.setTitle(tailing ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
+		if (silent) {
+			return;
+		}
+
+		this.aideProbeService.followAlong(tailing);
 	}
 
 	override focus(): void {
@@ -156,7 +165,12 @@ export class AideProbeViewPane extends ViewPane {
 				return;
 			}
 
-			this.requestInProgress.set(this.viewModel.requestInProgress);
+			if (this.viewModel.requestInProgress) {
+				this.requestInProgress.set(true);
+			} else {
+				this.requestInProgress.set(false);
+				this.toggleTailing(false, true);
+			}
 			this.onDidChangeItems();
 		}));
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
@@ -192,8 +206,16 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private updateExplorationDetail(): void {
-		if (this.requestInProgress.get()) {
+		if (this.viewModel?.sessionId) {
 			this.explorationDetail.style.display = 'flex';
+			const firstChild = this.explorationDetail.firstChild;
+			if (firstChild) {
+				if (this.requestInProgress.get()) {
+					firstChild.textContent = 'Exploring the codebase';
+				} else {
+					firstChild.textContent = 'Exploration complete';
+				}
+			}
 		} else {
 			this.explorationDetail.style.display = 'none';
 		}

@@ -28,6 +28,7 @@ import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
+import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
 
@@ -55,7 +56,8 @@ export class AideChatBreakdowns extends Disposable {
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
-		@IThemeService private readonly themeService: IThemeService
+		@IThemeService private readonly themeService: IThemeService,
+		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 	) {
 		super();
 
@@ -177,7 +179,10 @@ export class AideChatBreakdowns extends Disposable {
 		let codeEditor: ICodeEditor | null;
 		let explanationWidgetPosition: Position = new Position(1, 1);
 
-		const symbol = await element.symbol;
+		const resolveLocationOperation = element.symbol;
+		this.editorProgressService.showWhile(resolveLocationOperation);
+		const symbol = await resolveLocationOperation;
+
 		if (!symbol) {
 			codeEditor = await this.editorService.openCodeEditor({
 				resource: uri,

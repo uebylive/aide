@@ -178,6 +178,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	completeResponse(): void {
 		this._isComplete = true;
+		this.followAlong(false);
 
 		this._onDidChange.fire();
 	}

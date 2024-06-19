@@ -80,7 +80,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
-				await viewItem.symbol;
 				return viewItem;
 			}) ?? []);
 
