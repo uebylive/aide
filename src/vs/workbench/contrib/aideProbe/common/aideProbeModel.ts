@@ -170,7 +170,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		} else if (progress.kind === 'breakdown') {
 			this._response.applyBreakdown(progress);
 		} else if (progress.kind === 'goToDefinition') {
-			this._response.decorateGoToDefinition(progress)
+			this._response.decorateGoToDefinition(progress);
 		}
 
 		this._onDidChange.fire();

@@ -35,7 +35,8 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
-//import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { editorSelectionBackground, editorSelectionForeground } from 'vs/platform/theme/common/colors/editorColors';
 
 const $ = dom.$;
 
@@ -87,16 +88,20 @@ export class AideChatBreakdowns extends Disposable {
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		//@IThemeService private readonly themeService: IThemeService
+		@IThemeService private readonly themeService: IThemeService
 	) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 
+		const theme = this.themeService.getColorTheme();
+		const decorationBackgroundColor = theme.getColor(editorSelectionBackground);
+		const decorationColor = theme.getColor(editorSelectionForeground);
+
 		this.editorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
-			color: '#FFFFFF',
-			backgroundColor: '#FF0000',
+			color: decorationColor?.toString() || '#f3f4f6',
+			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
 			borderRadius: '3px',
 		});
 
