@@ -102,9 +102,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 export interface IAideProbeBreakdownViewModel {
 	readonly uri: URI;
 	readonly name: string;
-	query?: IMarkdownString;
-	reason?: IMarkdownString;
-	response?: IMarkdownString;
+	readonly query?: IMarkdownString;
+	readonly reason?: IMarkdownString;
+	readonly response?: IMarkdownString;
 	currentRenderedHeight: number | undefined;
 }
 
@@ -132,24 +132,12 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		return this._breakdown.query;
 	}
 
-	set query(value: IMarkdownString | undefined) {
-		this._breakdown.query = value;
-	}
-
 	get reason() {
 		return this._breakdown.reason;
 	}
 
-	set reason(value: IMarkdownString | undefined) {
-		this._breakdown.reason = value;
-	}
-
 	get response() {
 		return this._breakdown.response;
-	}
-
-	set response(value: IMarkdownString | undefined) {
-		this._breakdown.response = value;
 	}
 
 	currentRenderedHeight: number | undefined;

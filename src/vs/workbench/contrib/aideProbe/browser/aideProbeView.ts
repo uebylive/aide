@@ -201,7 +201,7 @@ export class AideProbeViewPane extends ViewPane {
 
 	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>, container: HTMLElement) {
 		this._breakdownsList.show(container);
-		this._breakdownsList.updateBreakdowns([...breakdowns]);
+		this._breakdownsList.updateBreakdowns(breakdowns);
 	}
 
 	private renderFinalAnswer(): void {
