@@ -98,6 +98,12 @@ export interface IAideChatMarkdownContent {
 	kind: 'markdownContent';
 }
 
+export interface IAideProbeGoToDefinition {
+	uri: URI;
+	range: Range;
+	kind: 'goToDefinition';
+}
+
 export interface IChatTreeData {
 	treeData: IChatResponseProgressFileTreeData;
 	kind: 'treeData';

@@ -8,6 +8,7 @@ import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cance
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
+import { Range } from 'vs/editor/common/core/range';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
@@ -27,6 +28,12 @@ export interface IAideProbeBreakdownContent {
 	reason?: IMarkdownString;
 	response?: IMarkdownString;
 	kind: 'breakdown';
+}
+
+export interface IAideProbeGoToDefinition {
+	kind: 'goToDefinition';
+	uri: URI;
+	range: Range;
 }
 
 export type IAideProbeProgress =

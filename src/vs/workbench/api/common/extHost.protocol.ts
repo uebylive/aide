@@ -88,7 +88,7 @@ import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, I
 import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeResult } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -1483,9 +1483,12 @@ export type IAideChatProgressDto =
 
 export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent>;
 
+export type IAideProbeGoToDefinitionDto = Dto<IAideProbeGoToDefinition>;
+
 export interface MainThreadAideProbeProviderShape extends IDisposable {
 	$registerProbingProvider(handle: number, data: IAideProbeData): void;
 	$handleProbingProgressChunk(requestId: string, progress: IAideProbeProgressDto): Promise<void>;
+	$handleProbingGoToDefinition(requestId: string, data: IAideProbeGoToDefinitionDto): void;
 	$unregisterProbingProvider(handle: number): void;
 }
 

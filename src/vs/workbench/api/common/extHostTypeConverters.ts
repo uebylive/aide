@@ -54,7 +54,7 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
-import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
@@ -2707,6 +2707,16 @@ export namespace AideChatResponseMarkdownPart {
 	}
 	export function to(part: Dto<IAideChatMarkdownContent>): vscode.ChatResponseMarkdownPart {
 		return new types.AideChatResponseMarkdownPart(MarkdownString.to(part.content));
+	}
+}
+
+export namespace AideProbeGoToDefinitionPart {
+	export function from(part: vscode.AideProbeGoToDefinition): Dto<IAideProbeGoToDefinition> {
+		return {
+			kind: 'goToDefinition',
+			uri: part.uri,
+			range: Range.from(part.range),
+		};
 	}
 }
 

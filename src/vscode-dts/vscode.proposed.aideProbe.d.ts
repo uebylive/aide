@@ -7,6 +7,7 @@ declare module 'vscode' {
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
+		location(value: AideProbeGoToDefinition): void;
 	}
 
 	export interface ProbeErrorDetails {
