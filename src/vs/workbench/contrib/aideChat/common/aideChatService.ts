@@ -103,6 +103,7 @@ export interface IAideProbeGoToDefinition {
 	uri: URI;
 	range: Range;
 	kind: 'goToDefinition';
+	thinking: string;
 }
 
 export interface IChatTreeData {

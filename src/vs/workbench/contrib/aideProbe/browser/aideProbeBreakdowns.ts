@@ -274,7 +274,7 @@ export class AideChatBreakdowns extends Disposable {
 							endColumn: definition.range.endColumn + 1,
 							endLineNumber: definition.range.endLineNumber
 						},
-						hoverMessage: { value: 'test' },
+						hoverMessage: { value: definition.thinking },
 					};
 				});
 

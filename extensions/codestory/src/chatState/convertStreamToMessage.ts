@@ -396,8 +396,7 @@ export const reportAgentEventsToChat = async (
 				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
 				const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
 				const range = new vscode.Range(startPosition, endPosition);
-				//await addDecoration(goToDefinition.fs_file_path, goToDefinition.range);
-				response.location({ uri, range, name: symbol_identifier.symbol_name });
+				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			}
 			if ('Probe' in symbolEventSubStep === false) {

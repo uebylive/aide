@@ -119,6 +119,11 @@ declare module 'vscode' {
 		 * The position of the symbol where the agent went to definition.
 		 */
 		readonly range: Range;
+
+		/**
+		 * The thinking process behind following this definition
+		 */
+		readonly thinking: string;
 	}
 
 	export interface AideChatResponseStream extends ChatResponseStream {

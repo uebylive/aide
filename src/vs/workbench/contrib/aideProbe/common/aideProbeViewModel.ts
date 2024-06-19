@@ -115,6 +115,8 @@ export interface IAideProbeGoToDefinitionViewModel {
 	readonly name: string;
 	// decoration range on the uri
 	readonly range: Range;
+	// the thinking process behind following this definition
+	readonly thinking: string;
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
@@ -171,6 +173,10 @@ export class AideProbeGoToDefinitionViewModel extends Disposable implements IAid
 
 	get range() {
 		return this._definition.range;
+	}
+
+	get thinking() {
+		return this._definition.thinking;
 	}
 
 	constructor(

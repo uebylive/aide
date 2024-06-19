@@ -43,6 +43,7 @@ export interface IAideProbeGoToDefinition {
 	uri: URI;
 	name: string;
 	range: Range;
+	thinking: string;
 }
 
 export type IAideProbeProgress =

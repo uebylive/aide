@@ -2717,6 +2717,7 @@ export namespace AideProbeGoToDefinitionPart {
 			name: part.name,
 			uri: part.uri,
 			range: Range.from(part.range),
+			thinking: part.thinking,
 		};
 	}
 }
