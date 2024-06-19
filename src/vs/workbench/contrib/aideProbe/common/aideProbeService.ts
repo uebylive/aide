@@ -22,6 +22,14 @@ interface IReferenceByName {
 	uri: URI;
 }
 
+export interface IAideProbeGoToDefinition {
+	name: string;
+	uri: URI;
+	range: Range;
+	kind: 'goToDefinition';
+}
+
+
 export interface IAideProbeBreakdownContent {
 	reference: IReferenceByName;
 	query?: IMarkdownString;
@@ -33,12 +41,14 @@ export interface IAideProbeBreakdownContent {
 export interface IAideProbeGoToDefinition {
 	kind: 'goToDefinition';
 	uri: URI;
+	name: string;
 	range: Range;
 }
 
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
-	| IAideProbeBreakdownContent;
+	| IAideProbeBreakdownContent
+	| IAideProbeGoToDefinition;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;

@@ -28,13 +28,15 @@ import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
+//import { IThemeService } from 'vs/platform/theme/common/themeService';
+
 const $ = dom.$;
 
 async function getSymbol(
@@ -57,6 +59,10 @@ async function getSymbol(
 	}
 }
 
+
+const decorationDescription = 'chat-breakdown-definition';
+const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
+
 export class AideChatBreakdowns extends Disposable {
 	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
@@ -68,6 +74,8 @@ export class AideChatBreakdowns extends Disposable {
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
+	// Keep track of definitions, we are just overloading this for now
+	private goToDefinitionDecorations: IAideProbeGoToDefinitionViewModel[] = [];
 	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
 
 	private readonly markdownRenderer: MarkdownRenderer;
@@ -79,10 +87,19 @@ export class AideChatBreakdowns extends Disposable {
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		//@IThemeService private readonly themeService: IThemeService
 	) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
+
+		this.editorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
+			color: '#FFFFFF',
+			backgroundColor: '#FF0000',
+			borderRadius: '3px',
+		});
+
 	}
 
 	show(container: HTMLElement): void {
@@ -146,7 +163,26 @@ export class AideChatBreakdowns extends Disposable {
 		}));
 	}
 
-	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
+	// private _getBreakdownListIndex(element: IAideProbeBreakdownViewModel): number {
+	// 	let matchIndex = -1;
+	// 	this.viewModel.forEach((item, index) => {
+	// 		if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
+	// 			matchIndex = index;
+	// 		}
+	// 	});
+	// 	return matchIndex;
+	// }
+
+	// Whenever we have an event, update our internal state
+
+	public async updateGoToDefinitionsDecorations(definitions: IAideProbeGoToDefinitionViewModel[]): Promise<void> {
+		this.goToDefinitionDecorations = definitions;
+	}
+
+
+
+
+	public async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
@@ -214,9 +250,44 @@ export class AideChatBreakdowns extends Disposable {
 			content.appendMarkdown('[testing-skcd]');
 			const renderedContent = this.markdownRenderer.render(content);
 			rowResponse.appendChild(renderedContent.element);
+
+
 			// TODO(skcd): pass the data over here
 			// this.goToDefinitionWidget = this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionWidget, codeEditor));
 			// this.goToDefinitionWidget.showAt(goToDefinitionPosition, rowResponse);
+
+
+			// we have the go-to-definitions, we want to highlight only on the file we are currently opening in the probebreakdownviewmodel
+			const definitionsToHighlight = this.goToDefinitionDecorations.filter((definition) => {
+				return definition.uri === element.uri;
+			});
+
+			definitionsToHighlight.forEach((definition) => {
+				codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, [
+					{
+						range: {
+							startLineNumber: definition.range.startLineNumber,
+							startColumn: definition.range.startColumn,
+							endColumn: definition.range.endColumn,
+							endLineNumber: definition.range.endLineNumber
+						},
+						hoverMessage: { value: 'test' },
+					}
+				]);
+			});
+
+
+			// codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, [
+			// 	{
+			// 		range: {
+			// 			startLineNumber: 1,
+			// 			startColumn: 1,
+			// 			endColumn: 30,
+			// 			endLineNumber: 9
+			// 		},
+			// 		hoverMessage: { value: 'test' },
+			// 	}
+			// ]);
 		}
 	}
 

@@ -2714,6 +2714,7 @@ export namespace AideProbeGoToDefinitionPart {
 	export function from(part: vscode.AideProbeGoToDefinition): Dto<IAideProbeGoToDefinition> {
 		return {
 			kind: 'goToDefinition',
+			name: part.name,
 			uri: part.uri,
 			range: Range.from(part.range),
 		};

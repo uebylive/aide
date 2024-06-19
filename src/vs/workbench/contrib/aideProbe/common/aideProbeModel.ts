@@ -8,7 +8,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { generateUuid } from 'vs/base/common/uuid';
-import { IAideProbeBreakdownContent, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
 	readonly message: string;
@@ -17,6 +17,7 @@ export interface IAideProbeRequestModel {
 export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
+	readonly goToDefinitions: ReadonlyMap<string, IAideProbeGoToDefinition[]>;
 }
 
 export interface IAideProbeModel {
@@ -51,9 +52,13 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
+	private readonly _goToDefinitionsBySymbol: Map<string, IAideProbeGoToDefinition[]> = new Map();
 	private readonly _breakdowns: IAideProbeBreakdownContent[] = [];
 	public get breakdowns(): ReadonlyArray<IAideProbeBreakdownContent> {
 		return this._breakdowns;
+	}
+	public get goToDefinitions(): ReadonlyMap<string, IAideProbeGoToDefinition[]> {
+		return this._goToDefinitionsBySymbol;
 	}
 
 	constructor() {
@@ -86,7 +91,23 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			this._breakdowns.push(breakdown);
 		}
 	}
+
+	/**
+			* Decorate the goToDefinition
+			*/
+
+	decorateGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
+		const mapKey = `${goToDefinition.uri.toString()}:${goToDefinition.name}`;
+		if (this._goToDefinitionsBySymbol.has(mapKey)) {
+			this._goToDefinitionsBySymbol.get(mapKey)!.push(goToDefinition);
+		} else {
+			this._goToDefinitionsBySymbol.set(mapKey, [goToDefinition]);
+		}
+	}
 }
+
+
+
 
 export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
@@ -148,6 +169,8 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._response.result = progress.content;
 		} else if (progress.kind === 'breakdown') {
 			this._response.applyBreakdown(progress);
+		} else if (progress.kind === 'goToDefinition') {
+			this._response.decorateGoToDefinition(progress)
 		}
 
 		this._onDidChange.fire();

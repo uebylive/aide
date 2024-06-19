@@ -111,6 +111,11 @@ declare module 'vscode' {
 		readonly uri: Uri;
 
 		/**
+		 * Name of the symbol
+		 */
+		readonly name: string;
+
+		/**
 		 * The position of the symbol where the agent went to definition.
 		 */
 		readonly range: Range;

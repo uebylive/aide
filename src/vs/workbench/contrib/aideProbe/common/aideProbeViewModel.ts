@@ -7,9 +7,10 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
+import { Range } from 'vs/editor/common/core/range';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeViewModel {
 	readonly model: IAideProbeModel;
@@ -18,6 +19,8 @@ export interface IAideProbeViewModel {
 	readonly isTailing: boolean;
 	readonly onDidChange: Event<void>;
 	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
+	// TODO(willis): Maybe this is wrong, but lets push through with this type
+	readonly onChangeGoToDefinition: Event<IAideProbeGoToDefinitionViewModel[]>;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
@@ -26,6 +29,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 	private readonly _onChangeActiveBreakdown = this._register(new Emitter<IAideProbeBreakdownViewModel>());
 	readonly onChangeActiveBreakdown = this._onChangeActiveBreakdown.event;
+
+	private readonly _onChangeGoToDefinition = this._register(new Emitter<IAideProbeGoToDefinitionViewModel[]>());
+	readonly onChangeGoToDefinition = this._onChangeGoToDefinition.event;
 
 	get model(): IAideProbeModel {
 		return this._model;
@@ -44,8 +50,12 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
+	private _goToDefinitions: IAideProbeGoToDefinitionViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
+	}
+	get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinitionViewModel> {
+		return this._goToDefinitions;
 	}
 
 	constructor(
@@ -59,6 +69,19 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item));
 				return viewItem;
 			}) ?? [];
+
+			if (_model.response) {
+				// TODO(willis+skcd): Not sure if this is really correct.. but yolo
+				this._goToDefinitions = [];
+				// this._goToDefinitions = _model.response.goToDefinitions.values();
+				for (const response of _model.response.goToDefinitions.values()) {
+					for (const definition of response) {
+						const viewItem = this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
+						this._goToDefinitions.push(viewItem);
+					}
+				}
+				this._onChangeGoToDefinition.fire(this._goToDefinitions);
+			}
 
 			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
 				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
@@ -83,6 +106,15 @@ export interface IAideProbeBreakdownViewModel {
 	reason?: IMarkdownString;
 	response?: IMarkdownString;
 	currentRenderedHeight: number | undefined;
+}
+
+export interface IAideProbeGoToDefinitionViewModel {
+	// symbol uri
+	readonly uri: URI;
+	// symbol name
+	readonly name: string;
+	// decoration range on the uri
+	readonly range: Range;
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
@@ -122,6 +154,27 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,
+	) {
+		super();
+	}
+}
+
+export class AideProbeGoToDefinitionViewModel extends Disposable implements IAideProbeGoToDefinitionViewModel {
+
+	get uri() {
+		return this._definition.uri;
+	}
+
+	get name() {
+		return this._definition.name;
+	}
+
+	get range() {
+		return this._definition.range;
+	}
+
+	constructor(
+		private readonly _definition: IAideProbeGoToDefinition,
 	) {
 		super();
 	}

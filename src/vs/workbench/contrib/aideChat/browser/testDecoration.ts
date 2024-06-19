@@ -4,11 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+//import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
+// import { IDecorationOptions } from 'vs/editor/common/editorCommon';
+// import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
+// import { IThemeService } from 'vs/platform/theme/common/themeService';
 
 
 export class TestDecoration extends Disposable {
@@ -16,9 +16,9 @@ export class TestDecoration extends Disposable {
 	private readonly _toDispose = new DisposableStore();
 
 	constructor(
-		private readonly _editor: ICodeEditor,
+		//private readonly _editor: ICodeEditor,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IThemeService private readonly themeService: IThemeService
+		//@IThemeService private readonly themeService: IThemeService
 	) {
 		super();
 
@@ -30,25 +30,25 @@ export class TestDecoration extends Disposable {
 			borderRadius: '3px',
 		});
 
-		const decoration: IDecorationOptions[] = [
-			{
-				range: {
-					startLineNumber: 1,
-					startColumn: 1,
-					endColumn: 30,
-					endLineNumber: 9
-				},
-				hoverMessage: { value: 'test' },
-				// renderOptions: {
-				// after: {
-				// contentText: 'test',
-				// color: this.getPlaceholderColor()
-				// }
-				// }
-			}
-		];
+		// const decoration: IDecorationOptions[] = [
+		// {
+		// range: {
+		// startLineNumber: 1,
+		// startColumn: 1,
+		// endColumn: 30,
+		// endLineNumber: 9
+		// },
+		// hoverMessage: { value: 'test' },
+		// renderOptions: {
+		// after: {
+		// contentText: 'test',
+		// color: this.getPlaceholderColor()
+		// }
+		// }
+		// }
+		// ];
 
-		this._editor.setDecorationsByType('test', 'test', decoration);
+		//this._editor.setDecorationsByType('test', 'test', decoration);
 
 	}
 
@@ -58,9 +58,9 @@ export class TestDecoration extends Disposable {
 	}
 
 
-	private getPlaceholderColor(): string | undefined {
-		const theme = this.themeService.getColorTheme();
-		const transparentForeground = theme.getColor(inputPlaceholderForeground);
-		return transparentForeground?.toString();
-	}
+	// private getPlaceholderColor(): string | undefined {
+	// 	const theme = this.themeService.getColorTheme();
+	// 	const transparentForeground = theme.getColor(inputPlaceholderForeground);
+	// 	return transparentForeground?.toString();
+	// }
 }

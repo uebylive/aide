@@ -99,6 +99,7 @@ export interface IAideChatMarkdownContent {
 }
 
 export interface IAideProbeGoToDefinition {
+	name: string;
 	uri: URI;
 	range: Range;
 	kind: 'goToDefinition';

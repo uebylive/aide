@@ -163,6 +163,11 @@ export class AideProbeViewPane extends ViewPane {
 			this._breakdownsList.openBreakdownReference(breakdown);
 		}));
 
+		// Keep track of the goToDefinition list and decorate them whenever we open the relevant file
+		this.viewModelDisposables.add(this.viewModel.onChangeGoToDefinition((definition) => {
+			this._breakdownsList.updateGoToDefinitionsDecorations(definition);
+		}));
+
 		const editorValue = this.getInput();
 		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
 

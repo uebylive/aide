@@ -57,7 +57,7 @@ import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browse
 import { AideChatEditSessionService, IAideChatEditSessionService } from 'vs/workbench/contrib/aideChat/browser/aideChatEdits';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
 import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
-import { TestDecoration } from 'vs/workbench/contrib/aideChat/browser/testDecoration';
+// import { TestDecoration } from 'vs/workbench/contrib/aideChat/browser/testDecoration';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -241,7 +241,7 @@ registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointH
 
 registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
 registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
-registerEditorContribution(TestDecoration.ID, TestDecoration, EditorContributionInstantiation.AfterFirstRender);
+//registerEditorContribution(TestDecoration.ID, TestDecoration, EditorContributionInstantiation.AfterFirstRender);
 
 registerChatActions();
 registerChatCopyActions();

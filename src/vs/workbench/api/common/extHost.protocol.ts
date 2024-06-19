@@ -1481,7 +1481,7 @@ export type IAideChatProgressDto =
 	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
 	| IAideChatTaskDto;
 
-export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent>;
+export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition>;
 
 export type IAideProbeGoToDefinitionDto = Dto<IAideProbeGoToDefinition>;
 
