@@ -137,6 +137,7 @@
 
 .aide-probe-view .rendered-markdown {
 	animation: fadeInFromBottom 0.7s ease-out;
+	overflow-wrap: break-word;
 }
 
 .aide-probe-view .rendered-markdown table {

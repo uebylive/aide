@@ -3,11 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
+import { DocumentSymbol } from 'vs/editor/common/languages';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
@@ -105,6 +109,7 @@ export interface IAideProbeBreakdownViewModel {
 	readonly query?: IMarkdownString;
 	readonly reason?: IMarkdownString;
 	readonly response?: IMarkdownString;
+	readonly symbol: Promise<DocumentSymbol | undefined>;
 	currentRenderedHeight: number | undefined;
 }
 
@@ -140,12 +145,56 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		return this._breakdown.response;
 	}
 
+	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
+	private _symbol: DocumentSymbol | undefined;
+	get symbol() {
+		return this._getSymbol();
+	}
+
+	private async _getSymbol(): Promise<DocumentSymbol | undefined> {
+		if (!this._symbol && this._symbolResolver) {
+			this._symbol = await this._symbolResolver();
+		}
+
+		return this._symbol;
+	}
+
 	currentRenderedHeight: number | undefined;
 
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,
+		@ITextModelService textModelResolverService: ITextModelService,
+		@IOutlineModelService outlineModelService: IOutlineModelService,
 	) {
 		super();
+
+		if (_breakdown.reference.uri && _breakdown.reference.name) {
+			this._symbolResolver = async () => {
+				this._symbol = await this.resolveSymbol(_breakdown.reference.uri, _breakdown.reference.name, textModelResolverService, outlineModelService);
+				return this._symbol;
+			};
+			this._symbolResolver();
+		}
+	}
+
+	async resolveSymbol(
+		uri: URI,
+		name: string,
+		textModelResolverService: ITextModelService,
+		outlineModelService: IOutlineModelService,
+	): Promise<DocumentSymbol | undefined> {
+		const reference = await textModelResolverService.createModelReference(uri);
+		try {
+			const symbols = (await outlineModelService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
+			const symbol = symbols.find(s => s.name === name);
+			if (!symbol) {
+				return;
+			}
+
+			return symbol;
+		} finally {
+			reference.dispose();
+		}
 	}
 }
 

@@ -5,28 +5,24 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { URI } from 'vs/base/common/uri';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
@@ -34,27 +30,6 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
 
 const $ = dom.$;
-
-async function getSymbol(
-	uri: URI,
-	name: string,
-	textModelResolverService: ITextModelService,
-	outlineModelService: IOutlineModelService,
-): Promise<DocumentSymbol | undefined> {
-	const reference = await textModelResolverService.createModelReference(uri);
-	try {
-		const symbols = (await outlineModelService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
-		const symbol = symbols.find(s => s.name === name);
-		if (!symbol) {
-			return;
-		}
-
-		return symbol;
-	} finally {
-		reference.dispose();
-	}
-}
-
 
 const decorationDescription = 'chat-breakdown-definition';
 const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
@@ -69,7 +44,7 @@ export class AideChatBreakdowns extends Disposable {
 	private renderer: BreakdownRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
-	private explanationWidget: AideProbeExplanationWidget | undefined;
+	private explanationWidget: Map<string, AideProbeExplanationWidget> = new Map();
 	// Keep track of definitions, we are just overloading this for now
 	private goToDefinitionDecorations: IAideProbeGoToDefinitionViewModel[] = [];
 	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
@@ -79,8 +54,6 @@ export class AideChatBreakdowns extends Disposable {
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ITextModelService private readonly textModelResolverService: ITextModelService,
-		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService
 	) {
@@ -182,12 +155,6 @@ export class AideChatBreakdowns extends Disposable {
 			}
 		}
 
-		if (this.explanationWidget) {
-			this.explanationWidget.hide();
-			this.explanationWidget.dispose();
-			this.explanationWidget = undefined;
-		}
-
 		if (this.goToDefinitionWidget) {
 			this.goToDefinitionWidget.hide();
 			this.goToDefinitionWidget.dispose();
@@ -196,33 +163,10 @@ export class AideChatBreakdowns extends Disposable {
 
 		let codeEditor: ICodeEditor | null;
 		let explanationWidgetPosition: Position = new Position(1, 1);
-		// let goToDefinitionPosition: Position = new Position(1, 1);
 
 		const { uri, name } = element;
-		try {
-			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
-			if (!symbol) {
-				codeEditor = await this.editorService.openCodeEditor({
-					resource: uri,
-					options: {
-						pinned: false,
-						preserveFocus: true,
-					}
-				}, null);
-			} else {
-				explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
-				// goToDefinitionPosition = new Position(symbol.range.startLineNumber + 1, symbol.range.startColumn + 10);
-				codeEditor = await this.editorService.openCodeEditor({
-					resource: uri,
-					options: {
-						pinned: false,
-						preserveFocus: true,
-						selection: symbol.range,
-						selectionRevealType: TextEditorSelectionRevealType.NearTop
-					}
-				}, null);
-			}
-		} catch (e) {
+		const symbol = await element.symbol;
+		if (!symbol) {
 			codeEditor = await this.editorService.openCodeEditor({
 				resource: uri,
 				options: {
@@ -230,11 +174,30 @@ export class AideChatBreakdowns extends Disposable {
 					preserveFocus: true,
 				}
 			}, null);
+		} else {
+			explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+			codeEditor = await this.editorService.openCodeEditor({
+				resource: uri,
+				options: {
+					pinned: false,
+					preserveFocus: true,
+					selection: symbol.range,
+					selectionRevealType: TextEditorSelectionRevealType.NearTop
+				}
+			}, null);
 		}
 
-		if (codeEditor) {
-			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-			this.explanationWidget.show(explanationWidgetPosition, 5);
+		if (codeEditor && symbol && explanationWidgetPosition) {
+			const symbolKey = `${uri.fsPath}:${symbol.name}`;
+			if (this.explanationWidget.get(symbolKey)) {
+				const existingWidget = this.explanationWidget.get(symbolKey)!;
+				existingWidget.setContent(element);
+				existingWidget.show(explanationWidgetPosition, 5);
+			} else {
+				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
+				newWidget.show(explanationWidgetPosition, 5);
+				this.explanationWidget.set(symbolKey, newWidget);
+			}
 
 			// show the go-to-definition information
 			const rowResponse = $('div.breakdown-content');
@@ -266,6 +229,14 @@ export class AideChatBreakdowns extends Disposable {
 				});
 
 			codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, definitionsToHighlight);
+		} else if (!symbol) {
+			const symbolKey = `${uri.fsPath}:${name}`;
+			if (this.explanationWidget.get(symbolKey)) {
+				const existingWidget = this.explanationWidget.get(symbolKey)!;
+				existingWidget.hide();
+				existingWidget.dispose();
+				this.explanationWidget.delete(symbolKey);
+			}
 		}
 	}
 
@@ -345,8 +316,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
-		@ITextModelService private readonly textModelResolverService: ITextModelService,
-		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 	) {
 		super();
 	}
@@ -390,11 +359,11 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 			templateDisposables.add(label);
 			templateData.container.appendChild(rowResource);
 
-			this.getSymbolKind(uri, name).then(kind => {
-				if (kind) {
+			element.symbol.then(symbol => {
+				if (symbol && symbol.kind) {
 					label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
 						fileKind: FileKind.FILE,
-						icon: SymbolKinds.toIcon(kind),
+						icon: SymbolKinds.toIcon(symbol.kind),
 					});
 				}
 			});
@@ -409,15 +378,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 		}
 
 		this.updateItemHeight(templateData);
-	}
-
-	private async getSymbolKind(uri: URI, name: string): Promise<SymbolKind | undefined> {
-		const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
-		if (!symbol) {
-			return;
-		}
-
-		return symbol.kind;
 	}
 
 	disposeTemplate(templateData: IBreakdownTemplateData): void {
