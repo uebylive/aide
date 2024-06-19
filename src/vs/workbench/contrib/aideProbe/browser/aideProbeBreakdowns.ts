@@ -36,7 +36,7 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { editorSelectionBackground, editorSelectionForeground } from 'vs/platform/theme/common/colors/editorColors';
+import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
 
 const $ = dom.$;
 
@@ -96,8 +96,8 @@ export class AideChatBreakdowns extends Disposable {
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 
 		const theme = this.themeService.getColorTheme();
-		const decorationBackgroundColor = theme.getColor(editorSelectionBackground);
-		const decorationColor = theme.getColor(editorSelectionForeground);
+		const decorationBackgroundColor = theme.getColor(editorFindMatch);
+		const decorationColor = theme.getColor(editorFindMatchForeground);
 
 		this.editorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
 			color: decorationColor?.toString() || '#f3f4f6',
