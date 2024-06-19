@@ -314,7 +314,7 @@ export const reportDummyEventsToChat = async (
 			symbol_name: 'generate_agent_stream',
 			path: `${workspaceRoot}/sidecar/src/webserver/agent_stream.rs`,
 			response: 'The agent streams responses to the user by sending partial responses and updates.'
-		}
+		},
 	];
 
 	for (const path of paths) {
@@ -324,11 +324,11 @@ export const reportDummyEventsToChat = async (
 			reason: new vscode.MarkdownString(path.reason),
 			response: response ? new vscode.MarkdownString(path.response) : undefined
 		});
-		await new Promise(resolve => setTimeout(resolve, 1000));
+		// await new Promise(resolve => setTimeout(resolve, 1000));
 	}
 
 	// Wait 5 seconds
-	await new Promise(resolve => setTimeout(resolve, 1000));
+	// await new Promise(resolve => setTimeout(resolve, 1000));
 
 	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
 1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
@@ -336,7 +336,15 @@ export const reportDummyEventsToChat = async (
 3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
 4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
 5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
-So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`)
+So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`).appendMarkdown(
+		`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
+	1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
+	2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
+	3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
+	4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
+	5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
+	So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`
+	)
 	);
 };
 

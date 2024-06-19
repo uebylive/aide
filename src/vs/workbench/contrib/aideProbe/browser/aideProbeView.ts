@@ -33,14 +33,18 @@ import { Codicon } from 'vs/base/common/codicons';
 import { defaultToggleStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
+import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 
 const $ = dom.$;
 
 export class AideProbeViewPane extends ViewPane {
 	private container!: HTMLElement;
+	private resultWrapper!: HTMLElement;
 	private explorationDetail!: HTMLElement;
 	private breakdownsListContainer!: HTMLElement;
 	private responseWrapper!: HTMLElement;
+	private scrollableElement!: DomScrollableElement;
 	private tailingToggle: Toggle | undefined;
 
 	private inputPart!: AideProbeInputPart;
@@ -101,7 +105,19 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
 		this.inputPart.render(this.container, this);
 
-		const breakdownsWrapper = dom.append(this.container, $('.breakdownsWrapper'));
+		this.resultWrapper = $('.resultWrapper', { tabIndex: 0 });
+		this.scrollableElement = this._register(new DomScrollableElement(
+			this.resultWrapper,
+			{
+				alwaysConsumeMouseWheel: true,
+				horizontal: ScrollbarVisibility.Hidden,
+				vertical: ScrollbarVisibility.Visible
+			}
+		));
+		const scrollableElementNode = this.scrollableElement.getDomNode();
+		dom.append(this.container, scrollableElementNode);
+
+		const breakdownsWrapper = dom.append(this.resultWrapper, $('.breakdownsWrapper'));
 		this.explorationDetail = dom.append(breakdownsWrapper, $('div.exploration-detail'));
 		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
 		const text = $('span', undefined, 'Exploring the codebase');
@@ -119,7 +135,7 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
-		this.responseWrapper = dom.append(this.container, $('.responseWrapper'));
+		this.responseWrapper = dom.append(this.resultWrapper, $('.responseWrapper'));
 
 		this.onDidChangeItems();
 	}
@@ -165,16 +181,6 @@ export class AideProbeViewPane extends ViewPane {
 		const model = this.aideProbeService.startSession();
 		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
-			if (!this.viewModel) {
-				return;
-			}
-
-			if (this.viewModel.requestInProgress) {
-				this.requestInProgress.set(true);
-			} else {
-				this.requestInProgress.set(false);
-				this.toggleTailing(false, true);
-			}
 			this.onDidChangeItems();
 		}));
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
@@ -191,6 +197,7 @@ export class AideProbeViewPane extends ViewPane {
 
 		if (result) {
 			this.inputPart.acceptInput(editorValue);
+			this.onDidChangeItems();
 			return result.responseCreatedPromise;
 		}
 
@@ -198,6 +205,13 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private onDidChangeItems(): void {
+		if (this.viewModel?.requestInProgress) {
+			this.requestInProgress.set(true);
+		} else {
+			this.requestInProgress.set(false);
+			this.toggleTailing(false, true);
+		}
+
 		this.updateExplorationDetail();
 		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
 			this.renderBreakdownsListData(this.viewModel?.breakdowns ?? [], this.breakdownsListContainer);
@@ -207,6 +221,7 @@ export class AideProbeViewPane extends ViewPane {
 			dom.hide(this.breakdownsListContainer);
 		}
 		this.renderFinalAnswer();
+		this.scrollableElement.scanDomNode();
 	}
 
 	private updateExplorationDetail(): void {
@@ -257,6 +272,7 @@ export class AideProbeViewPane extends ViewPane {
 
 		this.inputPart.layout(height, width);
 		this._breakdownsList.layout(width);
+		this.scrollableElement.scanDomNode();
 	}
 
 	override dispose(): void {
