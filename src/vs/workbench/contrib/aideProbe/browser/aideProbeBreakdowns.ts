@@ -259,35 +259,21 @@ export class AideChatBreakdowns extends Disposable {
 
 			// we have the go-to-definitions, we want to highlight only on the file we are currently opening in the probebreakdownviewmodel
 			const definitionsToHighlight = this.goToDefinitionDecorations.filter((definition) => {
-				return definition.uri === element.uri;
-			});
-
-			definitionsToHighlight.forEach((definition) => {
-				codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, [
-					{
+				return definition.uri.fsPath === element.uri.fsPath;
+			})
+				.map((definition) => {
+					return {
 						range: {
 							startLineNumber: definition.range.startLineNumber,
 							startColumn: definition.range.startColumn,
-							endColumn: definition.range.endColumn,
+							endColumn: definition.range.endColumn + 1,
 							endLineNumber: definition.range.endLineNumber
 						},
 						hoverMessage: { value: 'test' },
-					}
-				]);
-			});
+					};
+				});
 
-
-			// codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, [
-			// 	{
-			// 		range: {
-			// 			startLineNumber: 1,
-			// 			startColumn: 1,
-			// 			endColumn: 30,
-			// 			endLineNumber: 9
-			// 		},
-			// 		hoverMessage: { value: 'test' },
-			// 	}
-			// ]);
+			codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, definitionsToHighlight);
 		}
 	}
 
