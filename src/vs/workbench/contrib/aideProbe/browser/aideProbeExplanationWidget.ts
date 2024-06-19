@@ -7,6 +7,8 @@ import * as dom from 'vs/base/browser/dom';
 import * as lifecycle from 'vs/base/common/lifecycle';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { IPosition } from 'vs/editor/common/core/position';
+import { IRange } from 'vs/editor/common/core/range';
 import { ZoneWidget } from 'vs/editor/contrib/zoneWidget/browser/zoneWidget';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
@@ -67,5 +69,27 @@ export class AideProbeExplanationWidget extends ZoneWidget {
 	override dispose(): void {
 		this.toDispose = lifecycle.dispose(this.toDispose);
 		super.dispose();
+	}
+
+	private doDummyRender(): number {
+		if (!this.domNode) {
+			return 0;
+		}
+
+		const dummyParent = $('.aide-probe-explanation-widget-dummy');
+		this.domNode.appendChild(dummyParent);
+
+		this.renderContent(dummyParent);
+		const height = dom.getContentHeight(dummyParent);
+		this.domNode.removeChild(dummyParent);
+
+		return Math.ceil(height / 22);
+	}
+
+	override show(rangeOrPos: IRange | IPosition): void {
+		super.show(rangeOrPos, 1);
+		const lines = this.doDummyRender();
+		super.hide();
+		super.show(rangeOrPos, lines + 2);
 	}
 }

@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef, SideCarClient } from '../sidecar/client';
@@ -236,129 +237,22 @@ export const reportProcUpdateToChat = (
 	}
 };
 
-export const reportDummyEventsToChat = async (
-	response: vscode.ProbeResponseStream,
-): Promise<void> => {
-	const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-	if (!workspaceRoot) {
-		return;
-	}
-
-	const paths = [
-		{
-			symbol_name: 'agent_router',
-			path: `${workspaceRoot}/sidecar/src/bin/webserver.rs`,
-			query: 'How does the LLM ccommunicaet with the agent?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'agent_router',
-			path: `${workspaceRoot}/sidecar/src/bin/webserver.rs`,
-			query: 'How does the LLM ccommunicate with the agent?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'agent_router',
-			path: `${workspaceRoot}/sidecar/src/bin/webserver.rs`,
-			query: 'How does the agent communicate with the LLM? Why is the agent important?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'ExplainRequest',
-			path: `${workspaceRoot}/sidecar/src/webserver/agent.rs`,
-			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
-			reason: 'It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
-		},
-		{
-			symbol_name: 'trim_utter_history',
-			path: `${workspaceRoot}/sidecar/src/agent/search.rs`,
-			query: 'What are the different search algorithms used by the agent?',
-			reason: 'The agent likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.',
-			response: 'The agent uses various search algorithms like semantic search, lexical search, and git log analysis to find relevant code snippets and explanations.'
-		},
-		{
-			symbol_name: 'ConversationMessage',
-			path: `${workspaceRoot}/sidecar/src/agent/types.rs`,
-			query: 'What are the different types used by the agent?',
-			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
-		},
-		{
-			symbol_name: 'agent_router',
-			path: `${workspaceRoot}/sidecar/src/bin/webserver.rs`,
-			response: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.',
-		},
-		{
-			symbol_name: 'generate_agent_stream',
-			path: `${workspaceRoot}/sidecar/src/webserver/agent_stream.rs`,
-			query: 'How does the agent stream responses to the user?',
-			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
-			response: 'The agent sends partial responses and updates to the user as they become available to stream responses.'
-		},
-		{
-			symbol_name: 'ExplainRequest',
-			path: `${workspaceRoot}/sidecar/src/webserver/agent.rs`,
-			response: 'The agent acts as a central hub for coordinating the communication with LLMs.'
-
-		},
-		{
-			symbol_name: 'trim_utter_history',
-			path: `${workspaceRoot}/sidecar/src/agent/search.rs`,
-			response: 'The agent orchestrates different search algorithms and combines their results by communicating with the LLMs.'
-		},
-		{
-			symbol_name: 'ConversationMessage',
-			path: `${workspaceRoot}/sidecar/src/agent/types.rs`,
-			response: 'The agent uses various types to represent different data structures and entities.'
-		},
-		{
-			symbol_name: 'generate_agent_stream',
-			path: `${workspaceRoot}/sidecar/src/webserver/agent_stream.rs`,
-			response: 'The agent streams responses to the user by sending partial responses and updates.'
-		},
-	];
-
-	for (const path of paths) {
-		response.breakdown({
-			reference: { uri: vscode.Uri.file(path.path), name: path.symbol_name },
-			query: new vscode.MarkdownString(path.query),
-			reason: new vscode.MarkdownString(path.reason),
-			response: response ? new vscode.MarkdownString(path.response) : undefined
-		});
-		// await new Promise(resolve => setTimeout(resolve, 1000));
-	}
-
-	// Wait 5 seconds
-	// await new Promise(resolve => setTimeout(resolve, 1000));
-
-	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
-1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
-2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
-3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
-4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
-5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
-So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`).appendMarkdown(
-		`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
-	1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
-	2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
-	3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
-	4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
-	5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
-	So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`
-	)
-	);
+export const readJsonFile = (filePath: string): any => {
+	const jsonString = fs.readFileSync(filePath, 'utf-8');
+	return JSON.parse(jsonString);
 };
 
 export const reportAgentEventsToChat = async (
-	stream: AsyncIterator<SideCarAgentEvent>,
+	stream: SideCarAgentEvent[],
 	response: vscode.ProbeResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
 	console.log('reportAgentEventsToChat starting');
-	const asyncIterable = {
-		[Symbol.asyncIterator]: () => stream
-	};
+	// const asyncIterable = {
+	// 	[Symbol.asyncIterator]: () => stream
+	// };
 
 	// now we ping the sidecar that the probing needs to stop
 	if (token.isCancellationRequested) {
@@ -366,7 +260,7 @@ export const reportAgentEventsToChat = async (
 		return;
 	}
 
-	for await (const event of asyncIterable) {
+	for (const event of stream) {
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);

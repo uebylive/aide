@@ -208,10 +208,10 @@ export class AideChatBreakdowns extends Disposable {
 			if (this.explanationWidget.get(symbolKey)) {
 				const existingWidget = this.explanationWidget.get(symbolKey)!;
 				existingWidget.setContent(element);
-				existingWidget.show(explanationWidgetPosition, 5);
+				existingWidget.show(explanationWidgetPosition);
 			} else {
 				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-				newWidget.show(explanationWidgetPosition, 5);
+				newWidget.show(explanationWidgetPosition);
 				this.explanationWidget.set(symbolKey, newWidget);
 			}
 
@@ -251,29 +251,35 @@ export class AideChatBreakdowns extends Disposable {
 	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
 		const list = assertIsDefined(this.list);
 
+		let matchingIndex = -1;
 		if (this.viewModel.length === 0) {
 			this.viewModel = [...breakdowns];
 			list.splice(0, 0, breakdowns);
 		} else {
+			console.log('updating breakdowns');
+			console.log(breakdowns);
 			breakdowns.forEach((breakdown) => {
 				const matchIndex = this.getBreakdownListIndex(breakdown);
 				if (matchIndex === -1) {
 					this.viewModel.push(breakdown);
 					list.splice(this.viewModel.length - 1, 0, [breakdown]);
 				} else {
-					const match = this.viewModel[matchIndex];
-					const shouldUpdate = match.query?.value !== breakdown.query?.value
-						|| match.reason?.value !== breakdown.reason?.value
-						|| match.response?.value !== breakdown.response?.value;
-					if (shouldUpdate) {
-						this.viewModel[matchIndex] = breakdown;
-						list.splice(matchIndex, 1, [breakdown]);
-						if (this.activeBreakdown?.uri.fsPath === breakdown.uri.fsPath && this.activeBreakdown?.name === breakdown.name) {
-							this.list?.setFocus([matchIndex]);
-						}
+					this.viewModel[matchIndex] = breakdown;
+					list.splice(matchIndex, 1, [breakdown]);
+					if (this.activeBreakdown?.uri.fsPath === breakdown.uri.fsPath && this.activeBreakdown?.name === breakdown.name) {
+						matchingIndex = matchIndex;
 					}
 				}
 			});
+			const listLength = this.viewModel.length;
+			console.log('list length', listLength);
+			for (let i = listLength - 1; i >= 0; i--) {
+				console.log(list.element(i));
+			}
+		}
+		this.list?.rerender();
+		if (matchingIndex !== -1) {
+			this.list?.setFocus([matchingIndex]);
 		}
 
 		this.layout();
@@ -349,6 +355,7 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 	}
 
 	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
+		console.log('rendering element', element, index, templateData, height);
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;

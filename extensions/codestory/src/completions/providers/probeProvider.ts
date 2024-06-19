@@ -6,7 +6,7 @@
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
-import { reportDummyEventsToChat } from '../../chatState/convertStreamToMessage';
+import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -56,10 +56,11 @@ export class AideProbeProvider implements vscode.Disposable {
 		// console.log('threadId', threadId);
 		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		// console.log('probeResponse', probeResponse);
-		// await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		const stream = readJsonFile('/Users/nareshr/github/codestory/ide/extensions/codestory/src/dummydata.json');
+		await reportAgentEventsToChat(stream, response, threadId, _token, this._sideCarClient);
 		// console.log('reportAgentEventsToChat done');
 		console.log(this._editorUrl, query, threadId);
-		await reportDummyEventsToChat(response);
+		// await reportDummyEventsToChat(response);
 		return {};
 	}
 
