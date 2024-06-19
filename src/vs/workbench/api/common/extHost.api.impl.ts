@@ -26,6 +26,7 @@ import { IExtHostAIModels } from 'vs/workbench/api/common/extHostAIModels';
 import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
 import { ExtHostAideChatAgents2 } from 'vs/workbench/api/common/extHostAideChatAgents2';
 import { ExtHostAideChatVariables } from 'vs/workbench/api/common/extHostAideChatVariables';
+import { ExtHostAideProbeProvider } from 'vs/workbench/api/common/extHostAideProbeProvider';
 import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
 import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
 import { IExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
@@ -220,6 +221,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostAideChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostAideChatAgents2, new ExtHostAideChatAgents2(rpcProtocol, extHostLogService, extHostCommands, initData.quality));
 	const extHostAideChatVariables = rpcProtocol.set(ExtHostContext.ExtHostAideChatVariables, new ExtHostAideChatVariables(rpcProtocol));
+	const extHostAideProbeProvider = rpcProtocol.set(ExtHostContext.ExtHostAideProbeProvider, new ExtHostAideProbeProvider(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
@@ -1515,6 +1517,17 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
+		const aideProbe: typeof vscode.aideProbe = {
+			// IMPORTANT
+			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
+			_version: 1,
+
+			registerProbeResponseProvider(id: string, provider: vscode.ProbeResponseProvider) {
+				checkProposedApiEnabled(extension, 'aideProbe');
+				return extHostAideProbeProvider.registerProbingProvider(extension, id, provider);
+			}
+		};
+
 		// namespace: speech
 		const speech: typeof vscode.speech = {
 			registerSpeechProvider(id: string, provider: vscode.SpeechProvider) {
@@ -1548,6 +1561,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			// namespaces
 			ai,
 			aideChat,
+			aideProbe,
 			authentication,
 			commands,
 			comments,

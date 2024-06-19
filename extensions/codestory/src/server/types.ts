@@ -80,6 +80,7 @@ interface SymbolEventProbeRequest {
 interface SymbolEventGoToDefinitionRequest {
 	fs_file_path: string;
 	range: SidecarRequestRange;
+	thinking: string;
 }
 
 interface SymbolEventSubStep {

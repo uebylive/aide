@@ -131,13 +131,13 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
 
 interface MultiLevelCodeTriggerActionContext {
-	widget: IChatWidget;
+	inputEditor: ICodeEditor;
 	range: IRange;
 	pick: 'file' | 'code' | 'folder';
 }
 
 function isMultiLevelCodeTriggerActionContext(context: any): context is MultiLevelCodeTriggerActionContext {
-	return 'widget' in context && 'range' in context && 'pick' in context;
+	return 'inputEditor' in context && 'range' in context && 'pick' in context;
 }
 
 export class MultiLevelCodeTriggerAction extends Action2 {
@@ -158,7 +158,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 			return;
 		}
 
-		const inputEditor = context.widget.inputEditor;
+		const inputEditor = context.inputEditor;
 		const doCleanup = () => {
 			// Failed, remove the dangling prefix
 			inputEditor.executeEdits('chatMultiLevelCodeTrigger', [{ range: context.range, text: `` }]);

@@ -54,10 +54,11 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
-import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatBreakdown, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
+import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export namespace Command {
 
@@ -2709,6 +2710,18 @@ export namespace AideChatResponseMarkdownPart {
 	}
 }
 
+export namespace AideProbeGoToDefinitionPart {
+	export function from(part: vscode.AideProbeGoToDefinition): Dto<IAideProbeGoToDefinition> {
+		return {
+			kind: 'goToDefinition',
+			name: part.name,
+			uri: part.uri,
+			range: Range.from(part.range),
+			thinking: part.thinking,
+		};
+	}
+}
+
 export namespace AideChatResponseMarkdownWithVulnerabilitiesPart {
 	export function from(part: vscode.ChatResponseMarkdownWithVulnerabilitiesPart): Dto<IAideChatAgentMarkdownContentWithVulnerability> {
 		return {
@@ -2921,25 +2934,14 @@ export namespace AideChatResponseReferencePart {
 }
 
 export namespace AideChatResponseBreakdownPart {
-	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideChatBreakdown> {
+	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideProbeBreakdownContent> {
 		return {
 			kind: 'breakdown',
-			reference: part.reference,
+			reference: { name: part.reference.name, uri: part.reference.uri },
 			query: part.query && MarkdownString.from(part.query),
 			reason: part.reason && MarkdownString.from(part.reason),
 			response: part.response && MarkdownString.from(part.response)
 		};
-	}
-	export function to(part: Dto<IAideChatBreakdown>): vscode.AideChatResponseBreakdown {
-		const value = revive<IAideChatBreakdown>(part);
-
-		return new types.AideChatResponseBreakdownPart(
-			value.reference.uri,
-			value.reference.name,
-			part.query && MarkdownString.to(part.query),
-			part.reason && MarkdownString.to(part.reason),
-			part.response && MarkdownString.to(part.response),
-		);
 	}
 }
 

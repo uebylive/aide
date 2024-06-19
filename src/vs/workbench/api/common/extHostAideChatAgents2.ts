@@ -192,15 +192,6 @@ class ChatAgentResponseStream {
 
 					return this;
 				},
-				breakdown(value) {
-					throwIfDone(this.breakdown);
-					checkProposedApiEnabled(that._extension, 'aideChatParticipant');
-
-					const part = new extHostTypes.AideChatResponseBreakdownPart(value.reference.uri, value.reference.name, value.query, value.reason, value.response);
-					const dto = typeConvert.AideChatResponseBreakdownPart.from(part);
-					_report(dto);
-					return this;
-				},
 				textEdit(target, edits) {
 					throwIfDone(this.textEdit);
 					checkProposedApiEnabled(that._extension, 'aideChatParticipant');

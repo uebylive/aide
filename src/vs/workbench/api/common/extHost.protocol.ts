@@ -85,9 +85,10 @@ import * as search from 'vs/workbench/services/search/common/search';
 import { ISaveProfileResult } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
 import type { TerminalShellExecutionCommandLineConfidence } from 'vscode';
 import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -1476,15 +1477,25 @@ export interface IAideChatResponseProgressFileTreeData {
 	children?: IAideChatResponseProgressFileTreeData[];
 }
 
-// export type IDocumentContextDto = {
-// 	uri: UriComponents;
-// 	version: number;
-// 	ranges: IRange[];
-// };
-
 export type IAideChatProgressDto =
 	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
 	| IAideChatTaskDto;
+
+export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition>;
+
+export type IAideProbeGoToDefinitionDto = Dto<IAideProbeGoToDefinition>;
+
+export interface MainThreadAideProbeProviderShape extends IDisposable {
+	$registerProbingProvider(handle: number, data: IAideProbeData): void;
+	$handleProbingProgressChunk(requestId: string, progress: IAideProbeProgressDto): Promise<void>;
+	$handleProbingGoToDefinition(requestId: string, data: IAideProbeGoToDefinitionDto): void;
+	$unregisterProbingProvider(handle: number): void;
+}
+
+export interface ExtHostAideProbeProviderShape {
+	$initiateProbe(handle: number, request: string, token: CancellationToken): Promise<IAideProbeResult | undefined>;
+}
+
 ///////////////////////// END AIDE /////////////////////////
 
 export interface ExtHostUrlsShape {
@@ -2975,6 +2986,7 @@ export const MainContext = {
 	MainThreadEmbeddings: createProxyIdentifier<MainThreadEmbeddingsShape>('MainThreadEmbeddings'),
 	MainThreadAideChatAgents2: createProxyIdentifier<MainThreadAideChatAgentsShape2>('MainThreadAideChatAgents2'),
 	MainThreadAideChatVariables: createProxyIdentifier<MainThreadAideChatVariablesShape>('MainThreadAideChatVariables'),
+	MainThreadProbeProvider: createProxyIdentifier<MainThreadAideProbeProviderShape>('MainThreadProbeProvider'),
 	MainThreadChatAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadChatAgents2'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
 	MainThreadClipboard: createProxyIdentifier<MainThreadClipboardShape>('MainThreadClipboard'),
@@ -3102,6 +3114,7 @@ export const ExtHostContext = {
 	ExtHostAideChatAgents2: createProxyIdentifier<ExtHostAideChatAgentsShape2>('ExtHostAideChatAgents'),
 	ExtHostAideChatVariables: createProxyIdentifier<ExtHostAideChatVariablesShape>('ExtHostAideChatVariables'),
 	ExtHostAideChatProvider: createProxyIdentifier<ExtHostAIModelsShape>('ExtHostAideChatProvider'),
+	ExtHostAideProbeProvider: createProxyIdentifier<ExtHostAideProbeProviderShape>('ExtHostAideProbeProvider'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostEmbeddings: createProxyIdentifier<ExtHostEmbeddingsShape>('ExtHostEmbeddings'),
 	ExtHostAiRelatedInformation: createProxyIdentifier<ExtHostAiRelatedInformationShape>('ExtHostAiRelatedInformation'),

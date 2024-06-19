@@ -5,10 +5,12 @@
 
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { AgentStep, CodeSpan, ConversationMessage } from '../sidecar/types';
 import { RepoRef, SideCarClient } from '../sidecar/client';
 import { SideCarAgentEvent } from '../server/types';
+//import { addDecoration } from './decorations/add';
 
 
 export const reportFromStreamToSearchProgress = async (
@@ -235,137 +237,22 @@ export const reportProcUpdateToChat = (
 	}
 };
 
-const parseProbeQuestionAskRequest = (query: string): { userQuery: string; probeReason: string } => {
-	const userQueryRegex = /(?:The original user query is:|The user has asked the following query:)\s*(.+?)(?:\n|$)/;
-	const probeReasonRegex = /We also (?:believe|belive) this symbol needs to be probed because of:\s*(.+)/s;
-
-	const userQueryMatch = query.match(userQueryRegex);
-	const probeReasonMatch = query.match(probeReasonRegex);
-
-	const userQuery = userQueryMatch ? userQueryMatch[1].trim() : '';
-	const probeReason = probeReasonMatch ? probeReasonMatch[1].trim() : '';
-
-	return { userQuery, probeReason };
-};
-
-export const reportDummyEventsToChat = async (
-	response: vscode.AideChatResponseStream,
-): Promise<void> => {
-	const paths = [
-		{
-			symbol_name: 'agent_router',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
-			query: 'How does the LLM ccommunicaet with the agent?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'agent_router',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
-			query: 'How does the LLM ccommunicate with the agent?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'agent_router',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
-			query: 'How does the agent communicate with the LLM? Why is the agent important?',
-			reason: 'What are the different components of the agent? What are the different methods of the agent?',
-		},
-		{
-			symbol_name: 'ExplainRequest',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
-			query: 'What does the agent do in the code base? What are the different components of the agent? What are the different methods of the agent?',
-			reason: 'It has methods like answer, answer_context, and code_search_hybrid that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.'
-		},
-		{
-			symbol_name: 'trim_utter_history',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
-			query: 'What are the different search algorithms used by the agent?',
-			reason: 'The agent likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.',
-			response: 'The agent uses various search algorithms like semantic search, lexical search, and git log analysis to find relevant code snippets and explanations.'
-		},
-		{
-			symbol_name: 'ConversationMessage',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
-			query: 'What are the different types used by the agent?',
-			reason: 'The agent uses various types to represent different data structures and entities in the code base.'
-		},
-		{
-			symbol_name: 'agent_router',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/webserver.rs',
-			response: 'The agent communicates with the Large Language Models (LLMs) through various components and methods.'
-		},
-		{
-			symbol_name: 'generate_agent_stream',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
-			query: 'How does the agent stream responses to the user?',
-			reason: 'The agent streams responses to the user by sending partial responses and updates as they become available.',
-			response: 'The agent sends partial responses and updates to the user as they become available to stream responses.'
-		},
-		{
-			symbol_name: 'ExplainRequest',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent.rs',
-			response: 'The agent acts as a central hub for coordinating the communication with LLMs.'
-		},
-		{
-			symbol_name: 'trim_utter_history',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/search.rs',
-			response: 'The agent orchestrates different search algorithms and combines their results by communicating with the LLMs.'
-		},
-		{
-			symbol_name: 'ConversationMessage',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/agent/types.rs',
-			response: 'The agent uses various types to represent different data structures and entities.'
-		},
-		{
-			symbol_name: 'generate_agent_stream',
-			path: '/Users/nareshr/github/codestory/sidecar/sidecar/src/webserver/agent_stream.rs',
-			response: 'The agent streams responses to the user by sending partial responses and updates.'
-		}
-	];
-
-	for (const path of paths) {
-		response.breakdown({
-			reference: { uri: vscode.Uri.file(path.path), name: path.symbol_name },
-			query: new vscode.MarkdownString(path.query),
-			reason: new vscode.MarkdownString(path.reason),
-			response: response ? new vscode.MarkdownString(path.response) : undefined
-		});
-		await new Promise(resolve => setTimeout(resolve, 1000));
-	}
-
-	// Wait 5 seconds
-	await new Promise(resolve => setTimeout(resolve, 1000));
-
-	response.markdown(new vscode.MarkdownString(`Based on the code and probing results, the agent communicates with the Large Language Models (LLMs) through various components and methods:
-1. The \`agent_router\` function sets up the API routes for different agent actions like search, hybrid search, explanation, and follow-up chat.
-2. For follow-up chat queries, the \`followup_chat\` function is called. It retrieves the previous conversation context, creates a new \`ConversationMessage\` with the user's query, and prepares an \`Agent\` instance using \`Agent::prepare_for_followup\`.
-3. The \`Agent\` instance acts as a central hub for coordinating the communication with LLMs. It has methods like \`answer\`, \`answer_context\`, and \`code_search_hybrid\` (defined in \`agent/search.rs\`) that handle tasks like constructing prompts, managing token limits, streaming LLM responses, and updating the conversation context.
-4. The \`Agent\` struct utilizes various sub-components like \`LLMBroker\`, \`LLMTokenizer\`, \`LLMChatModelBroker\`, and \`ReRankBroker\` to generate contextual and relevant responses using the LLMs.
-5. For example, in the \`hybrid_search\` function, the \`agent.code_search_hybrid(&query)\` method is called, which likely orchestrates different search algorithms (semantic, lexical, git log analysis) and combines their results by communicating with the LLMs through the various brokers and components.
-So in summary, the \`Agent\` struct acts as an intermediary that coordinates the communication with LLMs through its various methods and sub-components like brokers, tokenizers, and rerankers, to generate relevant responses based on the user's query and conversation context.`)
-	);
+export const readJsonFile = (filePath: string): any => {
+	const jsonString = fs.readFileSync(filePath, 'utf-8');
+	return JSON.parse(jsonString);
 };
 
 export const reportAgentEventsToChat = async (
-	stream: AsyncIterator<SideCarAgentEvent>,
-	response: vscode.AideChatResponseStream,
+	stream: SideCarAgentEvent[],
+	response: vscode.ProbeResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
-	const asyncIterable = {
-		[Symbol.asyncIterator]: () => stream
-	};
-
-	const openFiles = new Set<string>();
-	const addReference = (fsFilePath: string, response: vscode.AideChatResponseStream) => {
-		if (openFiles.has(fsFilePath)) {
-			return;
-		}
-
-		openFiles.add(fsFilePath);
-		response.reference(vscode.Uri.file(fsFilePath));
-	};
+	console.log('reportAgentEventsToChat starting');
+	// const asyncIterable = {
+	// 	[Symbol.asyncIterator]: () => stream
+	// };
 
 	// now we ping the sidecar that the probing needs to stop
 	if (token.isCancellationRequested) {
@@ -373,44 +260,19 @@ export const reportAgentEventsToChat = async (
 		return;
 	}
 
-	for await (const event of asyncIterable) {
+	for (const event of stream) {
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
+			console.log('Stopped the agent probe');
 			return;
 		}
+
 		if ('keep_alive' in event) {
 			continue;
 		}
 
-		if (event.event.ToolEvent) {
-			const toolEventKeys = Object.keys(event.event.ToolEvent);
-			if (toolEventKeys.length === 0) {
-				continue;
-			}
-
-			const toolEventKey = toolEventKeys[0] as keyof typeof event.event.ToolEvent;
-			if (toolEventKey === 'OpenFile' && event.event.ToolEvent.OpenFile !== undefined) {
-				const openFileEvent = event.event.ToolEvent.OpenFile;
-				if (openFileEvent.fs_file_path === undefined) {
-					continue;
-				}
-
-				const fsFilePath = openFileEvent.fs_file_path;
-				addReference(fsFilePath, response);
-			} else if (toolEventKey === 'ProbeQuestionAskRequest' && event.event.ToolEvent.ProbeQuestionAskRequest !== undefined) {
-				// const probeQuestionAskRequest = event.event.ToolEvent.ProbeQuestionAskRequest;
-				// const { userQuery, probeReason } = parseProbeQuestionAskRequest(probeQuestionAskRequest.query);
-				// response.breakdown({
-				// 	reference: {
-				// 		uri: vscode.Uri.file(probeQuestionAskRequest.fs_file_path),
-				// 		name: probeQuestionAskRequest.symbol_identifier
-				// 	},
-				// 	query: new vscode.MarkdownString(userQuery),
-				// 	reason: new vscode.MarkdownString(probeReason)
-				// });
-			}
-		} else if (event.event.SymbolEvent) {
+		if (event.event.SymbolEvent) {
 			const symbolEventKeys = Object.keys(event.event.SymbolEvent.event);
 			if (symbolEventKeys.length === 0) {
 				continue;
@@ -423,17 +285,19 @@ export const reportAgentEventsToChat = async (
 						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
 						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
 					},
-					// setting both of these to be the same thing, figure out if this is really necessary??
-					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
-					reason: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request),
+					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request)
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
-			if ('GoToDefinition' in symbolEventSubStep) {
-				// add decoration for now
-				// const goToDefinition = symbolEventSubStep.GoToDefinition!;
-				// await addDecoration(goToDefinition.fs_file_path, goToDefinition.range);
+
+			if (symbolEventSubStep.GoToDefinition) {
+				const goToDefinition = symbolEventSubStep.GoToDefinition;
+				const uri = vscode.Uri.file(goToDefinition.fs_file_path);
+				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
+				const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
+				const range = new vscode.Range(startPosition, endPosition);
+				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			}
 			if ('Probe' in symbolEventSubStep === false) {
@@ -457,6 +321,19 @@ export const reportAgentEventsToChat = async (
 					response: new vscode.MarkdownString(probeAnswer)
 				});
 			}
+		} else if (event.event.RequestEvent) {
+			const { ProbeFinished } = event.event.RequestEvent;
+			if (!ProbeFinished) {
+				return;
+			}
+
+			const { reply } = ProbeFinished;
+			if (reply === null) {
+				return;
+			}
+
+			response.markdown(reply);
+			return;
 		}
 	}
 };

@@ -21,7 +21,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { ILogService } from 'vs/platform/log/common/log';
 import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress, IAideChatBreakdown } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
 
@@ -99,7 +99,6 @@ export interface IChatResponseModel {
 	readonly agent?: IChatAgentData;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IAideChatContentReference>;
-	readonly breakdowns: ReadonlyArray<IAideChatBreakdown>;
 	readonly progressMessages: ReadonlyArray<IAideChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
@@ -349,12 +348,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
-	private readonly _breakdownsBySymbol: Map<string, IAideChatBreakdown> = new Map();
-	private readonly _breakdowns: IAideChatBreakdown[] = [];
-	public get breakdowns(): ReadonlyArray<IAideChatBreakdown> {
-		return this._breakdowns;
-	}
-
 	private readonly _progressMessages: IAideChatProgressMessage[] = [];
 	public get progressMessages(): ReadonlyArray<IAideChatProgressMessage> {
 		return this._progressMessages;
@@ -410,34 +403,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			this._contentReferences.push(progress);
 			this._onDidChange.fire();
 		}
-	}
-
-	/**
-	 * Apply a breakdown to the response content.
-	*/
-	applyBreakdown(breakdown: IAideChatBreakdown) {
-		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
-		const { query, reason, response } = breakdown;
-		if (this._breakdownsBySymbol.has(mapKey)) {
-			if (query && query.value.length > 0) {
-				this._breakdownsBySymbol.get(mapKey)!.query = query;
-			}
-			if (reason && reason.value.length > 0) {
-				this._breakdownsBySymbol.get(mapKey)!.reason = reason;
-			}
-			if (response && response.value.length > 0) {
-				this._breakdownsBySymbol.get(mapKey)!.response = response;
-			}
-			// Update the breakdown in the list
-			const index = this._breakdowns.findIndex(b => equals(b.reference, breakdown.reference));
-			if (index !== -1) {
-				this._breakdowns[index] = this._breakdownsBySymbol.get(mapKey)!;
-			}
-		} else {
-			this._breakdownsBySymbol.set(mapKey, breakdown);
-			this._breakdowns.push(breakdown);
-		}
-		this._onDidChange.fire();
 	}
 
 	setAgent(agent: IChatAgentData, slashCommand?: IChatAgentCommand) {
@@ -543,7 +508,6 @@ export interface ISerializableChatRequestData {
 	/** For backward compat: should be optional */
 	usedContext?: IChatUsedContext;
 	contentReferences?: ReadonlyArray<IAideChatContentReference>;
-	breakdowns?: ReadonlyArray<IAideChatBreakdown>;
 }
 
 export interface IExportableChatData {
@@ -753,10 +717,6 @@ export class ChatModel extends Disposable implements IChatModel {
 					if (raw.contentReferences) {
 						raw.contentReferences.forEach(r => request.response!.applyReference(revive(r)));
 					}
-
-					if (raw.breakdowns) {
-						raw.breakdowns.forEach(b => request.response!.applyBreakdown(revive(b)));
-					}
 				}
 				return request;
 			});
@@ -900,8 +860,6 @@ export class ChatModel extends Disposable implements IChatModel {
 			request.response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
 			request.response.applyReference(progress);
-		} else if (progress.kind === 'breakdown') {
-			request.response.applyBreakdown(progress);
 		} else if (progress.kind === 'agentDetection') {
 			const agent = this.chatAgentService.getAgent(progress.agentId);
 			if (agent) {
@@ -1001,7 +959,6 @@ export class ChatModel extends Disposable implements IChatModel {
 					slashCommand: r.response?.slashCommand,
 					usedContext: r.response?.usedContext,
 					contentReferences: r.response?.contentReferences,
-					breakdowns: r.response?.breakdowns
 				};
 			}),
 		};

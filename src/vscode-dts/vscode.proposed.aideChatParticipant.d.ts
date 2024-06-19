@@ -104,8 +104,29 @@ declare module 'vscode' {
 		readonly response?: MarkdownString;
 	}
 
+	export interface AideProbeGoToDefinition {
+		/**
+		 * The file where the agent went to the definition.
+		 */
+		readonly uri: Uri;
+
+		/**
+		 * Name of the symbol
+		 */
+		readonly name: string;
+
+		/**
+		 * The position of the symbol where the agent went to definition.
+		 */
+		readonly range: Range;
+
+		/**
+		 * The thinking process behind following this definition
+		 */
+		readonly thinking: string;
+	}
+
 	export interface AideChatResponseStream extends ChatResponseStream {
-		breakdown(value: AideChatResponseBreakdown): void;
 	}
 
 	export type AideChatExtendedRequestHandler = (request: AideChatRequest, context: ChatContext, response: AideChatResponseStream, token: CancellationToken) => ProviderResult<ChatResult | void>;

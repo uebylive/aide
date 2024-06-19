@@ -803,6 +803,7 @@ export class SideCarClient {
 		editorUrl: string,
 		threadId: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
+		console.log('starting agent probe');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
@@ -869,10 +870,12 @@ async function convertVSCodeVariableToSidecar(
 		const startRange = {
 			line: parsedJson.range.startLineNumber,
 			character: parsedJson.range.startColumn,
+			byteOffset: 0,
 		};
 		const endRange = {
 			line: parsedJson.range.endLineNumber,
 			character: parsedJson.range.endColumn,
+			byteOffset: 0,
 		};
 		const variableType = getVariableType(
 			variableName,

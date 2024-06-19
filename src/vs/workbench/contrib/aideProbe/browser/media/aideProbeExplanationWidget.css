@@ -3,12 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.aide-chat-breakdown-hover {
-	line-height: unset;
-	padding: 6px;
+.breakdown-header {
+	font-weight: 600;
 }
 
-.aide-chat-breakdown-hover-header {
-	font-weight: 600;
-	margin-bottom: 4px;
+.breakdown-body {
+	font-style: italic;
+}
+
+.aide-probe-explanation-widget {
+	padding: 6px;
 }

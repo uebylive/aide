@@ -4692,6 +4692,19 @@ export class AideChatResponseBreakdownPart {
 	}
 }
 
+export class AideProbeGoToDefinitionPart {
+	uri: vscode.Uri;
+	range: vscode.Range;
+	name: string;
+	thinking: string;
+	constructor(uri: vscode.Uri, range: vscode.Range, name: string, thinking: string) {
+		this.uri = uri;
+		this.range = range;
+		this.name = name;
+		this.thinking = thinking;
+	}
+}
+
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];
