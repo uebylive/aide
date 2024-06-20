@@ -35,6 +35,7 @@ import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelega
 import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
+import { IDimension } from 'vs/editor/common/core/dimension';
 
 const $ = dom.$;
 
@@ -46,6 +47,7 @@ export class AideProbeViewPane extends ViewPane {
 	private responseWrapper!: HTMLElement;
 	private scrollableElement!: DomScrollableElement;
 	private tailingToggle: Toggle | undefined;
+	private dimensions: IDimension | undefined;
 
 	private inputPart!: AideProbeInputPart;
 
@@ -221,7 +223,9 @@ export class AideProbeViewPane extends ViewPane {
 			dom.hide(this.breakdownsListContainer);
 		}
 		this.renderFinalAnswer();
+
 		this.scrollableElement.scanDomNode();
+		this.resultWrapper.style.height = `${(this.dimensions?.height ?? 0) - this.inputPart.element.offsetHeight}px`;
 	}
 
 	private updateExplorationDetail(): void {
@@ -269,10 +273,12 @@ export class AideProbeViewPane extends ViewPane {
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
+		this.dimensions = { width, height };
 
 		this.inputPart.layout(height, width);
 		this._breakdownsList.layout(width);
 		this.scrollableElement.scanDomNode();
+		this.resultWrapper.style.height = `${height - this.inputPart.element.offsetHeight}px`;
 	}
 
 	override dispose(): void {
