@@ -6,7 +6,7 @@
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
-import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -54,10 +54,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 		// console.log('threadId', threadId);
-		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		// console.log('probeResponse', probeResponse);
-		const stream = readJsonFile('/Users/nareshr/github/codestory/ide/extensions/codestory/src/dummydata.json');
-		await reportAgentEventsToChat(stream, response, threadId, _token, this._sideCarClient);
+		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		console.log('probeResponse', probeResponse);
+		// To use dummy data, get the gist from here: https://gist.github.com/theskcd/8292bf96db11190d52d2d758a340ed20 and read it
+		// to a file
+		// const stream = readJsonFile('/Users/skcd/scratch/ide/extensions/codestory/src/dummydata.json');
+		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
 		// console.log('reportAgentEventsToChat done');
 		console.log(this._editorUrl, query, threadId);
 		// await reportDummyEventsToChat(response);

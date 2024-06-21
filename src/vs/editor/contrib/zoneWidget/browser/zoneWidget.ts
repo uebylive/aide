@@ -438,6 +438,7 @@ export abstract class ZoneWidget implements IHorizontalSashLayoutProvider {
 		}
 
 		const containerHeight = heightInLines * lineHeight - this._decoratingElementsHeight();
+		console.log('zoneWidget._showImpl', heightInLines, lineHeight, heightInLines * lineHeight, this._decoratingElementsHeight());
 
 		if (this.container) {
 			this.container.style.top = arrowHeight + 'px';
@@ -544,6 +545,8 @@ export abstract class ZoneWidget implements IHorizontalSashLayoutProvider {
 	}
 
 	getHorizontalSashTop() {
+		console.log(this.domNode);
+		console.log('ZoneWidget.getHOrizontalSlashTop', this.domNode.style.height, this._decoratingElementsHeight() / 2, this.domNode.offsetHeight);
 		return (this.domNode.style.height === null ? 0 : parseInt(this.domNode.style.height)) - (this._decoratingElementsHeight() / 2);
 	}
 

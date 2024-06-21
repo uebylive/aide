@@ -243,16 +243,16 @@ export const readJsonFile = (filePath: string): any => {
 };
 
 export const reportAgentEventsToChat = async (
-	stream: SideCarAgentEvent[],
+	stream: AsyncIterableIterator<SideCarAgentEvent>,
 	response: vscode.ProbeResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
 	console.log('reportAgentEventsToChat starting');
-	// const asyncIterable = {
-	// 	[Symbol.asyncIterator]: () => stream
-	// };
+	const asyncIterable = {
+		[Symbol.asyncIterator]: () => stream
+	};
 
 	// now we ping the sidecar that the probing needs to stop
 	if (token.isCancellationRequested) {
@@ -260,7 +260,14 @@ export const reportAgentEventsToChat = async (
 		return;
 	}
 
-	for (const event of stream) {
+	// await new Promise((resolve) => setTimeout(resolve, 1000));
+
+	// const randomInt = (min: number, max: number) =>
+	// 	Math.floor(Math.random() * (max - min + 1)) + min;
+
+
+	for await (const event of asyncIterable) {
+		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
