@@ -4,92 +4,83 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import * as lifecycle from 'vs/base/common/lifecycle';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IPosition } from 'vs/editor/common/core/position';
-import { IRange } from 'vs/editor/common/core/range';
-import { ZoneWidget } from 'vs/editor/contrib/zoneWidget/browser/zoneWidget';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { Disposable } from 'vs/base/common/lifecycle';
+import { generateUuid } from 'vs/base/common/uuid';
+import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from 'vs/editor/browser/editorBrowser';
+import { Position } from 'vs/editor/common/core/position';
+import { PositionAffinity } from 'vs/editor/common/model';
 
 const $ = dom.$;
 
-export class AideProbeExplanationWidget extends ZoneWidget {
-	private readonly markdownRenderer: MarkdownRenderer;
-	private toDispose: lifecycle.IDisposable[];
+export class AideProbeExplanationWidget extends Disposable implements IContentWidget {
+	static readonly ID = 'editor.contrib.aideProbeExplanationWidget';
+
+	private _explanationId: string;
+	private _isVisible: boolean;
+	private domNode!: HTMLElement;
+	private showAtPosition: Position | null;
+
+	getId(): string {
+		return `${AideProbeExplanationWidget.ID}_${this._explanationId}`;
+	}
+
+	getDomNode(): HTMLElement {
+		return this.domNode;
+	}
+
+	getPosition(): IContentWidgetPosition | null {
+		return this._isVisible ? {
+			position: this.showAtPosition,
+			preference: [ContentWidgetPositionPreference.BELOW, ContentWidgetPositionPreference.ABOVE],
+			positionAffinity: PositionAffinity.Right
+		} : null;
+	}
 
 	constructor(
-		private parentEditor: ICodeEditor,
-		private content: IAideProbeBreakdownViewModel,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		private readonly editor: ICodeEditor,
 	) {
-		super(parentEditor, {
-			showArrow: false,
-			showFrame: true,
-			frameWidth: 1,
-			isAccessible: true,
-		});
+		super();
 
-		this.toDispose = [];
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
-		this.toDispose.push(this.markdownRenderer);
-
-		super.create();
+		this._explanationId = generateUuid();
+		this._isVisible = false;
+		this.showAtPosition = null;
 	}
 
-	public setContent(content: IAideProbeBreakdownViewModel): void {
-		this.content = content;
+	private create(content: HTMLElement): void {
+		this.domNode = $('.aide-probe-explanation-widget.monaco-hover');
+		this.domNode.appendChild(content);
+
+		this.editor.addContentWidget(this);
 	}
 
-	protected override _fillContainer(container: HTMLElement): void {
-		const contentParent = $('.aide-probe-explanation-widget');
-		const layoutInfo = this.parentEditor.getLayoutInfo();
-		contentParent.style.paddingLeft = `${layoutInfo.glyphMarginWidth + layoutInfo.lineNumbersWidth + layoutInfo.decorationsWidth}px`;
-		container.appendChild(contentParent);
-		this.renderContent(contentParent);
-	}
-
-	private renderContent(container: HTMLElement): void {
-		const { query, response } = this.content;
-		if (response) {
-			const body = $('div.breakdown-body');
-			const renderedContent = this.markdownRenderer.render(response);
-			body.appendChild(renderedContent.element);
-			container.appendChild(body);
-		} else if (query) {
-			const header = $('div.breakdown-header');
-			const renderedContent = this.markdownRenderer.render(query);
-			header.appendChild(renderedContent.element);
-			container.appendChild(header);
+	async showAt(position: Position, content: HTMLElement): Promise<void> {
+		if (!this.editor.hasModel()) {
+			this.hide();
+			return;
 		}
-	}
 
-	override dispose(): void {
-		this.toDispose = lifecycle.dispose(this.toDispose);
-		super.dispose();
-	}
-
-	private doDummyRender(): number {
 		if (!this.domNode) {
-			return 0;
+			this.create(content);
+		} else if (this.domNode.firstChild) {
+			dom.clearNode(this.domNode);
+			this.create(content);
 		}
 
-		const dummyParent = $('.aide-probe-explanation-widget-dummy');
-		this.domNode.appendChild(dummyParent);
-
-		this.renderContent(dummyParent);
-		const height = dom.getContentHeight(dummyParent);
-		this.domNode.removeChild(dummyParent);
-
-		return Math.ceil(height / 22);
+		this.showAtPosition = position;
+		this._isVisible = true;
+		this.editor.layoutContentWidget(this);
 	}
 
-	override show(rangeOrPos: IRange | IPosition): void {
-		super.show(rangeOrPos, 1);
-		const lines = this.doDummyRender();
-		super.hide();
-		super.show(rangeOrPos, lines + 2);
+	hide(): void {
+		if (!this._isVisible) {
+			return;
+		}
+
+		if (dom.isAncestorOfActiveElement(this.domNode)) {
+			this.editor.focus();
+		}
+
+		this._isVisible = false;
+		this.editor.layoutContentWidget(this);
 	}
 }

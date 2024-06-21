@@ -19,11 +19,10 @@ import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
+import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -46,9 +45,7 @@ export class AideChatBreakdowns extends Disposable {
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 	private explanationWidget: Map<string, AideProbeExplanationWidget> = new Map();
-	// Keep track of definitions, we are just overloading this for now
 	private goToDefinitionDecorations: IAideProbeGoToDefinitionViewModel[] = [];
-	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
 
 	private readonly markdownRenderer: MarkdownRenderer;
 
@@ -146,6 +143,23 @@ export class AideChatBreakdowns extends Disposable {
 		this.goToDefinitionDecorations = definitions;
 	}
 
+	private renderExplanation(element: IAideProbeBreakdownViewModel) {
+		const container = $('div.breakdown-content');
+		const { query, response } = element;
+		if (response) {
+			const body = $('div.breakdown-body');
+			const renderedContent = this.markdownRenderer.render(response);
+			body.appendChild(renderedContent.element);
+			container.appendChild(body);
+		} else if (query) {
+			const header = $('div.breakdown-header');
+			const renderedContent = this.markdownRenderer.render(query);
+			header.appendChild(renderedContent.element);
+			container.appendChild(header);
+		}
+		return container;
+	}
+
 	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		const { uri, name } = element;
 		const symbolKey = `${uri.fsPath}:${name}`;
@@ -170,14 +184,8 @@ export class AideChatBreakdowns extends Disposable {
 			}
 		}
 
-		if (this.goToDefinitionWidget) {
-			this.goToDefinitionWidget.hide();
-			this.goToDefinitionWidget.dispose();
-			this.goToDefinitionWidget = undefined;
-		}
-
 		let codeEditor: ICodeEditor | null;
-		let explanationWidgetPosition: Position = new Position(1, 1);
+		let explanationWidgetPosition: Position = new Position(1, 300);
 
 		const resolveLocationOperation = element.symbol;
 		this.editorProgressService.showWhile(resolveLocationOperation);
@@ -192,7 +200,7 @@ export class AideChatBreakdowns extends Disposable {
 				}
 			}, null);
 		} else {
-			explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+			explanationWidgetPosition = new Position(symbol.range.startLineNumber, 300);
 			codeEditor = await this.editorService.openCodeEditor({
 				resource: uri,
 				options: {
@@ -207,11 +215,12 @@ export class AideChatBreakdowns extends Disposable {
 		if (codeEditor && symbol && explanationWidgetPosition) {
 			if (this.explanationWidget.get(symbolKey)) {
 				const existingWidget = this.explanationWidget.get(symbolKey)!;
-				existingWidget.setContent(element);
-				existingWidget.show(explanationWidgetPosition);
+				const content = this.renderExplanation(element);
+				existingWidget.showAt(explanationWidgetPosition, content);
 			} else {
-				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-				newWidget.show(explanationWidgetPosition);
+				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor));
+				const content = this.renderExplanation(element);
+				newWidget.showAt(explanationWidgetPosition, content);
 				this.explanationWidget.set(symbolKey, newWidget);
 			}
 
