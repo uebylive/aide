@@ -7,6 +7,9 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import postHogClient from '../../posthog/client';
+import { getUniqueId } from '../../utilities/uniqueId';
+import * as os from 'os';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -30,6 +33,18 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
 		const query = _request.trim();
+
+		const startTime = process.hrtime();
+
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'probe_requested',
+			properties: {
+				platform: os.platform(),
+			},
+		});
+
+
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
 		if (activeEditor) {
@@ -58,6 +73,19 @@ export class AideProbeProvider implements vscode.Disposable {
 		console.log('probeResponse', probeResponse);
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
 		console.log('reportAgentEventsToChat done');
+
+
+		const endTime = process.hrtime(startTime);
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'probe_completed',
+			properties: {
+				platform: os.platform(),
+				timeElapsed: `${endTime[0]}s ${endTime[1] / 1000000}ms`
+			},
+		});
+
+
 		// console.log(this._editorUrl, query, threadId);
 		// await reportDummyEventsToChat(response);
 		return {};
