@@ -7,9 +7,9 @@ import { workspace } from 'vscode';
 // For the moment, we read a harcoded list of invite codes embedded in the codebase
 import { inviteCodes } from '../invite-codes';
 
-export function checkInviteCode() {
+export function getInviteCode() {
 	const config = workspace.getConfiguration('aide');
 	const code = config.get<string>('probeInviteCode');
 	if (!code || !inviteCodes.includes(code)) { return false; }
-	else { return code; }
+	else { return `ivc-${code}`; }
 }

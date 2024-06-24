@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import { PostHog } from 'posthog-node';
 import * as vscode from 'vscode';
-import { checkInviteCode } from '../utilities/checkInviteCode';
+import { getInviteCode } from '../utilities/getInviteCode';
 import { getUserId } from '../utilities/uniqueId';
 
 let postHogClient: PostHog | undefined;
@@ -32,7 +32,7 @@ try {
 }
 
 function identifyUserWithInviteCode() {
-	const code = checkInviteCode();
+	const code = getInviteCode();
 	if (code && postHogClient) { postHogClient.identify({ distinctId: getUserId(), properties: { inviteCode: code } }); }
 }
 

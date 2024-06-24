@@ -7,7 +7,7 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
-import { checkInviteCode } from '../../utilities/checkInviteCode';
+import { getInviteCode } from '../../utilities/getInviteCode';
 
 
 
@@ -41,7 +41,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 
 	private checkActivation() {
-		this.active = Boolean(checkInviteCode())
+		this.active = Boolean(getInviteCode());
 	}
 
 	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
