@@ -30,7 +30,14 @@ export class AideProbeProvider implements vscode.Disposable {
 			{
 				provideProbeResponse: this.provideProbeResponse.bind(this),
 				onDidUserAction(action) {
-					console.log('onDidUserAction', action);
+					postHogClient?.capture({
+						distinctId: getUniqueId(),
+						event: action.action.type,
+						properties: {
+							platform: os.platform(),
+							requestId: action.sessionId,
+						},
+					});
 				},
 			}
 		);
@@ -47,6 +54,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			event: 'probe_requested',
 			properties: {
 				platform: os.platform(),
+				requestId: request.requestId,
 			},
 		});
 
@@ -90,7 +98,8 @@ export class AideProbeProvider implements vscode.Disposable {
 			event: 'probe_completed',
 			properties: {
 				platform: os.platform(),
-				timeElapsed: `${endTime[0]}s ${endTime[1] / 1000000}ms`
+				timeElapsed: `${endTime[0]}s ${endTime[1] / 1000000}ms`,
+				requestId: request.requestId,
 			},
 		});
 

@@ -22,9 +22,14 @@ export interface IFollowAlongAction {
 	status: boolean;
 }
 
+export interface INavigateBreakdownAction {
+	type: 'navigateBreakdown';
+	status: boolean;
+}
+
 export interface IAideProbeUserAction {
 	sessionId: string;
-	action: IFollowAlongAction;
+	action: IFollowAlongAction | INavigateBreakdownAction;
 }
 
 interface IReferenceByName {
@@ -78,6 +83,7 @@ export interface IAideProbeService {
 	clearSession(sessionId: string): void;
 
 	followAlong(follow: boolean): void;
+	navigateBreakdown(): void;
 }
 
 export interface IInitiateProbeResponseState {
@@ -184,6 +190,16 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	clearSession(sessionId: string): void {
 		this._model?.dispose();
 		this.cancelCurrentRequestForSession(sessionId);
+	}
+
+	navigateBreakdown(): void {
+		this.probeProvider?.onUserAction({
+			sessionId: this._model?.sessionId!,
+			action: {
+				type: 'navigateBreakdown',
+				status: true,
+			},
+		});
 	}
 
 	followAlong(follow: boolean): void {

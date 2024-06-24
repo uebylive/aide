@@ -9,9 +9,14 @@ declare module 'vscode' {
 		status: boolean;
 	}
 
+	export interface NavigateBreakdownAction {
+		type: 'navigateBreakdown';
+		status: boolean;
+	}
+
 	export interface AideProbeUserAction {
 		sessionId: string;
-		action: FollowAlongAction;
+		action: FollowAlongAction | NavigateBreakdownAction;
 	}
 
 	export interface ProbeRequest {

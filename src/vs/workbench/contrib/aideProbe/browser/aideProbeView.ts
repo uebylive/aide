@@ -186,6 +186,7 @@ export class AideProbeViewPane extends ViewPane {
 			this.onDidChangeItems();
 		}));
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
+			this.aideProbeService.navigateBreakdown();
 			this._breakdownsList.openBreakdownReference(breakdown);
 		}));
 
