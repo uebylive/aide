@@ -89,6 +89,7 @@ import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -1474,17 +1475,14 @@ export type IAideChatProgressDto =
 
 export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition>;
 
-export type IAideProbeGoToDefinitionDto = Dto<IAideProbeGoToDefinition>;
-
 export interface MainThreadAideProbeProviderShape extends IDisposable {
 	$registerProbingProvider(handle: number, data: IAideProbeData): void;
-	$handleProbingProgressChunk(requestId: string, progress: IAideProbeProgressDto): Promise<void>;
-	$handleProbingGoToDefinition(requestId: string, data: IAideProbeGoToDefinitionDto): void;
+	$handleProbingProgressChunk(request: IAideProbeRequestModel, progress: IAideProbeProgressDto): Promise<void>;
 	$unregisterProbingProvider(handle: number): void;
 }
 
 export interface ExtHostAideProbeProviderShape {
-	$initiateProbe(handle: number, request: string, token: CancellationToken): Promise<IAideProbeResult | undefined>;
+	$initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined>;
 }
 
 ///////////////////////// END AIDE /////////////////////////

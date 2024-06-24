@@ -10,6 +10,7 @@ import { IExtensionDescription } from 'vs/platform/extensions/common/extensions'
 import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
+import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 import { IAideProbeData, IAideProbeResponseErrorDetails, IAideProbeResult } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import type * as vscode from 'vscode';
 
@@ -26,15 +27,16 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 		this._proxy = mainContext.getProxy(MainContext.MainThreadProbeProvider);
 	}
 
-	async $initiateProbe(handle: number, request: string, token: CancellationToken): Promise<IAideProbeResult | undefined> {
+	async $initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;
 		}
 
 		const that = this;
+		const extRequest = typeConvert.AideProbeRequestModel.to(request);
 		const task = provider.provider.provideProbeResponse(
-			request,
+			extRequest,
 			{
 				breakdown(value) {
 					const part = new extHostTypes.AideChatResponseBreakdownPart(value.reference.uri, value.reference.name, value.query, value.reason, value.response);

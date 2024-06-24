@@ -28,8 +28,9 @@ export class AideProbeProvider implements vscode.Disposable {
 		);
 	}
 
-	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
-		const query = _request.trim();
+	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		let { query } = request;
+		query = query.trim();
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
 		if (activeEditor) {

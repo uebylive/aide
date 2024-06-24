@@ -4,6 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export interface ProbeRequest {
+		requestId: string;
+		query: string;
+	}
+
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
@@ -19,7 +24,7 @@ declare module 'vscode' {
 	}
 
 	export interface ProbeResponseProvider {
-		provideProbeResponse(request: string, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
+		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
 	}
 
 	export namespace aideProbe {
