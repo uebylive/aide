@@ -28,7 +28,7 @@ export class ActionViewItemWithKb extends ActionViewItem {
 			return super.updateLabel();
 		}
 		if (this.label) {
-			const div = h('div.keybinding').root;
+			const div = h('div.action-with-kb').root;
 
 			const k = this._register(new KeybindingLabel(div, OS, { disableTitle: true, ...unthemedKeybindingLabelOptions }));
 			k.set(kb);
