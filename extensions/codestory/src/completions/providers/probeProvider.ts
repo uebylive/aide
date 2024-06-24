@@ -8,9 +8,13 @@ import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 
+// For the moment, we read a harcoded list of invite codes embedded in the codebase
+import { inviteCodes } from '../../invite-codes';
+
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string;
+	private active: boolean = false;
 
 	constructor(
 		sideCarClient: SideCarClient,
@@ -26,10 +30,35 @@ export class AideProbeProvider implements vscode.Disposable {
 			'aideProbeProvider',
 			{ provideProbeResponse: this.provideProbeResponse.bind(this) }
 		);
+
+		this.checkActivation();
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('aide')) {
+				this.checkActivation();
+			}
+		});
+	}
+
+
+	private checkActivation() {
+		const config = vscode.workspace.getConfiguration('aide');
+		const code = config.get<string>('probeInviteCode');
+		if (!code || !inviteCodes.includes(code)) {
+			this.active = false;
+		} else {
+			this.active = true;
+		}
+
 	}
 
 	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
 		const query = _request.trim();
+
+		if (!this.active) {
+			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
+			return {};
+		}
+
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
 		if (activeEditor) {
