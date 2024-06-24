@@ -17,6 +17,16 @@ export interface IAideProbeData {
 	id: string;
 }
 
+export interface IFollowAlongAction {
+	type: 'followAlong';
+	status: boolean;
+}
+
+export interface IAideProbeUserAction {
+	sessionId: string;
+	action: IFollowAlongAction;
+}
+
 interface IReferenceByName {
 	name: string;
 	uri: URI;
@@ -53,6 +63,7 @@ export interface IAideProbeResult {
 
 export interface IAideProbeResolver {
 	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => void, token: CancellationToken) => Promise<IAideProbeResult>;
+	onUserAction: (action: IAideProbeUserAction) => void;
 }
 
 export const IAideProbeService = createDecorator<IAideProbeService>('IAideProbeService');
@@ -78,7 +89,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
-	private readonly probeProviders = new Map<string, IAideProbeResolver>();
+	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
 
 	constructor(
@@ -88,14 +99,13 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): IDisposable {
-		const existing = this.probeProviders.get(data.id);
-		if (existing) {
+		if (this.probeProvider) {
 			throw new Error(`A probe provider with the id '${data.id}' is already registered.`);
 		}
 
-		this.probeProviders.set(data.id, resolver);
+		this.probeProvider = resolver;
 		return toDisposable(() => {
-			this.probeProviders.delete(data.id);
+			this.probeProvider = undefined;
 		});
 	}
 
@@ -137,7 +147,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			try {
 				const requestModel = new AideProbeRequestModel(probeModel.sessionId, request);
 
-				const resolver = this.probeProviders.get('aideProbeProvider');
+				const resolver = this.probeProvider;
 				if (!resolver) {
 					throw new Error('No probe provider registered.');
 				}
@@ -178,5 +188,13 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	followAlong(follow: boolean): void {
 		this._model?.followAlong(follow);
+
+		this.probeProvider?.onUserAction({
+			sessionId: this._model?.sessionId!,
+			action: {
+				type: 'followAlong',
+				status: follow,
+			},
+		});
 	}
 }

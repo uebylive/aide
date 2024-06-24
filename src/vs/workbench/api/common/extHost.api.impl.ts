@@ -1532,7 +1532,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
 			_version: 1,
 
-			registerProbeResponseProvider(id: string, provider: vscode.ProbeResponseProvider) {
+			registerProbeResponseProvider(id: string, provider: vscode.ProbeResponseHandler) {
 				checkProposedApiEnabled(extension, 'aideProbe');
 				return extHostAideProbeProvider.registerProbingProvider(extension, id, provider);
 			}

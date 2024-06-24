@@ -56,7 +56,7 @@ import * as types from './extHostTypes';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
@@ -3114,6 +3114,15 @@ export namespace AideProbeRequestModel {
 		return {
 			requestId: request.sessionId,
 			query: request.message
+		};
+	}
+}
+
+export namespace AideProbeUserAction {
+	export function to(userAction: IAideProbeUserAction): vscode.AideProbeUserAction {
+		return {
+			sessionId: userAction.sessionId,
+			action: userAction.action,
 		};
 	}
 }

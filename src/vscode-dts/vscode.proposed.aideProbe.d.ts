@@ -4,6 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export interface FollowAlongAction {
+		type: 'followAlong';
+		status: boolean;
+	}
+
+	export interface AideProbeUserAction {
+		sessionId: string;
+		action: FollowAlongAction;
+	}
+
 	export interface ProbeRequest {
 		requestId: string;
 		query: string;
@@ -23,8 +33,9 @@ declare module 'vscode' {
 		errorDetails?: ProbeErrorDetails;
 	}
 
-	export interface ProbeResponseProvider {
+	export interface ProbeResponseHandler {
 		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
+		onDidUserAction: (action: AideProbeUserAction) => void;
 	}
 
 	export namespace aideProbe {
@@ -38,6 +49,6 @@ declare module 'vscode' {
 		 * @param provider
 		 * @param metadata
 		 */
-		export function registerProbeResponseProvider(id: string, provider: ProbeResponseProvider): Disposable;
+		export function registerProbeResponseProvider(id: string, provider: ProbeResponseHandler): Disposable;
 	}
 }

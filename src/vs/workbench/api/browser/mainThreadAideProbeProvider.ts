@@ -7,7 +7,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeData, IAideProbeProgress, IAideProbeResolver, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeData, IAideProbeProgress, IAideProbeResolver, IAideProbeService, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 @extHostNamedCustomer(MainContext.MainThreadProbeProvider)
@@ -32,6 +32,9 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 				} finally {
 					this._pendingProgress.delete(request.sessionId);
 				}
+			},
+			onUserAction: (action: IAideProbeUserAction) => {
+				this._proxy.$onUserAction(handle, action);
 			}
 		};
 

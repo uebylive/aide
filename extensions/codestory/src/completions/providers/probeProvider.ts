@@ -27,7 +27,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
-			{ provideProbeResponse: this.provideProbeResponse.bind(this) }
+			{
+				provideProbeResponse: this.provideProbeResponse.bind(this),
+				onDidUserAction(action) {
+					console.log('onDidUserAction', action);
+				},
+			}
 		);
 	}
 
