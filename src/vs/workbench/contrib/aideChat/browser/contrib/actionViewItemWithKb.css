@@ -3,8 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.action-with-kb {
+.interactive-input-toolbars .keybinding {
 	display: flex;
-	margin-left: 6px;
+	margin-left: 4px;
 	opacity: 0.6;
+}
+
+.interactive-input-toolbars .keybinding .monaco-keybinding-key {
+	font-size: 8px;
+	padding: 2px 3px;
 }
