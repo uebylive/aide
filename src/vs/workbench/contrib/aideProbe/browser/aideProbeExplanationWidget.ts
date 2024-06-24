@@ -4,83 +4,51 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { generateUuid } from 'vs/base/common/uuid';
-import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from 'vs/editor/browser/editorBrowser';
-import { Position } from 'vs/editor/common/core/position';
-import { PositionAffinity } from 'vs/editor/common/model';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
 
-export class AideProbeExplanationWidget extends Disposable implements IContentWidget {
-	static readonly ID = 'editor.contrib.aideProbeExplanationWidget';
-
-	private _explanationId: string;
-	private _isVisible: boolean;
-	private domNode!: HTMLElement;
-	private showAtPosition: Position | null;
-
-	getId(): string {
-		return `${AideProbeExplanationWidget.ID}_${this._explanationId}`;
-	}
-
-	getDomNode(): HTMLElement {
-		return this.domNode;
-	}
-
-	getPosition(): IContentWidgetPosition | null {
-		return this._isVisible ? {
-			position: this.showAtPosition,
-			preference: [ContentWidgetPositionPreference.BELOW, ContentWidgetPositionPreference.ABOVE],
-			positionAffinity: PositionAffinity.Right
-		} : null;
-	}
+export class AideProbeExplanationWidget extends SidePanelWidget {
+	private breakdownContent: IAideProbeBreakdownViewModel | undefined;
 
 	constructor(
-		private readonly editor: ICodeEditor,
+		editor: ICodeEditor,
+		private readonly markdownRenderer: MarkdownRenderer
 	) {
-		super();
-
-		this._explanationId = generateUuid();
-		this._isVisible = false;
-		this.showAtPosition = null;
+		super(editor);
 	}
 
-	private create(content: HTMLElement): void {
-		this.domNode = $('.aide-probe-explanation-widget.monaco-hover');
-		this.domNode.appendChild(content);
-
-		this.editor.addContentWidget(this);
+	private renderExplanation(element: IAideProbeBreakdownViewModel) {
+		const container = $('div.breakdown-content');
+		const { query, response } = element;
+		if (response) {
+			const body = $('div.breakdown-body');
+			const renderedContent = this.markdownRenderer.render(response);
+			body.appendChild(renderedContent.element);
+			container.appendChild(body);
+		} else if (query) {
+			const header = $('div.breakdown-header');
+			const renderedContent = this.markdownRenderer.render(query);
+			header.appendChild(renderedContent.element);
+			container.appendChild(header);
+		}
+		return container;
 	}
 
-	async showAt(position: Position, content: HTMLElement): Promise<void> {
-		if (!this.editor.hasModel()) {
-			this.hide();
+	updateBreakdown(content: IAideProbeBreakdownViewModel): void {
+		this.breakdownContent = content;
+		super.show();
+	}
+
+	protected override _fillContainer(container: HTMLElement): void {
+		if (!this.breakdownContent) {
 			return;
 		}
 
-		if (!this.domNode) {
-			this.create(content);
-		} else if (this.domNode.firstChild) {
-			dom.clearNode(this.domNode);
-			this.create(content);
-		}
-
-		this.showAtPosition = position;
-		this._isVisible = true;
-		this.editor.layoutContentWidget(this);
-	}
-
-	hide(): void {
-		if (!this._isVisible) {
-			return;
-		}
-
-		if (dom.isAncestorOfActiveElement(this.domNode)) {
-			this.editor.focus();
-		}
-
-		this._isVisible = false;
-		this.editor.layoutContentWidget(this);
+		const contentDiv = this.renderExplanation(this.breakdownContent);
+		container.append(contentDiv);
 	}
 }

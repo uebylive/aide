@@ -143,23 +143,6 @@ export class AideChatBreakdowns extends Disposable {
 		this.goToDefinitionDecorations = definitions;
 	}
 
-	private renderExplanation(element: IAideProbeBreakdownViewModel) {
-		const container = $('div.breakdown-content');
-		const { query, response } = element;
-		if (response) {
-			const body = $('div.breakdown-body');
-			const renderedContent = this.markdownRenderer.render(response);
-			body.appendChild(renderedContent.element);
-			container.appendChild(body);
-		} else if (query) {
-			const header = $('div.breakdown-header');
-			const renderedContent = this.markdownRenderer.render(query);
-			header.appendChild(renderedContent.element);
-			container.appendChild(header);
-		}
-		return container;
-	}
-
 	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		const { uri, name } = element;
 		const symbolKey = `${uri.fsPath}:${name}`;
@@ -179,8 +162,8 @@ export class AideChatBreakdowns extends Disposable {
 					continue;
 				}
 
-				const existingWidget = this.explanationWidget.get(key);
-				existingWidget?.hide();
+				// const existingWidget = this.explanationWidget.get(key);
+				// existingWidget?.hide();
 			}
 		}
 
@@ -215,12 +198,10 @@ export class AideChatBreakdowns extends Disposable {
 		if (codeEditor && symbol && explanationWidgetPosition) {
 			if (this.explanationWidget.get(symbolKey)) {
 				const existingWidget = this.explanationWidget.get(symbolKey)!;
-				const content = this.renderExplanation(element);
-				existingWidget.showAt(explanationWidgetPosition, content);
+				existingWidget.updateBreakdown(element);
 			} else {
-				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor));
-				const content = this.renderExplanation(element);
-				newWidget.showAt(explanationWidgetPosition, content);
+				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, this.markdownRenderer));
+				newWidget.updateBreakdown(element);
 				this.explanationWidget.set(symbolKey, newWidget);
 			}
 
