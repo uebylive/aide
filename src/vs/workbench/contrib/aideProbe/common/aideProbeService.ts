@@ -11,7 +11,7 @@ import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export interface IAideProbeData {
 	id: string;
@@ -21,14 +21,6 @@ interface IReferenceByName {
 	name: string;
 	uri: URI;
 }
-
-export interface IAideProbeGoToDefinition {
-	name: string;
-	uri: URI;
-	range: Range;
-	kind: 'goToDefinition';
-}
-
 
 export interface IAideProbeBreakdownContent {
 	reference: IReferenceByName;
@@ -60,7 +52,7 @@ export interface IAideProbeResult {
 }
 
 export interface IAideProbeResolver {
-	initiate: (request: string, progress: (part: IAideProbeProgress) => void, token: CancellationToken) => Promise<IAideProbeResult>;
+	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => void, token: CancellationToken) => Promise<IAideProbeResult>;
 }
 
 export const IAideProbeService = createDecorator<IAideProbeService>('IAideProbeService');
@@ -143,14 +135,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				probeModel.request = new AideProbeRequestModel(request);
+				const requestModel = new AideProbeRequestModel(probeModel.sessionId, request);
 
 				const resolver = this.probeProviders.get('aideProbeProvider');
 				if (!resolver) {
 					throw new Error('No probe provider registered.');
 				}
 
-				const result = await resolver.initiate(request, progressCallback, token);
+				const result = await resolver.initiate(requestModel, progressCallback, token);
 				if (token.isCancellationRequested) {
 					return;
 				} else if (result) {

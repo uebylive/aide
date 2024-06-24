@@ -58,6 +58,7 @@ import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } fr
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
+import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export namespace Command {
 
@@ -3104,6 +3105,15 @@ export namespace AideChatAgentResult {
 		return {
 			errorDetails: result.errorDetails,
 			metadata: result.metadata,
+		};
+	}
+}
+
+export namespace AideProbeRequestModel {
+	export function to(request: IAideProbeRequestModel): vscode.ProbeRequest {
+		return {
+			requestId: request.sessionId,
+			query: request.message
 		};
 	}
 }
