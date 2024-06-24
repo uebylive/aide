@@ -41,7 +41,7 @@ const viewDescriptor: IViewDescriptor = {
 		keybindings: {
 			primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyG,
 		},
-		order: 1
+		order: 2
 	}
 };
 

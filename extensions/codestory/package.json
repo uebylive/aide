@@ -16,7 +16,6 @@
     "chatParticipantAdditions",
     "chatParticipantPrivate",
     "aideChatParticipant",
-    "aideChatProvider",
     "aideChatVariableResolver",
     "aideProbe",
     "csevents",

@@ -9,13 +9,13 @@ import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ILocalizedString, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
+import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IView } from 'vs/workbench/common/views';
 import { showProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -36,7 +36,7 @@ export class SubmitAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_PROBE_INPUT,
 				primary: KeyCode.Enter,
@@ -64,31 +64,44 @@ export class SubmitAction extends Action2 {
 
 class SubmitActionComposer extends Disposable {
 	static readonly ID = 'workbench.action.aideProbe.submitComposer';
-	private registeredAction: IDisposable;
+
+	private registeredAction: IDisposable | undefined;
+	private hasStartingPoint: IContextKey<boolean>;
 
 	constructor(
-		@IEditorService private readonly editorService: IEditorService
+		@IContextKeyService contextKeyService: IContextKeyService,
+		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
-		this.registeredAction = registerAction2(class extends SubmitAction {
-			constructor() {
-				super(localize2('aideProbe.submitComposer.label', "Start search"));
-			}
-		});
+		this.hasStartingPoint = CONTEXT_PROBE_HAS_STARTING_POINT.bindTo(contextKeyService);
 
+		this.setSubmitActionState();
 		this._register(this.editorService.onDidActiveEditorChange(() => {
-			const activeEditor = this.editorService.activeEditor;
-			if (activeEditor?.resource) {
-				this.registeredAction.dispose();
-				const fileName = basenameOrAuthority(activeEditor.resource);
-				const title = localize2('aideProbe.submit.label', "Start search from {0}", fileName);
-				this.registeredAction = registerAction2(class extends SubmitAction {
-					constructor() {
-						super(title);
-					}
-				});
-			}
+			this.setSubmitActionState();
 		}));
+	}
+
+	private setSubmitActionState() {
+		const activeEditor = this.editorService.activeEditor;
+		if (activeEditor?.resource) {
+			this.registeredAction?.dispose();
+			const fileName = basenameOrAuthority(activeEditor.resource);
+			const title = localize2('aideProbe.submit.label', "Start search from {0}", fileName);
+			this.registeredAction = registerAction2(class extends SubmitAction {
+				constructor() {
+					super(title);
+				}
+			});
+			this.hasStartingPoint.set(true);
+		} else {
+			this.registeredAction?.dispose();
+			this.registeredAction = registerAction2(class extends SubmitAction {
+				constructor() {
+					super(localize2('aideProbe.submitComposer.label', "Open a file to start searching from"));
+				}
+			});
+			this.hasStartingPoint.set(false);
+		}
 	}
 }
 

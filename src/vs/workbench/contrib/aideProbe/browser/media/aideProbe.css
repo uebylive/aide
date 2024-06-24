@@ -61,15 +61,6 @@
 	white-space: normal;
 }
 
-.aide-probe-view .breakdownsListContainer .monaco-list .monaco-list-row > .monaco-tl-row {
-	width: 100%;
-}
-
-.aide-probe-view .breakdownsListContainer .monaco-list .monaco-list-row > .monaco-tl-row > .monaco-tl-twistie {
-	/* Hide twisties from chat tree rows, but not from nested trees within a chat response */
-	display: none !important;
-}
-
 .aide-probe-view .breakdownsListContainer .monaco-list .monaco-list-row {
 	display: flex;
 	align-items: center;
@@ -146,6 +137,7 @@
 
 .aide-probe-view .rendered-markdown {
 	animation: fadeInFromBottom 0.7s ease-out;
+	overflow-wrap: break-word;
 }
 
 .aide-probe-view .rendered-markdown table {

@@ -11,6 +11,7 @@ import { generateUuid } from 'vs/base/common/uuid';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
+	readonly sessionId: string;
 	readonly message: string;
 }
 
@@ -35,6 +36,7 @@ export interface IAideProbeModel {
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
+		readonly sessionId: string,
 		readonly message: string,
 	) {
 		super();
@@ -82,7 +84,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				this._breakdownsBySymbol.get(mapKey)!.response = response;
 			}
 			// Update the breakdown in the list
-			const index = this._breakdowns.findIndex(b => equals(b.reference, breakdown.reference));
+			const index = this._breakdowns.findIndex(
+				b => equals(b.reference.name, breakdown.reference.name) && equals(b.reference.uri, breakdown.reference.uri)
+			);
 			if (index !== -1) {
 				this._breakdowns[index] = this._breakdownsBySymbol.get(mapKey)!;
 			}
@@ -178,6 +182,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	completeResponse(): void {
 		this._isComplete = true;
+		this.followAlong(false);
 
 		this._onDidChange.fire();
 	}

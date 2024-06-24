@@ -4,62 +4,33 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { ITreeElement, ITreeNode, ITreeRenderer } from 'vs/base/browser/ui/tree/tree';
-import { CancellationToken } from 'vs/base/common/cancellation';
+import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
-import { FuzzyScore } from 'vs/base/common/filters';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { URI } from 'vs/base/common/uri';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
+import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { Position } from 'vs/editor/common/core/position';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
+import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
-
-async function getSymbol(
-	uri: URI,
-	name: string,
-	textModelResolverService: ITextModelService,
-	outlineModelService: IOutlineModelService,
-): Promise<DocumentSymbol | undefined> {
-	const reference = await textModelResolverService.createModelReference(uri);
-	try {
-		const symbols = (await outlineModelService.getOrCreate(reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
-		const symbol = symbols.find(s => s.name === name);
-		if (!symbol) {
-			return;
-		}
-
-		return symbol;
-	} finally {
-		reference.dispose();
-	}
-}
-
 
 const decorationDescription = 'chat-breakdown-definition';
 const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
@@ -70,11 +41,11 @@ export class AideChatBreakdowns extends Disposable {
 
 	private activeBreakdown: IAideProbeBreakdownViewModel | undefined;
 
-	private list: WorkbenchObjectTree<IAideProbeBreakdownViewModel> | undefined;
-	private renderer: BreakdownRenderer | undefined;
+	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
+	private renderer: BreakdownRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
-	private explanationWidget: AideProbeExplanationWidget | undefined;
+	private explanationWidget: Map<string, AideProbeExplanationWidget> = new Map();
 	// Keep track of definitions, we are just overloading this for now
 	private goToDefinitionDecorations: IAideProbeGoToDefinitionViewModel[] = [];
 	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
@@ -84,11 +55,9 @@ export class AideChatBreakdowns extends Disposable {
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ITextModelService private readonly textModelResolverService: ITextModelService,
-		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@ICodeEditorService private readonly editorService: ICodeEditorService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IThemeService private readonly themeService: IThemeService
+		@IThemeService private readonly themeService: IThemeService,
+		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 	) {
 		super();
 
@@ -123,37 +92,32 @@ export class AideChatBreakdowns extends Disposable {
 
 	private createBreakdownsList(listContainer: HTMLElement): void {
 		// List
-		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService])));
-		const listDelegate = scopedInstantiationService.createInstance(BreakdownsListDelegate);
-
-		this.renderer = this._register(new BreakdownRenderer(this.resourceLabels, this.textModelResolverService, this.outlineModelService));
-		const list = this.list = <WorkbenchObjectTree<IAideProbeBreakdownViewModel>>scopedInstantiationService.createInstance(
-			WorkbenchObjectTree,
+		const listDelegate = this.instantiationService.createInstance(BreakdownsListDelegate);
+		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
+			WorkbenchList,
 			'BreakdownsList',
 			listContainer,
 			listDelegate,
 			[this.renderer],
 			{
-				identityProvider: { getId: (e: IAideProbeBreakdownViewModel) => `${e.uri.fsPath}_${e.name}` },
-				horizontalScrolling: false,
-				alwaysConsumeMouseWheel: false,
-				supportDynamicHeights: true,
-				hideTwistiesOfChildlessElements: true,
-				accessibilityProvider: this.instantiationService.createInstance(ChatAccessibilityProvider),
 				setRowLineHeight: false,
+				supportDynamicHeights: true,
+				horizontalScrolling: false,
+				alwaysConsumeMouseWheel: false
 			}
-		);
+		));
 
 		this._register(list.onDidChangeContentHeight(height => {
 			list.layout(height);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
-			list.updateElementHeight(e.element, e.height);
+			list.updateElementHeight(e.index, e.height);
 		}));
 		this._register(list.onDidChangeFocus(e => {
-			if (e.elements.length === 1) {
-				const element = e.elements[0]!;
-				list.setSelection([element]);
+			if (e.indexes.length === 1) {
+				const index = e.indexes[0];
+				list.setSelection([index]);
+				const element = list.element(index);
 				this._onDidChangeFocus.fire(element);
 				if (element && element.uri && element.name) {
 					this.openBreakdownReference(element);
@@ -168,37 +132,42 @@ export class AideChatBreakdowns extends Disposable {
 		}));
 	}
 
-	// private _getBreakdownListIndex(element: IAideProbeBreakdownViewModel): number {
-	// 	let matchIndex = -1;
-	// 	this.viewModel.forEach((item, index) => {
-	// 		if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
-	// 			matchIndex = index;
-	// 		}
-	// 	});
-	// 	return matchIndex;
-	// }
+	private getBreakdownListIndex(element: IAideProbeBreakdownViewModel): number {
+		let matchIndex = -1;
+		this.viewModel.forEach((item, index) => {
+			if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
+				matchIndex = index;
+			}
+		});
+		return matchIndex;
+	}
 
-	// Whenever we have an event, update our internal state
-
-	public async updateGoToDefinitionsDecorations(definitions: IAideProbeGoToDefinitionViewModel[]): Promise<void> {
+	async updateGoToDefinitionsDecorations(definitions: IAideProbeGoToDefinitionViewModel[]): Promise<void> {
 		this.goToDefinitionDecorations = definitions;
 	}
 
+	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
+		const { uri, name } = element;
+		const symbolKey = `${uri.fsPath}:${name}`;
 
-
-
-	public async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
 			this.activeBreakdown = element;
-			this.list?.setFocus([element]);
-		}
+			const index = this.getBreakdownListIndex(element);
+			if (this.list && index !== -1) {
+				this.list.setFocus([index]);
+			}
 
-		if (this.explanationWidget) {
-			this.explanationWidget.hide();
-			this.explanationWidget.dispose();
-			this.explanationWidget = undefined;
+			const keys = this.explanationWidget.keys();
+			for (const key of keys) {
+				if (key === symbolKey) {
+					continue;
+				}
+
+				const existingWidget = this.explanationWidget.get(key);
+				existingWidget?.hide();
+			}
 		}
 
 		if (this.goToDefinitionWidget) {
@@ -209,33 +178,12 @@ export class AideChatBreakdowns extends Disposable {
 
 		let codeEditor: ICodeEditor | null;
 		let explanationWidgetPosition: Position = new Position(1, 1);
-		// let goToDefinitionPosition: Position = new Position(1, 1);
 
-		const { uri, name } = element;
-		try {
-			const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
-			if (!symbol) {
-				codeEditor = await this.editorService.openCodeEditor({
-					resource: uri,
-					options: {
-						pinned: false,
-						preserveFocus: true,
-					}
-				}, null);
-			} else {
-				explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
-				// goToDefinitionPosition = new Position(symbol.range.startLineNumber + 1, symbol.range.startColumn + 10);
-				codeEditor = await this.editorService.openCodeEditor({
-					resource: uri,
-					options: {
-						pinned: false,
-						preserveFocus: true,
-						selection: symbol.range,
-						selectionRevealType: TextEditorSelectionRevealType.NearTop
-					}
-				}, null);
-			}
-		} catch (e) {
+		const resolveLocationOperation = element.symbol;
+		this.editorProgressService.showWhile(resolveLocationOperation);
+		const symbol = await resolveLocationOperation;
+
+		if (!symbol) {
 			codeEditor = await this.editorService.openCodeEditor({
 				resource: uri,
 				options: {
@@ -243,11 +191,29 @@ export class AideChatBreakdowns extends Disposable {
 					preserveFocus: true,
 				}
 			}, null);
+		} else {
+			explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+			codeEditor = await this.editorService.openCodeEditor({
+				resource: uri,
+				options: {
+					pinned: false,
+					preserveFocus: true,
+					selection: symbol.range,
+					selectionRevealType: TextEditorSelectionRevealType.NearTop
+				}
+			}, null);
 		}
 
-		if (codeEditor) {
-			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-			this.explanationWidget.show(explanationWidgetPosition, 5);
+		if (codeEditor && symbol && explanationWidgetPosition) {
+			if (this.explanationWidget.get(symbolKey)) {
+				const existingWidget = this.explanationWidget.get(symbolKey)!;
+				existingWidget.setContent(element);
+				existingWidget.show(explanationWidgetPosition);
+			} else {
+				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
+				newWidget.show(explanationWidgetPosition);
+				this.explanationWidget.set(symbolKey, newWidget);
+			}
 
 			// show the go-to-definition information
 			const rowResponse = $('div.breakdown-content');
@@ -282,25 +248,39 @@ export class AideChatBreakdowns extends Disposable {
 		}
 	}
 
-	updateBreakdowns(breakdowns: IAideProbeBreakdownViewModel[]): void {
+	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
 		const list = assertIsDefined(this.list);
 
-		this.viewModel = breakdowns;
-		const treeItems = (this.viewModel ?? [])
-			.map((item): ITreeElement<IAideProbeBreakdownViewModel> => {
-				return {
-					element: item,
-					children: [],
-					collapsible: false
-				};
+		let matchingIndex = -1;
+		if (this.viewModel.length === 0) {
+			this.viewModel = [...breakdowns];
+			list.splice(0, 0, breakdowns);
+		} else {
+			console.log('updating breakdowns');
+			console.log(breakdowns);
+			breakdowns.forEach((breakdown) => {
+				const matchIndex = this.getBreakdownListIndex(breakdown);
+				if (matchIndex === -1) {
+					this.viewModel.push(breakdown);
+					list.splice(this.viewModel.length - 1, 0, [breakdown]);
+				} else {
+					this.viewModel[matchIndex] = breakdown;
+					list.splice(matchIndex, 1, [breakdown]);
+					if (this.activeBreakdown?.uri.fsPath === breakdown.uri.fsPath && this.activeBreakdown?.name === breakdown.name) {
+						matchingIndex = matchIndex;
+					}
+				}
 			});
-		list.setChildren(null, treeItems, {
-			diffIdentityProvider: {
-				getId(element) {
-					return `${element.uri.fsPath}_${element.name}`;
-				},
+			const listLength = this.viewModel.length;
+			console.log('list length', listLength);
+			for (let i = listLength - 1; i >= 0; i--) {
+				console.log(list.element(i));
 			}
-		});
+		}
+		this.list?.rerender();
+		if (matchingIndex !== -1) {
+			this.list?.setFocus([matchingIndex]);
+		}
 
 		this.layout();
 	}
@@ -314,7 +294,7 @@ export class AideChatBreakdowns extends Disposable {
 		this.isVisible = false;
 
 		// Clear list
-		this.updateBreakdowns([]);
+		this.list.splice(0, this.viewModel.length);
 
 		// Clear view model
 		this.viewModel = [];
@@ -342,7 +322,7 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
-class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBreakdownViewModel, FuzzyScore, IBreakdownTemplateData> {
+class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownsListRenderer';
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
@@ -350,8 +330,6 @@ class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBr
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
-		@ITextModelService private readonly textModelResolverService: ITextModelService,
-		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 	) {
 		super();
 	}
@@ -376,8 +354,8 @@ class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBr
 		return data;
 	}
 
-	renderElement(node: ITreeNode<IAideProbeBreakdownViewModel, FuzzyScore>, index: number, templateData: IBreakdownTemplateData): void {
-		const element = node.element;
+	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
+		console.log('rendering element', element, index, templateData, height);
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
@@ -396,34 +374,27 @@ class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBr
 			templateDisposables.add(label);
 			templateData.container.appendChild(rowResource);
 
-			this.getSymbolKind(uri, name).then(kind => {
-				if (kind) {
+			element.symbol.then(symbol => {
+				if (symbol && symbol.kind) {
 					label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
 						fileKind: FileKind.FILE,
-						icon: SymbolKinds.toIcon(kind),
+						icon: SymbolKinds.toIcon(symbol.kind),
 					});
 				}
 			});
 		}
 
+		const completeIcon = Codicon.arrowRight;
+		const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
 		if (response && response.value.length > 0) {
-			const progressIcon = Codicon.arrowRight;
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
+			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(progressIcon));
+			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(completeIcon));
 		} else {
-			const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
+			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(completeIcon));
 			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
 		}
 
 		this.updateItemHeight(templateData);
-	}
-
-	private async getSymbolKind(uri: URI, name: string): Promise<SymbolKind | undefined> {
-		const symbol = await getSymbol(uri, name, this.textModelResolverService, this.outlineModelService);
-		if (!symbol) {
-			return;
-		}
-
-		return symbol.kind;
 	}
 
 	disposeTemplate(templateData: IBreakdownTemplateData): void {
@@ -437,14 +408,14 @@ class BreakdownRenderer extends Disposable implements ITreeRenderer<IAideProbeBr
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.wrapper.offsetHeight;
+		const newHeight = templateData.wrapper.offsetHeight || 22;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
 			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
 				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
 				// If it becomes properly sync, then this could be removed.
-				element.currentRenderedHeight = templateData.wrapper.offsetHeight;
+				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));

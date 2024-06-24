@@ -27,20 +27,27 @@ import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aidePro
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeViewModel';
 import { Event } from 'vs/base/common/event';
 import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { Codicon } from 'vs/base/common/codicons';
 import { defaultToggleStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
+import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
+import { ScrollbarVisibility } from 'vs/base/common/scrollable';
+import { IDimension } from 'vs/editor/common/core/dimension';
 
 const $ = dom.$;
 
 export class AideProbeViewPane extends ViewPane {
 	private container!: HTMLElement;
+	private resultWrapper!: HTMLElement;
 	private explorationDetail!: HTMLElement;
 	private breakdownsListContainer!: HTMLElement;
 	private responseWrapper!: HTMLElement;
+	private scrollableElement!: DomScrollableElement;
+	private tailingToggle: Toggle | undefined;
+	private dimensions: IDimension | undefined;
 
 	private inputPart!: AideProbeInputPart;
 
@@ -100,13 +107,25 @@ export class AideProbeViewPane extends ViewPane {
 		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
 		this.inputPart.render(this.container, this);
 
-		const breakdownsWrapper = dom.append(this.container, $('.breakdownsWrapper'));
+		this.resultWrapper = $('.resultWrapper', { tabIndex: 0 });
+		this.scrollableElement = this._register(new DomScrollableElement(
+			this.resultWrapper,
+			{
+				alwaysConsumeMouseWheel: true,
+				horizontal: ScrollbarVisibility.Hidden,
+				vertical: ScrollbarVisibility.Visible
+			}
+		));
+		const scrollableElementNode = this.scrollableElement.getDomNode();
+		dom.append(this.container, scrollableElementNode);
+
+		const breakdownsWrapper = dom.append(this.resultWrapper, $('.breakdownsWrapper'));
 		this.explorationDetail = dom.append(breakdownsWrapper, $('div.exploration-detail'));
 		dom.append(breakdownsWrapper, $('span.chat-animated-ellipsis'));
 		const text = $('span', undefined, 'Exploring the codebase');
 		this.explorationDetail.appendChild(text);
 		const hoverDelegate = this._register(createInstantHoverDelegate());
-		const toggle = this._register(new Toggle({
+		const toggle = this.tailingToggle = this._register(new Toggle({
 			...defaultToggleStyles,
 			icon: Codicon.eyeClosed,
 			title: nls.localize('followAlong', "Follow Along"),
@@ -114,16 +133,28 @@ export class AideProbeViewPane extends ViewPane {
 			hoverDelegate,
 		}));
 		this._register(toggle.onChange(() => {
-			const checked = toggle.checked;
-			toggle.setIcon(checked ? Codicon.eye : Codicon.eyeClosed);
-			toggle.setTitle(checked ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
-			this.aideProbeService.followAlong(checked);
+			this.toggleTailing(toggle.checked);
 		}));
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
-		this.responseWrapper = dom.append(this.container, $('.responseWrapper'));
+		this.responseWrapper = dom.append(this.resultWrapper, $('.responseWrapper'));
 
 		this.onDidChangeItems();
+	}
+
+	private toggleTailing(tailing: boolean, silent?: boolean) {
+		if (!this.tailingToggle) {
+			return;
+		}
+
+		this.tailingToggle.setIcon(tailing ? Codicon.eye : Codicon.eyeClosed);
+		this.tailingToggle.setTitle(tailing ? nls.localize('stopFollowing', "Stop Following") : nls.localize('followAlong', "Follow Along"));
+		if (silent) {
+			this.tailingToggle.checked = tailing;
+			return;
+		}
+
+		this.aideProbeService.followAlong(tailing);
 	}
 
 	override focus(): void {
@@ -152,12 +183,7 @@ export class AideProbeViewPane extends ViewPane {
 		const model = this.aideProbeService.startSession();
 		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
-			if (!this.viewModel) {
-				return;
-			}
-
 			this.onDidChangeItems();
-			this.requestInProgress.set(this.viewModel.requestInProgress);
 		}));
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
 			this._breakdownsList.openBreakdownReference(breakdown);
@@ -173,6 +199,7 @@ export class AideProbeViewPane extends ViewPane {
 
 		if (result) {
 			this.inputPart.acceptInput(editorValue);
+			this.onDidChangeItems();
 			return result.responseCreatedPromise;
 		}
 
@@ -180,6 +207,13 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private onDidChangeItems(): void {
+		if (this.viewModel?.requestInProgress) {
+			this.requestInProgress.set(true);
+		} else {
+			this.requestInProgress.set(false);
+			this.toggleTailing(false, true);
+		}
+
 		this.updateExplorationDetail();
 		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
 			this.renderBreakdownsListData(this.viewModel?.breakdowns ?? [], this.breakdownsListContainer);
@@ -189,11 +223,22 @@ export class AideProbeViewPane extends ViewPane {
 			dom.hide(this.breakdownsListContainer);
 		}
 		this.renderFinalAnswer();
+
+		this.scrollableElement.scanDomNode();
+		this.resultWrapper.style.height = `${(this.dimensions?.height ?? 0) - this.inputPart.element.offsetHeight}px`;
 	}
 
 	private updateExplorationDetail(): void {
-		if (this.requestInProgress.get()) {
+		if (this.viewModel?.sessionId) {
 			this.explorationDetail.style.display = 'flex';
+			const firstChild = this.explorationDetail.firstChild;
+			if (firstChild) {
+				if (this.requestInProgress.get()) {
+					firstChild.textContent = 'Exploring the codebase';
+				} else {
+					firstChild.textContent = 'Exploration complete';
+				}
+			}
 		} else {
 			this.explorationDetail.style.display = 'none';
 		}
@@ -201,7 +246,7 @@ export class AideProbeViewPane extends ViewPane {
 
 	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>, container: HTMLElement) {
 		this._breakdownsList.show(container);
-		this._breakdownsList.updateBreakdowns([...breakdowns]);
+		this._breakdownsList.updateBreakdowns(breakdowns);
 	}
 
 	private renderFinalAnswer(): void {
@@ -228,9 +273,12 @@ export class AideProbeViewPane extends ViewPane {
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
+		this.dimensions = { width, height };
 
 		this.inputPart.layout(height, width);
 		this._breakdownsList.layout(width);
+		this.scrollableElement.scanDomNode();
+		this.resultWrapper.style.height = `${height - this.inputPart.element.offsetHeight}px`;
 	}
 
 	override dispose(): void {

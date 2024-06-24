@@ -31,8 +31,9 @@ export class AideProbeProvider implements vscode.Disposable {
 		);
 	}
 
-	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
-		const query = _request.trim();
+	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		let { query } = request;
+		query = query.trim();
 
 		const startTime = process.hrtime();
 
@@ -68,11 +69,14 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		console.log('threadId', threadId);
+		// console.log('threadId', threadId);
 		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		console.log('probeResponse', probeResponse);
+		// To use dummy data, get the gist from here: https://gist.github.com/theskcd/8292bf96db11190d52d2d758a340ed20 and read it
+		// to a file
+		// const stream = readJsonFile('/Users/skcd/scratch/ide/extensions/codestory/src/dummydata.json');
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
-		console.log('reportAgentEventsToChat done');
+		// console.log('reportAgentEventsToChat done');
 
 
 		const endTime = process.hrtime(startTime);
@@ -86,7 +90,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 
 
-		// console.log(this._editorUrl, query, threadId);
+		console.log(this._editorUrl, query, threadId);
 		// await reportDummyEventsToChat(response);
 		return {};
 	}
