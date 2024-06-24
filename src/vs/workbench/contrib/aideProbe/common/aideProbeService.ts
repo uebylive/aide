@@ -97,6 +97,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
+	private _didNavigateBreakdown: boolean = false;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService
@@ -118,6 +119,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	startSession(): AideProbeModel {
 		if (this._model) {
 			this._model.dispose();
+			this._didNavigateBreakdown = false;
 		}
 
 		this._model = this.instantiationService.createInstance(AideProbeModel);
@@ -193,13 +195,16 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	navigateBreakdown(): void {
-		this.probeProvider?.onUserAction({
-			sessionId: this._model?.sessionId!,
-			action: {
-				type: 'navigateBreakdown',
-				status: true,
-			},
-		});
+		if (!this._didNavigateBreakdown) {
+			this.probeProvider?.onUserAction({
+				sessionId: this._model?.sessionId!,
+				action: {
+					type: 'navigateBreakdown',
+					status: true,
+				},
+			});
+			this._didNavigateBreakdown = true;
+		}
 	}
 
 	followAlong(follow: boolean): void {
