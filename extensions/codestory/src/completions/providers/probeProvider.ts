@@ -7,9 +7,9 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { checkInviteCode } from '../../utilities/checkInviteCode';
 
-// For the moment, we read a harcoded list of invite codes embedded in the codebase
-import { inviteCodes } from '../../invite-codes';
+
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -41,14 +41,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 
 	private checkActivation() {
-		const config = vscode.workspace.getConfiguration('aide');
-		const code = config.get<string>('probeInviteCode');
-		if (!code || !inviteCodes.includes(code)) {
-			this.active = false;
-		} else {
-			this.active = true;
-		}
-
+		this.active = Boolean(checkInviteCode())
 	}
 
 	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
