@@ -30,7 +30,7 @@ import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChat
 import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
+import { AideChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/aiModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'aideChat.sessions';
@@ -557,7 +557,7 @@ export class ChatService extends Disposable implements IAideChatService {
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
 					await this.extensionService.activateByEvent(`onChatParticipant:${agent.id}`);
-					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id, this.aideMode);
+					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id);
 
 					const initVariableData: IChatRequestVariableData = { variables: [] };
 					request = model.addRequest(parsedRequest, initVariableData, attempt, agent, agentSlashCommandPart?.command);
@@ -584,7 +584,6 @@ export class ChatService extends Disposable implements IAideChatService {
 					}
 
 					const requestProps: IAideChatAgentRequest = {
-						mode: this.aideMode,
 						sessionId,
 						requestId: request.id,
 						agentId: agent.id,
@@ -611,8 +610,8 @@ export class ChatService extends Disposable implements IAideChatService {
 						if (!request.response) {
 							continue;
 						}
-						history.push({ role: ChatMessageRole.User, content: request.message.text });
-						history.push({ role: ChatMessageRole.Assistant, content: request.response.response.asString() });
+						history.push({ role: AideChatMessageRole.User, content: { type: 'text', value: request.message.text } });
+						history.push({ role: AideChatMessageRole.Assistant, content: { type: 'text', value: request.response.response.asString() } });
 					}
 					const message = parsedRequest.text;
 					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<IAideChatProgress>(p => {

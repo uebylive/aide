@@ -18,13 +18,13 @@ import { StatusBarItemsExtensionPoint } from 'vs/workbench/api/browser/statusBar
 import './mainThreadLocalization';
 import './mainThreadBulkEdits';
 import './mainThreadModelSelection';
-import './mainThreadAIModels';
 import './mainThreadAideChatAgents2';
 import './mainThreadAideChatVariables';
 import './mainThreadAideProbeProvider';
 import './mainThreadLanguageModels';
 import './mainThreadChatAgents2';
 import './mainThreadChatVariables';
+import './mainThreadLanguageModelTools';
 import './mainThreadEmbeddings';
 import './mainThreadCodeInsets';
 import './mainThreadCLICommands';

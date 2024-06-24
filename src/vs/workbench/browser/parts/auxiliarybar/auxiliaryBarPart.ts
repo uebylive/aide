@@ -33,7 +33,7 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 import { createAndFillInContextMenuActions } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { $ } from 'vs/base/browser/dom';
 import { HiddenItemStrategy, WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
+import { ActionViewItem, IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
 import { CompositeMenuActions } from 'vs/workbench/browser/actions';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
