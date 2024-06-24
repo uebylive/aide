@@ -7,6 +7,9 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { getInviteCode } from '../../utilities/getInviteCode';
+
+
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
 import * as os from 'os';
@@ -14,6 +17,7 @@ import * as os from 'os';
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string;
+	private active: boolean = false;
 
 	constructor(
 		sideCarClient: SideCarClient,
@@ -38,10 +42,24 @@ export class AideProbeProvider implements vscode.Disposable {
 							requestId: action.sessionId,
 						},
 					});
-				},
+				}
 			}
 		);
+
+		this.checkActivation();
+
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('aide')) {
+				this.checkActivation();
+			}
+		});
 	}
+
+
+	private checkActivation() {
+		this.active = Boolean(getInviteCode());
+	}
+
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
 		let { query } = request;
@@ -58,6 +76,12 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
+
+
+		if (!this.active) {
+			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
+			return {};
+		}
 
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
