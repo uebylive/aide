@@ -311,6 +311,20 @@ export class AideChatBreakdowns extends Disposable {
 			return; // already hidden
 		}
 
+		// Remove all explanation widgets and go-to-definition widgets
+		const keys = this.explanationWidget.keys();
+		for (const key of keys) {
+			const existingWidget = this.explanationWidget.get(key);
+			existingWidget?.hide();
+			this.explanationWidget.delete(key);
+		}
+
+		if (this.goToDefinitionWidget) {
+			this.goToDefinitionWidget.hide();
+			this.goToDefinitionWidget.dispose();
+			this.goToDefinitionWidget = undefined;
+		}
+
 		// Hide
 		this.isVisible = false;
 

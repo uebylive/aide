@@ -50,6 +50,10 @@
 	margin-left: 4px;
 }
 
+.aide-probe-view .exploration-detail > span {
+	flex-grow: 1;
+}
+
 .aide-probe-view .breakdownsWrapper .breakdownsListContainer {
 	margin-top: 8px;
 }

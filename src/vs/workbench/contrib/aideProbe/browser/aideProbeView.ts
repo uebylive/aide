@@ -132,6 +132,7 @@ export class AideProbeViewPane extends ViewPane {
 			isChecked: false,
 			hoverDelegate,
 		}));
+		toggle.domNode.style.display = 'none';
 		this._register(toggle.onChange(() => {
 			this.toggleTailing(toggle.checked);
 		}));
@@ -210,8 +211,14 @@ export class AideProbeViewPane extends ViewPane {
 	private onDidChangeItems(): void {
 		if (this.viewModel?.requestInProgress) {
 			this.requestInProgress.set(true);
+			if (this.tailingToggle) {
+				this.tailingToggle.domNode.style.display = 'block';
+			}
 		} else {
 			this.requestInProgress.set(false);
+			if (this.tailingToggle) {
+				this.tailingToggle.domNode.style.display = 'none';
+			}
 			this.toggleTailing(false, true);
 		}
 
@@ -225,8 +232,9 @@ export class AideProbeViewPane extends ViewPane {
 		}
 		this.renderFinalAnswer();
 
-		this.scrollableElement.scanDomNode();
-		this.resultWrapper.style.height = `${(this.dimensions?.height ?? 0) - this.inputPart.element.offsetHeight}px`;
+		if (this.dimensions) {
+			this.layoutBody(this.dimensions.height, this.dimensions.width);
+		}
 	}
 
 	private updateExplorationDetail(): void {
