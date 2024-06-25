@@ -23,11 +23,8 @@ export class AideProbeProvider implements vscode.Disposable {
 		sideCarClient: SideCarClient,
 		editorUrl: string,
 	) {
-		console.log('AideProbeProvider');
-		console.log(sideCarClient);
 		this._sideCarClient = sideCarClient;
 		this._editorUrl = editorUrl;
-		console.log(this._sideCarClient);
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
@@ -106,15 +103,11 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		// console.log('threadId', threadId);
 		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		console.log('probeResponse', probeResponse);
 		// To use dummy data, get the gist from here: https://gist.github.com/theskcd/8292bf96db11190d52d2d758a340ed20 and read it
 		// to a file
 		// const stream = readJsonFile('/Users/skcd/scratch/ide/extensions/codestory/src/dummydata.json');
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
-		// console.log('reportAgentEventsToChat done');
-
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -127,8 +120,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-
-		console.log(this._editorUrl, query, threadId);
 		// await reportDummyEventsToChat(response);
 		return {};
 	}
