@@ -242,6 +242,7 @@ export const readJsonFile = (filePath: string): any => {
 	return JSON.parse(jsonString);
 };
 
+const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
 	stream: AsyncIterableIterator<SideCarAgentEvent>,
 	response: vscode.ProbeResponseStream,
@@ -339,7 +340,15 @@ export const reportAgentEventsToChat = async (
 				return;
 			}
 
-			response.markdown(reply);
+			// The sidecar currently sends '<symbolName> at <fileName>' at the start of the response. Remove it.
+			const match = reply.match(pattern);
+			if (match) {
+				const suffix = match[2].trim();
+				response.markdown(suffix);
+			} else {
+				response.markdown(reply);
+			}
+
 			return;
 		}
 	}
