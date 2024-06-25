@@ -225,8 +225,9 @@ export class AideProbeViewPane extends ViewPane {
 		}
 		this.renderFinalAnswer();
 
-		this.scrollableElement.scanDomNode();
-		this.resultWrapper.style.height = `${(this.dimensions?.height ?? 0) - this.inputPart.element.offsetHeight}px`;
+		if (this.dimensions) {
+			this.layoutBody(this.dimensions.height, this.dimensions.width);
+		}
 	}
 
 	private updateExplorationDetail(): void {
