@@ -283,7 +283,6 @@ export async function activate(context: ExtensionContext) {
 			if (activeDocument) {
 				const activeDocumentUri = activeDocument.uri;
 				if (shouldTrackFile(activeDocumentUri)) {
-					console.log('editor.onDidChangeActiveTextEditor', activeDocumentUri.fsPath);
 					await sidecarClient.documentOpen(
 						activeDocumentUri.fsPath,
 						activeDocument.getText(),
