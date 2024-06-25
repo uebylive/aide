@@ -153,14 +153,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				const requestModel = new AideProbeRequestModel(probeModel.sessionId, request);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request)
 
 				const resolver = this.probeProvider;
 				if (!resolver) {
 					throw new Error('No probe provider registered.');
 				}
 
-				const result = await resolver.initiate(requestModel, progressCallback, token);
+				const result = await resolver.initiate(probeModel.request, progressCallback, token);
 				if (token.isCancellationRequested) {
 					return;
 				} else if (result) {

@@ -452,7 +452,6 @@ class DocumentManager {
 		indentStyle: IndentStyleSpaces | undefined,
 		lineLimit: number,
 	) {
-		console.log('sidecar.document_manager');
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
@@ -460,9 +459,7 @@ class DocumentManager {
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = document.getText().split(/\r\n|\r|\n/g);
-		console.log('sidecar.document_manager.editorLines', editorLines.length, lineLimit);
 		const newDocumentLineLimit = Math.min(editorLines.length - 1, lineLimit);
-		console.log('sidecar.document_manager.newDocumentLineLimit', newDocumentLineLimit);
 		for (let i = 0; i <= newDocumentLineLimit; i++) {
 			this.lines[i] = new LineContent(editorLines[i], this.indentStyle);
 		}
