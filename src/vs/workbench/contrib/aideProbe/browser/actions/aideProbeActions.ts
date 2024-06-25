@@ -115,7 +115,7 @@ export class CancelAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_REQUEST_IN_PROGRESS, CONTEXT_PROBE_INPUT_HAS_FOCUS),
+			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
 			keybinding: {
 				primary: KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib,
