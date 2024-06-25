@@ -25,7 +25,7 @@ export class AideProbeExplanationWidget extends ZoneWidget {
 	constructor(
 		private parentEditor: ICodeEditor,
 		private content: IAideProbeBreakdownViewModel,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super(parentEditor, {
 			showArrow: false,
@@ -101,7 +101,6 @@ export class AideProbeExplanationWidget extends ZoneWidget {
 		const height = getTotalHeight(dummyParent);
 		this.domNode.removeChild(dummyParent);
 		const lineHeight = this.parentEditor.getOption(EditorOption.lineHeight);
-		console.log('AideProbeExplanationWidget.doDummyRender', height, lineHeight, Math.ceil(height / lineHeight));
 
 		return Math.ceil(height / lineHeight);
 	}
