@@ -11,6 +11,7 @@ import { generateUuid } from 'vs/base/common/uuid';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
+	readonly sessionId: string;
 	readonly message: string;
 }
 
@@ -35,6 +36,7 @@ export interface IAideProbeModel {
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
+		readonly sessionId: string,
 		readonly message: string,
 	) {
 		super();

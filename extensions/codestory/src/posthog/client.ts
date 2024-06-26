@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import { PostHog } from 'posthog-node';
 import * as vscode from 'vscode';
+import { getInviteCode } from '../utilities/getInviteCode';
+import { getUserId } from '../utilities/uniqueId';
 
 let postHogClient: PostHog | undefined;
 try {
@@ -16,8 +18,23 @@ try {
 			'phc_dKVAmUNwlfHYSIAH1kgnvq3iEw7ovE5YYvGhTyeRlaB',
 			{ host: 'https://app.posthog.com' }
 		);
+
+		identifyUserWithInviteCode();
+
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('aide')) {
+				identifyUserWithInviteCode();
+			}
+		});
 	}
 } catch (err) {
+
 }
+
+function identifyUserWithInviteCode() {
+	const code = getInviteCode();
+	if (code && postHogClient) { postHogClient.identify({ distinctId: getUserId(), properties: { inviteCode: code } }); }
+}
+
 
 export default postHogClient;

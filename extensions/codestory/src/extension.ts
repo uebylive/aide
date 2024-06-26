@@ -178,6 +178,15 @@ export async function activate(context: ExtensionContext) {
 	// can still grab it by listenting to port 0
 	server.listen(port);
 
+	// Register a disposable to stop the server when the extension is deactivated
+	context.subscriptions.push({
+		dispose: () => {
+			if (server) {
+				server.close();
+			}
+		},
+	});
+
 	const editorUrl = `http://localhost:${port}`;
 	console.log('Editor url:' + editorUrl);
 
@@ -283,7 +292,6 @@ export async function activate(context: ExtensionContext) {
 			if (activeDocument) {
 				const activeDocumentUri = activeDocument.uri;
 				if (shouldTrackFile(activeDocumentUri)) {
-					console.log('editor.onDidChangeActiveTextEditor', activeDocumentUri.fsPath);
 					await sidecarClient.documentOpen(
 						activeDocumentUri.fsPath,
 						activeDocument.getText(),

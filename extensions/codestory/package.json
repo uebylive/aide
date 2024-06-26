@@ -16,7 +16,6 @@
     "chatParticipantAdditions",
     "chatParticipantPrivate",
     "aideChatParticipant",
-    "aideChatProvider",
     "aideChatVariableResolver",
     "aideProbe",
     "csevents",
@@ -89,6 +88,11 @@
       "type": "object",
       "title": "Aide Extension settings",
       "properties": {
+        "aide.probeInviteCode": {
+          "type": "string",
+          "default": "",
+          "description": "The invite code for the probing feature"
+        },
         "aide.activeDirectories": {
           "type": "string",
           "default": "",

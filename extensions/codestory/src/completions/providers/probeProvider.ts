@@ -6,30 +6,80 @@
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 import { SideCarClient } from '../../sidecar/client';
-import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { getInviteCode } from '../../utilities/getInviteCode';
+
+
+import postHogClient from '../../posthog/client';
+import { getUniqueId } from '../../utilities/uniqueId';
+import * as os from 'os';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string;
+	private active: boolean = false;
 
 	constructor(
 		sideCarClient: SideCarClient,
 		editorUrl: string,
 	) {
-		console.log('AideProbeProvider');
-		console.log(sideCarClient);
 		this._sideCarClient = sideCarClient;
 		this._editorUrl = editorUrl;
-		console.log(this._sideCarClient);
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
-			{ provideProbeResponse: this.provideProbeResponse.bind(this) }
+			{
+				provideProbeResponse: this.provideProbeResponse.bind(this),
+				onDidUserAction(action) {
+					postHogClient?.capture({
+						distinctId: getUniqueId(),
+						event: action.action.type,
+						properties: {
+							platform: os.platform(),
+							requestId: action.sessionId,
+						},
+					});
+				}
+			}
 		);
+
+		this.checkActivation();
+
+		vscode.workspace.onDidChangeConfiguration((event) => {
+			if (event.affectsConfiguration('aide')) {
+				this.checkActivation();
+			}
+		});
 	}
 
-	private async provideProbeResponse(_request: string, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
-		const query = _request.trim();
+
+	private checkActivation() {
+		this.active = Boolean(getInviteCode());
+	}
+
+
+	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		let { query } = request;
+		query = query.trim();
+
+		const startTime = process.hrtime();
+
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'probe_requested',
+			properties: {
+				platform: os.platform(),
+				requestId: request.requestId,
+			},
+		});
+
+
+
+		if (!this.active) {
+			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
+			return {};
+		}
+
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
 		if (activeEditor) {
@@ -53,13 +103,23 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		// console.log('threadId', threadId);
-		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		// console.log('probeResponse', probeResponse);
-		const stream = readJsonFile('/Users/nareshr/github/codestory/ide/extensions/codestory/src/dummydata.json');
-		await reportAgentEventsToChat(stream, response, threadId, _token, this._sideCarClient);
-		// console.log('reportAgentEventsToChat done');
-		console.log(this._editorUrl, query, threadId);
+		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		// To use dummy data, get the gist from here: https://gist.github.com/theskcd/8292bf96db11190d52d2d758a340ed20 and read it
+		// to a file
+		// const stream = readJsonFile('/Users/skcd/scratch/ide/extensions/codestory/src/dummydata.json');
+		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+
+		const endTime = process.hrtime(startTime);
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'probe_completed',
+			properties: {
+				platform: os.platform(),
+				timeElapsed: `${endTime[0]}s ${endTime[1] / 1000000}ms`,
+				requestId: request.requestId,
+			},
+		});
+
 		// await reportDummyEventsToChat(response);
 		return {};
 	}

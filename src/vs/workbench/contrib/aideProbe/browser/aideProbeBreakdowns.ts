@@ -28,6 +28,7 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
 import { IEditorProgressService } from 'vs/platform/progress/common/progress';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const $ = dom.$;
 
@@ -52,7 +53,8 @@ export class AideChatBreakdowns extends Disposable {
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICodeEditorService private readonly editorService: ICodeEditorService,
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
+		@IEditorService private readonly editorService: IEditorService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 	) {
@@ -61,11 +63,30 @@ export class AideChatBreakdowns extends Disposable {
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
 
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			const activeEditor = this.editorService.activeEditor;
+			const activeEditorPath = activeEditor?.resource?.fsPath;
+			if (!activeEditorPath) {
+				return;
+			}
+
+			// Remove all explanation widget when the active editor changes
+			const keys = this.explanationWidget.keys();
+			for (const key of keys) {
+				// Hide every widget where the key doesn't start with activeEditorPath
+				if (!key.startsWith(activeEditorPath)) {
+					const existingWidget = this.explanationWidget.get(key);
+					existingWidget?.hide();
+					this.explanationWidget.delete(key);
+				}
+			}
+		}));
+
 		const theme = this.themeService.getColorTheme();
 		const decorationBackgroundColor = theme.getColor(editorFindMatch);
 		const decorationColor = theme.getColor(editorFindMatchForeground);
 
-		this.editorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
+		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
 			color: decorationColor?.toString() || '#f3f4f6',
 			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
 			borderRadius: '3px',
@@ -175,7 +196,7 @@ export class AideChatBreakdowns extends Disposable {
 		const symbol = await resolveLocationOperation;
 
 		if (!symbol) {
-			codeEditor = await this.editorService.openCodeEditor({
+			codeEditor = await this.codeEditorService.openCodeEditor({
 				resource: uri,
 				options: {
 					pinned: false,
@@ -183,8 +204,8 @@ export class AideChatBreakdowns extends Disposable {
 				}
 			}, null);
 		} else {
-			explanationWidgetPosition = new Position(symbol.range.startLineNumber, 300);
-			codeEditor = await this.editorService.openCodeEditor({
+			explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+			codeEditor = await this.codeEditorService.openCodeEditor({
 				resource: uri,
 				options: {
 					pinned: false,
@@ -278,6 +299,20 @@ export class AideChatBreakdowns extends Disposable {
 	hide(): void {
 		if (!this.isVisible || !this.list) {
 			return; // already hidden
+		}
+
+		// Remove all explanation widgets and go-to-definition widgets
+		const keys = this.explanationWidget.keys();
+		for (const key of keys) {
+			const existingWidget = this.explanationWidget.get(key);
+			existingWidget?.hide();
+			this.explanationWidget.delete(key);
+		}
+
+		if (this.goToDefinitionWidget) {
+			this.goToDefinitionWidget.hide();
+			this.goToDefinitionWidget.dispose();
+			this.goToDefinitionWidget = undefined;
 		}
 
 		// Hide

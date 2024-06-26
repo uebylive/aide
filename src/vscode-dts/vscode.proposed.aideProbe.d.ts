@@ -4,6 +4,26 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export interface FollowAlongAction {
+		type: 'followAlong';
+		status: boolean;
+	}
+
+	export interface NavigateBreakdownAction {
+		type: 'navigateBreakdown';
+		status: boolean;
+	}
+
+	export interface AideProbeUserAction {
+		sessionId: string;
+		action: FollowAlongAction | NavigateBreakdownAction;
+	}
+
+	export interface ProbeRequest {
+		requestId: string;
+		query: string;
+	}
+
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
@@ -18,8 +38,9 @@ declare module 'vscode' {
 		errorDetails?: ProbeErrorDetails;
 	}
 
-	export interface ProbeResponseProvider {
-		provideProbeResponse(request: string, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
+	export interface ProbeResponseHandler {
+		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
+		onDidUserAction: (action: AideProbeUserAction) => void;
 	}
 
 	export namespace aideProbe {
@@ -33,6 +54,6 @@ declare module 'vscode' {
 		 * @param provider
 		 * @param metadata
 		 */
-		export function registerProbeResponseProvider(id: string, provider: ProbeResponseProvider): Disposable;
+		export function registerProbeResponseProvider(id: string, provider: ProbeResponseHandler): Disposable;
 	}
 }

@@ -343,10 +343,6 @@ export class ExtHostAideChatAgents2 extends Disposable implements ExtHostAideCha
 		} catch (e) {
 			this._logService.error(e, agent.extension);
 
-			if (e instanceof extHostTypes.AIModelError && e.cause) {
-				e = e.cause;
-			}
-
 			return { errorDetails: { message: toErrorMessage(e), responseIsIncomplete: true } };
 
 		} finally {

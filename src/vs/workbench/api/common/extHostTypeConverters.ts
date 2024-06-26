@@ -42,7 +42,6 @@ import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workb
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/languageModels';
-import * as aideChatProvider from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { DebugTreeItemCollapsibleState, IDebugVisualizationTreeItem } from 'vs/workbench/contrib/debug/common/debug';
 import * as notebooks from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { ICellRange } from 'vs/workbench/contrib/notebook/common/notebookRange';
@@ -57,8 +56,9 @@ import * as types from './extHostTypes';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { AideMode } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
+import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export namespace Command {
 
@@ -2071,8 +2071,8 @@ export namespace TestCoverage {
 			statement: fromCoverageCount(coverage.statementCoverage),
 			branch: coverage.branchCoverage && fromCoverageCount(coverage.branchCoverage),
 			declaration: coverage.declarationCoverage && fromCoverageCount(coverage.declarationCoverage),
-			testId: coverage instanceof types.FileCoverage && coverage.testItem ?
-				TestId.fromExtHostTestItem(coverage.testItem, controllerId).toString() : undefined,
+			testIds: coverage instanceof types.FileCoverage && coverage.fromTests.length ?
+				coverage.fromTests.map(t => TestId.fromExtHostTestItem(t, controllerId).toString()) : undefined,
 		};
 	}
 }
@@ -2250,23 +2250,69 @@ export namespace ChatFollowup {
 	}
 }
 
+export namespace LanguageModelChatMessageRole {
+	export function to(role: chatProvider.ChatMessageRole): vscode.LanguageModelChatMessageRole {
+		switch (role) {
+			case chatProvider.ChatMessageRole.System: return types.LanguageModelChatMessageRole.System;
+			case chatProvider.ChatMessageRole.User: return types.LanguageModelChatMessageRole.User;
+			case chatProvider.ChatMessageRole.Assistant: return types.LanguageModelChatMessageRole.Assistant;
+		}
+	}
+
+	export function from(role: vscode.LanguageModelChatMessageRole): chatProvider.ChatMessageRole {
+		switch (role) {
+			case types.LanguageModelChatMessageRole.System: return chatProvider.ChatMessageRole.System;
+			case types.LanguageModelChatMessageRole.User: return chatProvider.ChatMessageRole.User;
+			case types.LanguageModelChatMessageRole.Assistant: return chatProvider.ChatMessageRole.Assistant;
+		}
+		return chatProvider.ChatMessageRole.User;
+	}
+}
 
 export namespace LanguageModelChatMessage {
 
 	export function to(message: chatProvider.IChatMessage): vscode.LanguageModelChatMessage {
-		switch (message.role) {
-			case chatProvider.ChatMessageRole.System: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.System, message.content);
-			case chatProvider.ChatMessageRole.User: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.User, message.content);
-			case chatProvider.ChatMessageRole.Assistant: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.Assistant, message.content);
+		let content: string = '';
+		let content2: vscode.LanguageModelChatMessageFunctionResultPart | undefined;
+		if (message.content.type === 'text') {
+			content = message.content.value;
+		} else {
+			content2 = new types.LanguageModelFunctionResultPart(message.content.name, message.content.value, message.content.isError);
 		}
+		const role = LanguageModelChatMessageRole.to(message.role);
+		const result = new types.LanguageModelChatMessage(role, content, message.name);
+		if (content2 !== undefined) {
+			result.content2 = content2;
+		}
+		return result;
 	}
 
 	export function from(message: vscode.LanguageModelChatMessage): chatProvider.IChatMessage {
-		switch (message.role as types.LanguageModelChatMessageRole) {
-			case types.LanguageModelChatMessageRole.System: return { role: chatProvider.ChatMessageRole.System, content: message.content };
-			case types.LanguageModelChatMessageRole.User: return { role: chatProvider.ChatMessageRole.User, content: message.content };
-			case types.LanguageModelChatMessageRole.Assistant: return { role: chatProvider.ChatMessageRole.Assistant, content: message.content };
+
+		const role = LanguageModelChatMessageRole.from(message.role);
+		const name = message.name;
+
+		let content: chatProvider.IChatMessagePart;
+
+		if (message.content2 instanceof types.LanguageModelFunctionResultPart) {
+			content = {
+				type: 'function_result',
+				name: message.content2.name,
+				value: message.content2.content,
+				isError: message.content2.isError
+			};
+		} else {
+			content = {
+				type: 'text',
+				value: message.content
+			};
 		}
+
+		return {
+			role,
+			name,
+			content
+		};
 	}
 }
 
@@ -2679,25 +2725,6 @@ export namespace AideChatFollowup {
 	}
 }
 
-export namespace AIModelChatMessage {
-
-	export function to(message: aideChatProvider.IAideChatMessage): vscode.LanguageModelChatMessage {
-		switch (message.role) {
-			case aideChatProvider.ChatMessageRole.System: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.System, message.content);
-			case aideChatProvider.ChatMessageRole.User: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.User, message.content);
-			case aideChatProvider.ChatMessageRole.Assistant: return new types.LanguageModelChatMessage(<number>types.LanguageModelChatMessageRole.Assistant, message.content);
-		}
-	}
-
-	export function from(message: vscode.LanguageModelChatMessage): aideChatProvider.IAideChatMessage {
-		switch (message.role as types.LanguageModelChatMessageRole) {
-			case types.LanguageModelChatMessageRole.System: return { role: aideChatProvider.ChatMessageRole.System, content: message.content };
-			case types.LanguageModelChatMessageRole.User: return { role: aideChatProvider.ChatMessageRole.User, content: message.content };
-			case types.LanguageModelChatMessageRole.Assistant: return { role: aideChatProvider.ChatMessageRole.Assistant, content: message.content };
-		}
-	}
-}
-
 export namespace AideChatResponseMarkdownPart {
 	export function from(part: vscode.ChatResponseMarkdownPart): Dto<IAideChatMarkdownContent> {
 		return {
@@ -3005,7 +3032,6 @@ export namespace AideChatResponsePart {
 export namespace AideChatAgentRequest {
 	export function to(request: IAideChatAgentRequest): vscode.AideChatRequest {
 		return {
-			mode: AideChatMode.to(request.mode),
 			threadId: request.sessionId,
 			prompt: request.message,
 			command: request.command,
@@ -3016,22 +3042,6 @@ export namespace AideChatAgentRequest {
 			acceptedConfirmationData: request.acceptedConfirmationData,
 			rejectedConfirmationData: request.rejectedConfirmationData
 		};
-	}
-}
-
-export namespace AideChatMode {
-	export function to(mode: AideMode): types.AideMode {
-		switch (mode) {
-			case AideMode.Chat: return types.AideMode.Chat;
-			case AideMode.Edit: return types.AideMode.Edit;
-		}
-	}
-
-	export function from(mode: types.AideMode): AideMode {
-		switch (mode) {
-			case types.AideMode.Chat: return AideMode.Chat;
-			case types.AideMode.Edit: return AideMode.Edit;
-		}
 	}
 }
 
@@ -3095,6 +3105,24 @@ export namespace AideChatAgentResult {
 		return {
 			errorDetails: result.errorDetails,
 			metadata: result.metadata,
+		};
+	}
+}
+
+export namespace AideProbeRequestModel {
+	export function to(request: IAideProbeRequestModel): vscode.ProbeRequest {
+		return {
+			requestId: request.sessionId,
+			query: request.message
+		};
+	}
+}
+
+export namespace AideProbeUserAction {
+	export function to(userAction: IAideProbeUserAction): vscode.AideProbeUserAction {
+		return {
+			sessionId: userAction.sessionId,
+			action: userAction.action,
 		};
 	}
 }
@@ -3170,6 +3198,17 @@ export namespace DebugTreeItem {
 			canEdit: item.canEdit,
 			collapsibleState: (item.collapsibleState || DebugTreeItemCollapsibleState.None) as DebugTreeItemCollapsibleState,
 			contextValue: item.contextValue,
+		};
+	}
+}
+
+
+export namespace LanguageModelToolDescription {
+	export function to(item: IToolData): vscode.LanguageModelToolDescription {
+		return {
+			name: item.name,
+			description: item.description,
+			parametersSchema: item.parametersSchema,
 		};
 	}
 }

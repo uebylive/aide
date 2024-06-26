@@ -17,7 +17,6 @@ import { StopWatch } from 'vs/base/common/stopwatch';
 import { URI, UriComponents } from 'vs/base/common/uri';
 import { localize } from 'vs/nls';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
 import { Progress } from 'vs/platform/progress/common/progress';
@@ -25,14 +24,13 @@ import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storag
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_MODE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
 import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
+import { AideChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/aiModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'aideChat.sessions';
@@ -128,21 +126,10 @@ type ChatTerminalClassification = {
 	comment: 'Provides insight into the usage of Chat features.';
 };
 
-export enum AideMode {
-	Edit = 'Edit',
-	Chat = 'Chat'
-}
-type AideModeType = `${AideMode}`;
-
 const maxPersistedSessions = 25;
 
 export class ChatService extends Disposable implements IAideChatService {
 	declare _serviceBrand: undefined;
-
-	private _aideMode: IContextKey<AideModeType>;
-	public get aideMode(): AideMode {
-		return this._aideMode.get() as AideMode;
-	}
 
 	private readonly _sessionModels = this._register(new DisposableMap<string, ChatModel>());
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
@@ -163,7 +150,6 @@ export class ChatService extends Disposable implements IAideChatService {
 	private readonly _sessionFollowupCancelTokens = this._register(new DisposableMap<string, CancellationTokenSource>());
 
 	constructor(
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IStorageService private readonly storageService: IStorageService,
 		@ILogService private readonly logService: ILogService,
 		@IExtensionService private readonly extensionService: IExtensionService,
@@ -175,8 +161,6 @@ export class ChatService extends Disposable implements IAideChatService {
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 	) {
 		super();
-
-		this._aideMode = CONTEXT_CHAT_MODE.bindTo(this.contextKeyService);
 
 		const sessionData = storageService.get(serializedChatKey, StorageScope.WORKSPACE, '');
 		if (sessionData) {
@@ -198,12 +182,6 @@ export class ChatService extends Disposable implements IAideChatService {
 		}
 
 		this._register(storageService.onWillSaveState(() => this.saveState()));
-	}
-
-	switchMode(): AideMode {
-		const newMode = this.aideMode === AideMode.Edit ? AideMode.Chat : AideMode.Edit;
-		this._aideMode.set(newMode);
-		return newMode;
 	}
 
 	isEnabled(location: AideChatAgentLocation): boolean {
@@ -579,7 +557,7 @@ export class ChatService extends Disposable implements IAideChatService {
 				if (agentPart || (defaultAgent && !commandPart)) {
 					const agent = (agentPart?.agent ?? defaultAgent)!;
 					await this.extensionService.activateByEvent(`onChatParticipant:${agent.id}`);
-					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id, this.aideMode);
+					const history = getHistoryEntriesFromModel(model, agentPart?.agent.id);
 
 					const initVariableData: IChatRequestVariableData = { variables: [] };
 					request = model.addRequest(parsedRequest, initVariableData, attempt, agent, agentSlashCommandPart?.command);
@@ -606,7 +584,6 @@ export class ChatService extends Disposable implements IAideChatService {
 					}
 
 					const requestProps: IAideChatAgentRequest = {
-						mode: this.aideMode,
 						sessionId,
 						requestId: request.id,
 						agentId: agent.id,
@@ -633,8 +610,8 @@ export class ChatService extends Disposable implements IAideChatService {
 						if (!request.response) {
 							continue;
 						}
-						history.push({ role: ChatMessageRole.User, content: request.message.text });
-						history.push({ role: ChatMessageRole.Assistant, content: request.response.response.asString() });
+						history.push({ role: AideChatMessageRole.User, content: { type: 'text', value: request.message.text } });
+						history.push({ role: AideChatMessageRole.Assistant, content: { type: 'text', value: request.response.response.asString() } });
 					}
 					const message = parsedRequest.text;
 					const commandResult = await this.chatSlashCommandService.executeCommand(commandPart.slashCommand.command, message.substring(commandPart.slashCommand.command.length + 1).trimStart(), new Progress<IAideChatProgress>(p => {
