@@ -18,7 +18,7 @@ export interface IAideProbeRequestModel {
 export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
-	readonly goToDefinitions: ReadonlyMap<string, IAideProbeGoToDefinition[]>;
+	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 }
 
 export interface IAideProbeModel {
@@ -54,13 +54,15 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
-	private readonly _goToDefinitionsBySymbol: Map<string, IAideProbeGoToDefinition[]> = new Map();
 	private readonly _breakdowns: IAideProbeBreakdownContent[] = [];
+
 	public get breakdowns(): ReadonlyArray<IAideProbeBreakdownContent> {
 		return this._breakdowns;
 	}
-	public get goToDefinitions(): ReadonlyMap<string, IAideProbeGoToDefinition[]> {
-		return this._goToDefinitionsBySymbol;
+
+	private readonly _goToDefinitions: IAideProbeGoToDefinition[] = [];
+	public get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinition> {
+		return this._goToDefinitions;
 	}
 
 	constructor() {
@@ -97,16 +99,15 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	/**
-			* Decorate the goToDefinition
-			*/
-
+	 * Decorate a go to definition in the response content.
+	*/
 	decorateGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
-		const mapKey = `${goToDefinition.uri.toString()}:${goToDefinition.name}`;
-		if (this._goToDefinitionsBySymbol.has(mapKey)) {
-			this._goToDefinitionsBySymbol.get(mapKey)!.push(goToDefinition);
-		} else {
-			this._goToDefinitionsBySymbol.set(mapKey, [goToDefinition]);
+		const existing = this._goToDefinitions.find(gtd => equals(gtd.uri, goToDefinition.uri) && equals(gtd.name, goToDefinition.name));
+		if (existing) {
+			return;
 		}
+
+		this._goToDefinitions.push(goToDefinition);
 	}
 }
 

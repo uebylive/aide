@@ -16,16 +16,10 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 
 const $ = dom.$;
-
-const decorationDescription = 'chat-breakdown-definition';
-const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
 
 export class AideChatBreakdowns extends Disposable {
 	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
@@ -41,23 +35,11 @@ export class AideChatBreakdowns extends Disposable {
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IThemeService private readonly themeService: IThemeService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
 
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
-
-		const theme = this.themeService.getColorTheme();
-		const decorationBackgroundColor = theme.getColor(editorFindMatch);
-		const decorationColor = theme.getColor(editorFindMatchForeground);
-
-		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
-			color: decorationColor?.toString() || '#f3f4f6',
-			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
-			borderRadius: '3px',
-		});
 	}
 
 	show(container: HTMLElement): void {
@@ -299,8 +281,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
 			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
-				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
-				// If it becomes properly sync, then this could be removed.
 				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });

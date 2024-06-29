@@ -42,11 +42,21 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 		this.editor = editor;
 		this.domNode = $('.editor-side-panel-container');
 		this.panelId = generateUuid();
+
+		this._register(this.editor.onDidLayoutChange(() => {
+			this.updateContainerSize();
+			this.editor.layoutOverlayWidget(this);
+		}));
+	}
+
+	private updateContainerSize(): void {
+		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
+		this.domNode.style.width = `${this.editor.getLayoutInfo().width * 0.3}px`;
 	}
 
 	protected show(): void {
 		this._fillContainer(this.domNode);
-		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
+		this.updateContainerSize();
 		this.editor.addOverlayWidget(this);
 		this.editor.layoutOverlayWidget(this);
 	}

@@ -10,14 +10,17 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
+import { IModelDeltaDecoration } from 'vs/editor/common/model';
 import { ITextEditorOptions, TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { editorFindMatch, editorFindMatchForeground } from 'vs/platform/theme/common/colorRegistry';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
-// const decorationDescription = 'chat-breakdown-definition';
-// const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
+const decorationDescription = 'chat-breakdown-definition';
+const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -33,14 +36,26 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 	private readonly markdownRenderer: MarkdownRenderer;
 	private explanationWidget: AideProbeExplanationWidget | undefined;
+	private _goToDefinitionDecorations: string[] = [];
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IThemeService private readonly themeService: IThemeService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+
+		const theme = this.themeService.getColorTheme();
+		const decorationBackgroundColor = theme.getColor(editorFindMatch);
+		const decorationColor = theme.getColor(editorFindMatchForeground);
+
+		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
+			color: decorationColor?.toString() || '#f3f4f6',
+			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
+			borderRadius: '3px',
+		});
 	}
 
 	private openCodeEditor(uri: URI, selection?: IRange): Promise<ICodeEditor | null> {
@@ -83,25 +98,32 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, this.markdownRenderer));
 			this.explanationWidget.setBreakdown(element);
 			this.explanationWidget.show();
-
-			// we have the go-to-definitions, we want to highlight only on the file we are currently opening in the probebreakdownviewmodel
-			// const definitionsToHighlight = this.goToDefinitionDecorations.filter((definition) => {
-			// 	return definition.uri.fsPath === element.uri.fsPath;
-			// })
-			// 	.map((definition) => {
-			// 		return {
-			// 			range: {
-			// 				startLineNumber: definition.range.startLineNumber,
-			// 				startColumn: definition.range.startColumn,
-			// 				endColumn: definition.range.endColumn + 1,
-			// 				endLineNumber: definition.range.endLineNumber
-			// 			},
-			// 			hoverMessage: { value: definition.thinking },
-			// 		};
-			// 	});
-
-			// codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, definitionsToHighlight);
 		}
+	}
+
+	async showGoToDefinition(definition: IAideProbeGoToDefinitionViewModel): Promise<void> {
+		// we have the go-to-definitions, we want to highlight only on the file we are currently opening in the probebreakdownviewmodel
+		const codeEditor = this.codeEditorService.getActiveCodeEditor();
+		if (!codeEditor) {
+			return;
+		}
+
+		codeEditor.changeDecorations((changeAccessor) => {
+			const newDecorations: IModelDeltaDecoration[] = [{
+				range: {
+					startLineNumber: definition.range.startLineNumber,
+					startColumn: definition.range.startColumn,
+					endColumn: definition.range.endColumn + 1,
+					endLineNumber: definition.range.endLineNumber
+				},
+				options: {
+					description: decorationDescription,
+					inlineClassName: placeholderDecorationType,
+					hoverMessage: { value: definition.thinking },
+				}
+			}];
+			this._goToDefinitionDecorations = changeAccessor.deltaDecorations(this._goToDefinitionDecorations, newDecorations);
+		});
 	}
 
 	clearBreakdowns(): void {

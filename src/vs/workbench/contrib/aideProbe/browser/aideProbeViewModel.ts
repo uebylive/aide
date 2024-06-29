@@ -23,8 +23,6 @@ export interface IAideProbeViewModel {
 	readonly isTailing: boolean;
 	readonly onDidChange: Event<void>;
 	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
-	// TODO(willis): Maybe this is wrong, but lets push through with this type
-	readonly onChangeGoToDefinition: Event<IAideProbeGoToDefinitionViewModel[]>;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
@@ -33,9 +31,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 	private readonly _onChangeActiveBreakdown = this._register(new Emitter<IAideProbeBreakdownViewModel>());
 	readonly onChangeActiveBreakdown = this._onChangeActiveBreakdown.event;
-
-	private readonly _onChangeGoToDefinition = this._register(new Emitter<IAideProbeGoToDefinitionViewModel[]>());
-	readonly onChangeGoToDefinition = this._onChangeGoToDefinition.event;
 
 	private _references: Map<string, IReference<IResolvedTextEditorModel>> = new Map();
 
@@ -83,18 +78,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				return viewItem;
 			}) ?? []);
 
-			if (_model.response) {
-				// TODO(willis+skcd): Not sure if this is really correct.. but yolo
-				this._goToDefinitions = [];
-				// this._goToDefinitions = _model.response.goToDefinitions.values();
-				for (const response of _model.response.goToDefinitions.values()) {
-					for (const definition of response) {
-						const viewItem = this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
-						this._goToDefinitions.push(viewItem);
-					}
-				}
-				this._onChangeGoToDefinition.fire(this._goToDefinitions);
-			}
+			this._goToDefinitions = _model.response?.goToDefinitions.map(definition => {
+				return this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
+			}) ?? [];
 
 			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
 				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
@@ -103,6 +89,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 			this._onDidChange.fire();
 		}));
+
 		this._register(_model.onDidChangeTailing((isTailing) => {
 			if (isTailing && this._breakdowns.length > 0) {
 				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
