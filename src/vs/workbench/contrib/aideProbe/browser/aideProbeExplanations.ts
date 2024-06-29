@@ -10,8 +10,8 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
+import { ScrollType } from 'vs/editor/common/editorCommon';
 import { IModelDeltaDecoration } from 'vs/editor/common/model';
-import { ITextEditorOptions, TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { editorFindMatch, editorFindMatchForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -19,8 +19,8 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
-const decorationDescription = 'chat-breakdown-definition';
-const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
+const breakdownDecoration = 'chat-breakdown-definition';
+const brakdownDecorationType = 'chat-breakdown-definition-type';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -51,28 +51,34 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		const decorationBackgroundColor = theme.getColor(editorFindMatch);
 		const decorationColor = theme.getColor(editorFindMatchForeground);
 
-		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
+		this.codeEditorService.registerDecorationType(breakdownDecoration, brakdownDecorationType, {
 			color: decorationColor?.toString() || '#f3f4f6',
 			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
 			borderRadius: '3px',
 		});
 	}
 
-	private openCodeEditor(uri: URI, selection?: IRange): Promise<ICodeEditor | null> {
-		let options: ITextEditorOptions = {
-			pinned: false,
-			preserveFocus: true
-		};
+	private async openCodeEditor(uri: URI, selection?: IRange): Promise<ICodeEditor | null> {
+		const editor = await this.codeEditorService.openCodeEditor({
+			resource: uri,
+			options: { pinned: false, preserveFocus: true }
+		}, null);
 
-		if (selection) {
-			options = {
-				...options,
-				selection,
-				selectionRevealType: TextEditorSelectionRevealType.NearTop
-			};
+		if (editor && selection) {
+			editor.revealLineNearTop(selection.startLineNumber || 1, ScrollType.Smooth);
+			editor.changeDecorations((changeAccessor) => {
+				const newDecorations: IModelDeltaDecoration[] = [{
+					range: selection,
+					options: {
+						description: breakdownDecoration,
+						className: brakdownDecorationType,
+					}
+				}];
+				this._goToDefinitionDecorations = changeAccessor.deltaDecorations(this._goToDefinitionDecorations, newDecorations);
+			});
 		}
 
-		return this.codeEditorService.openCodeEditor({ resource: uri, options }, null);
+		return editor;
 	}
 
 	async changeActiveBreakdown(element: IAideProbeBreakdownViewModel): Promise<void> {
@@ -96,7 +102,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 		if (codeEditor && symbol && breakdownPosition) {
 			this.explanationWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, this.markdownRenderer));
-			this.explanationWidget.setBreakdown(element);
+			await this.explanationWidget.setBreakdown(element);
 			this.explanationWidget.show();
 		}
 	}
@@ -117,8 +123,8 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 					endLineNumber: definition.range.endLineNumber
 				},
 				options: {
-					description: decorationDescription,
-					inlineClassName: placeholderDecorationType,
+					description: breakdownDecoration,
+					inlineClassName: brakdownDecorationType,
 					hoverMessage: { value: definition.thinking },
 				}
 			}];
@@ -128,5 +134,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 	clearBreakdowns(): void {
 		this.explanationWidget?.clearBreakdowns();
+		this.explanationWidget?.hide();
+		this.explanationWidget?.dispose();
 	}
 }

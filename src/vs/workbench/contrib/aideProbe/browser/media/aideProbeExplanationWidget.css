@@ -3,14 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.breakdown-header {
+.editor-side-panel-container .breakdown-content {
+	position: absolute;
+	box-sizing: border-box;
+	padding: 0 16px;
+	color: var(--vscode-editorWidget-foreground);
+	background-color: var(--vscode-editorWidget-background);
+	border: 1px solid var(--vscode-statusBarItem-remoteBackground);
+	border-radius: 4px;
+}
+
+.editor-side-panel-container .breakdown-header .rendered-markdown {
 	font-weight: 600;
+	margin-bottom: 6px;
 }
 
-.breakdown-body {
-	font-style: italic;
+.editor-side-panel-container .breakdown-header .rendered-markdown > p {
+	line-height: 22px;
 }
 
-.aide-probe-explanation-widget {
-	padding: 6px;
+.editor-side-panel-container .breakdown-header .rendered-markdown > p > span {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.editor-side-panel-container .breakdown-header .rendered-markdown > p .codicon {
+	color: var(--vscode-statusBarItem-remoteBackground) !important;
 }

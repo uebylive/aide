@@ -4,7 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { getWindow } from 'vs/base/browser/dom';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { autorun, IObservable, observableFromEvent } from 'vs/base/common/observable';
 import { generateUuid } from 'vs/base/common/uuid';
 import 'vs/css!./sidePanelWidget';
 import { ICodeEditor, IOverlayWidget, IOverlayWidgetPosition, OverlayWidgetPositionPreference } from 'vs/editor/browser/editorBrowser';
@@ -30,6 +32,7 @@ const $ = dom.$;
  */
 export abstract class SidePanelWidget extends Disposable implements IOverlayWidget {
 	private static readonly ID = 'editor.contrib.sidePanelWidget';
+	private readonly _scrollTop: IObservable<number>;
 
 	panelId: string;
 	domNode: HTMLElement;
@@ -43,27 +46,43 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 		this.domNode = $('.editor-side-panel-container');
 		this.panelId = generateUuid();
 
+		this._scrollTop = observableFromEvent(this.editor.onDidScrollChange, () => /** @description editor.getScrollTop */ this.editor.getScrollTop());
+		this._register(autorun(reader => {
+			/** @description update padding top when editor scroll changes */
+			const newScrollTop = this._scrollTop.read(reader);
+			this.setScrollTop(newScrollTop);
+		}));
+
 		this._register(this.editor.onDidLayoutChange(() => {
-			this.updateContainerSize();
-			this.editor.layoutOverlayWidget(this);
+			this.layout();
 		}));
 	}
 
-	private updateContainerSize(): void {
-		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
-		this.domNode.style.width = `${this.editor.getLayoutInfo().width * 0.3}px`;
+	private setScrollTop(scrollTop: number): void {
+		this.domNode.style.position = 'absolute';
+		this.domNode.style.top = `-${scrollTop}px`;
 	}
 
 	protected show(): void {
 		this._fillContainer(this.domNode);
-		this.updateContainerSize();
 		this.editor.addOverlayWidget(this);
-		this.editor.layoutOverlayWidget(this);
+		this.layout();
+
+		getWindow(this.domNode).requestAnimationFrame(() => {
+			this.setScrollTop(this.editor.getScrollTop());
+		});
 	}
 
 	hide(): void {
 		dom.clearNode(this.domNode);
 		this.editor.removeOverlayWidget(this);
+	}
+
+	layout(): void {
+		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
+		this.domNode.style.width = `${this.editor.getLayoutInfo().width * 0.3}px`;
+
+		this.editor.layoutOverlayWidget(this);
 	}
 
 	protected abstract _fillContainer(container: HTMLElement): void;
