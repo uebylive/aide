@@ -33,10 +33,9 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 
 	panelId: string;
 	domNode: HTMLElement;
-	editor: ICodeEditor;
 
 	constructor(
-		editor: ICodeEditor
+		readonly editor: ICodeEditor
 	) {
 		super();
 
@@ -47,8 +46,14 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 
 	protected show(): void {
 		this._fillContainer(this.domNode);
+		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
 		this.editor.addOverlayWidget(this);
 		this.editor.layoutOverlayWidget(this);
+	}
+
+	hide(): void {
+		dom.clearNode(this.domNode);
+		this.editor.removeOverlayWidget(this);
 	}
 
 	protected abstract _fillContainer(container: HTMLElement): void;

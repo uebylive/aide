@@ -110,9 +110,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 }
 
-
-
-
 export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;

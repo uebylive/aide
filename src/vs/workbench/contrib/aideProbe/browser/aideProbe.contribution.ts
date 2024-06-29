@@ -14,6 +14,7 @@ import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneCont
 import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeInputEditorContrib';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
@@ -53,3 +54,4 @@ registerProbeActions();
 
 // Register services
 registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
+registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);

@@ -5,7 +5,6 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
@@ -94,9 +93,6 @@ export interface IInitiateProbeResponseState {
 
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
-
-	private readonly _onDidToggleFollowAlong = this._register(new Emitter<boolean>());
-	readonly onDidToggleFollowAlong = this._onDidToggleFollowAlong.event;
 
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
@@ -213,8 +209,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	followAlong(follow: boolean): void {
 		this._model?.followAlong(follow);
-		this._onDidToggleFollowAlong.fire(follow);
-
 		this.probeProvider?.onUserAction({
 			sessionId: this._model?.sessionId!,
 			action: {
