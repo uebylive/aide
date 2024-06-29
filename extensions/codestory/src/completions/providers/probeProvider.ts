@@ -3,16 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as os from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
+
 import { SideCarClient } from '../../sidecar/client';
-import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import { getInviteCode } from '../../utilities/getInviteCode';
-
-
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
-import * as os from 'os';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -25,6 +24,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	) {
 		this._sideCarClient = sideCarClient;
 		this._editorUrl = editorUrl;
+		console.log(this._editorUrl);
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
@@ -103,11 +103,25 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		// To use dummy data, get the gist from here: https://gist.github.com/theskcd/8292bf96db11190d52d2d758a340ed20 and read it
-		// to a file
-		// const stream = readJsonFile('/Users/skcd/scratch/ide/extensions/codestory/src/dummydata.json');
+		// const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+
+		// Use dummy data: Start
+		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+		if (!extensionRoot || !workspaceRoot) {
+			return {};
+		}
+
+		const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
+		const probeResponse = (async function* (arr) {
+			for (const original of arr) {
+				const itemString = JSON.stringify(original).replace(/\/Users\/skcd\/scratch\/sidecar/g, workspaceRoot);
+				const item = JSON.parse(itemString);
+				yield item;
+			}
+		})(jsonArr);
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		// Use dummy data: End
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -120,7 +134,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-		// await reportDummyEventsToChat(response);
 		return {};
 	}
 
