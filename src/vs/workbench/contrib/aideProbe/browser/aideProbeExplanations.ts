@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Emitter, Event } from 'vs/base/common/event';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
@@ -15,6 +16,7 @@ import { ScrollType } from 'vs/editor/common/editorCommon';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { editorFindMatch, editorFindMatchForeground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
@@ -34,7 +36,12 @@ export interface IAideProbeExplanationService {
 export class AideProbeExplanationService extends Disposable implements IAideProbeExplanationService {
 	declare _serviceBrand: undefined;
 
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
+
 	private readonly markdownRenderer: MarkdownRenderer;
+	private readonly resourceLabels: ResourceLabels;
+
 	private explanationWidget: AideProbeExplanationWidget | undefined;
 	private activeCodeEditor: ICodeEditor | undefined;
 
@@ -48,6 +55,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 
 		this._register(this.themeService.onDidColorThemeChange(() => this.updateRegisteredDecorationTypes()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.updateDecorations()));
@@ -85,7 +93,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 		if (codeEditor && symbol && breakdownPosition) {
 			this.explanationWidget = this._register(this.instantiationService.createInstance(
-				AideProbeExplanationWidget, codeEditor, this.markdownRenderer
+				AideProbeExplanationWidget, codeEditor, this.resourceLabels, this.markdownRenderer
 			));
 			await this.explanationWidget.setBreakdown(element);
 			this.explanationWidget.show();

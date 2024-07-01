@@ -7,13 +7,16 @@ import * as dom from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { MarkdownString } from 'vs/base/common/htmlContent';
+import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { Range } from 'vs/editor/common/core/range';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { DocumentSymbol } from 'vs/editor/common/languages';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
+import { FileKind } from 'vs/platform/files/common/files';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { symbolDecorationLineOptions } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 
@@ -29,6 +32,7 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 
 	constructor(
 		parentEditor: ICodeEditor,
+		private readonly resourceLabels: ResourceLabels,
 		private readonly markdownRenderer: MarkdownRenderer,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService
 	) {
@@ -58,7 +62,19 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 
 	private renderExplanation(element: IAideProbeBreakdownViewModel) {
 		const container = $('div.breakdown-content');
-		const { query, response } = element;
+		const { name, query, response } = element;
+
+		const rowResource = $('div.breakdown-resource');
+		const label = this._register(this.resourceLabels.create(rowResource, { supportHighlights: true }));
+		label.element.style.display = 'flex';
+		label.setResource({ name }, { icon: SymbolKinds.toIcon(SymbolKind.Method) });
+		container.appendChild(rowResource);
+
+		element.symbol.then(symbol => {
+			if (symbol && symbol.kind) {
+				label.setResource({ name }, { icon: SymbolKinds.toIcon(symbol.kind) });
+			}
+		});
 
 		if (query) {
 			const header = $('div.breakdown-header');

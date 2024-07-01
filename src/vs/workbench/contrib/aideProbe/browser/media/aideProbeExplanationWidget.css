@@ -13,6 +13,10 @@
 	border-radius: 4px;
 }
 
+.editor-side-panel-container .breakdown-resource {
+	padding-top: 16px;
+}
+
 .editor-side-panel-container .breakdown-header .rendered-markdown {
 	font-weight: 600;
 	margin-bottom: 6px;
