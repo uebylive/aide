@@ -4,113 +4,152 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { getTotalHeight } from 'vs/base/browser/dom';
-import * as lifecycle from 'vs/base/common/lifecycle';
+import { CancellationToken } from 'vs/base/common/cancellation';
+import { Codicon } from 'vs/base/common/codicons';
+import { MarkdownString } from 'vs/base/common/htmlContent';
+import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { EditorOption } from 'vs/editor/common/config/editorOptions';
-import { IPosition } from 'vs/editor/common/core/position';
-import { IRange } from 'vs/editor/common/core/range';
-import { ZoneWidget } from 'vs/editor/contrib/zoneWidget/browser/zoneWidget';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { Range } from 'vs/editor/common/core/range';
+import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
+import { FileKind } from 'vs/platform/files/common/files';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { symbolDecorationLineOptions } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 
 const $ = dom.$;
 
-export class AideProbeExplanationWidget extends ZoneWidget {
-	private readonly markdownRenderer: MarkdownRenderer;
-	private toDispose: lifecycle.IDisposable[];
+export class AideProbeExplanationWidget extends SidePanelWidget {
+	private breakdowns: { vm: IAideProbeBreakdownViewModel; position?: number }[] = [];
+
+	private _symbolResolver: (() => Promise<DocumentSymbol[] | undefined>) | undefined;
+	private symbols: DocumentSymbol[] | undefined;
+
+	private readonly _probingSymbolDecorations: IEditorDecorationsCollection;
 
 	constructor(
-		private parentEditor: ICodeEditor,
-		private content: IAideProbeBreakdownViewModel,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		parentEditor: ICodeEditor,
+		private readonly resourceLabels: ResourceLabels,
+		private readonly markdownRenderer: MarkdownRenderer,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService
 	) {
-		super(parentEditor, {
-			showArrow: false,
-			showFrame: true,
-			frameWidth: 1,
-			isAccessible: true,
+		super(parentEditor);
+
+		this._symbolResolver = async () => {
+			this.symbols = await this.resolveSymbol();
+			return this.symbols;
+		};
+		this._symbolResolver();
+
+		this._probingSymbolDecorations = this.editor.createDecorationsCollection();
+	}
+
+	async resolveSymbol(): Promise<DocumentSymbol[] | undefined> {
+		try {
+			const model = this.editor.getModel();
+			if (!model) {
+				return;
+			}
+
+			return (await this.outlineModelService.getOrCreate(model, CancellationToken.None)).getTopLevelSymbols();
+		} catch (e) {
+			return;
+		}
+	}
+
+	private renderExplanation(element: IAideProbeBreakdownViewModel) {
+		const container = $('div.breakdown-content');
+		const { name, query, response } = element;
+
+		const rowResource = $('div.breakdown-resource');
+		const label = this._register(this.resourceLabels.create(rowResource, { supportHighlights: true }));
+		label.element.style.display = 'flex';
+		label.setResource({ name }, { icon: SymbolKinds.toIcon(SymbolKind.Method) });
+		container.appendChild(rowResource);
+
+		element.symbol.then(symbol => {
+			if (symbol && symbol.kind) {
+				label.setResource({ name }, { icon: SymbolKinds.toIcon(symbol.kind) });
+			}
 		});
 
-		this.toDispose = [];
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
-		this.toDispose.push(this.markdownRenderer);
+		if (query) {
+			const header = $('div.breakdown-header');
+			const circleIcon = Codicon.circleFilled.id;
+			const markdown = new MarkdownString(`$(${circleIcon}) ${query.value}`, { supportThemeIcons: true });
+			const renderedContent = this.markdownRenderer.render(markdown);
+			header.appendChild(renderedContent.element);
+			container.appendChild(header);
+		}
 
-		super.create();
-	}
-
-	public setContent(content: IAideProbeBreakdownViewModel): void {
-		this.content = content;
-	}
-
-	protected override _fillContainer(container: HTMLElement): void {
-		const contentParent = $('.aide-probe-explanation-widget');
-		const layoutInfo = this.parentEditor.getLayoutInfo();
-		contentParent.style.paddingLeft = `${layoutInfo.glyphMarginWidth + layoutInfo.lineNumbersWidth + layoutInfo.decorationsWidth}px`;
-		container.appendChild(contentParent);
-		this.renderContent(contentParent);
-	}
-
-	private renderContent(container: HTMLElement): void {
-		const { query, response } = this.content;
 		if (response) {
 			const body = $('div.breakdown-body');
 			const renderedContent = this.markdownRenderer.render(response);
 			body.appendChild(renderedContent.element);
 			container.appendChild(body);
-		} else if (query) {
-			const header = $('div.breakdown-header');
-			const renderedContent = this.markdownRenderer.render(query);
-			header.appendChild(renderedContent.element);
-			container.appendChild(header);
+		}
+
+		return container;
+	}
+
+	private async getOffset(content: IAideProbeBreakdownViewModel): Promise<number> {
+		if (!this.symbols && this._symbolResolver) {
+			this.symbols = await this._symbolResolver();
+		}
+
+		const symbol = this.symbols?.find(s => s.name === content.name);
+		return this.editor.getTopForLineNumber(symbol?.selectionRange.startLineNumber ?? 0);
+	}
+
+	async setBreakdown(content: IAideProbeBreakdownViewModel): Promise<void> {
+		let existingBreakdown = this.breakdowns.find(b => b.vm.name === content.name && b.vm.uri === content.uri);
+		if (existingBreakdown) {
+			existingBreakdown = {
+				...existingBreakdown,
+				vm: content,
+				position: await this.getOffset(content)
+			};
+		} else {
+			this.breakdowns.push({
+				vm: content,
+				position: await this.getOffset(content)
+			});
 		}
 	}
 
-	override dispose(): void {
-		this.toDispose = lifecycle.dispose(this.toDispose);
-		super.dispose();
+	showProbingSymbols(symbol: DocumentSymbol) {
+		const lineRange = new Range(
+			symbol.range.startLineNumber, 1,
+			symbol.range.startLineNumber, Number.MAX_VALUE
+		);
+		this._probingSymbolDecorations.append([{ range: lineRange, options: symbolDecorationLineOptions }]);
 	}
 
-	private getExtraLines(): number {
-		const { query, response } = this.content;
-		let textToCountLines = '';
-		if (response) {
-			textToCountLines = response.value;
-		} else if (query) {
-			textToCountLines = query.value;
-		}
-		const lines = textToCountLines.split(/\r\n|\r|\n/).length;
-		if (lines > 20) {
-			return Math.floor(lines / 20);
-		}
-		return 0;
+	clear(): void {
+		this.breakdowns = [];
+		this._probingSymbolDecorations.clear();
 	}
 
-	private doDummyRender(): number {
-		if (!this.domNode) {
-			return 0;
-		}
-
-		const dummyParent = $('.aide-probe-explanation-widget-dummy');
-		this.domNode.appendChild(dummyParent);
-
-		this.renderContent(dummyParent);
-		// const height = dom.getContentHeight(dummyParent);
-		const height = getTotalHeight(dummyParent);
-		this.domNode.removeChild(dummyParent);
-		const lineHeight = this.parentEditor.getOption(EditorOption.lineHeight);
-
-		return Math.ceil(height / lineHeight);
+	override show(): void {
+		super.show();
 	}
 
-	override show(rangeOrPos: IRange | IPosition): void {
-		super.show(rangeOrPos, 1);
-		const lines = this.doDummyRender();
+	override hide(): void {
 		super.hide();
-		const extraLines = this.getExtraLines();
-		super.show(rangeOrPos, lines + 2 + extraLines);
-		this.updatePositionAndHeight(rangeOrPos, lines + 2 + extraLines);
+	}
+
+	protected override _fillContainer(container: HTMLElement): void {
+		if (!this.breakdowns.length) {
+			return;
+		}
+
+		for (const breakdown of this.breakdowns) {
+			const contentDiv = this.renderExplanation(breakdown.vm);
+			contentDiv.style.top = `${breakdown.position}px`;
+			container.append(contentDiv);
+		}
 	}
 }

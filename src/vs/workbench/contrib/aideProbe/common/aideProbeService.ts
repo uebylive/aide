@@ -5,7 +5,6 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
@@ -78,10 +77,11 @@ export interface IAideProbeService {
 	_serviceBrand: undefined;
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
 
+	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
 	cancelCurrentRequestForSession(sessionId: string): void;
-	clearSession(sessionId: string): void;
+	clearSession(): void;
 
 	followAlong(follow: boolean): void;
 	navigateBreakdown(): void;
@@ -95,16 +95,13 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
-	private readonly _onDidToggleFollowAlong = this._register(new Emitter<boolean>());
-	readonly onDidToggleFollowAlong = this._onDidToggleFollowAlong.event;
-
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
 	private _didNavigateBreakdown: boolean = false;
 
 	constructor(
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 	}
@@ -118,6 +115,10 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return toDisposable(() => {
 			this.probeProvider = undefined;
 		});
+	}
+
+	getSession(): AideProbeModel | undefined {
+		return this._model;
 	}
 
 	startSession(): AideProbeModel {
@@ -193,9 +194,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._pendingRequests.deleteAndDispose(sessionId);
 	}
 
-	clearSession(sessionId: string): void {
+	clearSession(): void {
+		const sessionId = this._model?.sessionId;
 		this._model?.dispose();
-		this.cancelCurrentRequestForSession(sessionId);
+		this._model = undefined;
+		this._didNavigateBreakdown = false;
+		if (sessionId) {
+			this.cancelCurrentRequestForSession(sessionId);
+		}
 	}
 
 	navigateBreakdown(): void {
@@ -213,8 +219,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	followAlong(follow: boolean): void {
 		this._model?.followAlong(follow);
-		this._onDidToggleFollowAlong.fire(follow);
-
 		this.probeProvider?.onUserAction({
 			sessionId: this._model?.sessionId!,
 			action: {

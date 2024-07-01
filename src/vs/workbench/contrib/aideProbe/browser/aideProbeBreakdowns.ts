@@ -10,31 +10,17 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { TextEditorSelectionRevealType } from 'vs/platform/editor/common/editor';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
-import { Position } from 'vs/editor/common/core/position';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IAideProbeBreakdownViewModel, IAideProbeGoToDefinitionViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeGoToDefinitionWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeGoToDefinitionWidget';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { editorFindMatchForeground, editorFindMatch } from 'vs/platform/theme/common/colors/editorColors';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IEditorProgressService } from 'vs/platform/progress/common/progress';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const $ = dom.$;
-
-const decorationDescription = 'chat-breakdown-definition';
-const placeholderDecorationType = 'chat-breakdown-definition-session-detail';
 
 export class AideChatBreakdowns extends Disposable {
 	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
@@ -46,55 +32,16 @@ export class AideChatBreakdowns extends Disposable {
 	private renderer: BreakdownRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
-	private explanationWidget: Map<string, AideProbeExplanationWidget> = new Map();
-	// Keep track of definitions, we are just overloading this for now
-	private goToDefinitionDecorations: IAideProbeGoToDefinitionViewModel[] = [];
-	private goToDefinitionWidget: AideProbeGoToDefinitionWidget | undefined;
-
-	private readonly markdownRenderer: MarkdownRenderer;
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IEditorService private readonly editorService: IEditorService,
-		@IThemeService private readonly themeService: IThemeService,
 		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
+		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
 
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.renderer = this._register(this.instantiationService.createInstance(BreakdownRenderer, this.resourceLabels));
-
-		this._register(this.editorService.onDidActiveEditorChange(() => {
-			const activeEditor = this.editorService.activeEditor;
-			const activeEditorPath = activeEditor?.resource?.fsPath;
-			if (!activeEditorPath) {
-				return;
-			}
-
-			// Remove all explanation widget when the active editor changes
-			const keys = this.explanationWidget.keys();
-			for (const key of keys) {
-				// Hide every widget where the key doesn't start with activeEditorPath
-				if (!key.startsWith(activeEditorPath)) {
-					const existingWidget = this.explanationWidget.get(key);
-					existingWidget?.hide();
-					this.explanationWidget.delete(key);
-				}
-			}
-		}));
-
-		const theme = this.themeService.getColorTheme();
-		const decorationBackgroundColor = theme.getColor(editorFindMatch);
-		const decorationColor = theme.getColor(editorFindMatchForeground);
-
-		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {
-			color: decorationColor?.toString() || '#f3f4f6',
-			backgroundColor: decorationBackgroundColor?.toString() || '#1f2937',
-			borderRadius: '3px',
-		});
-
 	}
 
 	show(container: HTMLElement): void {
@@ -163,14 +110,7 @@ export class AideChatBreakdowns extends Disposable {
 		return matchIndex;
 	}
 
-	async updateGoToDefinitionsDecorations(definitions: IAideProbeGoToDefinitionViewModel[]): Promise<void> {
-		this.goToDefinitionDecorations = definitions;
-	}
-
 	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
-		const { uri, name } = element;
-		const symbolKey = `${uri.fsPath}:${name}`;
-
 		if (this.activeBreakdown === element) {
 			return;
 		} else {
@@ -179,94 +119,13 @@ export class AideChatBreakdowns extends Disposable {
 			if (this.list && index !== -1) {
 				this.list.setFocus([index]);
 			}
-
-			const keys = this.explanationWidget.keys();
-			for (const key of keys) {
-				if (key === symbolKey) {
-					continue;
-				}
-
-				const existingWidget = this.explanationWidget.get(key);
-				existingWidget?.hide();
-			}
 		}
 
-		if (this.goToDefinitionWidget) {
-			this.goToDefinitionWidget.hide();
-			this.goToDefinitionWidget.dispose();
-			this.goToDefinitionWidget = undefined;
-		}
-
-		let codeEditor: ICodeEditor | null;
-		let explanationWidgetPosition: Position = new Position(1, 1);
 
 		const resolveLocationOperation = element.symbol;
 		this.editorProgressService.showWhile(resolveLocationOperation);
-		const symbol = await resolveLocationOperation;
-
-		if (!symbol) {
-			codeEditor = await this.codeEditorService.openCodeEditor({
-				resource: uri,
-				options: {
-					pinned: false,
-					preserveFocus: true,
-				}
-			}, null);
-		} else {
-			explanationWidgetPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
-			codeEditor = await this.codeEditorService.openCodeEditor({
-				resource: uri,
-				options: {
-					pinned: false,
-					preserveFocus: true,
-					selection: symbol.range,
-					selectionRevealType: TextEditorSelectionRevealType.NearTop
-				}
-			}, null);
-		}
-
-		if (codeEditor && symbol && explanationWidgetPosition) {
-			if (this.explanationWidget.get(symbolKey)) {
-				const existingWidget = this.explanationWidget.get(symbolKey)!;
-				existingWidget.setContent(element);
-				existingWidget.show(explanationWidgetPosition);
-			} else {
-				const newWidget = this._register(this.instantiationService.createInstance(AideProbeExplanationWidget, codeEditor, element));
-				newWidget.show(explanationWidgetPosition);
-				this.explanationWidget.set(symbolKey, newWidget);
-			}
-
-			// show the go-to-definition information
-			const rowResponse = $('div.breakdown-content');
-			const content = new MarkdownString();
-			content.appendMarkdown('[testing-skcd]');
-			const renderedContent = this.markdownRenderer.render(content);
-			rowResponse.appendChild(renderedContent.element);
-
-
-			// TODO(skcd): pass the data over here
-			// this.goToDefinitionWidget = this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionWidget, codeEditor));
-			// this.goToDefinitionWidget.showAt(goToDefinitionPosition, rowResponse);
-
-
-			// we have the go-to-definitions, we want to highlight only on the file we are currently opening in the probebreakdownviewmodel
-			const definitionsToHighlight = this.goToDefinitionDecorations.filter((definition) => {
-				return definition.uri.fsPath === element.uri.fsPath;
-			})
-				.map((definition) => {
-					return {
-						range: {
-							startLineNumber: definition.range.startLineNumber,
-							startColumn: definition.range.startColumn,
-							endColumn: definition.range.endColumn + 1,
-							endLineNumber: definition.range.endLineNumber
-						},
-						hoverMessage: { value: definition.thinking },
-					};
-				});
-
-			codeEditor.setDecorationsByType(decorationDescription, placeholderDecorationType, definitionsToHighlight);
-		}
+		await resolveLocationOperation;
+		this.explanationService.changeActiveBreakdown(element);
 	}
 
 	updateBreakdowns(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
@@ -277,8 +136,6 @@ export class AideChatBreakdowns extends Disposable {
 			this.viewModel = [...breakdowns];
 			list.splice(0, 0, breakdowns);
 		} else {
-			console.log('updating breakdowns');
-			console.log(breakdowns);
 			breakdowns.forEach((breakdown) => {
 				const matchIndex = this.getBreakdownListIndex(breakdown);
 				if (matchIndex === -1) {
@@ -287,17 +144,11 @@ export class AideChatBreakdowns extends Disposable {
 				} else {
 					this.viewModel[matchIndex] = breakdown;
 					list.splice(matchIndex, 1, [breakdown]);
-					if (this.activeBreakdown?.uri.fsPath === breakdown.uri.fsPath && this.activeBreakdown?.name === breakdown.name) {
-						matchingIndex = matchIndex;
-					}
 				}
+				matchingIndex = matchIndex;
 			});
-			const listLength = this.viewModel.length;
-			console.log('list length', listLength);
-			for (let i = listLength - 1; i >= 0; i--) {
-				console.log(list.element(i));
-			}
 		}
+
 		this.list?.rerender();
 		if (matchingIndex !== -1) {
 			this.list?.setFocus([matchingIndex]);
@@ -312,18 +163,7 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		// Remove all explanation widgets and go-to-definition widgets
-		const keys = this.explanationWidget.keys();
-		for (const key of keys) {
-			const existingWidget = this.explanationWidget.get(key);
-			existingWidget?.hide();
-			this.explanationWidget.delete(key);
-		}
-
-		if (this.goToDefinitionWidget) {
-			this.goToDefinitionWidget.hide();
-			this.goToDefinitionWidget.dispose();
-			this.goToDefinitionWidget = undefined;
-		}
+		this.explanationService.clear();
 
 		// Hide
 		this.isVisible = false;
@@ -390,7 +230,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 	}
 
 	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: IBreakdownTemplateData, height: number | undefined): void {
-		console.log('rendering element', element, index, templateData, height);
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
@@ -448,8 +287,6 @@ class BreakdownRenderer extends Disposable implements IListRenderer<IAideProbeBr
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
 			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
-				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
-				// If it becomes properly sync, then this could be removed.
 				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
