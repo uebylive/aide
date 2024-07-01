@@ -77,10 +77,11 @@ export interface IAideProbeService {
 	_serviceBrand: undefined;
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
 
+	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
 	cancelCurrentRequestForSession(sessionId: string): void;
-	clearSession(sessionId: string): void;
+	clearSession(): void;
 
 	followAlong(follow: boolean): void;
 	navigateBreakdown(): void;
@@ -100,7 +101,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	private _didNavigateBreakdown: boolean = false;
 
 	constructor(
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 	}
@@ -114,6 +115,10 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return toDisposable(() => {
 			this.probeProvider = undefined;
 		});
+	}
+
+	getSession(): AideProbeModel | undefined {
+		return this._model;
 	}
 
 	startSession(): AideProbeModel {
@@ -189,9 +194,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._pendingRequests.deleteAndDispose(sessionId);
 	}
 
-	clearSession(sessionId: string): void {
+	clearSession(): void {
+		const sessionId = this._model?.sessionId;
 		this._model?.dispose();
-		this.cancelCurrentRequestForSession(sessionId);
+		this._model = undefined;
+		this._didNavigateBreakdown = false;
+		if (sessionId) {
+			this.cancelCurrentRequestForSession(sessionId);
+		}
 	}
 
 	navigateBreakdown(): void {

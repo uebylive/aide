@@ -18,6 +18,7 @@ import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
+import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
 
@@ -35,6 +36,7 @@ export class AideChatBreakdowns extends Disposable {
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
@@ -119,6 +121,10 @@ export class AideChatBreakdowns extends Disposable {
 			}
 		}
 
+
+		const resolveLocationOperation = element.symbol;
+		this.editorProgressService.showWhile(resolveLocationOperation);
+		await resolveLocationOperation;
 		this.explanationService.changeActiveBreakdown(element);
 	}
 
@@ -157,7 +163,7 @@ export class AideChatBreakdowns extends Disposable {
 		}
 
 		// Remove all explanation widgets and go-to-definition widgets
-		this.explanationService.clearBreakdowns();
+		this.explanationService.clear();
 
 		// Hide
 		this.isVisible = false;

@@ -268,6 +268,7 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	clear(): void {
+		this.aideProbeService.clearSession();
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
 		this.requestInProgress.set(false);

@@ -5,7 +5,6 @@
 
 .monaco-editor .editor-side-panel-container {
 	position: absolute;
-	z-index: 35;
 	overflow: hidden;
 	line-height: 22px;
 }

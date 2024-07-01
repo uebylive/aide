@@ -30,3 +30,7 @@
 .editor-side-panel-container .breakdown-header .rendered-markdown > p .codicon {
 	color: var(--vscode-statusBarItem-remoteBackground) !important;
 }
+
+.monaco-workbench .aide-probe-definition-line-decoration {
+	background-color: var(--vscode-diffEditor-insertedLineBackground);
+}

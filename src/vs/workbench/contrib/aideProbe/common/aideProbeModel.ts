@@ -101,7 +101,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	/**
 	 * Decorate a go to definition in the response content.
 	*/
-	decorateGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
+	applyGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
 		const existing = this._goToDefinitions.find(gtd => equals(gtd.uri, goToDefinition.uri) && equals(gtd.name, goToDefinition.name));
 		if (existing) {
 			return;
@@ -172,7 +172,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		} else if (progress.kind === 'breakdown') {
 			this._response.applyBreakdown(progress);
 		} else if (progress.kind === 'goToDefinition') {
-			this._response.decorateGoToDefinition(progress);
+			this._response.applyGoToDefinition(progress);
 		}
 
 		this._onDidChange.fire();

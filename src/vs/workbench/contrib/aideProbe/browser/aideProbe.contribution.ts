@@ -16,6 +16,7 @@ import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/act
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
+import 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 import 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeInputEditorContrib';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 

@@ -9,10 +9,13 @@ import { Codicon } from 'vs/base/common/codicons';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { Range } from 'vs/editor/common/core/range';
+import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { symbolDecorationLineOptions } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 
 const $ = dom.$;
 
@@ -21,6 +24,8 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 
 	private _symbolResolver: (() => Promise<DocumentSymbol[] | undefined>) | undefined;
 	private symbols: DocumentSymbol[] | undefined;
+
+	private readonly _probingSymbolDecorations: IEditorDecorationsCollection;
 
 	constructor(
 		parentEditor: ICodeEditor,
@@ -34,6 +39,8 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 			return this.symbols;
 		};
 		this._symbolResolver();
+
+		this._probingSymbolDecorations = this.editor.createDecorationsCollection();
 	}
 
 	async resolveSymbol(): Promise<DocumentSymbol[] | undefined> {
@@ -97,8 +104,17 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 		}
 	}
 
-	clearBreakdowns(): void {
+	showProbingSymbols(symbol: DocumentSymbol) {
+		const lineRange = new Range(
+			symbol.range.startLineNumber, 1,
+			symbol.range.startLineNumber, Number.MAX_VALUE
+		);
+		this._probingSymbolDecorations.append([{ range: lineRange, options: symbolDecorationLineOptions }]);
+	}
+
+	clear(): void {
 		this.breakdowns = [];
+		this._probingSymbolDecorations.clear();
 	}
 
 	override show(): void {
