@@ -22,8 +22,8 @@ export class MainThreadAideCommandPaletteProvider extends Disposable implements 
 
 	$registerCommandPaletteProvider(handle: number, data: IAideCommandPaletteData): void {
 		const impl: IAideCommandPaletteResolver = {
-			initiate: async (request, token) => {
-				await this._proxy.$provideResponse(handle, request, token);
+			initiate: (request, token) => {
+				this._proxy.$provideResponse(handle, request, token);
 			},
 		};
 		this._aideCommandPaletteService.registerCommandPaletteProvider(data, impl);

@@ -34,9 +34,17 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 			this._container.classList.add('command-palette-container');
 			this.workbenchLayoutService.activeContainer.appendChild(this._container);
 			this._widget = this.instantiationService.createInstance(AideCommandPaletteWidget, this._container);
+
 			this._widget.render();
 			this._widget.focus();
-			this._widget.onDidBlur(() => this.close());
+			this._widget.onDidBlur(() => {
+				if (!this._widget) {
+					return;
+				}
+				const value = this._widget.inputEditor.getValue();
+				const model = this.startSession();
+				this.sendRequest(model, value);
+			});
 		}
 	}
 
