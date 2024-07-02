@@ -24,8 +24,7 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { URI } from 'vs/base/common/uri';
 
 import 'vs/css!./commandPalette';
-import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteService';
-import { CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteContextKeys';
+import { CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideCommandPalette/browser/aideCommandPaletteContextKeys';
 
 const $ = dom.$;
 

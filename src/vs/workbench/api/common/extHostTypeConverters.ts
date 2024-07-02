@@ -59,6 +59,7 @@ import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/com
 import { IAideProbeBreakdownContent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { IAideCommandPaletteRequestModel } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteModel';
 
 export namespace Command {
 
@@ -3123,6 +3124,15 @@ export namespace AideProbeUserAction {
 		return {
 			sessionId: userAction.sessionId,
 			action: userAction.action,
+		};
+	}
+}
+
+export namespace AideCommandPaletteRequestModel {
+	export function to(request: IAideCommandPaletteRequestModel): vscode.CommandPaletteRequest {
+		return {
+			requestId: request.sessionId,
+			query: request.message
 		};
 	}
 }

@@ -25,6 +25,7 @@ import { CandidatePortSource, ExtHostContext, ExtHostLogLevelServiceShape, MainC
 import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
 import { ExtHostAideChatAgents2 } from 'vs/workbench/api/common/extHostAideChatAgents2';
 import { ExtHostAideChatVariables } from 'vs/workbench/api/common/extHostAideChatVariables';
+import { ExtHostAideCommandPaletteProvider } from 'vs/workbench/api/common/extHostAideCommandPaletteProvider';
 import { ExtHostAideProbeProvider } from 'vs/workbench/api/common/extHostAideProbeProvider';
 import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
 import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
@@ -221,6 +222,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostAideChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostAideChatAgents2, new ExtHostAideChatAgents2(rpcProtocol, extHostLogService, extHostCommands, initData.quality));
 	const extHostAideChatVariables = rpcProtocol.set(ExtHostContext.ExtHostAideChatVariables, new ExtHostAideChatVariables(rpcProtocol));
 	const extHostAideProbeProvider = rpcProtocol.set(ExtHostContext.ExtHostAideProbeProvider, new ExtHostAideProbeProvider(rpcProtocol));
+	const extHostAideCommandPaletteProvider = rpcProtocol.set(ExtHostContext.ExtHostAideCommandPaletteProvider, new ExtHostAideCommandPaletteProvider(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
@@ -1538,6 +1540,17 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
+		const aideCommandPalette: typeof vscode.aideCommandPalette = {
+			// IMPORTANT
+			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
+			_version: 1,
+
+			registerCommandPaletteProvider(id: string, provider: vscode.AideCommandPaletteResponseHandler) {
+				checkProposedApiEnabled(extension, 'aideCommandPalette');
+				return extHostAideCommandPaletteProvider.registerCommandPaletteProvider(extension, id, provider);
+			}
+		};
+
 		// namespace: speech
 		const speech: typeof vscode.speech = {
 			registerSpeechProvider(id: string, provider: vscode.SpeechProvider) {
@@ -1572,6 +1585,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			ai,
 			aideChat,
 			aideProbe,
+			aideCommandPalette,
 			authentication,
 			commands,
 			comments,

@@ -6,7 +6,6 @@
 import * as os from 'os';
 import * as vscode from 'vscode';
 
-import { SideCarClient } from '../../sidecar/client';
 import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
@@ -17,10 +16,10 @@ export class CommandPaletteProvider implements vscode.Disposable {
 	private active: boolean = false;
 
 	constructor(
-		sideCarClient: SideCarClient,
+		//sideCarClient: SideCarClient,
 		editorUrl: string,
 	) {
-		//	this._sideCarClient = sideCarClient;
+		// this._sideCarClient = sideCarClient;
 		this._editorUrl = editorUrl;
 		console.log(this._editorUrl);
 
@@ -40,20 +39,20 @@ export class CommandPaletteProvider implements vscode.Disposable {
 		});
 	}
 
-	private async provideResponse(request: string) {
-
-		request = request.trim();
+	private async provideResponse(request: vscode.CommandPaletteRequest) {
+		let { query } = request;
+		query = query.trim();
 
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
 			event: 'command_palette_request',
 			properties: {
 				platform: os.platform(),
-				request,
+				query,
 			},
 		});
 
-
+		console.log(query);
 
 		if (!this.active) {
 			// TODO show a message to the user that they need to activate the extension

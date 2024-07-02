@@ -4,13 +4,30 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+
+	export interface SidecarErrorDetails {
+		type: 'error';
+		message: string;
+	}
+
+	export interface SidecarResponse {
+		type: 'response';
+		response: string;
+	}
+
+	export type SidecarResult = SidecarErrorDetails | SidecarResponse;
+
+	export interface CommandPaletteRequest {
+		requestId: string;
+		query: string;
+	}
+
+	export interface AideCommandPaletteResponseHandler {
+		provideResponse(request: CommandPaletteRequest, token: CancellationToken): ProviderResult<SidecarResult | void>;
+	}
+
 	export namespace aideCommandPalette {
-
-		export interface CommandPal {
-			provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
-			onDidUserAction: (action: AideProbeUserAction) => void;
-		}
-
-		export function registerCommandPaletteProvider(id: string, provider: ProbeResponseHandler): Disposable;
+		export const _version: 1 | number;
+		export function registerCommandPaletteProvider(id: string, provider: AideCommandPaletteResponseHandler): Disposable;
 	}
 }
