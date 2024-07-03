@@ -13,6 +13,7 @@ import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgres
 export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
+	readonly editMode: boolean;
 }
 
 export interface IAideProbeResponseModel {
@@ -38,6 +39,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	constructor(
 		readonly sessionId: string,
 		readonly message: string,
+		readonly editMode: boolean
 	) {
 		super();
 	}

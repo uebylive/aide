@@ -2904,14 +2904,14 @@ export namespace AideChatResponseCommandButtonPart {
 }
 
 export namespace AideChatResponseTextEditPart {
-	export function from(part: vscode.ChatResponseTextEditPart): Dto<IAideChatTextEdit> {
+	export function from(part: vscode.AideChatResponseTextEdit): Dto<IAideChatTextEdit> {
 		return {
 			kind: 'textEdit',
 			uri: part.uri,
 			edits: part.edits.map(e => TextEdit.from(e))
 		};
 	}
-	export function to(part: Dto<IAideChatTextEdit>): vscode.ChatResponseTextEditPart {
+	export function to(part: Dto<IAideChatTextEdit>): vscode.AideChatResponseTextEdit {
 		return new types.AideChatResponseTextEditPart(URI.revive(part.uri), part.edits.map(e => TextEdit.to(e)));
 	}
 }

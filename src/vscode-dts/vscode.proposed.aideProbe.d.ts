@@ -22,12 +22,14 @@ declare module 'vscode' {
 	export interface ProbeRequest {
 		requestId: string;
 		query: string;
+		editMode: boolean;
 	}
 
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		location(value: AideProbeGoToDefinition): void;
+		codeEdit(value: AideChatResponseTextEdit): void;
 	}
 
 	export interface ProbeErrorDetails {

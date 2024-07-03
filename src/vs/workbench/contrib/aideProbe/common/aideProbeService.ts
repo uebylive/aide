@@ -9,6 +9,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
+import { TextEdit } from 'vs/editor/common/languages';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
@@ -53,10 +54,17 @@ export interface IAideProbeGoToDefinition {
 	thinking: string;
 }
 
+export interface IAideChatResponseTextEdit {
+	kind: 'textEdit';
+	uri: URI;
+	edits: TextEdit[];
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
-	| IAideProbeGoToDefinition;
+	| IAideProbeGoToDefinition
+	| IAideChatResponseTextEdit;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -131,7 +139,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit = true): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -158,7 +166,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, edit);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

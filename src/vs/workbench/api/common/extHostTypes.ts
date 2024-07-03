@@ -4766,9 +4766,9 @@ export class AideProbeGoToDefinitionPart {
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];
-	constructor(uri: vscode.Uri, edits: vscode.TextEdit | vscode.TextEdit[]) {
+	constructor(uri: vscode.Uri, edits: vscode.TextEdit[]) {
 		this.uri = uri;
-		this.edits = Array.isArray(edits) ? edits : [edits];
+		this.edits = edits;
 	}
 }
 

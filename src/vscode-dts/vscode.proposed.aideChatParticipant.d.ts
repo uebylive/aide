@@ -111,6 +111,19 @@ declare module 'vscode' {
 		readonly thinking: string;
 	}
 
+
+	export interface AideChatResponseTextEdit {
+		/**
+		 * The file where the agent went to the definition.
+		 */
+		readonly uri: Uri;
+
+		/**
+		 * Edits applied to the document
+		 */
+		readonly edits: TextEdit[];
+	}
+
 	export interface AideChatResponseStream extends ChatResponseStream {
 	}
 

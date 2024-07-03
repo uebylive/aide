@@ -37,6 +37,20 @@ export type ProbeAgentBody = {
 	request_id: string;
 };
 
+export type CodeEditAgentBody = {
+	editor_url: string;
+	model_config: Record<string, any>;
+	git_directory_name: string;
+	user_context: UserContext;
+	query: string;
+	active_window_data: {
+		file_path: string;
+		file_content: string;
+		language: string;
+	} | null;
+	request_id: string;
+};
+
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
 
 interface SideCarAgentKeepAliveEvent {
