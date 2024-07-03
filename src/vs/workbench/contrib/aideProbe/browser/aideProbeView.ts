@@ -36,6 +36,11 @@ import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/c
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { IDimension } from 'vs/editor/common/core/dimension';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
+import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
+import { AideMinimap } from 'vs/workbench/contrib/aideProbe/browser/aideMinimap';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 
 const $ = dom.$;
 
@@ -48,6 +53,9 @@ export class AideProbeViewPane extends ViewPane {
 	private scrollableElement!: DomScrollableElement;
 	private tailingToggle: Toggle | undefined;
 	private dimensions: IDimension | undefined;
+
+	private minimapContainer!: HTMLElement;
+	private _mmEditor: ICodeEditor | undefined;
 
 	private inputPart!: AideProbeInputPart;
 
@@ -139,6 +147,26 @@ export class AideProbeViewPane extends ViewPane {
 		this.explorationDetail.appendChild(toggle.domNode);
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 		this.responseWrapper = dom.append(this.resultWrapper, $('.responseWrapper'));
+
+		this.minimapContainer = dom.append(this.container, $('.aideminimap'));
+		let mmOptions: IEditorConstructionOptions = getSimpleEditorOptions(this.configurationService);
+		const editorOptions = getSimpleCodeEditorWidgetOptions();
+
+		mmOptions = {
+			...mmOptions,
+			minimap: {
+				enabled: true
+			}
+		};
+
+		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]));
+		this._mmEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this.minimapContainer, mmOptions, editorOptions));
+		const value = `const a = 5;
+		const b = 10;
+		`;
+		this._mmEditor.setValue(value);
+		const aideMinimap = this.instantiationService.createInstance(AideMinimap, this._mmEditor);
+		console.log(aideMinimap);
 
 		this.onDidChangeItems();
 	}

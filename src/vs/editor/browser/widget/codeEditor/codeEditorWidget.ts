@@ -414,6 +414,10 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._configuration.updateOptions(newOptions || {});
 	}
 
+	public getConfiguration(): IEditorConfiguration {
+		return this._configuration;
+	}
+
 	public getOptions(): IComputedEditorOptions {
 		return this._configuration.options;
 	}

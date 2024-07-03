@@ -13,11 +13,10 @@ import * as platform from 'vs/base/common/platform';
 import * as strings from 'vs/base/common/strings';
 import { ILine, RenderedLinesCollection } from 'vs/editor/browser/view/viewLayer';
 import { PartFingerprint, PartFingerprints, ViewPart } from 'vs/editor/browser/view/viewPart';
-import { RenderMinimap, EditorOption, MINIMAP_GUTTER_WIDTH, EditorLayoutInfoComputer } from 'vs/editor/common/config/editorOptions';
+import { RenderMinimap, EditorOption, MINIMAP_GUTTER_WIDTH, EditorLayoutInfoComputer, IComputedEditorOptions } from 'vs/editor/common/config/editorOptions';
 import { Range } from 'vs/editor/common/core/range';
 import { RGBA8 } from 'vs/editor/common/core/rgba';
 import { ScrollType } from 'vs/editor/common/editorCommon';
-import { IEditorConfiguration } from 'vs/editor/common/config/editorConfiguration';
 import { ColorId } from 'vs/editor/common/encodedTokenAttributes';
 import { MinimapCharRenderer } from 'vs/editor/browser/viewParts/minimap/minimapCharRenderer';
 import { Constants } from 'vs/editor/browser/viewParts/minimap/minimapCharSheet';
@@ -45,7 +44,7 @@ const POINTER_DRAG_RESET_DISTANCE = 140;
 
 const GUTTER_DECORATION_WIDTH = 2;
 
-class MinimapOptions {
+export class MinimapOptions {
 
 	public readonly renderMinimap: RenderMinimap;
 	public readonly size: 'proportional' | 'fill' | 'fit';
@@ -108,8 +107,8 @@ class MinimapOptions {
 	 */
 	public readonly foregroundAlpha: number;
 
-	constructor(configuration: IEditorConfiguration, theme: EditorTheme, tokensColorTracker: MinimapTokensColorTracker) {
-		const options = configuration.options;
+	constructor(configuration: IComputedEditorOptions, theme: EditorTheme, tokensColorTracker: MinimapTokensColorTracker) {
+		const options = configuration;
 		const pixelRatio = options.get(EditorOption.pixelRatio);
 		const layoutInfo = options.get(EditorOption.layoutInfo);
 		const minimapLayout = layoutInfo.minimap;
@@ -574,7 +573,7 @@ export interface IMinimapModel {
 	setScrollTop(scrollTop: number): void;
 }
 
-interface IMinimapRenderingContext {
+export interface IMinimapRenderingContext {
 	readonly viewportContainsWhitespaceGaps: boolean;
 
 	readonly scrollWidth: number;
@@ -827,7 +826,7 @@ export class Minimap extends ViewPart implements IMinimapModel {
 		this._selections = [];
 		this._minimapSelections = null;
 
-		this.options = new MinimapOptions(this._context.configuration, this._context.theme, this.tokensColorTracker);
+		this.options = new MinimapOptions(this._context.configuration.options, this._context.theme, this.tokensColorTracker);
 		const [samplingState,] = MinimapSamplingState.compute(this.options, this._context.viewModel.getLineCount(), null);
 		this._samplingState = samplingState;
 		this._shouldCheckSampling = false;
@@ -845,7 +844,7 @@ export class Minimap extends ViewPart implements IMinimapModel {
 	}
 
 	private _onOptionsMaybeChanged(): boolean {
-		const opts = new MinimapOptions(this._context.configuration, this._context.theme, this.tokensColorTracker);
+		const opts = new MinimapOptions(this._context.configuration.options, this._context.theme, this.tokensColorTracker);
 		if (this.options.equals(opts)) {
 			return false;
 		}
@@ -1144,7 +1143,7 @@ export class Minimap extends ViewPart implements IMinimapModel {
 	//#endregion
 }
 
-class InnerMinimap extends Disposable {
+export class InnerMinimap extends Disposable {
 
 	private readonly _theme: EditorTheme;
 	private readonly _model: IMinimapModel;
