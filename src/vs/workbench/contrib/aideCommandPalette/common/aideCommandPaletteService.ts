@@ -31,6 +31,8 @@ export interface IAideCommandPaletteResolver {
 }
 
 export interface IAideCommandPaletteService {
+	_serviceBrand: undefined;
+
 	open(): void;
 	close(): void;
 	registerCommandPaletteProvider(data: IAideCommandPaletteData, resolver: IAideCommandPaletteResolver): IDisposable;

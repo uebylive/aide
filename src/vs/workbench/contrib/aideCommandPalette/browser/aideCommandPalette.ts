@@ -15,6 +15,8 @@ import { CancellationTokenSource } from 'vs/base/common/cancellation';
 export const VIEW_ID = 'workbench.view.aideCommandPalette';
 
 export class AideCommandPaletteService extends Disposable implements IAideCommandPaletteService {
+	_serviceBrand: undefined;
+
 	private _container: HTMLElement | undefined;
 	private _model: AideCommandPaletteModel | undefined;
 	private commandPaletteProvider: IAideCommandPaletteResolver | undefined;
