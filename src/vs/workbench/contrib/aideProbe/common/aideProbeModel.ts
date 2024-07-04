@@ -8,7 +8,8 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { generateUuid } from 'vs/base/common/uuid';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeRequestModel {
 	readonly sessionId: string;
@@ -20,6 +21,8 @@ export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
+	readonly codeEditsPreview: ReadonlyArray<IAideProbeTextEditPreview>;
+	readonly codeEdits: ReadonlyArray<IAideProbeTextEdit>;
 }
 
 export interface IAideProbeModel {
@@ -67,6 +70,17 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._goToDefinitions;
 	}
 
+	private readonly _codeEditsPreviewBySymbol: Map<string, IAideProbeTextEditPreview[]> = new Map();
+	private readonly _codeEditsPreview: IAideProbeTextEditPreview[] = [];
+	public get codeEditsPreview(): ReadonlyArray<IAideProbeTextEditPreview> {
+		return this._codeEditsPreview;
+	}
+
+	private readonly _codeEdits: IAideProbeTextEdit[] = [];
+	public get codeEdits(): ReadonlyArray<IAideProbeTextEdit> {
+		return this._codeEdits;
+	}
+
 	constructor() {
 		super();
 	}
@@ -110,6 +124,30 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		}
 
 		this._goToDefinitions.push(goToDefinition);
+	}
+
+	/**
+		* Decorate a chunk of code to be edited in the response content.
+	*/
+	applyCodeEditPreview(codeEditPreview: IAideProbeTextEditPreview) {
+		const mapKey = `${codeEditPreview.reference.uri.toString()}:${codeEditPreview.reference.name}`;
+		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
+			this._codeEditsPreviewBySymbol.get(mapKey)!.push(codeEditPreview);
+		} else {
+			this._codeEditsPreviewBySymbol.set(mapKey, [codeEditPreview]);
+			this._codeEditsPreview.push(codeEditPreview);
+		}
+	}
+
+	/**
+	 * Decorate a chunk of code to be edited in the response content.
+	*/
+	applyCodeEdit(codeEdit: IAideProbeTextEdit) {
+		const mapKey = `${codeEdit.reference.uri.toString()}:${codeEdit.reference.name}`;
+		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
+			this._codeEditsPreviewBySymbol.delete(mapKey);
+		}
+		this._codeEdits.push(codeEdit);
 	}
 }
 
@@ -169,12 +207,23 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._response = new AideProbeResponseModel();
 		}
 
-		if (progress.kind === 'markdownContent') {
-			this._response.result = progress.content;
-		} else if (progress.kind === 'breakdown') {
-			this._response.applyBreakdown(progress);
-		} else if (progress.kind === 'goToDefinition') {
-			this._response.applyGoToDefinition(progress);
+
+		switch (progress.kind) {
+			case 'markdownContent':
+				this._response.result = progress.content;
+				break;
+			case 'breakdown':
+				this._response.applyBreakdown(progress);
+				break;
+			case 'goToDefinition':
+				this._response.applyGoToDefinition(progress);
+				break;
+			case 'textEditPreview':
+				this._response.applyCodeEditPreview(progress);
+				break;
+			case 'textEdit':
+				this._response.applyCodeEdit(progress);
+				break;
 		}
 
 		this._onDidChange.fire();

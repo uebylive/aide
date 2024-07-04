@@ -88,7 +88,7 @@ import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, I
 import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IAideChatResponseTextEdit, IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeTextEdit, IAideProbeTextEditPreview, IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
@@ -1473,7 +1473,7 @@ export type IAideChatProgressDto =
 	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
 	| IAideChatTaskDto;
 
-export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideChatResponseTextEdit>;
+export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeTextEditPreview | IAideProbeTextEdit>;
 
 export interface MainThreadAideProbeProviderShape extends IDisposable {
 	$registerProbingProvider(handle: number, data: IAideProbeData): void;

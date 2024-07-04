@@ -111,6 +111,29 @@ declare module 'vscode' {
 		readonly thinking: string;
 	}
 
+	export interface AideProbeResponseTextEditPreview {
+		/**
+	 * Code reference relevant to this breakdown.
+	 */
+		readonly reference: CodeReferenceByName;
+
+		/**
+		 * Where edits will be applied
+		 */
+		readonly ranges: Range[];
+	}
+
+	export interface AideProbeResponseTextEdit {
+		/**
+	 * Code reference relevant to this breakdown.
+	 */
+		readonly reference: CodeReferenceByName;
+
+		/**
+		 * Where edits will be applied
+		 */
+		readonly edits: TextEdit[];
+	}
 
 	export interface AideChatResponseTextEdit {
 		/**

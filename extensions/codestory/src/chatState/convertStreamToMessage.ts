@@ -261,14 +261,14 @@ export const reportAgentEventsToChat = async (
 		return;
 	}
 
-	// await new Promise((resolve) => setTimeout(resolve, 1000));
+	//await new Promise((resolve) => setTimeout(resolve, 1000));
 
-	// const randomInt = (min: number, max: number) =>
-	// 	Math.floor(Math.random() * (max - min + 1)) + min;
+	const randomInt = (min: number, max: number) =>
+		Math.floor(Math.random() * (max - min + 1)) + min;
 
 
 	for await (const event of asyncIterable) {
-		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
@@ -281,19 +281,32 @@ export const reportAgentEventsToChat = async (
 		}
 
 		if (event.event.SymbolEvent) {
-			const symbolEventKeys = Object.keys(event.event.SymbolEvent.event);
+			const symbolEvent = event.event.SymbolEvent.event;
+			const symbolEventKeys = Object.keys(symbolEvent);
 			if (symbolEventKeys.length === 0) {
 				continue;
 			}
-			const symbolEventKey = symbolEventKeys[0] as keyof typeof event.event.SymbolEvent.event;
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 			// If this is a symbol event then we have to make sure that we are getting the probe request over here
-			if (symbolEventKey === 'Probe' && event.event.SymbolEvent.event.Probe !== undefined) {
+			if (symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
 				response.breakdown({
 					reference: {
-						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
+						uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: symbolEvent.Probe.symbol_identifier.symbol_name,
 					},
-					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request)
+					query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
+				});
+			} else if (symbolEventKey === 'Edit') {
+				response.codeEditPreview({
+					reference: {
+						uri: vscode.Uri.file(symbolEvent.Edit.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: symbolEvent.Edit.symbol_identifier.symbol_name
+					},
+					ranges: symbolEvent.Edit.symbols.map(symbolToEdit =>
+						new vscode.Range(
+							new vscode.Position(symbolToEdit.range.startPosition.line, symbolToEdit.range.startPosition.character),
+							new vscode.Position(symbolToEdit.range.endPosition.line, symbolToEdit.range.endPosition.character)
+						))
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
@@ -307,7 +320,22 @@ export const reportAgentEventsToChat = async (
 				const range = new vscode.Range(startPosition, endPosition);
 				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
+			} else if (symbolEventSubStep.Edit) {
+				response.codeEdit({
+					reference: {
+						uri: vscode.Uri.file(symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: symbol_identifier.symbol_name
+					},
+					edits: symbolEventSubStep.Edit.symbols.map(symbolToEdit => new vscode.TextEdit(
+						new vscode.Range(
+							new vscode.Position(symbolToEdit.range.startPosition.line, symbolToEdit.range.startPosition.character),
+							new vscode.Position(symbolToEdit.range.endPosition.line, symbolToEdit.range.endPosition.character)
+						),
+						'add new text here'
+					))
+				});
 			}
+
 			if ('Probe' in symbolEventSubStep === false) {
 				continue;
 			}

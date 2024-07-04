@@ -140,7 +140,25 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 					}
 				]);
 			}
+
+
+			const matchingCodeEdits = activeSession.response?.codeEdits.filter(edit => edit.reference.uri.fsPath === uri.fsPath) ?? [];
+			for (const codeEdit of matchingCodeEdits) {
+				for (const singleEdit of codeEdit.edits) {
+					activeEditor.setDecorationsByType(symbolDecorationClass, symbolDecoration, [
+						{
+							range: {
+								...singleEdit.range,
+								endColumn: singleEdit.range.endColumn + 1
+							},
+						}
+					]);
+				}
+			}
 		}
+
+
+
 	}
 
 	clear(): void {

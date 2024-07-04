@@ -12,6 +12,7 @@ import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertSt
 import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
+//import { SideCarAgentEvent } from '../../server/types';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -74,8 +75,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-
-
 		if (!this.active) {
 			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
 			return {};
@@ -105,11 +104,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 
-		//let response
-		//if (request.editMode) {
-		//	response = await this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+		//let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		//if (false) {
+		//	// TODO: Add real git directory name
+		//	probeResponse = this._sideCarClient.startAgentCodeEdit('', query, variables, this._editorUrl, threadId);
 		//} else {
-		//	response = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		//	probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		//}
 
 

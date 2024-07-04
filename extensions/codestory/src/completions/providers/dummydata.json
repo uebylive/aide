@@ -5,13 +5,13 @@
 			"SymbolEvent": {
 				"symbol": {
 					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 				},
 				"event": {
 					"Probe": {
 						"symbol_identifier": {
 							"symbol_name": "agent_router",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 						},
 						"probe_request": "how does the agent talk to the LLM?",
 						"original_request": "how does the agent talk to the LLM?",
@@ -30,14 +30,51 @@
 	{
 		"request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
 		"event": {
+			"SymbolEvent": {
+				"symbol_identifier": {
+					"symbol_name": "agent_router",
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
+				},
+				"event": {
+					"Edit": {
+						"symbol_identifier": {
+							"symbol_name": "agent_router",
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
+						},
+						"symbols": [
+							{
+								"outline": true,
+								"range": {
+									"startPosition": {
+										"line": 165,
+										"character": 0
+									},
+									"endPosition": {
+										"line": 166,
+										"character": 999
+									}
+								},
+								"symbol_name": "agent_router",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
+								"instructions": ["I will probably add a print statement here."]
+							}
+						]
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
+		"event": {
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 						"range": {
 							"startPosition": {
 								"line": 164,
@@ -62,11 +99,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 						"range": {
 							"startPosition": {
 								"line": 169,
@@ -91,11 +128,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 						"range": {
 							"startPosition": {
 								"line": 160,
@@ -120,13 +157,13 @@
 			"SymbolEvent": {
 				"symbol": {
 					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"Probe": {
 						"symbol_identifier": {
 							"symbol_name": "search_agent",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 						},
 						"probe_request": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?",
 						"original_request": "how does the agent talk to the LLM?",
@@ -134,7 +171,7 @@
 						"history": [
 							{
 								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 								"content": "",
 								"question": "how does the agent talk to the LLM?"
 							}
@@ -155,13 +192,13 @@
 			"SymbolEvent": {
 				"symbol": {
 					"symbol_name": "followup_chat",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"Probe": {
 						"symbol_identifier": {
 							"symbol_name": "followup_chat",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 						},
 						"probe_request": "What is the purpose and functionality of the `followup_chat` function? How does it interact with the LLM to generate responses for follow-up chat messages from the user?",
 						"original_request": "how does the agent talk to the LLM?",
@@ -169,7 +206,7 @@
 						"history": [
 							{
 								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 								"content": "",
 								"question": "how does the agent talk to the LLM?"
 							}
@@ -190,7 +227,7 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "followup_chat",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"Probe": {
@@ -206,7 +243,7 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "followup_chat",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"Probe": {
@@ -222,11 +259,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs",
 						"range": {
 							"startPosition": {
 								"line": 91,
@@ -251,11 +288,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs",
 						"range": {
 							"startPosition": {
 								"line": 69,
@@ -280,11 +317,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs",
 						"range": {
 							"startPosition": {
 								"line": 74,
@@ -309,13 +346,13 @@
 			"SymbolEvent": {
 				"symbol": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"Probe": {
 						"symbol_identifier": {
 							"symbol_name": "Agent",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 						},
 						"probe_request": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?",
 						"original_request": "how does the agent talk to the LLM?",
@@ -323,13 +360,13 @@
 						"history": [
 							{
 								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
 								"content": "",
 								"question": "how does the agent talk to the LLM?"
 							},
 							{
 								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/webserver/agent.rs",
 								"content": "",
 								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
 							}
@@ -350,11 +387,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/user_context.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/user_context.rs",
 						"range": {
 							"startPosition": {
 								"line": 63,
@@ -379,11 +416,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 745,
@@ -408,11 +445,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 1014,
@@ -437,11 +474,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 1025,
@@ -466,11 +503,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 738,
@@ -495,11 +532,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/search.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/search.rs",
 						"range": {
 							"startPosition": {
 								"line": 680,
@@ -524,11 +561,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/user_context.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/user_context.rs",
 						"range": {
 							"startPosition": {
 								"line": 37,
@@ -553,11 +590,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 1093,
@@ -582,11 +619,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/search.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/search.rs",
 						"range": {
 							"startPosition": {
 								"line": 665,
@@ -611,11 +648,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/user_context.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/user_context.rs",
 						"range": {
 							"startPosition": {
 								"line": 44,
@@ -640,11 +677,11 @@
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs"
 				},
 				"event": {
 					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
+						"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/agent/types.rs",
 						"range": {
 							"startPosition": {
 								"line": 742,
@@ -664,1305 +701,38 @@
 		}
 	},
 	{
-		"request_id": "3c6823b6-78cb-487b-bf4c-ddd3317fd4cf",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-						"range": {
-							"startPosition": {
-								"line": 732,
-								"character": 21,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 732,
-								"character": 31,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This field likely represents the application context, which might include information about the project, the repository, and other relevant data. We need to understand how it's used to provide context to the LLM."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c6823b6-78cb-487b-bf4c-ddd3317fd4cf",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/search.rs",
-						"range": {
-							"startPosition": {
-								"line": 724,
-								"character": 25,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 724,
-								"character": 37,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand how the `utter_history` method is used to collect the conversation history for the LLM prompt."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c6823b6-78cb-487b-bf4c-ddd3317fd4cf",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-						"range": {
-							"startPosition": {
-								"line": 739,
-								"character": 24,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 739,
-								"character": 32,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This field likely represents the interface for communicating with the LLM. We need to understand how it's used to send queries and receive responses."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "UserContext",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-						},
-						"probe_request": "What information does the `UserContext` struct store, and how is it used by the `Agent` to provide relevant context to the LLM when processing the user's query?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b003c7d1-24bc-4dd4-a27d-61cc7d073293",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "ConversationMessage",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "ConversationMessage",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-						},
-						"probe_request": "How does the `ConversationMessage` struct represent the individual messages exchanged between the user and the agent during their conversation? What are the key fields or components that capture the content, metadata, and context of each message?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "92df195a-5042-4cd3-826a-b1d70966ba18",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "Application",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/application/application.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "Application",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/application/application.rs"
-						},
-						"probe_request": "What is the purpose and structure of the `Application` struct? How does it represent the application context, and what kind of information does it store that is relevant for the agent to provide context to the LLM when handling a user's query?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "LLMBroker",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-						},
-						"probe_request": "How does the `LLMBroker` struct facilitate communication between the `Agent` and the LLM? What are the key methods or fields in `LLMBroker` that handle sending queries to the LLM and receiving responses from it? How does the `Agent` interact with `LLMBroker` to leverage the LLM's capabilities in generating responses to the user's query?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "92df195a-5042-4cd3-826a-b1d70966ba18",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Application",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/application/application.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The Application struct is central to the Sidecar app, managing essential components:\n\n* Configuration: Holds settings like user ID and index directory.\n* Repository Pool and Indexes: Manage data storage and retrieval.\n* Semantic Client and LLM Broker: Facilitate semantic search and LLM communication.\n* Sync Queue and Language Parsing: Handle background tasks and code parsing.\n* SQL Database and Posthog Client: Store data and track user interactions.\n\nIt provides context for the LLM to deliver precise responses to user queries."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "92df195a-5042-4cd3-826a-b1d70966ba18",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Application",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/application/application.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The Application struct is central to the Sidecar app, managing essential components:\n\n* Configuration: Holds settings like user ID and index directory.\n* Repository Pool and Indexes: Manage data storage and retrieval.\n* Semantic Client and LLM Broker: Facilitate semantic search and LLM communication.\n* Sync Queue and Language Parsing: Handle background tasks and code parsing.\n* SQL Database and Posthog Client: Store data and track user interactions.\n\nIt provides context for the LLM to deliver precise responses to user queries."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b003c7d1-24bc-4dd4-a27d-61cc7d073293",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "ConversationMessage",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `ConversationMessage` struct represents a message in a conversation between a user and an AI, capturing:\n            - **Content:** user's `query`, AI's `answer`, `steps_taken` to derive the answer, and `generated_answer_context`.\n            - **Metadata:** unique `message_id`, `session_id`, creation `created_at`, and update `last_updated` timestamps.\n            - **Context:** lists of `file_paths`, `code_spans`, `open_files`, `definitions_interested_in`, and `user_variables`; `user_context` from prior interactions; `active_window_data`; and `extended_variable_information`.\n\n                        This struct efficiently tracks and manages conversation flow."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b003c7d1-24bc-4dd4-a27d-61cc7d073293",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "ConversationMessage",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `ConversationMessage` struct represents a message in a conversation between a user and an AI, capturing:\n            - **Content:** user's `query`, AI's `answer`, `steps_taken` to derive the answer, and `generated_answer_context`.\n            - **Metadata:** unique `message_id`, `session_id`, creation `created_at`, and update `last_updated` timestamps.\n            - **Context:** lists of `file_paths`, `code_spans`, `open_files`, `definitions_interested_in`, and `user_variables`; `user_context` from prior interactions; `active_window_data`; and `extended_variable_information`.\n\n                        This struct efficiently tracks and manages conversation flow."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 105,
-								"character": 21,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 105,
-								"character": 37,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method handles completion requests and is called by `stream_answer` when the request is a completion request. We need to understand how it sends the query to the LLM and streams the response back."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 109,
-								"character": 21,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 109,
-								"character": 44,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method handles string requests and is called by `stream_answer` when the request is a string request. We need to understand how it sends the query to the LLM and streams the response back."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 408,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 408,
-								"character": 40,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method is mentioned as being important for understanding how `LLMBroker` handles string requests."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 136,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 136,
-								"character": 42,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand the structure of the request that is sent to the LLM. This will help us understand what information the `LLMBroker` needs to send the query."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 50,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 50,
-								"character": 19,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method is responsible for initializing the `LLMBroker` instance. It sets up the database connection, creates instances of various LLM clients (e.g., OpenAI, Ollama, TogetherAI, etc.), and adds them to the `providers` map. This method is likely called by the `Agent` to create an `LLMBroker` instance for communication with the LLM."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 163,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 163,
-								"character": 33,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method is responsible for sending the completion request to the LLM and streaming the response back. We need to understand how it works to understand the communication flow."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 433,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 433,
-								"character": 40,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This method is called by `stream_string_completion` to send the string request to the LLM client."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-						"range": {
-							"startPosition": {
-								"line": 41,
-								"character": 48,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 41,
-								"character": 56,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This symbol represents the trait that defines the interface for interacting with different LLM providers. We need to understand the methods and functionality provided by this trait to understand how the `LLMBroker` interacts with LLMs."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-						"range": {
-							"startPosition": {
-								"line": 351,
-								"character": 21,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 351,
-								"character": 36,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand what the `file_content_map` field represents and how it is used in the context of the `UserContext`."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-						"range": {
-							"startPosition": {
-								"line": 345,
-								"character": 21,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 345,
-								"character": 29,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand what the `variables` field represents and how it is used in the context of the `UserContext`."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-						"range": {
-							"startPosition": {
-								"line": 334,
-								"character": 55,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 334,
-								"character": 65,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand the structure of the `UserContext` to understand what information it stores."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs",
-						"range": {
-							"startPosition": {
-								"line": 156,
-								"character": 30,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 156,
-								"character": 45,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This field represents a vector of `FileContentValue` structs, which likely contain information about the content of files. We need to understand the structure of `FileContentValue` to understand the context provided to the LLM."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs",
-						"range": {
-							"startPosition": {
-								"line": 155,
-								"character": 23,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 155,
-								"character": 41,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "This field represents a vector of `VariableInformation` structs, which likely contain information about variables, selections, and files. We need to understand the structure of `VariableInformation` to understand the context provided to the LLM."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs",
-						"range": {
-							"startPosition": {
-								"line": 201,
-								"character": 17,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 201,
-								"character": 22,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand how the `to_xml` method converts the `UserContext` into XML format."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"GoToDefinition": {
-						"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-						"range": {
-							"startPosition": {
-								"line": 362,
-								"character": 24,
-								"byteOffset": 0
-							},
-							"endPosition": {
-								"line": 362,
-								"character": 41,
-								"byteOffset": 0
-							}
-						},
-						"thinking": "We need to understand what the `terminal_selection` field represents and how it is used in the context of the `UserContext`."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c62e158-69c0-42d1-99d4-3ef4ed189b8f",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "LLMClient",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "LLMClient",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-						},
-						"probe_request": "What are the key methods and functionality provided by the `LLMClient` trait that enable the `LLMBroker` to interact with different LLM providers? How does the `LLMClient` trait define the interface for sending queries to the LLM and receiving responses?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							},
-							{
-								"symbol": "LLMBroker",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-								"content": "",
-								"question": "How does the `LLMBroker` struct facilitate communication between the `Agent` and the LLM? What are the key methods or fields in `LLMBroker` that handle sending queries to the LLM and receiving responses from it? How does the `Agent` interact with `LLMBroker` to leverage the LLM's capabilities in generating responses to the user's query?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "360672f2-3fad-4e1c-a4e4-36ed79e14983",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "LLMClientCompletionRequest",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "LLMClientCompletionRequest",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-						},
-						"probe_request": "What is the structure and purpose of the `LLMClientCompletionRequest` struct? How does it encapsulate the information needed to send a query to the LLM, such as the user's messages, model parameters, and other metadata? What are the key fields or methods of this struct that facilitate the communication between the `Agent` and the LLM through the `LLMBroker`?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							},
-							{
-								"symbol": "LLMBroker",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs",
-								"content": "",
-								"question": "How does the `LLMBroker` struct facilitate communication between the `Agent` and the LLM? What are the key methods or fields in `LLMBroker` that handle sending queries to the LLM and receiving responses from it? How does the `Agent` interact with `LLMBroker` to leverage the LLM's capabilities in generating responses to the user's query?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "5c796c89-5dfd-4bef-9c20-78bc0f2468e9",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "FileContentValue",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "FileContentValue",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-						},
-						"probe_request": "What information does the `FileContentValue` struct store, and how is it used to provide file content context to the LLM when processing the user's query?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							},
-							{
-								"symbol": "UserContext",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs",
-								"content": "",
-								"question": "What information does the `UserContext` struct store, and how is it used by the `Agent` to provide relevant context to the LLM when processing the user's query?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "24ba3d33-5736-44ee-8976-876ef839b3c6",
-		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "VariableInformation",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"symbol_identifier": {
-							"symbol_name": "VariableInformation",
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-						},
-						"probe_request": "What information does the `VariableInformation` struct store, and how is it used to provide context about variables, selections, and files to the LLM when processing the user's query?",
-						"original_request": "how does the agent talk to the LLM?",
-						"original_request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-						"history": [
-							{
-								"symbol": "agent_router",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
-								"content": "",
-								"question": "how does the agent talk to the LLM?"
-							},
-							{
-								"symbol": "search_agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs",
-								"content": "",
-								"question": "What is the role of the `search_agent` function in facilitating the interaction between the agent and the LLM? How does it handle the user's query and communicate with the LLM to generate a response?"
-							},
-							{
-								"symbol": "Agent",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs",
-								"content": "",
-								"question": "How does the `Agent` struct represent the state and capabilities of the agent during its interaction with the LLM? What are the key components or fields of the `Agent` struct that enable it to handle the user's query, communicate with the LLM, and generate a response?"
-							},
-							{
-								"symbol": "UserContext",
-								"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs",
-								"content": "",
-								"question": "What information does the `UserContext` struct store, and how is it used by the `Agent` to provide relevant context to the LLM when processing the user's query?"
-							}
-						]
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null
-				}
-			}
-		}
-	},
-	{
-		"request_id": "360672f2-3fad-4e1c-a4e4-36ed79e14983",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMClientCompletionRequest",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `LLMClientCompletionRequest` struct handles communication between the `Agent`, which interacts with the user, and the `LLMBroker`, which communicates with LLMs like GPT-3. It includes fields such as `model`, `messages`, `temperature`, and `max_tokens`, specifying the LLM type, conversation context, creativity control, and response length limit. Key methods include `new`, `set_llm`, and `set_temperature`, facilitating the setup and customization of requests for text generation."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "360672f2-3fad-4e1c-a4e4-36ed79e14983",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMClientCompletionRequest",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `LLMClientCompletionRequest` struct handles communication between the `Agent`, which interacts with the user, and the `LLMBroker`, which communicates with LLMs like GPT-3. It includes fields such as `model`, `messages`, `temperature`, and `max_tokens`, specifying the LLM type, conversation context, creativity control, and response length limit. Key methods include `new`, `set_llm`, and `set_temperature`, facilitating the setup and customization of requests for text generation."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "5c796c89-5dfd-4bef-9c20-78bc0f2468e9",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "FileContentValue",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `FileContentValue` struct stores information about a file, including its path, content, and language. It's used to provide file content context to the LLM when processing the user's query. The `to_xml` method converts the `FileContentValue` struct into an XML string, which is likely used to format the file content for the LLM. This allows the LLM to access and understand the content of the file in the context of the user's query."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "5c796c89-5dfd-4bef-9c20-78bc0f2468e9",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "FileContentValue",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `FileContentValue` struct stores information about a file, including its path, content, and language. It's used to provide file content context to the LLM when processing the user's query. The `to_xml` method converts the `FileContentValue` struct into an XML string, which is likely used to format the file content for the LLM. This allows the LLM to access and understand the content of the file in the context of the user's query."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "24ba3d33-5736-44ee-8976-876ef839b3c6",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "VariableInformation",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `VariableInformation` struct stores information about a variable, selection, or file. It includes the following fields:\n\n* `start_position`: The starting line and column of the variable or selection in the file.\n* `end_position`: The ending line and column of the variable or selection in the file.\n* `fs_file_path`: The absolute path to the file containing the variable or selection.\n* `name`: The name of the variable or selection.\n* `variable_type`: The type of the variable or selection, which can be `CodeSymbol`, `File`, or `Selection`.\n* `content`: The content of the variable or selection.\n* `language`: The programming language of the file containing the variable or selection.\n\nThis information is used to provide context about variables, selections, and files to the LLM when processing the user's query. For example, if the user asks \"What is the value of the variable `x`?\", the LLM can use the `VariableInformation` struct to find the variable `x` in the code, determine its type and value, and then provide the user with the answer.\n\nThe `to_xml` method converts the `VariableInformation` struct into an XML string that can be sent to the LLM. This XML string includes the name, type, file path, and content of the variable or selection, which allows the LLM to understand the context of the user's query."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "24ba3d33-5736-44ee-8976-876ef839b3c6",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "VariableInformation",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `VariableInformation` struct stores information about a variable, selection, or file. It includes the following fields:\n\n* `start_position`: The starting line and column of the variable or selection in the file.\n* `end_position`: The ending line and column of the variable or selection in the file.\n* `fs_file_path`: The absolute path to the file containing the variable or selection.\n* `name`: The name of the variable or selection.\n* `variable_type`: The type of the variable or selection, which can be `CodeSymbol`, `File`, or `Selection`.\n* `content`: The content of the variable or selection.\n* `language`: The programming language of the file containing the variable or selection.\n\nThis information is used to provide context about variables, selections, and files to the LLM when processing the user's query. For example, if the user asks \"What is the value of the variable `x`?\", the LLM can use the `VariableInformation` struct to find the variable `x` in the code, determine its type and value, and then provide the user with the answer.\n\nThe `to_xml` method converts the `VariableInformation` struct into an XML string that can be sent to the LLM. This XML string includes the name, type, file path, and content of the variable or selection, which allows the LLM to understand the context of the user's query."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c62e158-69c0-42d1-99d4-3ef4ed189b8f",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMClient",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "probe requests are empty, symbol not relevant for the user"
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c62e158-69c0-42d1-99d4-3ef4ed189b8f",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMClient",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/clients/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "probe requests are empty, symbol not relevant for the user"
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `UserContext` struct stores information that provides relevant context to the LLM (Large Language Model) when processing the user's query. It contains the following key fields:\n\n1. `variables`: A vector of `VariableInformation` structs, which store details about variables, selections, or files, including their name, type, content, file path, and position in the file. This allows the LLM to understand the context of variables and selections mentioned in the user's query.\n\n2. `file_content_map`: A vector of `FileContentValue` structs, which store the file path, content, and programming language of relevant files. This provides the LLM with the necessary file content to understand the context of the user's query.\n\n3. `terminal_selection`: An optional string representing the user's selection from the terminal output, if applicable. This can provide additional context to the LLM about the user's intent or focus.\n\n4. `folder_paths`: A vector of absolute paths to folders, which can be used to provide the LLM with the context of the project structure and file locations.\n\nThe `Agent` struct, which represents the agent interacting with the LLM, likely uses the `UserContext` to gather and organize all the relevant information needed to understand and respond to the user's query. When the `Agent` communicates with the LLM, it can include the `UserContext` data, allowing the LLM to access the necessary context, such as variable definitions, file contents, and project structure, to generate an informed and relevant response.\n\nThe `merge_from_previous` method in the `UserContext` implementation is responsible for merging the current context with any previous context, ensuring that the LLM has access to all the relevant information from the user's interaction history."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "b52a11cf-d64b-4e00-a4c9-e9b94bde3e1a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "UserContext",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/user_context/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `UserContext` struct stores information that provides relevant context to the LLM (Large Language Model) when processing the user's query. It contains the following key fields:\n\n1. `variables`: A vector of `VariableInformation` structs, which store details about variables, selections, or files, including their name, type, content, file path, and position in the file. This allows the LLM to understand the context of variables and selections mentioned in the user's query.\n\n2. `file_content_map`: A vector of `FileContentValue` structs, which store the file path, content, and programming language of relevant files. This provides the LLM with the necessary file content to understand the context of the user's query.\n\n3. `terminal_selection`: An optional string representing the user's selection from the terminal output, if applicable. This can provide additional context to the LLM about the user's intent or focus.\n\n4. `folder_paths`: A vector of absolute paths to folders, which can be used to provide the LLM with the context of the project structure and file locations.\n\nThe `Agent` struct, which represents the agent interacting with the LLM, likely uses the `UserContext` to gather and organize all the relevant information needed to understand and respond to the user's query. When the `Agent` communicates with the LLM, it can include the `UserContext` data, allowing the LLM to access the necessary context, such as variable definitions, file contents, and project structure, to generate an informed and relevant response.\n\nThe `merge_from_previous` method in the `UserContext` implementation is responsible for merging the current context with any previous context, ensuring that the LLM has access to all the relevant information from the user's interaction history."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `LLMBroker` struct plays a crucial role in facilitating communication between the `Agent` and the Large Language Model (LLM). It acts as an intermediary that handles sending queries to the LLM and receiving responses from it. Here are the key components and methods of `LLMBroker` that enable this functionality:\n\n1. **`providers` field**: This is a `HashMap` that maps `LLMProvider` enums to concrete implementations of the `LLMClient` trait. Each `LLMClient` represents a specific LLM provider (e.g., OpenAI, Anthropic) and encapsulates the logic for communicating with that provider's API.\n\n2. **`db` field**: This is an instance of `SqlDb`, which likely represents a database connection used for storing and retrieving data related to LLM interactions.\n\n3. **`posthog_client` and `parea_client` fields**: These are instances of `PosthogClient` and `PareaClient`, respectively, which are likely used for analytics and monitoring purposes.\n\n4. **`stream_completion` and `completion` methods**: These methods, defined in the `LLMClient` trait, are implemented by each concrete `LLMClient` implementation. They are responsible for sending the actual query to the LLM provider's API and receiving the generated response. The `stream_completion` method streams the response as it is being generated, while `completion` waits for the entire response before returning it.\n\nThe `Agent` interacts with the `LLMBroker` to leverage the LLM's capabilities in generating responses to the user's query. Here's a high-level overview of how this interaction might work:\n\n1. The `Agent` receives the user's query and constructs an `LLMClientCompletionRequest` object, which encapsulates the query, context, and other parameters required by the LLM.\n\n2. The `Agent` passes this `LLMClientCompletionRequest` to the `LLMBroker`.\n\n3. The `LLMBroker` retrieves the appropriate `LLMClient` implementation from the `providers` map based on the desired LLM provider.\n\n4. The `LLMBroker` calls the `stream_completion` or `completion` method on the selected `LLMClient`, passing along the `LLMClientCompletionRequest` and any necessary API keys or authentication credentials.\n\n5. The `LLMClient` implementation handles the communication with the LLM provider's API, sending the query and receiving the generated response.\n\n6. The `LLMClient` returns the response to the `LLMBroker`, which can then pass it back to the `Agent`.\n\n7. The `Agent` can process the response from the LLM and present it to the user or take any other necessary actions.\n\nBy abstracting the communication with different LLM providers behind the `LLMClient` trait and the `LLMBroker` struct, the codebase achieves a modular and extensible design. New LLM providers can be added by implementing the `LLMClient` trait, and the `Agent` can seamlessly interact with any provider through the `LLMBroker` interface."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "be4c27e2-b619-4b15-978a-958d89bcb1b3",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "LLMBroker",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/llm_client/src/broker.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `LLMBroker` struct plays a crucial role in facilitating communication between the `Agent` and the Large Language Model (LLM). It acts as an intermediary that handles sending queries to the LLM and receiving responses from it. Here are the key components and methods of `LLMBroker` that enable this functionality:\n\n1. **`providers` field**: This is a `HashMap` that maps `LLMProvider` enums to concrete implementations of the `LLMClient` trait. Each `LLMClient` represents a specific LLM provider (e.g., OpenAI, Anthropic) and encapsulates the logic for communicating with that provider's API.\n\n2. **`db` field**: This is an instance of `SqlDb`, which likely represents a database connection used for storing and retrieving data related to LLM interactions.\n\n3. **`posthog_client` and `parea_client` fields**: These are instances of `PosthogClient` and `PareaClient`, respectively, which are likely used for analytics and monitoring purposes.\n\n4. **`stream_completion` and `completion` methods**: These methods, defined in the `LLMClient` trait, are implemented by each concrete `LLMClient` implementation. They are responsible for sending the actual query to the LLM provider's API and receiving the generated response. The `stream_completion` method streams the response as it is being generated, while `completion` waits for the entire response before returning it.\n\nThe `Agent` interacts with the `LLMBroker` to leverage the LLM's capabilities in generating responses to the user's query. Here's a high-level overview of how this interaction might work:\n\n1. The `Agent` receives the user's query and constructs an `LLMClientCompletionRequest` object, which encapsulates the query, context, and other parameters required by the LLM.\n\n2. The `Agent` passes this `LLMClientCompletionRequest` to the `LLMBroker`.\n\n3. The `LLMBroker` retrieves the appropriate `LLMClient` implementation from the `providers` map based on the desired LLM provider.\n\n4. The `LLMBroker` calls the `stream_completion` or `completion` method on the selected `LLMClient`, passing along the `LLMClientCompletionRequest` and any necessary API keys or authentication credentials.\n\n5. The `LLMClient` implementation handles the communication with the LLM provider's API, sending the query and receiving the generated response.\n\n6. The `LLMClient` returns the response to the `LLMBroker`, which can then pass it back to the `Agent`.\n\n7. The `Agent` can process the response from the LLM and present it to the user or take any other necessary actions.\n\nBy abstracting the communication with different LLM providers behind the `LLMClient` trait and the `LLMBroker` struct, the codebase achieves a modular and extensible design. New LLM providers can be added by implementing the `LLMClient` trait, and the `Agent` can seamlessly interact with any provider through the `LLMBroker` interface."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c6823b6-78cb-487b-bf4c-ddd3317fd4cf",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The Agent struct is crucial for managing interactions with a Large Language Model (LLM) through several key components:\n\n            1. LLMBroker: Manages communications with LLM providers like OpenAI, transmitting user queries and receiving responses.\n            2. LLMTokenizer: Prepares text for the LLM, ensuring proper format and tokenization for optimal processing.\n            3. Application Context: Accesses essential services and data structures to support functionality and query processing.\n            4. Conversation History: Tracks the flow of exchanges, maintaining context and continuity in interactions.\n            5. Optimization Tools: Utilizes modeling and reranking tools to enhance the quality and relevance of LLM responses."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "3c6823b6-78cb-487b-bf4c-ddd3317fd4cf",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "Agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/agent/types.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The Agent struct is crucial for managing interactions with a Large Language Model (LLM) through several key components:\n\n            1. LLMBroker: Manages communications with LLM providers like OpenAI, transmitting user queries and receiving responses.\n            2. LLMTokenizer: Prepares text for the LLM, ensuring proper format and tokenization for optimal processing.\n            3. Application Context: Accesses essential services and data structures to support functionality and query processing.\n            4. Conversation History: Tracks the flow of exchanges, maintaining context and continuity in interactions.\n            5. Optimization Tools: Utilizes modeling and reranking tools to enhance the quality and relevance of LLM responses."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7afa27ec-cb81-48af-a53a-2534daf4322a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `search_agent` function facilitates interaction with the Large Language Model (LLM). It extracts query details, initializes dependencies, and sets up a communication channel. After loading previous conversations from the database, it prepares an `Agent` with necessary tools like an LLM tokenizer and reranker. The `generate_agent_stream` function then manages LLM communication, processes responses, updates conversation states, and returns the response stream. This function is crucial for orchestrating the agent-LLM interaction, ensuring effective response generation based on user queries."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7afa27ec-cb81-48af-a53a-2534daf4322a",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "search_agent",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/webserver/agent.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "The `search_agent` function facilitates interaction with the Large Language Model (LLM). It extracts query details, initializes dependencies, and sets up a communication channel. After loading previous conversations from the database, it prepares an `Agent` with necessary tools like an LLM tokenizer and reranker. The `generate_agent_stream` function then manages LLM communication, processes responses, updates conversation states, and returns the response stream. This function is crucial for orchestrating the agent-LLM interaction, ensuring effective response generation based on user queries."
-					}
-				}
-			}
-		}
-	},
-	{
 		"request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
 		"event": {
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
 					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
+					"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
 				},
 				"event": {
-					"Probe": {
-						"ProbeAnswer": "Based on the code analysis, the agent interacts with the Large Language Model (LLM) through two main functions: `search_agent` and `followup_chat`.\n\n1. `search_agent`:\n- This function handles new user queries for searching or answering questions.\n- It prepares an `Agent` instance with the user's query, previous conversation context, repository information, and various dependencies like the LLM broker, SQL database, reranker, and chat broker.\n- It then calls the `generate_agent_stream` function, which likely manages the communication with the LLM through the LLM broker.\n- The LLM is provided with the user's query and context, and its response is processed and sent back through a communication channel.\n\n2. `followup_chat`:\n- This function handles follow-up chat messages from the user, continuing an existing conversation thread.\n- It retrieves the previous conversation messages from the SQL database and uses them as context for the LLM.\n- Similar to `search_agent`, it prepares an `Agent` instance with the previous conversation, user context, and other relevant information.\n- It initiates the `generate_agent_stream` function, which interacts with the LLM to generate a response based on the provided context.\n\nIn both cases, the `generate_agent_stream` function plays a crucial role in managing the communication with the LLM. It likely sends the user's query and context to the LLM through the LLM broker, receives the LLM's response, processes it, updates the conversation state, and sends the processed response back through the communication channel.\n\nThe agent interacts with the LLM by providing the necessary context, such as the user's query, previous conversation messages, file paths, and other relevant information. The LLM generates a response based on this context, which is then processed and returned to the user through the communication channel."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
-				},
-				"event": {
-					"Probe": {
-						"ProbeAnswer": "Based on the code analysis, the agent interacts with the Large Language Model (LLM) through two main functions: `search_agent` and `followup_chat`.\n\n1. `search_agent`:\n- This function handles new user queries for searching or answering questions.\n- It prepares an `Agent` instance with the user's query, previous conversation context, repository information, and various dependencies like the LLM broker, SQL database, reranker, and chat broker.\n- It then calls the `generate_agent_stream` function, which likely manages the communication with the LLM through the LLM broker.\n- The LLM is provided with the user's query and context, and its response is processed and sent back through a communication channel.\n\n2. `followup_chat`:\n- This function handles follow-up chat messages from the user, continuing an existing conversation thread.\n- It retrieves the previous conversation messages from the SQL database and uses them as context for the LLM.\n- Similar to `search_agent`, it prepares an `Agent` instance with the previous conversation, user context, and other relevant information.\n- It initiates the `generate_agent_stream` function, which interacts with the LLM to generate a response based on the provided context.\n\nIn both cases, the `generate_agent_stream` function plays a crucial role in managing the communication with the LLM. It likely sends the user's query and context to the LLM through the LLM broker, receives the LLM's response, processes it, updates the conversation state, and sends the processed response back through the communication channel.\n\nThe agent interacts with the LLM by providing the necessary context, such as the user's query, previous conversation messages, file paths, and other relevant information. The LLM generates a response based on this context, which is then processed and returned to the user through the communication channel."
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "6d031d5d-7558-4485-8a33-888523b49c91",
-		"event": {
-			"SymbolEvent": {
-				"symbol_identifier": {
-					"symbol_name": "agent_router",
-					"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs"
-				},
-				"event": {
-					"SymbolToEditRequest": [
-						{
-							"range": {
-								"startPosition": {
-									"line": 176,
-									"character": 0
-								},
-								"endPosition": {
-									"line": 176,
-									"character": 10
-								}
-							},
-							"fs_file_path": "/Users/guglielmodanna/scratch/sidecar/sidecar/src/bin/webserver.rs",
+					"Edit": {
+						"symbol_identifier": {
 							"symbol_name": "agent_router",
-							"is_new": true
-						}
-					]
+							"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs"
+						},
+						"symbols": [
+							{
+								"outline": true,
+								"range": {
+									"startPosition": {
+										"line": 165,
+										"character": 0
+									},
+									"endPosition": {
+										"line": 168,
+										"character": 999
+									}
+								},
+								"symbol_name": "agent_router",
+								"fs_file_path": "/Users/guglielmodanna/Repo/sidecar/sidecar/src/bin/webserver.rs",
+								"is_new": true
+							}
+						]
+					}
 				}
 			}
 		}

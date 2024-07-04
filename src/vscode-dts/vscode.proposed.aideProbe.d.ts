@@ -29,7 +29,8 @@ declare module 'vscode' {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		location(value: AideProbeGoToDefinition): void;
-		codeEdit(value: AideChatResponseTextEdit): void;
+		codeEditPreview(value: AideProbeResponseTextEditPreview): void;
+		codeEdit(value: AideProbeResponseTextEdit): void;
 	}
 
 	export interface ProbeErrorDetails {

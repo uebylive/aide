@@ -56,7 +56,7 @@ import * as types from './extHostTypes';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeBreakdownContent, IAideProbeTextEdit, IAideProbeTextEditPreview, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
 
@@ -2972,6 +2972,26 @@ export namespace AideChatResponseBreakdownPart {
 	}
 }
 
+export namespace AideProbeResponseTextEditPreviewPart {
+	export function from(part: vscode.AideProbeResponseTextEditPreview): Dto<IAideProbeTextEditPreview> {
+		return {
+			kind: 'textEditPreview',
+			reference: part.reference,
+			ranges: part.ranges.map(r => Range.from(r))
+		};
+	}
+}
+
+export namespace AideProbeResponseTextEditPart {
+	export function from(part: vscode.AideProbeResponseTextEdit): Dto<IAideProbeTextEdit> {
+		return {
+			kind: 'textEdit',
+			reference: part.reference,
+			edits: part.edits.map(e => TextEdit.from(e))
+		};
+	}
+}
+
 export namespace AideChatResponsePart {
 
 	export function from(part: vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseMarkdownWithVulnerabilitiesPart | vscode.ChatResponseDetectedParticipantPart | vscode.ChatResponseWarningPart | vscode.ChatResponseConfirmationPart | vscode.ChatResponseWarningPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IChatProgressDto {
@@ -3113,7 +3133,8 @@ export namespace AideProbeRequestModel {
 	export function to(request: IAideProbeRequestModel): vscode.ProbeRequest {
 		return {
 			requestId: request.sessionId,
-			query: request.message
+			query: request.message,
+			editMode: request.editMode,
 		};
 	}
 }

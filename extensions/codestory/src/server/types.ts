@@ -100,6 +100,7 @@ interface SymbolEventGoToDefinitionRequest {
 interface SymbolEventSubStep {
 	Probe?: SymbolEventProbeRequest;
 	GoToDefinition?: SymbolEventGoToDefinitionRequest;
+	Edit?: SymbolToEditRequest;
 }
 
 interface SymbolLocation {

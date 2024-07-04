@@ -54,9 +54,15 @@ export interface IAideProbeGoToDefinition {
 	thinking: string;
 }
 
-export interface IAideChatResponseTextEdit {
+export interface IAideProbeTextEditPreview {
+	kind: 'textEditPreview';
+	reference: IReferenceByName;
+	ranges: Range[];
+}
+
+export interface IAideProbeTextEdit {
 	kind: 'textEdit';
-	uri: URI;
+	reference: IReferenceByName;
 	edits: TextEdit[];
 }
 
@@ -64,7 +70,8 @@ export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
-	| IAideChatResponseTextEdit;
+	| IAideProbeTextEditPreview
+	| IAideProbeTextEdit;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;

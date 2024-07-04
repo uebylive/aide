@@ -4763,12 +4763,30 @@ export class AideProbeGoToDefinitionPart {
 	}
 }
 
+export class AideProbeResponseTextEditPreviewPart {
+	reference: vscode.CodeReferenceByName;
+	ranges: vscode.Range[];
+	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.Range | vscode.Range[]) {
+		this.reference = reference;
+		this.ranges = Array.isArray(ranges) ? ranges : [ranges];
+	}
+}
+
+export class AideProbeResponseTextEditPart {
+	reference: vscode.CodeReferenceByName;
+	edits: vscode.TextEdit[];
+	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.TextEdit | vscode.TextEdit[]) {
+		this.reference = reference;
+		this.edits = Array.isArray(ranges) ? ranges : [ranges];
+	}
+}
+
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];
-	constructor(uri: vscode.Uri, edits: vscode.TextEdit[]) {
+	constructor(uri: vscode.Uri, edits: vscode.TextEdit | vscode.TextEdit[]) {
 		this.uri = uri;
-		this.edits = edits;
+		this.edits = Array.isArray(edits) ? edits : [edits];
 	}
 }
 

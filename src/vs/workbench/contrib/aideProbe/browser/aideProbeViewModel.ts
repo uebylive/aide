@@ -14,7 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeTextEdit, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeViewModel {
 	readonly model: IAideProbeModel;
@@ -60,6 +60,17 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._goToDefinitions;
 	}
 
+	private _codeEditsPreview: IAideProbeTextEditPreview[] = [];
+	get codeEditsPreview(): ReadonlyArray<IAideProbeTextEditPreview> {
+		return this._codeEditsPreview;
+	}
+
+
+	private _codeEdits: IAideProbeTextEdit[] = [];
+	get codeEdits(): ReadonlyArray<IAideProbeTextEdit> {
+		return this._codeEdits;
+	}
+
 	constructor(
 		private readonly _model: IAideProbeModel,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -80,6 +91,14 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 			this._goToDefinitions = _model.response?.goToDefinitions.map(definition => {
 				return this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
+			}) ?? [];
+
+			this._codeEditsPreview = _model.response?.codeEditsPreview.map(preview => {
+				return this._register(this.instantiationService.createInstance(AideProbeTextEditPreviewViewModel, preview));
+			}) ?? [];
+
+			this._codeEdits = _model.response?.codeEdits.map(edit => {
+				return this._register(this.instantiationService.createInstance(AideProbeTextEditViewModel, edit));
 			}) ?? [];
 
 			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
@@ -208,6 +227,43 @@ export class AideProbeGoToDefinitionViewModel extends Disposable implements IAid
 
 	constructor(
 		private readonly _definition: IAideProbeGoToDefinition,
+	) {
+		super();
+	}
+}
+
+export class AideProbeTextEditPreviewViewModel extends Disposable implements IAideProbeTextEditPreview {
+	readonly kind = 'textEditPreview';
+
+	get reference() {
+		return this._preview.reference;
+	}
+
+	get ranges() {
+		return this._preview.ranges;
+	}
+
+	constructor(
+		private readonly _preview: IAideProbeTextEditPreview,
+	) {
+		super();
+	}
+}
+
+
+export class AideProbeTextEditViewModel extends Disposable implements IAideProbeTextEdit {
+	readonly kind = 'textEdit';
+
+	get reference() {
+		return this._edit.reference;
+	}
+
+	get edits() {
+		return this._edit.edits;
+	}
+
+	constructor(
+		private readonly _edit: IAideProbeTextEdit,
 	) {
 		super();
 	}

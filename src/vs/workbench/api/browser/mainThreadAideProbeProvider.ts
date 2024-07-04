@@ -43,6 +43,7 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 
 	async $handleProbingProgressChunk(request: IAideProbeRequestModel, progress: IAideProbeProgressDto): Promise<void> {
 		const revivedProgress = revive(progress) as IAideProbeProgress;
+		console.log(progress.kind);
 		this._pendingProgress.get(request.sessionId)?.(revivedProgress);
 	}
 
