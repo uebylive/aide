@@ -160,7 +160,7 @@ export async function activate(context: ExtensionContext) {
 		});
 	};
 
-	const getNextOpenPort = async (startFrom: number = 42423) => {
+	const getNextOpenPort = async (startFrom: number = 42450) => {
 		let openPort: number | null = null;
 		while (startFrom < 65535 || !!openPort) {
 			if (await isPortOpen(startFrom)) {
