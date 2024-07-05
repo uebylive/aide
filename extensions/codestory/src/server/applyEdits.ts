@@ -39,7 +39,7 @@ export async function applyEdits(request: SidecarApplyEditsRequest): Promise<Sid
 	const lines = replacedText.split(/\r\n|\r|\n/);
 	let lastLineColumn = 0;
 	if (lines.length > 0) {
-		lastLineColumn = lines[lines.length - 1].length
+		lastLineColumn = lines[lines.length - 1].length;
 	} else {
 		lastLineColumn = replacedText.length + startPosition.character;
 	}

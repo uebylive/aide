@@ -33,7 +33,7 @@ export interface IAideProbeUserAction {
 	action: IFollowAlongAction | INavigateBreakdownAction;
 }
 
-interface IReferenceByName {
+export interface IReferenceByName {
 	name: string;
 	uri: URI;
 }
