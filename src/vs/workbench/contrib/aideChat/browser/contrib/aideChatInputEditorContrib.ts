@@ -26,16 +26,20 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { IAideChatWidgetService, IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { CodeSymbolCompletionProviderName, dynamicVariableDecorationType, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, dynamicVariableDecorationType, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, IWidgetWithInputEditor, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
 import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
+import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const decorationDescription = 'chat';
 const placeholderDecorationType = 'chat-session-detail';
@@ -322,68 +326,80 @@ class ChatTokenDeleter extends Disposable {
 }
 ChatWidget.CONTRIBS.push(ChatTokenDeleter);
 
-class FileReferenceCompletions extends Disposable {
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}file:\\w*`, 'g'); // MUST be using `g`-flag
+async function getWidget(
+	model: ITextModel,
+	chatWidgetService: IAideChatWidgetService,
+	viewsService: IViewsService
+): Promise<IWidgetWithInputEditor | undefined | null> {
+	let widget: IWidgetWithInputEditor | undefined | null;
+	const scheme = model.uri.scheme;
+	if (scheme === ChatInputPart.INPUT_SCHEME) {
+		widget = chatWidgetService.getWidgetByInputUri(model.uri);
+	} else if (scheme === AideProbeInputPart.INPUT_SCHEME) {
+		widget = await showProbeView(viewsService);
+	}
+
+	return widget;
+}
+
+export class FileReferenceCompletionsProvider extends Disposable {
 	private readonly fileQueryBuilder = this.instantiationService.createInstance(QueryBuilder);
 
 	constructor(
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
 		@ISearchService private readonly searchService: ISearchService,
 		@ILabelService private readonly labelService: ILabelService,
+		@IViewsService private readonly viewsService: IViewsService
 	) {
 		super();
+	}
 
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: FileReferenceCompletionProviderName,
-			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget) {
-					return null;
-				}
+	async provideCompletionItems(model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) {
+		const widget = await getWidget(model, this.chatWidgetService, this.viewsService);
+		if (!widget) {
+			return null;
+		}
 
-				const varWord = getWordAtText(position.column, FileReferenceCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
-				if (!varWord && model.getWordUntilPosition(position).word) {
-					return null;
-				}
+		const varWord = getWordAtText(position.column, FileReferenceCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+		if (!varWord && model.getWordUntilPosition(position).word) {
+			return null;
+		}
 
-				const range: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.endColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
+		const range: IRange = {
+			startLineNumber: position.lineNumber,
+			startColumn: varWord ? varWord.endColumn : position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: varWord ? varWord.endColumn : position.column
+		};
 
-				const files = await this.doGetFileSearchResults(_token);
-				const completionURIs = files.results.map(result => result.resource);
+		const files = await this.doGetFileSearchResults(_token);
+		const completionURIs = files.results.map(result => result.resource);
 
-				const editRange: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.startColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
+		const editRange: IRange = {
+			startLineNumber: position.lineNumber,
+			startColumn: varWord ? varWord.startColumn : position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: varWord ? varWord.endColumn : position.column
+		};
 
-				const completionItems = completionURIs.map(uri => {
-					const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
-					return <CompletionItem>{
-						label: basenameOrAuthority(uri),
-						insertText: '',
-						detail,
-						kind: CompletionItemKind.File,
-						range,
-						command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
-						sortText: 'z'
-					};
-				});
+		const completionItems = completionURIs.map(uri => {
+			const detail = this.labelService.getUriLabel(dirname(uri), { relative: true });
+			return <CompletionItem>{
+				label: basenameOrAuthority(uri),
+				insertText: '',
+				detail,
+				kind: CompletionItemKind.File,
+				range,
+				command: { id: SelectAndInsertFileAction.ID, title: SelectAndInsertFileAction.ID, arguments: [{ widget, range: editRange, uri }] },
+				sortText: 'z'
+			};
+		});
 
-				return {
-					suggestions: completionItems
-				};
-			}
-		}));
+		return {
+			suggestions: completionItems
+		};
 	}
 
 	private doGetFileSearchResults(token: CancellationToken): Promise<ISearchComplete> {
@@ -397,65 +413,106 @@ class FileReferenceCompletions extends Disposable {
 			), token);
 	}
 }
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FileReferenceCompletions, LifecyclePhase.Eventually);
 
-
-class CodeSymbolCompletions extends Disposable {
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}code:\\w*`, 'g'); // MUST be using `g`-flag
-	private readonly workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
+class FileReferenceCompletions extends Disposable {
+	static readonly VariableNameDef = new RegExp(`${chatVariableLeader}file:\\w*`, 'g'); // MUST be using `g`-flag
 
 	constructor(
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: FileReferenceCompletionProviderName,
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const fileReferenceCompletionsProvider = this._register(this.instantiationService.createInstance(FileReferenceCompletionsProvider));
+				return fileReferenceCompletionsProvider.provideCompletionItems(model, position, _context, _token);
+			}
+		}));
+	}
+}
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(FileReferenceCompletions, LifecyclePhase.Eventually);
+
+export class CodeSymbolCompletionProvider extends Disposable {
+	private readonly workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
+
+	constructor(
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@IViewsService private readonly viewsService: IViewsService,
+		@IEditorService private readonly editorService: IEditorService,
+	) {
+		super();
+	}
+
+	async provideCompletionItems(model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) {
+		const widget = await getWidget(model, this.chatWidgetService, this.viewsService);
+		if (!widget) {
+			return null;
+		}
+
+		const varWord = getWordAtText(position.column, CodeSymbolCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
+		if (!varWord && model.getWordUntilPosition(position).word) {
+			return null;
+		}
+
+		const range: IRange = {
+			startLineNumber: position.lineNumber,
+			startColumn: varWord ? varWord.endColumn : position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: varWord ? varWord.endColumn : position.column
+		};
+
+		const prefixWord = `${chatVariableLeader}code:`;
+		const query = varWord ? varWord.word.substring(prefixWord.length) : '';
+		let editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks(query, undefined, CancellationToken.None);
+		if (!editorSymbolPicks.length) {
+			return null;
+		}
+
+		if (model.uri.scheme === AideProbeInputPart.INPUT_SCHEME) {
+			const openEditor = this.editorService.activeEditor;
+			if (openEditor) {
+				editorSymbolPicks = editorSymbolPicks.filter(pick => pick.resource?.fsPath === openEditor.resource?.fsPath);
+			}
+		}
+
+		const editRange: IRange = {
+			startLineNumber: position.lineNumber,
+			startColumn: varWord ? varWord.startColumn : position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: varWord ? varWord.endColumn : position.column
+		};
+		return {
+			incomplete: true,
+			suggestions: editorSymbolPicks.map(pick => ({
+				label: pick.label,
+				insertText: '',
+				detail: pick.resource ? basenameOrAuthority(pick.resource) : '',
+				kind: CompletionItemKind.Text,
+				range,
+				command: { id: SelectAndInsertCodeAction.ID, title: SelectAndInsertCodeAction.ID, arguments: [{ widget, range: editRange, pick }] },
+				sortText: 'z'
+			} satisfies CompletionItem)),
+		};
+	}
+}
+
+class CodeSymbolCompletions extends Disposable {
+	static readonly VariableNameDef = new RegExp(`${chatVariableLeader}code:\\w*`, 'g'); // MUST be using `g`-flag
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: CodeSymbolCompletionProviderName,
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
-				if (!widget) {
-					return null;
-				}
-
-				const varWord = getWordAtText(position.column, CodeSymbolCompletions.VariableNameDef, model.getLineContent(position.lineNumber), 0);
-				if (!varWord && model.getWordUntilPosition(position).word) {
-					return null;
-				}
-
-				const range: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.endColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
-
-				const prefixWord = `${chatVariableLeader}code:`;
-				const query = varWord ? varWord.word.substring(prefixWord.length) : '';
-				const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks(query, undefined, CancellationToken.None);
-				if (!editorSymbolPicks.length) {
-					return null;
-				}
-
-				const editRange: IRange = {
-					startLineNumber: position.lineNumber,
-					startColumn: varWord ? varWord.startColumn : position.column,
-					endLineNumber: position.lineNumber,
-					endColumn: varWord ? varWord.endColumn : position.column
-				};
-				return {
-					incomplete: true,
-					suggestions: editorSymbolPicks.map(pick => ({
-						label: pick.label,
-						insertText: '',
-						detail: pick.resource ? basenameOrAuthority(pick.resource) : '',
-						kind: CompletionItemKind.Text,
-						range,
-						command: { id: SelectAndInsertCodeAction.ID, title: SelectAndInsertCodeAction.ID, arguments: [{ widget, range: editRange, pick }] },
-						sortText: 'z'
-					} satisfies CompletionItem)),
-				};
+				const codeSymbolCompletionsProvider = this._register(this.instantiationService.createInstance(CodeSymbolCompletionProvider));
+				return codeSymbolCompletionsProvider.provideCompletionItems(model, position, _context, _token);
 			}
 		}));
 	}

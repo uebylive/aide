@@ -36,10 +36,18 @@ import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/c
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { IDimension } from 'vs/editor/common/core/dimension';
+import { IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
+import { IAideProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { ILogService } from 'vs/platform/log/common/log';
+import { toErrorMessage } from 'vs/base/common/errorMessage';
+import { isDefined } from 'vs/base/common/types';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 
 const $ = dom.$;
 
-export class AideProbeViewPane extends ViewPane {
+export class AideProbeViewPane extends ViewPane implements IAideProbeView {
+	public static readonly CONTRIBS: { new(...args: [IAideProbeView, ...any]): IChatWidgetContrib }[] = [];
+
 	private container!: HTMLElement;
 	private resultWrapper!: HTMLElement;
 	private explorationDetail!: HTMLElement;
@@ -50,6 +58,7 @@ export class AideProbeViewPane extends ViewPane {
 	private dimensions: IDimension | undefined;
 
 	private inputPart!: AideProbeInputPart;
+	private contribs: IChatWidgetContrib[] = [];
 
 	private readonly markdownRenderer: MarkdownRenderer;
 	private requestInProgress: IContextKey<boolean>;
@@ -78,6 +87,10 @@ export class AideProbeViewPane extends ViewPane {
 		return this._viewModel;
 	}
 
+	get inputEditor(): ICodeEditor {
+		return this.inputPart.inputEditor;
+	}
+
 	constructor(
 		options: IViewPaneOptions,
 		@IKeybindingService keybindingService: IKeybindingService,
@@ -88,6 +101,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IOpenerService openerService: IOpenerService,
 		@IThemeService themeService: IThemeService,
+		@ILogService private readonly logService: ILogService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
@@ -140,7 +154,20 @@ export class AideProbeViewPane extends ViewPane {
 		this.breakdownsListContainer = dom.append(breakdownsWrapper, $('.breakdownsListContainer'));
 		this.responseWrapper = dom.append(this.resultWrapper, $('.responseWrapper'));
 
+		this.contribs = AideProbeViewPane.CONTRIBS.map(contrib => {
+			try {
+				return this._register(this.instantiationService.createInstance(contrib, this));
+			} catch (err) {
+				this.logService.error('Failed to instantiate probe view pane contrib', toErrorMessage(err));
+				return undefined;
+			}
+		}).filter(isDefined);
+
 		this.onDidChangeItems();
+	}
+
+	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {
+		return this.contribs.find(c => c.id === id) as T;
 	}
 
 	private toggleTailing(tailing: boolean, silent?: boolean) {
