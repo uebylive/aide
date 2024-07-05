@@ -27,7 +27,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideCommandPalette/browser/aideCommandPaletteContextKeys';
+import { CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteContextKeys';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 
@@ -39,6 +39,13 @@ const COMMAND_PALETTE_POSITION_KEY = 'aide.commandPalette.widgetposition';
 const COMMAND_PALETTE_Y_KEY = 'aide.commandPalette.widgety';
 
 export class AideCommandPaletteWidget extends Disposable {
+
+	readonly _container!: HTMLElement;
+	private isVisible = false;
+	private inputEditorHeight = 0;
+
+	private _inputEditor!: CodeEditorWidget;
+	private _inputEditorContainer!: HTMLElement;
 
 	/** coordinate of the debug toolbar per aux window */
 	private readonly auxWindowCoordinates = new WeakMap<CodeWindow, { x: number; y: number | undefined }>();
@@ -53,11 +60,6 @@ export class AideCommandPaletteWidget extends Disposable {
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-	private inputEditorHeight = 0;
-	readonly _container!: HTMLElement;
-
-	private _inputEditor!: CodeEditorWidget;
-	private _inputEditorContainer!: HTMLElement;
 
 	get inputEditor() {
 		return this._inputEditor;
@@ -65,6 +67,8 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	private inputModel: ITextModel | undefined;
 	private inputEditorHasFocus: IContextKey<boolean>;
+
+	id: string = 'aideCommandPalette';
 
 	constructor(
 		readonly container: HTMLElement,
@@ -80,38 +84,9 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		this.inputEditorHasFocus = CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this._container = container;
-	}
-
-	id: string = 'aideCommandPalette';
-
-	private _getAriaLabel(): string {
-		const verbose = this.configurationService.getValue<boolean>(AccessibilityVerbositySettingId.Chat);
-		if (verbose) {
-			const kbLabel = this.keybindingService.lookupKeybinding(AccessibilityCommandId.OpenAccessibilityHelp)?.getLabel();
-			return kbLabel ? localize('actions.commandPalette.accessibiltyHelp', "Command palette input, Type to interact with Aide, press enter to send out the request. Use {0} for Chat Accessibility Help.", kbLabel) : localize('commandPalette.accessibilityHelpNoKb', "Command palette input, Type to interact with Aide, press enter to run. Use the Command Palette Accessibility Help command for more information.");
-		}
-		return localize('chatInput', "Chat Input");
-	}
-
-	setValue(value: string): void {
-		this.inputEditor.setValue(value);
-		// always leave cursor at the end
-		this.inputEditor.setPosition({ lineNumber: 1, column: value.length + 1 });
-	}
-
-	focus() {
-		this._inputEditor.focus();
-	}
-
-	hasFocus(): boolean {
-		return this._inputEditor.hasWidgetFocus();
-	}
-
-	render(initialValue = ''): void {
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(this._container));
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, inputScopedContextKeyService]));
-
 
 		const options: IEditorConstructionOptions = getSimpleEditorOptions(this.configurationService);
 		options.readOnly = false;
@@ -146,7 +121,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		}
 		this.inputModel = inputModel;
 		this._inputEditor.setModel(this.inputModel);
-		// I don't like that we need to manally invoke this, I didn't find a call to this on ChatInputPart
 		this._inputEditor.render();
 
 		this._register(this._inputEditor.onDidFocusEditorText(() => {
@@ -204,6 +178,23 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.setCoordinates();
 
 		this.layout();
+	}
+
+	private _getAriaLabel(): string {
+		const verbose = this.configurationService.getValue<boolean>(AccessibilityVerbositySettingId.Chat);
+		if (verbose) {
+			const kbLabel = this.keybindingService.lookupKeybinding(AccessibilityCommandId.OpenAccessibilityHelp)?.getLabel();
+			return kbLabel ? localize('actions.commandPalette.accessibiltyHelp', "Command palette input, Type to interact with Aide, press enter to send out the request. Use {0} for Chat Accessibility Help.", kbLabel) : localize('commandPalette.accessibilityHelpNoKb', "Command palette input, Type to interact with Aide, press enter to run. Use the Command Palette Accessibility Help command for more information.");
+		}
+		return localize('chatInput', "Chat Input");
+	}
+
+	focus() {
+		this._inputEditor.focus();
+	}
+
+	hasFocus(): boolean {
+		return this._inputEditor.hasWidgetFocus();
 	}
 
 	private setYCoordinate(y: number): void {
@@ -268,6 +259,22 @@ export class AideCommandPaletteWidget extends Disposable {
 		} else {
 			this.auxWindowCoordinates.set(activeWindow, { x, y });
 		}
+	}
+
+	show(): void {
+		if (this.isVisible) {
+			this.setCoordinates();
+			return;
+		}
+
+		dom.show(this.container);
+		this.isVisible = true;
+		this.setCoordinates();
+	}
+
+	hide(): void {
+		this.isVisible = false;
+		dom.hide(this.container);
 	}
 
 

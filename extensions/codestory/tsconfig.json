@@ -11,7 +11,6 @@
 		"../../src/vscode-dts/vscode.proposed.aideChatParticipant.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideChatVariableResolver.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideProbe.d.ts",
-		"../../src/vscode-dts/vscode.proposed.aideCommandPalette.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantPrivate.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",

@@ -30,7 +30,6 @@ import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 import { AideQuickFix } from './quickActions/fix';
 import { copySettings } from './utilities/copySettings';
 import { AideProbeProvider } from './completions/providers/probeProvider';
-import { CommandPaletteProvider } from './completions/providers/commandPaletteProvider';
 
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
@@ -278,10 +277,6 @@ export async function activate(context: ExtensionContext) {
 
 	const probeProvider = new AideProbeProvider(sidecarClient, editorUrl);
 	context.subscriptions.push(probeProvider);
-
-
-	const commandPaletteProvider = new CommandPaletteProvider(editorUrl);
-	context.subscriptions.push(commandPaletteProvider);
 
 	// Register feedback commands
 	context.subscriptions.push(
