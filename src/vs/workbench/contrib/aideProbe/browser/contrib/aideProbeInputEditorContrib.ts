@@ -11,10 +11,12 @@ import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList }
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { localize } from 'vs/nls';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
+import { CodeSymbolCompletionProviderName, MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
 import { computeCompletionRanges } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
+import { CodeSymbolCompletionProvider } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
 import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
@@ -49,30 +51,12 @@ class BuiltinDynamicCompletions extends Disposable {
 				return <CompletionList>{
 					suggestions: [
 						<CompletionItem>{
-							label: `${probeVariableLeader}file`,
-							insertText: `${probeVariableLeader}file:`,
-							detail: localize('pickFileReferenceLabel', "Pick a file"),
-							range,
-							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'file' }] },
-							sortText: 'z'
-						},
-						<CompletionItem>{
 							label: `${probeVariableLeader}code`,
 							insertText: `${probeVariableLeader}code:`,
 							detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
 							range,
 							kind: CompletionItemKind.Text,
 							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'code' }] },
-							sortText: 'z'
-						},
-						<CompletionItem>{
-							label: `${probeVariableLeader}folder`,
-							insertText: `${probeVariableLeader}folder:`,
-							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
-							range,
-							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'folder' }] },
 							sortText: 'z'
 						}
 					]
@@ -83,3 +67,23 @@ class BuiltinDynamicCompletions extends Disposable {
 }
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
+
+class CodeSymbolCompletions extends Disposable {
+	static readonly VariableNameDef = new RegExp(`${probeVariableLeader}code:\\w*`, 'g'); // MUST be using `g`-flag
+
+	constructor(
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: AideProbeInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: CodeSymbolCompletionProviderName,
+			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
+				const codeSymbolCompletionsProvider = this._register(this.instantiationService.createInstance(CodeSymbolCompletionProvider));
+				return codeSymbolCompletionsProvider.provideCompletionItems(model, position, _context, _token);
+			}
+		}));
+	}
+}
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(CodeSymbolCompletions, LifecyclePhase.Eventually);

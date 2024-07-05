@@ -30,6 +30,7 @@ import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/br
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatRequestVariableValue, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -38,6 +39,11 @@ export const dynamicVariableDecorationType = 'chat-dynamic-variable';
 export const FolderReferenceCompletionProviderName = 'chatInplaceFolderReferenceCompletionProvider';
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
+
+export interface IWidgetWithInputEditor {
+	inputEditor: ICodeEditor;
+	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
+}
 
 export class ChatDynamicVariableModel extends Disposable implements IChatWidgetContrib {
 	public static readonly ID = 'chatDynamicVariableModel';
@@ -52,7 +58,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 	}
 
 	constructor(
-		private readonly widget: IChatWidget,
+		private readonly widget: IWidgetWithInputEditor,
 		@ILabelService private readonly labelService: ILabelService,
 		@ILogService private readonly logService: ILogService,
 	) {
@@ -129,6 +135,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 }
 
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
+AideProbeViewPane.CONTRIBS.push(ChatDynamicVariableModel);
 
 interface MultiLevelCodeTriggerActionContext {
 	inputEditor: ICodeEditor;
@@ -187,7 +194,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 registerAction2(MultiLevelCodeTriggerAction);
 
 interface SelectAndInsertFileActionContext {
-	widget: IChatWidget;
+	widget: IWidgetWithInputEditor;
 	range: IRange;
 	uri: URI;
 }
@@ -304,7 +311,7 @@ export class SelectAndInsertFileAction extends Action2 {
 registerAction2(SelectAndInsertFileAction);
 
 interface SelectAndInsertCodeActionContext {
-	widget: IChatWidget;
+	widget: IWidgetWithInputEditor;
 	range: IRange;
 	pick: ISymbolQuickPickItem;
 }
