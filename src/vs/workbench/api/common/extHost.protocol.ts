@@ -90,6 +90,8 @@ import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { IAideProbeTextEdit, IAideProbeTextEditPreview, IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { IAideCommandPaletteData } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteService';
+import { IAideCommandPaletteRequestModel } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteModel';
 
 export interface IWorkspaceData extends IStaticWorkspaceData {
 	folders: { uri: UriComponents; name: string; index: number }[];
@@ -1484,6 +1486,15 @@ export interface MainThreadAideProbeProviderShape extends IDisposable {
 export interface ExtHostAideProbeProviderShape {
 	$initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined>;
 	$onUserAction(handle: number, action: IAideProbeUserAction): void;
+}
+
+export interface MainThreadAideCommandPaletteProviderShape {
+	$registerCommandPaletteProvider(handle: number, request: IAideCommandPaletteData): void;
+	$unregisterCommandPaletteProvider(handle: number): void;
+}
+
+export interface ExtHostAideCommandPaletteProviderShape {
+	$provideResponse(handle: number, request: IAideCommandPaletteRequestModel, token: CancellationToken): void;
 }
 
 ///////////////////////// END AIDE /////////////////////////
@@ -2990,6 +3001,7 @@ export const MainContext = {
 	MainThreadAideChatAgents2: createProxyIdentifier<MainThreadAideChatAgentsShape2>('MainThreadAideChatAgents2'),
 	MainThreadAideChatVariables: createProxyIdentifier<MainThreadAideChatVariablesShape>('MainThreadAideChatVariables'),
 	MainThreadProbeProvider: createProxyIdentifier<MainThreadAideProbeProviderShape>('MainThreadProbeProvider'),
+	MainThreadAideCommandPaletteProvider: createProxyIdentifier<MainThreadAideCommandPaletteProviderShape>('MainThreadAideCommandPaletteProvider'),
 	MainThreadChatAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadChatAgents2'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
 	MainThreadLanguageModelTools: createProxyIdentifier<MainThreadLanguageModelToolsShape>('MainThreadChatSkills'),
@@ -3119,6 +3131,7 @@ export const ExtHostContext = {
 	ExtHostAideChatAgents2: createProxyIdentifier<ExtHostAideChatAgentsShape2>('ExtHostAideChatAgents'),
 	ExtHostAideChatVariables: createProxyIdentifier<ExtHostAideChatVariablesShape>('ExtHostAideChatVariables'),
 	ExtHostAideProbeProvider: createProxyIdentifier<ExtHostAideProbeProviderShape>('ExtHostAideProbeProvider'),
+	ExtHostAideCommandPaletteProvider: createProxyIdentifier<ExtHostAideCommandPaletteProviderShape>('ExtHostAideCommandPaletteProvider'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostEmbeddings: createProxyIdentifier<ExtHostEmbeddingsShape>('ExtHostEmbeddings'),
 	ExtHostAiRelatedInformation: createProxyIdentifier<ExtHostAiRelatedInformationShape>('ExtHostAiRelatedInformation'),
