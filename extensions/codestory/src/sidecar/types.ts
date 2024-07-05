@@ -486,6 +486,7 @@ export enum LLMProvider {
 	Anthropic,
 	FireworksAI,
 	GeminiPro,
+	OpenRouter,
 }
 
 export type CustomLLMType = {
@@ -639,6 +640,13 @@ function getProviderConfiguration(type: string, value: ModelProviderConfiguratio
 			}
 		};
 	}
+	if (type === 'open-router') {
+		return {
+			'OpenRouter': {
+				'api_key': value.apiKey,
+			}
+		};
+	}
 	return null;
 }
 
@@ -677,6 +685,9 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	}
 	if (providerConfiguration.type === 'geminipro') {
 		return 'GeminiPro';
+	}
+	if (providerConfiguration.type === 'openrouter') {
+		return 'OpenRouter';
 	}
 	return null;
 }
