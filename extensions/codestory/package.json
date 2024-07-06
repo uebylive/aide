@@ -72,7 +72,7 @@
         "name": "Aide",
         "description": "What can I help you with today?",
         "isDefault": true,
-        "locations": ["panel"]
+        "locations": ["panel", "editor"]
       }
     ],
     "menus": {
