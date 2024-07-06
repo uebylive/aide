@@ -7,6 +7,7 @@ import { MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { isMacintosh } from 'vs/base/common/platform';
+import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
 import * as nls from 'vs/nls';
 import { AccessibleViewRegistry } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
 import { ICommandService } from 'vs/platform/commands/common/commands';
@@ -22,24 +23,32 @@ import { ChatAccessibilityHelp } from 'vs/workbench/contrib/aideChat/browser/act
 import { registerChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
+import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
 import { registerChatCopyActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCopyActions';
+import { registerChatDeveloperActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions';
 import { SubmitAction, registerChatExecuteActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
 import { registerChatFileTreeActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatFileTreeActions';
 import { registerChatExportActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatImportExport';
 import { registerMoveActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatMoveActions';
+import { registerQuickChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatQuickInputActions';
 import { registerChatTitleActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatTitleActions';
-import { IAideChatAccessibilityService, IAideChatCodeBlockContextProviderService, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IAideChatAccessibilityService, IAideChatCodeBlockContextProviderService, IAideChatWidgetService, IQuickChatService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityService';
 import { ChatEditor, IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
 import { AideChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
 import { ChatExtensionPointHandler } from 'vs/workbench/contrib/aideChat/browser/aideChatParticipantContributions';
+import { QuickChatService } from 'vs/workbench/contrib/aideChat/browser/aideChatQuick';
 import { ChatResponseAccessibleView } from 'vs/workbench/contrib/aideChat/browser/aideChatResponseAccessibleView';
 import { ChatVariablesService } from 'vs/workbench/contrib/aideChat/browser/aideChatVariables';
 import { ChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
+import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
 import { ChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/codeBlockContextProviderService';
+import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
+import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorHover';
+import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -47,15 +56,14 @@ import { ChatService } from 'vs/workbench/contrib/aideChat/common/aideChatServic
 import { ChatSlashCommandService, IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { ChatWidgetHistoryService, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
+import { ILanguageModelsService, LanguageModelsService } from 'vs/workbench/contrib/aideChat/common/languageModels';
+import { ILanguageModelStatsService, LanguageModelStatsService } from 'vs/workbench/contrib/aideChat/common/languageModelStats';
+import { ILanguageModelToolsService, LanguageModelToolsService } from 'vs/workbench/contrib/aideChat/common/languageModelToolsService';
+import { LanguageModelToolsExtensionPointHandler } from 'vs/workbench/contrib/aideChat/common/tools/languageModelToolsContribution';
+import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/aideChat/common/voiceChatService';
 import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import '../common/aideChatColors';
-import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
-import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
-import { AideChatEditSessionService, IAideChatEditSessionService } from 'vs/workbench/contrib/aideChat/browser/aideChatEdits';
-import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
-import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
-// import { TestDecoration } from 'vs/workbench/contrib/aideChat/browser/testDecoration';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -96,10 +104,23 @@ configurationRegistry.registerConfiguration({
 			deprecated: true,
 			default: false
 		},
+		'aideChat.experimental.variables.editor': {
+			type: 'boolean',
+			description: nls.localize('aideChat.experimental.variables.editor', "Enables variables for editor chat."),
+			default: false
+		},
+		'aideChat.experimental.variables.notebook': {
+			type: 'boolean',
+			description: nls.localize('aideChat.experimental.variables.notebook', "Enables variables for notebook chat."),
+			default: false
+		},
+		'aideChat.experimental.variables.terminal': {
+			type: 'boolean',
+			description: nls.localize('aideChat.experimental.variables.terminal', "Enables variables for terminal chat."),
+			default: false
+		},
 	}
 });
-
-
 Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane(
 	EditorPaneDescriptor.create(
 		ChatEditor,
@@ -125,7 +146,7 @@ class ChatResolverContribution extends Disposable {
 			`${Schemas.vscodeChatSesssion}:**/**`,
 			{
 				id: AideChatEditorInput.EditorID,
-				label: nls.localize('aidehat', "Aide"),
+				label: nls.localize('aideChat', "Aide"),
 				priority: RegisteredEditorPriority.builtin
 			},
 			{
@@ -209,8 +230,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 
 				const variables = [
 					...chatVariablesService.getVariables(),
-					{ name: 'file', description: nls.localize('file', "Choose a file in the workspace") },
-					{ name: 'folder', description: nls.localize('folder', "Choose a folder in the workspace") },
+					{ name: 'file', description: nls.localize('file', "Choose a file in the workspace") }
 				];
 				const variableText = variables
 					.map(v => `* \`${chatVariableLeader}${v.name}\` - ${v.description}`)
@@ -239,7 +259,7 @@ registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointH
 
 registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
 registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
-//registerEditorContribution(TestDecoration.ID, TestDecoration, EditorContributionInstantiation.AfterFirstRender);
+registerWorkbenchContribution2(LanguageModelToolsExtensionPointHandler.ID, LanguageModelToolsExtensionPointHandler, WorkbenchPhase.Eventually);
 
 registerChatActions();
 registerChatCopyActions();
@@ -248,18 +268,24 @@ registerChatCodeCompareBlockActions();
 registerChatFileTreeActions();
 registerChatTitleActions();
 registerChatExecuteActions();
+registerQuickChatActions();
 registerChatExportActions();
 registerMoveActions();
 registerNewChatActions();
 registerChatContextActions();
+registerChatDeveloperActions();
 
 registerSingleton(IAideChatService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideChatWidgetService, ChatWidgetService, InstantiationType.Delayed);
+registerSingleton(IQuickChatService, QuickChatService, InstantiationType.Delayed);
 registerSingleton(IAideChatAccessibilityService, ChatAccessibilityService, InstantiationType.Delayed);
 registerSingleton(IAideChatWidgetHistoryService, ChatWidgetHistoryService, InstantiationType.Delayed);
+registerSingleton(ILanguageModelsService, LanguageModelsService, InstantiationType.Delayed);
+registerSingleton(ILanguageModelStatsService, LanguageModelStatsService, InstantiationType.Delayed);
 registerSingleton(IAideChatSlashCommandService, ChatSlashCommandService, InstantiationType.Delayed);
 registerSingleton(IAideChatAgentService, ChatAgentService, InstantiationType.Delayed);
 registerSingleton(IAideChatAgentNameService, ChatAgentNameService, InstantiationType.Delayed);
 registerSingleton(IAideChatVariablesService, ChatVariablesService, InstantiationType.Delayed);
-registerSingleton(IAideChatEditSessionService, AideChatEditSessionService, InstantiationType.Delayed);
+registerSingleton(ILanguageModelToolsService, LanguageModelToolsService, InstantiationType.Delayed);
+registerSingleton(IVoiceChatService, VoiceChatService, InstantiationType.Delayed);
 registerSingleton(IAideChatCodeBlockContextProviderService, ChatCodeBlockContextProviderService, InstantiationType.Delayed);

@@ -8,8 +8,8 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IProgress } from 'vs/platform/progress/common/progress';
+import { IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { IAideChatFollowup, IAideChatProgress, IChatResponseProgressFileTreeData } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/aiModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 //#region slash service, commands etc

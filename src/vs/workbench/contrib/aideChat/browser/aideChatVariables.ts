@@ -3,17 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { basename } from 'vs/base/common/path';
 import { coalesce } from 'vs/base/common/arrays';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { onUnexpectedExternalError } from 'vs/base/common/errors';
 import { Iterable } from 'vs/base/common/iterator';
 import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { URI } from 'vs/base/common/uri';
+import { Location } from 'vs/editor/common/languages';
+import { IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatDynamicVariableModel } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestDynamicVariablePart, ChatRequestVariablePart, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IChatVariableResolver, IAideChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { ChatContextAttachments } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 interface IChatData {
 	data: IAideChatVariableData;
@@ -26,7 +32,8 @@ export class ChatVariablesService implements IAideChatVariablesService {
 	private _resolver = new Map<string, IChatData>();
 
 	constructor(
-		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService
+		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@IViewsService private readonly viewsService: IViewsService,
 	) {
 	}
 
@@ -83,11 +90,15 @@ export class ChatVariablesService implements IAideChatVariablesService {
 
 		await Promise.allSettled(jobs);
 
+		// Make array not sparse
 		resolvedVariables = coalesce<IAideChatRequestVariableEntry>(resolvedVariables);
 
 		// "reverse", high index first so that replacement is simple
 		resolvedVariables.sort((a, b) => b.range!.start - a.range!.start);
-		resolvedVariables.push(...resolvedAttachedContext);
+
+		// resolvedAttachedContext is a sparse array
+		resolvedVariables.push(...coalesce(resolvedAttachedContext));
+
 
 		return {
 			variables: resolvedVariables,
@@ -143,5 +154,32 @@ export class ChatVariablesService implements IAideChatVariablesService {
 		return toDisposable(() => {
 			this._resolver.delete(key);
 		});
+	}
+
+	async attachContext(name: string, value: string | URI | Location, location: AideChatAgentLocation) {
+		if (location !== AideChatAgentLocation.Panel) {
+			return;
+		}
+
+		await showChatView(this.viewsService);
+		const widget = this.chatWidgetService.lastFocusedWidget;
+		if (!widget || !widget.viewModel) {
+			return;
+		}
+
+		const key = name.toLowerCase();
+		if (key === 'file' && typeof value !== 'string') {
+			const uri = URI.isUri(value) ? value : value.uri;
+			const range = 'range' in value ? value.range : undefined;
+			widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.setContext(false, { value, id: uri.toString() + (range?.toString() ?? ''), name: basename(uri.path), isFile: true, isDynamic: true });
+			return;
+		}
+
+		const resolved = this._resolver.get(key);
+		if (!resolved) {
+			return;
+		}
+
+		widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.setContext(false, { ...resolved.data, value });
 	}
 }

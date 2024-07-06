@@ -25,7 +25,7 @@ export class ChatFollowups<T extends IAideChatFollowup> extends Disposable {
 	) {
 		super();
 
-		const followupsContainer = dom.append(container, $('.interactive-session-followups'));
+		const followupsContainer = dom.append(container, $('.aide-chat-followups'));
 		followups.forEach(followup => this.renderFollowup(followupsContainer, followup));
 	}
 

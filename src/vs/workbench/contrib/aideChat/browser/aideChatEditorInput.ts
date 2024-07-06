@@ -20,7 +20,7 @@ import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aide
 import { IChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
-const ChatEditorIcon = registerIcon('chat-editor-label-icon', Codicon.commentDiscussion, nls.localize('chatEditorLabelIcon', 'Icon of the chat editor label.'));
+const ChatEditorIcon = registerIcon('chat-editor-label-icon', Codicon.commentDiscussion, nls.localize('aideChatEditorLabelIcon', 'Icon of the chat editor label.'));
 
 export class AideChatEditorInput extends EditorInput {
 	static readonly countsInUse = new Set<number>();
@@ -84,7 +84,7 @@ export class AideChatEditorInput extends EditorInput {
 	}
 
 	override getName(): string {
-		return this.model?.title || nls.localize('chatEditorName', "Chat") + (this.inputCount > 0 ? ` ${this.inputCount + 1}` : '');
+		return this.model?.title || nls.localize('aideChatEditorName', "Aide") + (this.inputCount > 0 ? ` ${this.inputCount + 1}` : '');
 	}
 
 	override getIcon(): ThemeIcon {
