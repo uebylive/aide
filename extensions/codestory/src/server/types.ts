@@ -606,7 +606,7 @@ export interface SidecarResponseRange {
 export interface SidecarResponsePosition {
 	line: number;
 	character: number;
-	byte_offset: number;
+	byteOffset: number;
 }
 
 export type SidecarApplyEditsResponse = {
