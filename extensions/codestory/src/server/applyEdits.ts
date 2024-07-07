@@ -49,12 +49,12 @@ export async function applyEdits(request: SidecarApplyEditsRequest): Promise<Sid
 		startPosition: {
 			line: startPosition.line,
 			character: startPosition.character,
-			byte_offset: 0,
+			byteOffset: 0,
 		},
 		endPosition: {
 			line: startPosition.line + replacedText.split(/\r\n|\r|\n/).length,
 			character: lastLineColumn,
-			byte_offset: 0,
+			byteOffset: 0,
 		}
 	};
 	return {
