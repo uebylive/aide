@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode } from 'vs/base/common/keyCodes';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ILocalizedString, localize2 } from 'vs/nls';
@@ -16,6 +16,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/com
 import { IView } from 'vs/workbench/common/views';
 import { showProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/common/aideCommandPaletteService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -25,6 +26,51 @@ export interface IProbeActionContext {
 	view?: IView;
 	inputValue?: string;
 }
+
+
+export class OpenCommandPaletteGlobalAction extends Action2 {
+	static readonly ID = 'workbench.action.aideCommandPalette.open';
+	constructor() {
+		super({
+			id: OpenCommandPaletteGlobalAction.ID,
+			title: localize2('openCommandPalette', "Open command palette"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyY,
+			}
+		});
+	}
+
+	override async run(accessor: ServicesAccessor): Promise<void> {
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.showPalette();
+	}
+}
+
+
+export class CloseCommandPaletteGlobalAction extends Action2 {
+	static readonly ID = 'workbench.action.aideCommandPalette.close';
+	constructor() {
+		super({
+			id: CloseCommandPaletteGlobalAction.ID,
+			title: localize2('closeCommandPalette', "Close command palette"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyCode.Escape,
+			}
+		});
+	}
+
+	override async run(accessor: ServicesAccessor): Promise<void> {
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.hidePalette();
+	}
+}
+
 
 export class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';
@@ -175,6 +221,8 @@ export class ClearAction extends Action2 {
 }
 
 export function registerProbeActions() {
+	registerAction2(OpenCommandPaletteGlobalAction);
+	registerAction2(CloseCommandPaletteGlobalAction);
 	registerAction2(CancelAction);
 	registerAction2(ClearAction);
 	registerWorkbenchContribution2(SubmitActionComposer.ID, SubmitActionComposer, WorkbenchPhase.BlockStartup);

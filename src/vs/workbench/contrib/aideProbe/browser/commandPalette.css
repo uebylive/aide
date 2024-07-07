@@ -17,11 +17,37 @@
 
 .command-palette-container {
 	position: fixed;
-	z-index: 20;
+	z-index: 40;
+	animation: fadein 0.3s ease forwards;
+	padding: 8px;
+	border-radius: 10px;
+	transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+	transition-delay: 0.3s;
+}
+
+.command-palette-container:hover:not(:has(.command-palette-input-editor:hover))  {
+	background-color: var(--vscode-toolbar-hoverBackground);
+	backdrop-filter: blur(5px);
+	cursor: grab;
+}
+
+.command-palette-container:active:not(:has(.command-palette-input-editor:active)) {
+	cursor: grabbing;
+}
+
+.command-palette-inner-container {
 	padding: 4px;
 	border-radius: 6px;
 	background-color: var(--vscode-input-background);
 	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border, transparent);
-	animation: fadein 0.3s ease forwards;
+	border: 1px solid var(--vscode-chat-requestBorder);
+	cursor: revert;
+}
+
+
+.command-palette-input-editor {
+	padding-inline: 12px;
+	background-color: var(--vscode-editor-background);
+	border-radius: 2px;
+	overflow: hidden;
 }

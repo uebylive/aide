@@ -217,6 +217,7 @@ export class AideProbeInputPart extends Disposable implements IHistoryNavigation
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
+				console.log(action);
 				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}

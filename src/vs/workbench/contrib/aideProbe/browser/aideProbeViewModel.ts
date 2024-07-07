@@ -128,6 +128,17 @@ export interface IAideProbeBreakdownViewModel {
 	currentRenderedHeight: number | undefined;
 }
 
+
+export type EditsSummary = Array<'addition' | 'deletion' | undefined>;
+
+export interface IAideProbeSymbolInfoViewModel {
+	readonly uri: URI;
+	readonly name: string;
+	readonly symbol: Promise<DocumentSymbol | undefined>;
+	readonly response?: IMarkdownString;
+	currentRenderedHeight: number | undefined;
+}
+
 export interface IAideProbeGoToDefinitionViewModel {
 	// symbol uri
 	readonly uri: URI;
@@ -205,6 +216,71 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 			return;
 		}
 	}
+}
+
+
+export class AideProbeSymbolInfoViewModel extends Disposable implements IAideProbeSymbolInfoViewModel {
+
+	get uri() {
+		return this._breakdown.reference.uri;
+	}
+
+	get name() {
+		return this._breakdown.reference.name;
+	}
+
+	get editSummary() {
+		return this.editsSummary;
+	}
+
+
+	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
+	private _symbol: DocumentSymbol | undefined;
+	get symbol() {
+		return this._getSymbol();
+	}
+
+	private async _getSymbol(): Promise<DocumentSymbol | undefined> {
+		if (!this._symbol && this._symbolResolver) {
+			this._symbol = await this._symbolResolver();
+		}
+
+		return this._symbol;
+	}
+
+	currentRenderedHeight: number | undefined;
+
+	constructor(
+		private readonly _breakdown: IAideProbeBreakdownContent,
+		private readonly reference: IReference<IResolvedTextEditorModel>,
+		private readonly editsSummary: EditsSummary,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
+	) {
+		super();
+
+		if (_breakdown.reference.uri && _breakdown.reference.name) {
+			this._symbolResolver = async () => {
+				this._symbol = await this.resolveSymbol();
+				return this._symbol;
+			};
+			this._symbolResolver();
+		}
+	}
+
+	async resolveSymbol(): Promise<DocumentSymbol | undefined> {
+		try {
+			const symbols = (await this.outlineModelService.getOrCreate(this.reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
+			const symbol = symbols.find(s => s.name === this.name);
+			if (!symbol) {
+				return;
+			}
+
+			return symbol;
+		} catch (e) {
+			return;
+		}
+	}
+
 }
 
 export class AideProbeGoToDefinitionViewModel extends Disposable implements IAideProbeGoToDefinitionViewModel {

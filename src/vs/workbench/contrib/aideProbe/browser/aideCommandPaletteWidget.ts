@@ -7,8 +7,8 @@ import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
-import { Emitter } from 'vs/base/common/event';
-import { Disposable, MutableDisposable } from 'vs/base/common/lifecycle';
+import { Event, Emitter } from 'vs/base/common/event';
+import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 import { clamp } from 'vs/base/common/numbers';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./commandPalette';
@@ -19,15 +19,23 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteContextKeys';
+import { CancelAction, SubmitAction } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
+import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeSymbolInfo } from 'vs/workbench/contrib/aideProbe/browser/aideProbeSymbolInfo';
+import { AideProbeViewModel, IAideProbeSymbolInfoViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 
@@ -46,13 +54,46 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	private _inputEditor!: CodeEditorWidget;
 	private _inputEditorContainer!: HTMLElement;
+	private symbolInfoListContainer!: HTMLElement;
 
-	/** coordinate of the debug toolbar per aux window */
+	private requestInProgress: IContextKey<boolean>;
+	private _resourceLabels: ResourceLabels;
+	private _symbolInfoList: AideProbeSymbolInfo;
+
+	private panelHeight: number = 200;
+
+
+	private readonly viewModelDisposables = this._register(new DisposableStore());
+	private _viewModel: AideProbeViewModel | undefined;
+	private set viewModel(viewModel: AideProbeViewModel | undefined) {
+		if (this._viewModel === viewModel) {
+			return;
+		}
+
+		this.viewModelDisposables.clear();
+
+		this._viewModel = viewModel;
+		if (viewModel) {
+			this.viewModelDisposables.add(viewModel);
+		} else {
+			this.viewModel?.dispose();
+			this.viewModelDisposables.clear();
+		}
+	}
+
+	get viewModel(): AideProbeViewModel | undefined {
+		return this._viewModel;
+	}
+
+	/** coordinate of the command palette per aux window */
 	private readonly auxWindowCoordinates = new WeakMap<CodeWindow, { x: number; y: number | undefined }>();
 
 	private static readonly INPUT_EDITOR_URI = URI.parse('aideCommandPalette:input');
 	private _onDidChangeHeight = this._register(new Emitter<void>());
 	readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 
 	private _onDidFocus = this._register(new Emitter<void>());
 	readonly onDidFocus = this._onDidFocus.event;
@@ -67,6 +108,8 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	private inputModel: ITextModel | undefined;
 	private inputEditorHasFocus: IContextKey<boolean>;
+	private inputEditorHasText: IContextKey<boolean>;
+	private toolbar: MenuWorkbenchToolBar;
 
 	id: string = 'aideCommandPalette';
 
@@ -79,14 +122,24 @@ export class AideCommandPaletteWidget extends Disposable {
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 	) {
 		super();
 
-		this.inputEditorHasFocus = CONTEXT_COMMAND_PALETTE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+
+		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+
+		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.inputEditorHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this._container = container;
 
-		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(this._container));
+
+		const innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
+
+		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(innerContainer));
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, inputScopedContextKeyService]));
+
+
 
 		const options: IEditorConstructionOptions = getSimpleEditorOptions(this.configurationService);
 		options.readOnly = false;
@@ -107,14 +160,12 @@ export class AideCommandPaletteWidget extends Disposable {
 		};
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 
-		this._inputEditorContainer = dom.append(this.container, $('.command-palette-input-editor'));
+		this._inputEditorContainer = dom.append(innerContainer, $('.command-palette-input-editor'));
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorContainer, options, editorOptions));
 
-
 		let inputModel = this.modelService.getModel(AideCommandPaletteWidget.INPUT_EDITOR_URI);
-
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, AideCommandPaletteWidget.INPUT_EDITOR_URI, true);
 			this._register(inputModel);
@@ -122,6 +173,27 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.inputModel = inputModel;
 		this._inputEditor.setModel(this.inputModel);
 		this._inputEditor.render();
+
+		this._resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+		this._symbolInfoList = this._register(this.instantiationService.createInstance(AideProbeSymbolInfo, this._resourceLabels));
+
+
+		const toolbarContainer = dom.append(this._inputEditorContainer, $('.probe-input-toolbar-container'));
+		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideProbePrimary, {
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action, options) => {
+				console.log(action);
+				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+				return;
+			}
+		}));
+		this.toolbar.getElement().classList.add('probe-input-toolbar');
+
 
 		this._register(this._inputEditor.onDidFocusEditorText(() => {
 			this.inputEditorHasFocus.set(true);
@@ -143,18 +215,32 @@ export class AideCommandPaletteWidget extends Disposable {
 				this._onDidChangeHeight.fire();
 				this.layout();
 			}
+
+			const model = this._inputEditor.getModel();
+			const inputHasText = !!model && model.getValue().trim().length > 0;
+			this._inputEditorContainer.classList.toggle('has-text', inputHasText);
+			this.inputEditorHasText.set(inputHasText);
 		}));
 
 		this._register(dom.addDisposableGenericMouseDownListener(this._container, (event: MouseEvent) => {
+			if (dom.isHTMLElement(event.target) && (event.target === this._inputEditorContainer || this._inputEditorContainer.contains(event.target))) {
+				return;
+			}
+
 			this._container.classList.add('dragged');
 			const activeWindow = dom.getWindow(this.layoutService.activeContainer);
 
+			const widgetRect = this._container.getBoundingClientRect();
+			const mouseDownEvent = new StandardMouseEvent(activeWindow, event);
+			const xInWidget = mouseDownEvent.posx - widgetRect.left;
+			const yInWidget = mouseDownEvent.posy - widgetRect.top;
+
 			const mouseMoveListener = dom.addDisposableGenericMouseMoveListener(activeWindow, (e: MouseEvent) => {
 				const mouseMoveEvent = new StandardMouseEvent(activeWindow, e);
-				// Prevent default to stop editor selecting text #8524
+				// Prevent default to stop editor selecting text
 				mouseMoveEvent.preventDefault();
-				// Reduce x by width of drag handle to reduce jarring #16604
-				this.setCoordinates(mouseMoveEvent.posx - 14, mouseMoveEvent.posy - 14);
+
+				this.setCoordinates(mouseMoveEvent.posx - xInWidget, mouseMoveEvent.posy - yInWidget);
 			});
 
 			const mouseUpListener = dom.addDisposableGenericMouseUpListener(activeWindow, (e: MouseEvent) => {
@@ -176,7 +262,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		registerResizeListener();
 
 		this.setCoordinates();
-
 		this.layout();
 	}
 
@@ -222,6 +307,7 @@ export class AideCommandPaletteWidget extends Disposable {
 	private setCoordinates(x?: number, y?: number): void {
 
 		const widgetWidth = this._container.clientWidth;
+
 		const currentWindow = dom.getWindow(this.layoutService.activeContainer);
 		const isMainWindow = currentWindow === mainWindow;
 
@@ -233,7 +319,6 @@ export class AideCommandPaletteWidget extends Disposable {
 				? positionPercentage * currentWindow.innerWidth
 				: (0.5 * currentWindow.innerWidth - 0.5 * widgetWidth);
 		}
-
 		x = clamp(x, 0, currentWindow.innerWidth - widgetWidth); // do not allow the widget to overflow on the right
 		this._container.style.left = `${x}px`;
 
@@ -278,9 +363,83 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 
+	acceptInput(): void {
+		this._acceptInput();
+	}
+
+	private _acceptInput() {
+		if (this.viewModel?.requestInProgress) {
+			return;
+		} else if (this.viewModel) {
+			this.clear();
+		}
+
+		const model = this.aideProbeService.startSession();
+		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
+			this.onDidChangeItems();
+		}));
+
+		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
+			this.aideProbeService.navigateBreakdown();
+			this._symbolInfoList.openSymbolInfoReference(breakdown);
+		}));
+
+		const editorValue = this.inputEditor.getValue();
+		this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
+
+		return undefined;
+	}
+
+	private onDidChangeItems(): void {
+		if (this.viewModel?.requestInProgress) {
+			this.requestInProgress.set(true);
+		} else {
+			this.requestInProgress.set(false);
+		}
+
+		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
+			this.renderBreakdownsListData(this.viewModel?.breakdowns ?? [], this.symbolInfoListContainer);
+			dom.show(this.symbolInfoListContainer);
+		} else {
+			this._symbolInfoList.hide();
+			dom.hide(this.symbolInfoListContainer);
+		}
+
+		if (this.panelHeight) {
+			this.layoutPanel(this.panelHeight);
+		}
+	}
+
+
+	private layoutPanel(height: number) {
+		this.panelHeight = height;
+		this._symbolInfoList.layout(height);
+	}
+
+
+	clear(): void {
+		this.aideProbeService.clearSession();
+		this.viewModel?.dispose();
+		this.viewModel = undefined;
+		this.requestInProgress.set(false);
+		this._symbolInfoList.hide();
+		this.onDidChangeItems();
+	}
+
+	private renderBreakdownsListData(breakdowns: ReadonlyArray<IAideProbeSymbolInfoViewModel>, container: HTMLElement) {
+		this._symbolInfoList.show(container);
+		this._symbolInfoList.updateSymbolInfo(breakdowns);
+	}
+
+
 	layout(): void {
 		const height = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 		this._inputEditor.layout({ width: 400, height });
+	}
+
+	override dispose(): void {
+		super.dispose();
 	}
 
 }
