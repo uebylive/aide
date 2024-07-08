@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarSymbolSearchRequest } from './types';
+import { SidecarSymbolSearchRequest, SidecarSymbolSearchResponse } from './types';
 
-export async function symbolSearch(request: SidecarSymbolSearchRequest) {
+export async function symbolSearch(request: SidecarSymbolSearchRequest): Promise<SidecarSymbolSearchResponse> {
 	const responses: {
 		name: string;
 		kind: vscode.SymbolKind;
@@ -20,21 +20,18 @@ export async function symbolSearch(request: SidecarSymbolSearchRequest) {
 		locations: responses.map((response) => {
 			return {
 				name: response.name,
-				kind: response.kind,
-				containerName: response.containerName,
-				location: {
-					uri: response.location.uri.fsPath,
-					range: {
-						startPosition: {
-							line: response.location.range.start.line,
-							character: response.location.range.start.character,
-							byteOffset: 0,
-						},
-						endPosition: {
-							line: response.location.range.end.line,
-							character: response.location.range.end.character,
-							byteOffset: 0,
-						},
+				kind: response.kind.toString(),
+				fs_file_path: response.location.uri.fsPath,
+				range: {
+					startPosition: {
+						line: response.location.range.start.line,
+						character: response.location.range.start.character,
+						byteOffset: 0,
+					},
+					endPosition: {
+						line: response.location.range.end.line,
+						character: response.location.range.end.character,
+						byteOffset: 0,
 					},
 				},
 			};
