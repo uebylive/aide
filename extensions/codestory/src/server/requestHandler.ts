@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -12,6 +12,7 @@ import { SIDECAR_CLIENT } from '../extension';
 import { goToImplementation } from './goToImplementation';
 import { quickFixInvocation, quickFixList } from './quickFix';
 import { applyEdits } from './applyEdits';
+import { symbolSearch } from './symbolSearch';
 import { goToReferences } from './goToReferences';
 
 // Helper function to read the request body
@@ -101,6 +102,13 @@ export async function handleRequest(req: http.IncomingMessage, res: http.ServerR
 			const body = await readRequestBody(req);
 			const request: SidecarGoToReferencesRequest = JSON.parse(body);
 			const response = await goToReferences(request);
+			res.writeHead(200, { 'Content-Type': 'application/json' });
+			res.end(JSON.stringify(response));
+		} else if (req.method === 'POST' && req.url === '/symbol_search') {
+			console.log('search-for-symbol');
+			const body = await readRequestBody(req);
+			const request: SidecarSymbolSearchRequest = JSON.parse(body);
+			const response = await symbolSearch(request);
 			res.writeHead(200, { 'Content-Type': 'application/json' });
 			res.end(JSON.stringify(response));
 		} else {
