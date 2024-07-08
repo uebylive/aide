@@ -12,7 +12,6 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { Extensions as ViewExtensions, IViewContainersRegistry, ViewContainerLocation, IViewDescriptor, IViewsRegistry } from 'vs/workbench/common/views';
-import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/common/aideCommandPaletteService';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
@@ -20,7 +19,7 @@ import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aidePr
 import 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 import 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeInputEditorContrib';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
-import { AideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService.impl';
+import { AideCommandPaletteService, IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 
 const probeViewIcon = registerIcon('probe-view-icon', Codicon.telescope, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
 

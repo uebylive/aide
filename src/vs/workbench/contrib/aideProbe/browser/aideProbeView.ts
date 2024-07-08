@@ -36,6 +36,7 @@ import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/c
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { IDimension } from 'vs/editor/common/core/dimension';
+import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 
 const $ = dom.$;
 
@@ -91,6 +92,7 @@ export class AideProbeViewPane extends ViewPane {
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@IAideCommandPaletteService private readonly aideCommandPaletteService: IAideCommandPaletteService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
@@ -183,6 +185,14 @@ export class AideProbeViewPane extends ViewPane {
 
 		const model = this.aideProbeService.startSession();
 		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
+
+		const commandPaletteWidget = this.aideCommandPaletteService.widget;
+		if (commandPaletteWidget) {
+			commandPaletteWidget.acceptInput(this.viewModel);
+		}
+
+
+
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			this.onDidChangeItems();
 		}));

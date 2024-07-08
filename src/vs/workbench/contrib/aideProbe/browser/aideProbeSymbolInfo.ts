@@ -16,27 +16,25 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IAideProbeSymbolInfoViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IEditorProgressService } from 'vs/platform/progress/common/progress';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
 
 export class AideProbeSymbolInfo extends Disposable {
-	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeSymbolInfoViewModel>());
+	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
-	private activeSymbolInfo: IAideProbeSymbolInfoViewModel | undefined;
+	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
-	private list: WorkbenchList<IAideProbeSymbolInfoViewModel> | undefined;
+	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
 	private renderer: SymbolInfoRenderer;
-	private viewModel: IAideProbeSymbolInfoViewModel[] = [];
+	private viewModel: IAideProbeBreakdownViewModel[] = [];
 	private isVisible: boolean | undefined;
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
@@ -61,7 +59,7 @@ export class AideProbeSymbolInfo extends Disposable {
 	private createSymbolInfosList(listContainer: HTMLElement): void {
 		// List
 		const listDelegate = this.instantiationService.createInstance(SymbolInfoListDelegate);
-		const list = this.list = this._register(<WorkbenchList<IAideProbeSymbolInfoViewModel>>this.instantiationService.createInstance(
+		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'SymbolInfosList',
 			listContainer,
@@ -100,7 +98,7 @@ export class AideProbeSymbolInfo extends Disposable {
 		}));
 	}
 
-	private getSymbolInfoListIndex(element: IAideProbeSymbolInfoViewModel): number {
+	private getSymbolInfoListIndex(element: IAideProbeBreakdownViewModel): number {
 		let matchIndex = -1;
 		this.viewModel.forEach((item, index) => {
 			if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
@@ -110,7 +108,7 @@ export class AideProbeSymbolInfo extends Disposable {
 		return matchIndex;
 	}
 
-	async openSymbolInfoReference(element: IAideProbeSymbolInfoViewModel): Promise<void> {
+	async openSymbolInfoReference(element: IAideProbeBreakdownViewModel): Promise<void> {
 		if (this.activeSymbolInfo === element) {
 			return;
 		} else {
@@ -123,12 +121,11 @@ export class AideProbeSymbolInfo extends Disposable {
 
 
 		const resolveLocationOperation = element.symbol;
-		this.editorProgressService.showWhile(resolveLocationOperation);
 		await resolveLocationOperation;
 		this.explanationService.changeActiveBreakdown(element);
 	}
 
-	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeSymbolInfoViewModel>): void {
+	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
 		const list = assertIsDefined(this.list);
 
 		let matchingIndex = -1;
@@ -183,7 +180,7 @@ export class AideProbeSymbolInfo extends Disposable {
 }
 
 interface ISymbolInfoTemplateData {
-	currentItem?: IAideProbeSymbolInfoViewModel;
+	currentItem?: IAideProbeBreakdownViewModel;
 	currentItemIndex?: number;
 	wrapper: HTMLElement;
 	container: HTMLElement;
@@ -192,12 +189,12 @@ interface ISymbolInfoTemplateData {
 }
 
 interface IItemHeightChangeParams {
-	element: IAideProbeSymbolInfoViewModel;
+	element: IAideProbeBreakdownViewModel;
 	index: number;
 	height: number;
 }
 
-class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeSymbolInfoViewModel, ISymbolInfoTemplateData> {
+class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, ISymbolInfoTemplateData> {
 	static readonly TEMPLATE_ID = 'symbolInfoListRenderer';
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
@@ -229,7 +226,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeS
 		return data;
 	}
 
-	renderElement(element: IAideProbeSymbolInfoViewModel, index: number, templateData: ISymbolInfoTemplateData, height: number | undefined): void {
+	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: ISymbolInfoTemplateData, height: number | undefined): void {
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
@@ -295,18 +292,18 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeS
 	}
 }
 
-class SymbolInfoListDelegate implements IListVirtualDelegate<IAideProbeSymbolInfoViewModel> {
+class SymbolInfoListDelegate implements IListVirtualDelegate<IAideProbeBreakdownViewModel> {
 	private defaultElementHeight: number = 22;
 
-	getHeight(element: IAideProbeSymbolInfoViewModel): number {
+	getHeight(element: IAideProbeBreakdownViewModel): number {
 		return (element.currentRenderedHeight ?? this.defaultElementHeight);
 	}
 
-	getTemplateId(element: IAideProbeSymbolInfoViewModel): string {
+	getTemplateId(element: IAideProbeBreakdownViewModel): string {
 		return SymbolInfoRenderer.TEMPLATE_ID;
 	}
 
-	hasDynamicHeight(element: IAideProbeSymbolInfoViewModel): boolean {
+	hasDynamicHeight(element: IAideProbeBreakdownViewModel): boolean {
 		return true;
 	}
 }

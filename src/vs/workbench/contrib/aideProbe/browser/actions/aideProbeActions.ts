@@ -16,7 +16,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/com
 import { IView } from 'vs/workbench/common/views';
 import { showProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/common/aideCommandPaletteService';
+import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -100,13 +100,13 @@ export class SubmitAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const aideProbeView = await showProbeView(accessor.get(IViewsService));
-		if (!aideProbeView) {
-			return;
-		}
 
-		aideProbeView.acceptInput();
+		if (aideProbeView) {
+			aideProbeView.acceptInput();
+		}
 	}
 }
+
 
 class SubmitActionComposer extends Disposable {
 	static readonly ID = 'workbench.action.aideProbe.submitComposer';

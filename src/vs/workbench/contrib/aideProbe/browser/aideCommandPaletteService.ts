@@ -4,12 +4,25 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 import { Disposable } from 'vs/base/common/lifecycle';
-import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/common/aideCommandPaletteService';
 
+export interface IAideCommandPaletteData {
+	id: string;
+}
+
+export interface IAideCommandPaletteService {
+	_serviceBrand: undefined;
+	widget: AideCommandPaletteWidget | undefined;
+
+	showPalette(): void;
+	hidePalette(): void;
+}
+
+
+export const IAideCommandPaletteService = createDecorator<IAideCommandPaletteService>('IAideCommandPaletteService');
 
 export class AideCommandPaletteService extends Disposable implements IAideCommandPaletteService {
 	_serviceBrand: undefined;
@@ -17,8 +30,12 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 	static readonly ID = 'workbench.contrib.commandPalette';
 
 	private _container: HTMLElement | undefined;
-	private _widget: AideCommandPaletteWidget | undefined;
 	private _mounted = false;
+
+	private _widget: AideCommandPaletteWidget | undefined;
+	get widget(): AideCommandPaletteWidget | undefined {
+		return this._widget;
+	}
 
 
 	constructor(
