@@ -25,7 +25,7 @@ export class HoldToSpeak extends AbstractInlineChatAction {
 
 	constructor() {
 		super({
-			id: 'inlineChat.holdForSpeech',
+			id: 'inlineAideChat.holdForSpeech',
 			precondition: ContextKeyExpr.and(HasSpeechProvider, CTX_INLINE_CHAT_VISIBLE),
 			title: localize2('holdForSpeech', "Hold for Speech"),
 			keybinding: {

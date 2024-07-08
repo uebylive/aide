@@ -15,8 +15,8 @@ import { InlineChatNotebookContribution } from 'vs/workbench/contrib/inlineAideC
 import { IWorkbenchContributionsRegistry, registerWorkbenchContribution2, Extensions as WorkbenchExtensions, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { InlineChatSavingServiceImpl } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSavingServiceImpl';
 import { InlineChatAccessibleView } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatAccessibleView';
-import { IInlineChatSavingService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSavingService';
-import { IInlineChatSessionService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSessionService';
+import { IInlineAideChatSavingService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSavingService';
+import { IInlineAideChatSessionService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSessionService';
 import { InlineChatEnabler, InlineChatSessionServiceImpl } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSessionServiceImpl';
 import { AccessibleViewRegistry } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
 import { CancelAction, SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
@@ -29,8 +29,8 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 
 // --- browser
 
-registerSingleton(IInlineChatSessionService, InlineChatSessionServiceImpl, InstantiationType.Delayed);
-registerSingleton(IInlineChatSavingService, InlineChatSavingServiceImpl, InstantiationType.Delayed);
+registerSingleton(IInlineAideChatSessionService, InlineChatSessionServiceImpl, InstantiationType.Delayed);
+registerSingleton(IInlineAideChatSavingService, InlineChatSavingServiceImpl, InstantiationType.Delayed);
 
 registerEditorContribution(INLINE_CHAT_ID, InlineChatController, EditorContributionInstantiation.Eager); // EAGER because of notebook dispose/create of editors
 
@@ -103,7 +103,7 @@ AccessibleViewRegistry.register(new InlineChatAccessibleView());
 // When active it filters out the send and cancel actions from the chat menu
 class MenuCopier implements IDisposable {
 
-	static Id = 'inlineChat.menuCopier';
+	static Id = 'inlineAideChat.menuCopier';
 
 	readonly dispose: () => void;
 

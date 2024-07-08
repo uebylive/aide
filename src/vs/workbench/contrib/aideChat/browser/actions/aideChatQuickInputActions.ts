@@ -16,7 +16,7 @@ import { IQuickChatOpenOptions, IQuickChatService } from 'vs/workbench/contrib/a
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { InlineChatController } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatController';
 
-export const ASK_QUICK_QUESTION_ACTION_ID = 'workbench.action.quickchat.toggle';
+export const ASK_QUICK_QUESTION_ACTION_ID = 'workbench.action.aidequickchat.toggle';
 export function registerQuickChatActions() {
 	registerAction2(QuickChatGlobalAction);
 	registerAction2(AskQuickChatAction);
@@ -24,7 +24,7 @@ export function registerQuickChatActions() {
 	registerAction2(class OpenInChatViewAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.quickchat.openInChatView',
+				id: 'workbench.action.aidequickchat.openInChatView',
 				title: localize2('aideChat.openInChatView.label', "Open in Chat View"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -46,7 +46,7 @@ export function registerQuickChatActions() {
 	registerAction2(class CloseQuickChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.quickchat.close',
+				id: 'workbench.action.aidequickchat.close',
 				title: localize2('aideChat.closeQuickChat.label', "Close Quick Chat"),
 				f1: false,
 				category: CHAT_CATEGORY,
@@ -68,7 +68,7 @@ export function registerQuickChatActions() {
 	registerAction2(class LaunchInlineChatFromQuickChatAction extends Action2 {
 		constructor() {
 			super({
-				id: 'workbench.action.quickchat.launchInlineChat',
+				id: 'workbench.action.quickchat.launchInlineAideChat',
 				title: localize2('aideChat.launchInlineChat.label', "Launch Inline Chat"),
 				f1: false,
 				category: CHAT_CATEGORY
@@ -162,7 +162,7 @@ class QuickChatGlobalAction extends Action2 {
 class AskQuickChatAction extends Action2 {
 	constructor() {
 		super({
-			id: `workbench.action.openQuickChat`,
+			id: `workbench.action.openAideQuickChat`,
 			category: CHAT_CATEGORY,
 			title: localize2('aideChat.open', "Open Quick Chat"),
 			f1: true

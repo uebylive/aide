@@ -6,9 +6,9 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { Session } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSession';
 
 
-export const IInlineChatSavingService = createDecorator<IInlineChatSavingService>('IInlineChatSavingService	');
+export const IInlineAideChatSavingService = createDecorator<IInlineAideChatSavingService>('IInlineAideChatSavingService');
 
-export interface IInlineChatSavingService {
+export interface IInlineAideChatSavingService {
 	_serviceBrand: undefined;
 
 	markChanged(session: Session): void;

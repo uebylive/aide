@@ -30,7 +30,7 @@ import { IPreferencesService } from 'vs/workbench/services/preferences/common/pr
 import { ILogService } from 'vs/platform/log/common/log';
 import { IChatService } from 'vs/workbench/contrib/chat/common/chatService';
 
-CommandsRegistry.registerCommandAlias('interactiveEditor.start', 'inlineChat.start');
+// CommandsRegistry.registerCommandAlias('interactiveEditor.start', 'inlineChat.start');
 CommandsRegistry.registerCommandAlias('interactive.acceptChanges', ACTION_ACCEPT_CHANGES);
 
 export const LOCALIZED_START_INLINE_CHAT_STRING = localize2('run', 'Start in Editor');

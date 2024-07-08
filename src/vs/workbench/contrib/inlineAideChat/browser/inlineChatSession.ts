@@ -20,7 +20,7 @@ import { ILanguageService } from 'vs/editor/common/languages/language';
 import { ResourceMap } from 'vs/base/common/map';
 import { Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
-import { IInlineChatSessionService, Recording } from './inlineChatSessionService';
+import { IInlineAideChatSessionService, Recording } from './inlineChatSessionService';
 import { LineRange } from 'vs/editor/common/core/lineRange';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { coalesceInPlace } from 'vs/base/common/arrays';
@@ -359,7 +359,7 @@ export class StashedSession {
 		session: Session,
 		private readonly _undoCancelEdits: IValidEditOperation[],
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IInlineChatSessionService private readonly _sessionService: IInlineChatSessionService,
+		@IInlineAideChatSessionService private readonly _sessionService: IInlineAideChatSessionService,
 		@ILogService private readonly _logService: ILogService
 	) {
 		this._ctxHasStashedSession = CTX_INLINE_CHAT_HAS_STASHED_SESSION.bindTo(contextKeyService);

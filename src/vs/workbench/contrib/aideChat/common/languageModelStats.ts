@@ -161,9 +161,9 @@ export class LanguageModelStatsService extends Disposable implements ILanguageMo
 }
 
 Registry.as<IExtensionFeaturesRegistry>(Extensions.ExtensionFeaturesRegistry).registerExtensionFeature({
-	id: 'languageModels',
+	id: 'aiModels',
 	label: localize('Language Models', "Language Models"),
-	description: localize('languageModels', "Language models usage statistics of this extension."),
+	description: localize('aiModels', "Language models usage statistics of this extension."),
 	access: {
 		canToggle: false
 	},

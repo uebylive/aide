@@ -26,7 +26,7 @@ import { CTX_INLINE_CHAT_HAS_AGENT, EditMode } from 'vs/workbench/contrib/inline
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { UntitledTextEditorInput } from 'vs/workbench/services/untitled/common/untitledTextEditorInput';
 import { EmptyResponse, ErrorResponse, HunkData, ReplyResponse, Session, SessionExchange, SessionWholeRange, StashedSession, TelemetryData, TelemetryDataClassification } from './inlineChatSession';
-import { IInlineChatSessionEndEvent, IInlineChatSessionEvent, IInlineChatSessionService, ISessionKeyComputer, Recording } from './inlineChatSessionService';
+import { IInlineChatSessionEndEvent, IInlineChatSessionEvent, IInlineAideChatSessionService, ISessionKeyComputer, Recording } from './inlineChatSessionService';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 import { ISelection } from 'vs/editor/common/core/selection';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -60,7 +60,7 @@ class InlineChatContext {
 	) { }
 }
 
-export class InlineChatSessionServiceImpl implements IInlineChatSessionService {
+export class InlineChatSessionServiceImpl implements IInlineAideChatSessionService {
 
 	declare _serviceBrand: undefined;
 
@@ -379,7 +379,7 @@ export class InlineChatSessionServiceImpl implements IInlineChatSessionService {
 
 export class InlineChatEnabler {
 
-	static Id = 'inlineChat.enabler';
+	static Id = 'inlineAideChat.enabler';
 
 	private readonly _ctxHasProvider: IContextKey<boolean>;
 

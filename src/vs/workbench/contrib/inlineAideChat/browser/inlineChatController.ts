@@ -30,9 +30,9 @@ import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiati
 import { ILogService } from 'vs/platform/log/common/log';
 import { IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IInlineChatSavingService } from './inlineChatSavingService';
+import { IInlineAideChatSavingService } from './inlineChatSavingService';
 import { EmptyResponse, ErrorResponse, ReplyResponse, Session, SessionPrompt } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSession';
-import { IInlineChatSessionService } from './inlineChatSessionService';
+import { IInlineAideChatSessionService } from './inlineChatSessionService';
 import { EditModeStrategy, IEditObserver, LiveStrategy, PreviewStrategy, ProgressingEditsOptions } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatStrategies';
 import { InlineChatZoneWidget } from './inlineChatZoneWidget';
 import { CTX_INLINE_CHAT_REQUEST_IN_PROGRESS, CTX_INLINE_CHAT_RESPONSE_TYPE, CTX_INLINE_CHAT_USER_DID_EDIT, CTX_INLINE_CHAT_VISIBLE, EditMode, INLINE_CHAT_ID, InlineChatConfigKeys, InlineChatResponseType } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
@@ -135,8 +135,8 @@ export class InlineChatController implements IEditorContribution {
 	constructor(
 		private readonly _editor: ICodeEditor,
 		@IInstantiationService private readonly _instaService: IInstantiationService,
-		@IInlineChatSessionService private readonly _inlineChatSessionService: IInlineChatSessionService,
-		@IInlineChatSavingService private readonly _inlineChatSavingService: IInlineChatSavingService,
+		@IInlineAideChatSessionService private readonly _inlineChatSessionService: IInlineAideChatSessionService,
+		@IInlineAideChatSavingService private readonly _inlineChatSavingService: IInlineAideChatSavingService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@ILogService private readonly _logService: ILogService,
 		@IConfigurationService private readonly _configurationService: IConfigurationService,

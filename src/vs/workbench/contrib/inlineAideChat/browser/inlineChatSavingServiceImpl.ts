@@ -12,13 +12,13 @@ import { IConfigurationService } from 'vs/platform/configuration/common/configur
 import { IProgress, IProgressStep } from 'vs/platform/progress/common/progress';
 import { SaveReason } from 'vs/workbench/common/editor';
 import { Session } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSession';
-import { IInlineChatSessionService } from './inlineChatSessionService';
+import { IInlineAideChatSessionService } from './inlineChatSessionService';
 import { InlineChatConfigKeys } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
 import { GroupsOrder, IEditorGroup, IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IFilesConfigurationService } from 'vs/workbench/services/filesConfiguration/common/filesConfigurationService';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-import { IInlineChatSavingService } from './inlineChatSavingService';
+import { IInlineAideChatSavingService } from './inlineChatSavingService';
 import { Iterable } from 'vs/base/common/iterator';
 import { IResourceEditorInput } from 'vs/platform/editor/common/editor';
 import { Schemas } from 'vs/base/common/network';
@@ -38,7 +38,7 @@ interface SessionData {
 	readonly groupCandidate: IEditorGroup;
 }
 
-export class InlineChatSavingServiceImpl implements IInlineChatSavingService {
+export class InlineChatSavingServiceImpl implements IInlineAideChatSavingService {
 
 	declare readonly _serviceBrand: undefined;
 
@@ -51,7 +51,7 @@ export class InlineChatSavingServiceImpl implements IInlineChatSavingService {
 		@IEditorGroupsService private readonly _editorGroupService: IEditorGroupsService,
 		@ITextFileService private readonly _textFileService: ITextFileService,
 		@IEditorService private readonly _editorService: IEditorService,
-		@IInlineChatSessionService private readonly _inlineChatSessionService: IInlineChatSessionService,
+		@IInlineAideChatSessionService private readonly _inlineChatSessionService: IInlineAideChatSessionService,
 		@IConfigurationService private readonly _configService: IConfigurationService,
 		@IWorkingCopyFileService private readonly _workingCopyFileService: IWorkingCopyFileService,
 		@ILogService private readonly _logService: ILogService,

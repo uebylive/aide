@@ -912,13 +912,13 @@ export class ReadChatResponseAloud extends Action2 {
 
 export class StopReadAloud extends Action2 {
 
-	static readonly ID = 'workbench.action.speech.stopReadAloud';
+	static readonly ID = 'workbench.action.aideChat.stopReadAloud';
 
 	constructor() {
 		super({
 			id: StopReadAloud.ID,
 			icon: syncing,
-			title: localize2('workbench.action.speech.stopReadAloud', "Stop Reading Aloud"),
+			title: localize2('workbench.action.aideChat.stopReadAloud', "Stop Reading Aloud"),
 			f1: true,
 			category: CHAT_CATEGORY,
 			precondition: GlobalTextToSpeechInProgress, // need global context here because of `f1: true`
@@ -998,7 +998,7 @@ function supportsKeywordActivation(configurationService: IConfigurationService, 
 
 export class KeywordActivationContribution extends Disposable implements IWorkbenchContribution {
 
-	static readonly ID = 'workbench.contrib.keywordActivation';
+	static readonly ID = 'workbench.contrib.aideChat.keywordActivation';
 
 	static SETTINGS_VALUE = {
 		OFF: 'off',

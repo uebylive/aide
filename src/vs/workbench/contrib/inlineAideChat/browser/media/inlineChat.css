@@ -7,7 +7,7 @@
 	z-index: 3;
 }
 
-.monaco-workbench .zone-widget.inline-chat-widget .interactive-session {
+.monaco-workbench .zone-widget.inline-chat-widget .cschat-session {
 	max-width: unset;
 }
 
@@ -21,35 +21,35 @@
 	background: var(--vscode-inlineChat-background);
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-input-part .interactive-execute-toolbar {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .cschat-input-part .interactive-execute-toolbar {
 	margin-bottom: 1px;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-input-part .interactive-input-and-execute-toolbar {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .cschat-input-part .interactive-input-and-execute-toolbar {
 	width: 100%;
 	border-radius: 2px;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-list {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .interactive-list {
 	padding: 2px 0 0 0;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-list .interactive-item-container.interactive-item-compact {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .interactive-list .interactive-item-container.interactive-item-compact {
 	padding: 2px 0;
 	gap: 6px;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-list .interactive-item-container.interactive-item-compact .header .avatar {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .interactive-list .interactive-item-container.interactive-item-compact .header .avatar {
 	outline-offset: -1px;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-list .interactive-item-container.interactive-item-compact .chat-notification-widget {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .interactive-list .interactive-item-container.interactive-item-compact .chat-notification-widget {
 	margin-bottom: 0;
 	padding: 0;
 	border: none;
 }
 
-.monaco-workbench .inline-chat .chat-widget .interactive-session .interactive-list .interactive-request {
+.monaco-workbench .inline-chat .chat-widget .cschat-session .interactive-list .interactive-request {
 	border: none;
 }
 
@@ -120,7 +120,7 @@
 	padding: 5px 5px;
 }
 
-.monaco-workbench .inline-chat .followUps .interactive-session-followups .monaco-button {
+.monaco-workbench .inline-chat .followUps .cschat-session-followups .monaco-button {
 	display: block;
 	color: var(--vscode-textLink-foreground);
 	font-size: 12px;
@@ -271,7 +271,7 @@
 	background-color: var(--vscode-inlineChat-regionHighlight);
 }
 
-.monaco-workbench .interactive-session .interactive-input-and-execute-toolbar .monaco-editor .inline-chat-slash-command {
+.monaco-workbench .cschat-session .interactive-input-and-execute-toolbar .monaco-editor .inline-chat-slash-command {
 	background-color: var(--vscode-chat-slashCommandBackground);
 	color: var(--vscode-chat-slashCommandForeground); /* Overrides the foreground color rule in chat.css */
 	border-radius: 2px;

@@ -75,7 +75,7 @@ Registry.as<IConfigurationRegistry>(Extensions.Configuration).registerConfigurat
 });
 
 
-export const INLINE_CHAT_ID = 'interactiveEditor';
+export const INLINE_CHAT_ID = 'inlineAideChat';
 export const INTERACTIVE_EDITOR_ACCESSIBILITY_HELP_ID = 'interactiveEditorAccessiblityHelp';
 
 // --- CONTEXT
@@ -86,39 +86,39 @@ export const enum InlineChatResponseType {
 	MessagesAndEdits = 'messagesAndEdits'
 }
 
-export const CTX_INLINE_CHAT_HAS_AGENT = new RawContextKey<boolean>('inlineChatHasProvider', false, localize('inlineChatHasProvider', "Whether a provider for interactive editors exists"));
-export const CTX_INLINE_CHAT_VISIBLE = new RawContextKey<boolean>('inlineChatVisible', false, localize('inlineChatVisible', "Whether the interactive editor input is visible"));
-export const CTX_INLINE_CHAT_FOCUSED = new RawContextKey<boolean>('inlineChatFocused', false, localize('inlineChatFocused', "Whether the interactive editor input is focused"));
-export const CTX_INLINE_CHAT_RESPONSE_FOCUSED = new RawContextKey<boolean>('inlineChatResponseFocused', false, localize('inlineChatResponseFocused', "Whether the interactive widget's response is focused"));
-export const CTX_INLINE_CHAT_EMPTY = new RawContextKey<boolean>('inlineChatEmpty', false, localize('inlineChatEmpty', "Whether the interactive editor input is empty"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_FIRST = new RawContextKey<boolean>('inlineChatInnerCursorFirst', false, localize('inlineChatInnerCursorFirst', "Whether the cursor of the iteractive editor input is on the first line"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_LAST = new RawContextKey<boolean>('inlineChatInnerCursorLast', false, localize('inlineChatInnerCursorLast', "Whether the cursor of the iteractive editor input is on the last line"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_START = new RawContextKey<boolean>('inlineChatInnerCursorStart', false, localize('inlineChatInnerCursorStart', "Whether the cursor of the iteractive editor input is on the start of the input"));
-export const CTX_INLINE_CHAT_INNER_CURSOR_END = new RawContextKey<boolean>('inlineChatInnerCursorEnd', false, localize('inlineChatInnerCursorEnd', "Whether the cursor of the iteractive editor input is on the end of the input"));
-export const CTX_INLINE_CHAT_OUTER_CURSOR_POSITION = new RawContextKey<'above' | 'below' | ''>('inlineChatOuterCursorPosition', '', localize('inlineChatOuterCursorPosition', "Whether the cursor of the outer editor is above or below the interactive editor input"));
-export const CTX_INLINE_CHAT_HAS_STASHED_SESSION = new RawContextKey<boolean>('inlineChatHasStashedSession', false, localize('inlineChatHasStashedSession', "Whether interactive editor has kept a session for quick restore"));
-export const CTX_INLINE_CHAT_USER_DID_EDIT = new RawContextKey<boolean>('inlineChatUserDidEdit', undefined, localize('inlineChatUserDidEdit', "Whether the user did changes ontop of the inline chat"));
-export const CTX_INLINE_CHAT_DOCUMENT_CHANGED = new RawContextKey<boolean>('inlineChatDocumentChanged', false, localize('inlineChatDocumentChanged', "Whether the document has changed concurrently"));
-export const CTX_INLINE_CHAT_CHANGE_HAS_DIFF = new RawContextKey<boolean>('inlineChatChangeHasDiff', false, localize('inlineChatChangeHasDiff', "Whether the current change supports showing a diff"));
-export const CTX_INLINE_CHAT_CHANGE_SHOWS_DIFF = new RawContextKey<boolean>('inlineChatChangeShowsDiff', false, localize('inlineChatChangeShowsDiff', "Whether the current change showing a diff"));
+export const CTX_INLINE_CHAT_HAS_AGENT = new RawContextKey<boolean>('inlineAideChatHasProvider', false, localize('inlineAideChatHasProvider', "Whether a provider for interactive editors exists"));
+export const CTX_INLINE_CHAT_VISIBLE = new RawContextKey<boolean>('inlineAideChatVisible', false, localize('inlineAideChatVisible', "Whether the interactive editor input is visible"));
+export const CTX_INLINE_CHAT_FOCUSED = new RawContextKey<boolean>('inlineAideChatFocused', false, localize('inlineAideChatFocused', "Whether the interactive editor input is focused"));
+export const CTX_INLINE_CHAT_RESPONSE_FOCUSED = new RawContextKey<boolean>('inlineAideChatResponseFocused', false, localize('inlineAideChatResponseFocused', "Whether the interactive widget's response is focused"));
+export const CTX_INLINE_CHAT_EMPTY = new RawContextKey<boolean>('inlineAideChatEmpty', false, localize('inlineAideChatEmpty', "Whether the interactive editor input is empty"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_FIRST = new RawContextKey<boolean>('inlineAideChatInnerCursorFirst', false, localize('inlineAideChatInnerCursorFirst', "Whether the cursor of the iteractive editor input is on the first line"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_LAST = new RawContextKey<boolean>('inlineAideChatInnerCursorLast', false, localize('inlineAideChatInnerCursorLast', "Whether the cursor of the iteractive editor input is on the last line"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_START = new RawContextKey<boolean>('inlineAideChatInnerCursorStart', false, localize('inlineAideChatInnerCursorStart', "Whether the cursor of the iteractive editor input is on the start of the input"));
+export const CTX_INLINE_CHAT_INNER_CURSOR_END = new RawContextKey<boolean>('inlineAideChatInnerCursorEnd', false, localize('inlineAideChatInnerCursorEnd', "Whether the cursor of the iteractive editor input is on the end of the input"));
+export const CTX_INLINE_CHAT_OUTER_CURSOR_POSITION = new RawContextKey<'above' | 'below' | ''>('inlineAideChatOuterCursorPosition', '', localize('inlineAideChatOuterCursorPosition', "Whether the cursor of the outer editor is above or below the interactive editor input"));
+export const CTX_INLINE_CHAT_HAS_STASHED_SESSION = new RawContextKey<boolean>('inlineAideChatHasStashedSession', false, localize('inlineAideChatHasStashedSession', "Whether interactive editor has kept a session for quick restore"));
+export const CTX_INLINE_CHAT_USER_DID_EDIT = new RawContextKey<boolean>('inlineAideChatUserDidEdit', undefined, localize('inlineAideChatUserDidEdit', "Whether the user did changes ontop of the inline chat"));
+export const CTX_INLINE_CHAT_DOCUMENT_CHANGED = new RawContextKey<boolean>('inlineAideChatDocumentChanged', false, localize('inlineAideChatDocumentChanged', "Whether the document has changed concurrently"));
+export const CTX_INLINE_CHAT_CHANGE_HAS_DIFF = new RawContextKey<boolean>('inlineAideChatChangeHasDiff', false, localize('inlineAideChatChangeHasDiff', "Whether the current change supports showing a diff"));
+export const CTX_INLINE_CHAT_CHANGE_SHOWS_DIFF = new RawContextKey<boolean>('inlineAideChatChangeShowsDiff', false, localize('inlineAideChatChangeShowsDiff', "Whether the current change showing a diff"));
 export const CTX_INLINE_CHAT_EDIT_MODE = new RawContextKey<EditMode>('config.inlineChat.mode', EditMode.Live);
-export const CTX_INLINE_CHAT_REQUEST_IN_PROGRESS = new RawContextKey<boolean>('inlineChatRequestInProgress', false, localize('inlineChatRequestInProgress', "Whether an inline chat request is currently in progress"));
-export const CTX_INLINE_CHAT_RESPONSE_TYPE = new RawContextKey<InlineChatResponseType>('inlineChatResponseType', InlineChatResponseType.None, localize('inlineChatResponseTypes', "What type was the responses have been receieved, nothing yet, just messages, or messaged and local edits"));
+export const CTX_INLINE_CHAT_REQUEST_IN_PROGRESS = new RawContextKey<boolean>('inlineAideChatRequestInProgress', false, localize('inlineAideChatRequestInProgress', "Whether an inline chat request is currently in progress"));
+export const CTX_INLINE_CHAT_RESPONSE_TYPE = new RawContextKey<InlineChatResponseType>('inlineAideChatResponseType', InlineChatResponseType.None, localize('inlineAideChatResponseTypes', "What type was the responses have been receieved, nothing yet, just messages, or messaged and local edits"));
 
 export const CTX_INLINE_CHAT_CONFIG_TXT_BTNS = ContextKeyExpr.equals(`config.${[InlineChatConfigKeys.ExpTextButtons]}`, true);
 
 // --- (selected) action identifier
 
-export const ACTION_ACCEPT_CHANGES = 'inlineChat.acceptChanges';
-export const ACTION_REGENERATE_RESPONSE = 'inlineChat.regenerate';
-export const ACTION_VIEW_IN_CHAT = 'inlineChat.viewInChat';
-export const ACTION_TOGGLE_DIFF = 'inlineChat.toggleDiff';
+export const ACTION_ACCEPT_CHANGES = 'inlineAideChat.acceptChanges';
+export const ACTION_REGENERATE_RESPONSE = 'inlineAideChat.regenerate';
+export const ACTION_VIEW_IN_CHAT = 'inlineAideChat.viewInChat';
+export const ACTION_TOGGLE_DIFF = 'inlineAideChat.toggleDiff';
 
 // --- menus
 
-export const MENU_INLINE_CHAT_EXECUTE = MenuId.for('inlineChat.execute');
-export const MENU_INLINE_CHAT_CONTENT_STATUS = MenuId.for('inlineChat.content.status');
-export const MENU_INLINE_CHAT_WIDGET_STATUS = MenuId.for('inlineChatWidget.status');
+export const MENU_INLINE_CHAT_EXECUTE = MenuId.for('inlineAideChat.execute');
+export const MENU_INLINE_CHAT_CONTENT_STATUS = MenuId.for('inlineAideChat.content.status');
+export const MENU_INLINE_CHAT_WIDGET_STATUS = MenuId.for('inlineAideChatWidget.status');
 
 // --- colors
 

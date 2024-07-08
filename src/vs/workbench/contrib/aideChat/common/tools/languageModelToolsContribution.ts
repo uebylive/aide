@@ -63,7 +63,7 @@ function toToolKey(extensionIdentifier: ExtensionIdentifier, toolName: string) {
 }
 
 export class LanguageModelToolsExtensionPointHandler implements IWorkbenchContribution {
-	static readonly ID = 'workbench.contrib.toolsExtensionPointHandler';
+	static readonly ID = 'workbench.contrib.aideToolsExtensionPointHandler';
 
 	private _registrationDisposables = new DisposableMap<string>();
 

@@ -25,7 +25,7 @@ export interface ISessionKeyComputer {
 	getComparisonKey(editor: ICodeEditor, uri: URI): string;
 }
 
-export const IInlineChatSessionService = createDecorator<IInlineChatSessionService>('IInlineChatSessionService');
+export const IInlineAideChatSessionService = createDecorator<IInlineAideChatSessionService>('IInlineAideChatSessionService');
 
 export interface IInlineChatSessionEvent {
 	readonly editor: ICodeEditor;
@@ -36,7 +36,7 @@ export interface IInlineChatSessionEndEvent extends IInlineChatSessionEvent {
 	readonly endedByExternalCause: boolean;
 }
 
-export interface IInlineChatSessionService {
+export interface IInlineAideChatSessionService {
 	_serviceBrand: undefined;
 
 	onWillStartSession: Event<IActiveCodeEditor>;

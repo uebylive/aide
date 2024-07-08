@@ -9,7 +9,7 @@ import { Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { InlineChatController } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatController';
-import { IInlineChatSessionService } from './inlineChatSessionService';
+import { IInlineAideChatSessionService } from './inlineChatSessionService';
 import { INotebookEditorService } from 'vs/workbench/contrib/notebook/browser/services/notebookEditorService';
 import { CellUri } from 'vs/workbench/contrib/notebook/common/notebookCommon';
 
@@ -18,7 +18,7 @@ export class InlineChatNotebookContribution {
 	private readonly _store = new DisposableStore();
 
 	constructor(
-		@IInlineChatSessionService sessionService: IInlineChatSessionService,
+		@IInlineAideChatSessionService sessionService: IInlineAideChatSessionService,
 		@INotebookEditorService notebookEditorService: INotebookEditorService,
 	) {
 
