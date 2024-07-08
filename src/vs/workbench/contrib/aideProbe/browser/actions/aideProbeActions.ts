@@ -58,6 +58,7 @@ export class CloseCommandPaletteGlobalAction extends Action2 {
 			title: localize2('closeCommandPalette', "Close command palette"),
 			f1: false,
 			category: PROBE_CATEGORY,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyCode.Escape,
@@ -75,10 +76,10 @@ export class CloseCommandPaletteGlobalAction extends Action2 {
 export class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';
 
-	constructor(title: ILocalizedString) {
+	constructor(title?: ILocalizedString) {
 		super({
 			id: SubmitAction.ID,
-			title,
+			title: title ?? 'Submit',
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
@@ -90,6 +91,11 @@ export class SubmitAction extends Action2 {
 			},
 			menu: [
 				{
+					id: MenuId.AideCommandPaletteNavigation,
+					group: 'navigation',
+					when: CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(),
+				},
+				{
 					id: MenuId.AideProbePrimary,
 					group: 'navigation',
 					when: CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(),
@@ -99,6 +105,7 @@ export class SubmitAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
+
 		const aideProbeView = await showProbeView(accessor.get(IViewsService));
 
 		if (aideProbeView) {
@@ -160,7 +167,6 @@ export class CancelAction extends Action2 {
 			title: localize2('aideProbe.cancel.label', "Cancel"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			icon: Codicon.x,
 			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
 			keybinding: {
 				primary: KeyCode.Escape,
@@ -184,6 +190,85 @@ export class CancelAction extends Action2 {
 			return;
 		}
 
+		aideProbeView.cancelRequest();
+	}
+}
+
+
+export class NavigateUpAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.navigateUp';
+
+	constructor() {
+		super({
+			id: NavigateUpAction.ID,
+			title: localize2('aideProbe.navigateUp.label', "Navigate up"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			precondition: CONTEXT_PROBE_INPUT_HAS_FOCUS,
+			keybinding: {
+				primary: KeyCode.UpArrow,
+				weight: KeybindingWeight.EditorContrib,
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		console.log('up');
+	}
+}
+
+export class NavigateDownAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.navigateDown';
+
+	constructor() {
+		super({
+			id: NavigateDownAction.ID,
+			title: localize2('aideProbe.navigateDown.label', "Navigate down"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			precondition: CONTEXT_PROBE_INPUT_HAS_FOCUS,
+			keybinding: {
+				primary: KeyCode.DownArrow,
+				weight: KeybindingWeight.EditorContrib,
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		console.log('down');
+	}
+}
+
+export class ExitAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.exit';
+
+	constructor() {
+		super({
+			id: ExitAction.ID,
+			title: localize2('aideProbe.cancel.label', "Cancel"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.x,
+			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
+			keybinding: {
+				primary: KeyCode.Escape,
+				weight: KeybindingWeight.EditorContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
+			},
+			menu: [
+				{
+					id: MenuId.AideCommandPaletteExitRequest,
+					group: 'navigation',
+				}
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const aideProbeView = await showProbeView(accessor.get(IViewsService));
+		if (!aideProbeView) {
+			return;
+		}
 		aideProbeView.cancelRequest();
 	}
 }
@@ -225,5 +310,8 @@ export function registerProbeActions() {
 	registerAction2(CloseCommandPaletteGlobalAction);
 	registerAction2(CancelAction);
 	registerAction2(ClearAction);
+	registerAction2(ExitAction);
+	registerAction2(NavigateUpAction);
+	registerAction2(NavigateDownAction);
 	registerWorkbenchContribution2(SubmitActionComposer.ID, SubmitActionComposer, WorkbenchPhase.BlockStartup);
 }

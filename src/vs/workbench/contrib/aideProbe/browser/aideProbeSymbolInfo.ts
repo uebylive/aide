@@ -18,6 +18,7 @@ import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+//import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
 
@@ -34,7 +35,9 @@ export class AideProbeSymbolInfo extends Disposable {
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
+		request: string,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		//@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
@@ -57,6 +60,7 @@ export class AideProbeSymbolInfo extends Disposable {
 	}
 
 	private createSymbolInfosList(listContainer: HTMLElement): void {
+
 		// List
 		const listDelegate = this.instantiationService.createInstance(SymbolInfoListDelegate);
 		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
@@ -121,6 +125,7 @@ export class AideProbeSymbolInfo extends Disposable {
 
 
 		const resolveLocationOperation = element.symbol;
+		//this.editorProgressService.showWhile(resolveLocationOperation);
 		await resolveLocationOperation;
 		this.explanationService.changeActiveBreakdown(element);
 	}
