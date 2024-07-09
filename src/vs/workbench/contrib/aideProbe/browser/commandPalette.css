@@ -57,6 +57,7 @@
 }
 
 .command-palette-input {
+	position: relative;
 	background-color: var(--vscode-editor-background);
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 2px;
@@ -68,9 +69,15 @@
 	padding-inline: 12px;
 }
 
-.command-palette-panel {
-	width: 100%;
+.command-palette-submit-toolbar {
 	position: absolute;
+	right: 0;
+}
+
+.command-palette-panel {
+	width: calc(100% - 18px);
+	position: absolute;
+	border: 1px solid var(--vscode-chat-requestBorder);
 	background-color: var(--vscode-menu-background);
 	border-radius: 5px;
 	overflow: hidden;
@@ -96,4 +103,17 @@
 	border-bottom: 1px solid var(--vscode-chat-requestBorder);
 }
 
+.symbol-info-list-item {
+	padding-inline: 8px;
+	padding-block: 8px;
+}
 
+.symbol-info-resource .monaco-icon-label > .monaco-icon-label-container {
+	display: flex;
+	flex-direction: column;
+}
+
+.symbol-info-resource  .monaco-icon-label > .monaco-icon-label-container > .monaco-icon-description-container > .label-description {
+	margin-left: 0;
+	font-size: 1em;
+}

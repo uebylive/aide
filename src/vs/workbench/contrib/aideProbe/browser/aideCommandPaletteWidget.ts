@@ -144,6 +144,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		const innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
 
 		this.symbolInfoListContainer = dom.append(this.container, $('.command-palette-panel'));
+		dom.hide(this.symbolInfoListContainer);
 
 		this._inputContainer = dom.append(innerContainer, $('.command-palette-input'));
 
@@ -222,7 +223,7 @@ export class AideCommandPaletteWidget extends Disposable {
 				return;
 			}
 		}));
-		this.submitToolbar.getElement().classList.add('command-palette-navigation-toolbar');
+		this.submitToolbar.getElement().classList.add('command-palette-submit-toolbar');
 
 		// Register events
 
@@ -438,6 +439,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
 			this.renderSymbolListData(this.viewModel?.breakdowns ?? []);
+
 			dom.show(this.symbolInfoListContainer);
 			this.isPanelVisible = true;
 		} else {

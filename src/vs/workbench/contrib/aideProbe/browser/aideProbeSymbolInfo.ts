@@ -14,13 +14,14 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
-import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
+import { relativePath } from 'vs/base/common/resources';
 //import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
@@ -46,7 +47,7 @@ export class AideProbeSymbolInfo extends Disposable {
 		private readonly resourceLabels: ResourceLabels,
 		container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		//@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
+
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
@@ -247,9 +248,7 @@ export class AideProbeSymbolInfo extends Disposable {
 interface ISymbolInfoTemplateData {
 	currentItem?: IAideProbeBreakdownViewModel;
 	currentItemIndex?: number;
-	wrapper: HTMLElement;
 	container: HTMLElement;
-	progressIndicator: HTMLElement;
 	toDispose: DisposableStore;
 }
 
@@ -267,6 +266,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
+		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 	) {
 		super();
 	}
@@ -279,14 +279,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 		const data: ISymbolInfoTemplateData = Object.create(null);
 		data.toDispose = new DisposableStore();
 
-		data.wrapper = dom.append(container, $('.symbolInfo-list-item-wrapper'));
-		// Content
-		data.container = $('.symbolInfo-list-item');
-		data.wrapper.appendChild(data.container);
-
-		// Progress indicator
-		data.progressIndicator = $('.symbolInfo-list-item-details');
-		data.wrapper.appendChild(data.progressIndicator);
+		data.container = dom.append(container, $('.symbol-info-list-item'));
 
 		return data;
 	}
@@ -300,10 +293,18 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 		const { uri, name } = element;
 		if (uri) {
-			const rowResource = $('div.symbolInfo-resource');
+			const rowResource = $('div.symbol-info-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
 			label.element.style.display = 'flex';
-			label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+
+
+			const workspaceFolder = this.contextService.getWorkspace().folders[0];
+
+			const workspaceFolderUri = workspaceFolder.uri;
+
+			const path = relativePath(workspaceFolderUri, uri);
+
+			label.setResource({ resource: uri, name, description: path }, {
 				fileKind: FileKind.FILE,
 				icon: SymbolKinds.toIcon(SymbolKind.Method),
 			});
@@ -312,7 +313,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 			element.symbol.then(symbol => {
 				if (symbol && symbol.kind) {
-					label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+					label.setResource({ resource: uri, name, description: path }, {
 						fileKind: FileKind.FILE,
 						icon: SymbolKinds.toIcon(symbol.kind),
 					});
@@ -334,12 +335,12 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.wrapper.offsetHeight || 22;
+		const newHeight = templateData.container.offsetHeight || 22;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
-			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
-				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
+			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
+				element.currentRenderedHeight = templateData.container.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));
