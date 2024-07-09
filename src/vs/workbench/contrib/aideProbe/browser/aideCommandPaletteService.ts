@@ -8,6 +8,9 @@ import { createDecorator, IInstantiationService } from 'vs/platform/instantiatio
 import { AideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { VIEW_ID as PROBE_VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 
 export interface IAideCommandPaletteData {
 	id: string;
@@ -18,6 +21,8 @@ export interface IAideCommandPaletteService {
 	widget: AideCommandPaletteWidget | undefined;
 
 	showPalette(): void;
+	acceptInput(): void;
+	cancelRequest(): void;
 	hidePalette(): void;
 }
 
@@ -41,6 +46,7 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 	constructor(
 		@IWorkbenchLayoutService private readonly workbenchLayoutService: IWorkbenchLayoutService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IViewsService private readonly viewsService: IViewsService
 	) {
 		super();
 
@@ -69,6 +75,27 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 			return;
 		}
 		this._widget.show();
+	}
+
+	async acceptInput() {
+		if (!this._widget) {
+			return;
+		}
+		this._widget.acceptInput();
+
+		const aideProbeView = await this.viewsService.openView<AideProbeViewPane>(PROBE_VIEW_ID);
+
+		if (aideProbeView) {
+			aideProbeView.acceptInput();
+		}
+	}
+
+
+	cancelRequest(): void {
+		if (!this._widget) {
+			return;
+		}
+		this._widget.cancelRequest();
 	}
 
 

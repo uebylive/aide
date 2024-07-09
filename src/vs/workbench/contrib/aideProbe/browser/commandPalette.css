@@ -26,7 +26,7 @@
 }
 
 .command-palette-container:hover:not(:has(.command-palette-input-editor:hover))  {
-	background-color: var(--vscode-toolbar-hoverBackground);
+	background-color: rgba(86, 86, 86, 0.4);
 	backdrop-filter: blur(5px);
 	cursor: grab;
 }
@@ -38,7 +38,7 @@
 .command-palette-inner-container {
 	padding: 4px;
 	border-radius: 6px;
-	background-color: var(--vscode-input-background);
+	background-color: var(--vscode-menu-background);
 	color: var(--vscode-input-foreground);
 	border: 1px solid var(--vscode-chat-requestBorder);
 	cursor: revert;
@@ -58,6 +58,7 @@
 
 .command-palette-input {
 	background-color: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 2px;
 	overflow: hidden;
 	display: flex;
@@ -66,3 +67,33 @@
 .command-palette-input-editor {
 	padding-inline: 12px;
 }
+
+.command-palette-panel {
+	width: 100%;
+	position: absolute;
+	background-color: var(--vscode-menu-background);
+	border-radius: 5px;
+	overflow: hidden;
+}
+
+.command-palette-panel.top {
+	top: 100%;
+	margin-top: 10px;
+}
+
+.command-palette-panel.bottom {
+	bottom: 100%;
+	margin-top: 10px;
+}
+
+
+.symbol-info-header {
+	display: flex;
+	gap: 8px;
+	padding-inline: 14px;
+	padding-block: 8px;
+	background-color: var(--vscode-editor-background);
+	border-bottom: 1px solid var(--vscode-chat-requestBorder);
+}
+
+

@@ -18,6 +18,9 @@ import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 //import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
@@ -28,31 +31,87 @@ export class AideProbeSymbolInfo extends Disposable {
 
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
+	container: HTMLElement;
+	private header: HTMLElement;
+	private headerText: HTMLElement;
+	private loadingSpinner: HTMLElement | undefined;
+	private actionsToolbar: MenuWorkbenchToolBar;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
 	private renderer: SymbolInfoRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
+
 	private isVisible: boolean | undefined;
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
-		request: string,
+		container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		//@IEditorProgressService private readonly editorProgressService: IEditorProgressService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
+		this.container = container;
+
+		this.header = $('.symbol-info-header');
+		dom.hide(this.header);
+		this.container.appendChild(this.header);
+		this.headerText = $('.symbol-info-header-text');
+		this.header.appendChild(this.headerText);
+
+		const toolbarContainer = $('.symbol-info-toolbar-container');
+		this.header.appendChild(toolbarContainer);
+
+		this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideCommandPaletteActions, {
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action, options) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+				return;
+			}
+		}));
+		this.actionsToolbar.getElement().classList.add('symbol-info-actions');
 
 		this.renderer = this._register(this.instantiationService.createInstance(SymbolInfoRenderer, this.resourceLabels));
 	}
 
-	show(container: HTMLElement): void {
+	get contentHeight(): number | undefined {
+		if (!this.list) {
+			return;
+		}
+		return this.list.contentHeight;
+	}
+
+	show(headerText: string = 'New request', isLoading: boolean): void {
+
+		this.headerText.textContent = headerText;
+
+		dom.show(this.header);
+
+		if (isLoading) {
+			if (!this.loadingSpinner) {
+				const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
+				this.loadingSpinner = $('.symbol-info-spinner');
+				this.loadingSpinner.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
+				this.header.prepend(this.loadingSpinner);
+			}
+		} else {
+			if (this.loadingSpinner) {
+				this.header.removeChild(this.loadingSpinner);
+				this.loadingSpinner = undefined;
+			}
+		}
+
 		if (this.isVisible) {
 			return; // already visible
 		}
 
 		// Lazily create if showing for the first time
 		if (!this.list) {
-			this.createSymbolInfosList(container);
+			this.createSymbolInfosList(this.container);
 		}
 
 		// Make visible
@@ -123,7 +182,6 @@ export class AideProbeSymbolInfo extends Disposable {
 			}
 		}
 
-
 		const resolveLocationOperation = element.symbol;
 		//this.editorProgressService.showWhile(resolveLocationOperation);
 		await resolveLocationOperation;
@@ -163,6 +221,8 @@ export class AideProbeSymbolInfo extends Disposable {
 		if (!this.isVisible || !this.list) {
 			return; // already hidden
 		}
+
+		dom.hide(this.header);
 
 		// Remove all explanation widgets and go-to-definition widgets
 		this.explanationService.clear();
@@ -238,7 +298,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name, response } = element;
+		const { uri, name } = element;
 		if (uri) {
 			const rowResource = $('div.symbolInfo-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
@@ -258,16 +318,6 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 					});
 				}
 			});
-		}
-
-		const completeIcon = Codicon.arrowRight;
-		const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
-		if (response && response.value.length > 0) {
-			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(progressIcon));
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(completeIcon));
-		} else {
-			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(completeIcon));
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
 		}
 
 		this.updateItemHeight(templateData);

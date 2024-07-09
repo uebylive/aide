@@ -95,6 +95,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
+	getInitiateProbeState: () => IInitiateProbeResponseState | undefined;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(): void;
 
@@ -114,6 +115,11 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
 	private _didNavigateBreakdown: boolean = false;
+	private _initiateProbeResponseState: IInitiateProbeResponseState | undefined;
+
+	getInitiateProbeState(): IInitiateProbeResponseState | undefined {
+		return this._initiateProbeResponseState;
+	}
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -198,10 +204,13 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		rawResponsePromise.finally(() => {
 			this._pendingRequests.deleteAndDispose(probeModel.sessionId);
 		});
-		return {
+
+		this._initiateProbeResponseState = {
 			responseCreatedPromise: responseCreated.p,
 			responseCompletePromise: rawResponsePromise,
 		};
+
+		return this._initiateProbeResponseState;
 	}
 
 	cancelCurrentRequestForSession(sessionId: string): void {

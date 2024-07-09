@@ -32,12 +32,12 @@ import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storag
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_IN_PROBE_INPUT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeSymbolInfo } from 'vs/workbench/contrib/aideProbe/browser/aideProbeSymbolInfo';
 import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
+import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
 const $ = dom.$;
 
@@ -46,22 +46,41 @@ const INPUT_EDITOR_MIN_HEIGHT = 24;
 const COMMAND_PALETTE_POSITION_KEY = 'aide.commandPalette.widgetposition';
 const COMMAND_PALETTE_Y_KEY = 'aide.commandPalette.widgety';
 
+
 export class AideCommandPaletteWidget extends Disposable {
 
-	readonly _container!: HTMLElement;
+
 	private isVisible = false;
 	private inputEditorHeight = 0;
 
-	private _inputEditor: CodeEditorWidget;
-	private _inputContainer: HTMLElement;
+	private isPanelVisible = false;
+
+	private get yDefault() {
+		return this.layoutService.mainContainerOffset.top;
+	}
+
+	readonly _container!: HTMLElement;
+
+	private _inputContainer: HTMLElement; // contains all inputs
 	private _inputEditorContainer: HTMLElement;
+	private _inputEditor: CodeEditorWidget;
+
+
+	get inputEditor() {
+		return this._inputEditor;
+	}
+
+	private inputModel: ITextModel | undefined;
+	private inputEditorHasFocus: IContextKey<boolean>;
+	private inputEditorHasText: IContextKey<boolean>;
+	private contextToolbar: MenuWorkbenchToolBar;
+	private submitToolbar: MenuWorkbenchToolBar;
+
+	private requestInProgress: IContextKey<boolean>;
+
 	private symbolInfoListContainer: HTMLElement;
-
-	private _resourceLabels: ResourceLabels;
-	private _symbolInfoList: AideProbeSymbolInfo;
-
-	private panelHeight: number = 200;
-
+	private resourceLabels: ResourceLabels;
+	private symbolInfoList: AideProbeSymbolInfo;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeViewModel | undefined;
@@ -101,17 +120,6 @@ export class AideCommandPaletteWidget extends Disposable {
 	private _onDidBlur = this._register(new Emitter<void>());
 	readonly onDidBlur = this._onDidBlur.event;
 
-
-	get inputEditor() {
-		return this._inputEditor;
-	}
-
-	private inputModel: ITextModel | undefined;
-	private inputEditorHasFocus: IContextKey<boolean>;
-	private inputEditorHasText: IContextKey<boolean>;
-	private exitToolbar: MenuWorkbenchToolBar;
-	private navigationToolbar: MenuWorkbenchToolBar;
-
 	id: string = 'aideCommandPalette';
 
 	constructor(
@@ -129,19 +137,21 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		this.inputEditorHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+
 		this._container = container;
 
 		const innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
 
 		this.symbolInfoListContainer = dom.append(this.container, $('.command-palette-panel'));
-		this._inputContainer = dom.append(innerContainer, $('.command-palette-input'));
 
+		this._inputContainer = dom.append(innerContainer, $('.command-palette-input'));
 
 		// Context
 
 		const contextContainer = dom.append(this._inputContainer, $('.command-palette-context'));
 
-		this.exitToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, contextContainer, MenuId.AideCommandPaletteExitRequest, {
+		this.contextToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, contextContainer, MenuId.AideCommandPaletteContext, {
 			menuOptions: {
 				shouldForwardArgs: true
 			},
@@ -153,7 +163,7 @@ export class AideCommandPaletteWidget extends Disposable {
 				return;
 			}
 		}));
-		this.exitToolbar.getElement().classList.add('command-palette-exit-toolbar');
+		this.contextToolbar.getElement().classList.add('command-palette-exit-toolbar');
 
 
 		// Input editor
@@ -195,13 +205,12 @@ export class AideCommandPaletteWidget extends Disposable {
 		this._inputEditor.setModel(this.inputModel);
 		this._inputEditor.render();
 
-		this._resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
-		this._symbolInfoList = this._register(this.instantiationService.createInstance(AideProbeSymbolInfo, this._resourceLabels, this.viewModel?.model.request?.message ?? 'Probe request'));
+		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+		this.symbolInfoList = this._register(this.instantiationService.createInstance(AideProbeSymbolInfo, this.resourceLabels, this.symbolInfoListContainer));
 
+		// Submit toolbar
 
-		// Navigation toolbar
-
-		this.navigationToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this._inputContainer, MenuId.AideCommandPaletteNavigation, {
+		this.submitToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this._inputContainer, MenuId.AideCommandPaletteSubmit, {
 			menuOptions: {
 				shouldForwardArgs: true
 			},
@@ -213,7 +222,7 @@ export class AideCommandPaletteWidget extends Disposable {
 				return;
 			}
 		}));
-		this.navigationToolbar.getElement().classList.add('command-palette-navigation-toolbar');
+		this.submitToolbar.getElement().classList.add('command-palette-navigation-toolbar');
 
 		// Register events
 
@@ -234,6 +243,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			const currentHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 			if (currentHeight !== this.inputEditorHeight) {
 				this.inputEditorHeight = currentHeight;
+				this.setPanelPosition();
 				this._onDidChangeHeight.fire();
 				this.layout();
 			}
@@ -304,28 +314,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		return this._inputEditor.hasWidgetFocus();
 	}
 
-	private setYCoordinate(y: number): void {
-		const [yMin, yMax] = this.yRange;
-		y = Math.max(yMin, Math.min(y, yMax));
-		this._container.style.top = `${y}px`;
-	}
-
-	private get yDefault() {
-		return this.layoutService.mainContainerOffset.top;
-	}
-
-	private _yRange: [number, number] | undefined;
-	private get yRange(): [number, number] {
-		if (!this._yRange) {
-			const isTitleBarVisible = this.layoutService.isVisible(Parts.TITLEBAR_PART, dom.getWindow(this.layoutService.activeContainer));
-			const yMin = isTitleBarVisible ? 0 : this.layoutService.mainContainerOffset.top;
-			// TODO - improve this,
-			const yMax = this.layoutService.activeContainer.clientHeight - this._container.clientHeight;
-			this._yRange = [yMin, yMax];
-		}
-		return this._yRange;
-	}
-
 	private setCoordinates(x?: number, y?: number): void {
 
 		const widgetWidth = this._container.clientWidth;
@@ -349,8 +337,15 @@ export class AideCommandPaletteWidget extends Disposable {
 				? this.storageService.getNumber(COMMAND_PALETTE_Y_KEY, StorageScope.PROFILE)
 				: this.auxWindowCoordinates.get(currentWindow)?.y;
 		}
+		if (y === undefined) {
+			y = this.yDefault;
+		}
 
-		this.setYCoordinate(y ?? this.yDefault);
+		this.setPanelPosition();
+
+		const yMax = this.layoutService.activeContainer.clientHeight - this._container.clientHeight;
+		y = Math.max(0, Math.min(y, yMax));
+		this._container.style.top = `${y}px`;
 	}
 
 	private storePosition(): void {
@@ -365,6 +360,19 @@ export class AideCommandPaletteWidget extends Disposable {
 			this.storageService.store(COMMAND_PALETTE_Y_KEY, y, StorageScope.PROFILE, StorageTarget.MACHINE);
 		} else {
 			this.auxWindowCoordinates.set(activeWindow, { x, y });
+		}
+	}
+
+	private setPanelPosition() {
+		if (this.isPanelVisible && this.symbolInfoList && this.symbolInfoList.contentHeight !== undefined) {
+			const rect = this._container.getBoundingClientRect();
+			if (rect.top < this.symbolInfoList.contentHeight) {
+				this.symbolInfoListContainer.classList.add('top');
+				this.symbolInfoListContainer.classList.remove('bottom');
+			} else {
+				this.symbolInfoListContainer.classList.add('bottom');
+				this.symbolInfoListContainer.classList.remove('top');
+			}
 		}
 	}
 
@@ -385,59 +393,73 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 
-	acceptInput(viewModel: AideProbeViewModel) {
+	acceptInput() {
+		return this._acceptInput();
+	}
 
+	private _acceptInput() {
 		if (this.viewModel?.requestInProgress) {
 			return;
 		} else if (this.viewModel) {
 			this.clear();
 		}
 
-		this.viewModel = viewModel;
+		const model = this.aideProbeService.startSession();
+		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
+
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			this.onDidChangeItems();
 		}));
-
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
 			this.aideProbeService.navigateBreakdown();
-			this._symbolInfoList.openSymbolInfoReference(breakdown);
+			this.symbolInfoList.openSymbolInfoReference(breakdown);
 		}));
 
-		const editorValue = this.inputEditor.getValue();
+		const editorValue = this._inputEditor.getValue();
 		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
+		this.inputEditor.setValue('');
 
 		if (result) {
 			this.onDidChangeItems();
 			return result.responseCreatedPromise;
 		}
 
-		return undefined;
+		return editorValue;
 	}
 
 	private onDidChangeItems(): void {
 		if (this.viewModel?.requestInProgress) {
-			//this.requestInProgress.set(true);
+			this.requestInProgress.set(true);
 		} else {
-			//this.requestInProgress.set(false);
+			this.requestInProgress.set(false);
 		}
+
+
 
 		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
-			this.renderSymbolListData(this.viewModel?.breakdowns ?? [], this.symbolInfoListContainer);
+			this.renderSymbolListData(this.viewModel?.breakdowns ?? []);
 			dom.show(this.symbolInfoListContainer);
+			this.isPanelVisible = true;
 		} else {
-			this._symbolInfoList.hide();
+			this.symbolInfoList.hide();
 			dom.hide(this.symbolInfoListContainer);
+			this.isPanelVisible = false;
 		}
 
-		if (this.panelHeight) {
-			this.layoutPanel(this.panelHeight);
-		}
+		this.layoutPanel();
+		this.setPanelPosition();
 	}
 
 
-	private layoutPanel(height: number) {
-		this.panelHeight = height;
-		this._symbolInfoList.layout(height);
+	private renderSymbolListData(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>) {
+		const requestHeader = this.viewModel?.model.request?.message;
+		const isLoading = this.requestInProgress.get() ?? false;
+		this.symbolInfoList.show(requestHeader, isLoading);
+		this.symbolInfoList.updateSymbolInfo(breakdowns);
+	}
+
+	private layoutPanel() {
+		//
 	}
 
 	cancelRequest(): void {
@@ -450,14 +472,9 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.aideProbeService.clearSession();
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
-		//this.requestInProgress.set(false);
-		this._symbolInfoList.hide();
+		this.requestInProgress.set(false);
+		this.symbolInfoList.hide();
 		this.onDidChangeItems();
-	}
-
-	private renderSymbolListData(breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>, container: HTMLElement) {
-		this._symbolInfoList.show(container);
-		this._symbolInfoList.updateSymbolInfo(breakdowns);
 	}
 
 
