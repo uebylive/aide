@@ -803,7 +803,7 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
-		let activeWindowDataForProbing = null;
+		let activeWindowDataForProbing = undefined;
 		if (activeWindowData !== undefined) {
 			activeWindowDataForProbing = {
 				file_path: activeWindowData.file_path,
@@ -813,12 +813,12 @@ export class SideCarClient {
 		}
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body: ProbeAgentBody = {
+			query,
 			editor_url: editorUrl,
+			request_id: threadId,
 			model_config: sideCarModelConfiguration,
 			user_context: await convertVSCodeVariableToSidecar(variables),
-			query,
 			active_window_data: activeWindowDataForProbing,
-			request_id: threadId,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -835,7 +835,6 @@ export class SideCarClient {
 	}
 
 	async *startAgentCodeEdit(
-		gitDirectoryName: string,
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
@@ -846,23 +845,20 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agentic/code_editing';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
-		let activeWindowDataForCodeEditing = null;
+		let activeWindowDataForProbing = undefined;
 		if (activeWindowData !== undefined) {
-			activeWindowDataForCodeEditing = {
+			activeWindowDataForProbing = {
 				file_path: activeWindowData.file_path,
 				file_content: activeWindowData.file_content,
 				language: activeWindowData.language,
 			};
 		}
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body: CodeEditAgentBody = {
-			git_directory_name: gitDirectoryName,
+			user_query: query,
 			editor_url: editorUrl,
-			model_config: sideCarModelConfiguration,
-			user_context: await convertVSCodeVariableToSidecar(variables),
-			query,
-			active_window_data: activeWindowDataForCodeEditing,
 			request_id: threadId,
+			user_context: await convertVSCodeVariableToSidecar(variables),
+			active_window_data: activeWindowDataForProbing,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {

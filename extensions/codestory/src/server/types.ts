@@ -24,31 +24,27 @@ export type SymbolIdentifier = {
 	fs_file_path?: string;
 };
 
+type ActiveWindowData = {
+	file_path: string;
+	file_content: string;
+	language: string;
+}
+
 export type ProbeAgentBody = {
+	query: string;
 	editor_url: string;
+	request_id: string;
 	model_config: Record<string, any>;
 	user_context: UserContext;
-	query: string;
-	active_window_data: {
-		file_path: string;
-		file_content: string;
-		language: string;
-	} | null;
-	request_id: string;
+	active_window_data?: ActiveWindowData;
 };
 
 export type CodeEditAgentBody = {
+	user_query: string;
 	editor_url: string;
-	model_config: Record<string, any>;
-	git_directory_name: string;
-	user_context: UserContext;
-	query: string;
-	active_window_data: {
-		file_path: string;
-		file_content: string;
-		language: string;
-	} | null;
 	request_id: string;
+	user_context: UserContext;
+	active_window_data?: ActiveWindowData;
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
@@ -97,10 +93,39 @@ interface SymbolEventGoToDefinitionRequest {
 	thinking: string;
 }
 
+interface SymbolEventEditRequest {
+	RangeSelectionForEdit: RangeSelectionForEditRequest;
+	InsertCode: InsertCodeForEditRequest;
+	EditCode: EditedCodeForEditRequest;
+	CodeCorrectionTool: CodeCorrectionToolSelection;
+}
+
+interface RangeSelectionForEditRequest {
+	range: SidecarRequestRange;
+	fs_file_path: string;
+}
+
+interface InsertCodeForEditRequest {
+	range: SidecarRequestRange;
+	fs_file_path: string;
+}
+
+interface EditedCodeForEditRequest {
+	range: SidecarRequestRange;
+	fs_file_path: string;
+	new_code: string;
+}
+
+interface CodeCorrectionToolSelection {
+	range: SidecarRequestRange;
+	fs_file_path: string;
+	tool_use: string;
+}
+
 interface SymbolEventSubStep {
 	Probe?: SymbolEventProbeRequest;
 	GoToDefinition?: SymbolEventGoToDefinitionRequest;
-	Edit?: SymbolToEditRequest;
+	Edit?: SymbolEventEditRequest;
 }
 
 interface SymbolLocation {
@@ -114,7 +139,7 @@ interface SymbolInputEvent {
 	provider: LLMProvider;
 	api_keys: LLMProviderAPIKeys;
 	user_query: string;
-	// Here we have properties for swe bench which we are sending for testing
+	request_id: string;
 	swe_bench_test_endpoint?: string;
 	repo_map_fs_path?: string;
 	gcloud_access_token?: string;
@@ -122,6 +147,7 @@ interface SymbolInputEvent {
 	swe_bench_git_dname?: string;
 	swe_bench_code_editing?: LLMProperties;
 	swe_bench_gemini_api_keys?: LLMProperties;
+	swe_bench_long_context_editing?: LLMProperties;
 }
 
 interface LLMProperties {
@@ -143,13 +169,18 @@ interface SymbolEventRequest {
 }
 
 interface SymbolEvent {
-	InitialRequest: {};
+	InitialRequest: InitialRequestData;
 	AskQuestion: AskQuestionRequest;
 	UserFeedback: {};
 	Delete: {};
 	Edit: SymbolToEditRequest;
 	Outline: {};
 	Probe: SymbolToProbeRequest;
+}
+
+interface InitialRequestData {
+	original_question: string;
+	plan_if_available?: string;
 }
 
 interface AskQuestionRequest {
@@ -162,6 +193,7 @@ interface SymbolToEdit {
 	fs_file_path: string;
 	symbol_name: string;
 	instructions: string[];
+	is_new: boolean;
 }
 
 interface SymbolToEditRequest {
@@ -205,6 +237,9 @@ interface ToolInput {
 	CodeCorrectnessAction?: CodeCorrectnessRequest;
 	CodeEditingError?: CodeEditingErrorRequest;
 	ClassSymbolFollowup?: ClassSymbolFollowupRequest;
+	ProbeCreateQuestionForSymbol?: ProbeQuestionForSymbolRequest;
+	ProbeEnoughOrDeeper?: ProbeEnoughOrDeeperRequest;
+	ProbeFilterSnippetsSingleSymbol?: CodeToProbeSubSymbolRequest;
 	ProbeSubSymbol?: CodeToEditFilterRequest;
 	ProbePossibleRequest?: CodeSymbolToAskQuestionsRequest;
 	ProbeQuestionAskRequest?: CodeSymbolToAskQuestionsRequest;
@@ -214,6 +249,9 @@ interface ToolInput {
 	SWEBenchTest?: SWEBenchTestRequest;
 	TestOutputCorrection?: TestOutputCorrectionRequest;
 	CodeSymbolFollowInitialRequest?: CodeSymbolFollowInitialRequest;
+	PlanningBeforeCodeEdit?: PlanningBeforeCodeEditRequest;
+	NewSubSymbolForCodeEditing?: NewSubSymbolRequiredRequest;
+	GrepSymbolInCodebase?: LSPGrepSymbolInCodebaseRequest;
 }
 
 interface CodeEdit {
@@ -227,11 +265,14 @@ interface CodeEdit {
 	instruction: string;
 	api_key: LLMProviderAPIKeys;
 	provider: LLMProvider;
+	is_swe_bench_initial_edit: boolean;
+	is_new_symbol_request?: string;
 }
 
 export type LSPDiagnostics = {
 	fs_file_path: string;
 	range: SidecarRequestRange;
+	editor_url: string;
 };
 
 export interface FindCodeSnippets {
@@ -395,6 +436,31 @@ export type Snippet = {
 	outline_node_content: OutlineNodeContent;
 };
 
+export type ProbeQuestionForSymbolRequest = {
+	symbol_name: string;
+	next_symbol_name: string;
+	next_symbol_file_path: string;
+	history: string[];
+	hyperlinks: string[];
+	original_user_query: string;
+	llm_properties: LLMProperties;
+};
+
+export type ProbeEnoughOrDeeperRequest = {
+	symbol_name: string;
+	xml_string: string;
+	query: string;
+	llm_properties: LLMProperties;
+};
+
+export type CodeToProbeSubSymbolRequest = {
+	xml_symbol: string;
+	query: string;
+	llm: LLMTypeVariant;
+	provider: LLMProvider
+	api_key: LLMProviderAPIKeys;
+};
+
 export type CodeToEditFilterRequest = {
 	snippets: Snippet[];
 	query: string;
@@ -488,6 +554,25 @@ export type CodeSymbolFollowInitialRequest = {
 	llm: LLMTypeVariant;
 	provider: LLMProvider;
 	api_keys: LLMProviderAPIKeys;
+};
+
+export type PlanningBeforeCodeEditRequest = {
+	user_query: string;
+	files_with_content: Record<string, string>;
+	original_plan: string;
+	llm_properties: LLMProperties;
+};
+
+export type NewSubSymbolRequiredRequest = {
+	user_query: string;
+	plan: string;
+	symbol_content: string;
+	llm_properties: LLMProperties;
+};
+
+export type LSPGrepSymbolInCodebaseRequest = {
+	editor_url: string;
+	search_string: string;
 };
 
 export type CodeToEditSymbolRequest = {

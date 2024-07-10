@@ -8,7 +8,7 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
 import { SideCarClient } from '../../sidecar/client';
-import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
@@ -104,16 +104,14 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 
-		//let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
-		//if (false) {
-		//	// TODO: Add real git directory name
-		//	probeResponse = this._sideCarClient.startAgentCodeEdit('', query, variables, this._editorUrl, threadId);
-		//} else {
-		//	probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		//}
+		// let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		// if (false) {
+		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+		// } else {
+		// 	probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		// }
 
-
-		// Use dummy data: Start
+		/* // Use dummy data: Start
 		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
 		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 		if (!extensionRoot || !workspaceRoot) {
@@ -128,8 +126,7 @@ export class AideProbeProvider implements vscode.Disposable {
 				yield item;
 			}
 		})(jsonArr);
-
-		// Use dummy data: End
+		// Use dummy data: End */
 
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
 

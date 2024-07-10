@@ -263,12 +263,11 @@ export const reportAgentEventsToChat = async (
 
 	//await new Promise((resolve) => setTimeout(resolve, 1000));
 
-	const randomInt = (min: number, max: number) =>
-		Math.floor(Math.random() * (max - min + 1)) + min;
-
+	// const randomInt = (min: number, max: number) =>
+	// 	Math.floor(Math.random() * (max - min + 1)) + min;
 
 	for await (const event of asyncIterable) {
-		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
+		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
@@ -311,6 +310,9 @@ export const reportAgentEventsToChat = async (
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			if (!symbol_identifier.fs_file_path) {
+				return;
+			}
 
 			if (symbolEventSubStep.GoToDefinition) {
 				const goToDefinition = symbolEventSubStep.GoToDefinition;
@@ -321,41 +323,85 @@ export const reportAgentEventsToChat = async (
 				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			} else if (symbolEventSubStep.Edit) {
-				response.codeEdit({
-					reference: {
-						uri: vscode.Uri.file(symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: symbol_identifier.symbol_name
-					},
-					edits: symbolEventSubStep.Edit.symbols.map(symbolToEdit => new vscode.TextEdit(
-						new vscode.Range(
-							new vscode.Position(symbolToEdit.range.startPosition.line, symbolToEdit.range.startPosition.character),
-							new vscode.Position(symbolToEdit.range.endPosition.line, symbolToEdit.range.endPosition.character)
-						),
-						'add new text here'
-					))
-				});
-			}
+				const editEvent = symbolEventSubStep.Edit;
+				if (editEvent.RangeSelectionForEdit) {
+					response.codeEditPreview({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						ranges: [new vscode.Range(
+							new vscode.Position(editEvent.RangeSelectionForEdit.range.startPosition.line, editEvent.RangeSelectionForEdit.range.startPosition.character),
+							new vscode.Position(editEvent.RangeSelectionForEdit.range.endPosition.line, editEvent.RangeSelectionForEdit.range.endPosition.character)
+						)]
+					});
+				} else if (editEvent.EditCode) {
+					response.codeEdit({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						edits: [
+							new vscode.TextEdit(
+								new vscode.Range(
+									new vscode.Position(editEvent.EditCode.range.startPosition.line, editEvent.EditCode.range.startPosition.character),
+									new vscode.Position(editEvent.EditCode.range.endPosition.line, editEvent.EditCode.range.endPosition.character)
+								),
+								editEvent.EditCode.new_code
+							)
+						]
+					});
+				} else if (editEvent.InsertCode) {
+					response.codeEdit({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						edits: [
+							new vscode.TextEdit(
+								new vscode.Range(
+									new vscode.Position(editEvent.InsertCode.range.startPosition.line, editEvent.InsertCode.range.startPosition.character),
+									new vscode.Position(editEvent.InsertCode.range.endPosition.line, editEvent.InsertCode.range.endPosition.character)
+								),
+								'new_code'
+							)
+						]
+					});
+				} else if (editEvent.CodeCorrectionTool) {
+					response.codeEdit({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						edits: [
+							new vscode.TextEdit(
+								new vscode.Range(
+									new vscode.Position(editEvent.CodeCorrectionTool.range.startPosition.line, editEvent.CodeCorrectionTool.range.startPosition.character),
+									new vscode.Position(editEvent.CodeCorrectionTool.range.endPosition.line, editEvent.CodeCorrectionTool.range.endPosition.character)
+								),
+								'tool_used'
+							)
+						]
+					});
+				}
+			} else if (symbolEventSubStep.Probe) {
+				const probeSubStep = symbolEventSubStep.Probe;
+				const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
+				if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
+					continue;
+				}
 
-			if ('Probe' in symbolEventSubStep === false) {
-				continue;
-			}
-
-			const probeSubStep = symbolEventSubStep.Probe!;
-			const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
-			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
-				continue;
-			}
-
-			const subStepType = probeRequestKeys[0];
-			if (subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
-				const probeAnswer = probeSubStep.ProbeAnswer;
-				response.breakdown({
-					reference: {
-						uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-						name: symbol_identifier.symbol_name
-					},
-					response: new vscode.MarkdownString(probeAnswer)
-				});
+				const subStepType = probeRequestKeys[0];
+				if (subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
+					const probeAnswer = probeSubStep.ProbeAnswer;
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						response: new vscode.MarkdownString(probeAnswer)
+					});
+				}
 			}
 		} else if (event.event.RequestEvent) {
 			const { ProbeFinished } = event.event.RequestEvent;
