@@ -240,7 +240,9 @@ export class MenuId {
 	static readonly DiffEditorHunkToolbar = new MenuId('DiffEditorHunkToolbar');
 	static readonly DiffEditorSelectionToolbar = new MenuId('DiffEditorSelectionToolbar');
 	static readonly AideProbePrimary = new MenuId('AideProbePrimary');
-	static readonly AideProbeCommandPalette = new MenuId('AideProbeCommandPalette');
+	static readonly AideCommandPaletteSubmit = new MenuId('AideCommandPaletteSubmit');
+	static readonly AideCommandPaletteContext = new MenuId('AideCommandPaletteContext');
+	static readonly AideCommandPaletteActions = new MenuId('AideCommandPaletteActions');
 
 
 	/**

@@ -7,7 +7,6 @@ import * as dom from 'vs/base/browser/dom';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
-import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
 import * as nls from 'vs/nls';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -22,7 +21,6 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideChatBreakdowns } from 'vs/workbench/contrib/aideProbe/browser/aideProbeBreakdowns';
-import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
@@ -36,7 +34,6 @@ import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/c
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { IDimension } from 'vs/editor/common/core/dimension';
-import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 
 const $ = dom.$;
 
@@ -49,8 +46,6 @@ export class AideProbeViewPane extends ViewPane {
 	private scrollableElement!: DomScrollableElement;
 	private tailingToggle: Toggle | undefined;
 	private dimensions: IDimension | undefined;
-
-	private inputPart!: AideProbeInputPart;
 
 	private readonly markdownRenderer: MarkdownRenderer;
 	private requestInProgress: IContextKey<boolean>;
@@ -91,8 +86,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
-		@IAideProbeService private readonly aideProbeService: IAideProbeService,
-		@IAideCommandPaletteService private readonly aideCommandPaletteService: IAideCommandPaletteService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
@@ -105,9 +99,6 @@ export class AideProbeViewPane extends ViewPane {
 	protected override renderBody(container: HTMLElement): void {
 		super.renderBody(container);
 		this.container = dom.append(container, $('.aide-probe-view'));
-
-		this.inputPart = this._register(this.instantiationService.createInstance(AideProbeInputPart));
-		this.inputPart.render(this.container, this);
 
 		this.resultWrapper = $('.resultWrapper', { tabIndex: 0 });
 		this.scrollableElement = this._register(new DomScrollableElement(
@@ -164,14 +155,6 @@ export class AideProbeViewPane extends ViewPane {
 		super.focus();
 	}
 
-	getInputEditor(): CodeEditorWidget {
-		return this.inputPart.inputEditor;
-	}
-
-	getInput(): string {
-		return this.inputPart.inputEditor.getValue();
-	}
-
 	acceptInput() {
 		this._acceptInput();
 	}
@@ -183,15 +166,12 @@ export class AideProbeViewPane extends ViewPane {
 			this.clear();
 		}
 
-		const model = this.aideProbeService.startSession();
-		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
-
-		const commandPaletteWidget = this.aideCommandPaletteService.widget;
-		if (commandPaletteWidget) {
-			commandPaletteWidget.acceptInput(this.viewModel);
+		const model = this.aideProbeService.getSession();
+		if (!model) {
+			return;
 		}
 
-
+		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			this.onDidChangeItems();
@@ -201,11 +181,10 @@ export class AideProbeViewPane extends ViewPane {
 			this._breakdownsList.openBreakdownReference(breakdown);
 		}));
 
-		const editorValue = this.getInput();
-		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
+
+		const result = this.aideProbeService.getInitiateProbeState();
 
 		if (result) {
-			this.inputPart.acceptInput(editorValue);
 			this.onDidChangeItems();
 			return result.responseCreatedPromise;
 		}
@@ -290,10 +269,8 @@ export class AideProbeViewPane extends ViewPane {
 		super.layoutBody(height, width);
 		this.dimensions = { width, height };
 
-		this.inputPart.layout(height, width);
 		this._breakdownsList.layout(width);
 		this.scrollableElement.scanDomNode();
-		this.resultWrapper.style.height = `${height - this.inputPart.element.offsetHeight}px`;
 	}
 
 	override dispose(): void {

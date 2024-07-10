@@ -14,10 +14,15 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { FileKind } from 'vs/platform/files/common/files';
-import { basenameOrAuthority } from 'vs/base/common/resources';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
+import { relativePath } from 'vs/base/common/resources';
+//import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
 
@@ -27,29 +32,87 @@ export class AideProbeSymbolInfo extends Disposable {
 
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
+	container: HTMLElement;
+	private header: HTMLElement;
+	private headerText: HTMLElement;
+	private loadingSpinner: HTMLElement | undefined;
+	private actionsToolbar: MenuWorkbenchToolBar;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
 	private renderer: SymbolInfoRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
+
 	private isVisible: boolean | undefined;
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
+		container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
+		this.container = container;
+
+		this.header = $('.symbol-info-header');
+		dom.hide(this.header);
+		this.container.appendChild(this.header);
+		this.headerText = $('.symbol-info-header-text');
+		this.header.appendChild(this.headerText);
+
+		const toolbarContainer = $('.symbol-info-toolbar-container');
+		this.header.appendChild(toolbarContainer);
+
+		this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideCommandPaletteActions, {
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action, options) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+				return;
+			}
+		}));
+		this.actionsToolbar.getElement().classList.add('symbol-info-actions');
 
 		this.renderer = this._register(this.instantiationService.createInstance(SymbolInfoRenderer, this.resourceLabels));
 	}
 
-	show(container: HTMLElement): void {
+	get contentHeight(): number | undefined {
+		if (!this.list) {
+			return;
+		}
+		return this.list.contentHeight;
+	}
+
+	show(headerText: string = 'New request', isLoading: boolean): void {
+
+		this.headerText.textContent = headerText;
+
+		dom.show(this.header);
+
+		if (isLoading) {
+			if (!this.loadingSpinner) {
+				const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
+				this.loadingSpinner = $('.symbol-info-spinner');
+				this.loadingSpinner.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
+				this.header.prepend(this.loadingSpinner);
+			}
+		} else {
+			if (this.loadingSpinner) {
+				this.header.removeChild(this.loadingSpinner);
+				this.loadingSpinner = undefined;
+			}
+		}
+
 		if (this.isVisible) {
 			return; // already visible
 		}
 
 		// Lazily create if showing for the first time
 		if (!this.list) {
-			this.createSymbolInfosList(container);
+			this.createSymbolInfosList(this.container);
 		}
 
 		// Make visible
@@ -57,6 +120,7 @@ export class AideProbeSymbolInfo extends Disposable {
 	}
 
 	private createSymbolInfosList(listContainer: HTMLElement): void {
+
 		// List
 		const listDelegate = this.instantiationService.createInstance(SymbolInfoListDelegate);
 		const list = this.list = this._register(<WorkbenchList<IAideProbeBreakdownViewModel>>this.instantiationService.createInstance(
@@ -119,8 +183,8 @@ export class AideProbeSymbolInfo extends Disposable {
 			}
 		}
 
-
 		const resolveLocationOperation = element.symbol;
+		//this.editorProgressService.showWhile(resolveLocationOperation);
 		await resolveLocationOperation;
 		this.explanationService.changeActiveBreakdown(element);
 	}
@@ -159,6 +223,8 @@ export class AideProbeSymbolInfo extends Disposable {
 			return; // already hidden
 		}
 
+		dom.hide(this.header);
+
 		// Remove all explanation widgets and go-to-definition widgets
 		this.explanationService.clear();
 
@@ -182,9 +248,7 @@ export class AideProbeSymbolInfo extends Disposable {
 interface ISymbolInfoTemplateData {
 	currentItem?: IAideProbeBreakdownViewModel;
 	currentItemIndex?: number;
-	wrapper: HTMLElement;
 	container: HTMLElement;
-	progressIndicator: HTMLElement;
 	toDispose: DisposableStore;
 }
 
@@ -202,6 +266,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
+		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 	) {
 		super();
 	}
@@ -214,14 +279,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 		const data: ISymbolInfoTemplateData = Object.create(null);
 		data.toDispose = new DisposableStore();
 
-		data.wrapper = dom.append(container, $('.symbolInfo-list-item-wrapper'));
-		// Content
-		data.container = $('.symbolInfo-list-item');
-		data.wrapper.appendChild(data.container);
-
-		// Progress indicator
-		data.progressIndicator = $('.symbolInfo-list-item-details');
-		data.wrapper.appendChild(data.progressIndicator);
+		data.container = dom.append(container, $('.symbol-info-list-item'));
 
 		return data;
 	}
@@ -233,12 +291,20 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name, response } = element;
+		const { uri, name } = element;
 		if (uri) {
-			const rowResource = $('div.symbolInfo-resource');
+			const rowResource = $('div.symbol-info-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
 			label.element.style.display = 'flex';
-			label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+
+
+			const workspaceFolder = this.contextService.getWorkspace().folders[0];
+
+			const workspaceFolderUri = workspaceFolder.uri;
+
+			const path = relativePath(workspaceFolderUri, uri);
+
+			label.setResource({ resource: uri, name, description: path }, {
 				fileKind: FileKind.FILE,
 				icon: SymbolKinds.toIcon(SymbolKind.Method),
 			});
@@ -247,22 +313,12 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 			element.symbol.then(symbol => {
 				if (symbol && symbol.kind) {
-					label.setResource({ resource: uri, name, description: basenameOrAuthority(uri) }, {
+					label.setResource({ resource: uri, name, description: path }, {
 						fileKind: FileKind.FILE,
 						icon: SymbolKinds.toIcon(symbol.kind),
 					});
 				}
 			});
-		}
-
-		const completeIcon = Codicon.arrowRight;
-		const progressIcon = ThemeIcon.modify(Codicon.loading, 'spin');
-		if (response && response.value.length > 0) {
-			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(progressIcon));
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(completeIcon));
-		} else {
-			templateData.progressIndicator.classList.remove(...ThemeIcon.asClassNameArray(completeIcon));
-			templateData.progressIndicator.classList.add(...ThemeIcon.asClassNameArray(progressIcon));
 		}
 
 		this.updateItemHeight(templateData);
@@ -279,12 +335,12 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.wrapper.offsetHeight || 22;
+		const newHeight = templateData.container.offsetHeight || 22;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
-			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.wrapper), () => {
-				element.currentRenderedHeight = templateData.wrapper.offsetHeight || 22;
+			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
+				element.currentRenderedHeight = templateData.container.offsetHeight || 22;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));
