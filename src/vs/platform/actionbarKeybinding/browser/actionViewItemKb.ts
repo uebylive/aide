@@ -34,6 +34,7 @@ export class ActionViewItemKb extends ActionViewItem {
 			k.set(kb);
 
 			this.label.classList.add('sr-only');
+
 			this.label.textContent = this._action.label;
 			this.label.appendChild(div);
 			this.element?.appendChild(div);

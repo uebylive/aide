@@ -46,14 +46,34 @@
 
 .command-palette-context {
 	display: grid;
+	border-right: 1px solid transparent;
+}
+
+.command-palette-context.active {
+	border-color: var(--vscode-chat-requestBorder);
 }
 
 .command-palette-logo {
 	grid-area: 1 / -1 / 1 / -1;
+	background-image: url('./aideLogo.svg');
+	background-repeat: no-repeat;
+	background-position: center;
+	transition: opacity 0.3s ease;
 }
 
-.command-palette-exit {
+.command-palette-context.active .command-palette-logo {
+	opacity: 0;
+}
+
+.command-palette-context-toolbar {
 	grid-area: 1 / -1 / 1 / -1;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	padding-inline: 6px;
+}
+
+.command-palette-context.active .command-palette-context-toolbar {
+	opacity: 1;
 }
 
 .command-palette-input {
@@ -66,7 +86,7 @@
 }
 
 .command-palette-input-editor {
-	padding-inline: 12px;
+	padding-inline: 6px;
 }
 
 .command-palette-submit-toolbar {
