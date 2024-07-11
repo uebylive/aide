@@ -8,11 +8,30 @@ import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
 import { SideCarClient } from '../../sidecar/client';
-import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
 import { getUniqueId } from '../../utilities/uniqueId';
 //import { SideCarAgentEvent } from '../../server/types';
+
+interface IAideProbeSessionTracker {
+	requestId: string | undefined;
+}
+
+export class AideProbeSessionTracker implements IAideProbeSessionTracker, vscode.Disposable {
+	private _requestId: string | undefined;
+	set requestId(id: string) {
+		this._requestId = id;
+	}
+
+	get requestId(): string | undefined {
+		return this._requestId;
+	}
+
+	dispose() {
+		throw new Error('Method not implemented.');
+	}
+}
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -106,12 +125,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		// let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 		// if (false) {
-		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+		// const probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
 		// } else {
 		// 	probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		// }
 
-		/* // Use dummy data: Start
+		// Use dummy data: Start
 		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
 		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 		if (!extensionRoot || !workspaceRoot) {
@@ -121,12 +140,12 @@ export class AideProbeProvider implements vscode.Disposable {
 		const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
 		const probeResponse = (async function* (arr) {
 			for (const original of arr) {
-				const itemString = JSON.stringify(original).replace(/\/Users\/skcd\/scratch\/sidecar/g, workspaceRoot);
+				const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
 				const item = JSON.parse(itemString);
 				yield item;
 			}
 		})(jsonArr);
-		// Use dummy data: End */
+		// Use dummy data: End
 
 		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
 

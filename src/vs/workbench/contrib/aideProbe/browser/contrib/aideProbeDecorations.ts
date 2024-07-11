@@ -5,13 +5,15 @@
 
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 
-export const symbolDecoration = 'aide-probe-definition';
-export const symbolDecorationClass = 'aide-probe-definition-decoration';
+export const probeDefinitionDecoration = 'aide-probe-definition';
+export const probeDefinitionDecorationClass = 'aide-probe-definition-decoration';
+export const editSymbolDecoration = 'aide-edit-symbol';
+export const editSymbolDecorationClass = 'aide-edit-symbol-decoration';
 
-const symbolDecorationLine = 'aide-probe-definition-line';
-const symbolDecorationLineClass = 'aide-probe-definition-line-decoration';
+const probeSymbolDecoration = 'aide-probe-definition-line';
+const probeSymbolDecorationClass = 'aide-probe-definition-line-decoration';
 export const symbolDecorationLineOptions = ModelDecorationOptions.register({
-	description: symbolDecorationLine,
-	className: symbolDecorationLineClass,
+	description: probeSymbolDecoration,
+	className: probeSymbolDecorationClass,
 	isWholeLine: true,
 });

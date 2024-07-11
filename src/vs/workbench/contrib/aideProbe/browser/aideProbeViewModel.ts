@@ -17,12 +17,14 @@ import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe
 import { IAideProbeTextEdit, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 export interface IAideProbeViewModel {
+	readonly onDidChange: Event<void>;
+	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
+
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly requestInProgress: boolean;
 	readonly isTailing: boolean;
-	readonly onDidChange: Event<void>;
-	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
+	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
@@ -55,22 +57,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._breakdowns;
 	}
 
-	private _goToDefinitions: IAideProbeGoToDefinitionViewModel[] = [];
-	get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinitionViewModel> {
-		return this._goToDefinitions;
-	}
-
-	private _codeEditsPreview: IAideProbeTextEditPreview[] = [];
-	get codeEditsPreview(): ReadonlyArray<IAideProbeTextEditPreview> {
-		return this._codeEditsPreview;
-	}
-
-
-	private _codeEdits: IAideProbeTextEdit[] = [];
-	get codeEdits(): ReadonlyArray<IAideProbeTextEdit> {
-		return this._codeEdits;
-	}
-
 	constructor(
 		private readonly _model: IAideProbeModel,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -88,18 +74,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
 				return viewItem;
 			}) ?? []);
-
-			this._goToDefinitions = _model.response?.goToDefinitions.map(definition => {
-				return this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
-			}) ?? [];
-
-			this._codeEditsPreview = _model.response?.codeEditsPreview.map(preview => {
-				return this._register(this.instantiationService.createInstance(AideProbeTextEditPreviewViewModel, preview));
-			}) ?? [];
-
-			this._codeEdits = _model.response?.codeEdits.map(edit => {
-				return this._register(this.instantiationService.createInstance(AideProbeTextEditViewModel, edit));
-			}) ?? [];
 
 			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
 				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];

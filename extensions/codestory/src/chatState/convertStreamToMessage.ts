@@ -266,18 +266,25 @@ export const reportAgentEventsToChat = async (
 	// const randomInt = (min: number, max: number) =>
 	// 	Math.floor(Math.random() * (max - min + 1)) + min;
 
+	// Temp code: Create a new file to record logs
+	// const logPath = path.join('/Users/nareshr/github/codestory/sidecar', 'probeLogs.json');
+	// const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+	// logStream.write('[');
+
 	for await (const event of asyncIterable) {
 		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
 			console.log('Stopped the agent probe');
-			return;
+			break;
 		}
 
 		if ('keep_alive' in event) {
 			continue;
 		}
+
+		// logStream.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
@@ -311,7 +318,7 @@ export const reportAgentEventsToChat = async (
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
 			if (!symbol_identifier.fs_file_path) {
-				return;
+				continue;
 			}
 
 			if (symbolEventSubStep.GoToDefinition) {
@@ -351,38 +358,6 @@ export const reportAgentEventsToChat = async (
 							)
 						]
 					});
-				} else if (editEvent.InsertCode) {
-					response.codeEdit({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						edits: [
-							new vscode.TextEdit(
-								new vscode.Range(
-									new vscode.Position(editEvent.InsertCode.range.startPosition.line, editEvent.InsertCode.range.startPosition.character),
-									new vscode.Position(editEvent.InsertCode.range.endPosition.line, editEvent.InsertCode.range.endPosition.character)
-								),
-								'new_code'
-							)
-						]
-					});
-				} else if (editEvent.CodeCorrectionTool) {
-					response.codeEdit({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						edits: [
-							new vscode.TextEdit(
-								new vscode.Range(
-									new vscode.Position(editEvent.CodeCorrectionTool.range.startPosition.line, editEvent.CodeCorrectionTool.range.startPosition.character),
-									new vscode.Position(editEvent.CodeCorrectionTool.range.endPosition.line, editEvent.CodeCorrectionTool.range.endPosition.character)
-								),
-								'tool_used'
-							)
-						]
-					});
 				}
 			} else if (symbolEventSubStep.Probe) {
 				const probeSubStep = symbolEventSubStep.Probe;
@@ -406,12 +381,12 @@ export const reportAgentEventsToChat = async (
 		} else if (event.event.RequestEvent) {
 			const { ProbeFinished } = event.event.RequestEvent;
 			if (!ProbeFinished) {
-				return;
+				continue;
 			}
 
 			const { reply } = ProbeFinished;
 			if (reply === null) {
-				return;
+				continue;
 			}
 
 			// The sidecar currently sends '<symbolName> at <fileName>' at the start of the response. Remove it.
@@ -423,7 +398,10 @@ export const reportAgentEventsToChat = async (
 				response.markdown(reply);
 			}
 
-			return;
+			break;
 		}
 	}
+
+	// logStream.write(']');
+	// logStream.end();
 };

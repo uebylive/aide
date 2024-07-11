@@ -14,13 +14,13 @@ import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
 import { ScrollType } from 'vs/editor/common/editorCommon';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { editorFindMatch, editorFindMatchForeground } from 'vs/platform/theme/common/colorRegistry';
+import { editorFindMatch, editorFindMatchForeground, selectionBackground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { symbolDecorationClass, symbolDecoration } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
+import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -102,19 +102,25 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 	}
 
 	private updateRegisteredDecorationTypes() {
-		this.codeEditorService.removeDecorationType(symbolDecorationClass);
+		this.codeEditorService.removeDecorationType(probeDefinitionDecorationClass);
+		this.codeEditorService.removeDecorationType(editSymbolDecorationClass);
 
 		const theme = this.themeService.getColorTheme();
-		this.codeEditorService.registerDecorationType(symbolDecorationClass, symbolDecoration, {
+		this.codeEditorService.registerDecorationType(probeDefinitionDecorationClass, probeDefinitionDecoration, {
 			color: theme.getColor(editorFindMatchForeground)?.toString(),
 			backgroundColor: theme.getColor(editorFindMatch)?.toString(),
 			borderRadius: '3px'
 		});
+		this.codeEditorService.registerDecorationType(editSymbolDecorationClass, editSymbolDecoration, {
+			backgroundColor: theme.getColor(selectionBackground)?.toString(),
+			isWholeLine: true
+		});
+
 		this.updateDecorations();
 	}
 
 	private updateDecorations() {
-		this.activeCodeEditor?.removeDecorationsByType(symbolDecoration);
+		this.activeCodeEditor?.removeDecorationsByType(probeDefinitionDecoration);
 		const activeSession = this.aideProbeService.getSession();
 		if (!activeSession) {
 			return;
@@ -130,7 +136,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 			const matchingDefinitions = activeSession.response?.goToDefinitions.filter(definition => definition.uri.fsPath === uri.fsPath) ?? [];
 			for (const decoration of matchingDefinitions) {
-				activeEditor.setDecorationsByType(symbolDecorationClass, symbolDecoration, [
+				activeEditor.setDecorationsByType(probeDefinitionDecorationClass, probeDefinitionDecoration, [
 					{
 						range: {
 							...decoration.range,
@@ -145,7 +151,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 			const matchingCodeEdits = activeSession.response?.codeEdits.filter(edit => edit.reference.uri.fsPath === uri.fsPath) ?? [];
 			for (const codeEdit of matchingCodeEdits) {
 				for (const singleEdit of codeEdit.edits) {
-					activeEditor.setDecorationsByType(symbolDecorationClass, symbolDecoration, [
+					activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, [
 						{
 							range: {
 								...singleEdit.range,
