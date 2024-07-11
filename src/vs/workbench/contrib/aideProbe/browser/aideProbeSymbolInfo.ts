@@ -47,7 +47,6 @@ export class AideProbeSymbolInfo extends Disposable {
 		private readonly resourceLabels: ResourceLabels,
 		container: HTMLElement,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super();
@@ -299,9 +298,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 
 			const workspaceFolder = this.contextService.getWorkspace().folders[0];
-
 			const workspaceFolderUri = workspaceFolder.uri;
-
 			const path = relativePath(workspaceFolderUri, uri);
 
 			label.setResource({ resource: uri, name, description: path }, {

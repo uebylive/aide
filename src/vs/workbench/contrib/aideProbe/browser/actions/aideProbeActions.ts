@@ -14,9 +14,10 @@ import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IView } from 'vs/workbench/common/views';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { commands } from 'vs/workbench/browser/web.factory';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -240,7 +241,7 @@ export class ExitAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
+			precondition: CONTEXT_PROBE_IS_ACTIVE,
 			keybinding: {
 				primary: KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib,
@@ -258,6 +259,7 @@ export class ExitAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.cancelRequest();
+		commands.executeCommand('setContext', 'aideProbeRequestIsActive', false);
 	}
 }
 

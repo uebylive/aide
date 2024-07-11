@@ -28,6 +28,15 @@ export interface IAideProbeViewModel {
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
+
+
+	private _filter: string | undefined;
+
+	setFilter(value: string | undefined) {
+		this._filter = value;
+		this._onDidChange.fire();
+	}
+
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
@@ -54,7 +63,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return this._breakdowns;
+		return this._breakdowns.filter(b => !this._filter || b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase()));
 	}
 
 	constructor(
