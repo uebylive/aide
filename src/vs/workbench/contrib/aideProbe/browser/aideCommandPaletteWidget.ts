@@ -35,7 +35,7 @@ import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/commo
 import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_REQUEST_IN_PROGRESS, CONTEXT_PROBE_IS_ACTIVE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeSymbolInfo } from 'vs/workbench/contrib/aideProbe/browser/aideProbeSymbolInfo';
 import { AideProbeViewModel, IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 

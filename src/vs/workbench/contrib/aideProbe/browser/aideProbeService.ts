@@ -5,84 +5,13 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { Range } from 'vs/editor/common/core/range';
-import { TextEdit } from 'vs/editor/common/languages';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-
-export interface IAideProbeData {
-	id: string;
-}
-
-export interface IFollowAlongAction {
-	type: 'followAlong';
-	status: boolean;
-}
-
-export interface INavigateBreakdownAction {
-	type: 'navigateBreakdown';
-	status: boolean;
-}
-
-export interface IAideProbeUserAction {
-	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction;
-}
-
-export interface IReferenceByName {
-	name: string;
-	uri: URI;
-}
-
-export interface IAideProbeBreakdownContent {
-	reference: IReferenceByName;
-	query?: IMarkdownString;
-	reason?: IMarkdownString;
-	response?: IMarkdownString;
-	kind: 'breakdown';
-}
-
-export interface IAideProbeGoToDefinition {
-	kind: 'goToDefinition';
-	uri: URI;
-	name: string;
-	range: Range;
-	thinking: string;
-}
-
-export interface IAideProbeTextEditPreview {
-	kind: 'textEditPreview';
-	reference: IReferenceByName;
-	ranges: Range[];
-}
-
-export interface IAideProbeTextEdit {
-	kind: 'textEdit';
-	reference: IReferenceByName;
-	edits: TextEdit[];
-}
-
-export type IAideProbeProgress =
-	| IAideChatMarkdownContent
-	| IAideProbeBreakdownContent
-	| IAideProbeGoToDefinition
-	| IAideProbeTextEditPreview
-	| IAideProbeTextEdit;
-
-export interface IAideProbeResponseErrorDetails {
-	message: string;
-}
-
-export interface IAideProbeResult {
-	errorDetails?: IAideProbeResponseErrorDetails;
-}
+import { AideProbeModel, AideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeRequestModel, IAideProbeProgress, IAideProbeResult, IAideProbeUserAction, IAideProbeData, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IAideProbeResolver {
-	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => void, token: CancellationToken) => Promise<IAideProbeResult>;
+	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => Promise<void>, token: CancellationToken) => Promise<IAideProbeResult>;
 	onUserAction: (action: IAideProbeUserAction) => void;
 }
 
@@ -165,12 +94,12 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		const source = new CancellationTokenSource();
 		const token = source.token;
 		const initiateProbeInternal = async () => {
-			const progressCallback = (progress: IAideProbeProgress) => {
+			const progressCallback = async (progress: IAideProbeProgress) => {
 				if (token.isCancellationRequested) {
 					return;
 				}
 
-				probeModel.acceptResponseProgress(progress);
+				await probeModel.acceptResponseProgress(progress);
 				completeResponseCreated();
 			};
 

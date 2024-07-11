@@ -4772,15 +4772,6 @@ export class AideProbeResponseTextEditPreviewPart {
 	}
 }
 
-export class AideProbeResponseTextEditPart {
-	reference: vscode.CodeReferenceByName;
-	edits: vscode.TextEdit[];
-	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.TextEdit | vscode.TextEdit[]) {
-		this.reference = reference;
-		this.edits = Array.isArray(ranges) ? ranges : [ranges];
-	}
-}
-
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];

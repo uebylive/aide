@@ -24,7 +24,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	private active: boolean = false;
 
 	private _requestHandler: http.Server | null = null;
-	private _currentRequest = new Map<string, vscode.ProbeResponseStream>();
+	private _openResponseStream: vscode.ProbeResponseStream | undefined;
 
 	private async isPortOpen(port: number): Promise<boolean> {
 		return new Promise((resolve, _) => {
@@ -111,11 +111,19 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest) {
-		applyEdits(request);
+		if (!this._openResponseStream) {
+			return;
+		}
+
+		applyEdits(request, this._openResponseStream);
 	}
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
-		this._currentRequest.set(request.requestId, response);
+		if (!this._editorUrl) {
+			return;
+		}
+
+		this._openResponseStream = response;
 		let { query } = request;
 		query = query.trim();
 

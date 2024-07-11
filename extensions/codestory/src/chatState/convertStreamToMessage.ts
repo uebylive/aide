@@ -342,22 +342,6 @@ export const reportAgentEventsToChat = async (
 							new vscode.Position(editEvent.RangeSelectionForEdit.range.endPosition.line, editEvent.RangeSelectionForEdit.range.endPosition.character)
 						)]
 					});
-				} else if (editEvent.EditCode) {
-					response.codeEdit({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						edits: [
-							new vscode.TextEdit(
-								new vscode.Range(
-									new vscode.Position(editEvent.EditCode.range.startPosition.line, editEvent.EditCode.range.startPosition.character),
-									new vscode.Position(editEvent.EditCode.range.endPosition.line, editEvent.EditCode.range.endPosition.character)
-								),
-								editEvent.EditCode.new_code
-							)
-						]
-					});
 				}
 			} else if (symbolEventSubStep.Probe) {
 				const probeSubStep = symbolEventSubStep.Probe;

@@ -13,8 +13,7 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeTextEdit, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeModel, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
@@ -28,8 +27,6 @@ export interface IAideProbeViewModel {
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
-
-
 	private _filter: string | undefined;
 
 	setFilter(value: string | undefined) {
@@ -236,10 +233,6 @@ export class AideProbeTextEditPreviewViewModel extends Disposable implements IAi
 
 export class AideProbeTextEditViewModel extends Disposable implements IAideProbeTextEdit {
 	readonly kind = 'textEdit';
-
-	get reference() {
-		return this._edit.reference;
-	}
 
 	get edits() {
 		return this._edit.edits;

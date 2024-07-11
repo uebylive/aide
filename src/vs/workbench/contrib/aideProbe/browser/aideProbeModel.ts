@@ -8,35 +8,13 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { equals } from 'vs/base/common/objects';
 import { generateUuid } from 'vs/base/common/uuid';
-
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
-
-export interface IAideProbeRequestModel {
-	readonly sessionId: string;
-	readonly message: string;
-	readonly editMode: boolean;
-}
-
-export interface IAideProbeResponseModel {
-	result?: IMarkdownString;
-	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
-	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
-	readonly codeEditsPreview: ReadonlyArray<IAideProbeTextEditPreview>;
-	readonly codeEdits: ReadonlyArray<IAideProbeTextEdit>;
-}
-
-export interface IAideProbeModel {
-	onDidChange: Event<void>;
-	onDidChangeTailing: Event<boolean>;
-
-	sessionId: string;
-	request: IAideProbeRequestModel | undefined;
-	response: IAideProbeResponseModel | undefined;
-
-	isComplete: boolean;
-	isTailing: boolean;
-	requestInProgress: boolean;
-}
+import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
+import { ITextModel } from 'vs/editor/common/model';
+import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
+import { IModelService } from 'vs/editor/common/services/model';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IAideProbeRequestModel, IAideProbeResponseModel, IAideProbeBreakdownContent, IAideProbeTextEditPreview, IAideProbeTextEdit, IAideProbeModel, IAideProbeProgress, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -46,6 +24,11 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	) {
 		super();
 	}
+}
+
+interface IAideProbeEdits {
+	readonly textModel0: ITextModel;
+	readonly edits: IWorkspaceTextEdit[];
 }
 
 export class AideProbeResponseModel extends Disposable implements IAideProbeResponseModel {
@@ -76,18 +59,18 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._codeEditsPreview;
 	}
 
-	private readonly _codeEdits: IAideProbeTextEdit[] = [];
-	public get codeEdits(): ReadonlyArray<IAideProbeTextEdit> {
-		return this._codeEdits;
-	}
+	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 
-	constructor() {
+	constructor(
+		@IModelService private readonly _modelService: IModelService,
+		@IBulkEditService private readonly _bulkEditService: IBulkEditService
+	) {
 		super();
 	}
 
 	/**
 	 * Apply a breakdown to the response content.
-	*/
+	 */
 	applyBreakdown(breakdown: IAideProbeBreakdownContent) {
 		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
 		const { query, reason, response } = breakdown;
@@ -116,7 +99,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	/**
 	 * Decorate a go to definition in the response content.
-	*/
+	 */
 	applyGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
 		const existing = this._goToDefinitions.find(gtd => equals(gtd.uri, goToDefinition.uri) && equals(gtd.name, goToDefinition.name));
 		if (existing) {
@@ -127,8 +110,8 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	/**
-		* Decorate a chunk of code to be edited in the response content.
-	*/
+	 * Decorate a chunk of code to be edited in the response content.
+	 */
 	applyCodeEditPreview(codeEditPreview: IAideProbeTextEditPreview) {
 		const mapKey = `${codeEditPreview.reference.uri.toString()}:${codeEditPreview.reference.name}`;
 		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
@@ -141,13 +124,30 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	/**
 	 * Decorate a chunk of code to be edited in the response content.
-	*/
-	applyCodeEdit(codeEdit: IAideProbeTextEdit) {
-		const mapKey = `${codeEdit.reference.uri.toString()}:${codeEdit.reference.name}`;
-		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
-			this._codeEditsPreviewBySymbol.delete(mapKey);
+	 */
+	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
+		for (const edit of codeEdit.edits.edits) {
+			if (ResourceTextEdit.is(edit)) {
+				const mapKey = `${edit.resource.toString()}`;
+				if (this._codeEdits.has(mapKey)) {
+					this._codeEdits.get(mapKey)!.edits.push(edit);
+				} else {
+					const uri = edit.resource;
+					const textModel = this._modelService.getModel(uri);
+					if (!textModel) {
+						continue;
+					}
+
+					const textModel0 = this._register(this._modelService.createModel(
+						createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
+						{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
+						undefined, true
+					));
+					this._codeEdits.set(mapKey, { textModel0, edits: [edit] });
+				}
+			}
 		}
-		this._codeEdits.push(codeEdit);
+		await this._bulkEditService.apply(codeEdit.edits);
 	}
 }
 
@@ -192,19 +192,21 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._isTailing;
 	}
 
-	constructor() {
+	constructor(
+		@IInstantiationService private readonly _instantiationService: IInstantiationService
+	) {
 		super();
 
 		this._sessionId = generateUuid();
 	}
 
-	acceptResponseProgress(progress: IAideProbeProgress): void {
+	async acceptResponseProgress(progress: IAideProbeProgress): Promise<void> {
 		if (!this._request) {
 			throw new Error('Request not yet initialised');
 		}
 
 		if (!this._response) {
-			this._response = new AideProbeResponseModel();
+			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
 		}
 
 

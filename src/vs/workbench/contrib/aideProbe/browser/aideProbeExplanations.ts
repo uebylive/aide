@@ -21,7 +21,7 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
@@ -146,25 +146,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 					}
 				]);
 			}
-
-
-			const matchingCodeEdits = activeSession.response?.codeEdits.filter(edit => edit.reference.uri.fsPath === uri.fsPath) ?? [];
-			for (const codeEdit of matchingCodeEdits) {
-				for (const singleEdit of codeEdit.edits) {
-					activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, [
-						{
-							range: {
-								...singleEdit.range,
-								endColumn: singleEdit.range.endColumn + 1
-							},
-						}
-					]);
-				}
-			}
 		}
-
-
-
 	}
 
 	clear(): void {
