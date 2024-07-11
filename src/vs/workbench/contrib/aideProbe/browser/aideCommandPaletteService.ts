@@ -91,12 +91,23 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 	}
 
 
+	acceptCodeEdits() {
+		console.log('accept code edits');
+	}
+
+	rejectCodeEdits() {
+		console.log('accept code edits');
+	}
+
+
 	cancelRequest(): void {
 		if (!this._widget) {
 			return;
 		}
 		this._widget.cancelRequest();
 	}
+
+
 
 
 	hidePalette(): void {

@@ -61,6 +61,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
 		let { query } = request;
+		console.log('userQuery', query);
 		query = query.trim();
 
 		const startTime = process.hrtime();

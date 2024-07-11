@@ -26,9 +26,18 @@ import { relativePath } from 'vs/base/common/resources';
 
 const $ = dom.$;
 
+
+interface ChangeSymbolInfoEvent {
+	index: number;
+	element: IAideProbeBreakdownViewModel;
+}
+
+
 export class AideProbeSymbolInfo extends Disposable {
-	private readonly _onDidChangeFocus = this._register(new Emitter<IAideProbeBreakdownViewModel>());
+
+	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
+	private userFocusIndex: number | undefined;
 
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
@@ -37,9 +46,12 @@ export class AideProbeSymbolInfo extends Disposable {
 	private headerText: HTMLElement;
 	private loadingSpinner: HTMLElement | undefined;
 	private actionsToolbar: MenuWorkbenchToolBar;
+	private listContainer: HTMLElement;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
+	private emptyListPlaceholder: HTMLElement;
 	private renderer: SymbolInfoRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
+	maxItems: number = 8;
 
 	private isVisible: boolean | undefined;
 
@@ -57,6 +69,15 @@ export class AideProbeSymbolInfo extends Disposable {
 		this.container.appendChild(this.header);
 		this.headerText = $('.symbol-info-header-text');
 		this.header.appendChild(this.headerText);
+
+
+		this.listContainer = $('.symbol-info-list-container');
+		this.container.appendChild(this.listContainer);
+
+		this.emptyListPlaceholder = $('.symbol-info-empty-list-placeholder');
+		this.emptyListPlaceholder.textContent = 'No symbols match your query';
+		this.container.appendChild(this.emptyListPlaceholder);
+		dom.hide(this.emptyListPlaceholder);
 
 		const toolbarContainer = $('.symbol-info-toolbar-container');
 		this.header.appendChild(toolbarContainer);
@@ -82,7 +103,7 @@ export class AideProbeSymbolInfo extends Disposable {
 		if (!this.list) {
 			return;
 		}
-		return this.list.contentHeight;
+		return this.list.contentHeight + 36;
 	}
 
 	show(headerText: string = 'New request', isLoading: boolean): void {
@@ -111,7 +132,7 @@ export class AideProbeSymbolInfo extends Disposable {
 
 		// Lazily create if showing for the first time
 		if (!this.list) {
-			this.createSymbolInfosList(this.container);
+			this.createSymbolInfosList(this.listContainer);
 		}
 
 		// Make visible
@@ -137,28 +158,54 @@ export class AideProbeSymbolInfo extends Disposable {
 		));
 
 		this._register(list.onDidChangeContentHeight(height => {
-			list.layout(height);
+			console.log(height, this.maxItems * 52.39);
+			const newHeight = Math.min(height, this.maxItems * 52.39);
+			list.layout(newHeight);
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
 			list.updateElementHeight(e.index, e.height);
 		}));
-		this._register(list.onDidChangeFocus(e => {
-			if (e.indexes.length === 1) {
-				const index = e.indexes[0];
+		this._register(list.onDidChangeFocus(event => {
+			if (event.indexes.length === 1) {
+				const index = event.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
-				this._onDidChangeFocus.fire(element);
+
+
+				this._onDidChangeFocus.fire({ index, element });
+
+				if (event.browserEvent) {
+					this.userFocusIndex = index;
+				}
+
 				if (element && element.uri && element.name) {
-					this.openSymbolInfoReference(element);
+					this.openSymbolInfoReference(element, !!event.browserEvent);
 				}
 			}
 		}));
 		this._register(list.onDidOpen(async e => {
 			if (e.element && e.element.uri && e.element.name) {
-				this._onDidChangeFocus.fire(e.element);
-				this.openSymbolInfoReference(e.element);
+				const index = this.getSymbolInfoListIndex(e.element);
+
+				if (e.browserEvent) {
+					this.userFocusIndex = index;
+				}
+
+				this._onDidChangeFocus.fire({ index, element: e.element });
+				this.openSymbolInfoReference(e.element, !!e.browserEvent);
 			}
 		}));
+	}
+
+	setFocus(index: number, browserEvent?: UIEvent) {
+		if (!this.list) {
+			return;
+		}
+
+		const max = this.viewModel.length;
+		index = Math.min(Math.max(index, 0), max - 1);
+		this.list.setFocus([index], browserEvent);
+		this.list.reveal(index);
 	}
 
 	private getSymbolInfoListIndex(element: IAideProbeBreakdownViewModel): number {
@@ -171,21 +218,23 @@ export class AideProbeSymbolInfo extends Disposable {
 		return matchIndex;
 	}
 
-	async openSymbolInfoReference(element: IAideProbeBreakdownViewModel): Promise<void> {
+	async openSymbolInfoReference(element: IAideProbeBreakdownViewModel, setFocus: boolean = false): Promise<void> {
+
 		if (this.activeSymbolInfo === element) {
 			return;
 		} else {
 			this.activeSymbolInfo = element;
 			const index = this.getSymbolInfoListIndex(element);
-			if (this.list && index !== -1) {
+			if (this.list && index !== -1 && setFocus) {
 				this.list.setFocus([index]);
+				this.explanationService.changeActiveBreakdown(element);
 			}
 		}
 
-		const resolveLocationOperation = element.symbol;
+		//const resolveLocationOperation = element.symbol;
 		//this.editorProgressService.showWhile(resolveLocationOperation);
-		await resolveLocationOperation;
-		this.explanationService.changeActiveBreakdown(element);
+		//await resolveLocationOperation;
+
 	}
 
 	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
@@ -209,10 +258,55 @@ export class AideProbeSymbolInfo extends Disposable {
 			});
 		}
 
-		this.list?.rerender();
-		if (matchingIndex !== -1) {
-			this.list?.setFocus([matchingIndex]);
+		list.rerender();
+
+		if (this.userFocusIndex !== undefined) {
+			list.setFocus([this.userFocusIndex]);
+		} else if (matchingIndex !== -1) {
+			list.setFocus([matchingIndex]);
 		}
+
+		this.layout();
+	}
+
+	filterSymbolInfo(filteredSymbols: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
+		const list = this.list;
+		if (!list) {
+			return;
+		}
+		const currentFocus = list.getFocus()[0];
+		let focusIndex = -1;
+
+		this.viewModel = filteredSymbols.slice();
+		list.splice(0, list.length, filteredSymbols);
+
+		// Attempt to maintain focus
+		if (currentFocus !== undefined) {
+			const previouslyFocusedSymbol = this.viewModel[currentFocus];
+			focusIndex = filteredSymbols.findIndex(symbol =>
+				symbol.uri === previouslyFocusedSymbol?.uri &&
+				symbol.name === previouslyFocusedSymbol?.name
+			);
+		}
+
+		list.rerender();
+
+		if (focusIndex !== -1) {
+			list.setFocus([focusIndex]);
+		} else if (filteredSymbols.length > 0) {
+			list.setFocus([0]);
+		}
+
+		if (list.length === 0) {
+			dom.show(this.emptyListPlaceholder);
+			dom.hide(this.listContainer);
+		} else {
+			dom.hide(this.emptyListPlaceholder);
+			dom.show(this.listContainer);
+		}
+
+		// TODO: Fix height bug when the list is not epty but the layout
+		// calculates its height as 0
 
 		this.layout();
 	}
@@ -222,6 +316,7 @@ export class AideProbeSymbolInfo extends Disposable {
 			return; // already hidden
 		}
 
+		this.userFocusIndex = undefined;
 		dom.hide(this.header);
 
 		// Remove all explanation widgets and go-to-definition widgets
@@ -239,9 +334,38 @@ export class AideProbeSymbolInfo extends Disposable {
 
 	layout(width?: number): void {
 		if (this.list) {
-			this.list.layout(undefined, width);
+			this.container.style.height = `${this.list.renderHeight + 36 + (this.list.length === 0 ? 42 : 0)}px`;
+			this.list.layout(this.list.renderHeight, width);
 		}
 	}
+}
+
+interface DiffStat {
+	added: number;
+	removed: number;
+}
+
+class SymbolInfoDiffStat extends Disposable {
+
+	private maxStat: number = 6;
+
+	constructor(
+		container: HTMLElement,
+		private readonly added: number,
+		private readonly removed: number,
+	) {
+		super();
+
+	}
+
+
+	private render() {
+		const statContainer = $('.symbol-info-diff-stat-container');
+		let index = 0;
+	}
+
+
+
 }
 
 interface ISymbolInfoTemplateData {
@@ -332,12 +456,12 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 		const { currentItem: element, currentItemIndex: index } = templateData;
 
-		const newHeight = templateData.container.offsetHeight || 22;
+		const newHeight = templateData.container.offsetHeight || 52;
 		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
 		element.currentRenderedHeight = newHeight;
 		if (fireEvent) {
 			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
-				element.currentRenderedHeight = templateData.container.offsetHeight || 22;
+				element.currentRenderedHeight = templateData.container.offsetHeight || 52;
 				disposable.dispose();
 				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
 			}));
@@ -346,7 +470,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 }
 
 class SymbolInfoListDelegate implements IListVirtualDelegate<IAideProbeBreakdownViewModel> {
-	private defaultElementHeight: number = 22;
+	private defaultElementHeight: number = 52;
 
 	getHeight(element: IAideProbeBreakdownViewModel): number {
 		return (element.currentRenderedHeight ?? this.defaultElementHeight);

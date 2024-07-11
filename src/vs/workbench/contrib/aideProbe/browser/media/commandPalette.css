@@ -137,3 +137,8 @@
 	margin-left: 0;
 	font-size: 1em;
 }
+
+
+.symbol-info-empty-list-placeholder {
+	padding: 12px;
+}

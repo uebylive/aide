@@ -54,7 +54,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickFileReferenceLabel', "Pick a file"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'file' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ range: afterRange, pick: 'file' }] },
 							sortText: 'z'
 						},
 						<CompletionItem>{
@@ -63,7 +63,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'code' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ range: afterRange, pick: 'code' }] },
 							sortText: 'z'
 						},
 						<CompletionItem>{
@@ -72,7 +72,7 @@ class BuiltinDynamicCompletions extends Disposable {
 							detail: localize('pickFolderReferenceLabel', "Pick a folder"),
 							range,
 							kind: CompletionItemKind.Text,
-							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ inputEditor: probeView.getInputEditor(), range: afterRange, pick: 'folder' }] },
+							command: { id: MultiLevelCodeTriggerAction.ID, title: MultiLevelCodeTriggerAction.ID, arguments: [{ range: afterRange, pick: 'folder' }] },
 							sortText: 'z'
 						}
 					]
