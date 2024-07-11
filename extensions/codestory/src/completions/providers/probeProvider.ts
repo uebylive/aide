@@ -3,48 +3,82 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as http from 'http';
+import * as net from 'net';
 import * as os from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
-import { SideCarClient } from '../../sidecar/client';
 import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
-import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
+import { applyEdits } from '../../server/applyEdits';
+import { handleRequest } from '../../server/requestHandler';
+import { SidecarApplyEditsRequest } from '../../server/types';
+import { SideCarClient } from '../../sidecar/client';
+import { getInviteCode } from '../../utilities/getInviteCode';
 import { getUniqueId } from '../../utilities/uniqueId';
-//import { SideCarAgentEvent } from '../../server/types';
-
-interface IAideProbeSessionTracker {
-	requestId: string | undefined;
-}
-
-export class AideProbeSessionTracker implements IAideProbeSessionTracker, vscode.Disposable {
-	private _requestId: string | undefined;
-	set requestId(id: string) {
-		this._requestId = id;
-	}
-
-	get requestId(): string | undefined {
-		return this._requestId;
-	}
-
-	dispose() {
-		throw new Error('Method not implemented.');
-	}
-}
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
-	private _editorUrl: string;
+	private _editorUrl: string | undefined;
 	private active: boolean = false;
+
+	private _requestHandler: http.Server | null = null;
+	private _currentRequest = new Map<string, vscode.ProbeResponseStream>();
+
+	private async isPortOpen(port: number): Promise<boolean> {
+		return new Promise((resolve, _) => {
+			const s = net.createServer();
+			s.once('error', (err) => {
+				s.close();
+				// @ts-ignore
+				if (err['code'] === 'EADDRINUSE') {
+					resolve(false);
+				} else {
+					resolve(false); // or throw error!!
+					// reject(err);
+				}
+			});
+			s.once('listening', () => {
+				resolve(true);
+				s.close();
+			});
+			s.listen(port);
+		});
+	}
+
+	private async getNextOpenPort(startFrom: number = 42423) {
+		let openPort: number | null = null;
+		while (startFrom < 65535 || !!openPort) {
+			if (await this.isPortOpen(startFrom)) {
+				openPort = startFrom;
+				break;
+			}
+			startFrom++;
+		}
+		return openPort;
+	}
 
 	constructor(
 		sideCarClient: SideCarClient,
-		editorUrl: string,
 	) {
 		this._sideCarClient = sideCarClient;
-		this._editorUrl = editorUrl;
-		console.log(this._editorUrl);
+
+		// Server for the sidecar to talk to the editor
+		this._requestHandler = http.createServer(
+			handleRequest(this.provideEdit.bind(this))
+		);
+		this.getNextOpenPort().then((port) => {
+			if (port === null) {
+				throw new Error('Could not find an open port');
+			}
+
+			// can still grab it by listenting to port 0
+			this._requestHandler?.listen(port);
+			const editorUrl = `http://localhost:${port}`;
+			this._editorUrl = editorUrl;
+			console.log(this._editorUrl);
+		});
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
@@ -72,13 +106,16 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 	}
 
-
 	private checkActivation() {
 		this.active = Boolean(getInviteCode());
 	}
 
+	async provideEdit(request: SidecarApplyEditsRequest) {
+		applyEdits(request);
+	}
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		this._currentRequest.set(request.requestId, response);
 		let { query } = request;
 		query = query.trim();
 
@@ -165,6 +202,6 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 
 	dispose() {
-		console.log('AideProbeProvider.dispose');
+		this._requestHandler?.close();
 	}
 }
