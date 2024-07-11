@@ -209,7 +209,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
 		}
 
-
 		switch (progress.kind) {
 			case 'markdownContent':
 				this._response.result = progress.content;
@@ -224,7 +223,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				this._response.applyCodeEditPreview(progress);
 				break;
 			case 'textEdit':
-				this._response.applyCodeEdit(progress);
+				await this._response.applyCodeEdit(progress);
 				break;
 		}
 
