@@ -26,7 +26,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	}
 }
 
-interface IAideProbeEdits {
+export interface IAideProbeEdits {
 	readonly textModel0: ITextModel;
 	readonly edits: IWorkspaceTextEdit[];
 }
@@ -60,6 +60,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
+	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
+		return this.codeEdits;
+	}
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
@@ -68,9 +71,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		super();
 	}
 
-	/**
-	 * Apply a breakdown to the response content.
-	 */
 	applyBreakdown(breakdown: IAideProbeBreakdownContent) {
 		const mapKey = `${breakdown.reference.uri.toString()}:${breakdown.reference.name}`;
 		const { query, reason, response } = breakdown;
@@ -97,9 +97,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		}
 	}
 
-	/**
-	 * Decorate a go to definition in the response content.
-	 */
 	applyGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
 		const existing = this._goToDefinitions.find(gtd => equals(gtd.uri, goToDefinition.uri) && equals(gtd.name, goToDefinition.name));
 		if (existing) {
@@ -109,9 +106,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._goToDefinitions.push(goToDefinition);
 	}
 
-	/**
-	 * Decorate a chunk of code to be edited in the response content.
-	 */
 	applyCodeEditPreview(codeEditPreview: IAideProbeTextEditPreview) {
 		const mapKey = `${codeEditPreview.reference.uri.toString()}:${codeEditPreview.reference.name}`;
 		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
@@ -122,9 +116,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		}
 	}
 
-	/**
-	 * Decorate a chunk of code to be edited in the response content.
-	 */
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const edit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(edit)) {
@@ -137,6 +128,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					if (!textModel) {
 						continue;
 					}
+
 
 					const textModel0 = this._register(this._modelService.createModel(
 						createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),

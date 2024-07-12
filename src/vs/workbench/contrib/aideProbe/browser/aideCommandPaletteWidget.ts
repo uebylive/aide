@@ -406,6 +406,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			return;
 		}
 
+
 		dom.show(this.container);
 		this.isVisible = true;
 		this.setCoordinates();

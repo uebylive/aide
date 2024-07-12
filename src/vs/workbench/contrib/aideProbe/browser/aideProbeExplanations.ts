@@ -20,7 +20,7 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
+import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration, editPreviewSymbolDecoration, editPreviewSymbolDecorationClass } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -30,6 +30,7 @@ export interface IAideProbeExplanationService {
 	_serviceBrand: undefined;
 
 	changeActiveBreakdown(content: IAideProbeBreakdownViewModel): void;
+	updateDecorations(): void;
 	clear(): void;
 }
 
@@ -103,6 +104,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 	private updateRegisteredDecorationTypes() {
 		this.codeEditorService.removeDecorationType(probeDefinitionDecorationClass);
+		this.codeEditorService.removeDecorationType(editPreviewSymbolDecorationClass);
 		this.codeEditorService.removeDecorationType(editSymbolDecorationClass);
 
 		const theme = this.themeService.getColorTheme();
@@ -119,14 +121,21 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		this.updateDecorations();
 	}
 
-	private updateDecorations() {
-		this.activeCodeEditor?.removeDecorationsByType(probeDefinitionDecoration);
+	updateDecorations() {
+
+		if (this.activeCodeEditor) {
+			this.activeCodeEditor.removeDecorationsByType(probeDefinitionDecoration);
+			this.activeCodeEditor.removeDecorationsByType(editPreviewSymbolDecoration);
+			this.activeCodeEditor.removeDecorationsByType(editSymbolDecoration);
+		}
+
 		const activeSession = this.aideProbeService.getSession();
 		if (!activeSession) {
 			return;
 		}
 
 		const activeEditor = this.editorService.activeTextEditorControl;
+
 		if (isCodeEditor(activeEditor)) {
 			this.activeCodeEditor = activeEditor;
 			const uri = activeEditor.getModel()?.uri;
@@ -146,6 +155,31 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 					}
 				]);
 			}
+
+			const matchingEditPreviews = activeSession.response?.codeEditsPreview.filter(preview => preview.reference.uri.fsPath === uri.fsPath) ?? [];
+			for (const preview of matchingEditPreviews) {
+				activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, preview.ranges.map(range => {
+					return {
+						range: {
+							...range,
+							endColumn: range.endColumn + 1
+						}
+					};
+				}));
+			}
+
+			const matchingEdits = activeSession.response?.codeEdits.get(uri.fsPath)?.edits ?? [];
+			for (const edit of matchingEdits) {
+				activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, [
+					{
+						range: {
+							...edit.textEdit.range,
+							endColumn: edit.textEdit.range.endColumn + 1
+						},
+					}
+				]);
+			}
+
 		}
 	}
 
