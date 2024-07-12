@@ -18,6 +18,8 @@ export interface IAideProbeData {
 	id: string;
 }
 
+export type Mode = 'edit' | 'explore';
+
 export interface IFollowAlongAction {
 	type: 'followAlong';
 	status: boolean;

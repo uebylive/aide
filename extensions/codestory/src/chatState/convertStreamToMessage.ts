@@ -268,7 +268,7 @@ export const reportAgentEventsToChat = async (
 
 
 	for await (const event of asyncIterable) {
-		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 200));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);

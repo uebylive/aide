@@ -5,18 +5,17 @@
 
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
-import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ILocalizedString, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IView } from 'vs/workbench/common/views';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IDisposable, Disposable } from 'vs/base/common/lifecycle';
+import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
+import { Mode } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -79,11 +78,11 @@ export class SubmitAction extends Action2 {
 	constructor(title?: ILocalizedString) {
 		super({
 			id: SubmitAction.ID,
-			title: title ?? 'Submit',
+			title: title ?? 'Go',
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_STARTING_POINT, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(), CONTEXT_PROBE_IS_ACTIVE.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_PROBE_INPUT,
 				primary: KeyCode.Enter,
@@ -94,6 +93,7 @@ export class SubmitAction extends Action2 {
 					id: MenuId.AideCommandPaletteSubmit,
 					group: 'navigation',
 					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+					order: 9
 				},
 			]
 		});
@@ -107,45 +107,83 @@ export class SubmitAction extends Action2 {
 }
 
 
-class SubmitActionComposer extends Disposable {
+export class ToggleModeAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.toggleMode';
+
+	constructor(title?: ILocalizedString) {
+		const defaultTitle = localize2('workbench.action.aideProbe.toggleMode', "Toggle mode");
+		super({
+			id: ToggleModeAction.ID,
+			title: title ?? defaultTitle,
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			keybinding: {
+				when: CONTEXT_IN_PROBE_INPUT,
+				primary: KeyMod.Alt | KeyCode.KeyM,
+				weight: KeybindingWeight.EditorContrib
+			},
+			menu: [
+				{
+					id: MenuId.AideCommandPaletteSubmit,
+					group: 'navigation',
+					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+				},
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor, mode: Mode) {
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.widget?.setMode(mode);
+	}
+}
+
+
+class ToggleModeActionComposer extends Disposable {
 	static readonly ID = 'workbench.action.aideProbe.submitComposer';
 
 	private registeredAction: IDisposable | undefined;
-	private hasStartingPoint: IContextKey<boolean>;
+	private mode: IContextKey<'edit' | 'explore'>;
 
 	constructor(
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
-		this.hasStartingPoint = CONTEXT_PROBE_HAS_STARTING_POINT.bindTo(contextKeyService);
-
+		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.setSubmitActionState();
-		this._register(this.editorService.onDidActiveEditorChange(() => {
-			this.setSubmitActionState();
-		}));
 	}
 
-	private setSubmitActionState() {
-		const activeEditor = this.editorService.activeEditor;
-		if (activeEditor?.resource) {
-			this.registeredAction?.dispose();
-			const fileName = basenameOrAuthority(activeEditor.resource);
-			const title = localize2('aideProbe.submit.label', "Start search from {0}", fileName);
-			this.registeredAction = registerAction2(class extends SubmitAction {
+
+	private async setSubmitActionState() {
+		const that = this;
+		if (this.registeredAction) {
+			this.registeredAction.dispose();
+		}
+		if (this.mode.get() === 'explore') {
+			this.registeredAction = registerAction2(class extends ToggleModeAction {
 				constructor() {
-					super(title);
+					super();
+				}
+				override async run(accessor: ServicesAccessor) {
+					super.run(accessor, 'edit');
+					that.mode.set('edit');
+					that.setSubmitActionState();
 				}
 			});
-			this.hasStartingPoint.set(true);
 		} else {
-			this.registeredAction?.dispose();
-			this.registeredAction = registerAction2(class extends SubmitAction {
+			this.registeredAction = registerAction2(class extends ToggleModeAction {
 				constructor() {
-					super(localize2('aideProbe.submitComposer.label', "Open a file to start searching from"));
+					super();
+				}
+				override async run(accessor: ServicesAccessor) {
+					super.run(accessor, 'explore');
+					that.mode.set('explore');
+					that.setSubmitActionState();
 				}
 			});
-			this.hasStartingPoint.set(false);
+
 		}
 	}
 }
@@ -159,7 +197,7 @@ export class NavigateUpAction extends Action2 {
 			title: localize2('aideProbe.navigateUp.label', "Navigate up"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: CONTEXT_PROBE_INPUT_HAS_FOCUS && CONTEXT_PROBE_IS_ACTIVE,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_IS_ACTIVE),
 			keybinding: {
 				primary: KeyCode.UpArrow,
 				weight: KeybindingWeight.EditorContrib,
@@ -194,7 +232,7 @@ export class NavigateDownAction extends Action2 {
 			title: localize2('aideProbe.navigateDown.label', "Navigate down"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: CONTEXT_PROBE_INPUT_HAS_FOCUS && CONTEXT_PROBE_IS_ACTIVE,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_IS_ACTIVE),
 			keybinding: {
 				primary: KeyCode.DownArrow,
 				weight: KeybindingWeight.EditorContrib,
@@ -229,9 +267,9 @@ export class CancelAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS),
 			keybinding: {
-				primary: KeyCode.Escape,
+				primary: KeyMod.Alt | KeyCode.Backspace,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
 			},
@@ -239,7 +277,7 @@ export class CancelAction extends Action2 {
 				{
 					id: MenuId.AideCommandPaletteSubmit,
 					group: 'navigation',
-					when: CONTEXT_PROBE_REQUEST_IN_PROGRESS,
+					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS),
 				}
 			]
 		});
@@ -249,6 +287,72 @@ export class CancelAction extends Action2 {
 		console.log(CancelAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.cancelRequest();
+	}
+}
+
+export class RejectAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.reject';
+
+	constructor() {
+		super({
+			id: RejectAction.ID,
+			title: localize2('aideProbe.reject.label', "Reject"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.x,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			keybinding: {
+				primary: KeyMod.Alt | KeyCode.Backspace,
+				weight: KeybindingWeight.EditorContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
+			},
+			menu: [
+				{
+					id: MenuId.AideCommandPaletteSubmit,
+					group: 'navigation',
+					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+				}
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		console.log(RejectAction.ID);
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.rejectCodeEdits();
+	}
+}
+
+export class AcceptAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.accept';
+
+	constructor() {
+		super({
+			id: AcceptAction.ID,
+			title: localize2('aideProbe.accept.label', "Accept"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.x,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			keybinding: {
+				primary: KeyMod.Alt | KeyCode.Enter,
+				weight: KeybindingWeight.EditorContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
+			},
+			menu: [
+				{
+					id: MenuId.AideCommandPaletteSubmit,
+					group: 'navigation',
+					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+				}
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		console.log(AcceptAction.ID);
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.acceptCodeEdits();
 	}
 }
 
@@ -295,5 +399,8 @@ export function registerProbeActions() {
 	registerAction2(ClearAction);
 	registerAction2(NavigateUpAction);
 	registerAction2(NavigateDownAction);
-	registerWorkbenchContribution2(SubmitActionComposer.ID, SubmitActionComposer, WorkbenchPhase.BlockStartup);
+	registerAction2(SubmitAction);
+	registerAction2(AcceptAction);
+	registerAction2(RejectAction);
+	registerWorkbenchContribution2(ToggleModeActionComposer.ID, ToggleModeActionComposer, WorkbenchPhase.BlockStartup);
 }
