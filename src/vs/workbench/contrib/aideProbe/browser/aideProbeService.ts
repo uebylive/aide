@@ -143,6 +143,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	cancelCurrentRequestForSession(sessionId: string): void {
+		this._model?.revertEdits();
 		this._pendingRequests.get(sessionId)?.cancel();
 		this._pendingRequests.deleteAndDispose(sessionId);
 	}
