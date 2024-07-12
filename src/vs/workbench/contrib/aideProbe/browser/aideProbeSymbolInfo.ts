@@ -22,6 +22,7 @@ import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { relativePath } from 'vs/base/common/resources';
+import { URI } from 'vs/base/common/uri';
 //import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
@@ -311,6 +312,8 @@ export class AideProbeSymbolInfo extends Disposable {
 		this.layout();
 	}
 
+
+
 	hide(): void {
 		if (!this.isVisible || !this.list) {
 			return; // already hidden
@@ -340,31 +343,102 @@ export class AideProbeSymbolInfo extends Disposable {
 	}
 }
 
-interface DiffStat {
+export interface FileChanges {
 	added: number;
 	removed: number;
 }
 
-class SymbolInfoDiffStat extends Disposable {
+export type DiffStat = ('added' | 'removed' | 'empty')[];
 
-	private maxStat: number = 6;
+function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemoved: number, numberOfBoxes: number = 5): DiffStat {
+	if (totalChanges === 0) {
+		return Array(numberOfBoxes).fill('emtpty');
+	}
+
+	const addRatio = linesAdded / totalChanges;
+	const delRatio = linesRemoved / totalChanges;
+
+	const diffstat = new Array(numberOfBoxes).fill('empty');
+
+	for (let i = 0; i < numberOfBoxes; i++) {
+		const threshold = (i + 1) / 5;
+		if (addRatio > threshold) {
+			diffstat[i] = 'added';
+		} else if (delRatio > (1 - threshold)) {
+			diffstat[i] = 'removed';
+		} else {
+			diffstat[i] = 'empty';
+		}
+	}
+
+	return diffstat;
+}
+
+function generateDiffstats(fileChanges: Record<URI['path'], FileChanges>): Map<URI['path'], DiffStat> {
+	const diffstats = new Map<URI['path'], DiffStat>();
+
+	for (const [path, changes] of Object.entries(fileChanges)) {
+		const totalChanges = changes.added + changes.removed;
+		const stat = calculateDiffstat(totalChanges, changes.added, changes.removed);
+		diffstats.set(path, stat);
+	}
+
+	return diffstats;
+}
+
+
+class SymbolInfoDiffStat extends Disposable {
+	private diffStat: DiffStat;
+	private size: number = 5;
+	private readonly container: HTMLElement;
+	private readonly changes: FileChanges;
 
 	constructor(
 		container: HTMLElement,
-		private readonly added: number,
-		private readonly removed: number,
+		changes: FileChanges,
+		diffStat: DiffStat,
+		size: number = 5,
 	) {
 		super();
-
+		this.container = container;
+		this.diffStat = diffStat;
+		this.size = size;
+		this.changes = changes;
+		this.render();
 	}
 
 
 	private render() {
-		const statContainer = $('.symbol-info-diff-stat-container');
+		const outer = $('.symbol-info-diff-stat-container');
+		const statContainer = $('.symbol-info-diff-stat');
+		statContainer.style.setProperty('--size', `${this.size}px`);
+		const numberOfBoxes = this.diffStat.length;
+
 		let index = 0;
+		while (index < numberOfBoxes) {
+			const box = $('.symbol-info-diff-stat-box');
+			switch (this.diffStat[index]) {
+				case 'added':
+					box.classList.add('added');
+					break;
+				case 'removed':
+					box.classList.add('removed');
+					break;
+				default:
+					box.classList.add('empty');
+					break;
+			}
+			statContainer.appendChild(dom.append(statContainer, box));
+			index++;
+		}
+
+		outer.appendChild(statContainer);
+		const changesDescription = $('.symbol-info-diff-stat-description.sr-only');
+		const { added, removed } = this.changes;
+		changesDescription.textContent = `${added + removed} changed ${added} addition & ${removed} deletion`;
+		outer.appendChild(changesDescription);
+		this.container.appendChild(outer);
 	}
-
-
 
 }
 
@@ -381,6 +455,13 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
+
+const changes = {
+	added: 5, removed: 5,
+};
+
+const diffstat: DiffStat = ['added', 'removed', 'empty', 'empty', 'empty'];
+
 class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, ISymbolInfoTemplateData> {
 	static readonly TEMPLATE_ID = 'symbolInfoListRenderer';
 
@@ -390,6 +471,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 	constructor(
 		private readonly resourceLabels: ResourceLabels,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 	}
@@ -401,13 +483,13 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 	renderTemplate(container: HTMLElement): ISymbolInfoTemplateData {
 		const data: ISymbolInfoTemplateData = Object.create(null);
 		data.toDispose = new DisposableStore();
-
 		data.container = dom.append(container, $('.symbol-info-list-item'));
-
 		return data;
 	}
 
-	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: ISymbolInfoTemplateData, height: number | undefined): void {
+
+
+	renderElement(element: IAideProbeBreakdownViewModel, index: number, templateData: ISymbolInfoTemplateData): void {
 		const templateDisposables = new DisposableStore();
 
 		templateData.currentItem = element;
@@ -442,7 +524,10 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			});
 		}
 
+		templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffstat));
+
 		this.updateItemHeight(templateData);
+
 	}
 
 	disposeTemplate(templateData: ISymbolInfoTemplateData): void {
