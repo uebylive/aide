@@ -79,6 +79,11 @@ export class AideCommandPaletteWidget extends Disposable {
 	private requestInProgress: IContextKey<boolean>;
 	private requestIsActive: IContextKey<boolean>;
 
+	private _focusIndex: number | undefined;
+	get focusIndex(): number | undefined {
+		return this._focusIndex;
+	}
+
 	private symbolInfoListContainer: HTMLElement;
 	private resourceLabels: ResourceLabels;
 	private symbolInfoList: AideProbeSymbolInfo;
@@ -173,6 +178,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		// Input editor
 		this._inputEditorContainer = dom.append(this._inputContainer, $('.command-palette-input-editor'));
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(this._inputEditorContainer));
+		const editorWrapper = dom.append(this._inputEditorContainer, $('.command-palette-input-editor-wrapper'));
 		CONTEXT_IN_PROBE_INPUT.bindTo(inputScopedContextKeyService).set(true);
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, inputScopedContextKeyService]));
 
@@ -198,7 +204,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
-		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorContainer, options, editorOptions));
+		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorWrapper, options, editorOptions));
 
 		let inputModel = this.modelService.getModel(AideCommandPaletteWidget.INPUT_EDITOR_URI);
 		if (!inputModel) {
@@ -302,8 +308,17 @@ export class AideCommandPaletteWidget extends Disposable {
 		};
 		registerResizeListener();
 
+		this._register(this.symbolInfoList.onDidChangeFocus(e => {
+			this._focusIndex = e.index;
+		}));
+
 		this.setCoordinates();
 		this.layout();
+	}
+
+
+	setFocusIndex(index: number, browserEvent?: UIEvent) {
+		this.symbolInfoList.setFocus(index, browserEvent);
 	}
 
 	private _getAriaLabel(): string {
@@ -375,7 +390,7 @@ export class AideCommandPaletteWidget extends Disposable {
 	private setPanelPosition() {
 		if (this.isPanelVisible && this.symbolInfoList && this.symbolInfoList.contentHeight !== undefined) {
 			const rect = this._container.getBoundingClientRect();
-			if (rect.top < this.symbolInfoList.contentHeight + 36) {
+			if (rect.top < this.symbolInfoList.contentHeight) {
 				this.symbolInfoListContainer.classList.add('top');
 				this.symbolInfoListContainer.classList.remove('bottom');
 			} else {
@@ -402,7 +417,6 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 
-
 	acceptInput() {
 		return this._acceptInput();
 	}
@@ -425,6 +439,11 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			this.onDidChangeItems();
 		}));
+
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidFilter, 0)(() => {
+			this.onDidFilterItems();
+		}));
+
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
 			this.aideProbeService.navigateBreakdown();
 			this.symbolInfoList.openSymbolInfoReference(breakdown);
@@ -443,22 +462,26 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 	private onDidChangeItems(): void {
-		if (!this.viewModel?.requestInProgress) {
-			this.requestInProgress.set(false);
-		}
+		this.requestInProgress.set(this.viewModel?.requestInProgress ?? false);
 
-		if ((this.viewModel?.model.response?.breakdowns.length) ?? 0 > 0) {
-			this.contextElement.classList.add('active');
+		if ((this.viewModel?.breakdowns.length) ?? 0 > 0) {
 			this.renderSymbolListData(this.viewModel?.breakdowns ?? []);
 			dom.show(this.symbolInfoListContainer);
 			this.isPanelVisible = true;
 		} else {
 			this.symbolInfoList.hide();
-			this.contextElement.classList.remove('active');
 			dom.hide(this.symbolInfoListContainer);
 			this.isPanelVisible = false;
 		}
 
+
+		this.layoutPanel();
+		this.setPanelPosition();
+	}
+
+
+	private onDidFilterItems() {
+		this.symbolInfoList.filterSymbolInfo(this.viewModel?.filteredBreakdowns ?? []);
 		this.layoutPanel();
 		this.setPanelPosition();
 	}
@@ -479,6 +502,9 @@ export class AideCommandPaletteWidget extends Disposable {
 		if (this.viewModel?.sessionId) {
 			this.aideProbeService.cancelCurrentRequestForSession(this.viewModel.sessionId);
 		}
+		this.requestInProgress.set(this.viewModel?.requestInProgress ?? true);
+		this.requestIsActive.set(false);
+		this.contextElement.classList.remove('active');
 	}
 
 	clear(): void {
@@ -486,8 +512,10 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
 		this.requestInProgress.set(false);
+		this.requestIsActive.set(false);
 		this.symbolInfoList.hide();
 		this.onDidChangeItems();
+		this.contextElement.classList.remove('active');
 	}
 
 

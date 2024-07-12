@@ -125,6 +125,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		this._openResponseStream = response;
 		let { query } = request;
+		console.log('userQuery', query);
 		query = query.trim();
 
 		const startTime = process.hrtime();

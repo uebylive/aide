@@ -126,6 +126,11 @@
 .symbol-info-list-item {
 	padding-inline: 8px;
 	padding-block: 8px;
+	display: flex;
+}
+
+.symbol-info-resource {
+	flex: 2;
 }
 
 .symbol-info-resource .monaco-icon-label > .monaco-icon-label-container {
@@ -136,4 +141,32 @@
 .symbol-info-resource  .monaco-icon-label > .monaco-icon-label-container > .monaco-icon-description-container > .label-description {
 	margin-left: 0;
 	font-size: 1em;
+}
+
+
+.symbol-info-empty-list-placeholder {
+	padding: 12px;
+}
+
+.symbol-info-diff-stat-container {
+	margin-top: 6px;
+}
+
+.symbol-info-diff-stat {
+	display: flex;
+	gap: 2px;
+}
+
+.symbol-info-diff-stat-box {
+	height: var(--size, 6px);
+	width: var(--size, 6px);
+	background-color: var(--vscode-editor-background);
+}
+
+.symbol-info-diff-stat-box.added {
+	background-color: #10B981;
+}
+
+.symbol-info-diff-stat-box.removed {
+	background-color: #EF4444;
 }
