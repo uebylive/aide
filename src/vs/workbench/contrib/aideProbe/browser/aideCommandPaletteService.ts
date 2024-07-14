@@ -23,6 +23,8 @@ export interface IAideCommandPaletteService {
 	showPalette(): void;
 	acceptInput(): void;
 	cancelRequest(): void;
+	rejectCodeEdits(): void;
+	acceptCodeEdits(): void;
 	hidePalette(): void;
 }
 
@@ -83,8 +85,7 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 		}
 		this._widget.acceptInput();
 
-		const aideProbeView = await this.viewsService.openView<AideProbeViewPane>(PROBE_VIEW_ID);
-
+		const aideProbeView = this.viewsService.getViewWithId<AideProbeViewPane>(PROBE_VIEW_ID);
 		if (aideProbeView) {
 			aideProbeView.acceptInput();
 		}

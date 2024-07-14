@@ -23,7 +23,6 @@ import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/brows
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { relativePath } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
-//import { IEditorProgressService } from 'vs/platform/progress/common/progress';
 
 const $ = dom.$;
 
@@ -34,7 +33,7 @@ interface ChangeSymbolInfoEvent {
 }
 
 
-export class AideProbeSymbolInfo extends Disposable {
+export class AideCommandPalettePanel extends Disposable {
 
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
@@ -76,7 +75,6 @@ export class AideProbeSymbolInfo extends Disposable {
 		this.container.appendChild(this.listContainer);
 
 		this.emptyListPlaceholder = $('.symbol-info-empty-list-placeholder');
-		this.emptyListPlaceholder.textContent = 'No symbols match your query';
 		this.container.appendChild(this.emptyListPlaceholder);
 		dom.hide(this.emptyListPlaceholder);
 
@@ -159,7 +157,6 @@ export class AideProbeSymbolInfo extends Disposable {
 		));
 
 		this._register(list.onDidChangeContentHeight(height => {
-			console.log(height, this.maxItems * 52.39);
 			const newHeight = Math.min(height, this.maxItems * 52.39);
 			list.layout(newHeight);
 		}));
@@ -231,11 +228,6 @@ export class AideProbeSymbolInfo extends Disposable {
 				this.explanationService.changeActiveBreakdown(element);
 			}
 		}
-
-		//const resolveLocationOperation = element.symbol;
-		//this.editorProgressService.showWhile(resolveLocationOperation);
-		//await resolveLocationOperation;
-
 	}
 
 	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
@@ -258,7 +250,13 @@ export class AideProbeSymbolInfo extends Disposable {
 				matchingIndex = matchIndex;
 			});
 		}
-
+		console.log('updating symbol info', this.list?.length);
+		if (list.length === 0) {
+			this.emptyListPlaceholder.textContent = 'Loading...';
+			dom.show(this.emptyListPlaceholder);
+		} else {
+			dom.hide(this.emptyListPlaceholder);
+		}
 		list.rerender();
 
 		if (this.userFocusIndex !== undefined) {
@@ -290,20 +288,21 @@ export class AideProbeSymbolInfo extends Disposable {
 			);
 		}
 
-		list.rerender();
+		console.log('filtering symbol info', this.list?.length);
+		if (list.length === 0) {
+			dom.show(this.emptyListPlaceholder);
+			this.emptyListPlaceholder.textContent = 'No symbols match your query';
+			dom.hide(this.listContainer);
+		} else {
+			dom.hide(this.emptyListPlaceholder);
+			dom.show(this.listContainer);
+			list.rerender();
+		}
 
 		if (focusIndex !== -1) {
 			list.setFocus([focusIndex]);
 		} else if (filteredSymbols.length > 0) {
 			list.setFocus([0]);
-		}
-
-		if (list.length === 0) {
-			dom.show(this.emptyListPlaceholder);
-			dom.hide(this.listContainer);
-		} else {
-			dom.hide(this.emptyListPlaceholder);
-			dom.show(this.listContainer);
 		}
 
 		// TODO: Fix height bug when the list is not epty but the layout
@@ -374,7 +373,7 @@ function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemove
 	return diffstat;
 }
 
-function generateDiffstats(fileChanges: Record<URI['path'], FileChanges>): Map<URI['path'], DiffStat> {
+export function generateDiffstats(fileChanges: Record<URI['path'], FileChanges>): Map<URI['path'], DiffStat> {
 	const diffstats = new Map<URI['path'], DiffStat>();
 
 	for (const [path, changes] of Object.entries(fileChanges)) {

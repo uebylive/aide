@@ -45,12 +45,22 @@
 }
 
 .command-palette-context {
+	position: relative;
 	display: grid;
-	border-right: 1px solid transparent;
 }
 
-.command-palette-context.active {
-	border-color: var(--vscode-chat-requestBorder);
+.command-palette-context::after {
+	content: '';
+	height: 22px;
+	right: 0;
+	top: 50%;
+	transform: translateY(-50%);
+	position: absolute;
+	width: 1px;
+}
+
+.command-palette-context.active::after {
+	background-color: var(--vscode-chat-requestBorder);
 }
 
 .command-palette-logo {
@@ -90,8 +100,11 @@
 }
 
 .command-palette-submit-toolbar {
-	position: absolute;
-	right: 0;
+	margin-top: 5px;
+}
+
+.command-palette-submit-toolbar .actions-container {
+	gap: 6px;
 }
 
 .command-palette-panel {
