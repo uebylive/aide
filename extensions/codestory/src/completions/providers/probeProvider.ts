@@ -13,7 +13,7 @@ import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage'
 import postHogClient from '../../posthog/client';
 import { applyEdits } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
-import { SidecarApplyEditsRequest } from '../../server/types';
+import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
 import { getInviteCode } from '../../utilities/getInviteCode';
 import { getUniqueId } from '../../utilities/uniqueId';
@@ -169,12 +169,12 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 
-		// let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
-		// if (false) {
-		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
-		// } else {
-		// 	probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
-		// }
+		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		if (request.editMode) {
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+		} else {
+			probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		}
 
 		/* // Use dummy data: Start
 		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
@@ -193,7 +193,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		})(jsonArr);
 		// Use dummy data: End */
 
-		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, _token, this._sideCarClient);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({

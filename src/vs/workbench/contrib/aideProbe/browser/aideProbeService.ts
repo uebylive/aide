@@ -25,7 +25,7 @@ export interface IAideProbeService {
 
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
-	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
 	getInitiateProbeState: () => IInitiateProbeResponseState | undefined;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(): void;
@@ -83,7 +83,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit = true): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {

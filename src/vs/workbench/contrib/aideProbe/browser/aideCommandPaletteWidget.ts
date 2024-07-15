@@ -76,7 +76,6 @@ export class AideCommandPaletteWidget extends Disposable {
 	private _inputEditor: CodeEditorWidget;
 
 	private mode: IContextKey<ProbeMode>;
-
 	private contextElement: HTMLElement;
 
 
@@ -538,7 +537,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue);
+		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue, this.mode.get() === 'edit');
 
 		this.panel.show(editorValue, true);
 
