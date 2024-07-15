@@ -351,7 +351,10 @@ export class AideCommandPaletteWidget extends Disposable {
 		const resizeListener = this._register(new MutableDisposable());
 		const registerResizeListener = () => {
 			resizeListener.value = this._register(dom.addDisposableListener(
-				dom.getWindow(this.layoutService.activeContainer), dom.EventType.RESIZE, () => this.setCoordinates())
+				dom.getWindow(this.layoutService.activeContainer), dom.EventType.RESIZE, () => {
+					this.setCoordinates();
+					this.layoutInputs();
+				})
 			);
 		};
 		registerResizeListener();
@@ -402,7 +405,10 @@ export class AideCommandPaletteWidget extends Disposable {
 	private layoutInputs() {
 		const itemsCount = this.submitToolbar.getItemsLength();
 		const submitToolbarWidth = this.submitToolbar.getItemsWidth();
-		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: this.width - submitToolbarWidth - (Math.min(0, itemsCount - 1) * 6) });
+
+		const currentWindow = dom.getWindow(this.layoutService.activeContainer);
+		const maxWidth = Math.min(this.width, currentWindow.innerWidth - 100);
+		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - (Math.min(0, itemsCount - 1) * 6) });
 	}
 
 	private _getAriaLabel(): string {
