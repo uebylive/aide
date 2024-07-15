@@ -295,7 +295,7 @@ export const reportAgentEventsToChat = async (
 			}
 			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 			// If this is a symbol event then we have to make sure that we are getting the probe request over here
-			if (editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
+			if (!editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
 				response.breakdown({
 					reference: {
 						uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
@@ -352,7 +352,7 @@ export const reportAgentEventsToChat = async (
 				}
 
 				const subStepType = probeRequestKeys[0];
-				if (editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
+				if (!editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
 					const probeAnswer = probeSubStep.ProbeAnswer;
 					response.breakdown({
 						reference: {

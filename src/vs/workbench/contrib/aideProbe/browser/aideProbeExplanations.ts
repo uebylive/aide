@@ -169,7 +169,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				}));
 			}
 
-			const editDecorations: IModelDeltaDecoration[] = activeSession.response?.codeEdits.get(uri.fsPath)?.textModelNDecorations ?? [];
+			const editDecorations: IModelDeltaDecoration[] = activeSession.response?.codeEdits.get(uri.toString())?.textModelNDecorations ?? [];
 			activeEditor.createDecorationsCollection(editDecorations);
 		}
 	}

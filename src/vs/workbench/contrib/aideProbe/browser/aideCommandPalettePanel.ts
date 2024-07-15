@@ -250,7 +250,7 @@ export class AideCommandPalettePanel extends Disposable {
 				matchingIndex = matchIndex;
 			});
 		}
-		console.log('updating symbol info', this.list?.length);
+
 		if (list.length === 0) {
 			this.emptyListPlaceholder.textContent = 'Loading...';
 			dom.show(this.emptyListPlaceholder);
@@ -311,8 +311,6 @@ export class AideCommandPalettePanel extends Disposable {
 		this.layout();
 	}
 
-
-
 	hide(): void {
 		if (!this.isVisible || !this.list) {
 			return; // already hidden
@@ -320,9 +318,6 @@ export class AideCommandPalettePanel extends Disposable {
 
 		this.userFocusIndex = undefined;
 		dom.hide(this.header);
-
-		// Remove all explanation widgets and go-to-definition widgets
-		this.explanationService.clear();
 
 		// Hide
 		this.isVisible = false;

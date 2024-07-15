@@ -45,6 +45,7 @@ import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inpu
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 
 const $ = dom.$;
 
@@ -150,6 +151,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IThemeService private readonly themeService: IThemeService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
@@ -555,7 +557,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		const isRequestInProgress = this.viewModel?.requestInProgress ?? false;
 		this.requestInProgress.set(isRequestInProgress);
 
-		if (!isRequestInProgress) {
+		if (!this.viewModel?.sessionId) {
 			const aideProbeView = await this.viewsService.openView<AideProbeViewPane>(PROBE_VIEW_ID);
 			if (aideProbeView) {
 				aideProbeView.acceptInput();
@@ -597,6 +599,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	clear(): void {
 		this.aideProbeService.clearSession();
+		this.explanationService.clear();
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
 		this.requestInProgress.set(false);
@@ -611,5 +614,4 @@ export class AideCommandPaletteWidget extends Disposable {
 	override dispose(): void {
 		super.dispose();
 	}
-
 }
