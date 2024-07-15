@@ -8,6 +8,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { WorkspaceEdit } from 'vs/editor/common/languages';
+import { IValidEditOperation } from 'vs/editor/common/model';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 export interface IAideProbeData {
@@ -93,6 +94,7 @@ export interface IAideProbeResponseModel {
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
+	onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }>;
 
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;

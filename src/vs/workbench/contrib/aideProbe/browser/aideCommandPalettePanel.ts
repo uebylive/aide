@@ -215,7 +215,6 @@ export class AideCommandPalettePanel extends Disposable {
 	}
 
 	async openSymbolInfoReference(element: IAideProbeBreakdownViewModel, setFocus: boolean = false): Promise<void> {
-
 		if (this.activeSymbolInfo === element) {
 			return;
 		} else {

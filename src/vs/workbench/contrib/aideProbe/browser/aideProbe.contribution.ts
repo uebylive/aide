@@ -11,11 +11,13 @@ import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/
 import { Registry } from 'vs/platform/registry/common/platform';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
+import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { AideCommandPaletteService, IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_IS_ACTIVE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeDecorations';
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
@@ -60,3 +62,4 @@ registerProbeActions();
 registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
 registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);
 registerSingleton(IAideCommandPaletteService, AideCommandPaletteService, InstantiationType.Delayed);
+registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);

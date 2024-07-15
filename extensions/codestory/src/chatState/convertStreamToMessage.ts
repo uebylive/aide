@@ -242,6 +242,10 @@ export const readJsonFile = (filePath: string): any => {
 	return JSON.parse(jsonString);
 };
 
+
+const randomInt = (min: number, max: number) =>
+	Math.floor(Math.random() * (max - min + 1)) + min;
+
 const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
 	editMode: boolean,
@@ -261,11 +265,6 @@ export const reportAgentEventsToChat = async (
 		await sidecarClient.stopAgentProbe(threadId);
 		return;
 	}
-
-	//await new Promise((resolve) => setTimeout(resolve, 1000));
-
-	const randomInt = (min: number, max: number) =>
-		Math.floor(Math.random() * (max - min + 1)) + min;
 
 	// Temp code: Create a new file to record logs
 	// const logPath = path.join('/Users/nareshr/github/codestory/sidecar', 'probeLogs.json');

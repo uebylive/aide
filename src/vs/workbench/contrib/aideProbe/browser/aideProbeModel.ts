@@ -8,22 +8,18 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
-import { themeColorFromId } from 'vs/base/common/themables';
+import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { LineRange } from 'vs/editor/common/core/lineRange';
-import { Range } from 'vs/editor/common/core/range';
 import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation, MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
-import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
+import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { Progress } from 'vs/platform/progress/common/progress';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -39,12 +35,15 @@ export interface IAideProbeEdits {
 	readonly targetUri: string;
 	readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
-	textModelNDecorations: IModelDeltaDecoration[];
 	readonly hunkData: HunkData;
 	readonly edits: IWorkspaceTextEdit[];
+	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
 export class AideProbeResponseModel extends Disposable implements IAideProbeResponseModel {
+	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
+	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
+
 	private _result: IMarkdownString | undefined;
 	get result(): IMarkdownString | undefined {
 		return this._result;
@@ -76,20 +75,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
 		return this._codeEdits;
 	}
-
-	private readonly _decoInsertedText = ModelDecorationOptions.register({
-		description: 'aide-probe-edit-modified-line',
-		className: 'inline-chat-inserted-range-linehighlight',
-		isWholeLine: true,
-		overviewRuler: {
-			position: OverviewRulerLane.Full,
-			color: themeColorFromId(overviewRulerInlineChatDiffInserted),
-		},
-		minimap: {
-			position: MinimapPosition.Inline,
-			color: themeColorFromId(minimapInlineChatDiffInserted),
-		}
-	});
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
@@ -173,26 +158,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 						targetUri: uri.toString(),
 						textModel0,
 						textModelN,
-						textModelNDecorations: [],
 						hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
 						edits: [workspaceEdit]
 					};
 					this._codeEdits.set(mapKey, codeEdits);
 				}
-
-				const progress = new Progress<IValidEditOperation[]>(edits => {
-					const newLines = new Set<number>();
-					for (const edit of edits) {
-						LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
-					}
-
-					const newDecorations: IModelDeltaDecoration[] = [];
-					for (const line of newLines) {
-						newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: this._decoInsertedText });
-					}
-
-					codeEdits.textModelNDecorations = newDecorations;
-				});
 
 				const editOperation: IIdentifiedSingleEditOperation = {
 					range: workspaceEdit.textEdit.range,
@@ -201,7 +171,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 				codeEdits.hunkData.ignoreTextModelNChanges = true;
 				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-					progress.report(undoEdits);
+					this._onNewEdit.fire({ resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
@@ -223,6 +193,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
+
+	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
+	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
 
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
@@ -268,6 +241,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		if (!this._response) {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
+			this._register(this._response.onNewEdit(edits => this._onNewEdit.fire(edits)));
 		}
 
 		switch (progress.kind) {

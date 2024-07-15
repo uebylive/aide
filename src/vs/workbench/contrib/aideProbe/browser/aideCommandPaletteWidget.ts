@@ -121,17 +121,9 @@ export class AideCommandPaletteWidget extends Disposable {
 	private readonly auxWindowCoordinates = new WeakMap<CodeWindow, { x: number; y: number | undefined }>();
 
 	private static readonly INPUT_EDITOR_URI = URI.parse('aideCommandPalette:input');
-	private _onDidChangeHeight = this._register(new Emitter<void>());
-	readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
-
-	private _onDidFocus = this._register(new Emitter<void>());
-	readonly onDidFocus = this._onDidFocus.event;
-
-	private _onDidBlur = this._register(new Emitter<void>());
-	readonly onDidBlur = this._onDidBlur.event;
 
 	id: string = 'aideCommandPalette';
 
@@ -162,14 +154,11 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {});
 
 		const innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
-
 		this.panelContainer = dom.append(this.container, $('.command-palette-panel'));
 		dom.hide(this.panelContainer);
-
 		this._inputContainer = dom.append(innerContainer, $('.command-palette-input'));
 
 		// Context
-
 		this.contextElement = dom.append(this._inputContainer, $('.command-palette-context'));
 		dom.append(this.contextElement, $('.command-palette-logo'));
 
@@ -238,7 +227,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorWrapper, options, editorOptions));
 
-
 		let inputModel = this.modelService.getModel(AideCommandPaletteWidget.INPUT_EDITOR_URI);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, AideCommandPaletteWidget.INPUT_EDITOR_URI, true);
@@ -252,7 +240,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.panel = this._register(this.instantiationService.createInstance(AideCommandPalettePanel, this.resourceLabels, this.panelContainer));
 
 		// Submit toolbar
-
 		this.submitToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this._inputContainer, MenuId.AideCommandPaletteSubmit, {
 			menuOptions: {
 				shouldForwardArgs: true,
@@ -268,18 +255,14 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.submitToolbar.getElement().classList.add('command-palette-submit-toolbar');
 
 		// Register events
-
 		this._register(this._inputEditor.onDidFocusEditorText(() => {
 			this.inputEditorHasFocus.set(true);
-			this._onDidFocus.fire();
 			this._inputEditorContainer.classList.toggle('focused', true);
 		}));
 
 		this._register(this._inputEditor.onDidBlurEditorText(() => {
 			this.inputEditorHasFocus.set(false);
 			this._inputEditorContainer.classList.toggle('focused', false);
-
-			this._onDidBlur.fire();
 		}));
 
 		this._register(this._inputEditor.onDidChangeModelContent((event) => {
@@ -295,10 +278,8 @@ export class AideCommandPaletteWidget extends Disposable {
 			if (currentHeight !== this.inputEditorHeight) {
 				this.layoutInputs();
 				this.setPanelPosition();
-				this._onDidChangeHeight.fire();
 				this.inputEditorHeight = currentHeight;
 			}
-
 
 			const model = this._inputEditor.getModel();
 			const inputHasText = !!model && model.getValue().trim().length > 0;
@@ -492,7 +473,6 @@ export class AideCommandPaletteWidget extends Disposable {
 			return;
 		}
 
-
 		dom.show(this.container);
 		this.isVisible = true;
 		this.setCoordinates();
@@ -535,7 +515,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		}));
 
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
-			this.aideProbeService.navigateBreakdown();
 			this.panel.openSymbolInfoReference(breakdown);
 		}));
 
@@ -545,7 +524,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.isPanelVisible = true;
 		dom.show(this.panelContainer);
 		this.panel.show(editorValue, true);
-
 		this.inputEditor.setValue('');
 
 		if (result) {
@@ -571,12 +549,10 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.setPanelPosition();
 	}
 
-
 	private onDidFilterItems() {
 		this.panel.filterSymbolInfo(this.viewModel?.filteredBreakdowns ?? []);
 		this.setPanelPosition();
 	}
-
 
 	cancelRequest(): void {
 		if (this.viewModel?.sessionId) {

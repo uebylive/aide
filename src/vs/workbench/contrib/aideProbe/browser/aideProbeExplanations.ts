@@ -155,17 +155,17 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				]);
 			}
 
-			const matchingEditPreviews = activeSession.response?.codeEditsPreview.filter(preview => preview.reference.uri.fsPath === uri.fsPath) ?? [];
-			for (const preview of matchingEditPreviews) {
-				activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, preview.ranges.map(range => {
-					return {
-						range: {
-							...range,
-							endColumn: range.endColumn + 1
-						}
-					};
-				}));
-			}
+			// const matchingEditPreviews = activeSession.response?.codeEditsPreview.filter(preview => preview.reference.uri.fsPath === uri.fsPath) ?? [];
+			// for (const preview of matchingEditPreviews) {
+			// 	activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, preview.ranges.map(range => {
+			// 		return {
+			// 			range: {
+			// 				...range,
+			// 				endColumn: range.endColumn + 1
+			// 			}
+			// 		};
+			// 	}));
+			// }
 
 			const editDecorations: IModelDeltaDecoration[] = activeSession.response?.codeEdits.get(uri.toString())?.textModelNDecorations ?? [];
 			activeEditor.createDecorationsCollection(editDecorations);

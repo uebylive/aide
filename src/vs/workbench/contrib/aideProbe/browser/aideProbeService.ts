@@ -5,7 +5,10 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Emitter, Event } from 'vs/base/common/event';
+import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { URI } from 'vs/base/common/uri';
+import { IValidEditOperation } from 'vs/editor/common/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeRequestModel, IAideProbeProgress, IAideProbeResult, IAideProbeUserAction, IAideProbeData, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
@@ -26,11 +29,10 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
-	getInitiateProbeState: () => IInitiateProbeResponseState | undefined;
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(): void;
 
-	navigateBreakdown(): void;
+	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }>;
 }
 
 export interface IInitiateProbeResponseState {
@@ -41,15 +43,14 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
+	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
+	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
+
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
-	private _didNavigateBreakdown: boolean = false;
+	private readonly _modelDisposables = this._register(new DisposableStore());
 	private _initiateProbeResponseState: IInitiateProbeResponseState | undefined;
-
-	getInitiateProbeState(): IInitiateProbeResponseState | undefined {
-		return this._initiateProbeResponseState;
-	}
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -74,11 +75,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	startSession(): AideProbeModel {
 		if (this._model) {
+			this._modelDisposables.clear();
 			this._model.dispose();
-			this._didNavigateBreakdown = false;
 		}
 
 		this._model = this.instantiationService.createInstance(AideProbeModel);
+		this._modelDisposables.add(this._model.onNewEdit(edits => {
+			this._onNewEdit.fire(edits);
+		}));
 		return this._model;
 	}
 
@@ -153,22 +157,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		const sessionId = this._model?.sessionId;
 		this._model?.dispose();
 		this._model = undefined;
-		this._didNavigateBreakdown = false;
 		if (sessionId) {
 			this.cancelCurrentRequestForSession(sessionId);
-		}
-	}
-
-	navigateBreakdown(): void {
-		if (!this._didNavigateBreakdown) {
-			this.probeProvider?.onUserAction({
-				sessionId: this._model?.sessionId!,
-				action: {
-					type: 'navigateBreakdown',
-					status: true,
-				},
-			});
-			this._didNavigateBreakdown = true;
 		}
 	}
 }
