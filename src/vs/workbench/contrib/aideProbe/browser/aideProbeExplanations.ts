@@ -4,26 +4,19 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from 'vs/base/common/event';
-import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
-import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
 import { ScrollType } from 'vs/editor/common/editorCommon';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { editorFindMatch, editorFindMatchForeground, selectionBackground } from 'vs/platform/theme/common/colorRegistry';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration, editPreviewSymbolDecoration, editPreviewSymbolDecorationClass } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IModelDeltaDecoration } from 'vs/editor/common/model';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -44,23 +37,14 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 	private readonly resourceLabels: ResourceLabels;
 
 	private explanationWidget: AideProbeExplanationWidget | undefined;
-	private activeCodeEditor: ICodeEditor | undefined;
 
 	constructor(
-		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IEditorService private readonly editorService: IEditorService,
-		@IThemeService private readonly themeService: IThemeService
-	) {
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
-
-		this._register(this.themeService.onDidColorThemeChange(() => this.updateRegisteredDecorationTypes()));
-		this._register(this.editorService.onDidActiveEditorChange(() => this.updateDecorations()));
-		this.updateRegisteredDecorationTypes();
 	}
 
 	private async openCodeEditor(uri: URI, selection?: IRange): Promise<ICodeEditor | null> {
@@ -102,80 +86,9 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		}
 	}
 
-	private updateRegisteredDecorationTypes() {
-		this.codeEditorService.removeDecorationType(probeDefinitionDecorationClass);
-		this.codeEditorService.removeDecorationType(editPreviewSymbolDecorationClass);
-		this.codeEditorService.removeDecorationType(editSymbolDecorationClass);
-
-		const theme = this.themeService.getColorTheme();
-		this.codeEditorService.registerDecorationType(probeDefinitionDecorationClass, probeDefinitionDecoration, {
-			color: theme.getColor(editorFindMatchForeground)?.toString(),
-			backgroundColor: theme.getColor(editorFindMatch)?.toString(),
-			borderRadius: '3px'
-		});
-		this.codeEditorService.registerDecorationType(editSymbolDecorationClass, editSymbolDecoration, {
-			backgroundColor: theme.getColor(selectionBackground)?.toString(),
-			isWholeLine: true
-		});
-
-		this.updateDecorations();
-	}
-
-	private updateDecorations() {
-		if (this.activeCodeEditor) {
-			this.activeCodeEditor.removeDecorationsByType(probeDefinitionDecoration);
-			this.activeCodeEditor.removeDecorationsByType(editPreviewSymbolDecoration);
-			this.activeCodeEditor.removeDecorationsByType(editSymbolDecoration);
-		}
-
-		const activeSession = this.aideProbeService.getSession();
-		if (!activeSession) {
-			return;
-		}
-
-		const activeEditor = this.editorService.activeTextEditorControl;
-
-		if (isCodeEditor(activeEditor)) {
-			this.activeCodeEditor = activeEditor;
-			const uri = activeEditor.getModel()?.uri;
-			if (!uri) {
-				return;
-			}
-
-			const matchingDefinitions = activeSession.response?.goToDefinitions.filter(definition => definition.uri.fsPath === uri.fsPath) ?? [];
-			for (const decoration of matchingDefinitions) {
-				activeEditor.setDecorationsByType(probeDefinitionDecorationClass, probeDefinitionDecoration, [
-					{
-						range: {
-							...decoration.range,
-							endColumn: decoration.range.endColumn + 1
-						},
-						hoverMessage: new MarkdownString(decoration.thinking),
-					}
-				]);
-			}
-
-			// const matchingEditPreviews = activeSession.response?.codeEditsPreview.filter(preview => preview.reference.uri.fsPath === uri.fsPath) ?? [];
-			// for (const preview of matchingEditPreviews) {
-			// 	activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, preview.ranges.map(range => {
-			// 		return {
-			// 			range: {
-			// 				...range,
-			// 				endColumn: range.endColumn + 1
-			// 			}
-			// 		};
-			// 	}));
-			// }
-
-			const editDecorations: IModelDeltaDecoration[] = activeSession.response?.codeEdits.get(uri.toString())?.textModelNDecorations ?? [];
-			activeEditor.createDecorationsCollection(editDecorations);
-		}
-	}
-
 	clear(): void {
 		this.explanationWidget?.clear();
 		this.explanationWidget?.hide();
 		this.explanationWidget?.dispose();
-		this.updateDecorations();
 	}
 }

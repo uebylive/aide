@@ -7,11 +7,9 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { IValidEditOperation } from 'vs/editor/common/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeRequestModel, IAideProbeProgress, IAideProbeResult, IAideProbeUserAction, IAideProbeData, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeData, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export type ProbeMode = 'edit' | 'explore';
 
@@ -32,7 +30,7 @@ export interface IAideProbeService {
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(): void;
 
-	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }>;
+	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 }
 
 export interface IInitiateProbeResponseState {
@@ -43,8 +41,8 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
-	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
-	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
+	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
+	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
@@ -80,8 +78,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 
 		this._model = this.instantiationService.createInstance(AideProbeModel);
-		this._modelDisposables.add(this._model.onNewEdit(edits => {
-			this._onNewEdit.fire(edits);
+		this._modelDisposables.add(this._model.onNewEvent(edits => {
+			this._onNewEvent.fire(edits);
 		}));
 		return this._model;
 	}

@@ -12,13 +12,13 @@ import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
+import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
@@ -41,8 +41,8 @@ export interface IAideProbeEdits {
 }
 
 export class AideProbeResponseModel extends Disposable implements IAideProbeResponseModel {
-	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
-	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
+	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
+	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
 	private _result: IMarkdownString | undefined;
 	get result(): IMarkdownString | undefined {
@@ -108,6 +108,8 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			this._breakdownsBySymbol.set(mapKey, breakdown);
 			this._breakdowns.push(breakdown);
 		}
+
+		this._onNewEvent.fire(breakdown);
 	}
 
 	applyGoToDefinition(goToDefinition: IAideProbeGoToDefinition) {
@@ -171,7 +173,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 				codeEdits.hunkData.ignoreTextModelNChanges = true;
 				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-					this._onNewEdit.fire({ resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
+					this._onNewEvent.fire({ kind: 'edit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
@@ -194,8 +196,8 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
-	protected readonly _onNewEdit = this._store.add(new Emitter<{ resource: URI; edits: IValidEditOperation[] }>());
-	readonly onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }> = this._onNewEdit.event;
+	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
+	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
@@ -241,7 +243,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		if (!this._response) {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
-			this._register(this._response.onNewEdit(edits => this._onNewEdit.fire(edits)));
+			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
 		}
 
 		switch (progress.kind) {

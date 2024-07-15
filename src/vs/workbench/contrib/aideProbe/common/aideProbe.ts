@@ -94,7 +94,7 @@ export interface IAideProbeResponseModel {
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
-	onNewEdit: Event<{ resource: URI; edits: IValidEditOperation[] }>;
+	onNewEvent: Event<IAideProbeResponseEvent>;
 
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
@@ -105,3 +105,11 @@ export interface IAideProbeModel {
 
 	revertEdits(): void;
 }
+
+export interface IAideProbeEditEvent {
+	kind: 'edit';
+	resource: URI;
+	edits: IValidEditOperation[];
+}
+
+export type IAideProbeResponseEvent = IAideProbeEditEvent | IAideProbeGoToDefinition | IAideProbeBreakdownContent;
