@@ -6,15 +6,24 @@
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
+import { themeColorFromId } from 'vs/base/common/themables';
 import { generateUuid } from 'vs/base/common/uuid';
-import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { LineRange } from 'vs/editor/common/core/lineRange';
+import { Range } from 'vs/editor/common/core/range';
 import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { ITextModel } from 'vs/editor/common/model';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
+import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation, MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
+import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeRequestModel, IAideProbeResponseModel, IAideProbeBreakdownContent, IAideProbeTextEditPreview, IAideProbeTextEdit, IAideProbeModel, IAideProbeProgress, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { Progress } from 'vs/platform/progress/common/progress';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -27,7 +36,11 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 }
 
 export interface IAideProbeEdits {
+	readonly targetUri: string;
 	readonly textModel0: ITextModel;
+	readonly textModelN: ITextModel;
+	textModelNDecorations: IModelDeltaDecoration[];
+	readonly hunkData: HunkData;
 	readonly edits: IWorkspaceTextEdit[];
 }
 
@@ -61,12 +74,27 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
-		return this.codeEdits;
+		return this._codeEdits;
 	}
+
+	private readonly _decoInsertedText = ModelDecorationOptions.register({
+		description: 'aide-probe-edit-modified-line',
+		className: 'inline-chat-inserted-range-linehighlight',
+		isWholeLine: true,
+		overviewRuler: {
+			position: OverviewRulerLane.Full,
+			color: themeColorFromId(overviewRulerInlineChatDiffInserted),
+		},
+		minimap: {
+			position: MinimapPosition.Inline,
+			color: themeColorFromId(minimapInlineChatDiffInserted),
+		}
+	});
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
-		@IBulkEditService private readonly _bulkEditService: IBulkEditService
+		@ITextModelService private readonly _textModelService: ITextModelService,
+		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 	) {
 		super();
 	}
@@ -117,29 +145,68 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
-		for (const edit of codeEdit.edits.edits) {
-			if (ResourceTextEdit.is(edit)) {
-				const mapKey = `${edit.resource.toString()}`;
+		for (const workspaceEdit of codeEdit.edits.edits) {
+			if (ResourceTextEdit.is(workspaceEdit)) {
+				const mapKey = `${workspaceEdit.resource.toString()}`;
+				let codeEdits: IAideProbeEdits;
 				if (this._codeEdits.has(mapKey)) {
-					this._codeEdits.get(mapKey)!.edits.push(edit);
+					codeEdits = this._codeEdits.get(mapKey)!;
+					codeEdits.edits.push(workspaceEdit);
 				} else {
-					const uri = edit.resource;
+					const uri = workspaceEdit.resource;
 					const textModel = this._modelService.getModel(uri);
 					if (!textModel) {
 						continue;
 					}
 
+					this._register((await this._textModelService.createModelReference(textModel.uri)));
+					const textModelN = textModel;
 
+					const id = generateUuid();
 					const textModel0 = this._register(this._modelService.createModel(
 						createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
 						{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
-						undefined, true
+						uri.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
 					));
-					this._codeEdits.set(mapKey, { textModel0, edits: [edit] });
+
+					codeEdits = {
+						targetUri: uri.toString(),
+						textModel0,
+						textModelN,
+						textModelNDecorations: [],
+						hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
+						edits: [workspaceEdit]
+					};
+					this._codeEdits.set(mapKey, codeEdits);
 				}
+
+				const progress = new Progress<IValidEditOperation[]>(edits => {
+					const newLines = new Set<number>();
+					for (const edit of edits) {
+						LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
+					}
+
+					const newDecorations: IModelDeltaDecoration[] = [];
+					for (const line of newLines) {
+						newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: this._decoInsertedText });
+					}
+
+					codeEdits.textModelNDecorations = newDecorations;
+				});
+
+				const editOperation: IIdentifiedSingleEditOperation = {
+					range: workspaceEdit.textEdit.range,
+					text: workspaceEdit.textEdit.text
+				};
+
+				codeEdits.hunkData.ignoreTextModelNChanges = true;
+				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
+					progress.report(undoEdits);
+					return null;
+				});
+				codeEdits.hunkData.ignoreTextModelNChanges = false;
 			}
 		}
-		await this._bulkEditService.apply(codeEdit.edits);
 	}
 
 	revertEdits(): void {

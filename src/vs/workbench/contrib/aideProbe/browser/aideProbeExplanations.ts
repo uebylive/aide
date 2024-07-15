@@ -23,6 +23,7 @@ import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/bro
 import { probeDefinitionDecorationClass, probeDefinitionDecoration, editSymbolDecorationClass, editSymbolDecoration, editPreviewSymbolDecoration, editPreviewSymbolDecorationClass } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IModelDeltaDecoration } from 'vs/editor/common/model';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -168,18 +169,8 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				}));
 			}
 
-			const matchingEdits = activeSession.response?.codeEdits.get(uri.fsPath)?.edits ?? [];
-			for (const edit of matchingEdits) {
-				activeEditor.setDecorationsByType(editSymbolDecorationClass, editSymbolDecoration, [
-					{
-						range: {
-							...edit.textEdit.range,
-							endColumn: edit.textEdit.range.endColumn + 1
-						},
-					}
-				]);
-			}
-
+			const editDecorations: IModelDeltaDecoration[] = activeSession.response?.codeEdits.get(uri.fsPath)?.textModelNDecorations ?? [];
+			activeEditor.createDecorationsCollection(editDecorations);
 		}
 	}
 

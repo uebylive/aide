@@ -264,8 +264,8 @@ export const reportAgentEventsToChat = async (
 
 	//await new Promise((resolve) => setTimeout(resolve, 1000));
 
-	// const randomInt = (min: number, max: number) =>
-	// 	Math.floor(Math.random() * (max - min + 1)) + min;
+	const randomInt = (min: number, max: number) =>
+		Math.floor(Math.random() * (max - min + 1)) + min;
 
 	// Temp code: Create a new file to record logs
 	// const logPath = path.join('/Users/nareshr/github/codestory/sidecar', 'probeLogs.json');
@@ -273,7 +273,7 @@ export const reportAgentEventsToChat = async (
 	// logStream.write('[');
 
 	for await (const event of asyncIterable) {
-		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 50));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
