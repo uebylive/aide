@@ -8,12 +8,11 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, IReference } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
-import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeModel, IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
@@ -22,7 +21,6 @@ export interface IAideProbeViewModel {
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly requestInProgress: boolean;
-	readonly isTailing: boolean;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
@@ -57,10 +55,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.requestInProgress;
 	}
 
-	get isTailing(): boolean {
-		return this._model.isTailing;
-	}
-
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
@@ -88,19 +82,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				return viewItem;
 			}) ?? []);
 
-			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
-				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
-				this._onChangeActiveBreakdown.fire(latestBreakdown);
-			}
-
 			this._onDidChange.fire();
-		}));
-
-		this._register(_model.onDidChangeTailing((isTailing) => {
-			if (isTailing && this._breakdowns.length > 0) {
-				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
-				this._onChangeActiveBreakdown.fire(latestBreakdown);
-			}
 		}));
 	}
 }
@@ -113,17 +95,6 @@ export interface IAideProbeBreakdownViewModel {
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	currentRenderedHeight: number | undefined;
-}
-
-export interface IAideProbeGoToDefinitionViewModel {
-	// symbol uri
-	readonly uri: URI;
-	// symbol name
-	readonly name: string;
-	// decoration range on the uri
-	readonly range: Range;
-	// the thinking process behind following this definition
-	readonly thinking: string;
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
@@ -191,63 +162,5 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		} catch (e) {
 			return;
 		}
-	}
-}
-
-export class AideProbeGoToDefinitionViewModel extends Disposable implements IAideProbeGoToDefinitionViewModel {
-
-	get uri() {
-		return this._definition.uri;
-	}
-
-	get name() {
-		return this._definition.name;
-	}
-
-	get range() {
-		return this._definition.range;
-	}
-
-	get thinking() {
-		return this._definition.thinking;
-	}
-
-	constructor(
-		private readonly _definition: IAideProbeGoToDefinition,
-	) {
-		super();
-	}
-}
-
-export class AideProbeTextEditPreviewViewModel extends Disposable implements IAideProbeTextEditPreview {
-	readonly kind = 'textEditPreview';
-
-	get reference() {
-		return this._preview.reference;
-	}
-
-	get ranges() {
-		return this._preview.ranges;
-	}
-
-	constructor(
-		private readonly _preview: IAideProbeTextEditPreview,
-	) {
-		super();
-	}
-}
-
-
-export class AideProbeTextEditViewModel extends Disposable implements IAideProbeTextEdit {
-	readonly kind = 'textEdit';
-
-	get edits() {
-		return this._edit.edits;
-	}
-
-	constructor(
-		private readonly _edit: IAideProbeTextEdit,
-	) {
-		super();
 	}
 }

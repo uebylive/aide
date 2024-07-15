@@ -31,7 +31,6 @@ export interface IAideProbeExplanationService {
 	_serviceBrand: undefined;
 
 	changeActiveBreakdown(content: IAideProbeBreakdownViewModel): void;
-	updateDecorations(): void;
 	clear(): void;
 }
 
@@ -122,8 +121,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		this.updateDecorations();
 	}
 
-	updateDecorations() {
-
+	private updateDecorations() {
 		if (this.activeCodeEditor) {
 			this.activeCodeEditor.removeDecorationsByType(probeDefinitionDecoration);
 			this.activeCodeEditor.removeDecorationsByType(editPreviewSymbolDecoration);

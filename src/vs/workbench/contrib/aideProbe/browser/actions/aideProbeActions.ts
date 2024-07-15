@@ -24,7 +24,6 @@ export interface IProbeActionContext {
 	inputValue?: string;
 }
 
-
 export class OpenCommandPaletteAction extends Action2 {
 	static readonly ID = 'workbench.action.aideCommandPalette.open';
 	constructor() {
@@ -41,12 +40,10 @@ export class OpenCommandPaletteAction extends Action2 {
 	}
 
 	override async run(accessor: ServicesAccessor): Promise<void> {
-		console.log(OpenCommandPaletteAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.showPalette();
 	}
 }
-
 
 export class CloseCommandPaletteAction extends Action2 {
 	static readonly ID = 'workbench.action.aideCommandPalette.close';
@@ -65,12 +62,10 @@ export class CloseCommandPaletteAction extends Action2 {
 	}
 
 	override async run(accessor: ServicesAccessor): Promise<void> {
-		console.log(CloseCommandPaletteAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.hidePalette();
 	}
 }
-
 
 export class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';
@@ -99,13 +94,11 @@ export class SubmitAction extends Action2 {
 		});
 	}
 
-	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(SubmitAction.ID);
+	async run(accessor: ServicesAccessor) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.acceptInput();
 	}
 }
-
 
 export class ToggleModeAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.toggleMode';
@@ -139,7 +132,6 @@ export class ToggleModeAction extends Action2 {
 		commandPaletteService.widget?.setMode(mode);
 	}
 }
-
 
 class ToggleModeActionComposer extends Disposable {
 	static readonly ID = 'workbench.action.aideProbe.submitComposer';
@@ -206,7 +198,6 @@ export class NavigateUpAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(NavigateUpAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const commandPalette = commandPaletteService.widget;
 		if (!commandPalette || !commandPalette.viewModel) {
@@ -241,7 +232,6 @@ export class NavigateDownAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(NavigateDownAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const commandPalette = commandPaletteService.widget;
 		if (!commandPalette || !commandPalette.viewModel) {
@@ -284,7 +274,6 @@ export class CancelAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(CancelAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.cancelRequest();
 	}
@@ -317,7 +306,6 @@ export class RejectAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(RejectAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.widget?.clear();
 		commandPaletteService.rejectCodeEdits();
@@ -351,7 +339,6 @@ export class AcceptAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(AcceptAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		commandPaletteService.widget?.clear();
 		commandPaletteService.acceptCodeEdits();
@@ -385,7 +372,6 @@ export class ClearAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(ClearAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		if (!commandPaletteService.widget) {
 			return;

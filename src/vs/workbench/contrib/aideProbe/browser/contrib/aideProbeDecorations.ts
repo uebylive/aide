@@ -28,7 +28,6 @@ export const editSymbolDecorationLineOptions = ModelDecorationOptions.register({
 	isWholeLine: true,
 });
 
-
 // Decoration for the probed symbol
 const probeSymbolDecoration = 'aide-probe-definition-line';
 const probeSymbolDecorationClass = 'aide-probe-definition-line-decoration';

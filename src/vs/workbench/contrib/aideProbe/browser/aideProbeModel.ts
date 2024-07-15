@@ -224,13 +224,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private readonly _onDidChangeTailing = this._register(new Emitter<boolean>());
-	readonly onDidChangeTailing = this._onDidChangeTailing.event;
-
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
 	private _isComplete = false;
-	private _isTailing = false;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -255,10 +251,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	get isComplete(): boolean {
 		return this._isComplete;
-	}
-
-	get isTailing(): boolean {
-		return this._isTailing;
 	}
 
 	constructor(
@@ -301,8 +293,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	completeResponse(): void {
 		this._isComplete = true;
-		this.followAlong(false);
-
 		this._onDidChange.fire();
 	}
 
@@ -312,12 +302,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._isComplete = false;
 
 		this._onDidChange.fire();
-	}
-
-	followAlong(follow: boolean): void {
-		this._isTailing = follow;
-
-		this._onDidChangeTailing.fire(follow);
 	}
 
 	revertEdits(): void {

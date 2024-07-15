@@ -30,7 +30,6 @@ export interface IAideProbeService {
 	cancelCurrentRequestForSession(sessionId: string): void;
 	clearSession(): void;
 
-	followAlong(follow: boolean): void;
 	navigateBreakdown(): void;
 }
 
@@ -171,16 +170,5 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 			this._didNavigateBreakdown = true;
 		}
-	}
-
-	followAlong(follow: boolean): void {
-		this._model?.followAlong(follow);
-		this.probeProvider?.onUserAction({
-			sessionId: this._model?.sessionId!,
-			action: {
-				type: 'followAlong',
-				status: follow,
-			},
-		});
 	}
 }

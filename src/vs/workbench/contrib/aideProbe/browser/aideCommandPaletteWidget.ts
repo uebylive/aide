@@ -7,20 +7,22 @@ import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
-import { Event, Emitter } from 'vs/base/common/event';
+import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 import { clamp } from 'vs/base/common/numbers';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/commandPalette';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
+import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
+import { IDecorationOptions } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { ActionViewItemKb } from 'vs/platform/actionbarKeybinding/browser/actionViewItemKb';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
@@ -29,23 +31,18 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
+import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_REQUEST_IN_PROGRESS, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
-import { VIEW_ID as PROBE_VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 
 const $ = dom.$;
 
@@ -58,8 +55,6 @@ const decorationDescription = 'command-palette';
 const placeholderDecorationType = 'command-palette-detail';
 
 export class AideCommandPaletteWidget extends Disposable {
-
-
 	private isVisible = false;
 	private inputEditorHeight = 0;
 
@@ -78,7 +73,6 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	private mode: IContextKey<ProbeMode>;
 	private contextElement: HTMLElement;
-
 
 	get inputEditor() {
 		return this._inputEditor;
@@ -152,7 +146,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
-		@IViewsService private readonly viewsService: IViewsService,
 		@IThemeService private readonly themeService: IThemeService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
@@ -195,24 +188,22 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		contextToolbar.getElement().classList.add('command-palette-context-toolbar');
 
+		/* // Toggle
+		const hoverDelegate = this._register(createInstantHoverDelegate());
+		const toggle = this._register(new Toggle({
+			...defaultToggleStyles,
+			icon: Codicon.telescope,
+			title: nls.localize('mode', "Explore mode"),
+			isChecked: false,
+			hoverDelegate,
+		}));
 
-		// Toggle
-
-		//const hoverDelegate = this._register(createInstantHoverDelegate());
-		//const toggle = this._register(new Toggle({
-		//	...defaultToggleStyles,
-		//	icon: Codicon.telescope,
-		//	title: nls.localize('mode', "Explore mode"),
-		//	isChecked: false,
-		//	hoverDelegate,
-		//}));
-		//
-		//this._register(toggle.onChange(() => {
-		//	toggle.setIcon(toggle.checked ? Codicon.pencil : Codicon.telescope);
-		//	toggle.setTitle(toggle.checked ? nls.localize('editMode', "Edit mode") : nls.localize('followAlong', "Probe mode"));
-		//	this.mode = toggle.checked ? 'edit' : 'explore';
-		//}));
-		//innerContainer.appendChild(toggle.domNode);
+		this._register(toggle.onChange(() => {
+			toggle.setIcon(toggle.checked ? Codicon.pencil : Codicon.telescope);
+			toggle.setTitle(toggle.checked ? nls.localize('editMode', "Edit mode") : nls.localize('followAlong', "Probe mode"));
+			this.mode = toggle.checked ? 'edit' : 'explore';
+		}));
+		innerContainer.appendChild(toggle.domNode); */
 
 		// Input editor
 		this._inputEditorContainer = dom.append(this._inputContainer, $('.command-palette-input-editor'));
@@ -349,7 +340,6 @@ export class AideCommandPaletteWidget extends Disposable {
 				mouseUpListener.dispose();
 			});
 		}));
-
 
 		const resizeListener = this._register(new MutableDisposable());
 		const registerResizeListener = () => {
@@ -570,13 +560,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		const isRequestInProgress = this.viewModel?.requestInProgress ?? false;
 		this.requestInProgress.set(isRequestInProgress);
 
-		if (!this.viewModel?.sessionId) {
-			const aideProbeView = await this.viewsService.openView<AideProbeViewPane>(PROBE_VIEW_ID);
-			if (aideProbeView) {
-				aideProbeView.acceptInput();
-			}
-		}
-
 		if ((this.viewModel?.breakdowns.length) ?? 0 > 0) {
 			this.panel.updateSymbolInfo(this.viewModel?.breakdowns ?? []);
 			dom.show(this.panelContainer);
@@ -615,11 +598,5 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.isPanelVisible = false;
 		this.onDidChangeItems();
 		this.contextElement.classList.remove('active');
-	}
-
-
-
-	override dispose(): void {
-		super.dispose();
 	}
 }

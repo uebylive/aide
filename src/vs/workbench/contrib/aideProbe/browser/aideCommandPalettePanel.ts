@@ -26,12 +26,10 @@ import { URI } from 'vs/base/common/uri';
 
 const $ = dom.$;
 
-
 interface ChangeSymbolInfoEvent {
 	index: number;
 	element: IAideProbeBreakdownViewModel;
 }
-
 
 export class AideCommandPalettePanel extends Disposable {
 

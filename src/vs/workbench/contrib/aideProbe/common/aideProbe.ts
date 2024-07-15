@@ -93,14 +93,12 @@ export interface IAideProbeResponseModel {
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
-	onDidChangeTailing: Event<boolean>;
 
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
 
 	isComplete: boolean;
-	isTailing: boolean;
 	requestInProgress: boolean;
 
 	revertEdits(): void;
