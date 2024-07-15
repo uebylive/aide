@@ -518,7 +518,9 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			});
 		}
 
-		templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffstat));
+		if (changes) {
+			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffstat));
+		}
 
 		this.updateItemHeight(templateData);
 

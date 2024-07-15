@@ -9,7 +9,7 @@ import { AideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { VIEW_ID as PROBE_VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { VIEW_ID as PROBE_VIEW_ID, VIEWLET_ID as PROBE_VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 
 export interface IAideCommandPaletteData {
@@ -85,6 +85,7 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 		}
 		this._widget.acceptInput();
 
+		await this.viewsService.openViewContainer(PROBE_VIEWLET_ID);
 		const aideProbeView = this.viewsService.getViewWithId<AideProbeViewPane>(PROBE_VIEW_ID);
 		if (aideProbeView) {
 			aideProbeView.acceptInput();
