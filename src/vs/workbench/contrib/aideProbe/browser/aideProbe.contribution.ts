@@ -6,7 +6,6 @@
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import * as nls from 'vs/nls';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { Registry } from 'vs/platform/registry/common/platform';
@@ -48,7 +47,7 @@ const viewDescriptor: IViewDescriptor = {
 		},
 		order: 2
 	},
-	when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE),
+	when: CONTEXT_PROBE_IS_ACTIVE,
 };
 
 // Register search default location to sidebar

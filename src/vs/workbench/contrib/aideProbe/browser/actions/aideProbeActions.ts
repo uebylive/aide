@@ -319,6 +319,7 @@ export class RejectAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		console.log(RejectAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.widget?.clear();
 		commandPaletteService.rejectCodeEdits();
 	}
 }
@@ -352,6 +353,7 @@ export class AcceptAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		console.log(AcceptAction.ID);
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.widget?.clear();
 		commandPaletteService.acceptCodeEdits();
 	}
 }

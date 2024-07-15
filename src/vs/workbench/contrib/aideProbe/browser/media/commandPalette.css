@@ -126,6 +126,17 @@
 	margin-top: 10px;
 }
 
+.symbol-info-list-container {
+	display: grid;
+}
+
+.symbol-info-list-container > .monaco-list {
+	grid-area: 1 / -1 / 1 / -1;
+}
+
+.symbol-info-list-container > .symbol-info-empty-list-placeholder {
+	grid-area: 1 / -1 / 1 / -1;
+}
 
 .symbol-info-header {
 	display: flex;

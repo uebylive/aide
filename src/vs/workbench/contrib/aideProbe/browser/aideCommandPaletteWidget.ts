@@ -291,11 +291,14 @@ export class AideCommandPaletteWidget extends Disposable {
 			this._onDidBlur.fire();
 		}));
 
-		this._register(this._inputEditor.onDidChangeModelContent(() => {
+		this._register(this._inputEditor.onDidChangeModelContent((event) => {
 			const currentHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 
 			if (!this.requestInProgress.get() && this.requestIsActive.get() && this.viewModel) {
-				this.viewModel.setFilter(this._inputEditor.getValue());
+				const [fistEvent] = event.changes;
+				if (fistEvent.text !== '') {
+					this.viewModel.setFilter(this._inputEditor.getValue());
+				}
 			}
 
 			if (currentHeight !== this.inputEditorHeight) {
@@ -529,13 +532,15 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.requestIsActive.set(true);
 		this.contextElement.classList.add('active');
 
+
 		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 
-		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
+
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
 			this.onDidChangeItems();
 		}));
 
-		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidFilter, 0)(() => {
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidFilter)(() => {
 			this.onDidFilterItems();
 		}));
 
@@ -547,6 +552,8 @@ export class AideCommandPaletteWidget extends Disposable {
 		const editorValue = this._inputEditor.getValue();
 		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue, this.mode.get() === 'edit');
 
+		this.isPanelVisible = true;
+		dom.show(this.panelContainer);
 		this.panel.show(editorValue, true);
 
 		this.inputEditor.setValue('');
@@ -570,19 +577,13 @@ export class AideCommandPaletteWidget extends Disposable {
 			}
 		}
 
-		const requestHeader = this.viewModel?.model.request?.message;
-		this.panel.show(requestHeader, isRequestInProgress);
-
-
 		if ((this.viewModel?.breakdowns.length) ?? 0 > 0) {
 			this.panel.updateSymbolInfo(this.viewModel?.breakdowns ?? []);
 			dom.show(this.panelContainer);
 			this.isPanelVisible = true;
-		} else {
-			this.panel.hide();
-			dom.hide(this.panelContainer);
-			this.isPanelVisible = false;
 		}
+
+		this.panel.show(this.viewModel?.model.request?.message, this.requestInProgress.get() ?? false);
 
 		this.setPanelPosition();
 	}
@@ -611,6 +612,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.requestInProgress.set(false);
 		this.requestIsActive.set(false);
 		this.panel.hide();
+		this.isPanelVisible = false;
 		this.onDidChangeItems();
 		this.contextElement.classList.remove('active');
 	}

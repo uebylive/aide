@@ -95,10 +95,12 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 
 	acceptCodeEdits() {
 		console.log('accept code edits');
+		this._widget?.hide();
 	}
 
 	rejectCodeEdits() {
-		console.log('accept code edits');
+		console.log('renect code edits');
+		this._widget?.hide();
 	}
 
 

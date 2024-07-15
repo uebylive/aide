@@ -65,7 +65,6 @@ export class AideCommandPalettePanel extends Disposable {
 		this.container = container;
 
 		this.header = $('.symbol-info-header');
-		dom.hide(this.header);
 		this.container.appendChild(this.header);
 		this.headerText = $('.symbol-info-header-text');
 		this.header.appendChild(this.headerText);
@@ -75,8 +74,8 @@ export class AideCommandPalettePanel extends Disposable {
 		this.container.appendChild(this.listContainer);
 
 		this.emptyListPlaceholder = $('.symbol-info-empty-list-placeholder');
-		this.container.appendChild(this.emptyListPlaceholder);
-		dom.hide(this.emptyListPlaceholder);
+		this.listContainer.appendChild(this.emptyListPlaceholder);
+		this.emptyListPlaceholder.style.visibility = 'hidden';
 
 		const toolbarContainer = $('.symbol-info-toolbar-container');
 		this.header.appendChild(toolbarContainer);
@@ -134,6 +133,7 @@ export class AideCommandPalettePanel extends Disposable {
 			this.createSymbolInfosList(this.listContainer);
 		}
 
+		this.render();
 		// Make visible
 		this.isVisible = true;
 	}
@@ -251,13 +251,7 @@ export class AideCommandPalettePanel extends Disposable {
 			});
 		}
 
-		if (list.length === 0) {
-			this.emptyListPlaceholder.textContent = 'Loading...';
-			dom.show(this.emptyListPlaceholder);
-		} else {
-			dom.hide(this.emptyListPlaceholder);
-		}
-		list.rerender();
+		this.render();
 
 		if (this.userFocusIndex !== undefined) {
 			list.setFocus([this.userFocusIndex]);
@@ -265,7 +259,7 @@ export class AideCommandPalettePanel extends Disposable {
 			list.setFocus([matchingIndex]);
 		}
 
-		this.layout();
+
 	}
 
 	filterSymbolInfo(filteredSymbols: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
@@ -288,27 +282,14 @@ export class AideCommandPalettePanel extends Disposable {
 			);
 		}
 
-		console.log('filtering symbol info', this.list?.length);
-		if (list.length === 0) {
-			dom.show(this.emptyListPlaceholder);
-			this.emptyListPlaceholder.textContent = 'No symbols match your query';
-			dom.hide(this.listContainer);
-		} else {
-			dom.hide(this.emptyListPlaceholder);
-			dom.show(this.listContainer);
-			list.rerender();
-		}
+		this.render(true);
+
 
 		if (focusIndex !== -1) {
 			list.setFocus([focusIndex]);
 		} else if (filteredSymbols.length > 0) {
 			list.setFocus([0]);
 		}
-
-		// TODO: Fix height bug when the list is not epty but the layout
-		// calculates its height as 0
-
-		this.layout();
 	}
 
 	hide(): void {
@@ -327,6 +308,23 @@ export class AideCommandPalettePanel extends Disposable {
 
 		// Clear view model
 		this.viewModel = [];
+	}
+
+
+	private render(isFiltering: boolean = false) {
+		if (!this.list) {
+			return;
+		}
+		this.list.rerender();
+		if (this.list.length === 0) {
+			this.emptyListPlaceholder.style.visibility = 'visible';
+			this.emptyListPlaceholder.textContent = isFiltering ? 'No symbols match your query' : 'Loading...';
+			this.list.getHTMLElement().style.visibility = 'hidden';
+		} else {
+			this.emptyListPlaceholder.style.visibility = 'hidden';
+			this.list.getHTMLElement().style.visibility = 'visible';
+		}
+		this.layout();
 	}
 
 	layout(width?: number): void {
