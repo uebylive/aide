@@ -77,7 +77,7 @@ export class SubmitAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_PROBE_INPUT,
 				primary: KeyCode.Enter,

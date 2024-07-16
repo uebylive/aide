@@ -69,6 +69,9 @@ export class AideLSP {
 		}
 
 		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
+
+		this.isActive.set(isReferenceProviderActive);
+
 		if (!isReferenceProviderActive) {
 			this.notifiyLSPIsNotActive(languageId);
 		}
