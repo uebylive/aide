@@ -97,6 +97,11 @@
           "default": "",
           "description": "The invite code for the probing feature"
         },
+        "aide.resetNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reset 'Don't show again' notifications"
+        },
         "aide.activeDirectories": {
           "type": "string",
           "default": "",

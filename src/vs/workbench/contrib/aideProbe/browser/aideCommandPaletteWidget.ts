@@ -177,22 +177,23 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		contextToolbar.getElement().classList.add('command-palette-context-toolbar');
 
-		/* // Toggle
-		const hoverDelegate = this._register(createInstantHoverDelegate());
-		const toggle = this._register(new Toggle({
-			...defaultToggleStyles,
-			icon: Codicon.telescope,
-			title: nls.localize('mode', "Explore mode"),
-			isChecked: false,
-			hoverDelegate,
-		}));
+		// Toggle
 
-		this._register(toggle.onChange(() => {
-			toggle.setIcon(toggle.checked ? Codicon.pencil : Codicon.telescope);
-			toggle.setTitle(toggle.checked ? nls.localize('editMode', "Edit mode") : nls.localize('followAlong', "Probe mode"));
-			this.mode = toggle.checked ? 'edit' : 'explore';
-		}));
-		innerContainer.appendChild(toggle.domNode); */
+		//const hoverDelegate = this._register(createInstantHoverDelegate());
+		//const toggle = this._register(new Toggle({
+		//	...defaultToggleStyles,
+		//	icon: Codicon.telescope,
+		//	title: nls.localize('mode', "Explore mode"),
+		//	isChecked: false,
+		//	hoverDelegate,
+		//}));
+		//
+		//this._register(toggle.onChange(() => {
+		//	toggle.setIcon(toggle.checked ? Codicon.pencil : Codicon.telescope);
+		//	toggle.setTitle(toggle.checked ? nls.localize('editMode', "Edit mode") : nls.localize('followAlong', "Probe mode"));
+		//	this.mode = toggle.checked ? 'edit' : 'explore';
+		//}));
+		//innerContainer.appendChild(toggle.domNode);
 
 		// Input editor
 		this._inputEditorContainer = dom.append(this._inputContainer, $('.command-palette-input-editor'));
