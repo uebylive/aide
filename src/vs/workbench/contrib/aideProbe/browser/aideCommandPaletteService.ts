@@ -20,8 +20,6 @@ export interface IAideCommandPaletteService {
 	showPalette(): void;
 	acceptInput(): void;
 	cancelRequest(): void;
-	rejectCodeEdits(): void;
-	acceptCodeEdits(): void;
 	hidePalette(): void;
 }
 
@@ -76,16 +74,6 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 			return;
 		}
 		this._widget.acceptInput();
-	}
-
-	acceptCodeEdits() {
-		console.log('accept code edits');
-		this._widget?.hide();
-	}
-
-	rejectCodeEdits() {
-		console.log('renect code edits');
-		this._widget?.hide();
 	}
 
 	cancelRequest(): void {

@@ -15,7 +15,7 @@ import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_INPUT_HAS_FOC
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { IDisposable, Disposable } from 'vs/base/common/lifecycle';
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import { ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -307,8 +307,9 @@ export class RejectAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		const probeService = accessor.get(IAideProbeService);
 		commandPaletteService.widget?.clear();
-		commandPaletteService.rejectCodeEdits();
+		probeService.rejectCodeEdits();
 	}
 }
 
@@ -340,8 +341,9 @@ export class AcceptAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		const probeService = accessor.get(IAideProbeService);
 		commandPaletteService.widget?.clear();
-		commandPaletteService.acceptCodeEdits();
+		probeService.acceptCodeEdits();
 	}
 }
 

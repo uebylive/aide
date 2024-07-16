@@ -54,6 +54,12 @@ export class AideProbeDecorationService extends Disposable {
 				this.handleGoToDefinitionEvent(event);
 			}
 		}));
+
+
+		this._register(this.aideProbeService.onReview(() => {
+			this.removeDecorations();
+		}));
+
 		/*
 		this._register(this.themeService.onDidColorThemeChange(() => this.updateRegisteredDecorationTypes()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.updateDecorations()));
@@ -86,6 +92,11 @@ export class AideProbeDecorationService extends Disposable {
 		}
 
 		progressiveEditingDecorations!.append(newDecorations);
+	}
+
+
+	private removeDecorations() {
+		this.editDecorations.clear();
 	}
 
 	/*

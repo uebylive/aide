@@ -113,3 +113,5 @@ export interface IAideProbeEditEvent {
 }
 
 export type IAideProbeResponseEvent = IAideProbeEditEvent | IAideProbeGoToDefinition | IAideProbeBreakdownContent;
+
+export type IAideProbeReviewUserEvent = 'accept' | 'reject';

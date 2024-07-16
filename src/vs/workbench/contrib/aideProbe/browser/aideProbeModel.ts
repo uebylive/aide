@@ -10,6 +10,7 @@ import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
@@ -20,6 +21,7 @@ import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -77,6 +79,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	constructor(
+		@IEditorService private readonly editorService: IEditorService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
@@ -171,12 +174,22 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					text: workspaceEdit.textEdit.text
 				};
 
+				const editor = this.editorService.activeTextEditorControl;
+				const isCurrentFileBeingEdited = editor && isCodeEditor(editor) && editor.getModel()?.uri.path === workspaceEdit.resource.path;
+				if (isCurrentFileBeingEdited) {
+					editor.updateOptions({ readOnly: true });
+				}
+
 				codeEdits.hunkData.ignoreTextModelNChanges = true;
 				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
 					this._onNewEvent.fire({ kind: 'edit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
+
+				if (isCurrentFileBeingEdited) {
+					editor.updateOptions({ readOnly: false });
+				}
 			}
 		}
 	}
