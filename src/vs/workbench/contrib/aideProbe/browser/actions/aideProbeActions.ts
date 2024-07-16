@@ -308,9 +308,10 @@ export class RejectAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const probeService = accessor.get(IAideProbeService);
+		probeService.rejectCodeEdits();
+
 		commandPaletteService.widget?.clear();
 		commandPaletteService.hidePalette();
-		probeService.rejectCodeEdits();
 	}
 }
 

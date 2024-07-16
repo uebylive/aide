@@ -207,16 +207,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			}
 		}
 	}
-
-	revertEdits(): void {
-		for (const { textModel0 } of this._codeEdits.values()) {
-			const uri = textModel0.uri;
-			const textModel = this._modelService.getModel(uri);
-			if (textModel) {
-				textModel.setValue(textModel0.getValue());
-			}
-		}
-	}
 }
 
 export class AideProbeModel extends Disposable implements IAideProbeModel {
@@ -305,9 +295,5 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._isComplete = false;
 
 		this._onDidChange.fire();
-	}
-
-	revertEdits(): void {
-		this._response?.revertEdits();
 	}
 }

@@ -152,7 +152,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	cancelCurrentRequestForSession(sessionId: string): void {
-		this._model?.revertEdits();
 		this._pendingRequests.get(sessionId)?.cancel();
 		this._pendingRequests.deleteAndDispose(sessionId);
 	}
@@ -164,6 +163,13 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	rejectCodeEdits(): void {
+		const edits = this._model?.response?.codeEdits;
+		if (edits) {
+			for (const edit of edits.values()) {
+				edit?.hunkData.discardAll();
+			}
+		}
+
 		this._onReview.fire('reject');
 		this.clearSession();
 	}

@@ -88,8 +88,6 @@ export interface IAideProbeResponseModel {
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly codeEditsPreview: ReadonlyArray<IAideProbeTextEditPreview>;
-
-	revertEdits(): void;
 }
 
 export interface IAideProbeModel {
@@ -102,8 +100,6 @@ export interface IAideProbeModel {
 
 	isComplete: boolean;
 	requestInProgress: boolean;
-
-	revertEdits(): void;
 }
 
 export interface IAideProbeStartEditEvent {

@@ -72,12 +72,6 @@ export class AideProbeDecorationService extends Disposable {
 		this._register(this.aideProbeService.onReview(() => {
 			this.removeDecorations();
 		}));
-
-		/*
-		this._register(this.themeService.onDidColorThemeChange(() => this.updateRegisteredDecorationTypes()));
-		this._register(this.editorService.onDidActiveEditorChange(() => this.updateDecorations()));
-		this.updateRegisteredDecorationTypes();
-		*/
 	}
 
 	private async handleEditCompleteEvent(event: IAideProbeCompleteEditEvent) {
@@ -146,88 +140,11 @@ export class AideProbeDecorationService extends Disposable {
 		});
 	}
 
-
 	private removeDecorations() {
-		// for (const decorations of this.editDecorations.values()) {
-		// 	decorations.clear();
-		// }
-	}
-
-	/*
-	private async handleEditStartEvent(event: IAideProbeStartEditEvent) {
-		const { edits, resource } = event;
-		let progressiveEditingDecorations = this.progressiveEditingDecorations.get(resource.toString());
-		if (!progressiveEditingDecorations) {
-			const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
-			if (editor && !this.progressiveEditingDecorations.has(resource.toString())) {
-				this.progressiveEditingDecorations.set(resource.toString(), editor.createDecorationsCollection());
-			}
-			progressiveEditingDecorations = this.progressiveEditingDecorations.get(resource.toString());
-		}
-
-		const newLines = new Set<number>();
-		for (const edit of edits) {
-			LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
-		}
-		const existingRanges = progressiveEditingDecorations!.getRanges().map(LineRange.fromRange);
-		for (const existingRange of existingRanges) {
-			existingRange.forEach(line => newLines.delete(line));
-		}
-		const newDecorations: IModelDeltaDecoration[] = [];
-		for (const line of newLines) {
-			newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: editLineDecorationOptions });
-		}
-
-		progressiveEditingDecorations!.append(newDecorations);
-	}
-
-	private updateRegisteredDecorationTypes() {
-		this.codeEditorService.removeDecorationType(probeDefinitionDecorationClass);
-
-		const theme = this.themeService.getColorTheme();
-		this.codeEditorService.registerDecorationType(probeDefinitionDecorationClass, probeDefinitionDecoration, {
-			color: theme.getColor(editorFindMatchForeground)?.toString(),
-			backgroundColor: theme.getColor(editorFindMatch)?.toString(),
-			borderRadius: '3px'
-		});
-
-		this.updateDecorations();
-	}
-
-	private updateDecorations() {
-		if (this.activeEditor) {
-			this.activeEditor.removeDecorationsByType(probeDefinitionDecoration);
-		}
-
-		const activeSession = this.aideProbeService.getSession();
-		if (!activeSession) {
-			return;
-		}
-
-		const activeEditor = this.editorService.activeTextEditorControl;
-
-		if (isCodeEditor(activeEditor)) {
-			this.activeEditor = activeEditor;
-			const uri = activeEditor.getModel()?.uri;
-			if (!uri) {
-				return;
-			}
-
-			const matchingDefinitions = activeSession.response?.goToDefinitions.filter(definition => definition.uri.fsPath === uri.fsPath) ?? [];
-			for (const decoration of matchingDefinitions) {
-				activeEditor.setDecorationsByType(probeDefinitionDecorationClass, probeDefinitionDecoration, [
-					{
-						range: {
-							...decoration.range,
-							endColumn: decoration.range.endColumn + 1
-						},
-						hoverMessage: new MarkdownString(decoration.thinking),
-					}
-				]);
-			}
+		for (const data of this._hunkDisplayData.values()) {
+			data.remove();
 		}
 	}
-	*/
 
 	private async handleGoToDefinitionEvent(event: IAideProbeGoToDefinition) {
 		const { uri: resource } = event;
