@@ -267,9 +267,14 @@ export const reportAgentEventsToChat = async (
 	}
 
 	// Temp code: Create a new file to record logs
-	// const logPath = path.join('/Users/nareshr/github/codestory/sidecar', 'probeLogs.json');
-	// const logStream = fs.createWriteStream(logPath, { flags: 'a' });
-	// logStream.write('[');
+	let logStream: fs.WriteStream | undefined;
+	const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+	const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+	if (extensionRoot && workspaceRoot) {
+		const logPath = path.join(extensionRoot, 'src', 'completions', 'providers', 'dummydata.json');
+		logStream = fs.createWriteStream(logPath, { flags: 'w' });
+	}
+	logStream?.write('[');
 
 	for await (const event of asyncIterable) {
 		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 50));
@@ -284,7 +289,7 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
-		// logStream.write(JSON.stringify(event) + ',\n');
+		logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
@@ -386,6 +391,6 @@ export const reportAgentEventsToChat = async (
 		}
 	}
 
-	// logStream.write(']');
-	// logStream.end();
+	logStream?.write(']');
+	logStream?.end();
 };

@@ -22,6 +22,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -81,6 +82,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	constructor(
 		@IEditorService private readonly editorService: IEditorService,
 		@IModelService private readonly _modelService: IModelService,
+		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 	) {
@@ -185,6 +187,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					this._onNewEvent.fire({ kind: 'edit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
+				this._textFileService.save(codeEdits.textModelN.uri);
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
 
 				if (isCurrentFileBeingEdited) {
