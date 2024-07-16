@@ -96,7 +96,9 @@ export class AideProbeDecorationService extends Disposable {
 
 
 	private removeDecorations() {
-		this.editDecorations.clear();
+		for (const decorations of this.editDecorations.values()) {
+			decorations.clear();
+		}
 	}
 
 	/*

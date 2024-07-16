@@ -13,6 +13,7 @@ import { clamp } from 'vs/base/common/numbers';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/commandPalette';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -37,11 +38,12 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
 const $ = dom.$;
@@ -56,6 +58,7 @@ const placeholderDecorationType = 'command-palette-detail';
 
 export class AideCommandPaletteWidget extends Disposable {
 	private isVisible = false;
+	private isLSPActive: IContextKey<boolean>;
 	private inputEditorHeight = 0;
 
 	private isPanelVisible = false;
@@ -139,6 +142,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 		@IThemeService private readonly themeService: IThemeService,
+		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
 		super();
@@ -148,6 +152,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 		this.requestIsActive = CONTEXT_PROBE_IS_ACTIVE.bindTo(contextKeyService);
+		this.isLSPActive = CONTEXT_PROBE_IS_LSP_ACTIVE.bindTo(this.contextKeyService);
 
 		this._container = container;
 
@@ -256,6 +261,11 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.submitToolbar.getElement().classList.add('command-palette-submit-toolbar');
 
 		// Register events
+
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.updateInputEditorPlaceholder();
+		}));
+
 		this._register(this._inputEditor.onDidFocusEditorText(() => {
 			this.inputEditorHasFocus.set(true);
 			this._inputEditorContainer.classList.toggle('focused', true);
@@ -354,6 +364,26 @@ export class AideCommandPaletteWidget extends Disposable {
 		if (!this.inputEditorHasText.get()) {
 			const theme = this.themeService.getColorTheme();
 			const transparentForeground = theme.getColor(inputPlaceholderForeground);
+
+
+			let placeholder = 'Ask to explore your codebase';
+			if (this.mode.get() === 'explore') {
+				placeholder = 'Ask to edit your codebase';
+			}
+			if (!this.isLSPActive.get()) {
+				const editor = this.editorService.activeTextEditorControl;
+				if (!isCodeEditor(editor)) {
+					return;
+				}
+				const model = editor.getModel();
+				if (!model) {
+					return;
+				}
+				const languageId = model.getLanguageId();
+				const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
+				placeholder = `${capitalizedLanguageId} is not supported yet or the LSP is loading`;
+			}
+
 			const decoration: IDecorationOptions[] = [
 				{
 					range: {
@@ -364,7 +394,7 @@ export class AideCommandPaletteWidget extends Disposable {
 					},
 					renderOptions: {
 						after: {
-							contentText: this.mode.get() === 'explore' ? 'Ask to explore your codebase' : 'Ask to edit your codebase',
+							contentText: placeholder,
 							color: transparentForeground?.toString(),
 						}
 					}
@@ -483,6 +513,7 @@ export class AideCommandPaletteWidget extends Disposable {
 	hide(): void {
 		this.isVisible = false;
 		dom.hide(this.container);
+		this.panel.hide();
 	}
 
 
@@ -545,7 +576,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			this.isPanelVisible = true;
 		}
 
-		this.panel.show(this.viewModel?.model.request?.message, this.requestInProgress.get() ?? false);
+		this.panel.show(undefined, this.requestInProgress.get() ?? false);
 
 		this.setPanelPosition();
 	}
@@ -573,7 +604,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.requestIsActive.set(false);
 		this.panel.hide();
 		this.isPanelVisible = false;
-		this.onDidChangeItems();
 		this.contextElement.classList.remove('active');
 	}
 }

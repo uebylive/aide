@@ -102,11 +102,13 @@ export class AideCommandPalettePanel extends Disposable {
 		return this.list.contentHeight + 36;
 	}
 
-	show(headerText: string = 'New request', isLoading: boolean): void {
+	show(headerText: string | undefined, isLoading: boolean): void {
 
-		this.headerText.textContent = headerText;
+		if (headerText) {
+			this.headerText.textContent = headerText;
+		}
 
-		dom.show(this.header);
+		dom.show(this.container);
 
 		if (isLoading) {
 			if (!this.loadingSpinner) {
@@ -290,21 +292,21 @@ export class AideCommandPalettePanel extends Disposable {
 	}
 
 	hide(): void {
-		if (!this.isVisible || !this.list) {
-			return; // already hidden
+		if (this.list) {
+			// Clear list
+			this.list.splice(0, this.viewModel.length);
 		}
 
 		this.userFocusIndex = undefined;
-		dom.hide(this.header);
+		dom.hide(this.container);
 
 		// Hide
 		this.isVisible = false;
 
-		// Clear list
-		this.list.splice(0, this.viewModel.length);
 
 		// Clear view model
 		this.viewModel = [];
+		this.render();
 	}
 
 

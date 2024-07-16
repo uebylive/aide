@@ -309,6 +309,7 @@ export class RejectAction extends Action2 {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const probeService = accessor.get(IAideProbeService);
 		commandPaletteService.widget?.clear();
+		commandPaletteService.hidePalette();
 		probeService.rejectCodeEdits();
 	}
 }
@@ -343,6 +344,7 @@ export class AcceptAction extends Action2 {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const probeService = accessor.get(IAideProbeService);
 		commandPaletteService.widget?.clear();
+		commandPaletteService.hidePalette();
 		probeService.acceptCodeEdits();
 	}
 }

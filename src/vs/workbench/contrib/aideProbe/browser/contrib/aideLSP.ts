@@ -29,7 +29,7 @@ export class AideLSP {
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IStorageService private readonly storageService: IStorageService,
-		@IConfigurationService private readonly configurationService: IConfigurationService
+		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 
 		this.isActive = CONTEXT_PROBE_IS_LSP_ACTIVE.bindTo(this.contextKeyService);
@@ -64,13 +64,12 @@ export class AideLSP {
 
 		const languageId = model.getLanguageId();
 
+		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
+		this.isActive.set(isReferenceProviderActive);
+
 		if (languageId === 'plaintext' || languageId === 'json' || languageId === 'markdown') {
 			return;
 		}
-
-		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
-
-		this.isActive.set(isReferenceProviderActive);
 
 		if (!isReferenceProviderActive) {
 			this.notifiyLSPIsNotActive(languageId);
