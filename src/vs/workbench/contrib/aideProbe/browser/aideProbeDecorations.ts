@@ -5,19 +5,36 @@
 
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { themeColorFromId } from 'vs/base/common/themables';
 import { assertType } from 'vs/base/common/types';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { IModelDeltaDecoration } from 'vs/editor/common/model';
+import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeGoToDefinition, IAideProbeCompleteEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeCompleteEditEvent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 
 const editDecorationOptions = ModelDecorationOptions.register({
-	description: 'aide-probe-edit-modified-line',
+	description: 'aide-probe-edit-modified',
 	className: 'inline-chat-inserted-range',
+	stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+});
+
+const editLineDecorationOptions = ModelDecorationOptions.register({
+	description: 'aide-probe-edit-modified-line',
+	className: 'inline-chat-inserted-range-linehighlight',
+	isWholeLine: true,
+	overviewRuler: {
+		position: OverviewRulerLane.Full,
+		color: themeColorFromId(overviewRulerInlineChatDiffInserted),
+	},
+	minimap: {
+		position: MinimapPosition.Inline,
+		color: themeColorFromId(minimapInlineChatDiffInserted),
+	}
 });
 
 const goToDefinitionDecorationOptions = ModelDecorationOptions.register({
@@ -46,12 +63,11 @@ export class AideProbeDecorationService extends Disposable {
 
 		this._register(this.aideProbeService.onNewEvent((event) => {
 			if (event.kind === 'completeEdit') {
-				this.handleEditEvent(event);
+				this.handleEditCompleteEvent(event);
 			} else if (event.kind === 'goToDefinition') {
 				this.handleGoToDefinitionEvent(event);
 			}
 		}));
-
 
 		this._register(this.aideProbeService.onReview(() => {
 			this.removeDecorations();
@@ -64,7 +80,7 @@ export class AideProbeDecorationService extends Disposable {
 		*/
 	}
 
-	private async handleEditEvent(event: IAideProbeCompleteEditEvent) {
+	private async handleEditCompleteEvent(event: IAideProbeCompleteEditEvent) {
 		const currentSession = this.aideProbeService.getSession();
 		if (!currentSession) {
 			return;
@@ -89,7 +105,10 @@ export class AideProbeDecorationService extends Disposable {
 				if (!data) {
 					const decorationIds: string[] = [];
 					for (let i = 0; i < hunkRanges.length; i++) {
-						decorationIds.push(decorationsAccessor.addDecoration(hunkRanges[i], editDecorationOptions));
+						decorationIds.push(decorationsAccessor.addDecoration(hunkRanges[i], i === 0
+							? editLineDecorationOptions
+							: editDecorationOptions
+						));
 					}
 
 					const remove = () => {
@@ -125,20 +144,6 @@ export class AideProbeDecorationService extends Disposable {
 				}
 			}
 		});
-		// const newLines = new Set<number>();
-		// for (const edit of edits) {
-		// 	LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
-		// }
-		// const existingRanges = progressiveEditingDecorations!.getRanges().map(LineRange.fromRange);
-		// for (const existingRange of existingRanges) {
-		// 	existingRange.forEach(line => newLines.delete(line));
-		// }
-		// const newDecorations: IModelDeltaDecoration[] = [];
-		// for (const line of newLines) {
-		// 	newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: editDecorationOptions });
-		// }
-
-		// progressiveEditingDecorations!.append(newDecorations);
 	}
 
 
@@ -149,6 +154,33 @@ export class AideProbeDecorationService extends Disposable {
 	}
 
 	/*
+	private async handleEditStartEvent(event: IAideProbeStartEditEvent) {
+		const { edits, resource } = event;
+		let progressiveEditingDecorations = this.progressiveEditingDecorations.get(resource.toString());
+		if (!progressiveEditingDecorations) {
+			const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
+			if (editor && !this.progressiveEditingDecorations.has(resource.toString())) {
+				this.progressiveEditingDecorations.set(resource.toString(), editor.createDecorationsCollection());
+			}
+			progressiveEditingDecorations = this.progressiveEditingDecorations.get(resource.toString());
+		}
+
+		const newLines = new Set<number>();
+		for (const edit of edits) {
+			LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
+		}
+		const existingRanges = progressiveEditingDecorations!.getRanges().map(LineRange.fromRange);
+		for (const existingRange of existingRanges) {
+			existingRange.forEach(line => newLines.delete(line));
+		}
+		const newDecorations: IModelDeltaDecoration[] = [];
+		for (const line of newLines) {
+			newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: editLineDecorationOptions });
+		}
+
+		progressiveEditingDecorations!.append(newDecorations);
+	}
+
 	private updateRegisteredDecorationTypes() {
 		this.codeEditorService.removeDecorationType(probeDefinitionDecorationClass);
 
