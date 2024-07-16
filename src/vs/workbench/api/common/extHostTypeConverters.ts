@@ -2977,7 +2977,7 @@ export namespace AideProbeResponseTextEditPreviewPart {
 		return {
 			kind: 'textEditPreview',
 			reference: part.reference,
-			ranges: part.ranges.map(r => Range.from(r))
+			range: Range.from(part.range)
 		};
 	}
 }

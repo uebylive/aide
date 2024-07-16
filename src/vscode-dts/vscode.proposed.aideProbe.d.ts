@@ -56,7 +56,7 @@ declare module 'vscode' {
 		/**
 		 * Where edits will be applied
 		 */
-		readonly ranges: Range[];
+		readonly range: Range;
 	}
 
 	export interface AideProbeResponseTextEdit {

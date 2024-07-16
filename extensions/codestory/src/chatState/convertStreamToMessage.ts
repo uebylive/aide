@@ -267,17 +267,17 @@ export const reportAgentEventsToChat = async (
 	}
 
 	// Temp code: Create a new file to record logs
-	let logStream: fs.WriteStream | undefined;
-	const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
-	const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-	if (extensionRoot && workspaceRoot) {
-		const logPath = path.join(extensionRoot, 'src', 'completions', 'providers', 'dummydata.json');
-		logStream = fs.createWriteStream(logPath, { flags: 'w' });
-	}
-	logStream?.write('[');
+	// let logStream: fs.WriteStream | undefined;
+	// const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+	// const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+	// if (extensionRoot && workspaceRoot) {
+	// 	const logPath = path.join(extensionRoot, 'src', 'completions', 'providers', 'dummydata.json');
+	// 	logStream = fs.createWriteStream(logPath, { flags: 'w' });
+	// }
+	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
-		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 50));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
@@ -289,7 +289,7 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
-		logStream?.write(JSON.stringify(event) + ',\n');
+		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
@@ -306,18 +306,6 @@ export const reportAgentEventsToChat = async (
 						name: symbolEvent.Probe.symbol_identifier.symbol_name,
 					},
 					query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
-				});
-			} else if (symbolEventKey === 'Edit') {
-				response.codeEditPreview({
-					reference: {
-						uri: vscode.Uri.file(symbolEvent.Edit.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: symbolEvent.Edit.symbol_identifier.symbol_name
-					},
-					ranges: symbolEvent.Edit.symbols.map(symbolToEdit =>
-						new vscode.Range(
-							new vscode.Position(symbolToEdit.range.startPosition.line, symbolToEdit.range.startPosition.character),
-							new vscode.Position(symbolToEdit.range.endPosition.line, symbolToEdit.range.endPosition.character)
-						))
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
@@ -342,10 +330,10 @@ export const reportAgentEventsToChat = async (
 							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
 							name: symbol_identifier.symbol_name
 						},
-						ranges: [new vscode.Range(
+						range: new vscode.Range(
 							new vscode.Position(editEvent.RangeSelectionForEdit.range.startPosition.line, editEvent.RangeSelectionForEdit.range.startPosition.character),
 							new vscode.Position(editEvent.RangeSelectionForEdit.range.endPosition.line, editEvent.RangeSelectionForEdit.range.endPosition.character)
-						)]
+						)
 					});
 				}
 			} else if (symbolEventSubStep.Probe) {
@@ -391,6 +379,6 @@ export const reportAgentEventsToChat = async (
 		}
 	}
 
-	logStream?.write(']');
-	logStream?.end();
+	// logStream?.write(']');
+	// logStream?.end();
 };

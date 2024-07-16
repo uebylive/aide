@@ -17,8 +17,10 @@ import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } fro
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
+import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -80,7 +82,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	constructor(
-		@IEditorService private readonly editorService: IEditorService,
+		@IEditorService private readonly _editorService: IEditorService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
@@ -176,7 +178,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					text: workspaceEdit.textEdit.text
 				};
 
-				const editor = this.editorService.activeTextEditorControl;
+				const editor = this._editorService.activeTextEditorControl;
 				const isCurrentFileBeingEdited = editor && isCodeEditor(editor) && editor.getModel()?.uri.path === workspaceEdit.resource.path;
 				if (isCurrentFileBeingEdited) {
 					editor.updateOptions({ readOnly: true });
@@ -184,11 +186,20 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 				codeEdits.hunkData.ignoreTextModelNChanges = true;
 				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-					this._onNewEvent.fire({ kind: 'edit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
+					this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
 				this._textFileService.save(codeEdits.textModelN.uri);
+
+				const sha1 = new DefaultModelSHA1Computer();
+				const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
+					? sha1.computeSHA1(codeEdits.textModel0)
+					: generateUuid();
+				const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
+				const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+				codeEdits.hunkData.recompute(editState, diff);
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
+				this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
 				if (isCurrentFileBeingEdited) {
 					editor.updateOptions({ readOnly: false });

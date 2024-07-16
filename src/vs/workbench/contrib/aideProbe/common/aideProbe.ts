@@ -54,7 +54,7 @@ export interface IAideProbeGoToDefinition {
 export interface IAideProbeTextEditPreview {
 	kind: 'textEditPreview';
 	reference: IReferenceByName;
-	ranges: Range[];
+	range: Range;
 }
 
 export interface IAideProbeTextEdit {
@@ -106,12 +106,17 @@ export interface IAideProbeModel {
 	revertEdits(): void;
 }
 
-export interface IAideProbeEditEvent {
-	kind: 'edit';
+export interface IAideProbeStartEditEvent {
+	kind: 'startEdit';
 	resource: URI;
 	edits: IValidEditOperation[];
 }
 
-export type IAideProbeResponseEvent = IAideProbeEditEvent | IAideProbeGoToDefinition | IAideProbeBreakdownContent;
+export interface IAideProbeCompleteEditEvent {
+	kind: 'completeEdit';
+	resource: URI;
+}
+
+export type IAideProbeResponseEvent = IAideProbeStartEditEvent | IAideProbeCompleteEditEvent | IAideProbeGoToDefinition | IAideProbeBreakdownContent;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';

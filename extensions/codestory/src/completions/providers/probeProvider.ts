@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
-import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import postHogClient from '../../posthog/client';
 import { applyEdits } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
@@ -170,14 +170,16 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 
+		/*
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 		if (request.editMode) {
 			probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
 		} else {
 			probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
 		}
+		*/
 
-		/* // Use dummy data: Start
+		// Use dummy data: Start
 		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
 		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
 		if (!extensionRoot || !workspaceRoot) {
@@ -204,7 +206,7 @@ export class AideProbeProvider implements vscode.Disposable {
 				yield item;
 			}
 		})(jsonArr);
-		// Use dummy data: End */
+		// Use dummy data: End
 
 		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, _token, this._sideCarClient);
 

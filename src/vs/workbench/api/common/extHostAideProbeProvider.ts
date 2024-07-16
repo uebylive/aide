@@ -53,7 +53,7 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				codeEditPreview(value) {
-					const part = new extHostTypes.AideProbeResponseTextEditPreviewPart(value.reference, value.ranges);
+					const part = new extHostTypes.AideProbeResponseTextEditPreviewPart(value.reference, value.range);
 					const dto = typeConvert.AideProbeResponseTextEditPreviewPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},

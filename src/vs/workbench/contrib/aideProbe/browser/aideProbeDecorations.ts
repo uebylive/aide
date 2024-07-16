@@ -5,29 +5,19 @@
 
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
-import { themeColorFromId } from 'vs/base/common/themables';
+import { assertType } from 'vs/base/common/types';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { LineRange } from 'vs/editor/common/core/lineRange';
-import { Range } from 'vs/editor/common/core/range';
+import { Position } from 'vs/editor/common/core/position';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
+import { IModelDeltaDecoration } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeEditEvent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { IAideProbeGoToDefinition, IAideProbeCompleteEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 const editDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-edit-modified-line',
-	className: 'inline-chat-inserted-range-linehighlight',
-	isWholeLine: true,
-	overviewRuler: {
-		position: OverviewRulerLane.Full,
-		color: themeColorFromId(overviewRulerInlineChatDiffInserted),
-	},
-	minimap: {
-		position: MinimapPosition.Inline,
-		color: themeColorFromId(minimapInlineChatDiffInserted),
-	}
+	className: 'inline-chat-inserted-range',
 });
 
 const goToDefinitionDecorationOptions = ModelDecorationOptions.register({
@@ -35,11 +25,18 @@ const goToDefinitionDecorationOptions = ModelDecorationOptions.register({
 	className: 'aide-probe-go-to-definition'
 });
 
+type HunkDisplayData = {
+	decorationIds: string[];
+	hunk: HunkInformation;
+	position: Position;
+	remove(): void;
+};
+
 export class AideProbeDecorationService extends Disposable {
 	static readonly ID = 'workbench.contrib.aideProbeDecorationService';
 
+	private readonly _hunkDisplayData = new Map<HunkInformation, HunkDisplayData>();
 	private goToDefinitionDecorations: Map<string, IEditorDecorationsCollection> = new Map();
-	private editDecorations: Map<string, IEditorDecorationsCollection> = new Map();
 
 	constructor(
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
@@ -48,7 +45,7 @@ export class AideProbeDecorationService extends Disposable {
 		super();
 
 		this._register(this.aideProbeService.onNewEvent((event) => {
-			if (event.kind === 'edit') {
+			if (event.kind === 'completeEdit') {
 				this.handleEditEvent(event);
 			} else if (event.kind === 'goToDefinition') {
 				this.handleGoToDefinitionEvent(event);
@@ -67,38 +64,88 @@ export class AideProbeDecorationService extends Disposable {
 		*/
 	}
 
-	private async handleEditEvent(event: IAideProbeEditEvent) {
-		const { edits, resource } = event;
-		let progressiveEditingDecorations = this.editDecorations.get(resource.toString());
-		if (!progressiveEditingDecorations) {
-			const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
-			if (editor && !this.editDecorations.has(resource.toString())) {
-				this.editDecorations.set(resource.toString(), editor.createDecorationsCollection());
+	private async handleEditEvent(event: IAideProbeCompleteEditEvent) {
+		const currentSession = this.aideProbeService.getSession();
+		if (!currentSession) {
+			return;
+		}
+
+		const allEdits = currentSession.response?.codeEdits;
+		const fileEdits = allEdits?.get(event.resource.toString());
+		if (!fileEdits) {
+			return;
+		}
+
+		const { resource } = event;
+		const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
+
+		editor?.changeDecorations(decorationsAccessor => {
+			const keysNow = new Set(this._hunkDisplayData.keys());
+			for (const hunkData of fileEdits.hunkData.getInfo()) {
+				keysNow.delete(hunkData);
+
+				const hunkRanges = hunkData.getRangesN();
+				let data = this._hunkDisplayData.get(hunkData);
+				if (!data) {
+					const decorationIds: string[] = [];
+					for (let i = 0; i < hunkRanges.length; i++) {
+						decorationIds.push(decorationsAccessor.addDecoration(hunkRanges[i], editDecorationOptions));
+					}
+
+					const remove = () => {
+						editor.changeDecorations(decorationsAccessor => {
+							assertType(data);
+							for (const decorationId of data.decorationIds) {
+								decorationsAccessor.removeDecoration(decorationId);
+							}
+							data.decorationIds = [];
+						});
+					};
+
+					data = {
+						decorationIds,
+						hunk: hunkData,
+						position: hunkRanges[0].getStartPosition().delta(-1),
+						remove
+					};
+					this._hunkDisplayData.set(hunkData, data);
+				} else if (hunkData.getState() !== HunkState.Pending) {
+					data.remove();
+				} else {
+					const modifiedRangeNow = hunkRanges[0];
+					data.position = modifiedRangeNow.getStartPosition().delta(-1);
+				}
 			}
-			progressiveEditingDecorations = this.editDecorations.get(resource.toString());
-		}
 
-		const newLines = new Set<number>();
-		for (const edit of edits) {
-			LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
-		}
-		const existingRanges = progressiveEditingDecorations!.getRanges().map(LineRange.fromRange);
-		for (const existingRange of existingRanges) {
-			existingRange.forEach(line => newLines.delete(line));
-		}
-		const newDecorations: IModelDeltaDecoration[] = [];
-		for (const line of newLines) {
-			newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: editDecorationOptions });
-		}
+			for (const key of keysNow) {
+				const data = this._hunkDisplayData.get(key);
+				if (data) {
+					this._hunkDisplayData.delete(key);
+					data.remove();
+				}
+			}
+		});
+		// const newLines = new Set<number>();
+		// for (const edit of edits) {
+		// 	LineRange.fromRange(edit.range).forEach(line => newLines.add(line));
+		// }
+		// const existingRanges = progressiveEditingDecorations!.getRanges().map(LineRange.fromRange);
+		// for (const existingRange of existingRanges) {
+		// 	existingRange.forEach(line => newLines.delete(line));
+		// }
+		// const newDecorations: IModelDeltaDecoration[] = [];
+		// for (const line of newLines) {
+		// 	newDecorations.push({ range: new Range(line, 1, line, Number.MAX_VALUE), options: editDecorationOptions });
+		// }
 
-		progressiveEditingDecorations!.append(newDecorations);
+		// progressiveEditingDecorations!.append(newDecorations);
 	}
 
 
 	private removeDecorations() {
-		for (const decorations of this.editDecorations.values()) {
-			decorations.clear();
-		}
+		// for (const decorations of this.editDecorations.values()) {
+		// 	decorations.clear();
+		// }
 	}
 
 	/*

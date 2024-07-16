@@ -4765,10 +4765,10 @@ export class AideProbeGoToDefinitionPart {
 
 export class AideProbeResponseTextEditPreviewPart {
 	reference: vscode.CodeReferenceByName;
-	ranges: vscode.Range[];
-	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.Range | vscode.Range[]) {
+	range: vscode.Range;
+	constructor(reference: vscode.CodeReferenceByName, range: vscode.Range) {
 		this.reference = reference;
-		this.ranges = Array.isArray(ranges) ? ranges : [ranges];
+		this.range = range;
 	}
 }
 
