@@ -41,7 +41,7 @@ import { IViewBadge } from 'vs/workbench/common/views';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeTextEditPreview, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
@@ -2968,16 +2968,6 @@ export namespace AideChatResponseBreakdownPart {
 			query: part.query && MarkdownString.from(part.query),
 			reason: part.reason && MarkdownString.from(part.reason),
 			response: part.response && MarkdownString.from(part.response)
-		};
-	}
-}
-
-export namespace AideProbeResponseTextEditPreviewPart {
-	export function from(part: vscode.AideProbeResponseTextEditPreview): Dto<IAideProbeTextEditPreview> {
-		return {
-			kind: 'textEditPreview',
-			reference: part.reference,
-			range: Range.from(part.range)
 		};
 	}
 }

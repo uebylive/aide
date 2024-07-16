@@ -21,7 +21,7 @@ import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -68,12 +68,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	private readonly _goToDefinitions: IAideProbeGoToDefinition[] = [];
 	public get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinition> {
 		return this._goToDefinitions;
-	}
-
-	private readonly _codeEditsPreviewBySymbol: Map<string, IAideProbeTextEditPreview[]> = new Map();
-	private readonly _codeEditsPreview: IAideProbeTextEditPreview[] = [];
-	public get codeEditsPreview(): ReadonlyArray<IAideProbeTextEditPreview> {
-		return this._codeEditsPreview;
 	}
 
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
@@ -126,16 +120,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		}
 
 		this._goToDefinitions.push(goToDefinition);
-	}
-
-	applyCodeEditPreview(codeEditPreview: IAideProbeTextEditPreview) {
-		const mapKey = `${codeEditPreview.reference.uri.toString()}:${codeEditPreview.reference.name}`;
-		if (this._codeEditsPreviewBySymbol.has(mapKey)) {
-			this._codeEditsPreviewBySymbol.get(mapKey)!.push(codeEditPreview);
-		} else {
-			this._codeEditsPreviewBySymbol.set(mapKey, [codeEditPreview]);
-			this._codeEditsPreview.push(codeEditPreview);
-		}
 	}
 
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
@@ -272,9 +256,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				break;
 			case 'goToDefinition':
 				this._response.applyGoToDefinition(progress);
-				break;
-			case 'textEditPreview':
-				this._response.applyCodeEditPreview(progress);
 				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);

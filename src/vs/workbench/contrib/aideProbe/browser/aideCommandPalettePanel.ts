@@ -8,21 +8,21 @@ import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/lis
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
+import { relativePath } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { FileKind } from 'vs/platform/files/common/files';
+import { URI } from 'vs/base/common/uri';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { FileKind } from 'vs/platform/files/common/files';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { relativePath } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
 
@@ -32,11 +32,9 @@ interface ChangeSymbolInfoEvent {
 }
 
 export class AideCommandPalettePanel extends Disposable {
-
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 	private userFocusIndex: number | undefined;
-
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
 	container: HTMLElement;
@@ -44,11 +42,13 @@ export class AideCommandPalettePanel extends Disposable {
 	private headerText: HTMLElement;
 	private loadingSpinner: HTMLElement | undefined;
 	private actionsToolbar: MenuWorkbenchToolBar;
+	private emptyListPlaceholder: HTMLElement;
+
 	private listContainer: HTMLElement;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
-	private emptyListPlaceholder: HTMLElement;
 	private renderer: SymbolInfoRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
+
 	maxItems: number = 8;
 
 	private isVisible: boolean | undefined;
@@ -492,7 +492,6 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			const rowResource = $('div.symbol-info-resource');
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
 			label.element.style.display = 'flex';
-
 
 			const workspaceFolder = this.contextService.getWorkspace().folders[0];
 			const workspaceFolderUri = workspaceFolder.uri;

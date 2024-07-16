@@ -13,7 +13,7 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeBreakdownContent, IAideProbeModel, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
@@ -61,11 +61,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._breakdowns;
 	}
 
-	private _codeEditPreviews: IAideProbeCodeEditPreviewViewModel[] = [];
-	get codeEditPreviews(): ReadonlyArray<IAideProbeCodeEditPreviewViewModel> {
-		return this._codeEditPreviews;
-	}
-
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this.breakdowns.filter(b => !this._filter || b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase()));
 	}
@@ -85,16 +80,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
-				return viewItem;
-			}) ?? []);
-
-			this._codeEditPreviews = await Promise.all(_model.response?.codeEditsPreview.map(async (item) => {
-				let reference = this._references.get(item.reference.uri.toString());
-				if (!reference) {
-					reference = await this.textModelResolverService.createModelReference(item.reference.uri);
-				}
-
-				const viewItem = this._register(this.instantiationService.createInstance(AideProbeCodeEditPreviewViewModel, item, reference));
 				return viewItem;
 			}) ?? []);
 
@@ -177,69 +162,6 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		try {
 			const symbols = (await this.outlineModelService.getOrCreate(this.reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
 			const symbol = symbols.find(s => s.name === this.name);
-			if (!symbol) {
-				return;
-			}
-
-			return symbol;
-		} catch (e) {
-			return;
-		}
-	}
-}
-
-export class AideProbeCodeEditPreviewViewModel extends Disposable implements IAideProbeCodeEditPreviewViewModel {
-	get uri() {
-		return this._codeEditPreview.reference.uri;
-	}
-
-	get range() {
-		return this._codeEditPreview.range;
-	}
-
-	private _isRendered: boolean = false;
-	get isRendered() {
-		return this._isRendered;
-	}
-
-	set isRendered(value: boolean) {
-		this._isRendered = value;
-	}
-
-	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
-	private _symbol: DocumentSymbol | undefined;
-	get symbol() {
-		return this._getSymbol();
-	}
-
-	private async _getSymbol(): Promise<DocumentSymbol | undefined> {
-		if (!this._symbol && this._symbolResolver) {
-			this._symbol = await this._symbolResolver();
-		}
-
-		return this._symbol;
-	}
-
-	constructor(
-		private readonly _codeEditPreview: IAideProbeTextEditPreview,
-		private readonly reference: IReference<IResolvedTextEditorModel>,
-		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
-	) {
-		super();
-
-		if (_codeEditPreview.reference.uri && _codeEditPreview.reference.name) {
-			this._symbolResolver = async () => {
-				this._symbol = await this.resolveSymbol();
-				return this._symbol;
-			};
-			this._symbolResolver();
-		}
-	}
-
-	async resolveSymbol(): Promise<DocumentSymbol | undefined> {
-		try {
-			const symbols = (await this.outlineModelService.getOrCreate(this.reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
-			const symbol = symbols.find(s => s.name === this._codeEditPreview.reference.name);
 			if (!symbol) {
 				return;
 			}

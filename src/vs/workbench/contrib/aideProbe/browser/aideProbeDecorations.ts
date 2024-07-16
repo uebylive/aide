@@ -87,7 +87,7 @@ export class AideProbeDecorationService extends Disposable {
 		}
 
 		const { resource } = event;
-		const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
+		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
 
 		editor?.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
@@ -150,7 +150,7 @@ export class AideProbeDecorationService extends Disposable {
 		const { uri: resource } = event;
 		let progressiveGTDDecorations = this.goToDefinitionDecorations.get(resource.toString());
 		if (!progressiveGTDDecorations) {
-			const editor = await this.codeEditorService.openCodeEditor({ resource }, null);
+			const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
 			if (editor && !this.goToDefinitionDecorations.has(resource.toString())) {
 				this.goToDefinitionDecorations.set(resource.toString(), editor.createDecorationsCollection());
 			}

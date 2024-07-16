@@ -4763,15 +4763,6 @@ export class AideProbeGoToDefinitionPart {
 	}
 }
 
-export class AideProbeResponseTextEditPreviewPart {
-	reference: vscode.CodeReferenceByName;
-	range: vscode.Range;
-	constructor(reference: vscode.CodeReferenceByName, range: vscode.Range) {
-		this.reference = reference;
-		this.range = range;
-	}
-}
-
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];

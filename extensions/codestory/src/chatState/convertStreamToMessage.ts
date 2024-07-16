@@ -325,15 +325,11 @@ export const reportAgentEventsToChat = async (
 			} else if (symbolEventSubStep.Edit) {
 				const editEvent = symbolEventSubStep.Edit;
 				if (editEvent.RangeSelectionForEdit) {
-					response.codeEditPreview({
+					response.breakdown({
 						reference: {
 							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
 							name: symbol_identifier.symbol_name
-						},
-						range: new vscode.Range(
-							new vscode.Position(editEvent.RangeSelectionForEdit.range.startPosition.line, editEvent.RangeSelectionForEdit.range.startPosition.character),
-							new vscode.Position(editEvent.RangeSelectionForEdit.range.endPosition.line, editEvent.RangeSelectionForEdit.range.endPosition.character)
-						)
+						}
 					});
 				}
 			} else if (symbolEventSubStep.Probe) {

@@ -47,18 +47,6 @@ declare module 'vscode' {
 		readonly thinking: string;
 	}
 
-	export interface AideProbeResponseTextEditPreview {
-		/**
-		 * Code reference relevant to this breakdown.
-		*/
-		readonly reference: CodeReferenceByName;
-
-		/**
-		 * Where edits will be applied
-		 */
-		readonly range: Range;
-	}
-
 	export interface AideProbeResponseTextEdit {
 		/**
 		 * Where edits will be applied
@@ -70,7 +58,6 @@ declare module 'vscode' {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		location(value: AideProbeGoToDefinition): void;
-		codeEditPreview(value: AideProbeResponseTextEditPreview): void;
 		codeEdit(value: AideProbeResponseTextEdit): Thenable<void>;
 	}
 

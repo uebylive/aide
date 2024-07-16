@@ -51,12 +51,6 @@ export interface IAideProbeGoToDefinition {
 	thinking: string;
 }
 
-export interface IAideProbeTextEditPreview {
-	kind: 'textEditPreview';
-	reference: IReferenceByName;
-	range: Range;
-}
-
 export interface IAideProbeTextEdit {
 	kind: 'textEdit';
 	edits: WorkspaceEdit;
@@ -66,7 +60,6 @@ export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
-	| IAideProbeTextEditPreview
 	| IAideProbeTextEdit;
 
 export interface IAideProbeResponseErrorDetails {
@@ -87,7 +80,6 @@ export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
-	readonly codeEditsPreview: ReadonlyArray<IAideProbeTextEditPreview>;
 }
 
 export interface IAideProbeModel {
