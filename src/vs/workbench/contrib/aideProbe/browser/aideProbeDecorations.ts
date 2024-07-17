@@ -6,16 +6,19 @@
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { themeColorFromId } from 'vs/base/common/themables';
-import { assertType } from 'vs/base/common/types';
+import { assertAllDefined, assertType } from 'vs/base/common/types';
+import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeCompleteEditEvent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const editDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-edit-modified',
@@ -56,6 +59,7 @@ export class AideProbeDecorationService extends Disposable {
 	private goToDefinitionDecorations: Map<string, IEditorDecorationsCollection> = new Map();
 
 	constructor(
+		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 	) {
@@ -68,9 +72,22 @@ export class AideProbeDecorationService extends Disposable {
 				this.handleGoToDefinitionEvent(event);
 			}
 		}));
-
 		this._register(this.aideProbeService.onReview(() => {
 			this.removeDecorations();
+		}));
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			const activeEditor = this.editorService.activeTextEditorControl;
+			if (isCodeEditor(activeEditor)) {
+				let uri = activeEditor.getModel()?.uri;
+				let currentSession = this.aideProbeService.getSession();
+				[uri, currentSession] = assertAllDefined(uri, currentSession);
+
+				const allEdits = currentSession.response?.codeEdits;
+				const fileEdits = allEdits?.get(uri.toString());
+				assertType(fileEdits);
+
+				this.updateDecorations(activeEditor, fileEdits);
+			}
 		}));
 	}
 
@@ -88,8 +105,12 @@ export class AideProbeDecorationService extends Disposable {
 
 		const { resource } = event;
 		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+		assertType(editor);
+		this.updateDecorations(editor, fileEdits);
+	}
 
-		editor?.changeDecorations(decorationsAccessor => {
+	private updateDecorations(editor: ICodeEditor, fileEdits: IAideProbeEdits) {
+		editor.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
 			for (const hunkData of fileEdits.hunkData.getInfo()) {
 				keysNow.delete(hunkData);
