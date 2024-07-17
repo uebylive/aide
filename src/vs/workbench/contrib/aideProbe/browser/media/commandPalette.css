@@ -175,11 +175,20 @@
 
 .symbol-info-diff-stat-container {
 	margin-top: 6px;
+	display: flex;
+	flex-direction: column;
 }
 
 .symbol-info-diff-stat {
 	display: flex;
+	justify-content: end;
 	gap: 2px;
+}
+
+.symbol-info-diff-stat-description {
+	margin-top: 8px;
+	font-size: 0.8em;
+	color: var(--vscode-disabledForeground);
 }
 
 .symbol-info-diff-stat-box {

@@ -368,19 +368,15 @@ class SymbolInfoDiffStat extends Disposable {
 	private diffStat: DiffStat;
 	private size: number = 5;
 	private readonly container: HTMLElement;
-	private readonly changes: FileChanges;
 
 	constructor(
 		container: HTMLElement,
-		changes: FileChanges,
 		diffStat: DiffStat,
-		size: number = 5,
+		private readonly hunkCount: number = 0
 	) {
 		super();
 		this.container = container;
 		this.diffStat = diffStat;
-		this.size = size;
-		this.changes = changes;
 		this.render();
 	}
 
@@ -410,9 +406,8 @@ class SymbolInfoDiffStat extends Disposable {
 		}
 
 		outer.appendChild(statContainer);
-		const changesDescription = $('.symbol-info-diff-stat-description.sr-only');
-		const { added, removed } = this.changes;
-		changesDescription.textContent = `${added + removed} changed ${added} addition & ${removed} deletion`;
+		const changesDescription = $('.symbol-info-diff-stat-description');
+		changesDescription.textContent = `${this.hunkCount} change${this.hunkCount === 1 ? '' : 's'}`;
 		outer.appendChild(changesDescription);
 		this.container.appendChild(outer);
 	}
@@ -505,7 +500,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 				return acc;
 			}, { added: 0, removed: 0 });
 			const diffStat = calculateDiffstat(changes.added + changes.removed, changes.added, changes.removed);
-			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffStat));
+			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, diffStat, element.edits.length));
 		}
 
 		this.updateItemHeight(templateData);
