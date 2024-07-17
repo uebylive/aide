@@ -119,7 +119,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		applyEdits(request, this._openResponseStream);
 	}
 
-	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
 		if (!this._editorUrl) {
 			return;
 		}
@@ -208,7 +208,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		})(jsonArr);
 		// Use dummy data: End
 
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, _token, this._sideCarClient);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({

@@ -276,7 +276,11 @@ export class CancelAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		const probeService = accessor.get(IAideProbeService);
+
+		probeService.rejectCodeEdits();
 		commandPaletteService.cancelRequest();
+		commandPaletteService.widget?.clear();
 	}
 }
 
@@ -286,7 +290,7 @@ export class RejectAction extends Action2 {
 	constructor() {
 		super({
 			id: RejectAction.ID,
-			title: localize2('aideProbe.reject.label', "Reject"),
+			title: localize2('aideProbe.rejectAll.label', "Reject All"),
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
@@ -322,7 +326,7 @@ export class AcceptAction extends Action2 {
 	constructor() {
 		super({
 			id: AcceptAction.ID,
-			title: localize2('aideProbe.accept.label', "Accept"),
+			title: localize2('aideProbe.acceptAll.label', "Accept All"),
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,

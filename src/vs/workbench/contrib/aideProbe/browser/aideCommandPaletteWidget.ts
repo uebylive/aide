@@ -409,12 +409,11 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 	private layoutInputs() {
-		const itemsCount = this.submitToolbar.getItemsLength();
 		const submitToolbarWidth = this.submitToolbar.getItemsWidth();
 
 		const currentWindow = dom.getWindow(this.layoutService.activeContainer);
 		const maxWidth = Math.min(this.width, currentWindow.innerWidth - 100);
-		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - (Math.min(0, itemsCount - 1) * 6) - 8 });
+		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - 8 });
 	}
 
 	private _getAriaLabel(): string {
