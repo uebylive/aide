@@ -47,11 +47,11 @@ export class AideLSP {
 				this.resetNotificationState();
 			}
 		});
-
 	}
 
 	private checkForLSP() {
 		const editor = this.editorService.activeTextEditorControl;
+		console.log(editor);
 
 		if (!isCodeEditor(editor)) {
 			return;
@@ -64,13 +64,12 @@ export class AideLSP {
 
 		const languageId = model.getLanguageId();
 
-		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
-		console.log(languageId, isReferenceProviderActive);
-		this.isActive.set(isReferenceProviderActive);
-
 		if (languageId === 'plaintext' || languageId === 'json' || languageId === 'markdown') {
 			return;
 		}
+
+		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
+		this.isActive.set(isReferenceProviderActive);
 
 		if (!isReferenceProviderActive) {
 			this.notifiyLSPIsNotActive(languageId);

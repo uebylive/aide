@@ -60,7 +60,6 @@ const placeholderDecorationType = 'command-palette-detail';
 
 export class AideCommandPaletteWidget extends Disposable {
 	private isVisible = false;
-	private isLSPActive: IContextKey<boolean>;
 	private inputEditorHeight = 0;
 
 	private isPanelVisible = false;
@@ -157,7 +156,6 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 		this.requestIsActive = CONTEXT_PROBE_IS_ACTIVE.bindTo(contextKeyService);
-		this.isLSPActive = CONTEXT_PROBE_IS_LSP_ACTIVE.bindTo(contextKeyService);
 
 		this._container = container;
 
@@ -398,7 +396,7 @@ export class AideCommandPaletteWidget extends Disposable {
 				placeholder = 'Ask to edit your codebase';
 			}
 
-			if (!this.isLSPActive.get()) {
+			if (!CONTEXT_PROBE_IS_LSP_ACTIVE.getValue(this.contextKeyService)) {
 				const editor = this.editorService.activeTextEditorControl;
 				if (!isCodeEditor(editor)) {
 					return;
