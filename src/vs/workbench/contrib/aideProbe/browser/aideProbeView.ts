@@ -5,12 +5,13 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
-import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
+import { DisposableStore } from 'vs/base/common/lifecycle';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { IDimension } from 'vs/editor/common/core/dimension';
+import { Event } from 'vs/base/common/event';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -23,6 +24,8 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
+import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
 
@@ -31,9 +34,14 @@ export class AideProbeViewPane extends ViewPane {
 	private resultWrapper!: HTMLElement;
 	private responseWrapper!: HTMLElement;
 	private scrollableElement!: DomScrollableElement;
+	private viewModel: AideProbeViewModel | undefined;
 	private dimensions: IDimension | undefined;
 
 	private readonly markdownRenderer: MarkdownRenderer;
+
+	private readonly viewModelDisposables = this._register(new DisposableStore());
+
+	private didDisplayLoading = false;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -43,6 +51,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
 		@IInstantiationService instantiationService: IInstantiationService,
+		@IAideCommandPaletteService aideCommandPaletteService: IAideCommandPaletteService,
 		@IOpenerService openerService: IOpenerService,
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
@@ -51,6 +60,15 @@ export class AideProbeViewPane extends ViewPane {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
 		this.markdownRenderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
+
+		const viewModel = aideCommandPaletteService.widget?.viewModel;
+		if (viewModel) {
+			this.viewModel = viewModel;
+
+			this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
+				this.onDidChangeItems();
+			}));
+		}
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -74,17 +92,28 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private onDidChangeItems(): void {
-		// TODO(@ghostwriternr): Fix this
-		this.renderFinalAnswer(new MarkdownString().appendText('Hello, World!'));
+
+		if (this.viewModel?.requestInProgress) {
+			if (this.didDisplayLoading) {
+				return;
+			}
+			this.responseWrapper.textContent = 'Loading...';
+			this.didDisplayLoading = true;
+		} else {
+			this.renderFinalAnswer();
+		}
 
 		if (this.dimensions) {
 			this.layoutBody(this.dimensions.height, this.dimensions.width);
 		}
 	}
 
-	private renderFinalAnswer(result: IMarkdownString): void {
+	private renderFinalAnswer(): void {
 		dom.clearNode(this.responseWrapper);
-		this.responseWrapper.appendChild(this.markdownRenderer.render(result).element);
+		if (this.viewModel?.model.response?.result) {
+			const result = this.viewModel.model.response.result;
+			this.responseWrapper.appendChild(this.markdownRenderer.render(result).element);
+		}
 	}
 
 	protected override layoutBody(height: number, width: number): void {

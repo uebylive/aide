@@ -565,28 +565,23 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		const model = this.aideProbeService.startSession();
 
-		this.requestInProgress.set(true);
-		this.requestIsActive.set(true);
-		this.contextElement.classList.add('active');
-
-
 		this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
-
-
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
 			this.onDidChangeItems();
 		}));
-
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidFilter)(() => {
 			this.onDidFilterItems();
 		}));
-
 		this.viewModelDisposables.add(this.viewModel.onChangeActiveBreakdown((breakdown) => {
 			this.panel.openSymbolInfoReference(breakdown);
 		}));
 
 		const editorValue = this._inputEditor.getValue();
 		const result = this.aideProbeService.initiateProbe(this.viewModel.model, editorValue, this.mode.get() === 'edit');
+
+		this.requestInProgress.set(true);
+		this.requestIsActive.set(true);
+		this.contextElement.classList.add('active');
 
 		this.isPanelVisible = true;
 		dom.show(this.panelContainer);
