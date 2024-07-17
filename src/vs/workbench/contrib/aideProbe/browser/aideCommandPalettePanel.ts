@@ -11,7 +11,6 @@ import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { relativePath } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { URI } from 'vs/base/common/uri';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
@@ -349,7 +348,7 @@ function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemove
 	const addRatio = linesAdded / totalChanges;
 	const delRatio = linesRemoved / totalChanges;
 
-	const diffstat = new Array(numberOfBoxes).fill('empty');
+	const diffstat: DiffStat = new Array(numberOfBoxes).fill('empty');
 
 	for (let i = 0; i < numberOfBoxes; i++) {
 		const threshold = (i + 1) / 5;
@@ -364,19 +363,6 @@ function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemove
 
 	return diffstat;
 }
-
-export function generateDiffstats(fileChanges: Record<URI['path'], FileChanges>): Map<URI['path'], DiffStat> {
-	const diffstats = new Map<URI['path'], DiffStat>();
-
-	for (const [path, changes] of Object.entries(fileChanges)) {
-		const totalChanges = changes.added + changes.removed;
-		const stat = calculateDiffstat(totalChanges, changes.added, changes.removed);
-		diffstats.set(path, stat);
-	}
-
-	return diffstats;
-}
-
 
 class SymbolInfoDiffStat extends Disposable {
 	private diffStat: DiffStat;
@@ -430,7 +416,6 @@ class SymbolInfoDiffStat extends Disposable {
 		outer.appendChild(changesDescription);
 		this.container.appendChild(outer);
 	}
-
 }
 
 interface ISymbolInfoTemplateData {
@@ -445,13 +430,6 @@ interface IItemHeightChangeParams {
 	index: number;
 	height: number;
 }
-
-
-const changes = {
-	added: 5, removed: 5,
-};
-
-const diffstat: DiffStat = ['added', 'removed', 'empty', 'empty', 'empty'];
 
 class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, ISymbolInfoTemplateData> {
 	static readonly TEMPLATE_ID = 'symbolInfoListRenderer';
@@ -514,8 +492,20 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			});
 		}
 
-		if (changes) {
-			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffstat));
+		if (element.edits) {
+			const changes = element.edits.reduce((acc, edit) => {
+				const newRanges = edit.getRangesN();
+				acc.added += newRanges.reduce((acc, range) => acc + range.endLineNumber - range.startLineNumber, 0);
+				if (!edit.isInsertion()) {
+					const oldRanges = edit.getRanges0();
+					acc.removed += oldRanges.reduce((acc, range) => acc + range.endLineNumber - range.startLineNumber, 0);
+				} else {
+					acc.removed += 0;
+				}
+				return acc;
+			}, { added: 0, removed: 0 });
+			const diffStat = calculateDiffstat(changes.added + changes.removed, changes.added, changes.removed);
+			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffStat));
 		}
 
 		this.updateItemHeight(templateData);

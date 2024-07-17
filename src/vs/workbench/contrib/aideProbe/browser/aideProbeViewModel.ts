@@ -14,6 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeBreakdownContent, IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
@@ -73,6 +74,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(async () => {
+			const codeEdits = _model.response?.codeEdits;
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());
 				if (!reference) {
@@ -80,6 +82,30 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
+				viewItem.symbol.then(symbol => {
+					if (!symbol) {
+						return;
+					}
+
+					const edits = codeEdits?.get(item.reference.uri.toString());
+					const hunks = edits?.hunkData.getInfo();
+					for (const hunk of hunks ?? []) {
+						let wholeRange: Range | undefined;
+						const ranges = hunk.getRangesN();
+						for (const range of ranges) {
+							if (!wholeRange) {
+								wholeRange = range;
+							} else {
+								wholeRange = wholeRange.plusRange(range);
+							}
+						}
+
+						if (wholeRange && Range.containsRange(symbol.range, wholeRange)) {
+							viewItem.appendEdits([hunk]);
+						}
+					}
+				});
+
 				return viewItem;
 			}) ?? []);
 
@@ -95,6 +121,7 @@ export interface IAideProbeBreakdownViewModel {
 	readonly reason?: IMarkdownString;
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
+	readonly edits: HunkInformation[];
 	currentRenderedHeight: number | undefined;
 }
 
@@ -141,6 +168,15 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	}
 
 	currentRenderedHeight: number | undefined;
+
+	private _edits: HunkInformation[] = [];
+	get edits() {
+		return this._edits;
+	}
+
+	appendEdits(edits: HunkInformation[]) {
+		this._edits.push(...edits);
+	}
 
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,

@@ -10,6 +10,7 @@ import { Range } from 'vs/editor/common/core/range';
 import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 
 export interface IAideProbeData {
 	id: string;
@@ -80,6 +81,7 @@ export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
+	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 }
 
 export interface IAideProbeModel {
