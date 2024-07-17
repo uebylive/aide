@@ -40,7 +40,7 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_IN_PROGRESS, CONTEXT_PALETTE_IS_VISIBLE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
@@ -59,7 +59,7 @@ const decorationDescription = 'command-palette';
 const placeholderDecorationType = 'command-palette-detail';
 
 export class AideCommandPaletteWidget extends Disposable {
-	private isVisible = false;
+	private isVisible: IContextKey<boolean>;
 	private inputEditorHeight = 0;
 
 	private isPanelVisible = false;
@@ -136,6 +136,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 	constructor(
 		readonly container: HTMLElement,
+
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IStorageService private readonly storageService: IStorageService,
 		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService,
@@ -151,6 +152,7 @@ export class AideCommandPaletteWidget extends Disposable {
 	) {
 		super();
 
+		this.isVisible = CONTEXT_PALETTE_IS_VISIBLE.bindTo(contextKeyService);
 		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.inputEditorHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
@@ -360,6 +362,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		this.updateModeFlag();
 		this.setCoordinates();
+		this.hide();
 	}
 
 	setFocusIndex(index: number, browserEvent?: UIEvent) {
@@ -529,21 +532,21 @@ export class AideCommandPaletteWidget extends Disposable {
 	show(): void {
 		this.updateInputEditorPlaceholder();
 
-		if (this.isVisible) {
+		if (this.isVisible.get()) {
 			this.setCoordinates();
 			return;
 		}
 
 		dom.show(this.container);
 
-		this.isVisible = true;
+		this.isVisible.set(true);
 		this.setCoordinates();
 		this.focus();
 		this.layoutInputs();
 	}
 
 	hide(): void {
-		this.isVisible = false;
+		this.isVisible.set(false);
 		dom.hide(this.container);
 		this.panel.hide();
 	}

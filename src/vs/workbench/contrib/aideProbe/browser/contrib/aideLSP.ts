@@ -51,7 +51,6 @@ export class AideLSP {
 
 	private checkForLSP() {
 		const editor = this.editorService.activeTextEditorControl;
-		console.log(editor);
 
 		if (!isCodeEditor(editor)) {
 			return;

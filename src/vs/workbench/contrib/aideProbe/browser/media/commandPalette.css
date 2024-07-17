@@ -14,6 +14,26 @@
 	}
 }
 
+.aide-toggle-button {
+	position: sticky;
+	display: block;
+	bottom: 10px;
+	left: calc(100% - 50px);
+	width: 36px;
+	height: 36px;
+	border-radius: 99999px;
+	border: 1px solid var(--vscode-chat-requestBorder);
+	background-color: var(--vscode-editor-background);
+	transition: border-color 0.15s ease;
+	background-image: url('./aideLogo.svg');
+	background-repeat: no-repeat;
+	background-position: center;
+	cursor: pointer;
+}
+
+.aide-toggle-button:hover {
+	border-color: #065F46;
+}
 
 .command-palette-container {
 	position: fixed;

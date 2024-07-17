@@ -6,6 +6,7 @@
 import { localize } from 'vs/nls';
 import { RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 
+export const CONTEXT_PALETTE_IS_VISIBLE = new RawContextKey<boolean>('aideProbePaletteIsVisible', false, { type: 'boolean', description: localize('aideProbePaletteIsVisible', "True when the command palette is visible.") });
 export const CONTEXT_PROBE_IS_LSP_ACTIVE = new RawContextKey<boolean>('aideProbeIsLSPActive', false, { type: 'boolean', description: localize('aideProbeIsLSPActive', "Whether the language featurers service is active.") });
 export const CONTEXT_PROBE_MODE = new RawContextKey<'explore' | 'edit'>('aideProbeMode', 'edit', { type: 'string', description: localize('aideProbeMode', "Either explore or edit") });
 export const CONTEXT_PROBE_INPUT_HAS_TEXT = new RawContextKey<boolean>('aideProbeInputHasText', false, { type: 'boolean', description: localize('aideProbeInputHasText', "True when the AI search input has text.") });
