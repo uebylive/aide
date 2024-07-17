@@ -110,6 +110,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 							viewItem.appendEdits([hunk]);
 						}
 					}
+
+					this._onDidChange.fire();
 				});
 
 				return viewItem;
