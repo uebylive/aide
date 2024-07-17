@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Queue } from 'vs/base/common/async';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
@@ -11,7 +12,7 @@ import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
+import { IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
@@ -97,6 +98,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._goToDefinitions;
 	}
 
+	private progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
 		return this._codeEdits;
@@ -106,8 +108,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		@IModelService private readonly _modelService: IModelService,
 		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
-		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
-	) {
+		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService) {
 		super();
 	}
 
@@ -151,65 +152,75 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
-				const mapKey = `${workspaceEdit.resource.toString()}`;
-				let codeEdits: IAideProbeEdits;
-				if (this._codeEdits.has(mapKey)) {
-					codeEdits = this._codeEdits.get(mapKey)!;
-					codeEdits.edits.push(workspaceEdit);
-				} else {
-					const uri = workspaceEdit.resource;
-					const textModel = this._modelService.getModel(uri);
-					if (!textModel) {
-						continue;
-					}
-
-					this._register((await this._textModelService.createModelReference(textModel.uri)));
-					const textModelN = textModel;
-
-					const id = generateUuid();
-					const textModel0 = this._register(this._modelService.createModel(
-						createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
-						{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
-						uri.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
-					));
-
-					codeEdits = {
-						targetUri: uri.toString(),
-						textModel0,
-						textModelN,
-						hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
-						edits: [workspaceEdit]
-					};
-					this._codeEdits.set(mapKey, codeEdits);
-				}
-
-				const editOperation: IIdentifiedSingleEditOperation = {
-					range: workspaceEdit.textEdit.range,
-					text: workspaceEdit.textEdit.text
-				};
-
-				codeEdits.hunkData.ignoreTextModelNChanges = true;
-				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-					this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
-					return null;
+				this.progressiveEditsQueue.queue(async () => {
+					await this.processWorkspaceEdit(workspaceEdit);
 				});
-				this._register(codeEdits.textModelN.onDidChangeContent(e => {
-					if (e.isUndoing) {
-						this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
-					}
-				}));
-				this._textFileService.save(codeEdits.textModelN.uri);
-
-				const sha1 = new DefaultModelSHA1Computer();
-				const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
-					? sha1.computeSHA1(codeEdits.textModel0)
-					: generateUuid();
-				const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
-				const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
-				codeEdits.hunkData.recompute(editState, diff);
-				codeEdits.hunkData.ignoreTextModelNChanges = false;
-				this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 			}
+		}
+	}
+
+	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit) {
+		if (ResourceTextEdit.is(workspaceEdit)) {
+			const resource = workspaceEdit.resource;
+			const mapKey = `${resource.toString()}`;
+
+			let codeEdits: IAideProbeEdits;
+			if (this._codeEdits.has(mapKey)) {
+				codeEdits = this._codeEdits.get(mapKey)!;
+				codeEdits.edits.push(workspaceEdit);
+			} else {
+				console.log('codeEditsStart don\'t have it');
+				let textModel = this._modelService.getModel(resource);
+				if (!textModel) {
+					const ref = await this._textModelService.createModelReference(resource);
+					textModel = ref.object.textEditorModel;
+					ref.dispose();
+				}
+				const textModelN = textModel;
+
+				const id = generateUuid();
+				const textModel0 = this._register(this._modelService.createModel(
+					createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
+					{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
+					resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
+				));
+
+				codeEdits = {
+					targetUri: resource.toString(),
+					textModel0,
+					textModelN,
+					hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
+					edits: [workspaceEdit]
+				};
+				this._codeEdits.set(mapKey, codeEdits);
+			}
+
+			const editOperation: IIdentifiedSingleEditOperation = {
+				range: workspaceEdit.textEdit.range,
+				text: workspaceEdit.textEdit.text
+			};
+
+			codeEdits.hunkData.ignoreTextModelNChanges = true;
+			codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
+				this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
+				return null;
+			});
+			this._register(codeEdits.textModelN.onDidChangeContent(e => {
+				if (e.isUndoing) {
+					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
+				}
+			}));
+			await this._textFileService.save(codeEdits.textModelN.uri);
+
+			const sha1 = new DefaultModelSHA1Computer();
+			const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
+				? sha1.computeSHA1(codeEdits.textModel0)
+				: generateUuid();
+			const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
+			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+			await codeEdits.hunkData.recompute(editState, diff);
+			codeEdits.hunkData.ignoreTextModelNChanges = false;
+			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 		}
 	}
 }

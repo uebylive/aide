@@ -6,6 +6,7 @@
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { themeColorFromId } from 'vs/base/common/themables';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
@@ -95,6 +96,15 @@ export class AideProbeDecorationService extends Disposable {
 		}));
 	}
 
+	private async getCodeEditor(resource: URI): Promise<ICodeEditor | null> {
+		const openEditor = this.codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === resource.toString());
+		if (openEditor) {
+			return openEditor;
+		}
+
+		return await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+	}
+
 	private async handleEditCompleteEvent(event: IAideProbeCompleteEditEvent) {
 		const currentSession = this.aideProbeService.getSession();
 		if (!currentSession) {
@@ -103,12 +113,12 @@ export class AideProbeDecorationService extends Disposable {
 
 		const allEdits = currentSession.response?.codeEdits;
 		const fileEdits = allEdits?.get(event.resource.toString());
-		if (!fileEdits) {
+		if (!fileEdits || !fileEdits.hunkData.getInfo().length) {
 			return;
 		}
 
 		const { resource } = event;
-		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+		const editor = await this.getCodeEditor(resource);
 		if (editor) {
 			this.updateDecorations(editor, fileEdits);
 		}
@@ -127,7 +137,7 @@ export class AideProbeDecorationService extends Disposable {
 			return;
 		}
 
-		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+		const editor = await this.getCodeEditor(resource);
 		if (!editor) {
 			return;
 		}
@@ -218,7 +228,7 @@ export class AideProbeDecorationService extends Disposable {
 		const { uri: resource } = event;
 		let progressiveGTDDecorations = this.goToDefinitionDecorations.get(resource.toString());
 		if (!progressiveGTDDecorations) {
-			const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+			const editor = await this.getCodeEditor(resource);
 			if (editor && !this.goToDefinitionDecorations.has(resource.toString())) {
 				this.goToDefinitionDecorations.set(resource.toString(), editor.createDecorationsCollection());
 			}
