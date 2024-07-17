@@ -309,8 +309,8 @@ export class RejectAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const probeService = accessor.get(IAideProbeService);
-		probeService.rejectCodeEdits();
 
+		probeService.rejectCodeEdits();
 		commandPaletteService.widget?.clear();
 		commandPaletteService.hidePalette();
 	}
@@ -345,9 +345,10 @@ export class AcceptAction extends Action2 {
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
 		const probeService = accessor.get(IAideProbeService);
+
+		probeService.acceptCodeEdits();
 		commandPaletteService.widget?.clear();
 		commandPaletteService.hidePalette();
-		probeService.acceptCodeEdits();
 	}
 }
 
@@ -379,10 +380,10 @@ export class ClearAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		if (!commandPaletteService.widget) {
-			return;
-		}
-		commandPaletteService.widget.clear();
+		const probeService = accessor.get(IAideProbeService);
+
+		probeService.rejectCodeEdits();
+		commandPaletteService.widget?.clear();
 	}
 }
 

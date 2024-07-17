@@ -597,12 +597,15 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 	clear(): void {
-		this.aideProbeService.clearSession();
 		this.explanationService.clear();
+		this.aideProbeService.clearSession();
+
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
+
 		this.requestInProgress.set(false);
 		this.requestIsActive.set(false);
+
 		this.panel.hide();
 		this.isPanelVisible = false;
 		this.contextElement.classList.remove('active');
