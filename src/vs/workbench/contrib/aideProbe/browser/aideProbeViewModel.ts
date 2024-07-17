@@ -13,7 +13,8 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeBreakdownContent, IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
@@ -63,7 +64,12 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return this.breakdowns.filter(b => !this._filter || b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase()));
+		return this.breakdowns.filter(b => {
+			if (!this._filter) {
+				return true;
+			}
+			return b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase());
+		});
 	}
 
 	constructor(

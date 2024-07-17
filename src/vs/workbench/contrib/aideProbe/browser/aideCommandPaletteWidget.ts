@@ -293,10 +293,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			const currentHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 
 			if (!this.requestInProgress.get() && this.requestIsActive.get() && this.viewModel) {
-				const [fistEvent] = event.changes;
-				if (fistEvent.text !== '') {
-					this.viewModel.setFilter(this._inputEditor.getValue());
-				}
+				this.viewModel.setFilter(this._inputEditor.getValue());
 			}
 
 			if (currentHeight !== this.inputEditorHeight) {

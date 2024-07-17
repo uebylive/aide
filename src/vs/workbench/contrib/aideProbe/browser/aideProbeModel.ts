@@ -10,7 +10,6 @@ import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
@@ -21,10 +20,37 @@ import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
+
+export interface IAideProbeEdits {
+	readonly targetUri: string;
+	readonly textModel0: ITextModel;
+	readonly textModelN: ITextModel;
+	readonly hunkData: HunkData;
+	readonly edits: IWorkspaceTextEdit[];
+	textModelNDecorations?: IModelDeltaDecoration[];
+}
+
+export interface IAideProbeResponseModel {
+	result?: IMarkdownString;
+	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
+	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
+	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
+}
+
+export interface IAideProbeModel {
+	onDidChange: Event<void>;
+	onNewEvent: Event<IAideProbeResponseEvent>;
+
+	sessionId: string;
+	request: IAideProbeRequestModel | undefined;
+	response: IAideProbeResponseModel | undefined;
+
+	isComplete: boolean;
+	requestInProgress: boolean;
+}
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
 	constructor(
@@ -34,15 +60,6 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	) {
 		super();
 	}
-}
-
-export interface IAideProbeEdits {
-	readonly targetUri: string;
-	readonly textModel0: ITextModel;
-	readonly textModelN: ITextModel;
-	readonly hunkData: HunkData;
-	readonly edits: IWorkspaceTextEdit[];
-	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
 export class AideProbeResponseModel extends Disposable implements IAideProbeResponseModel {
@@ -76,7 +93,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	constructor(
-		@IEditorService private readonly _editorService: IEditorService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
@@ -162,17 +178,16 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					text: workspaceEdit.textEdit.text
 				};
 
-				const editor = this._editorService.activeTextEditorControl;
-				const isCurrentFileBeingEdited = editor && isCodeEditor(editor) && editor.getModel()?.uri.path === workspaceEdit.resource.path;
-				if (isCurrentFileBeingEdited) {
-					editor.updateOptions({ readOnly: true });
-				}
-
 				codeEdits.hunkData.ignoreTextModelNChanges = true;
 				codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
 					this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
 					return null;
 				});
+				this._register(codeEdits.textModelN.onDidChangeContent(e => {
+					if (e.isUndoing) {
+						this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
+					}
+				}));
 				this._textFileService.save(codeEdits.textModelN.uri);
 
 				const sha1 = new DefaultModelSHA1Computer();
@@ -184,10 +199,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				codeEdits.hunkData.recompute(editState, diff);
 				codeEdits.hunkData.ignoreTextModelNChanges = false;
 				this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
-
-				if (isCurrentFileBeingEdited) {
-					editor.updateOptions({ readOnly: false });
-				}
 			}
 		}
 	}

@@ -8,8 +8,8 @@ import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cance
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideProbeModel, AideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeData, IAideProbeModel, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResponseModel, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export type ProbeMode = 'edit' | 'explore';
 

@@ -6,16 +6,16 @@
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { themeColorFromId } from 'vs/base/common/themables';
-import { assertAllDefined, assertType } from 'vs/base/common/types';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { Position } from 'vs/editor/common/core/position';
+import { Range } from 'vs/editor/common/core/range';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeCompleteEditEvent, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -68,6 +68,8 @@ export class AideProbeDecorationService extends Disposable {
 		this._register(this.aideProbeService.onNewEvent((event) => {
 			if (event.kind === 'completeEdit') {
 				this.handleEditCompleteEvent(event);
+			} else if (event.kind === 'undoEdit') {
+				this.handleUndoEditEvent(event);
 			} else if (event.kind === 'goToDefinition') {
 				this.handleGoToDefinitionEvent(event);
 			}
@@ -78,15 +80,17 @@ export class AideProbeDecorationService extends Disposable {
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			const activeEditor = this.editorService.activeTextEditorControl;
 			if (isCodeEditor(activeEditor)) {
-				let uri = activeEditor.getModel()?.uri;
-				let currentSession = this.aideProbeService.getSession();
-				[uri, currentSession] = assertAllDefined(uri, currentSession);
+				const uri = activeEditor.getModel()?.uri;
+				const currentSession = this.aideProbeService.getSession();
+				if (!uri || !currentSession) {
+					return;
+				}
 
 				const allEdits = currentSession.response?.codeEdits;
 				const fileEdits = allEdits?.get(uri.toString());
-				assertType(fileEdits);
-
-				this.updateDecorations(activeEditor, fileEdits);
+				if (fileEdits) {
+					this.updateDecorations(activeEditor, fileEdits);
+				}
 			}
 		}));
 	}
@@ -105,8 +109,50 @@ export class AideProbeDecorationService extends Disposable {
 
 		const { resource } = event;
 		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
-		assertType(editor);
-		this.updateDecorations(editor, fileEdits);
+		if (editor) {
+			this.updateDecorations(editor, fileEdits);
+		}
+	}
+
+	private async handleUndoEditEvent(event: IAideProbeUndoEditEvent) {
+		const currentSession = this.aideProbeService.getSession();
+		if (!currentSession) {
+			return;
+		}
+
+		const { resource, changes } = event;
+		const allEdits = currentSession.response?.codeEdits;
+		const fileEdits = allEdits?.get(resource.toString());
+		if (!fileEdits) {
+			return;
+		}
+
+		const editor = await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
+		if (!editor) {
+			return;
+		}
+
+		editor.changeDecorations(decorationsAccessor => {
+			for (const change of changes) {
+				const changeRange = change.range;
+				// Remove the corresponding hunk from hunkData
+				const hunkData = fileEdits.hunkData.getInfo().find(hunk => hunk.getRangesN().some(range => range.equalsRange(changeRange)));
+				if (hunkData) {
+					const data = this._hunkDisplayData.get(hunkData);
+					if (data) {
+						this._hunkDisplayData.delete(hunkData);
+						data.remove();
+					}
+					hunkData.discardChanges();
+				}
+
+				// Remove all decorations that intersect with the range of the change
+				const intersected = editor.getDecorationsInRange(Range.lift(changeRange));
+				for (const decoration of intersected ?? []) {
+					decorationsAccessor.removeDecoration(decoration.id);
+				}
+			}
+		});
 	}
 
 	private updateDecorations(editor: ICodeEditor, fileEdits: IAideProbeEdits) {
@@ -128,11 +174,12 @@ export class AideProbeDecorationService extends Disposable {
 
 					const remove = () => {
 						editor.changeDecorations(decorationsAccessor => {
-							assertType(data);
-							for (const decorationId of data.decorationIds) {
-								decorationsAccessor.removeDecoration(decorationId);
+							if (data) {
+								for (const decorationId of data.decorationIds) {
+									decorationsAccessor.removeDecoration(decorationId);
+								}
+								data.decorationIds = [];
 							}
-							data.decorationIds = [];
 						});
 					};
 
