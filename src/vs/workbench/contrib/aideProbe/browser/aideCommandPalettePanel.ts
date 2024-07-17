@@ -489,13 +489,12 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 
 		if (element.edits.length > 0) {
 			const changes = element.edits.reduce((acc, edit) => {
-				const newRanges = edit.getRangesN();
-				acc.added += newRanges.reduce((acc, range) => acc + range.endLineNumber - range.startLineNumber, 0);
+				const newRanges = edit.getRangesN() || [];
+				acc.added += newRanges.reduce((sum, range) => sum + range.endLineNumber - range.startLineNumber, 0);
+
 				if (!edit.isInsertion()) {
-					const oldRanges = edit.getRanges0();
-					acc.removed += oldRanges.reduce((acc, range) => acc + range.endLineNumber - range.startLineNumber, 0);
-				} else {
-					acc.removed += 0;
+					const oldRanges = edit.getRanges0() || [];
+					acc.removed += oldRanges.reduce((sum, range) => sum + range.endLineNumber - 1 - range.startLineNumber, 0);
 				}
 				return acc;
 			}, { added: 0, removed: 0 });

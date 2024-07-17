@@ -102,6 +102,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 					const edits = codeEdits?.get(item.reference.uri.toString());
 					const hunks = edits?.hunkData.getInfo();
+					console.log(hunks?.map(h => ({ new: h.getRangesN(), old: h.getRanges0(), isInsertion: h.isInsertion() })));
 					for (const hunk of hunks ?? []) {
 						let wholeRange: Range | undefined;
 						const ranges = hunk.getRangesN();
