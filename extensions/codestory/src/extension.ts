@@ -25,7 +25,7 @@ import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
-import { getUniqueId, getUserId } from './utilities/uniqueId';
+import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 
 
@@ -34,8 +34,6 @@ export let SIDECAR_CLIENT: SideCarClient | null = null;
 export async function activate(context: ExtensionContext) {
 	// Project root here
 	const uniqueUserId = getUniqueId();
-	const userId = getUserId();
-	console.log('User id:' + userId);
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
 	postHogClient?.capture({
 		distinctId: getUniqueId(),
@@ -44,10 +42,6 @@ export async function activate(context: ExtensionContext) {
 			platform: os.platform(),
 		},
 	});
-	const appDataPath = process.env.APPDATA;
-	const userProfilePath = process.env.USERPROFILE;
-	console.log('appDataPath', appDataPath);
-	console.log('userProfilePath', userProfilePath);
 	const registerPreCopyCommand = commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
@@ -117,16 +111,13 @@ export async function activate(context: ExtensionContext) {
 					current_window: currentWindow,
 				},
 			});
-			console.log('Received symbol navigation event!');
-			console.log(event);
+			// console.log('Received symbol navigation event!');
+			// console.log(event);
 		},
 	});
 
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
-	const execPath = process.execPath;
-	console.log('Exec path:' + execPath);
-	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
@@ -151,7 +142,7 @@ export async function activate(context: ExtensionContext) {
 	// setup the callback for the model configuration
 	modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
-		console.log('Model configuration updated:' + JSON.stringify(config));
+		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup

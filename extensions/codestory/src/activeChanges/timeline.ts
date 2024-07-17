@@ -33,12 +33,12 @@ export const onTextDocumentChange = (context: ExtensionContext) => {
 	const state = stateManager(context);
 	return workspace.onDidSaveTextDocument(async (doc) => {
 		const documents = state.getDocuments();
-		console.log('something');
+		// console.log('something');
 		if (doc.uri.fsPath in documents) {
 			const checkpoint = new Date();
 			const oldText = documents[doc.uri.fsPath] || '';
 			const newText = doc.getText();
-			console.log('something');
+			// console.log('something');
 
 			const diff =
 				`${checkpoint.toLocaleString('en-US')}\n` +

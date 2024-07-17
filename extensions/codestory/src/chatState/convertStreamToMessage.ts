@@ -64,11 +64,11 @@ export const reportFromStreamToSearchProgress = async (
 		// Here we will get an event which will have the conversation_state as 'ReRankingStarted' and another
 		// which will have an event as 'ReRankingFinished'
 		if (conversationMessage.conversation_state === 'ReRankingStarted') {
-			console.log('ReRanking has started');
+			// console.log('ReRanking has started');
 			continue;
 		}
 		if (conversationMessage.conversation_state === 'ReRankingFinished') {
-			console.log('ReRanking has finsihed');
+			// console.log('ReRanking has finsihed');
 			continue;
 		}
 		if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'StreamingAnswer') {
@@ -116,8 +116,8 @@ export const formatPathsInAnswer = async (answer: string, reporef: RepoRef): Pro
 		const markdownLinkWithoutLineNumbers = markdownLink.split('#')[0];
 		const finalPath = path.join(reporef.getPath(), markdownLinkWithoutLineNumbers);
 		try {
-			console.log('[formatPathsInAnswer] checking the following path');
-			console.log(finalPath);
+			// console.log('[formatPathsInAnswer] checking the following path');
+			// console.log(finalPath);
 			await vscode.workspace.fs.stat(vscode.Uri.file(finalPath));
 			return true;
 		} catch (error) {
@@ -206,7 +206,7 @@ export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStre
 	});
 	for (let index = 0; index < Math.min(6, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
-		console.log(workingDirectory);
+		// console.log(workingDirectory);
 		let fullFilePath = currentCodeSpan.file_path;
 		if (!currentCodeSpan.file_path.startsWith(workingDirectory)) {
 			fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
@@ -243,8 +243,8 @@ export const readJsonFile = (filePath: string): any => {
 };
 
 
-const randomInt = (min: number, max: number) =>
-	Math.floor(Math.random() * (max - min + 1)) + min;
+// const randomInt = (min: number, max: number) =>
+// 	Math.floor(Math.random() * (max - min + 1)) + min;
 
 const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
@@ -255,7 +255,7 @@ export const reportAgentEventsToChat = async (
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
-	console.log('reportAgentEventsToChat starting');
+	// console.log('reportAgentEventsToChat starting');
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
@@ -277,11 +277,11 @@ export const reportAgentEventsToChat = async (
 	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
-		await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
+		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
-			console.log('Stopped the agent probe');
+			// console.log('Stopped the agent probe');
 			break;
 		}
 

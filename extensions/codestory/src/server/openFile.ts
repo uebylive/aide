@@ -15,8 +15,8 @@ export async function openFileEditor(request: SidecarOpenFileToolRequest): Promi
 	}
 
 	try {
-		const stat = await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
-		console.log(stat);
+		// const stat = await vscode.workspace.fs.stat(vscode.Uri.file(filePath));
+		// console.log(stat);
 		const textDocument = await vscode.workspace.openTextDocument(filePath);
 		// we get back the text document over here
 		const contents = textDocument.getText();

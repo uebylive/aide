@@ -30,8 +30,8 @@ export async function goToImplementation(request: SidecarGoToImplementationReque
 		}
 
 		if (shouldTrackFile(uri)) {
-			console.log('we are trakcing this uri');
-			console.log(uri);
+			// console.log('we are trakcing this uri');
+			// console.log(uri);
 		}
 
 		return {
