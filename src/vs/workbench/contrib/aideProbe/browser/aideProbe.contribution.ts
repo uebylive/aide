@@ -14,7 +14,6 @@ import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneCont
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
-
 import { AideCommandPaletteService, IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_IS_ACTIVE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';

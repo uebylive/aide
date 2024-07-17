@@ -44,6 +44,10 @@ export interface GeminiProProviderConfig {
 	readonly api_base: string;
 }
 
+export interface OpenRouterProviderConfig {
+	readonly api_key: string;
+}
+
 export interface LLMProviderAPIKeys {
 	OpenAI?: OpenAIProviderConfig;
 	TogetherAI?: TogetherAIProviderConfig;
@@ -55,4 +59,5 @@ export interface LLMProviderAPIKeys {
 	Anthropic?: AnthropicProviderConfig;
 	FireworksAI?: FireworkAIProviderConfig;
 	GeminiPro?: GeminiProProviderConfig;
+	OpenRouter?: OpenRouterProviderConfig;
 }

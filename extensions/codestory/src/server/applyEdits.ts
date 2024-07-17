@@ -17,7 +17,9 @@ export async function applyEdits(
 	const startPosition = request.selected_range.startPosition;
 	const endPosition = request.selected_range.endPosition;
 	const replacedText = request.edited_content;
-	const range = new vscode.Range(new vscode.Position(startPosition.line, startPosition.character), new vscode.Position(endPosition.line, endPosition.character));
+	// The position here should replace all the characters in the range for the
+	// start line but for the end line we can live with how things are for now
+	const range = new vscode.Range(new vscode.Position(startPosition.line, 0), new vscode.Position(endPosition.line, endPosition.character));
 	const fileUri = vscode.Uri.file(filePath);
 
 	const workspaceEdit = new vscode.WorkspaceEdit();
@@ -47,12 +49,12 @@ export async function applyEdits(
 		startPosition: {
 			line: startPosition.line,
 			character: startPosition.character,
-			byte_offset: 0,
+			byteOffset: 0,
 		},
 		endPosition: {
 			line: startPosition.line + replacedText.split(/\r\n|\r|\n/).length,
 			character: lastLineColumn,
-			byte_offset: 0,
+			byteOffset: 0,
 		}
 	};
 

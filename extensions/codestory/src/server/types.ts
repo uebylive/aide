@@ -594,6 +594,10 @@ export type SidecarGoToImplementationResponse = {
 	implementation_locations: FileAndRange[];
 };
 
+export type SidecarSymbolSearchRequest = {
+	search_string: string;
+};
+
 export type SidecarGoToReferencesRequest = {
 	fs_file_path: string;
 	position: SidecarRequestPosition;
@@ -601,6 +605,17 @@ export type SidecarGoToReferencesRequest = {
 
 export type SidecarGoToRefernecesResponse = {
 	reference_locations: FileAndRange[];
+};
+
+export type SidecarSymbolSearchInformation = {
+	name: String;
+	kind: String;
+	fs_file_path: String;
+	range: SidecarRequestRange;
+};
+
+export type SidecarSymbolSearchResponse = {
+	locations: SidecarSymbolSearchInformation[];
 };
 
 export type SidecarQuickFixRequest = {
@@ -706,7 +721,7 @@ export interface SidecarResponseRange {
 export interface SidecarResponsePosition {
 	line: number;
 	character: number;
-	byte_offset: number;
+	byteOffset: number;
 }
 
 export type SidecarApplyEditsResponse = {
