@@ -8,7 +8,6 @@ import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';

@@ -7,15 +7,13 @@ import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ILocalizedString, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS, CONTEXT_PROBE_IS_LSP_ACTIVE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
-import { IDisposable, Disposable } from 'vs/base/common/lifecycle';
-import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
