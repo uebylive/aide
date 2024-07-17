@@ -33,7 +33,6 @@ export class OpenCommandPaletteAction extends Action2 {
 			keybinding: {
 				weight: KeybindingWeight.ExternalExtension,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-
 			}
 		});
 	}

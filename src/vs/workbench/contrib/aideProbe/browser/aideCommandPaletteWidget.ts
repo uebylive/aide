@@ -391,10 +391,17 @@ export class AideCommandPaletteWidget extends Disposable {
 			const transparentForeground = theme.getColor(inputPlaceholderForeground);
 
 
-			let placeholder = 'Ask to explore your codebase';
-			if (this.mode.get() === 'edit') {
-				placeholder = 'Ask to edit your codebase';
+			let placeholder;
+			if (this.requestIsActive.get()) {
+				placeholder = 'Filter through the results';
+			} else {
+				if (this.mode.get() === 'edit') {
+					placeholder = 'Ask to edit your codebase';
+				} else {
+					placeholder = 'Ask to explore your codebase';
+				}
 			}
+
 
 			if (!CONTEXT_PROBE_IS_LSP_ACTIVE.getValue(this.contextKeyService)) {
 				const editor = this.editorService.activeTextEditorControl;
@@ -534,15 +541,14 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		if (this.isVisible.get()) {
 			this.setCoordinates();
+			this.focus();
 			return;
 		}
 
 		dom.show(this.container);
-
-		this.isVisible.set(true);
-		this.setCoordinates();
 		this.focus();
 		this.layoutInputs();
+		this.isVisible.set(true);
 	}
 
 	hide(): void {
@@ -628,6 +634,7 @@ export class AideCommandPaletteWidget extends Disposable {
 	clear(): void {
 		this.explanationService.clear();
 		this.aideProbeService.clearSession();
+		this.updateInputEditorPlaceholder();
 
 		this.viewModel?.dispose();
 		this.viewModel = undefined;
