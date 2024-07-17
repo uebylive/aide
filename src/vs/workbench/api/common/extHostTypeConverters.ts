@@ -41,7 +41,7 @@ import { IViewBadge } from 'vs/workbench/common/views';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeOpenFile, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
@@ -2977,6 +2977,15 @@ export namespace AideProbeResponseTextEditPart {
 		return {
 			kind: 'textEdit',
 			edits: WorkspaceEdit.from(part.edits)
+		};
+	}
+}
+
+export namespace AideProbeOpenFilePart {
+	export function from(part: vscode.AideProbeResponseOpenFile): Dto<IAideProbeOpenFile> {
+		return {
+			kind: 'openFile',
+			uri: part.uri
 		};
 	}
 }

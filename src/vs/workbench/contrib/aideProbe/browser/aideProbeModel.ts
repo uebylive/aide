@@ -35,6 +35,7 @@ export interface IAideProbeEdits {
 
 export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
+	readonly lastFileOpened?: URI;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
@@ -73,6 +74,15 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	set result(value: IMarkdownString) {
 		this._result = value;
+	}
+
+	private _lastFileOpened: URI | undefined;
+	get lastFileOpened(): URI | undefined {
+		return this._lastFileOpened;
+	}
+
+	set lastFileOpened(value: URI) {
+		this._lastFileOpened = value;
 	}
 
 	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
@@ -261,6 +271,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		switch (progress.kind) {
 			case 'markdownContent':
 				this._response.result = progress.content;
+				break;
+			case 'openFile':
+				this._response.lastFileOpened = progress.uri;
 				break;
 			case 'breakdown':
 				this._response.applyBreakdown(progress);

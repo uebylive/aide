@@ -290,8 +290,13 @@ export const reportAgentEventsToChat = async (
 		}
 
 		// logStream?.write(JSON.stringify(event) + ',\n');
-
-		if (event.event.SymbolEvent) {
+		if (event.event.ToolEvent) {
+			if (event.event.ToolEvent.OpenFile) {
+				response.openFile({
+					uri: vscode.Uri.file(event.event.ToolEvent.OpenFile.fs_file_path ?? 'symbol_not_found'),
+				});
+			}
+		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
 			const symbolEventKeys = Object.keys(symbolEvent);
 			if (symbolEventKeys.length === 0) {

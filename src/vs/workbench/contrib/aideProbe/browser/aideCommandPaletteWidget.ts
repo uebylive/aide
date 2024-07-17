@@ -12,6 +12,7 @@ import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
 import { clamp } from 'vs/base/common/numbers';
+import { basename } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/commandPalette';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
@@ -610,6 +611,8 @@ export class AideCommandPaletteWidget extends Disposable {
 			this.panel.updateSymbolInfo(this.viewModel?.breakdowns ?? []);
 			dom.show(this.panelContainer);
 			this.isPanelVisible = true;
+		} else if (this.viewModel?.lastFileOpened) {
+			this.panel.emptyListPlaceholder.textContent = `Opening ${basename(this.viewModel.lastFileOpened.fsPath)}`;
 		}
 
 		this.panel.show(undefined, this.requestInProgress.get() ?? false);

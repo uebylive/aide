@@ -58,6 +58,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.requestInProgress;
 	}
 
+	private _lastFileOpened: URI | undefined;
+	get lastFileOpened(): URI | undefined {
+		return this._lastFileOpened;
+	}
+
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
@@ -80,6 +85,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(async () => {
+
+			this._lastFileOpened = _model.response?.lastFileOpened;
 			const codeEdits = _model.response?.codeEdits;
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());

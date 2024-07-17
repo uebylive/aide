@@ -41,7 +41,7 @@ export class AideCommandPalettePanel extends Disposable {
 	private headerText: HTMLElement;
 	private loadingSpinner: HTMLElement | undefined;
 	private actionsToolbar: MenuWorkbenchToolBar;
-	private emptyListPlaceholder: HTMLElement;
+	emptyListPlaceholder: HTMLElement;
 
 	private listContainer: HTMLElement;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
@@ -487,7 +487,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			});
 		}
 
-		if (element.edits) {
+		if (element.edits.length > 0) {
 			const changes = element.edits.reduce((acc, edit) => {
 				const newRanges = edit.getRangesN();
 				acc.added += newRanges.reduce((acc, range) => acc + range.endLineNumber - range.startLineNumber, 0);

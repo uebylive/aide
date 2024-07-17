@@ -56,11 +56,17 @@ export interface IAideProbeTextEdit {
 	edits: WorkspaceEdit;
 }
 
+export interface IAideProbeOpenFile {
+	kind: 'openFile';
+	uri: URI;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
-	| IAideProbeTextEdit;
+	| IAideProbeTextEdit
+	| IAideProbeOpenFile;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;

@@ -57,6 +57,7 @@ declare module 'vscode' {
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		breakdown(value: AideChatResponseBreakdown): void;
+		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;
 		codeEdit(value: AideProbeResponseTextEdit): Thenable<void>;
 	}
