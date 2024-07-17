@@ -367,9 +367,10 @@ export class AideCommandPaletteWidget extends Disposable {
 
 
 			let placeholder = 'Ask to explore your codebase';
-			if (this.mode.get() === 'explore') {
+			if (this.mode.get() === 'edit') {
 				placeholder = 'Ask to edit your codebase';
 			}
+
 			if (!this.isLSPActive.get()) {
 				const editor = this.editorService.activeTextEditorControl;
 				if (!isCodeEditor(editor)) {
@@ -413,7 +414,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		const currentWindow = dom.getWindow(this.layoutService.activeContainer);
 		const maxWidth = Math.min(this.width, currentWindow.innerWidth - 100);
-		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - (Math.min(0, itemsCount - 1) * 6) });
+		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - (Math.min(0, itemsCount - 1) * 6) - 8 });
 	}
 
 	private _getAriaLabel(): string {

@@ -16,6 +16,7 @@ import { createDecorator, IInstantiationService } from 'vs/platform/instantiatio
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
@@ -40,7 +41,9 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICodeEditorService private readonly codeEditorService: ICodeEditorService) {
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+	) {
 		super();
 
 		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
@@ -77,6 +80,11 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		}
 
 		if (codeEditor && symbol && breakdownPosition) {
+			const activeSession = this.aideProbeService.getSession();
+			if (activeSession?.request?.editMode) {
+				return;
+			}
+
 			this.explanationWidget = this._register(this.instantiationService.createInstance(
 				AideProbeExplanationWidget, codeEditor, this.resourceLabels, this.markdownRenderer
 			));

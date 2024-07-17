@@ -114,7 +114,7 @@ export class ToggleModeAction extends Action2 {
 			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_PROBE_INPUT,
-				primary: KeyMod.Alt | KeyCode.KeyM,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyM,
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
@@ -147,27 +147,17 @@ class ToggleModeActionComposer extends Disposable {
 		this.setSubmitActionState();
 	}
 
-
 	private async setSubmitActionState() {
 		const that = this;
 		if (this.registeredAction) {
 			this.registeredAction.dispose();
 		}
-		if (this.mode.get() === 'explore') {
+
+		if (this.mode.get() === 'edit') {
+			const title = localize2('aideProbe.submitComposer.editLabel', "Edit mode");
 			this.registeredAction = registerAction2(class extends ToggleModeAction {
 				constructor() {
-					super();
-				}
-				override async run(accessor: ServicesAccessor) {
-					super.run(accessor, 'edit');
-					that.mode.set('edit');
-					that.setSubmitActionState();
-				}
-			});
-		} else {
-			this.registeredAction = registerAction2(class extends ToggleModeAction {
-				constructor() {
-					super();
+					super(title);
 				}
 				override async run(accessor: ServicesAccessor) {
 					super.run(accessor, 'explore');
@@ -175,7 +165,18 @@ class ToggleModeActionComposer extends Disposable {
 					that.setSubmitActionState();
 				}
 			});
-
+		} else {
+			const title = localize2('aideProbe.submitComposer.exploreLabel', "Explore mode");
+			this.registeredAction = registerAction2(class extends ToggleModeAction {
+				constructor() {
+					super(title);
+				}
+				override async run(accessor: ServicesAccessor) {
+					super.run(accessor, 'edit');
+					that.mode.set('edit');
+					that.setSubmitActionState();
+				}
+			});
 		}
 	}
 }
