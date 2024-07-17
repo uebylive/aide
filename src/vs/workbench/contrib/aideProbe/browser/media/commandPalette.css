@@ -36,9 +36,10 @@
 }
 
 .command-palette-inner-container {
+	position: relative;
 	padding: 4px;
 	border-radius: 6px;
-	background-color: var(--vscode-menu-background);
+	background-color: var(--vscode-editor-background);
 	color: var(--vscode-input-foreground);
 	border: 1px solid var(--vscode-chat-requestBorder);
 	cursor: revert;
@@ -99,6 +100,30 @@
 	padding-inline: 6px;
 }
 
+.command-palette-mode-flag {
+	padding-top: 7px;
+	padding-right: 8px;
+}
+
+.command-palette-mode-flag .monaco-text-button {
+	font-size: 11px;
+	line-height: 10px;
+	background-image: url('./bookOpenIcon.svg');
+	background-size: 16px;
+	background-repeat: no-repeat;
+	background-position: 2px 50%;
+	outline: 1px solid #374151;
+	border-radius: 2px;
+	padding-inline: 20px 4px;
+	padding-block: 4px;
+	transition: outline-offset 0.15s ease, outline-color 0.15s ease;
+}
+
+.command-palette-mode-flag .monaco-text-button.edit-mode {
+	background-image: url('./pencilSquareIcon.svg');
+	outline-color: #065F46 !important;
+}
+
 .command-palette-submit-toolbar {
 	margin-top: 5px;
 	margin-right: 8px;
@@ -146,6 +171,13 @@
 	padding-block: 8px;
 	background-color: var(--vscode-editor-background);
 	border-bottom: 1px solid var(--vscode-chat-requestBorder);
+}
+
+.symbol-info-header-text {
+	width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .symbol-info-list-item {

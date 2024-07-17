@@ -6,6 +6,9 @@
 import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
+import { Toggle } from 'vs/base/browser/ui/toggle/toggle';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
@@ -68,9 +71,12 @@ export class AideCommandPaletteWidget extends Disposable {
 	}
 
 	readonly _container!: HTMLElement;
+	private _innerContainer!: HTMLElement;
 	private width: number = 560;
 
 	private _inputContainer: HTMLElement; // contains all inputs
+	private _modeToggleContainer: HTMLElement;
+	private modeToggle: Button;
 	private _inputEditorContainer: HTMLElement;
 	private _inputEditor: CodeEditorWidget;
 
@@ -152,16 +158,18 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_PROBE_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 		this.requestIsActive = CONTEXT_PROBE_IS_ACTIVE.bindTo(contextKeyService);
-		this.isLSPActive = CONTEXT_PROBE_IS_LSP_ACTIVE.bindTo(this.contextKeyService);
+		this.isLSPActive = CONTEXT_PROBE_IS_LSP_ACTIVE.bindTo(contextKeyService);
 
 		this._container = container;
 
 		this.codeEditorService.registerDecorationType(decorationDescription, placeholderDecorationType, {});
 
-		const innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
+		this._innerContainer = dom.append(this.container, $('.command-palette-inner-container'));
 		this.panelContainer = dom.append(this.container, $('.command-palette-panel'));
 		dom.hide(this.panelContainer);
-		this._inputContainer = dom.append(innerContainer, $('.command-palette-input'));
+		this._inputContainer = dom.append(this._innerContainer, $('.command-palette-input'));
+
+
 
 		// Context
 		this.contextElement = dom.append(this._inputContainer, $('.command-palette-context'));
@@ -182,23 +190,6 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		contextToolbar.getElement().classList.add('command-palette-context-toolbar');
 
-		// Toggle
-
-		//const hoverDelegate = this._register(createInstantHoverDelegate());
-		//const toggle = this._register(new Toggle({
-		//	...defaultToggleStyles,
-		//	icon: Codicon.telescope,
-		//	title: nls.localize('mode', "Explore mode"),
-		//	isChecked: false,
-		//	hoverDelegate,
-		//}));
-		//
-		//this._register(toggle.onChange(() => {
-		//	toggle.setIcon(toggle.checked ? Codicon.pencil : Codicon.telescope);
-		//	toggle.setTitle(toggle.checked ? nls.localize('editMode', "Edit mode") : nls.localize('followAlong', "Probe mode"));
-		//	this.mode = toggle.checked ? 'edit' : 'explore';
-		//}));
-		//innerContainer.appendChild(toggle.domNode);
 
 		// Input editor
 		this._inputEditorContainer = dom.append(this._inputContainer, $('.command-palette-input-editor'));
@@ -245,6 +236,21 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 		this.panel = this._register(this.instantiationService.createInstance(AideCommandPalettePanel, this.resourceLabels, this.panelContainer));
 
+
+
+		// Toggle
+
+		this._modeToggleContainer = dom.append(this._inputContainer, $('.command-palette-mode-flag'));
+		const hoverDelegate = this._register(createInstantHoverDelegate());
+		const modeToggle = this.modeToggle = this._register(new Button(this._modeToggleContainer, {
+			hoverDelegate,
+		}));
+
+		this._register(modeToggle.onDidClick(() => {
+			this.mode.set(this.mode.get() === 'explore' ? 'edit' : 'explore');
+			this.updateModeFlag();
+		}));
+
 		// Submit toolbar
 		this.submitToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this._inputContainer, MenuId.AideCommandPaletteSubmit, {
 			menuOptions: {
@@ -261,6 +267,16 @@ export class AideCommandPaletteWidget extends Disposable {
 		this.submitToolbar.getElement().classList.add('command-palette-submit-toolbar');
 
 		// Register events
+
+		this._register(this.contextKeyService.onDidChangeContext((e) => {
+			if (e.affectsSome(new Set([CONTEXT_PROBE_IS_ACTIVE.key]))) {
+				if (this.requestIsActive.get()) {
+					this.hideModeFlag();
+				} else {
+					this.showModeFlag();
+				}
+			}
+		}));
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.updateInputEditorPlaceholder();
@@ -348,6 +364,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			this._focusIndex = e.index;
 		}));
 
+		this.updateModeFlag();
 		this.setCoordinates();
 	}
 
@@ -358,6 +375,17 @@ export class AideCommandPaletteWidget extends Disposable {
 	setMode(mode: ProbeMode) {
 		this.mode.set(mode);
 		this.updateInputEditorPlaceholder();
+		this.updateModeFlag();
+	}
+
+	private showModeFlag() {
+		dom.show(this._modeToggleContainer);
+		this.layoutInputs();
+	}
+
+	private hideModeFlag() {
+		dom.hide(this._modeToggleContainer);
+		this.layoutInputs();
 	}
 
 	private updateInputEditorPlaceholder() {
@@ -378,11 +406,12 @@ export class AideCommandPaletteWidget extends Disposable {
 				}
 				const model = editor.getModel();
 				if (!model) {
-					return;
+					placeholder = 'Open a file to start using Aide';
+				} else {
+					const languageId = model.getLanguageId();
+					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
+					placeholder = `Language server is not active for ${capitalizedLanguageId}`;
 				}
-				const languageId = model.getLanguageId();
-				const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
-				placeholder = `${capitalizedLanguageId} is not supported yet or the LSP is loading`;
 			}
 
 			const decoration: IDecorationOptions[] = [
@@ -413,7 +442,7 @@ export class AideCommandPaletteWidget extends Disposable {
 
 		const currentWindow = dom.getWindow(this.layoutService.activeContainer);
 		const maxWidth = Math.min(this.width, currentWindow.innerWidth - 100);
-		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - 8 });
+		this.inputEditor.layout({ height: this._inputEditor.getContentHeight(), width: maxWidth - submitToolbarWidth - this._modeToggleContainer.clientWidth - (Math.min(0, itemsCount - 1) * 6) - 8 });
 	}
 
 	private _getAriaLabel(): string {
@@ -495,9 +524,16 @@ export class AideCommandPaletteWidget extends Disposable {
 		}
 	}
 
+
+	updateModeFlag(): void {
+		this.modeToggle.label = this.mode.get() === 'explore' ? localize('exploreMode', "Explore mode") : localize('editMode', "Edit mode");
+		this.modeToggle.element.classList.toggle('edit-mode', this.mode.get() === 'edit');
+		this.updateInputEditorPlaceholder();
+		this.layoutInputs();
+	}
+
 	show(): void {
 		this.updateInputEditorPlaceholder();
-		this.focus();
 
 		if (this.isVisible) {
 			this.setCoordinates();
@@ -505,8 +541,10 @@ export class AideCommandPaletteWidget extends Disposable {
 		}
 
 		dom.show(this.container);
+
 		this.isVisible = true;
 		this.setCoordinates();
+		this.focus();
 		this.layoutInputs();
 	}
 

@@ -65,6 +65,7 @@ export class AideLSP {
 		const languageId = model.getLanguageId();
 
 		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
+		console.log(languageId, isReferenceProviderActive);
 		this.isActive.set(isReferenceProviderActive);
 
 		if (languageId === 'plaintext' || languageId === 'json' || languageId === 'markdown') {

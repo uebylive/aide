@@ -33,8 +33,9 @@ export class OpenCommandPaletteAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyY,
+				weight: KeybindingWeight.ExternalExtension,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
+
 			}
 		});
 	}
@@ -100,14 +101,13 @@ export class SubmitAction extends Action2 {
 	}
 }
 
-export class ToggleModeAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.toggleMode';
+export class EnterExploreModeAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.enterExploreMode';
 
-	constructor(title?: ILocalizedString) {
-		const defaultTitle = localize2('workbench.action.aideProbe.toggleMode', "Toggle mode");
+	constructor() {
 		super({
-			id: ToggleModeAction.ID,
-			title: title ?? defaultTitle,
+			id: EnterExploreModeAction.ID,
+			title: localize2('workbench.action.aideProbe.enterExploreMode', "Change to explore mode"),
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
@@ -118,66 +118,50 @@ export class ToggleModeAction extends Action2 {
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
-				{
-					id: MenuId.AideCommandPaletteSubmit,
-					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
-				},
+				//{
+				//	id: MenuId.AideCommandPaletteSubmit,
+				//	group: 'navigation',
+				//	when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(), CONTEXT_PROBE_MODE.isEqualTo('edit')),
+				//},
 			]
 		});
 	}
 
-	async run(accessor: ServicesAccessor, mode: ProbeMode) {
+	async run(accessor: ServicesAccessor) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		commandPaletteService.widget?.setMode(mode);
+		commandPaletteService.widget?.setMode('explore');
 	}
 }
 
-class ToggleModeActionComposer extends Disposable {
-	static readonly ID = 'workbench.action.aideProbe.submitComposer';
+export class EnterEditModeAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.enterEditMode';
 
-	private registeredAction: IDisposable | undefined;
-	private mode: IContextKey<'edit' | 'explore'>;
-
-	constructor(
-		@IContextKeyService contextKeyService: IContextKeyService,
-	) {
-		super();
-		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
-		this.setSubmitActionState();
+	constructor() {
+		super({
+			id: EnterEditModeAction.ID,
+			title: localize2('workbench.action.aideProbe.enterEditMode', "Change to edit mode"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			keybinding: {
+				when: CONTEXT_IN_PROBE_INPUT,
+				primary: KeyMod.Alt | KeyCode.KeyM,
+				weight: KeybindingWeight.EditorContrib
+			},
+			menu: [
+				//{
+				//	id: MenuId.AideCommandPaletteSubmit,
+				//	group: 'navigation',
+				//	when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(), CONTEXT_PROBE_MODE.isEqualTo('explore')),
+				//},
+			]
+		});
 	}
 
-	private async setSubmitActionState() {
-		const that = this;
-		if (this.registeredAction) {
-			this.registeredAction.dispose();
-		}
-
-		if (this.mode.get() === 'edit') {
-			const title = localize2('aideProbe.submitComposer.editLabel', "Edit mode");
-			this.registeredAction = registerAction2(class extends ToggleModeAction {
-				constructor() {
-					super(title);
-				}
-				override async run(accessor: ServicesAccessor) {
-					super.run(accessor, 'explore');
-					that.mode.set('explore');
-					that.setSubmitActionState();
-				}
-			});
-		} else {
-			const title = localize2('aideProbe.submitComposer.exploreLabel', "Explore mode");
-			this.registeredAction = registerAction2(class extends ToggleModeAction {
-				constructor() {
-					super(title);
-				}
-				override async run(accessor: ServicesAccessor) {
-					super.run(accessor, 'edit');
-					that.mode.set('edit');
-					that.setSubmitActionState();
-				}
-			});
-		}
+	async run(accessor: ServicesAccessor) {
+		const commandPaletteService = accessor.get(IAideCommandPaletteService);
+		commandPaletteService.widget?.setMode('edit');
 	}
 }
 
@@ -401,5 +385,6 @@ export function registerProbeActions() {
 	registerAction2(SubmitAction);
 	registerAction2(AcceptAction);
 	registerAction2(RejectAction);
-	registerWorkbenchContribution2(ToggleModeActionComposer.ID, ToggleModeActionComposer, WorkbenchPhase.BlockStartup);
+	registerAction2(EnterExploreModeAction);
+	registerAction2(EnterEditModeAction);
 }
