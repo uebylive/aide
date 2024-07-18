@@ -232,7 +232,7 @@ export interface IChatCommandAction {
 	commandButton: IAideChatCommandButton;
 }
 
-export interface IChatFollowupAction {
+export interface IAideChatFollowupAction {
 	kind: 'followUp';
 	followup: IAideChatFollowup;
 }
@@ -246,7 +246,7 @@ export interface IChatInlineChatCodeAction {
 	action: 'accepted' | 'discarded';
 }
 
-export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IChatFollowupAction | IChatBugReportAction | IChatInlineChatCodeAction;
+export type ChatUserAction = IChatVoteAction | IChatCopyAction | IChatInsertAction | IChatTerminalAction | IChatCommandAction | IAideChatFollowupAction | IChatBugReportAction | IChatInlineChatCodeAction;
 
 export interface IAideChatUserActionEvent {
 	action: ChatUserAction;

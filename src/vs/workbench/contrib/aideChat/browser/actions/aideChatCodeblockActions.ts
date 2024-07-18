@@ -6,7 +6,6 @@
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { URI } from 'vs/base/common/uri';
 import { ICodeEditor, isCodeEditor, isDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
@@ -18,22 +17,21 @@ import { ILanguageService } from 'vs/editor/common/languages/language';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { CopyAction } from 'vs/editor/contrib/clipboard/browser/clipboard';
-import { localize2 } from 'vs/nls';
+import { localize, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
-import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
+import { INotificationService, Severity } from 'vs/platform/notification/common/notification';
+import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 import { TerminalLocation } from 'vs/platform/terminal/common/terminal';
 import { IUntitledTextResourceEditorInput } from 'vs/workbench/common/editor';
 import { accessibleViewInCodeBlock } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { IAideChatWidgetService, IAideChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IAideChatEditSessionService } from 'vs/workbench/contrib/aideChat/browser/aideChatEdits';
 import { DefaultChatTextEditor, ICodeBlockActionContext, ICodeCompareBlockActionContext } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { IAideChatAgentEditRequest } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_EDIT_APPLIED, CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
+import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_EDIT_APPLIED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { ChatCopyKind, IAideChatService, IDocumentContext } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
 import { insertCell } from 'vs/workbench/contrib/notebook/browser/controller/cellOperations';
@@ -47,23 +45,12 @@ export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 	element: IChatResponseViewModel;
 }
 
-export interface IChatEditConfirmationContext {
-	responseId: string;
-	codeblockIndex: number;
-	type: 'approve' | 'reject';
-	uri: URI;
-}
-
 export function isCodeBlockActionContext(thing: unknown): thing is ICodeBlockActionContext {
 	return typeof thing === 'object' && thing !== null && 'code' in thing && 'element' in thing;
 }
 
 export function isCodeCompareBlockActionContext(thing: unknown): thing is ICodeCompareBlockActionContext {
 	return typeof thing === 'object' && thing !== null && 'element' in thing;
-}
-
-function isEditConfirmationContext(thing: unknown): thing is IChatEditConfirmationContext {
-	return typeof thing === 'object' && thing !== null && 'codeblockIndex' in thing && 'type' in thing && 'uri' in thing;
 }
 
 function isResponseFiltered(context: ICodeBlockActionContext) {
@@ -94,51 +81,6 @@ abstract class ChatCodeBlockAction extends Action2 {
 	}
 
 	abstract runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext): any;
-}
-
-export class EditConfirmationAction extends Action2 {
-	static readonly ID = 'workbench.action.aideChat.editConfirmation';
-
-	constructor() {
-		super({
-			id: EditConfirmationAction.ID,
-			title: ''
-		});
-	}
-
-	async run(_accessor: ServicesAccessor, ...args: any[]) {
-		const chatEditSessionService = _accessor.get(IAideChatEditSessionService);
-		const chatWidgetService = _accessor.get(IAideChatWidgetService);
-		const codeEditorService = _accessor.get(ICodeEditorService);
-		const commandService = _accessor.get(ICommandService);
-
-		const context = args[0];
-		if (!isEditConfirmationContext(context)) {
-			return;
-		}
-		const { type, uri } = context;
-
-		// Get the decorations to update
-		if (type === 'approve') {
-			chatEditSessionService.confirmEdits(uri);
-		} else {
-			chatEditSessionService.cancelEdits();
-		}
-
-		await commandService.executeCommand('_executeCodeLensProvider', uri, undefined);
-
-		const editor = codeEditorService.getActiveCodeEditor();
-		if (!editor) {
-			return;
-		}
-
-		const widget = chatWidgetService.lastFocusedWidget;
-		if (!widget) {
-			return;
-		}
-		widget.focusInput();
-		editor.focus();
-	}
 }
 
 export function registerChatCodeBlockActions() {
@@ -327,6 +269,8 @@ export function registerChatCodeBlockActions() {
 
 			const bulkEditService = accessor.get(IBulkEditService);
 			const codeEditorService = accessor.get(ICodeEditorService);
+			const progressService = accessor.get(IProgressService);
+			const notificationService = accessor.get(INotificationService);
 
 			const mappedEditsProviders = accessor.get(ILanguageFeaturesService).mappedEditsProvider.ordered(activeModel);
 
@@ -335,7 +279,6 @@ export function registerChatCodeBlockActions() {
 			let mappedEdits: WorkspaceEdit | null = null;
 
 			if (mappedEditsProviders.length > 0) {
-				const mostRelevantProvider = mappedEditsProviders[0]; // TODO@ulugbekna: should we try all providers?
 
 				// 0th sub-array - editor selections array if there are any selections
 				// 1st sub-array - array with documents used to get the chat reply
@@ -364,14 +307,37 @@ export function registerChatCodeBlockActions() {
 
 				const cancellationTokenSource = new CancellationTokenSource();
 
-				mappedEdits = await mostRelevantProvider.provideMappedEdits(
-					activeModel,
-					[codeBlockActionContext.code],
-					{ documents: docRefs },
-					cancellationTokenSource.token);
+				try {
+					mappedEdits = await progressService.withProgress(
+						{ location: ProgressLocation.Notification, delay: 500, sticky: true, cancellable: true },
+						async progress => {
+							progress.report({ message: localize('applyCodeBlock.progress', "Applying code block...") });
+
+							for (const provider of mappedEditsProviders) {
+								const mappedEdits = await provider.provideMappedEdits(
+									activeModel,
+									[codeBlockActionContext.code],
+									{ documents: docRefs },
+									cancellationTokenSource.token
+								);
+								if (mappedEdits) {
+									return mappedEdits;
+								}
+							}
+							return null;
+						},
+						() => cancellationTokenSource.cancel()
+					);
+				} catch (e) {
+					notificationService.notify({ severity: Severity.Error, message: localize('applyCodeBlock.error', "Failed to apply code block: {0}", e.message) });
+				} finally {
+					cancellationTokenSource.dispose();
+				}
+
 			}
 
 			if (mappedEdits) {
+				console.log('Mapped edits:', mappedEdits);
 				await bulkEditService.apply(mappedEdits);
 			} else {
 				const activeSelection = codeEditor.getSelection() ?? new Range(activeModel.getLineCount(), 1, activeModel.getLineCount(), 1);
@@ -540,89 +506,6 @@ export function registerChatCodeBlockActions() {
 		}
 	});
 
-	registerAction2(class ExportToCodebaseAction extends ChatCodeBlockAction {
-		constructor() {
-			super({
-				id: 'workbench.action.aideChat.exportToCodebase',
-				title: localize2('aideChat.exportToCodebase.label', "Apply changes to codebase"),
-				precondition: CONTEXT_CHAT_ENABLED,
-				f1: true,
-				category: CHAT_CATEGORY,
-				icon: Codicon.merge,
-				menu: {
-					id: MenuId.AideChatCodeBlock,
-					group: 'navigation',
-					when: CONTEXT_IN_CHAT_SESSION,
-				},
-				toggled: {
-					condition: CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS.notEqualsTo(''),
-					title: 'Cancel applying changes',
-					icon: Codicon.debugStop,
-				}
-			});
-		}
-
-		override async runWithContext(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			const editorService = accessor.get(IEditorService);
-			const csChatEditSessionService = accessor.get(IAideChatEditSessionService);
-
-			if (csChatEditSessionService.activeEditResponseId) {
-				// Cancel edit session
-				csChatEditSessionService.cancelEdits();
-				return;
-			}
-
-			if (isResponseFiltered(context)) {
-				// When run from command palette
-				return;
-			}
-
-			if (!isResponseVM(context.element)) {
-				// When element is not a response
-				return;
-			}
-			const responseVM: IChatResponseViewModel = context.element;
-
-			if (editorService.activeEditorPane?.getId() === NOTEBOOK_EDITOR_ID) {
-				return;
-			}
-
-			this.notifyUserAction(accessor, context);
-
-			const editRequest: IAideChatAgentEditRequest = {
-				sessionId: responseVM.sessionId,
-				agentId: responseVM.agent?.id ?? '',
-				responseId: responseVM.requestId,
-				response: responseVM.response.asString(),
-				context: [{
-					code: context.code,
-					languageId: context.languageId,
-					codeBlockIndex: context.codeBlockIndex,
-				}]
-			};
-			await csChatEditSessionService.sendEditRequest(responseVM, editRequest);
-		}
-
-		private notifyUserAction(accessor: ServicesAccessor, context: ICodeBlockActionContext) {
-			if (isResponseVM(context.element)) {
-				const chatService = accessor.get(IAideChatService);
-				chatService.notifyUserAction({
-					agentId: context.element.agent?.id,
-					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
-					result: context.element.result,
-					action: {
-						kind: 'insert',
-						codeBlockIndex: context.codeBlockIndex,
-						totalCharacters: context.code.length,
-					}
-				});
-			}
-		}
-	});
-
-	registerAction2(EditConfirmationAction);
-
 	function navigateCodeBlocks(accessor: ServicesAccessor, reverse?: boolean): void {
 		const codeEditorService = accessor.get(ICodeEditorService);
 		const chatWidgetService = accessor.get(IAideChatWidgetService);
@@ -640,7 +523,7 @@ export function registerChatCodeBlockActions() {
 		const currentResponse = curCodeBlockInfo ?
 			curCodeBlockInfo.element :
 			(focusedResponse ?? widget.viewModel?.getItems().reverse().find((item): item is IChatResponseViewModel => isResponseVM(item)));
-		if (!currentResponse) {
+		if (!currentResponse || !isResponseVM(currentResponse)) {
 			return;
 		}
 
@@ -753,7 +636,8 @@ export function registerChatCodeCompareBlockActions() {
 				precondition: ContextKeyExpr.and(EditorContextKeys.hasChanges, CONTEXT_CHAT_EDIT_APPLIED.negate()),
 				menu: {
 					id: MenuId.AideChatCompareBlock,
-					group: 'navigation'
+					group: 'navigation',
+					order: 1,
 				}
 			});
 		}
@@ -770,6 +654,30 @@ export function registerChatCodeCompareBlockActions() {
 				resource: context.edit.uri,
 				options: { revealIfVisible: true },
 			});
+		}
+	});
+
+	registerAction2(class DiscardEditsCompareBlockAction extends ChatCompareCodeBlockAction {
+		constructor() {
+			super({
+				id: 'workbench.action.aideChat.discardCompareEdits',
+				title: localize2('aideChat.compare.discard', "Discard Edits"),
+				f1: false,
+				category: CHAT_CATEGORY,
+				icon: Codicon.trash,
+				precondition: ContextKeyExpr.and(EditorContextKeys.hasChanges, CONTEXT_CHAT_EDIT_APPLIED.negate()),
+				menu: {
+					id: MenuId.AideChatCompareBlock,
+					group: 'navigation',
+					order: 2,
+				}
+			});
+		}
+
+		async runWithContext(accessor: ServicesAccessor, context: ICodeCompareBlockActionContext): Promise<any> {
+			const instaService = accessor.get(IInstantiationService);
+			const editor = instaService.createInstance(DefaultChatTextEditor);
+			editor.discard(context.element, context.edit);
 		}
 	});
 }

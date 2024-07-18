@@ -16,7 +16,7 @@ import { observableValue } from 'vs/base/common/observableInternal/base';
 import { equalsIgnoreCase } from 'vs/base/common/strings';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
-import { Command, ProviderResult, WorkspaceEdit } from 'vs/editor/common/languages';
+import { Command, ProviderResult } from 'vs/editor/common/languages';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
@@ -77,31 +77,11 @@ export interface IChatAgentData {
 	locations: AideChatAgentLocation[];
 }
 
-interface IAideChatAgentEditContext {
-	code: string;
-	languageId?: string;
-	codeBlockIndex: number;
-}
-
-export interface IAideChatAgentEditRequest {
-	sessionId: string;
-	agentId: string;
-	responseId: string;
-	response: string;
-	context: IAideChatAgentEditContext[];
-}
-
-export interface IAideChatAgentEditResponse {
-	edits: WorkspaceEdit;
-	codeBlockIndex: number;
-}
-
 export interface IChatAgentImplementation {
 	invoke(request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult>;
 	provideFollowups?(request: IAideChatAgentRequest, result: IAideChatAgentResult, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatFollowup[]>;
 	provideWelcomeMessage?(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
 	provideSampleQuestions?(location: AideChatAgentLocation, token: CancellationToken): ProviderResult<IAideChatFollowup[] | undefined>;
-	provideEdits?(request: IAideChatAgentEditRequest, progress: (part: IAideChatAgentEditResponse) => void, token: CancellationToken): Promise<IAideChatAgentEditResponse | undefined>;
 }
 
 export type IChatAgent = IChatAgentData & IChatAgentImplementation;
@@ -194,6 +174,7 @@ export interface IAideChatAgentService {
 	getAgents(): IChatAgentData[];
 	getActivatedAgents(): Array<IChatAgent>;
 	getAgentsByName(name: string): IChatAgentData[];
+	agentHasDupeName(id: string): boolean;
 
 	/**
 	 * Get the default agent (only if activated)
@@ -206,8 +187,6 @@ export interface IAideChatAgentService {
 	getContributedDefaultAgent(location: AideChatAgentLocation): IChatAgentData | undefined;
 	getSecondaryAgent(): IChatAgentData | undefined;
 	updateAgent(id: string, updateMetadata: IAideChatAgentMetadata): void;
-
-	makeEdits(context: IAideChatAgentEditRequest, progress: (part: IAideChatAgentEditResponse) => void, token: CancellationToken): Promise<IAideChatAgentEditResponse | undefined>;
 }
 
 export class ChatAgentService implements IAideChatAgentService {
@@ -367,6 +346,16 @@ export class ChatAgentService implements IAideChatAgentService {
 		return this.getAgents().filter(a => a.name === name);
 	}
 
+	agentHasDupeName(id: string): boolean {
+		const agent = this.getAgent(id);
+		if (!agent) {
+			return false;
+		}
+
+		return this.getAgentsByName(agent.name)
+			.filter(a => a.extensionId.value !== agent.extensionId.value).length > 0;
+	}
+
 	async invokeAgent(id: string, request: IAideChatAgentRequest, progress: (part: IAideChatProgress) => void, history: IChatAgentHistoryEntry[], token: CancellationToken): Promise<IAideChatAgentResult> {
 		const data = this._agents.get(id);
 		if (!data?.impl) {
@@ -387,20 +376,6 @@ export class ChatAgentService implements IAideChatAgentService {
 		}
 
 		return data.impl.provideFollowups(request, result, history, token);
-	}
-
-	async makeEdits(context: IAideChatAgentEditRequest, progress: (part: IAideChatAgentEditResponse) => void, token: CancellationToken): Promise<IAideChatAgentEditResponse | undefined> {
-		const agentId = context.agentId;
-		const data = this.getDefaultAgent(AideChatAgentLocation.Panel);
-		if (!data) {
-			throw new Error(`No agent with id ${agentId}`);
-		}
-
-		if (!data?.provideEdits) {
-			return;
-		}
-
-		return data.provideEdits(context, progress, token);
 	}
 }
 

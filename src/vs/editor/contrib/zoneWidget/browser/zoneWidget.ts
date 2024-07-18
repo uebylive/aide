@@ -545,8 +545,6 @@ export abstract class ZoneWidget implements IHorizontalSashLayoutProvider {
 	}
 
 	getHorizontalSashTop() {
-		console.log(this.domNode);
-		console.log('ZoneWidget.getHOrizontalSlashTop', this.domNode.style.height, this._decoratingElementsHeight() / 2, this.domNode.offsetHeight);
 		return (this.domNode.style.height === null ? 0 : parseInt(this.domNode.style.height)) - (this._decoratingElementsHeight() / 2);
 	}
 

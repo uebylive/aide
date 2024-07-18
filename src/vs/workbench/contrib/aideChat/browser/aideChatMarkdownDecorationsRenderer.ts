@@ -5,22 +5,27 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { Button } from 'vs/base/browser/ui/button/button';
+import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { URI } from 'vs/base/common/uri';
 import { Location } from 'vs/editor/common/languages';
+import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { ILabelService } from 'vs/platform/label/common/label';
 import { ILogService } from 'vs/platform/log/common/log';
 import { asCssVariable } from 'vs/platform/theme/common/colorUtils';
 import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { ChatAgentHover, getChatAgentHoverOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatAgentHover';
 import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
 import { chatAgentLeader, ChatRequestAgentPart, ChatRequestDynamicVariablePart, ChatRequestTextPart, chatSubcommandLeader, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { contentRefUrl } from '../common/annotations';
+import { Lazy } from 'vs/base/common/lazy';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 
 /** For rendering slash commands, variables */
 const decorationRefUrl = `http://_vscodedecoration_`;
@@ -37,7 +42,7 @@ export function agentToMarkdown(agent: IChatAgentData, isClickable: boolean, acc
 
 	const isAllowed = chatAgentNameService.getAgentNameRestriction(agent);
 	let name = `${isAllowed ? agent.name : getFullyQualifiedId(agent)}`;
-	const isDupe = isAllowed && chatAgentService.getAgentsByName(agent.name).length > 1;
+	const isDupe = isAllowed && chatAgentService.agentHasDupeName(agent.id);
 	if (isDupe) {
 		name += ` (${agent.publisherDisplayName})`;
 	}
@@ -70,8 +75,10 @@ export class ChatMarkdownDecorationsRenderer {
 		@ILogService private readonly logService: ILogService,
 		@IAideChatAgentService private readonly chatAgentService: IAideChatAgentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IHoverService private readonly hoverService: IHoverService,
 		@IAideChatService private readonly chatService: IAideChatService,
 		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
+		@ICommandService private readonly commandService: ICommandService,
 	) { }
 
 	convertParsedRequestToMarkdown(parsedRequest: IParsedChatRequest): string {
@@ -168,6 +175,12 @@ export class ChatMarkdownDecorationsRenderer {
 			container = this.renderResourceWidget(nameWithLeader, undefined);
 		}
 
+		const agent = this.chatAgentService.getAgent(args.agentId);
+		const hover: Lazy<ChatAgentHover> = new Lazy(() => store.add(this.instantiationService.createInstance(ChatAgentHover)));
+		store.add(this.hoverService.setupManagedHover(getDefaultHoverDelegate('element'), container, () => {
+			hover.value.setAgent(args.agentId);
+			return hover.value.domNode;
+		}, agent && getChatAgentHoverOptions(() => agent, this.commandService)));
 		return container;
 	}
 

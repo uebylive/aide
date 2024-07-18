@@ -29,6 +29,3 @@ export const CONTEXT_CHAT_INPUT_CURSOR_AT_TOP = new RawContextKey<boolean>('aide
 export const CONTEXT_CHAT_INPUT_HAS_AGENT = new RawContextKey<boolean>('aideChatInputHasAgent', false);
 export const CONTEXT_CHAT_LOCATION = new RawContextKey<AideChatAgentLocation>('aideChatLocation', undefined);
 export const CONTEXT_IN_QUICK_CHAT = new RawContextKey<boolean>('quickAideChatHasFocus', false, { type: 'boolean', description: localize('inQuickAideChat', "True when the quick chat UI has focus, false otherwise.") });
-
-export const CONTEXT_CHAT_EDIT_RESPONSEID_IN_PROGRESS = new RawContextKey<string>('aideChatEditResponseIdInProgress', '', { type: 'string', description: localize('aideChatEditResponseIdInProgress', "The response ID of the current edit in progress.") });
-export const CONTEXT_CHAT_EDIT_CODEBLOCK_NUMBER_IN_PROGRESS = new RawContextKey<number>('aideChatEditCodeblockNumberInProgress', -1, { type: 'number', description: localize('aideChatEditCodeblockNumberInProgress', "The codeblock number of the current edit in progress.") });

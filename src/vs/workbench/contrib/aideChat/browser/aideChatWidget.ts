@@ -9,8 +9,8 @@ import { disposableTimeout, timeout } from 'vs/base/common/async';
 import { toErrorMessage } from 'vs/base/common/errorMessage';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, MutableDisposable, combinedDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { isEqual } from 'vs/base/common/resources';
+import { matchesScheme, Schemas } from 'vs/base/common/network';
+import { extUri, isEqual } from 'vs/base/common/resources';
 import { isDefined } from 'vs/base/common/types';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/chat';
@@ -69,6 +69,8 @@ export interface IChatWidgetContrib extends IDisposable {
 	 */
 	getInputState?(): any;
 
+	onDidChangeInputState?: Event<void>;
+
 	/**
 	 * Called with the result of getInputState when navigating input history.
 	 */
@@ -105,13 +107,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _onDidChangeParsedInput = this._register(new Emitter<void>());
 	readonly onDidChangeParsedInput = this._onDidChangeParsedInput.event;
 
+	private readonly _onWillMaybeChangeHeight = new Emitter<void>();
+	readonly onWillMaybeChangeHeight: Event<void> = this._onWillMaybeChangeHeight.event;
+
 	private _onDidChangeHeight = this._register(new Emitter<number>());
 	readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
 	private readonly _onDidChangeContentHeight = new Emitter<void>();
 	readonly onDidChangeContentHeight: Event<void> = this._onDidChangeContentHeight.event;
 
-	private contribs: IChatWidgetContrib[] = [];
+	private contribs: ReadonlyArray<IChatWidgetContrib> = [];
 
 	private tree!: WorkbenchObjectTree<ChatTreeItem>;
 	private renderer!: ChatListItemRenderer;
@@ -202,11 +207,18 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._codeBlockModelCollection = this._register(instantiationService.createInstance(CodeBlockModelCollection));
 
 		this._register(codeEditorService.registerCodeEditorOpenHandler(async (input: ITextResourceEditorInput, _source: ICodeEditor | null, _sideBySide?: boolean): Promise<ICodeEditor | null> => {
-			if (input.resource.scheme !== Schemas.vscodeChatCodeBlock) {
+			let resource = input.resource;
+
+			// if trying to open backing documents, actually open the real chat code block doc
+			if (matchesScheme(resource, Schemas.vscodeCopilotBackingChatCodeBlock)) {
+				resource = resource.with({ scheme: Schemas.vscodeChatCodeBlock });
+			}
+
+			if (resource.scheme !== Schemas.vscodeChatCodeBlock) {
 				return null;
 			}
 
-			const responseId = input.resource.path.split('/').at(1);
+			const responseId = resource.path.split('/').at(1);
 			if (!responseId) {
 				return null;
 			}
@@ -216,12 +228,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return null;
 			}
 
+			// TODO: needs to reveal the chat view
+
 			this.reveal(item);
 
 			await timeout(0); // wait for list to actually render
 
 			for (const editor of this.renderer.editorsInUse() ?? []) {
-				if (editor.uri?.toString() === input.resource.toString()) {
+				if (extUri.isEqual(editor.uri, resource, true)) {
 					const inner = editor.editor;
 					if (input.options?.selection) {
 						inner.setSelection({
@@ -304,6 +318,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return undefined;
 			}
 		}).filter(isDefined);
+
+		this.contribs.forEach(c => {
+			if (c.onDidChangeInputState) {
+				this._register(c.onDidChangeInputState(() => {
+					const state = this.collectInputState();
+					this.inputPart.updateState(state);
+				}));
+			}
+		});
 	}
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {
@@ -355,6 +378,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 						collapsible: false
 					};
 				});
+
+			this._onWillMaybeChangeHeight.fire();
 
 			this.tree.setChildren(null, treeItems, {
 				diffIdentityProvider: {
@@ -531,12 +556,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._onDidChangeContentHeight.fire();
 	}
 
-	private createInput(container: HTMLElement, options?: { renderFollowups: boolean; renderStyle?: 'default' | 'compact' }): void {
+	private createInput(container: HTMLElement, options?: { renderFollowups: boolean; renderStyle?: 'default' | 'compact' | 'minimal' }): void {
 		this.inputPart = this._register(this.instantiationService.createInstance(ChatInputPart,
 			this.location,
 			{
 				renderFollowups: options?.renderFollowups ?? true,
-				renderStyle: options?.renderStyle,
+				renderStyle: options?.renderStyle === 'minimal' ? 'compact' : options?.renderStyle,
 				menus: { executeToolbar: MenuId.AideChatExecute, primaryToolbar: MenuId.AideChatExecutePrimary, ...this.viewOptions.menus },
 				editorOverflowWidgetsDomNode: this.viewOptions.editorOverflowWidgetsDomNode,
 			}
@@ -545,8 +570,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this._register(this.inputPart.onDidLoadInputState(state => {
 			this.contribs.forEach(c => {
-				if (c.setInputState && typeof state === 'object' && state?.[c.id]) {
-					c.setInputState(state[c.id]);
+				if (c.setInputState) {
+					const contribState = (typeof state === 'object' && state?.[c.id]) ?? {};
+					c.setInputState(contribState);
 				}
 			});
 		}));
@@ -599,12 +625,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 			this._onDidChangeContentHeight.fire();
 		}));
-		this._register(this.inputEditor.onDidChangeModelContent(() => {
-			this.parsedChatRequest = undefined;
-		}));
-		this._register(this.chatAgentService.onDidChangeAgents(() => {
-			this.parsedChatRequest = undefined;
-		}));
+		this._register(this.inputEditor.onDidChangeModelContent(() => this.parsedChatRequest = undefined));
+		this._register(this.chatAgentService.onDidChangeAgents(() => this.parsedChatRequest = undefined));
 	}
 
 	private onDidStyleChange(): void {
@@ -620,8 +642,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this._register(model.onDidChange(e => {
 			if (e.kind === 'initialize') {
-				const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
-				this.inputPart.setState(viewState.inputValue ?? '', requester);
+				this.inputPart.updateState(viewState.inputValue ?? '');
 			}
 		}));
 
@@ -655,8 +676,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
-		const requester = { username: model.requesterUsername, avatarIconUri: model.requesterAvatarIconUri };
-		this.inputPart.setState(viewState.inputValue, requester);
+		this.inputPart.initForNewChatModel(viewState.inputValue, viewState.inputState ?? this.collectInputState());
 		this.contribs.forEach(c => {
 			if (c.setInputState && viewState.inputState?.[c.id]) {
 				c.setInputState(viewState.inputState?.[c.id]);
@@ -702,11 +722,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	setInput(value = ''): void {
-		this.inputPart.setValue(value);
+		this.inputPart.setValue(value, false);
 	}
 
 	getInput(): string {
 		return this.inputPart.inputEditor.getValue();
+	}
+
+	logInputHistory(): void {
+		this.inputPart.logInputHistory();
 	}
 
 	async acceptInput(query?: string): Promise<IChatResponseModel | undefined> {
@@ -741,9 +765,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			if (result) {
 				this.inputPart.attachedContext.clear();
-				const inputState = this.collectInputState();
-				this.inputPart.acceptInput(isUserQuery ? input : undefined, isUserQuery ? inputState : undefined);
+				this.inputPart.acceptInput(isUserQuery);
 				this._onDidSubmitAgent.fire({ agent: result.agent, slashCommand: result.slashCommand });
+				this.inputPart.updateState(this.collectInputState());
 				result.responseCompletePromise.then(() => {
 					const responses = this.viewModel?.getItems().filter(isResponseVM);
 					const lastResponse = responses?.[responses.length - 1];

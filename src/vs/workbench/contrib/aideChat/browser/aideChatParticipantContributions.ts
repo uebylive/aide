@@ -23,11 +23,14 @@ import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs
 import { IRawChatParticipantContribution } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
 import { isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
+import { INotificationService, Severity } from 'vs/platform/notification/common/notification';
+import { Action } from 'vs/base/common/actions';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 
 const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatParticipantContribution[]>({
 	extensionPoint: 'aideChatParticipants',
 	jsonSchema: {
-		description: localize('vscode.extension.contributes.aideChatParticipant', 'Contributes an Aide participant'),
+		description: localize('vscode.extension.contributes.aideChatParticipant', 'Contributes a chat participant'),
 		type: 'array',
 		items: {
 			additionalProperties: false,
@@ -36,32 +39,36 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 			required: ['name', 'id'],
 			properties: {
 				id: {
-					description: localize('aideChatParticipantId', "A unique id for this aide participant."),
+					description: localize('aideChatParticipantId', "A unique id for this chat participant."),
 					type: 'string'
 				},
 				name: {
-					description: localize('aideChatParticipantName', "User-facing name for this aide participant. The user will use '@' with this name to invoke the participant."),
+					description: localize('aideChatParticipantName', "User-facing name for this chat participant. The user will use '@' with this name to invoke the participant. Name must not contain whitespace."),
 					type: 'string',
 					pattern: '^[\\w0-9_-]+$'
 				},
 				fullName: {
-					markdownDescription: localize('aideChatParticipantFullName', "The full name of this aide participant, which is shown as the label for responses coming from this participant. If not provided, {0} is used.", '`name`'),
+					markdownDescription: localize('aideChatParticipantFullName', "The full name of this chat participant, which is shown as the label for responses coming from this participant. If not provided, {0} is used.", '`name`'),
 					type: 'string'
 				},
 				description: {
-					description: localize('aideChatParticipantDescription', "A description of this aide participant, shown in the UI."),
+					description: localize('aideChatParticipantDescription', "A description of this chat participant, shown in the UI."),
 					type: 'string'
 				},
 				isSticky: {
-					description: localize('aideChatCommandSticky', "Whether invoking the command puts the aide into a persistent mode, where the command is automatically added to the aide input for the next message."),
+					description: localize('aideChatCommandSticky', "Whether invoking the command puts the chat into a persistent mode, where the command is automatically added to the chat input for the next message."),
 					type: 'boolean'
 				},
 				sampleRequest: {
 					description: localize('aideChatSampleRequest', "When the user clicks this participant in `/help`, this text will be submitted to the participant."),
 					type: 'string'
 				},
+				when: {
+					description: localize('aideChatParticipantWhen', "A condition which must be true to enable this participant."),
+					type: 'string'
+				},
 				commands: {
-					markdownDescription: localize('aideChatCommandsDescription', "Commands available for this aide participant, which the user can invoke with a `/`."),
+					markdownDescription: localize('aideChatCommandsDescription', "Commands available for this chat participant, which the user can invoke with a `/`."),
 					type: 'array',
 					items: {
 						additionalProperties: false,
@@ -86,7 +93,7 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 								type: 'string'
 							},
 							isSticky: {
-								description: localize('aideChatCommandSticky', "Whether invoking the command puts the aide into a persistent mode, where the command is automatically added to the aide input for the next message."),
+								description: localize('aideChatCommandSticky', "Whether invoking the command puts the chat into a persistent mode, where the command is automatically added to the chat input for the next message."),
 								type: 'boolean'
 							},
 						}
@@ -116,6 +123,8 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		@IProductService private readonly productService: IProductService,
 		@IContextKeyService private readonly contextService: IContextKeyService,
 		@ILogService private readonly logService: ILogService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		this._viewContainer = this.registerViewContainer();
 		this.registerListeners();
@@ -159,8 +168,20 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	private handleAndRegisterChatExtensions(): void {
 		chatParticipantExtensionPoint.setHandler((extensions, delta) => {
 			for (const extension of delta.added) {
-				if (this.productService.quality === 'stable' && !isProposedApiEnabled(extension.description, 'chatParticipantPrivate')) {
-					this.logService.warn(`Chat participants are not yet enabled in VS Code Stable (${extension.description.identifier.value})`);
+				// Detect old version of Copilot Chat extension.
+				// TODO@roblourens remove after one release, after this we will rely on things like the API version
+				if (extension.value.some(participant => participant.id === 'github.copilot.default' && !participant.fullName)) {
+					this.notificationService.notify({
+						severity: Severity.Error,
+						message: localize('aideChatFailErrorMessage', "Chat failed to load. Please ensure that the GitHub Copilot Chat extension is up to date."),
+						actions: {
+							primary: [
+								new Action('showExtension', localize('action.showExtension', "Show Extension"), undefined, true, () => {
+									return this.commandService.executeCommand('workbench.extensions.action.showExtensionsWithIds', ['GitHub.copilot-chat']);
+								})
+							]
+						}
+					});
 					continue;
 				}
 
@@ -199,11 +220,6 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 					const store = new DisposableStore();
 					if (providerDescriptor.isDefault && (!providerDescriptor.locations || providerDescriptor.locations?.includes(AideChatAgentLocation.Panel))) {
 						store.add(this.registerDefaultParticipantView(providerDescriptor));
-					}
-
-					if (providerDescriptor.when && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
-						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
-						continue;
 					}
 
 					store.add(this._chatAgentService.registerAgent(

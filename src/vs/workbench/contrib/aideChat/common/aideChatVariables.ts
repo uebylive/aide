@@ -10,6 +10,7 @@ import { URI } from 'vs/base/common/uri';
 import { IRange } from 'vs/editor/common/core/range';
 import { Location } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatContentReference, IAideChatProgressMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -45,6 +46,7 @@ export interface IAideChatVariablesService {
 	getVariable(name: string): IAideChatVariableData | undefined;
 	getVariables(): Iterable<Readonly<IAideChatVariableData>>;
 	getDynamicVariables(sessionId: string): ReadonlyArray<IDynamicVariable>; // should be its own service?
+	attachContext(name: string, value: string | URI | Location | unknown, location: AideChatAgentLocation): void;
 
 	/**
 	 * Resolves all variables that occur in `prompt`

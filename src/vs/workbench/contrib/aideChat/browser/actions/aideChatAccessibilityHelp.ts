@@ -10,7 +10,7 @@ import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/ai
 import { AccessibleViewProviderId, AccessibleViewType } from 'vs/platform/accessibility/browser/accessibleView';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibleDiffViewerNext } from 'vs/editor/browser/widget/diffEditor/commands';
-import { INLINE_CHAT_ID } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { INLINE_CHAT_ID } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE, CONTEXT_REQUEST } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';

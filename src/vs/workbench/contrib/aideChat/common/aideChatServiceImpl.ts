@@ -24,13 +24,13 @@ import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storag
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModel, ChatRequestModel, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
 import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
 import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/aiModels';
+import { AideChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 
 const serializedChatKey = 'aideChat.sessions';
@@ -394,7 +394,7 @@ export class ChatService extends Disposable implements IAideChatService {
 			return model;
 		}
 
-		const sessionData = this._persistedSessions[sessionId];
+		const sessionData = revive<ISerializableChatData>(this._persistedSessions[sessionId]);
 		if (!sessionData) {
 			return undefined;
 		}
@@ -418,9 +418,10 @@ export class ChatService extends Disposable implements IAideChatService {
 
 		await model.waitForInitialization();
 
-		if (this._pendingRequests.has(request.session.sessionId)) {
-			this.trace('sendRequest', `Session ${request.session.sessionId} already has a pending request`);
-			return;
+		const cts = this._pendingRequests.get(request.session.sessionId);
+		if (cts) {
+			this.trace('resendRequest', `Session ${request.session.sessionId} already has a pending request, cancelling...`);
+			cts.cancel();
 		}
 
 		const location = options?.location ?? model.initialLocation;
@@ -428,7 +429,7 @@ export class ChatService extends Disposable implements IAideChatService {
 		const enableCommandDetection = !options?.noCommandDetection;
 		const defaultAgent = this.chatAgentService.getDefaultAgent(location)!;
 
-		this.removeRequest(model.sessionId, request.id);
+		model.removeRequest(request.id, ChatRequestRemovalReason.Resend);
 
 		await this._sendRequestAsync(model, model.sessionId, request.message, attempt, enableCommandDetection, defaultAgent, location, options).responseCompletePromise;
 	}
@@ -669,11 +670,13 @@ export class ChatService extends Disposable implements IAideChatService {
 					chatSessionId: model.sessionId,
 					location
 				});
-				const rawResult: IAideChatAgentResult = { errorDetails: { message: err.message } };
-				model.setResponse(request, rawResult);
-				completeResponseCreated();
-				this.trace('sendRequest', `Error while handling request: ${toErrorMessage(err)}`);
-				model.completeResponse(request);
+				this.logService.error(`Error while handling chat request: ${toErrorMessage(err, true)}`);
+				if (request) {
+					const rawResult: IAideChatAgentResult = { errorDetails: { message: err.message } };
+					model.setResponse(request, rawResult);
+					completeResponseCreated();
+					model.completeResponse(request);
+				}
 			} finally {
 				listener.dispose();
 			}
