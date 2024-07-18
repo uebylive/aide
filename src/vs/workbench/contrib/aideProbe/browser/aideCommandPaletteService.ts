@@ -4,13 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { Disposable } from 'vs/base/common/lifecycle';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { VIEW_ID as PROBE_VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 
 export interface IAideCommandPaletteData {
 	id: string;
@@ -23,11 +20,8 @@ export interface IAideCommandPaletteService {
 	showPalette(): void;
 	acceptInput(): void;
 	cancelRequest(): void;
-	rejectCodeEdits(): void;
-	acceptCodeEdits(): void;
 	hidePalette(): void;
 }
-
 
 export const IAideCommandPaletteService = createDecorator<IAideCommandPaletteService>('IAideCommandPaletteService');
 
@@ -44,12 +38,9 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 		return this._widget;
 	}
 
-
 	constructor(
 		@IWorkbenchLayoutService private readonly workbenchLayoutService: IWorkbenchLayoutService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IViewsService private readonly viewsService: IViewsService
-	) {
+		@IInstantiationService private readonly instantiationService: IInstantiationService) {
 		super();
 
 		// QUESTION Does it make sense to mount the palette here?
@@ -68,7 +59,6 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 		}));
 	}
 
-
 	showPalette(): void {
 		if (!this._mounted) {
 			this.mountPalette();
@@ -84,22 +74,7 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 			return;
 		}
 		this._widget.acceptInput();
-
-		const aideProbeView = this.viewsService.getViewWithId<AideProbeViewPane>(PROBE_VIEW_ID);
-		if (aideProbeView) {
-			aideProbeView.acceptInput();
-		}
 	}
-
-
-	acceptCodeEdits() {
-		console.log('accept code edits');
-	}
-
-	rejectCodeEdits() {
-		console.log('accept code edits');
-	}
-
 
 	cancelRequest(): void {
 		if (!this._widget) {
@@ -107,9 +82,6 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 		}
 		this._widget.cancelRequest();
 	}
-
-
-
 
 	hidePalette(): void {
 		if (!this._mounted || !this._widget) {
@@ -123,11 +95,12 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 			this._container = document.createElement('div');
 			this._container.classList.add('command-palette-container');
 			this.workbenchLayoutService.activeContainer.appendChild(this._container);
-
 		}
+
 		if (!this._mounted) {
 			this._widget = this.instantiationService.createInstance(AideCommandPaletteWidget, this._container);
 		}
+
 		this._mounted = true;
 	}
 

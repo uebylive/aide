@@ -175,8 +175,8 @@ export async function typeDefinitionProvider(
 	position: vscode.Position,
 	sidecarClient: SideCarClient,
 ): Promise<TypeDefinitionProvider[]> {
-	console.log('invoking goToDefinition');
-	console.log(position);
+	// console.log('invoking goToDefinition');
+	// console.log(position);
 	try {
 		const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
 			'vscode.executeTypeDefinitionProvider',
@@ -192,8 +192,8 @@ export async function typeDefinitionProvider(
 
 			// No need to await on this
 			if (shouldTrackFile(uri)) {
-				console.log('we are tracking this uri');
-				console.log(uri);
+				// console.log('we are tracking this uri');
+				// console.log(uri);
 				sidecarClient.documentOpen(textDocument.uri.fsPath, textDocument.getText(), textDocument.languageId);
 			}
 
@@ -205,7 +205,7 @@ export async function typeDefinitionProvider(
 			};
 		}));
 	} catch (exception) {
-		console.log(exception);
+		// console.log(exception);
 	}
 	return [];
 }

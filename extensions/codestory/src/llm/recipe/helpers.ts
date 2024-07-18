@@ -113,7 +113,7 @@ export const getCodeNodeForName = (
 	codeSymbolNameMaybe: string,
 	fileCodeSymbolInformationList: FileCodeSymbolInformation[],
 ): CodeSymbolInformation | null => {
-	console.log(`[getFilePathForCodeNode]: ${codeSymbolNameMaybe}`);
+	// console.log(`[getFilePathForCodeNode]: ${codeSymbolNameMaybe}`);
 	const possibleNodesMaybe: CodeSymbolInformation[] = [];
 	fileCodeSymbolInformationList.forEach((fileCodeSymbolInformation) => {
 		const nodes = fileCodeSymbolInformation.codeSymbols;

@@ -9,7 +9,7 @@
  */
 
 import * as vscode from 'vscode';
-import { DiagnosticCode, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentAnswer, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
+import { DiagnosticCode, DiagnosticInformationFromEditor, DiagnosticSeverity, InLineAgentAction, InLineAgentContextSelection, InLineAgentLLMType, InLineAgentMessage } from '../../sidecar/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { IndentStyle, IndentStyleSpaces, IndentationHelper } from './editorSessionProvider';
 
@@ -39,7 +39,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 
 	let enteredGenerationLoop = false;
 	const skillUsed: InLineAgentAction | undefined = undefined;
-	let generatedAnswer: InLineAgentAnswer | null = null;
+	// let generatedAnswer: InLineAgentAnswer | null = null;
 	const answerSplitOnNewLineAccumulator = new AnswerSplitOnNewLineAccumulator();
 	let finalAnswer = '';
 	let contextSelection = null;
@@ -122,8 +122,8 @@ export const reportFromStreamToEditorSessionProgress = async (
 			if (skillUsed === 'Doc') {
 				// for doc generation we just track the answer until we get the final
 				// one and then apply it to the editor
-				generatedAnswer = inlineAgentMessage.answer;
-				console.log(generatedAnswer);
+				// generatedAnswer = inlineAgentMessage.answer;
+				// console.log(generatedAnswer);
 			}
 			if (skillUsed === 'Edit' || skillUsed === 'Doc') {
 				// we first add the delta
@@ -154,7 +154,7 @@ export const reportFromStreamToEditorSessionProgress = async (
 				// the edits for the lines
 			}
 			if (skillUsed === 'Fix') {
-				console.log(inlineAgentMessage.answer);
+				// console.log(inlineAgentMessage.answer);
 				answerSplitOnNewLineAccumulator.addDelta(inlineAgentMessage.answer?.delta);
 				contextSelection = inlineAgentMessage.answer?.context_selection;
 				if (streamProcessor === null) {
@@ -470,7 +470,7 @@ class DocumentManager {
 			for (let j = 0; j < section.lines.length; j++) {
 				const lineIndex = section.first_line_index + j;
 				if (lineIndex >= this.lines.length) {
-					console.log('sidecar.document_manager.getLineCount.greater', this.lines.length, lineIndex);
+					// console.log('sidecar.document_manager.getLineCount.greater', this.lines.length, lineIndex);
 				}
 				this.lines[lineIndex].markSent();
 			}
@@ -496,8 +496,8 @@ class DocumentManager {
 
 	// Replace a specific line and report the change
 	replaceLine(index: number, newLine: AdjustedLineContent) {
-		console.log('sidecar.replaceLine');
-		console.log('sidecar.replaceLine', index, newLine.adjustedContent);
+		// console.log('sidecar.replaceLine');
+		// console.log('sidecar.replaceLine', index, newLine.adjustedContent);
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		this.progress.textEdit(
 			this.document.uri,
@@ -513,8 +513,8 @@ class DocumentManager {
 
 	// Replace multiple lines starting from a specific index
 	replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
-		console.log('sidecar.replaceLines');
-		console.log('sidecar.replaceLines', startIndex, endIndex, newLine.adjustedContent);
+		// console.log('sidecar.replaceLines');
+		// console.log('sidecar.replaceLines', startIndex, endIndex, newLine.adjustedContent);
 		if (startIndex === endIndex) {
 			return this.replaceLine(startIndex, newLine);
 		} else {
@@ -538,8 +538,8 @@ class DocumentManager {
 
 	// Add a new line at the end
 	appendLine(newLine: AdjustedLineContent) {
-		console.log('sidecar.appendLine');
-		console.log('sidecar.appendLine', this.lines.length, newLine.adjustedContent);
+		// console.log('sidecar.appendLine');
+		// console.log('sidecar.appendLine', this.lines.length, newLine.adjustedContent);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.textEdit(
 			this.document.uri,
@@ -555,8 +555,8 @@ class DocumentManager {
 
 	// Insert a new line after a specific index
 	insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		console.log('sidecar.insertLineAfter');
-		console.log('sidecar.insertLineAfter', index, newLine.adjustedContent);
+		// console.log('sidecar.insertLineAfter');
+		// console.log('sidecar.insertLineAfter', index, newLine.adjustedContent);
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		this.progress.textEdit(
 			this.document.uri,
@@ -813,7 +813,7 @@ export const convertVSCodeDiagnostic = (
 export const shouldAddLeadingStrings = (
 	model: InLineAgentLLMType | undefined,
 ): boolean => {
-	console.log('mode being used', model);
+	// console.log('mode being used', model);
 	if (model === 'MistralInstruct' || model === 'Mixtral' || model === 'DeepSeekCoder1_3BInstruct' || model === 'DeepSeekCoder33BInstruct' || model === 'DeepSeekCoder6BInstruct' || model === 'CodeLLama70BInstruct' || model === 'CodeLlama13BInstruct' || model === 'CodeLlama7BInstruct') {
 		return true;
 	}

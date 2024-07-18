@@ -8,38 +8,32 @@ import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/lis
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
+import { relativePath } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { FileKind } from 'vs/platform/files/common/files';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { FileKind } from 'vs/platform/files/common/files';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { relativePath } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-//import { IEditorProgressService } from 'vs/platform/progress/common/progress';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
+import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
-
 
 interface ChangeSymbolInfoEvent {
 	index: number;
 	element: IAideProbeBreakdownViewModel;
 }
 
-
 export class AideCommandPalettePanel extends Disposable {
-
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 	private userFocusIndex: number | undefined;
-
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
 	container: HTMLElement;
@@ -47,11 +41,13 @@ export class AideCommandPalettePanel extends Disposable {
 	private headerText: HTMLElement;
 	private loadingSpinner: HTMLElement | undefined;
 	private actionsToolbar: MenuWorkbenchToolBar;
+	emptyListPlaceholder: HTMLElement;
+
 	private listContainer: HTMLElement;
 	private list: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
-	private emptyListPlaceholder: HTMLElement;
 	private renderer: SymbolInfoRenderer;
 	private viewModel: IAideProbeBreakdownViewModel[] = [];
+
 	maxItems: number = 8;
 
 	private isVisible: boolean | undefined;
@@ -66,7 +62,6 @@ export class AideCommandPalettePanel extends Disposable {
 		this.container = container;
 
 		this.header = $('.symbol-info-header');
-		dom.hide(this.header);
 		this.container.appendChild(this.header);
 		this.headerText = $('.symbol-info-header-text');
 		this.header.appendChild(this.headerText);
@@ -76,8 +71,8 @@ export class AideCommandPalettePanel extends Disposable {
 		this.container.appendChild(this.listContainer);
 
 		this.emptyListPlaceholder = $('.symbol-info-empty-list-placeholder');
-		this.container.appendChild(this.emptyListPlaceholder);
-		dom.hide(this.emptyListPlaceholder);
+		this.listContainer.appendChild(this.emptyListPlaceholder);
+		this.emptyListPlaceholder.style.visibility = 'hidden';
 
 		const toolbarContainer = $('.symbol-info-toolbar-container');
 		this.header.appendChild(toolbarContainer);
@@ -106,11 +101,13 @@ export class AideCommandPalettePanel extends Disposable {
 		return this.list.contentHeight + 36;
 	}
 
-	show(headerText: string = 'New request', isLoading: boolean): void {
+	show(headerText: string | undefined, isLoading: boolean): void {
 
-		this.headerText.textContent = headerText;
+		if (headerText) {
+			this.headerText.textContent = headerText;
+		}
 
-		dom.show(this.header);
+		dom.show(this.container);
 
 		if (isLoading) {
 			if (!this.loadingSpinner) {
@@ -135,6 +132,7 @@ export class AideCommandPalettePanel extends Disposable {
 			this.createSymbolInfosList(this.listContainer);
 		}
 
+		this.render();
 		// Make visible
 		this.isVisible = true;
 	}
@@ -218,7 +216,6 @@ export class AideCommandPalettePanel extends Disposable {
 	}
 
 	async openSymbolInfoReference(element: IAideProbeBreakdownViewModel, setFocus: boolean = false): Promise<void> {
-
 		if (this.activeSymbolInfo === element) {
 			return;
 		} else {
@@ -251,14 +248,8 @@ export class AideCommandPalettePanel extends Disposable {
 				matchingIndex = matchIndex;
 			});
 		}
-		console.log('updating symbol info', this.list?.length);
-		if (list.length === 0) {
-			this.emptyListPlaceholder.textContent = 'Loading...';
-			dom.show(this.emptyListPlaceholder);
-		} else {
-			dom.hide(this.emptyListPlaceholder);
-		}
-		list.rerender();
+
+		this.render();
 
 		if (this.userFocusIndex !== undefined) {
 			list.setFocus([this.userFocusIndex]);
@@ -266,7 +257,7 @@ export class AideCommandPalettePanel extends Disposable {
 			list.setFocus([matchingIndex]);
 		}
 
-		this.layout();
+
 	}
 
 	filterSymbolInfo(filteredSymbols: ReadonlyArray<IAideProbeBreakdownViewModel>): void {
@@ -289,50 +280,49 @@ export class AideCommandPalettePanel extends Disposable {
 			);
 		}
 
-		console.log('filtering symbol info', this.list?.length);
-		if (list.length === 0) {
-			dom.show(this.emptyListPlaceholder);
-			this.emptyListPlaceholder.textContent = 'No symbols match your query';
-			dom.hide(this.listContainer);
-		} else {
-			dom.hide(this.emptyListPlaceholder);
-			dom.show(this.listContainer);
-			list.rerender();
-		}
+		this.render(true);
+
 
 		if (focusIndex !== -1) {
 			list.setFocus([focusIndex]);
 		} else if (filteredSymbols.length > 0) {
 			list.setFocus([0]);
 		}
-
-		// TODO: Fix height bug when the list is not epty but the layout
-		// calculates its height as 0
-
-		this.layout();
 	}
 
-
-
 	hide(): void {
-		if (!this.isVisible || !this.list) {
-			return; // already hidden
+		if (this.list) {
+			// Clear list
+			this.list.splice(0, this.viewModel.length);
 		}
 
 		this.userFocusIndex = undefined;
-		dom.hide(this.header);
-
-		// Remove all explanation widgets and go-to-definition widgets
-		this.explanationService.clear();
+		dom.hide(this.container);
 
 		// Hide
 		this.isVisible = false;
 
-		// Clear list
-		this.list.splice(0, this.viewModel.length);
 
 		// Clear view model
 		this.viewModel = [];
+		this.render();
+	}
+
+
+	private render(isFiltering: boolean = false) {
+		if (!this.list) {
+			return;
+		}
+		this.list.rerender();
+		if (this.list.length === 0) {
+			this.emptyListPlaceholder.style.visibility = 'visible';
+			this.emptyListPlaceholder.textContent = isFiltering ? 'No symbols match your query' : 'Loading...';
+			this.list.getHTMLElement().style.visibility = 'hidden';
+		} else {
+			this.emptyListPlaceholder.style.visibility = 'hidden';
+			this.list.getHTMLElement().style.visibility = 'visible';
+		}
+		this.layout();
 	}
 
 	layout(width?: number): void {
@@ -358,7 +348,7 @@ function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemove
 	const addRatio = linesAdded / totalChanges;
 	const delRatio = linesRemoved / totalChanges;
 
-	const diffstat = new Array(numberOfBoxes).fill('empty');
+	const diffstat: DiffStat = new Array(numberOfBoxes).fill('empty');
 
 	for (let i = 0; i < numberOfBoxes; i++) {
 		const threshold = (i + 1) / 5;
@@ -374,36 +364,19 @@ function calculateDiffstat(totalChanges: number, linesAdded: number, linesRemove
 	return diffstat;
 }
 
-function generateDiffstats(fileChanges: Record<URI['path'], FileChanges>): Map<URI['path'], DiffStat> {
-	const diffstats = new Map<URI['path'], DiffStat>();
-
-	for (const [path, changes] of Object.entries(fileChanges)) {
-		const totalChanges = changes.added + changes.removed;
-		const stat = calculateDiffstat(totalChanges, changes.added, changes.removed);
-		diffstats.set(path, stat);
-	}
-
-	return diffstats;
-}
-
-
 class SymbolInfoDiffStat extends Disposable {
 	private diffStat: DiffStat;
 	private size: number = 5;
 	private readonly container: HTMLElement;
-	private readonly changes: FileChanges;
 
 	constructor(
 		container: HTMLElement,
-		changes: FileChanges,
 		diffStat: DiffStat,
-		size: number = 5,
+		private readonly hunkCount: number = 0
 	) {
 		super();
 		this.container = container;
 		this.diffStat = diffStat;
-		this.size = size;
-		this.changes = changes;
 		this.render();
 	}
 
@@ -433,13 +406,11 @@ class SymbolInfoDiffStat extends Disposable {
 		}
 
 		outer.appendChild(statContainer);
-		const changesDescription = $('.symbol-info-diff-stat-description.sr-only');
-		const { added, removed } = this.changes;
-		changesDescription.textContent = `${added + removed} changed ${added} addition & ${removed} deletion`;
+		const changesDescription = $('.symbol-info-diff-stat-description');
+		changesDescription.textContent = `${this.hunkCount} change${this.hunkCount === 1 ? '' : 's'}`;
 		outer.appendChild(changesDescription);
 		this.container.appendChild(outer);
 	}
-
 }
 
 interface ISymbolInfoTemplateData {
@@ -454,13 +425,6 @@ interface IItemHeightChangeParams {
 	index: number;
 	height: number;
 }
-
-
-const changes = {
-	added: 5, removed: 5,
-};
-
-const diffstat: DiffStat = ['added', 'removed', 'empty', 'empty', 'empty'];
 
 class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, ISymbolInfoTemplateData> {
 	static readonly TEMPLATE_ID = 'symbolInfoListRenderer';
@@ -502,7 +466,6 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
 			label.element.style.display = 'flex';
 
-
 			const workspaceFolder = this.contextService.getWorkspace().folders[0];
 			const workspaceFolderUri = workspaceFolder.uri;
 			const path = relativePath(workspaceFolderUri, uri);
@@ -524,7 +487,20 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 			});
 		}
 
-		templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, changes, diffstat));
+		if (element.edits.length > 0) {
+			const changes = element.edits.reduce((acc, edit) => {
+				const newRanges = edit.getRangesN() || [];
+				acc.added += newRanges.reduce((sum, range) => sum + range.endLineNumber - range.startLineNumber, 0);
+
+				if (!edit.isInsertion()) {
+					const oldRanges = edit.getRanges0() || [];
+					acc.removed += oldRanges.reduce((sum, range) => sum + range.endLineNumber - 1 - range.startLineNumber, 0);
+				}
+				return acc;
+			}, { added: 0, removed: 0 });
+			const diffStat = calculateDiffstat(changes.added + changes.removed, changes.added, changes.removed);
+			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, diffStat, element.edits.length));
+		}
 
 		this.updateItemHeight(templateData);
 

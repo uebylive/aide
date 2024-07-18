@@ -51,7 +51,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				}
 			}
 		} catch (exception) {
-			console.log('error when copying user settings.json', exception);
+			// console.log('error when copying user settings.json', exception);
 		}
 		try {
 			if (appDataPath !== undefined) {
@@ -63,7 +63,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				}
 			}
 		} catch (exception) {
-			console.log('error when copying keybindings.json', exception);
+			// console.log('error when copying keybindings.json', exception);
 		}
 
 		// Now we copy the extensions
@@ -74,7 +74,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				copyFiles(keybindingsFolder, destinationFolder);
 			}
 		} catch (exception) {
-			console.log('error when copying extensions', exception);
+			// console.log('error when copying extensions', exception);
 		}
 		return;
 	}
@@ -105,7 +105,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error(`Error creating ${homeDir}/.config/Code/User/ directory`);
 			}
 		} catch (exception) {
-			console.log('error when creating ~/.config/Code/User/ directory', exception);
+			// console.log('error when creating ~/.config/Code/User/ directory', exception);
 		}
 		try {
 			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/keybindings.json`, `${homeDir}/.config/Aide/User`]);
@@ -114,7 +114,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error('Error copying keybindings from vscode to aide');
 			}
 		} catch (exception) {
-			console.log('error when copying keybindings.json', exception);
+			// console.log('error when copying keybindings.json', exception);
 		}
 		try {
 			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/settings.json`, `${homeDir}/.config/Aide/User`]);
@@ -123,7 +123,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error('Error copying settings from vscode to aide');
 			}
 		} catch (exception) {
-			console.log('error when copying settings.json', exception);
+			// console.log('error when copying settings.json', exception);
 		}
 		window.showInformationMessage('Copied settings from vscode to aide');
 		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
@@ -136,7 +136,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error('Error creating ~/Library/Application Support/Aide/User directory');
 			}
 		} catch (exception) {
-			console.log('error when creating ~/Library/Application Support/Aide/User directory', exception);
+			// console.log('error when creating ~/Library/Application Support/Aide/User directory', exception);
 		}
 		try {
 			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/keybindings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
@@ -145,7 +145,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error('Error copying keybindings from vscode to aide');
 			}
 		} catch (exception) {
-			console.log('error when copying keybindings.json', exception);
+			// console.log('error when copying keybindings.json', exception);
 		}
 		try {
 			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/settings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
@@ -154,7 +154,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 				logger.error('Error copying settings from vscode to aide');
 			}
 		} catch (exception) {
-			console.log('error when copying settings.json', exception);
+			// console.log('error when copying settings.json', exception);
 		}
 		window.showInformationMessage('Copied settings from vscode to aide');
 		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');

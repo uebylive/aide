@@ -89,51 +89,13 @@ declare module 'vscode' {
 		readonly response?: MarkdownString;
 	}
 
-	export interface AideProbeGoToDefinition {
+	export interface AideProbeResponseOpenFile {
 		/**
 		 * The file where the agent went to the definition.
 		 */
 		readonly uri: Uri;
-
-		/**
-		 * Name of the symbol
-		 */
-		readonly name: string;
-
-		/**
-		 * The position of the symbol where the agent went to definition.
-		 */
-		readonly range: Range;
-
-		/**
-		 * The thinking process behind following this definition
-		 */
-		readonly thinking: string;
 	}
 
-	export interface AideProbeResponseTextEditPreview {
-		/**
-	 * Code reference relevant to this breakdown.
-	 */
-		readonly reference: CodeReferenceByName;
-
-		/**
-		 * Where edits will be applied
-		 */
-		readonly ranges: Range[];
-	}
-
-	export interface AideProbeResponseTextEdit {
-		/**
-	 * Code reference relevant to this breakdown.
-	 */
-		readonly reference: CodeReferenceByName;
-
-		/**
-		 * Where edits will be applied
-		 */
-		readonly edits: TextEdit[];
-	}
 
 	export interface AideChatResponseTextEdit {
 		/**

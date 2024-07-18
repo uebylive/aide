@@ -2,45 +2,38 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { commands, ExtensionContext, window, workspace, languages, modelSelection, env, csevents, } from 'vscode';
 import * as os from 'os';
-import * as http from 'http';
-import * as net from 'net';
+import { commands, csevents, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
 
-import { loadOrSaveToStorage } from './storage/types';
-import logger from './logger';
-import postHogClient from './posthog/client';
-import { getGitCurrentHash, getGitRepoName } from './git/helper';
-import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
-import { CodeSymbolInformationEmbeddings } from './utilities/types';
-import { getUniqueId, getUserId } from './utilities/uniqueId';
-import { readCustomSystemInstruction } from './utilities/systemInstruction';
-import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
-import { startSidecarBinary } from './utilities/setupSidecarBinary';
-import { ProjectContext } from './utilities/workspaceContext';
+import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { CSChatAgentProvider } from './completions/providers/chatprovider';
-import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
+import { AideProbeProvider } from './completions/providers/probeProvider';
+import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
-import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
+import logger from './logger';
+import postHogClient from './posthog/client';
+import { AideQuickFix } from './quickActions/fix';
+import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
+import { loadOrSaveToStorage } from './storage/types';
+import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
+import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
-import { handleRequest } from './server/requestHandler';
+import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
+import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
-import { AideQuickFix } from './quickActions/fix';
-import { copySettings } from './utilities/copySettings';
-import { AideProbeProvider } from './completions/providers/probeProvider';
+import { readCustomSystemInstruction } from './utilities/systemInstruction';
+import { CodeSymbolInformationEmbeddings } from './utilities/types';
+import { getUniqueId } from './utilities/uniqueId';
+import { ProjectContext } from './utilities/workspaceContext';
 
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
-
-
 export async function activate(context: ExtensionContext) {
 	// Project root here
 	const uniqueUserId = getUniqueId();
-	const userId = getUserId();
-	console.log('User id:' + userId);
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
 	postHogClient?.capture({
 		distinctId: getUniqueId(),
@@ -49,10 +42,6 @@ export async function activate(context: ExtensionContext) {
 			platform: os.platform(),
 		},
 	});
-	const appDataPath = process.env.APPDATA;
-	const userProfilePath = process.env.USERPROFILE;
-	console.log('appDataPath', appDataPath);
-	console.log('userProfilePath', userProfilePath);
 	const registerPreCopyCommand = commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
@@ -122,82 +111,19 @@ export async function activate(context: ExtensionContext) {
 					current_window: currentWindow,
 				},
 			});
-			console.log('Received symbol navigation event!');
-			console.log(event);
+			// console.log('Received symbol navigation event!');
+			// console.log(event);
 		},
 	});
 
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();
-	const execPath = process.execPath;
-	console.log('Exec path:' + execPath);
-	console.log('Model configuration:' + JSON.stringify(modelConfiguration));
 	// Setup the sidecar client here
 	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
 	SIDECAR_CLIENT = sidecarClient;
-
-	const isPortOpen = async (port: number): Promise<boolean> => {
-		return new Promise((resolve, _) => {
-			const s = net.createServer();
-			s.once('error', (err) => {
-				s.close();
-				// @ts-ignore
-				if (err['code'] === 'EADDRINUSE') {
-					resolve(false);
-				} else {
-					resolve(false); // or throw error!!
-					// reject(err);
-				}
-			});
-			s.once('listening', () => {
-				resolve(true);
-				s.close();
-			});
-			s.listen(port);
-		});
-	};
-
-	const getNextOpenPort = async (startFrom: number = 42423) => {
-		let openPort: number | null = null;
-		while (startFrom < 65535 || !!openPort) {
-			if (await isPortOpen(startFrom)) {
-				openPort = startFrom;
-				break;
-			}
-			startFrom++;
-		}
-		return openPort;
-	};
-
-	// Server for the sidecar to talk to the editor
-	const server = http.createServer(handleRequest);
-	const port = await getNextOpenPort();
-	// can still grab it by listenting to port 0
-	server.listen(port);
-
-	// Register a disposable to stop the server when the extension is deactivated
-	context.subscriptions.push({
-		dispose: () => {
-			if (server) {
-				server.close();
-			}
-		},
-	});
-
-	const editorUrl = `http://localhost:${port}`;
-	console.log('Editor url:' + editorUrl);
-
-	// Register a disposable to stop the server when the extension is deactivated
-	context.subscriptions.push({
-		dispose: () => {
-			if (server) {
-				server.close();
-			}
-		},
-	});
 
 	// we want to send the open tabs here to the sidecar
 	const openTextDocuments = await getRelevantFiles();
@@ -216,7 +142,7 @@ export async function activate(context: ExtensionContext) {
 	// setup the callback for the model configuration
 	modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
-		console.log('Model configuration updated:' + JSON.stringify(config));
+		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
 	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup
@@ -275,7 +201,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	const probeProvider = new AideProbeProvider(sidecarClient, editorUrl);
+	const probeProvider = new AideProbeProvider(sidecarClient);
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands

@@ -4750,6 +4750,13 @@ export class AideChatResponseBreakdownPart {
 	}
 }
 
+export class AideProbeOpenFilePart {
+	uri: vscode.Uri;
+	constructor(uri: vscode.Uri) {
+		this.uri = uri;
+	}
+}
+
 export class AideProbeGoToDefinitionPart {
 	uri: vscode.Uri;
 	range: vscode.Range;
@@ -4760,24 +4767,6 @@ export class AideProbeGoToDefinitionPart {
 		this.range = range;
 		this.name = name;
 		this.thinking = thinking;
-	}
-}
-
-export class AideProbeResponseTextEditPreviewPart {
-	reference: vscode.CodeReferenceByName;
-	ranges: vscode.Range[];
-	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.Range | vscode.Range[]) {
-		this.reference = reference;
-		this.ranges = Array.isArray(ranges) ? ranges : [ranges];
-	}
-}
-
-export class AideProbeResponseTextEditPart {
-	reference: vscode.CodeReferenceByName;
-	edits: vscode.TextEdit[];
-	constructor(reference: vscode.CodeReferenceByName, ranges: vscode.TextEdit | vscode.TextEdit[]) {
-		this.reference = reference;
-		this.edits = Array.isArray(ranges) ? ranges : [ranges];
 	}
 }
 

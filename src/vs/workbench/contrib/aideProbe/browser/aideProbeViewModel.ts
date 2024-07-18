@@ -13,21 +13,21 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeTextEdit, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeTextEditPreview } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
+	readonly onDidChange: Event<void>;
+	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
+
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly requestInProgress: boolean;
-	readonly isTailing: boolean;
-	readonly onDidChange: Event<void>;
-	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
+	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
-
-
 	private _filter: string | undefined;
 
 	setFilter(value: string | undefined) {
@@ -58,8 +58,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.requestInProgress;
 	}
 
-	get isTailing(): boolean {
-		return this._model.isTailing;
+	private _lastFileOpened: URI | undefined;
+	get lastFileOpened(): URI | undefined {
+		return this._lastFileOpened;
 	}
 
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
@@ -68,23 +69,12 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return this.breakdowns.filter(b => !this._filter || b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase()));
-	}
-
-	private _goToDefinitions: IAideProbeGoToDefinitionViewModel[] = [];
-	get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinitionViewModel> {
-		return this._goToDefinitions;
-	}
-
-	private _codeEditsPreview: IAideProbeTextEditPreview[] = [];
-	get codeEditsPreview(): ReadonlyArray<IAideProbeTextEditPreview> {
-		return this._codeEditsPreview;
-	}
-
-
-	private _codeEdits: IAideProbeTextEdit[] = [];
-	get codeEdits(): ReadonlyArray<IAideProbeTextEdit> {
-		return this._codeEdits;
+		return this.breakdowns.filter(b => {
+			if (!this._filter) {
+				return true;
+			}
+			return b.name.toLowerCase().includes(this._filter.toLowerCase()) || b.uri.path.toLowerCase().includes(this._filter.toLowerCase());
+		});
 	}
 
 	constructor(
@@ -95,6 +85,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(async () => {
+
+			this._lastFileOpened = _model.response?.lastFileOpened;
+			const codeEdits = _model.response?.codeEdits;
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());
 				if (!reference) {
@@ -102,34 +95,37 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 
 				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
+				viewItem.symbol.then(symbol => {
+					if (!symbol) {
+						return;
+					}
+
+					const edits = codeEdits?.get(item.reference.uri.toString());
+					const hunks = edits?.hunkData.getInfo();
+					console.log(hunks?.map(h => ({ new: h.getRangesN(), old: h.getRanges0(), isInsertion: h.isInsertion() })));
+					for (const hunk of hunks ?? []) {
+						let wholeRange: Range | undefined;
+						const ranges = hunk.getRangesN();
+						for (const range of ranges) {
+							if (!wholeRange) {
+								wholeRange = range;
+							} else {
+								wholeRange = wholeRange.plusRange(range);
+							}
+						}
+
+						if (wholeRange && Range.containsRange(symbol.range, wholeRange)) {
+							viewItem.appendEdits([hunk]);
+						}
+					}
+
+					this._onDidChange.fire();
+				});
+
 				return viewItem;
 			}) ?? []);
 
-			this._goToDefinitions = _model.response?.goToDefinitions.map(definition => {
-				return this._register(this.instantiationService.createInstance(AideProbeGoToDefinitionViewModel, definition));
-			}) ?? [];
-
-			this._codeEditsPreview = _model.response?.codeEditsPreview.map(preview => {
-				return this._register(this.instantiationService.createInstance(AideProbeTextEditPreviewViewModel, preview));
-			}) ?? [];
-
-			this._codeEdits = _model.response?.codeEdits.map(edit => {
-				return this._register(this.instantiationService.createInstance(AideProbeTextEditViewModel, edit));
-			}) ?? [];
-
-			if (_model.response && this.isTailing && this._breakdowns.length > 0) {
-				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
-				this._onChangeActiveBreakdown.fire(latestBreakdown);
-			}
-
 			this._onDidChange.fire();
-		}));
-
-		this._register(_model.onDidChangeTailing((isTailing) => {
-			if (isTailing && this._breakdowns.length > 0) {
-				const latestBreakdown = this._breakdowns[this._breakdowns.length - 1];
-				this._onChangeActiveBreakdown.fire(latestBreakdown);
-			}
 		}));
 	}
 }
@@ -141,18 +137,15 @@ export interface IAideProbeBreakdownViewModel {
 	readonly reason?: IMarkdownString;
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
+	readonly edits: HunkInformation[];
 	currentRenderedHeight: number | undefined;
 }
 
-export interface IAideProbeGoToDefinitionViewModel {
-	// symbol uri
+export interface IAideProbeCodeEditPreviewViewModel {
 	readonly uri: URI;
-	// symbol name
-	readonly name: string;
-	// decoration range on the uri
 	readonly range: Range;
-	// the thinking process behind following this definition
-	readonly thinking: string;
+	readonly symbol: Promise<DocumentSymbol | undefined>;
+	isRendered: boolean;
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
@@ -192,6 +185,15 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 
 	currentRenderedHeight: number | undefined;
 
+	private _edits: HunkInformation[] = [];
+	get edits() {
+		return this._edits;
+	}
+
+	appendEdits(edits: HunkInformation[]) {
+		this._edits.push(...edits);
+	}
+
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,
 		private readonly reference: IReference<IResolvedTextEditorModel>,
@@ -220,67 +222,5 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		} catch (e) {
 			return;
 		}
-	}
-}
-
-export class AideProbeGoToDefinitionViewModel extends Disposable implements IAideProbeGoToDefinitionViewModel {
-
-	get uri() {
-		return this._definition.uri;
-	}
-
-	get name() {
-		return this._definition.name;
-	}
-
-	get range() {
-		return this._definition.range;
-	}
-
-	get thinking() {
-		return this._definition.thinking;
-	}
-
-	constructor(
-		private readonly _definition: IAideProbeGoToDefinition,
-	) {
-		super();
-	}
-}
-
-export class AideProbeTextEditPreviewViewModel extends Disposable implements IAideProbeTextEditPreview {
-	readonly kind = 'textEditPreview';
-
-	get reference() {
-		return this._preview.reference;
-	}
-
-	get ranges() {
-		return this._preview.ranges;
-	}
-
-	constructor(
-		private readonly _preview: IAideProbeTextEditPreview,
-	) {
-		super();
-	}
-}
-
-
-export class AideProbeTextEditViewModel extends Disposable implements IAideProbeTextEdit {
-	readonly kind = 'textEdit';
-
-	get reference() {
-		return this._edit.reference;
-	}
-
-	get edits() {
-		return this._edit.edits;
-	}
-
-	constructor(
-		private readonly _edit: IAideProbeTextEdit,
-	) {
-		super();
 	}
 }
