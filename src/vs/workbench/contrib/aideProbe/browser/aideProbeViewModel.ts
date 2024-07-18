@@ -210,7 +210,7 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 		}
 	}
 
-	async resolveSymbol(): Promise<DocumentSymbol | undefined> {
+	private async resolveSymbol(): Promise<DocumentSymbol | undefined> {
 		try {
 			const symbols = (await this.outlineModelService.getOrCreate(this.reference.object.textEditorModel, CancellationToken.None)).getTopLevelSymbols();
 			const symbol = symbols.find(s => s.name === this.name);

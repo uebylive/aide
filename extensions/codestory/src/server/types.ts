@@ -74,6 +74,7 @@ interface UIEvent {
 	SymbolLoctationUpdate: SymbolLocation;
 	SymbolEventSubStep: SymbolEventSubStepRequest;
 	RequestEvent: RequestEvents;
+	EditRequestFinished: string;
 }
 
 interface SymbolEventSubStepRequest {

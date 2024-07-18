@@ -119,6 +119,26 @@ export class AideProbeProvider implements vscode.Disposable {
 		applyEdits(request, this._openResponseStream);
 	}
 
+	private addFileContext(textEditor: vscode.TextEditor, variables: vscode.ChatPromptReference[]) {
+		const fileName = textEditor.document.fileName.split('/').pop();
+		const firstLine = textEditor.document.lineAt(0);
+		const lastLine = textEditor.document.lineAt(textEditor.document.lineCount - 1);
+		const codeSelection = {
+			uri: textEditor.document.uri,
+			range: {
+				startLineNumber: firstLine.lineNumber,
+				startColumn: firstLine.range.start.character,
+				endLineNumber: lastLine.lineNumber,
+				endColumn: lastLine.range.end.character
+			}
+		};
+		variables.push({
+			id: 'vscode.file',
+			name: `file:${fileName}`,
+			value: JSON.stringify(codeSelection)
+		});
+	}
+
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
 		if (!this._editorUrl) {
 			return;
@@ -149,23 +169,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		const variables: vscode.ChatPromptReference[] = [];
 		const activeEditor = vscode.window.activeTextEditor;
 		if (activeEditor) {
-			const fileName = activeEditor.document.fileName.split('/').pop();
-			const firstLine = activeEditor.document.lineAt(0);
-			const lastLine = activeEditor.document.lineAt(activeEditor.document.lineCount - 1);
-			const codeSelection = {
-				uri: activeEditor.document.uri,
-				range: {
-					startLineNumber: firstLine.lineNumber,
-					startColumn: firstLine.range.start.character,
-					endLineNumber: lastLine.lineNumber,
-					endColumn: lastLine.range.end.character
-				}
-			};
-			variables.push({
-				id: 'vscode.file',
-				name: `file:${fileName}`,
-				value: JSON.stringify(codeSelection)
-			});
+			this.addFileContext(activeEditor, variables);
 		}
 
 		const threadId = uuid.v4();

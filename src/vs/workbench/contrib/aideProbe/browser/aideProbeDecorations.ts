@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { MarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { themeColorFromId } from 'vs/base/common/themables';
@@ -14,9 +15,10 @@ import { Range } from 'vs/editor/common/core/range';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -41,6 +43,12 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 	}
 });
 
+const breakdownDecorationOptions = ModelDecorationOptions.register({
+	description: 'aide-probe-breakdown',
+	className: 'aide-probe-breakdown',
+	isWholeLine: true,
+});
+
 const goToDefinitionDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-go-to-definition',
 	className: 'aide-probe-go-to-definition'
@@ -57,12 +65,14 @@ export class AideProbeDecorationService extends Disposable {
 	static readonly ID = 'workbench.contrib.aideProbeDecorationService';
 
 	private readonly _hunkDisplayData = new Map<HunkInformation, HunkDisplayData>();
+	private breakdownDecorations: Map<string, IEditorDecorationsCollection> = new Map();
 	private goToDefinitionDecorations: Map<string, IEditorDecorationsCollection> = new Map();
 
 	constructor(
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 	) {
 		super();
 
@@ -73,6 +83,8 @@ export class AideProbeDecorationService extends Disposable {
 				this.handleUndoEditEvent(event);
 			} else if (event.kind === 'goToDefinition') {
 				this.handleGoToDefinitionEvent(event);
+			} else if (event.kind === 'breakdown') {
+				this.handleBreakdownEvent(event);
 			}
 		}));
 		this._register(this.aideProbeService.onReview(() => {
@@ -96,10 +108,12 @@ export class AideProbeDecorationService extends Disposable {
 		}));
 	}
 
-	private async getCodeEditor(resource: URI): Promise<ICodeEditor | null> {
+	private async getCodeEditor(resource: URI, dontOpen?: boolean): Promise<ICodeEditor | null> {
 		const openEditor = this.codeEditorService.listCodeEditors().find(editor => editor.getModel()?.uri.toString() === resource.toString());
 		if (openEditor) {
 			return openEditor;
+		} else if (dontOpen) {
+			return null;
 		}
 
 		return await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
@@ -222,6 +236,41 @@ export class AideProbeDecorationService extends Disposable {
 		for (const data of this._hunkDisplayData.values()) {
 			data.remove();
 		}
+		for (const decorations of this.breakdownDecorations.values()) {
+			decorations.clear();
+		}
+	}
+
+	private async handleBreakdownEvent(event: IAideProbeBreakdownContent) {
+		const currentSession = this.aideProbeService.getSession();
+		if (!currentSession) {
+			return;
+		}
+
+		const editor = await this.getCodeEditor(event.reference.uri, true);
+		const textModel = editor?.getModel();
+		if (!editor || !textModel) {
+			return;
+		}
+
+		const { reference } = event;
+		const symbols = (await this.outlineModelService.getOrCreate(textModel, CancellationToken.None)).getTopLevelSymbols();
+		const symbol = symbols.find(s => s.name === reference.name);
+		if (!symbol) {
+			return;
+		}
+
+		let progressiveBreakdownDecorations = this.breakdownDecorations.get(reference.uri.toString());
+		if (!progressiveBreakdownDecorations) {
+			this.breakdownDecorations.set(reference.uri.toString(), editor.createDecorationsCollection());
+			progressiveBreakdownDecorations = this.breakdownDecorations.get(reference.uri.toString());
+		}
+
+		const newDecoration: IModelDeltaDecoration = {
+			range: symbol.range,
+			options: breakdownDecorationOptions
+		};
+		progressiveBreakdownDecorations?.append([newDecoration]);
 	}
 
 	private async handleGoToDefinitionEvent(event: IAideProbeGoToDefinition) {
