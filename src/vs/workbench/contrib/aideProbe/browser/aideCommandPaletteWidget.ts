@@ -612,7 +612,7 @@ export class AideCommandPaletteWidget extends Disposable {
 			dom.show(this.panelContainer);
 			this.isPanelVisible = true;
 		} else if (this.viewModel?.lastFileOpened) {
-			this.panel.emptyListPlaceholder.textContent = `Opening ${basename(this.viewModel.lastFileOpened.fsPath)}`;
+			this.panel.emptyListPlaceholder.textContent = `Reading ${basename(this.viewModel.lastFileOpened.fsPath)}`;
 		}
 
 		this.panel.show(undefined, this.requestInProgress.get() ?? false);
