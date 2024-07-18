@@ -171,12 +171,6 @@ export class AideProbeProvider implements vscode.Disposable {
 		if (activeEditor) {
 			this.addFileContext(activeEditor, variables);
 		}
-		const visibleTextEditors = vscode.window.visibleTextEditors;
-		for (const visibleEditor of visibleTextEditors) {
-			if (visibleEditor !== activeEditor) {
-				this.addFileContext(visibleEditor, variables);
-			}
-		}
 
 		const threadId = uuid.v4();
 
