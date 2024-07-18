@@ -377,6 +377,8 @@ export const reportAgentEventsToChat = async (
 			}
 
 			break;
+		} else if (event.event.EditRequestFinished) {
+			break;
 		}
 	}
 
