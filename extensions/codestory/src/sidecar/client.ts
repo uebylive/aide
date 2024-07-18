@@ -19,7 +19,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
 
 export enum CompletionStopReason {
 	/**
@@ -229,8 +229,8 @@ export class SideCarClient {
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
-		console.log(sideCarModelConfiguration);
-		console.log(JSON.stringify(sideCarModelConfiguration));
+		// console.log(sideCarModelConfiguration);
+		// console.log(JSON.stringify(sideCarModelConfiguration));
 		const agentSystemInstruction = readCustomSystemInstruction();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
@@ -251,8 +251,8 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
-				console.log('string parts');
-				console.log(lineSinglePartTrimmed);
+				// console.log('string parts');
+				// console.log(lineSinglePartTrimmed);
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
 				yield conversationMessage;
 			}
@@ -317,7 +317,7 @@ export class SideCarClient {
 					continue;
 				}
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
-				console.log('[search][stream] whats the message from the stream');
+				// console.log('[search][stream] whats the message from the stream');
 				yield conversationMessage;
 			}
 		}
@@ -353,8 +353,8 @@ export class SideCarClient {
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
 			await vscode.modelSelection.getConfiguration()
 		);
-		console.log('sidecar.model_configuration');
-		console.log(JSON.stringify(sideCarModelConfiguration));
+		// console.log('sidecar.model_configuration');
+		// console.log(JSON.stringify(sideCarModelConfiguration));
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
 
 		const body = {
@@ -677,7 +677,7 @@ export class SideCarClient {
 		// First get the list of indexed repositories
 		// log repo ref
 		await this.waitForGreenHC();
-		console.log('fetching the status of the various repositories');
+		// console.log('fetching the status of the various repositories');
 		const response = await fetch(this.getRepoListUrl());
 		const repoList = (await response.json()) as RepoStatus;
 		if (sidecarNotIndexRepository()) {
@@ -705,7 +705,7 @@ export class SideCarClient {
 		const totalAttempts = 10;
 		while (true) {
 			try {
-				console.log('trying to HC for repo check');
+				// console.log('trying to HC for repo check');
 				const url = baseUrl.toString();
 				const response = await fetch(url);
 				return response.status === 200;
@@ -798,12 +798,12 @@ export class SideCarClient {
 		editorUrl: string,
 		threadId: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		console.log('starting agent probe');
+		// console.log('starting agent probe');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/probe_request';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
-		let activeWindowDataForProbing = null;
+		let activeWindowDataForProbing = undefined;
 		if (activeWindowData !== undefined) {
 			activeWindowDataForProbing = {
 				file_path: activeWindowData.file_path,
@@ -813,12 +813,52 @@ export class SideCarClient {
 		}
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const body: ProbeAgentBody = {
+			query,
 			editor_url: editorUrl,
+			request_id: threadId,
 			model_config: sideCarModelConfiguration,
 			user_context: await convertVSCodeVariableToSidecar(variables),
-			query,
 			active_window_data: activeWindowDataForProbing,
+		};
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
+	}
+
+	async *startAgentCodeEdit(
+		query: string,
+		variables: readonly vscode.ChatPromptReference[],
+		editorUrl: string,
+		threadId: string,
+	): AsyncIterableIterator<SideCarAgentEvent> {
+		// console.log('starting agent code edit');
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/code_editing';
+		const url = baseUrl.toString();
+		const activeWindowData = getCurrentActiveWindow();
+		let activeWindowDataForProbing = undefined;
+		if (activeWindowData !== undefined) {
+			activeWindowDataForProbing = {
+				file_path: activeWindowData.file_path,
+				file_content: activeWindowData.file_content,
+				language: activeWindowData.language,
+			};
+		}
+		const body: CodeEditAgentBody = {
+			user_query: query,
+			editor_url: editorUrl,
 			request_id: threadId,
+			user_context: await convertVSCodeVariableToSidecar(variables),
+			active_window_data: activeWindowDataForProbing,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -834,6 +874,7 @@ export class SideCarClient {
 		}
 	}
 }
+
 
 interface CodeSelectionUriRange {
 	uri: vscode.Uri;

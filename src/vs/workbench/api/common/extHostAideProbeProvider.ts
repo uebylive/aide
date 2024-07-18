@@ -10,8 +10,7 @@ import { IExtensionDescription } from 'vs/platform/extensions/common/extensions'
 import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeData, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import type * as vscode from 'vscode';
 
 export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideProbeProviderShape {
@@ -43,6 +42,11 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					const dto = typeConvert.AideChatResponseBreakdownPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
+				openFile(value) {
+					const part = new extHostTypes.AideProbeOpenFilePart(value.uri);
+					const dto = typeConvert.AideProbeOpenFilePart.from(part);
+					that._proxy.$handleProbingProgressChunk(request, dto);
+				},
 				markdown(value) {
 					const part = new extHostTypes.AideChatResponseMarkdownPart(value);
 					const dto = typeConvert.AideChatResponseMarkdownPart.from(part);
@@ -52,6 +56,10 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					const part = new extHostTypes.AideProbeGoToDefinitionPart(value.uri, value.range, value.name, value.thinking);
 					const dto = typeConvert.AideProbeGoToDefinitionPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
+				},
+				async codeEdit(value) {
+					const dto = typeConvert.AideProbeResponseTextEditPart.from(value);
+					await that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 			},
 			token

@@ -12,13 +12,19 @@ import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/brow
 import { Range } from 'vs/editor/common/core/range';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { symbolDecorationLineOptions } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideProbeDecorations';
 
 const $ = dom.$;
+
+export const symbolDecorationLineOptions = ModelDecorationOptions.register({
+	description: 'aide-probe-definition-line',
+	className: 'aide-probe-definition-line-decoration',
+	isWholeLine: true,
+});
 
 export class AideProbeExplanationWidget extends SidePanelWidget {
 	private breakdowns: { vm: IAideProbeBreakdownViewModel; position?: number }[] = [];
@@ -128,7 +134,6 @@ export class AideProbeExplanationWidget extends SidePanelWidget {
 
 	clear(): void {
 		this.breakdowns = [];
-		this._probingSymbolDecorations.clear();
 	}
 
 	override show(): void {

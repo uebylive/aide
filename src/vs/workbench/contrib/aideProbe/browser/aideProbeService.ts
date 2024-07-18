@@ -5,69 +5,16 @@
 
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { Range } from 'vs/editor/common/core/range';
+import { Emitter, Event } from 'vs/base/common/event';
+import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeRequestModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
-export interface IAideProbeData {
-	id: string;
-}
-
-export interface IFollowAlongAction {
-	type: 'followAlong';
-	status: boolean;
-}
-
-export interface INavigateBreakdownAction {
-	type: 'navigateBreakdown';
-	status: boolean;
-}
-
-export interface IAideProbeUserAction {
-	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction;
-}
-
-interface IReferenceByName {
-	name: string;
-	uri: URI;
-}
-
-export interface IAideProbeBreakdownContent {
-	reference: IReferenceByName;
-	query?: IMarkdownString;
-	reason?: IMarkdownString;
-	response?: IMarkdownString;
-	kind: 'breakdown';
-}
-
-export interface IAideProbeGoToDefinition {
-	kind: 'goToDefinition';
-	uri: URI;
-	name: string;
-	range: Range;
-	thinking: string;
-}
-
-export type IAideProbeProgress =
-	| IAideChatMarkdownContent
-	| IAideProbeBreakdownContent
-	| IAideProbeGoToDefinition;
-
-export interface IAideProbeResponseErrorDetails {
-	message: string;
-}
-
-export interface IAideProbeResult {
-	errorDetails?: IAideProbeResponseErrorDetails;
-}
+export type ProbeMode = 'edit' | 'explore';
 
 export interface IAideProbeResolver {
-	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => void, token: CancellationToken) => Promise<IAideProbeResult>;
+	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => Promise<void>, token: CancellationToken) => Promise<IAideProbeResult>;
 	onUserAction: (action: IAideProbeUserAction) => void;
 }
 
@@ -79,12 +26,14 @@ export interface IAideProbeService {
 
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
-	initiateProbe(model: IAideProbeModel, request: string): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
 	cancelCurrentRequestForSession(sessionId: string): void;
+	acceptCodeEdits(): void;
+	rejectCodeEdits(): void;
 	clearSession(): void;
 
-	followAlong(follow: boolean): void;
-	navigateBreakdown(): void;
+	readonly onNewEvent: Event<IAideProbeResponseEvent>;
+	readonly onReview: Event<IAideProbeReviewUserEvent>;
 }
 
 export interface IInitiateProbeResponseState {
@@ -95,10 +44,17 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
+	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
+	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
+
+	protected readonly _onReview = this._store.add(new Emitter<IAideProbeReviewUserEvent>());
+	readonly onReview: Event<IAideProbeReviewUserEvent> = this._onReview.event;
+
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
-	private _didNavigateBreakdown: boolean = false;
+	private readonly _modelDisposables = this._register(new DisposableStore());
+	private _initiateProbeResponseState: IInitiateProbeResponseState | undefined;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -123,15 +79,18 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	startSession(): AideProbeModel {
 		if (this._model) {
+			this._modelDisposables.clear();
 			this._model.dispose();
-			this._didNavigateBreakdown = false;
 		}
 
 		this._model = this.instantiationService.createInstance(AideProbeModel);
+		this._modelDisposables.add(this._model.onNewEvent(edits => {
+			this._onNewEvent.fire(edits);
+		}));
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -144,12 +103,12 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		const source = new CancellationTokenSource();
 		const token = source.token;
 		const initiateProbeInternal = async () => {
-			const progressCallback = (progress: IAideProbeProgress) => {
+			const progressCallback = async (progress: IAideProbeProgress) => {
 				if (token.isCancellationRequested) {
 					return;
 				}
 
-				probeModel.acceptResponseProgress(progress);
+				await probeModel.acceptResponseProgress(progress);
 				completeResponseCreated();
 			};
 
@@ -158,7 +117,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, edit);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {
@@ -183,10 +142,13 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		rawResponsePromise.finally(() => {
 			this._pendingRequests.deleteAndDispose(probeModel.sessionId);
 		});
-		return {
+
+		this._initiateProbeResponseState = {
 			responseCreatedPromise: responseCreated.p,
 			responseCompletePromise: rawResponsePromise,
 		};
+
+		return this._initiateProbeResponseState;
 	}
 
 	cancelCurrentRequestForSession(sessionId: string): void {
@@ -194,37 +156,30 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._pendingRequests.deleteAndDispose(sessionId);
 	}
 
+
+	acceptCodeEdits(): void {
+		this._onReview.fire('accept');
+		this.clearSession();
+	}
+
+	rejectCodeEdits(): void {
+		const edits = this._model?.response?.codeEdits;
+		if (edits) {
+			for (const edit of edits.values()) {
+				edit?.hunkData.discardAll();
+			}
+		}
+
+		this._onReview.fire('reject');
+		this.clearSession();
+	}
+
 	clearSession(): void {
 		const sessionId = this._model?.sessionId;
 		this._model?.dispose();
 		this._model = undefined;
-		this._didNavigateBreakdown = false;
 		if (sessionId) {
 			this.cancelCurrentRequestForSession(sessionId);
 		}
-	}
-
-	navigateBreakdown(): void {
-		if (!this._didNavigateBreakdown) {
-			this.probeProvider?.onUserAction({
-				sessionId: this._model?.sessionId!,
-				action: {
-					type: 'navigateBreakdown',
-					status: true,
-				},
-			});
-			this._didNavigateBreakdown = true;
-		}
-	}
-
-	followAlong(follow: boolean): void {
-		this._model?.followAlong(follow);
-		this.probeProvider?.onUserAction({
-			sessionId: this._model?.sessionId!,
-			action: {
-				type: 'followAlong',
-				status: follow,
-			},
-		});
 	}
 }

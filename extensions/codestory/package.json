@@ -20,7 +20,6 @@
     "aideChatParticipant",
     "aideChatVariableResolver",
     "aideProbe",
-    "aideCommandPalette",
     "csevents",
     "defaultChatParticipant",
     "chatVariableResolver",
@@ -97,6 +96,11 @@
           "type": "string",
           "default": "",
           "description": "The invite code for the probing feature"
+        },
+        "aide.resetNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reset 'Don't show again' notifications"
         },
         "aide.activeDirectories": {
           "type": "string",

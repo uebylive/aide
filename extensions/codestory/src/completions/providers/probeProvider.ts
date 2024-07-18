@@ -3,28 +3,83 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as http from 'http';
+import * as net from 'net';
 import * as os from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
-import { SideCarClient } from '../../sidecar/client';
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
-import { getInviteCode } from '../../utilities/getInviteCode';
 import postHogClient from '../../posthog/client';
+import { applyEdits } from '../../server/applyEdits';
+import { handleRequest } from '../../server/requestHandler';
+import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
+import { SideCarClient } from '../../sidecar/client';
+import { getInviteCode } from '../../utilities/getInviteCode';
 import { getUniqueId } from '../../utilities/uniqueId';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
-	private _editorUrl: string;
+	private _editorUrl: string | undefined;
 	private active: boolean = false;
+
+	private _requestHandler: http.Server | null = null;
+	private _openResponseStream: vscode.ProbeResponseStream | undefined;
+
+	private async isPortOpen(port: number): Promise<boolean> {
+		return new Promise((resolve, _) => {
+			const s = net.createServer();
+			s.once('error', (err) => {
+				s.close();
+				// @ts-ignore
+				if (err['code'] === 'EADDRINUSE') {
+					resolve(false);
+				} else {
+					resolve(false); // or throw error!!
+					// reject(err);
+				}
+			});
+			s.once('listening', () => {
+				resolve(true);
+				s.close();
+			});
+			s.listen(port);
+		});
+	}
+
+	private async getNextOpenPort(startFrom: number = 42423) {
+		let openPort: number | null = null;
+		while (startFrom < 65535 || !!openPort) {
+			if (await this.isPortOpen(startFrom)) {
+				openPort = startFrom;
+				break;
+			}
+			startFrom++;
+		}
+		return openPort;
+	}
 
 	constructor(
 		sideCarClient: SideCarClient,
-		editorUrl: string,
 	) {
 		this._sideCarClient = sideCarClient;
-		this._editorUrl = editorUrl;
-		console.log(this._editorUrl);
+
+		// Server for the sidecar to talk to the editor
+		this._requestHandler = http.createServer(
+			handleRequest(this.provideEdit.bind(this))
+		);
+		this.getNextOpenPort().then((port) => {
+			if (port === null) {
+				throw new Error('Could not find an open port');
+			}
+
+			// can still grab it by listenting to port 0
+			this._requestHandler?.listen(port);
+			const editorUrl = `http://localhost:${port}`;
+			// console.log('editorUrl', editorUrl);
+			this._editorUrl = editorUrl;
+			// console.log(this._editorUrl);
+		});
 
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
@@ -52,14 +107,26 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 	}
 
-
 	private checkActivation() {
 		this.active = Boolean(getInviteCode());
 	}
 
+	async provideEdit(request: SidecarApplyEditsRequest) {
+		if (!this._openResponseStream) {
+			return;
+		}
 
-	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, _token: vscode.CancellationToken) {
+		applyEdits(request, this._openResponseStream);
+	}
+
+	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
+		if (!this._editorUrl) {
+			return;
+		}
+
+		this._openResponseStream = response;
 		let { query } = request;
+		// console.log('userQuery', query);
 		query = query.trim();
 
 		const startTime = process.hrtime();
@@ -73,8 +140,6 @@ export class AideProbeProvider implements vscode.Disposable {
 				requestId: request.requestId,
 			},
 		});
-
-
 
 		if (!this.active) {
 			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
@@ -104,7 +169,13 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const threadId = uuid.v4();
-		const probeResponse = await this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+
+		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		if (request.editMode) {
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+		} else {
+			probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+		}
 
 		/* // Use dummy data: Start
 		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
@@ -113,17 +184,29 @@ export class AideProbeProvider implements vscode.Disposable {
 			return {};
 		}
 
+		const that = this;
 		const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
 		const probeResponse = (async function* (arr) {
 			for (const original of arr) {
-				const itemString = JSON.stringify(original).replace(/\/Users\/skcd\/scratch\/sidecar/g, workspaceRoot);
-				const item = JSON.parse(itemString);
+				const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
+				const item = JSON.parse(itemString) as SideCarAgentEvent;
+				if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
+					const editSubStep = item.event.SymbolEventSubStep.event.Edit;
+					if (editSubStep.EditCode) {
+						const editEvent = editSubStep.EditCode;
+						that.provideEdit({
+							fs_file_path: editEvent.fs_file_path,
+							selected_range: editEvent.range,
+							edited_content: editEvent.new_code
+						});
+					}
+				}
 				yield item;
 			}
 		})(jsonArr);
 		// Use dummy data: End */
 
-		await reportAgentEventsToChat(probeResponse, response, threadId, _token, this._sideCarClient);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -141,6 +224,6 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 
 	dispose() {
-		console.log('AideProbeProvider.dispose');
+		this._requestHandler?.close();
 	}
 }

@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 .editor-side-panel-container .breakdown-content {
+	width: 100%;
 	position: absolute;
 	box-sizing: border-box;
 	padding: 0 16px;

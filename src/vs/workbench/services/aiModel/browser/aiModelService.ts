@@ -71,7 +71,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
 			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'GeminiPro') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
@@ -96,7 +96,8 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 					|| model.provider.type === 'ollama'
 					|| model.provider.type === 'anthropic'
 					|| model.provider.type === 'fireworkai'
-					|| model.provider.type === 'geminipro') {
+					|| model.provider.type === 'geminipro'
+					|| model.provider.type === 'open-router') {
 					acc[key] = model;
 				}
 			}
@@ -421,6 +422,25 @@ class ModelSelectionJsonSchema {
 					}
 				}
 			},
+			'openRouterProvider': {
+				'type': 'object',
+				'properties': {
+					'open-router': {
+						'type': 'object',
+						'properties': {
+							'name': {
+								'enum': ['Open Router'],
+								'description': nls.localize('modelSelection.json.openRouterProvider.name', 'Name of the provider')
+							},
+							'apiKey': {
+								'type': 'string',
+								'description': nls.localize('modelSelection.json.openRouterProvider.apiKey', 'API key for the provider')
+							},
+						},
+						'required': ['name', 'apiKey']
+					}
+				}
+			},
 			'providers': {
 				'oneOf': [
 					{ '$ref': '#/definitions/codestoryProvider' },
@@ -432,6 +452,7 @@ class ModelSelectionJsonSchema {
 					{ '$ref': '#/definitions/anthropicProvider' },
 					{ '$ref': '#/definitions/fireworksaiProvider' },
 					{ '$ref': '#/definitions/geminiProProvider' },
+					{ '$ref': '#/definitions/openRouterProvider' }
 				]
 			},
 			'azureOpenAIModelProviderConfig': {
@@ -452,7 +473,7 @@ class ModelSelectionJsonSchema {
 				'type': 'object',
 				'properties': {
 					'type': {
-						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic', 'fireworkai', 'geminipro'],
+						'enum': ['codestory', 'openai-default', 'togetherai', 'openai-compatible', 'ollama', 'anthropic', 'fireworkai', 'geminipro', 'open-router'],
 						'description': nls.localize('modelSelection.json.genericModelProviderConfig.type', 'Type of the provider')
 					}
 				},

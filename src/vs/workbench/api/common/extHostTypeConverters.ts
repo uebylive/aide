@@ -38,9 +38,14 @@ import { CommandsConverter } from 'vs/workbench/api/common/extHostCommands';
 import { getPrivateApiFor } from 'vs/workbench/api/common/extHostTestingPrivateApi';
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from 'vs/workbench/common/editor';
 import { IViewBadge } from 'vs/workbench/common/views';
+import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeOpenFile, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
+import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
 import * as chatProvider from 'vs/workbench/contrib/chat/common/languageModels';
 import { DebugTreeItemCollapsibleState, IDebugVisualizationTreeItem } from 'vs/workbench/contrib/debug/common/debug';
 import * as notebooks from 'vs/workbench/contrib/notebook/common/notebookCommon';
@@ -53,13 +58,7 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
-import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage, IAideProbeGoToDefinition } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
-import { IToolData } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
-import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideCommandPaletteRequestModel } from 'vs/workbench/contrib/aideCommandPalette/common/aideCommandPaletteModel';
+
 
 export namespace Command {
 
@@ -2905,14 +2904,14 @@ export namespace AideChatResponseCommandButtonPart {
 }
 
 export namespace AideChatResponseTextEditPart {
-	export function from(part: vscode.ChatResponseTextEditPart): Dto<IAideChatTextEdit> {
+	export function from(part: vscode.AideChatResponseTextEdit): Dto<IAideChatTextEdit> {
 		return {
 			kind: 'textEdit',
 			uri: part.uri,
 			edits: part.edits.map(e => TextEdit.from(e))
 		};
 	}
-	export function to(part: Dto<IAideChatTextEdit>): vscode.ChatResponseTextEditPart {
+	export function to(part: Dto<IAideChatTextEdit>): vscode.AideChatResponseTextEdit {
 		return new types.AideChatResponseTextEditPart(URI.revive(part.uri), part.edits.map(e => TextEdit.to(e)));
 	}
 }
@@ -2969,6 +2968,24 @@ export namespace AideChatResponseBreakdownPart {
 			query: part.query && MarkdownString.from(part.query),
 			reason: part.reason && MarkdownString.from(part.reason),
 			response: part.response && MarkdownString.from(part.response)
+		};
+	}
+}
+
+export namespace AideProbeResponseTextEditPart {
+	export function from(part: vscode.AideProbeResponseTextEdit): Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
+		return {
+			kind: 'textEdit',
+			edits: WorkspaceEdit.from(part.edits)
+		};
+	}
+}
+
+export namespace AideProbeOpenFilePart {
+	export function from(part: vscode.AideProbeResponseOpenFile): Dto<IAideProbeOpenFile> {
+		return {
+			kind: 'openFile',
+			uri: part.uri
 		};
 	}
 }
@@ -3114,7 +3131,8 @@ export namespace AideProbeRequestModel {
 	export function to(request: IAideProbeRequestModel): vscode.ProbeRequest {
 		return {
 			requestId: request.sessionId,
-			query: request.message
+			query: request.message,
+			editMode: request.editMode,
 		};
 	}
 }
@@ -3124,15 +3142,6 @@ export namespace AideProbeUserAction {
 		return {
 			sessionId: userAction.sessionId,
 			action: userAction.action,
-		};
-	}
-}
-
-export namespace AideCommandPaletteRequestModel {
-	export function to(request: IAideCommandPaletteRequestModel): vscode.CommandPaletteRequest {
-		return {
-			requestId: request.sessionId,
-			query: request.message
 		};
 	}
 }

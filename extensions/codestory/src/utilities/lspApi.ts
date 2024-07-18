@@ -11,10 +11,10 @@ import * as fs from 'fs';
 import { CodeSymbolInformation, CodeSymbolKind } from './types';
 
 
-function isSymbolInformationArray(symbols: SymbolInformation[] | DocumentSymbol[]): symbols is SymbolInformation[] {
-	// Assuming SymbolInformation has a unique property 'location'
-	return (symbols.length > 0 && 'containerName' in symbols[0]);
-}
+// function isSymbolInformationArray(symbols: SymbolInformation[] | DocumentSymbol[]): symbols is SymbolInformation[] {
+// 	// Assuming SymbolInformation has a unique property 'location'
+// 	return (symbols.length > 0 && 'containerName' in symbols[0]);
+// }
 
 
 function isDocumentSymbolArray(symbols: SymbolInformation[] | DocumentSymbol[]): symbols is DocumentSymbol[] {
@@ -153,12 +153,12 @@ const convertDocumentSymbolOutputToCodeSymbol = (
 	documentSymbols: SymbolInformation[] | DocumentSymbol[]
 ): CodeSymbolInformation[] => {
 	const codeSymbols: CodeSymbolInformation[] = [];
-	if (isSymbolInformationArray(documentSymbols)) {
-		for (let index = 0; index < documentSymbols.length; index++) {
-			const symbolInformation = documentSymbols[index];
-			console.log('[symbolInformation]', symbolInformation);
-		}
-	}
+	// if (isSymbolInformationArray(documentSymbols)) {
+	// 	for (let index = 0; index < documentSymbols.length; index++) {
+	// 		const symbolInformation = documentSymbols[index];
+	// 		console.log('[symbolInformation]', symbolInformation);
+	// 	}
+	// }
 	if (isDocumentSymbolArray(documentSymbols)) {
 		for (let index = 0; index < documentSymbols.length; index++) {
 			const documentInformation = documentSymbols[index];
@@ -187,8 +187,8 @@ export const getSymbolsFromDocumentUsingLSP = async (
 	languageId: string,
 	workingDirectory: string,
 ): Promise<CodeSymbolInformation[]> => {
-	console.log('[getSymbolsFromDocumentUsingLSP][filePath] ' + filePath);
-	console.log(filePath);
+	// console.log('[getSymbolsFromDocumentUsingLSP][filePath] ' + filePath);
+	// console.log(filePath);
 	try {
 		const fileSplitLines = (await fs.promises.readFile(filePath)).toString().split('\n');
 		const documentSymbolProviders = languages.getDocumentSymbolProvider(
@@ -214,7 +214,7 @@ export const getSymbolsFromDocumentUsingLSP = async (
 
 				// if promise timed out, continue to next iteration
 				if (symbols === 'Timed out') {
-					console.log('provideDocumentSymbols timed out!');
+					// console.log('provideDocumentSymbols timed out!');
 					continue;
 				}
 
@@ -237,13 +237,13 @@ export const getSymbolsFromDocumentUsingLSP = async (
 					return codeSymbolInformation;
 				}
 			} catch (e) {
-				console.log('[wtf3] we ran into an error' + e);
+				// console.log('[wtf3] we ran into an error' + e);
 			}
 		}
 		return [];
 	} catch (err) {
-		console.log(`[getSymbolsFromDocumentUsingLSP][error]: ${filePath}`);
-		console.log(err);
+		// console.log(`[getSymbolsFromDocumentUsingLSP][error]: ${filePath}`);
+		// console.log(err);
 		return [];
 	}
 };

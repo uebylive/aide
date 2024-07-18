@@ -39,6 +39,11 @@ export const FolderReferenceCompletionProviderName = 'chatInplaceFolderReference
 export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
+export interface IWidgetWithInputEditor {
+	inputEditor: ICodeEditor;
+	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
+}
+
 export class ChatDynamicVariableModel extends Disposable implements IChatWidgetContrib {
 	public static readonly ID = 'chatDynamicVariableModel';
 
@@ -52,7 +57,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 	}
 
 	constructor(
-		private readonly widget: IChatWidget,
+		private readonly widget: IWidgetWithInputEditor,
 		@ILabelService private readonly labelService: ILabelService,
 		@ILogService private readonly logService: ILogService,
 	) {
@@ -187,7 +192,7 @@ export class MultiLevelCodeTriggerAction extends Action2 {
 registerAction2(MultiLevelCodeTriggerAction);
 
 interface SelectAndInsertFileActionContext {
-	widget: IChatWidget;
+	widget: IWidgetWithInputEditor;
 	range: IRange;
 	uri: URI;
 }
@@ -304,7 +309,7 @@ export class SelectAndInsertFileAction extends Action2 {
 registerAction2(SelectAndInsertFileAction);
 
 interface SelectAndInsertCodeActionContext {
-	widget: IChatWidget;
+	widget: IWidgetWithInputEditor;
 	range: IRange;
 	pick: ISymbolQuickPickItem;
 }

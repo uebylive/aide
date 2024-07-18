@@ -36,6 +36,7 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 
 	panelId: string;
 	domNode: HTMLElement;
+	minWidth: number = 300;
 
 	constructor(
 		readonly editor: ICodeEditor
@@ -80,7 +81,8 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 
 	layout(): void {
 		this.domNode.style.height = `${this.editor.getScrollHeight()}px`;
-		this.domNode.style.width = `${this.editor.getLayoutInfo().width * 0.3}px`;
+		const layoutFraction = this.editor.getLayoutInfo().width * 0.3;
+		this.domNode.style.width = `${Math.min(layoutFraction, this.minWidth)}px`;
 
 		this.editor.layoutOverlayWidget(this);
 	}

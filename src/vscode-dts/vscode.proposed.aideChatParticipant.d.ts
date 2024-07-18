@@ -89,26 +89,24 @@ declare module 'vscode' {
 		readonly response?: MarkdownString;
 	}
 
-	export interface AideProbeGoToDefinition {
+	export interface AideProbeResponseOpenFile {
+		/**
+		 * The file where the agent went to the definition.
+		 */
+		readonly uri: Uri;
+	}
+
+
+	export interface AideChatResponseTextEdit {
 		/**
 		 * The file where the agent went to the definition.
 		 */
 		readonly uri: Uri;
 
 		/**
-		 * Name of the symbol
+		 * Edits applied to the document
 		 */
-		readonly name: string;
-
-		/**
-		 * The position of the symbol where the agent went to definition.
-		 */
-		readonly range: Range;
-
-		/**
-		 * The thinking process behind following this definition
-		 */
-		readonly thinking: string;
+		readonly edits: TextEdit[];
 	}
 
 	export interface AideChatResponseStream extends ChatResponseStream {

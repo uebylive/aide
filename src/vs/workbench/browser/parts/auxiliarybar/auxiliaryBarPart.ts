@@ -15,7 +15,7 @@ import { contrastBorder } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ActiveAuxiliaryContext, AuxiliaryBarFocusContext } from 'vs/workbench/common/contextkeys';
 import { ACTIVITY_BAR_BADGE_BACKGROUND, ACTIVITY_BAR_BADGE_FOREGROUND, ACTIVITY_BAR_TOP_ACTIVE_BORDER, ACTIVITY_BAR_TOP_DRAG_AND_DROP_BORDER, ACTIVITY_BAR_TOP_FOREGROUND, ACTIVITY_BAR_TOP_INACTIVE_FOREGROUND, PANEL_ACTIVE_TITLE_BORDER, PANEL_ACTIVE_TITLE_FOREGROUND, PANEL_DRAG_AND_DROP_BORDER, PANEL_INACTIVE_TITLE_FOREGROUND, SIDE_BAR_BACKGROUND, SIDE_BAR_BORDER, SIDE_BAR_FOREGROUND } from 'vs/workbench/common/theme';
-import { IViewDescriptorService, ViewContainerLocation } from 'vs/workbench/common/views';
+import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
 import { ActivityBarPosition, IWorkbenchLayoutService, LayoutSettings, Parts, Position } from 'vs/workbench/services/layout/browser/layoutService';
 import { HoverPosition } from 'vs/base/browser/ui/hover/hoverWidget';
@@ -36,7 +36,6 @@ import { HiddenItemStrategy, WorkbenchToolBar } from 'vs/platform/actions/browse
 import { ActionViewItem, IActionViewItemOptions } from 'vs/base/browser/ui/actionbar/actionViewItems';
 import { CompositeMenuActions } from 'vs/workbench/browser/actions';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
-import { IPaneCompositePartService } from 'vs/workbench/services/panecomposite/browser/panecomposite';
 
 export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 
@@ -87,7 +86,6 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IExtensionService extensionService: IExtensionService,
 		@ICommandService private commandService: ICommandService,
-		@IPaneCompositePartService private paneCompositeService: IPaneCompositePartService,
 		@IMenuService menuService: IMenuService,
 		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
@@ -116,22 +114,6 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 			extensionService,
 			menuService,
 		);
-
-		this._register(this.extensionService.onDidRegisterExtensions(async () => {
-			const csExtensionID = 'codestory-ghost.codestoryai';
-			const csExtension = extensionService.extensions.find(ext => ext.identifier.value === csExtensionID);
-			if (csExtension) {
-				this.paneCompositeService.openPaneComposite('workbench.panel.aideChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
-			}
-		}));
-
-		this._register(this.extensionService.onDidChangeExtensions(async (e) => {
-			const csExtensionID = 'codestory-ghost.codestoryai';
-			const csExtension = e.added.find(ext => ext.identifier.value === csExtensionID);
-			if (csExtension) {
-				this.paneCompositeService.openPaneComposite('workbench.panel.aideChatSidebar', ViewContainerLocation.AuxiliaryBar, true);
-			}
-		}));
 
 		this._register(configurationService.onDidChangeConfiguration(e => {
 			if (e.affectsConfiguration(LayoutSettings.ACTIVITY_BAR_LOCATION)) {

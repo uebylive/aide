@@ -191,10 +191,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/aideCommandPalette",
-			"project": "vscode-workbench"
-		}
-		{
 			"name": "vs/workbench/services/aiModel",
 			"project": "vscode-workbench"
 		},

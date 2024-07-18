@@ -37,12 +37,12 @@ export function truncateMultilineCompletion(
 	// we are going to do an early return here
 	const config = getLanguageConfig(languageId);
 	// console.log('sidecar.truncateMultilineCompletion', completion, prefix, suffix, languageId);
-	console.log('sidecar.truncateMultilineCompletion.prefix', prefix);
-	console.log('sidecar.truncateMultilineCompletion.suffix', suffix);
-	console.log('sidecar.truncateMultilineCompletion.completion', completion);
+	// console.log('sidecar.truncateMultilineCompletion.prefix', prefix);
+	// console.log('sidecar.truncateMultilineCompletion.suffix', suffix);
+	// console.log('sidecar.truncateMultilineCompletion.completion', completion);
 
 	if (!config) {
-		console.log('sidecar.truncateMultileCompletion.noconfig');
+		// console.log('sidecar.truncateMultileCompletion.noconfig');
 		return completion;
 	}
 
