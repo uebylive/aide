@@ -10,15 +10,15 @@ import { shouldTrackFile } from '../utilities/openTabs';
 export async function goToReferences(request: SidecarGoToReferencesRequest): Promise<SidecarGoToRefernecesResponse> {
 	const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
 		'vscode.executeReferenceProvider',
-		request.fs_file_path,
-		request.position,
+		vscode.Uri.file(request.fs_file_path),
+		new vscode.Position(request.position.line, request.position.character),
 	);
 	const implementations = await Promise.all(locations.map(async (location) => {
 		const uri = location.targetUri;
 		const range = location.targetRange;
 		if (shouldTrackFile(uri)) {
-			console.log('we are trakcing this uri');
-			console.log(uri);
+			// console.log('we are trakcing this uri');
+			// console.log(uri);
 		}
 		return {
 			fs_file_path: uri.fsPath,

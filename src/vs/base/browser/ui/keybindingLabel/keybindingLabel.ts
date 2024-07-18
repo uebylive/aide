@@ -157,6 +157,9 @@ export class KeybindingLabel extends Disposable {
 	}
 
 	private createKeyElement(label: string, extraClass = ''): HTMLElement {
+		if (label === 'Escape') {
+			label = 'Esc';
+		}
 		const keyElement = $('span.monaco-keybinding-key' + extraClass, undefined, label);
 		this.keyElements.add(keyElement);
 

@@ -4750,6 +4750,13 @@ export class AideChatResponseBreakdownPart {
 	}
 }
 
+export class AideProbeOpenFilePart {
+	uri: vscode.Uri;
+	constructor(uri: vscode.Uri) {
+		this.uri = uri;
+	}
+}
+
 export class AideProbeGoToDefinitionPart {
 	uri: vscode.Uri;
 	range: vscode.Range;

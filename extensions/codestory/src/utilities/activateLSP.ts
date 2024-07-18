@@ -45,7 +45,7 @@ export const getExtensionsInDirectory = (directory: string): Set<string> => {
 				}
 			}
 		} catch (e) {
-			console.log('[getExtensionsInDirectory] failing for directory', dir);
+			// console.log('[getExtensionsInDirectory] failing for directory', dir);
 			console.error(e);
 		}
 	}

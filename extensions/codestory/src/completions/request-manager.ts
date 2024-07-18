@@ -14,7 +14,6 @@ import {
 	type InlineCompletionItemWithAnalytics,
 } from './text-processing/process-inline-completions';
 import { getPositionAfterTextInsertionSameLine, lines, removeIndentation } from './text-processing';
-import { SideCarClient } from '../sidecar/client';
 import { Provider } from './providers/provider';
 import { TypeDefinitionProviderWithNode } from './helpers/vscodeApi';
 
@@ -71,16 +70,10 @@ export class RequestManager {
 	private cache = new RequestCache();
 	private completionCache: string | undefined = undefined;
 	private previousRequest: AbortController | undefined = undefined;
-	private sidecarClient: SideCarClient;
 	private readonly inflightRequests: Set<InflightRequest> = new Set();
 	// Tracks the last request that the request manager is called with. We use this to evaluate
 	// the relevance of existing requests (i.e to find out if the generations are still relevant)
 	// private latestRequestParams: null | RequestsManagerParams = null;
-
-	constructor(sidecarClient: SideCarClient) {
-		this.sidecarClient = sidecarClient;
-		console.log(this.sidecarClient);
-	}
 
 	public checkCache(
 		params: Pick<RequestsManagerParams, 'requestParams' | 'isCacheEnabled' | 'logger' | 'spanId'>

@@ -112,7 +112,7 @@ export function getArtificialDelay(
 	}
 
 	if (total > 0) {
-		console.log('Aide:latency', `Delay added: ${total}`);
+		// console.log('Aide:latency', `Delay added: ${total}`);
 	}
 
 	return total;

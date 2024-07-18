@@ -23,13 +23,13 @@ export class PythonServer extends CodeSymbolsIndexer {
 			const { data } = await axios.post(endpoint, {
 				file_path: filePath,
 			});
-			console.log('Whats the data after parsing the file');
-			console.log(data);
+			// console.log('Whats the data after parsing the file');
+			// console.log(data);
 			const codeSymbols = JSON.parse(data).code_symbols as CodeSymbolInformation[];
-			console.log('How many code symbols do we have: ' + codeSymbols.length);
+			// console.log('How many code symbols do we have: ' + codeSymbols.length);
 			return codeSymbols;
 		} catch (e) {
-			console.log(e);
+			// console.log(e);
 			return [];
 		}
 	}

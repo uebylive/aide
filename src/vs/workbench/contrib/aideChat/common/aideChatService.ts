@@ -97,14 +97,6 @@ export interface IAideChatMarkdownContent {
 	kind: 'markdownContent';
 }
 
-export interface IAideProbeGoToDefinition {
-	name: string;
-	uri: URI;
-	range: Range;
-	kind: 'goToDefinition';
-	thinking: string;
-}
-
 export interface IChatTreeData {
 	treeData: IChatResponseProgressFileTreeData;
 	kind: 'treeData';

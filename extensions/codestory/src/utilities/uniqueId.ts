@@ -88,7 +88,7 @@ export function getUserId(): string {
 			return os.userInfo().username;
 		}
 	} catch (err) {
-		console.log('err', err);
+		// console.log('err', err);
 		return 'You';
 	}
 }

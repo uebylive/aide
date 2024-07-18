@@ -724,8 +724,8 @@ function parseCodeBlockForDependencies(
 		// );
 		return codeSymbolDependencies;
 	} catch (e) {
-		console.log('[dependency] Why is this not working??');
-		console.log(e);
+		// console.log('[dependency] Why is this not working??');
+		// console.log(e);
 		return [];
 	}
 }
@@ -772,7 +772,7 @@ export function parseSourceFile(
 	sourceFile: SourceFile,
 	project: Project,
 	directoryPath: string,
-	sourceFilePath: string,
+	_sourceFilePath: string,
 	originalFilePath: string
 ): CodeSymbolInformation[] {
 	if (sourceFile !== undefined) {
@@ -821,7 +821,7 @@ export function parseSourceFile(
 		);
 		return classSymbols.concat(functionSymbols).concat(typeAliasSymbols).concat(interfaceSymbols);
 	} else {
-		console.log('[ts-morph]Source file is undefined: ' + sourceFilePath);
+		// console.log('[ts-morph]Source file is undefined: ' + sourceFilePath);
 		return [];
 	}
 }
@@ -832,7 +832,7 @@ export async function parseFileUsingTsMorph(
 	directoryPath: string,
 	originalFilePath: string
 ): Promise<CodeSymbolInformation[]> {
-	console.log('[ts-morph] Parsing file: ' + sourceFilePath);
+	// console.log('[ts-morph] Parsing file: ' + sourceFilePath);
 	const sourceFile = project.getSourceFile(sourceFilePath);
 	// We sync from the fs again if the file has changed meanwhile, this is not
 	// important for onboarding but super important when we are doing things live
@@ -841,7 +841,7 @@ export async function parseFileUsingTsMorph(
 	await sourceFile?.refreshFromFileSystem();
 	if (sourceFile) {
 		const codeSymbols = parseSourceFile(sourceFile, project, directoryPath, sourceFilePath, originalFilePath);
-		console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
+		// console.log('[ts-morph] Code symbols: ' + codeSymbols.length);
 		if (codeSymbols.length === 0) {
 			return await getSymbolsFromDocumentUsingLSP(
 				sourceFilePath,
@@ -887,7 +887,7 @@ export class TSMorphProjectManagement extends CodeSymbolsIndexer {
 	public addTsConfigPath(
 		tsConfigPath: string,
 	) {
-		console.log(`[addTsConfigPath]: ${tsConfigPath}`);
+		// console.log(`[addTsConfigPath]: ${tsConfigPath}`);
 		const dirName = path.dirname(tsConfigPath);
 		try {
 			const tsConfigProject = new Project({
@@ -1140,11 +1140,11 @@ export const getProject = async (
 		const interestingFiles = getTypescriptLikeFilesInDirectory(workingDirectory);
 		const tsMorphProject = new Project();
 		interestingFiles.forEach((filePath) => {
-			console.log('[ts-morph][add file]: ' + filePath);
+			// console.log('[ts-morph][add file]: ' + filePath);
 			try {
 				tsMorphProject.addSourceFileAtPath(filePath);
 			} catch (error) {
-				console.log('[ts-morph][add file][error]: ' + error);
+				// console.log('[ts-morph][add file][error]: ' + error);
 			}
 		});
 		tsProjectManagement.addProjectWithDirectoryToMapping(

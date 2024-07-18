@@ -59,8 +59,8 @@ export function generatePlanAndQueriesResponseParser(
 
 	const additionalQueries = response.split('<queries>')[1].split('</queries>')[0];
 	const additionalQueriesList = additionalQueries.split('\n*');
-	console.log('additional queries list');
-	console.log(additionalQueriesList);
+	// console.log('additional queries list');
+	// console.log(additionalQueriesList);
 	const queries = additionalQueriesList
 		.map((query) => query.trim())
 		.filter((query) => query.length > 0);
@@ -112,7 +112,7 @@ export interface FileFunctionsToParseResponse {
 export function generateFileFunctionsResponseParser(
 	response: string
 ): FileFunctionsToParseResponse {
-	console.log('[generateFileFunctionsResponseParser] what kind of response', response);
+	// console.log('[generateFileFunctionsResponseParser] what kind of response', response);
 	if (!response.includes('<modify_code_symbol>') || !response.includes('</modify_code_symbol>')) {
 		return {
 			codeSymbolModificationInstructionList: [],
@@ -128,7 +128,7 @@ export function generateFileFunctionsResponseParser(
 		.filter((codeSymbol) => codeSymbol.length > 0)
 		.filter((codeSymbol) => codeSymbol !== 'None')
 		.map((codeSymbol) => {
-			console.log(codeSymbol);
+			// console.log(codeSymbol);
 			const codeSymbolName = codeSymbol.split(':')[0].trim();
 			const instructions = codeSymbol.split(':')[1].trim();
 			return {
@@ -399,7 +399,7 @@ export interface CodeModificationContextAndDiff {
 export const parseCodeModificationResponse = (
 	response: string
 ): CodeModificationContextAndDiff | null => {
-	console.log('[parseCodeModificationResponse] response', response);
+	// console.log('[parseCodeModificationResponse] response', response);
 	if (!response.includes('<code_planning>') || !response.includes('</code_planning>')) {
 		return null;
 	}

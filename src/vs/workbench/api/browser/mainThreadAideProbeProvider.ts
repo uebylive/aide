@@ -6,14 +6,14 @@
 import { Disposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
 import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IAideProbeRequestModel } from 'vs/workbench/contrib/aideProbe/common/aideProbeModel';
-import { IAideProbeData, IAideProbeProgress, IAideProbeResolver, IAideProbeService, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbeService';
+import { IAideProbeResolver, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 @extHostNamedCustomer(MainContext.MainThreadProbeProvider)
 export class MainThreadAideProbeProvider extends Disposable implements MainThreadAideProbeProviderShape {
 	private readonly _proxy: ExtHostAideProbeProviderShape;
-	private readonly _pendingProgress = new Map<string, (part: IAideProbeProgress) => void>();
+	private readonly _pendingProgress = new Map<string, (part: IAideProbeProgress) => Promise<void>>();
 
 	constructor(
 		extHostContext: IExtHostContext,
@@ -43,7 +43,7 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 
 	async $handleProbingProgressChunk(request: IAideProbeRequestModel, progress: IAideProbeProgressDto): Promise<void> {
 		const revivedProgress = revive(progress) as IAideProbeProgress;
-		this._pendingProgress.get(request.sessionId)?.(revivedProgress);
+		await this._pendingProgress.get(request.sessionId)?.(revivedProgress);
 	}
 
 	$unregisterProbingProvider(handle: number): void {

@@ -18,12 +18,12 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 				startPosition: {
 					line: diagnostic.range.start.line,
 					character: diagnostic.range.start.character,
-					byte_offset: 0,
+					byteOffset: 0,
 				},
 				endPosition: {
 					line: diagnostic.range.end.line,
 					character: diagnostic.range.end.character,
-					byte_offset: 0,
+					byteOffset: 0,
 				},
 			},
 		};

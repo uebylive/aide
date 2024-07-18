@@ -110,22 +110,27 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 			}
 		} else {
 			const actionCommand = codeAction.command;
-			console.log('whats the command over here');
-			console.log(actionCommand);
+			// console.log('whats the command over here');
+			// console.log(actionCommand);
 			if (actionCommand !== undefined) {
-				actionsFlattened.push({
-					label: actionCommand.title,
-					command: actionCommand.command,
-					arguments: actionCommand.arguments,
-					id: actionIndex,
-				});
-				actionIndex = actionIndex + 1;
+				if (actionCommand.command === 'inlineChat.start') {
+					// If its any of the inlineChat.start, then we skip it
+					return;
+				} else {
+					actionsFlattened.push({
+						label: actionCommand.title,
+						command: actionCommand.command,
+						arguments: actionCommand.arguments,
+						id: actionIndex,
+					});
+					actionIndex = actionIndex + 1;
+				}
 			}
 		}
 	});
-	console.log('actions');
-	console.log(actionsFlattened);
-	console.log('actions list');
+	// console.log('actions');
+	// console.log(actionsFlattened);
+	// console.log('actions list');
 	QUICK_FIX_LIST.insertForRequestId(requestId, actionsFlattened);
 	return {
 		options: actionsFlattened.map((action) => {
