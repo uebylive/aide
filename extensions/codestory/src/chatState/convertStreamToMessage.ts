@@ -64,11 +64,11 @@ export const reportFromStreamToSearchProgress = async (
 		// Here we will get an event which will have the conversation_state as 'ReRankingStarted' and another
 		// which will have an event as 'ReRankingFinished'
 		if (conversationMessage.conversation_state === 'ReRankingStarted') {
-			console.log('ReRanking has started');
+			// console.log('ReRanking has started');
 			continue;
 		}
 		if (conversationMessage.conversation_state === 'ReRankingFinished') {
-			console.log('ReRanking has finsihed');
+			// console.log('ReRanking has finsihed');
 			continue;
 		}
 		if (conversationMessage.answer !== null && conversationMessage.conversation_state === 'StreamingAnswer') {
@@ -116,8 +116,8 @@ export const formatPathsInAnswer = async (answer: string, reporef: RepoRef): Pro
 		const markdownLinkWithoutLineNumbers = markdownLink.split('#')[0];
 		const finalPath = path.join(reporef.getPath(), markdownLinkWithoutLineNumbers);
 		try {
-			console.log('[formatPathsInAnswer] checking the following path');
-			console.log(finalPath);
+			// console.log('[formatPathsInAnswer] checking the following path');
+			// console.log(finalPath);
 			await vscode.workspace.fs.stat(vscode.Uri.file(finalPath));
 			return true;
 		} catch (error) {
@@ -206,7 +206,7 @@ export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStre
 	});
 	for (let index = 0; index < Math.min(6, sortedCodeSpans.length); index++) {
 		const currentCodeSpan = sortedCodeSpans[index];
-		console.log(workingDirectory);
+		// console.log(workingDirectory);
 		let fullFilePath = currentCodeSpan.file_path;
 		if (!currentCodeSpan.file_path.startsWith(workingDirectory)) {
 			fullFilePath = path.join(workingDirectory, currentCodeSpan.file_path);
@@ -242,15 +242,20 @@ export const readJsonFile = (filePath: string): any => {
 	return JSON.parse(jsonString);
 };
 
+
+// const randomInt = (min: number, max: number) =>
+// 	Math.floor(Math.random() * (max - min + 1)) + min;
+
 const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
+	editMode: boolean,
 	stream: AsyncIterableIterator<SideCarAgentEvent>,
 	response: vscode.ProbeResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
 ): Promise<void> => {
-	console.log('reportAgentEventsToChat starting');
+	// console.log('reportAgentEventsToChat starting');
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
@@ -261,43 +266,58 @@ export const reportAgentEventsToChat = async (
 		return;
 	}
 
-	// await new Promise((resolve) => setTimeout(resolve, 1000));
-
-	// const randomInt = (min: number, max: number) =>
-	// 	Math.floor(Math.random() * (max - min + 1)) + min;
-
+	// Temp code: Create a new file to record logs
+	// let logStream: fs.WriteStream | undefined;
+	// const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+	// const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+	// if (extensionRoot && workspaceRoot) {
+	// 	const logPath = path.join(extensionRoot, 'src', 'completions', 'providers', 'dummydata.json');
+	// 	logStream = fs.createWriteStream(logPath, { flags: 'w' });
+	// }
+	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
-		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 500));
+		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
-			console.log('Stopped the agent probe');
-			return;
+			// console.log('Stopped the agent probe');
+			break;
 		}
 
 		if ('keep_alive' in event) {
 			continue;
 		}
 
-		if (event.event.SymbolEvent) {
-			const symbolEventKeys = Object.keys(event.event.SymbolEvent.event);
+		// logStream?.write(JSON.stringify(event) + ',\n');
+		if (event.event.ToolEvent) {
+			if (event.event.ToolEvent.OpenFile) {
+				response.openFile({
+					uri: vscode.Uri.file(event.event.ToolEvent.OpenFile.fs_file_path ?? 'symbol_not_found'),
+				});
+			}
+		} else if (event.event.SymbolEvent) {
+			const symbolEvent = event.event.SymbolEvent.event;
+			const symbolEventKeys = Object.keys(symbolEvent);
 			if (symbolEventKeys.length === 0) {
 				continue;
 			}
-			const symbolEventKey = symbolEventKeys[0] as keyof typeof event.event.SymbolEvent.event;
+			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 			// If this is a symbol event then we have to make sure that we are getting the probe request over here
-			if (symbolEventKey === 'Probe' && event.event.SymbolEvent.event.Probe !== undefined) {
+			if (!editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
 				response.breakdown({
 					reference: {
-						uri: vscode.Uri.file(event.event.SymbolEvent.event.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: event.event.SymbolEvent.event.Probe.symbol_identifier.symbol_name,
+						uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+						name: symbolEvent.Probe.symbol_identifier.symbol_name,
 					},
-					query: new vscode.MarkdownString(event.event.SymbolEvent.event.Probe.probe_request)
+					query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
 				});
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
+			if (!symbol_identifier.fs_file_path) {
+				continue;
+			}
 
 			if (symbolEventSubStep.GoToDefinition) {
 				const goToDefinition = symbolEventSubStep.GoToDefinition;
@@ -307,37 +327,44 @@ export const reportAgentEventsToChat = async (
 				const range = new vscode.Range(startPosition, endPosition);
 				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
-			}
-			if ('Probe' in symbolEventSubStep === false) {
-				continue;
-			}
+			} else if (symbolEventSubStep.Edit) {
+				const editEvent = symbolEventSubStep.Edit;
+				if (editEvent.RangeSelectionForEdit) {
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						}
+					});
+				}
+			} else if (symbolEventSubStep.Probe) {
+				const probeSubStep = symbolEventSubStep.Probe;
+				const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
+				if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
+					continue;
+				}
 
-			const probeSubStep = symbolEventSubStep.Probe!;
-			const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
-			if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
-				continue;
-			}
-
-			const subStepType = probeRequestKeys[0];
-			if (subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
-				const probeAnswer = probeSubStep.ProbeAnswer;
-				response.breakdown({
-					reference: {
-						uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-						name: symbol_identifier.symbol_name
-					},
-					response: new vscode.MarkdownString(probeAnswer)
-				});
+				const subStepType = probeRequestKeys[0];
+				if (!editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
+					const probeAnswer = probeSubStep.ProbeAnswer;
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						response: new vscode.MarkdownString(probeAnswer)
+					});
+				}
 			}
 		} else if (event.event.RequestEvent) {
 			const { ProbeFinished } = event.event.RequestEvent;
 			if (!ProbeFinished) {
-				return;
+				continue;
 			}
 
 			const { reply } = ProbeFinished;
 			if (reply === null) {
-				return;
+				continue;
 			}
 
 			// The sidecar currently sends '<symbolName> at <fileName>' at the start of the response. Remove it.
@@ -349,7 +376,10 @@ export const reportAgentEventsToChat = async (
 				response.markdown(reply);
 			}
 
-			return;
+			break;
 		}
 	}
+
+	// logStream?.write(']');
+	// logStream?.end();
 };

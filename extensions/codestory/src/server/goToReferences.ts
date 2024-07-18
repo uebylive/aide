@@ -17,8 +17,8 @@ export async function goToReferences(request: SidecarGoToReferencesRequest): Pro
 		const uri = location.targetUri;
 		const range = location.targetRange;
 		if (shouldTrackFile(uri)) {
-			console.log('we are trakcing this uri');
-			console.log(uri);
+			// console.log('we are trakcing this uri');
+			// console.log(uri);
 		}
 		return {
 			fs_file_path: uri.fsPath,

@@ -27,19 +27,15 @@ import { IAideChatWidgetService, IChatWidget } from 'vs/workbench/contrib/aideCh
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
 import { CodeSymbolCompletionProviderName, dynamicVariableDecorationType, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, IWidgetWithInputEditor, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentService, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
+import { chatAgentLeader, ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatSubcommandLeader, chatVariableLeader, IParsedChatRequestPart } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { AideProbeInputPart } from 'vs/workbench/contrib/aideProbe/browser/aideProbeInputPart';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const decorationDescription = 'chat';
 const placeholderDecorationType = 'chat-session-detail';
@@ -329,14 +325,11 @@ ChatWidget.CONTRIBS.push(ChatTokenDeleter);
 async function getWidget(
 	model: ITextModel,
 	chatWidgetService: IAideChatWidgetService,
-	viewsService: IViewsService
 ): Promise<IWidgetWithInputEditor | undefined | null> {
 	let widget: IWidgetWithInputEditor | undefined | null;
 	const scheme = model.uri.scheme;
 	if (scheme === ChatInputPart.INPUT_SCHEME) {
 		widget = chatWidgetService.getWidgetByInputUri(model.uri);
-	} else if (scheme === AideProbeInputPart.INPUT_SCHEME) {
-		widget = await showProbeView(viewsService);
 	}
 
 	return widget;
@@ -351,13 +344,12 @@ export class FileReferenceCompletionsProvider extends Disposable {
 		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
 		@ISearchService private readonly searchService: ISearchService,
 		@ILabelService private readonly labelService: ILabelService,
-		@IViewsService private readonly viewsService: IViewsService
 	) {
 		super();
 	}
 
 	async provideCompletionItems(model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) {
-		const widget = await getWidget(model, this.chatWidgetService, this.viewsService);
+		const widget = await getWidget(model, this.chatWidgetService);
 		if (!widget) {
 			return null;
 		}
@@ -440,14 +432,12 @@ export class CodeSymbolCompletionProvider extends Disposable {
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IAideChatWidgetService private readonly chatWidgetService: IAideChatWidgetService,
-		@IViewsService private readonly viewsService: IViewsService,
-		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
 	}
 
 	async provideCompletionItems(model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) {
-		const widget = await getWidget(model, this.chatWidgetService, this.viewsService);
+		const widget = await getWidget(model, this.chatWidgetService);
 		if (!widget) {
 			return null;
 		}
@@ -466,16 +456,9 @@ export class CodeSymbolCompletionProvider extends Disposable {
 
 		const prefixWord = `${chatVariableLeader}code:`;
 		const query = varWord ? varWord.word.substring(prefixWord.length) : '';
-		let editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks(query, undefined, CancellationToken.None);
+		const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks(query, undefined, CancellationToken.None);
 		if (!editorSymbolPicks.length) {
 			return null;
-		}
-
-		if (model.uri.scheme === AideProbeInputPart.INPUT_SCHEME) {
-			const openEditor = this.editorService.activeEditor;
-			if (openEditor) {
-				editorSymbolPicks = editorSymbolPicks.filter(pick => pick.resource?.fsPath === openEditor.resource?.fsPath);
-			}
 		}
 
 		const editRange: IRange = {

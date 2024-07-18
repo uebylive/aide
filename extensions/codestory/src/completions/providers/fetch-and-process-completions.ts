@@ -209,7 +209,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 					docContext: dynamicMultilineDocContext,
 				});
 
-				console.log('sidecarCompletion.completion', 'dynamic-multiline-completion');
+				// console.log('sidecarCompletion.completion', 'dynamic-multiline-completion');
 				yield* stopStreamingAndUsePartialResponse({
 					completedCompletion,
 					isFullResponse,
@@ -242,7 +242,7 @@ export async function* fetchAndProcessDynamicMultilineCompletions(
 					providerOptions
 				);
 
-				console.log('sidecarCompletion.compltion', 'else-dynamic-multline-completion');
+				// console.log('sidecarCompletion.compltion', 'else-dynamic-multline-completion');
 				yield* stopStreamingAndUsePartialResponse({
 					isFullResponse,
 					completedCompletion,

@@ -8,7 +8,9 @@
     "vscode": "^1.75.0"
   },
   "main": "./out/extension.js",
-  "activationEvents": ["*"],
+  "activationEvents": [
+    "*"
+  ],
   "enabledApiProposals": [
     "inlineCompletionsAdditions",
     "interactive",
@@ -72,7 +74,9 @@
         "name": "Aide",
         "description": "What can I help you with today?",
         "isDefault": true,
-        "locations": ["panel"]
+        "locations": [
+          "panel"
+        ]
       }
     ],
     "menus": {
@@ -92,6 +96,11 @@
           "type": "string",
           "default": "",
           "description": "The invite code for the probing feature"
+        },
+        "aide.resetNotifications": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reset 'Don't show again' notifications"
         },
         "aide.activeDirectories": {
           "type": "string",

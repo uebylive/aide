@@ -96,7 +96,7 @@ export class InlineCompletionItemProvider
 					vscode.ConfigurationTarget.Global
 				);
 		}
-		this.requestManager = new RequestManager(sidecarClient);
+		this.requestManager = new RequestManager();
 		this.disposables.push(
 			vscode.commands.registerCommand(
 				'codestory.autocomplete.inline.accepted',
