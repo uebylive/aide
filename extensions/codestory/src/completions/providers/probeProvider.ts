@@ -167,8 +167,39 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 
 		const variables: vscode.ChatPromptReference[] = [];
-		const activeEditor = vscode.window.activeTextEditor;
-		if (activeEditor) {
+		let firstDocument: vscode.TextEditor | undefined;
+		const textDocuments: vscode.TextEditor[] = [];
+		if (vscode.window.activeTextEditor) {
+			let finish = false;
+
+			// Loop through all open files in the editor
+			do {
+				// Move to the next file
+				await vscode.commands.executeCommand('workbench.action.nextEditor').then(() => {
+					if (!firstDocument) {
+						firstDocument = vscode.window.activeTextEditor;
+						if (firstDocument) {
+							textDocuments.push(firstDocument);
+						}
+					} else {
+						// If the positioned document is the same as the first one, end the loop
+						if (firstDocument.document.fileName === vscode.window.activeTextEditor?.document.fileName) {
+							finish = true;
+						} else if (vscode.window.activeTextEditor) {
+							// Otherwise, add it to the array
+							textDocuments.push(vscode.window.activeTextEditor);
+						}
+					}
+				});
+
+				// If the loop has finished, go back to the first file in the positioning, as the loop already starts by changing files
+				if (finish) {
+					await vscode.commands.executeCommand('workbench.action.previousEditor');
+				}
+			} while (!finish);
+		}
+
+		for (const activeEditor of textDocuments) {
 			this.addFileContext(activeEditor, variables);
 		}
 
