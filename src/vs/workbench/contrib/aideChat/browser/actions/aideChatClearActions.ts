@@ -40,7 +40,7 @@ export class ClearChatEditorAction extends Action2 {
 				when: CONTEXT_IN_CHAT_SESSION
 			},
 			menu: [{
-				id: MenuId.ChatExecute,
+				id: MenuId.AideChatExecute,
 				when: ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 				group: 'navigation',
 				order: -1

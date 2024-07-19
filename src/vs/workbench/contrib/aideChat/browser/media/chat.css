@@ -530,6 +530,7 @@
 	padding: 12px 20px;
 	display: flex;
 	flex-direction: column;
+	border-top: 1px solid var(--vscode-chat-requestBorder);
 }
 
 .cschat-session .cschat-input-part.compact {
