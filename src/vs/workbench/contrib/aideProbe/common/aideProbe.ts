@@ -9,6 +9,7 @@ import { Range } from 'vs/editor/common/core/range';
 import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
 import { IModelContentChange } from 'vs/editor/common/textModelEvents';
+import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 
 export interface IAideProbeData {
@@ -79,6 +80,7 @@ export interface IAideProbeResult {
 export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
+	readonly variables: IChatRequestVariableData;
 	readonly editMode: boolean;
 }
 

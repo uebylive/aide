@@ -119,26 +119,6 @@ export class AideProbeProvider implements vscode.Disposable {
 		applyEdits(request, this._openResponseStream);
 	}
 
-	private addFileContext(textEditor: vscode.TextEditor, variables: vscode.ChatPromptReference[]) {
-		const fileName = textEditor.document.fileName.split('/').pop();
-		const firstLine = textEditor.document.lineAt(0);
-		const lastLine = textEditor.document.lineAt(textEditor.document.lineCount - 1);
-		const codeSelection = {
-			uri: textEditor.document.uri,
-			range: {
-				startLineNumber: firstLine.lineNumber,
-				startColumn: firstLine.range.start.character,
-				endLineNumber: lastLine.lineNumber,
-				endColumn: lastLine.range.end.character
-			}
-		};
-		variables.push({
-			id: 'vscode.file',
-			name: `file:${fileName}`,
-			value: JSON.stringify(codeSelection)
-		});
-	}
-
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
 		if (!this._editorUrl) {
 			return;
@@ -166,19 +146,13 @@ export class AideProbeProvider implements vscode.Disposable {
 			return {};
 		}
 
-		const variables: vscode.ChatPromptReference[] = [];
-		const activeEditor = vscode.window.activeTextEditor;
-		if (activeEditor) {
-			this.addFileContext(activeEditor, variables);
-		}
-
 		const threadId = uuid.v4();
 
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 		if (request.editMode) {
-			probeResponse = this._sideCarClient.startAgentCodeEdit(query, variables, this._editorUrl, threadId);
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId);
 		} else {
-			probeResponse = this._sideCarClient.startAgentProbe(query, variables, this._editorUrl, threadId);
+			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId);
 		}
 
 		/* // Use dummy data: Start

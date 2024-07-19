@@ -20,7 +20,7 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -58,6 +58,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	constructor(
 		readonly sessionId: string,
 		readonly message: string,
+		readonly variables: IChatRequestVariableData,
 		readonly editMode: boolean
 	) {
 		super();
