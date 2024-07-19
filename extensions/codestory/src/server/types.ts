@@ -701,6 +701,7 @@ export type SidecarApplyEditsRequest = {
 	fs_file_path: string;
 	edited_content: string;
 	selected_range: SidecarRequestRange;
+	apply_directly: boolean;
 };
 
 export interface SidecarRequestRange {
