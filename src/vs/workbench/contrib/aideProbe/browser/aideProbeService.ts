@@ -7,9 +7,12 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export type ProbeMode = 'edit' | 'explore';
 
@@ -58,6 +61,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IModelService private readonly modelService: IModelService,
+		@IEditorService private readonly editorService: IEditorService,
 	) {
 		super();
 	}
@@ -117,7 +122,29 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, edit);
+				const variableData: IChatRequestVariableData = { variables: [] };
+				const openEditors = this.editorService.editors;
+				for (const editor of openEditors) {
+					const resource = editor.resource;
+					if (!resource) {
+						continue;
+					}
+
+					const model = this.modelService.getModel(resource);
+					if (!model) {
+						continue;
+					}
+
+					const range = model.getFullModelRange();
+					const valueObj = { uri: resource, range: range };
+					variableData.variables.push({
+						id: 'vscode.file',
+						name: `file:${resource.path.split('/').pop()}`,
+						value: JSON.stringify(valueObj),
+					});
+				}
+
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

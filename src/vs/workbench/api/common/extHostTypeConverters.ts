@@ -3132,6 +3132,7 @@ export namespace AideProbeRequestModel {
 		return {
 			requestId: request.sessionId,
 			query: request.message,
+			references: request.variables.variables.map(ChatAgentValueReference.to),
 			editMode: request.editMode,
 		};
 	}

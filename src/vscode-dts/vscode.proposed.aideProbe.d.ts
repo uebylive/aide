@@ -22,6 +22,7 @@ declare module 'vscode' {
 	export interface ProbeRequest {
 		requestId: string;
 		query: string;
+		readonly references: readonly ChatPromptReference[];
 		editMode: boolean;
 	}
 
