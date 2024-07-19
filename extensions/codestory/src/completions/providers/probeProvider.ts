@@ -119,6 +119,16 @@ export class AideProbeProvider implements vscode.Disposable {
 		applyEdits(request, this._openResponseStream);
 	}
 
+	private async showInviteCodeNotification() {
+		const message = vscode.l10n.t('You need an invite code to use this feature. If you have it already, please enter it in the settings at \'aide.probeInviteCode\'.');
+		const configureButton = vscode.l10n.t('Configure');
+
+		const choice = await vscode.window.showInformationMessage(message, configureButton);
+		if (choice === configureButton) {
+			vscode.commands.executeCommand('workbench.action.openSettings', 'aide.probeInviteCode');
+		}
+	}
+
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
 		if (!this._editorUrl) {
 			return;
@@ -142,7 +152,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 
 		if (!this.active) {
-			response.markdown('Please add your invite under `"aide.probeInviteCode"` in your settings.');
+			this.showInviteCodeNotification();
 			return {};
 		}
 
