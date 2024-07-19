@@ -266,6 +266,11 @@ export class AideProbeDecorationService extends Disposable {
 			progressiveBreakdownDecorations = this.breakdownDecorations.get(reference.uri.toString());
 		}
 
+		const existingDecorations = progressiveBreakdownDecorations?.getRanges();
+		if (existingDecorations?.some(decoration => decoration.intersectRanges(symbol.range))) {
+			return;
+		}
+
 		const newDecoration: IModelDeltaDecoration = {
 			range: symbol.range,
 			options: breakdownDecorationOptions
