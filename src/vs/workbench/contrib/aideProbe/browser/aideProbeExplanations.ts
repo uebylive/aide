@@ -69,28 +69,43 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		this.explanationWidget?.dispose();
 
 		let codeEditor: ICodeEditor | null;
-		let breakdownPosition: Position = new Position(1, 300);
+		const activeSession = this.aideProbeService.getSession();
+		const editMode = activeSession?.request?.editMode;
 
-		const symbol = await element.symbol;
-		if (!symbol) {
-			codeEditor = await this.openCodeEditor(uri);
+		let breakdownPosition: Position = new Position(1, 1);
+		if (editMode) {
+			if (element.edits.length > 0) {
+				const ranges = element.edits[0].getRangesN();
+				if (ranges.length > 0) {
+					const wholeRange = ranges[0];
+					breakdownPosition = new Position(wholeRange.startLineNumber - 1, wholeRange.startColumn);
+					codeEditor = await this.openCodeEditor(uri, wholeRange);
+				}
+				codeEditor = await this.openCodeEditor(uri);
+			} else {
+				codeEditor = await this.openCodeEditor(uri);
+			}
 		} else {
-			breakdownPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
-			codeEditor = await this.openCodeEditor(uri, symbol.range);
-		}
-
-		if (codeEditor && symbol && breakdownPosition) {
-			const activeSession = this.aideProbeService.getSession();
-			if (activeSession?.request?.editMode) {
-				return;
+			const symbol = await element.symbol;
+			if (!symbol) {
+				codeEditor = await this.openCodeEditor(uri);
+			} else {
+				breakdownPosition = new Position(symbol.range.startLineNumber - 1, symbol.range.startColumn);
+				codeEditor = await this.openCodeEditor(uri, symbol.range);
 			}
 
-			this.explanationWidget = this._register(this.instantiationService.createInstance(
-				AideProbeExplanationWidget, codeEditor, this.resourceLabels, this.markdownRenderer
-			));
-			await this.explanationWidget.setBreakdown(element);
-			this.explanationWidget.show();
-			this.explanationWidget.showProbingSymbols(symbol);
+			if (codeEditor && symbol && breakdownPosition) {
+				if (activeSession?.request?.editMode) {
+					return;
+				}
+
+				this.explanationWidget = this._register(this.instantiationService.createInstance(
+					AideProbeExplanationWidget, codeEditor, this.resourceLabels, this.markdownRenderer
+				));
+				await this.explanationWidget.setBreakdown(element);
+				this.explanationWidget.show();
+				this.explanationWidget.showProbingSymbols(symbol);
+			}
 		}
 	}
 
