@@ -113,7 +113,7 @@ class MenuCopier implements IDisposable {
 		function updateMenu() {
 			if (configService.getValue<boolean>(InlineChatConfigKeys.ExpTextButtons)) {
 				store.clear();
-				for (const item of MenuRegistry.getMenuItems(MenuId.ChatExecute)) {
+				for (const item of MenuRegistry.getMenuItems(MenuId.AideChatExecute)) {
 					if (isIMenuItem(item) && (item.command.id === SubmitAction.ID || item.command.id === CancelAction.ID)) {
 						continue;
 					}
@@ -123,7 +123,7 @@ class MenuCopier implements IDisposable {
 		}
 		updateMenu();
 		const listener = MenuRegistry.onDidChangeMenu(e => {
-			if (e.has(MenuId.ChatExecute)) {
+			if (e.has(MenuId.AideChatExecute)) {
 				updateMenu();
 			}
 		});

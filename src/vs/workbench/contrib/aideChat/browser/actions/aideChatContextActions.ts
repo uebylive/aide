@@ -14,7 +14,7 @@ import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { Command } from 'vs/editor/common/languages';
 import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from 'vs/editor/contrib/quickAccess/browser/gotoSymbolQuickAccess';
 import { localize, localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
+import { Action2, MenuId } from 'vs/platform/actions/common/actions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
@@ -35,9 +35,12 @@ import { EditorType } from 'vs/editor/common/editorCommon';
 import { compare } from 'vs/base/common/strings';
 
 export function registerChatContextActions() {
-	registerAction2(AttachContextAction);
-	registerAction2(AttachFileAction);
-	registerAction2(AttachSelectionAction);
+	console.log(AttachContextAction.ID);
+	console.log(AttachFileAction.ID);
+	console.log(AttachSelectionAction.ID);
+	// registerAction2(AttachContextAction);
+	// registerAction2(AttachFileAction);
+	// registerAction2(AttachSelectionAction);
 }
 
 export type IChatContextQuickPickItem = IFileQuickPickItem | IDynamicVariableQuickPickItem | IStaticVariableQuickPickItem | IGotoSymbolQuickPickItem | ISymbolQuickPickItem | IQuickAccessQuickPickItem;
