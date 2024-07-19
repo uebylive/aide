@@ -382,6 +382,6 @@ export function registerProbeActions() {
 	registerAction2(SubmitAction);
 	registerAction2(AcceptAction);
 	registerAction2(RejectAction);
-	registerAction2(EnterExploreModeAction);
-	registerAction2(EnterEditModeAction);
+	// registerAction2(EnterExploreModeAction);
+	// registerAction2(EnterEditModeAction);
 }

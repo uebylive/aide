@@ -241,6 +241,7 @@ export class AideCommandPaletteWidget extends Disposable {
 		// Toggle
 
 		this._modeToggleContainer = dom.append(this._inputContainer, $('.command-palette-mode-flag'));
+		this._modeToggleContainer.style.display = 'none';
 		const hoverDelegate = this._register(createInstantHoverDelegate());
 		const modeToggle = this.modeToggle = this._register(new Button(this._modeToggleContainer, {
 			hoverDelegate,
