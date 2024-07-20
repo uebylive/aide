@@ -11,7 +11,7 @@ import * as vscode from 'vscode';
 
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import postHogClient from '../../posthog/client';
-import { applyEdits } from '../../server/applyEdits';
+import { applyEdits, applyEditsDirectly } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
 import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
@@ -76,7 +76,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			// can still grab it by listenting to port 0
 			this._requestHandler?.listen(port);
 			const editorUrl = `http://localhost:${port}`;
-			// console.log('editorUrl', editorUrl);
+			console.log('editorUrl', editorUrl);
 			this._editorUrl = editorUrl;
 			// console.log(this._editorUrl);
 		});
@@ -112,10 +112,13 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest) {
+		if (request.apply_directly) {
+			applyEditsDirectly(request);
+			return;
+		}
 		if (!this._openResponseStream) {
 			return;
 		}
-
 		applyEdits(request, this._openResponseStream);
 	}
 
