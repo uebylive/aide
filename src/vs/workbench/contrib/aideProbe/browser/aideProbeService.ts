@@ -202,7 +202,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this.clearSession();
 	}
 
-	clearSession(): void {
+	private clearSession(): void {
 		this._model?.dispose();
 		this._model = undefined;
 		this.cancelProbe();

@@ -593,6 +593,14 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 	cancelRequest(): void {
 		this.aideProbeService.cancelProbe();
+		const codeEdits = this._viewModel?.model.response?.codeEdits;
+		if (!codeEdits || codeEdits.size === 0) {
+			this.aideProbeService.rejectCodeEdits();
+			this.clear();
+
+			this.panel.hide();
+			this.isPanelVisible = false;
+		}
 	}
 
 	clear(): void {
@@ -604,13 +612,12 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this._viewModel = undefined;
 
 		this.requestStatus.set('INACTIVE');
-
-		this.hide();
 	}
 
 	public override dispose(): void {
 		this.storePosition();
 		this.clear();
+		this.hide();
 		super.dispose();
 	}
 }
