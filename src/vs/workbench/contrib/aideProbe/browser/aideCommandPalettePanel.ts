@@ -35,6 +35,7 @@ export interface IAideCommandPalettePanel {
 	show(headerText: string | undefined, isLoading: boolean): void;
 	hide(): void;
 
+	setIsFiltered(isFiltered: boolean): void;
 	setFocus(index: number, browserEvent?: UIEvent): void;
 	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeBreakdownViewModel>): void;
 	filterSymbolInfo(filteredSymbols: ReadonlyArray<IAideProbeBreakdownViewModel>): void;
@@ -47,6 +48,7 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
+	private _isFiltered = false;
 	private userFocusIndex: number | undefined;
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
@@ -101,7 +103,6 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 	}
 
 	show(headerText: string | undefined, isLoading: boolean): void {
-
 		if (headerText) {
 			this.headerText.textContent = headerText;
 		}
@@ -191,6 +192,10 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 				this.openSymbolInfoReference(e.element, !!e.browserEvent);
 			}
 		}));
+	}
+
+	setIsFiltered(isFiltered: boolean): void {
+		this._isFiltered = isFiltered;
 	}
 
 	setFocus(index: number, browserEvent?: UIEvent) {
@@ -313,7 +318,7 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 
 		if (this.list.length === 0) {
 			this.emptyListPlaceholder.style.visibility = 'visible';
-			this.emptyListPlaceholder.textContent = 'No symbols match your query';
+			this.emptyListPlaceholder.textContent = this._isFiltered ? 'No symbols match your query' : 'Exploring the codebase';
 			this.list.getHTMLElement().style.visibility = 'hidden';
 		} else {
 			this.emptyListPlaceholder.style.visibility = 'hidden';

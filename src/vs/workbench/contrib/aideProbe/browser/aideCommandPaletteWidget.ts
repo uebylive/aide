@@ -273,7 +273,9 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			const currentHeight = Math.max(this._inputEditor.getContentHeight(), INPUT_EDITOR_MIN_HEIGHT);
 
 			if (this.requestStatus.get() !== 'INACTIVE' && this._viewModel) {
-				this._viewModel.setFilter(this._inputEditor.getValue());
+				const inputValue = this._inputEditor.getValue();
+				this._viewModel.setFilter(inputValue);
+				this.panel.setIsFiltered(inputValue.length > 0);
 			}
 
 			if (currentHeight !== this.inputEditorHeight) {
