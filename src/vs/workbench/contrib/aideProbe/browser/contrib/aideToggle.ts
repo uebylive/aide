@@ -42,9 +42,11 @@ export class AideToggle extends Disposable {
 			if (this.isPaletteVisible.get()) {
 				return;
 			}
+
 			if (this.toggleButton) {
 				this.toggleButton.dispose();
 			}
+
 			const editor = this.editorService.activeTextEditorControl;
 			if (isCodeEditor(editor)) {
 				const editorRoot = editor.getDomNode();
@@ -53,9 +55,7 @@ export class AideToggle extends Disposable {
 				}
 				this.toggleButton = this._register(new Button(editorRoot, {}));
 				this.toggleButton.element.classList.add('aide-toggle-button');
-				this.toggleButton.setTitle('Open Aide');
-			}
-			if (this.toggleButton) {
+				this.toggleButton.setTitle('Kick off a task with AI');
 				this._register(this.toggleButton.onDidClick(() => {
 					this.aideCommandPaletteService.showPalette();
 				}));
@@ -64,4 +64,4 @@ export class AideToggle extends Disposable {
 	}
 }
 
-registerWorkbenchContribution2(AideToggle.ID, AideToggle, WorkbenchPhase.BlockStartup);
+registerWorkbenchContribution2(AideToggle.ID, AideToggle, WorkbenchPhase.Eventually);

@@ -42,6 +42,13 @@ export interface IAideProbeResponseModel {
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 }
 
+export type AideProbeStatus = 'INACTIVE' | 'IN_PROGRESS' | 'IN_REVIEW';
+export const enum IAideProbeStatus {
+	INACTIVE = 'INACTIVE',
+	IN_PROGRESS = 'IN_PROGRESS',
+	IN_REVIEW = 'IN_REVIEW'
+}
+
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
 	onNewEvent: Event<IAideProbeResponseEvent>;
@@ -49,9 +56,7 @@ export interface IAideProbeModel {
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
-
-	isComplete: boolean;
-	requestInProgress: boolean;
+	status: IAideProbeStatus;
 }
 
 export class AideProbeRequestModel extends Disposable implements IAideProbeRequestModel {
@@ -235,7 +240,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
-	private _isComplete = false;
+	private _status: IAideProbeStatus = IAideProbeStatus.INACTIVE;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -246,10 +251,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._request;
 	}
 
-	get requestInProgress(): boolean {
-		return !!this._request && !this._isComplete;
-	}
-
 	set request(value: AideProbeRequestModel) {
 		this._request = value;
 	}
@@ -258,8 +259,12 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._response;
 	}
 
-	get isComplete(): boolean {
-		return this._isComplete;
+	get status() {
+		return this._status;
+	}
+
+	set status(_status: IAideProbeStatus) {
+		this._status = _status;
 	}
 
 	constructor(
@@ -279,6 +284,8 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
 			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
 		}
+
+		this._status = IAideProbeStatus.IN_PROGRESS;
 
 		switch (progress.kind) {
 			case 'markdownContent':
@@ -302,14 +309,13 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	}
 
 	completeResponse(): void {
-		this._isComplete = true;
+		this._status = IAideProbeStatus.IN_REVIEW;
+
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
-		this._request = undefined;
-		this._response = undefined;
-		this._isComplete = false;
+		this._status = IAideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}

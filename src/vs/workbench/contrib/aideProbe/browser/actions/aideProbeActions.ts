@@ -12,7 +12,7 @@ import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
@@ -22,7 +22,12 @@ export interface IProbeActionContext {
 	inputValue?: string;
 }
 
-export class OpenCommandPaletteAction extends Action2 {
+const isProbingInProgress = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('IN_PROGRESS');
+const isProbingInReview = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('IN_REVIEW');
+const isIdle = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('INACTIVE');
+const isProbeActive = ContextKeyExpr.and(isProbingInProgress, isProbingInReview);
+
+class OpenCommandPaletteAction extends Action2 {
 	static readonly ID = 'workbench.action.aideCommandPalette.open';
 	constructor() {
 		super({
@@ -43,7 +48,7 @@ export class OpenCommandPaletteAction extends Action2 {
 	}
 }
 
-export class CloseCommandPaletteAction extends Action2 {
+class CloseCommandPaletteAction extends Action2 {
 	static readonly ID = 'workbench.action.aideCommandPalette.close';
 	constructor() {
 		super({
@@ -51,7 +56,7 @@ export class CloseCommandPaletteAction extends Action2 {
 			title: localize2('closeCommandPalette', "Close command palette"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: CONTEXT_PROBE_IS_ACTIVE.negate(),
+			precondition: isIdle,
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyCode.Escape,
@@ -66,7 +71,7 @@ export class CloseCommandPaletteAction extends Action2 {
 	}
 }
 
-export class SubmitAction extends Action2 {
+class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';
 
 	constructor(title?: ILocalizedString) {
@@ -76,7 +81,7 @@ export class SubmitAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, isIdle),
 			keybinding: {
 				when: CONTEXT_IN_PROBE_INPUT,
 				primary: KeyCode.Enter,
@@ -84,9 +89,9 @@ export class SubmitAction extends Action2 {
 			},
 			menu: [
 				{
-					id: MenuId.AideCommandPaletteSubmit,
+					id: MenuId.AideCommandPaletteToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+					when: isIdle,
 					order: 9
 				},
 			]
@@ -99,71 +104,7 @@ export class SubmitAction extends Action2 {
 	}
 }
 
-export class EnterExploreModeAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.enterExploreMode';
-
-	constructor() {
-		super({
-			id: EnterExploreModeAction.ID,
-			title: localize2('workbench.action.aideProbe.enterExploreMode', "Change to explore mode"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
-			keybinding: {
-				when: CONTEXT_IN_PROBE_INPUT,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyM,
-				weight: KeybindingWeight.EditorContrib
-			},
-			menu: [
-				//{
-				//	id: MenuId.AideCommandPaletteSubmit,
-				//	group: 'navigation',
-				//	when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(), CONTEXT_PROBE_MODE.isEqualTo('edit')),
-				//},
-			]
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		commandPaletteService.widget?.setMode('explore');
-	}
-}
-
-export class EnterEditModeAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.enterEditMode';
-
-	constructor() {
-		super({
-			id: EnterEditModeAction.ID,
-			title: localize2('workbench.action.aideProbe.enterEditMode', "Change to edit mode"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
-			keybinding: {
-				when: CONTEXT_IN_PROBE_INPUT,
-				primary: KeyMod.Alt | KeyCode.KeyM,
-				weight: KeybindingWeight.EditorContrib
-			},
-			menu: [
-				//{
-				//	id: MenuId.AideCommandPaletteSubmit,
-				//	group: 'navigation',
-				//	when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE.negate(), CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(), CONTEXT_PROBE_MODE.isEqualTo('explore')),
-				//},
-			]
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		commandPaletteService.widget?.setMode('edit');
-	}
-}
-
-export class NavigateUpAction extends Action2 {
+class NavigateUpAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.navigateUp';
 
 	constructor() {
@@ -172,7 +113,7 @@ export class NavigateUpAction extends Action2 {
 			title: localize2('aideProbe.navigateUp.label', "Navigate up"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_IS_ACTIVE),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeActive),
 			keybinding: {
 				primary: KeyCode.UpArrow,
 				weight: KeybindingWeight.EditorContrib,
@@ -197,7 +138,7 @@ export class NavigateUpAction extends Action2 {
 	}
 }
 
-export class NavigateDownAction extends Action2 {
+class NavigateDownAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.navigateDown';
 
 	constructor() {
@@ -206,7 +147,7 @@ export class NavigateDownAction extends Action2 {
 			title: localize2('aideProbe.navigateDown.label', "Navigate down"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_IS_ACTIVE),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeActive),
 			keybinding: {
 				primary: KeyCode.DownArrow,
 				weight: KeybindingWeight.EditorContrib,
@@ -230,7 +171,7 @@ export class NavigateDownAction extends Action2 {
 	}
 }
 
-export class CancelAction extends Action2 {
+class CancelAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.cancel';
 
 	constructor() {
@@ -240,7 +181,7 @@ export class CancelAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS),
+			precondition: isProbingInProgress,
 			keybinding: {
 				primary: KeyMod.Alt | KeyCode.Backspace,
 				weight: KeybindingWeight.EditorContrib,
@@ -248,9 +189,9 @@ export class CancelAction extends Action2 {
 			},
 			menu: [
 				{
-					id: MenuId.AideCommandPaletteSubmit,
+					id: MenuId.AideCommandPaletteToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS),
+					when: isProbingInProgress,
 				}
 			]
 		});
@@ -258,51 +199,11 @@ export class CancelAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		const probeService = accessor.get(IAideProbeService);
-
-		probeService.rejectCodeEdits();
 		commandPaletteService.cancelRequest();
-		commandPaletteService.widget?.clear();
 	}
 }
 
-export class RejectAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.reject';
-
-	constructor() {
-		super({
-			id: RejectAction.ID,
-			title: localize2('aideProbe.rejectAll.label', "Reject All"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.x,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
-			keybinding: {
-				primary: KeyMod.Alt | KeyCode.Backspace,
-				weight: KeybindingWeight.EditorContrib,
-				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
-			},
-			menu: [
-				{
-					id: MenuId.AideCommandPaletteSubmit,
-					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
-				}
-			]
-		});
-	}
-
-	async run(accessor: ServicesAccessor, ...args: any[]) {
-		const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		const probeService = accessor.get(IAideProbeService);
-
-		probeService.rejectCodeEdits();
-		commandPaletteService.widget?.clear();
-		commandPaletteService.hidePalette();
-	}
-}
-
-export class AcceptAction extends Action2 {
+class AcceptAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.accept';
 
 	constructor() {
@@ -312,7 +213,7 @@ export class AcceptAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+			precondition: isProbingInReview,
 			keybinding: {
 				primary: KeyMod.Alt | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib,
@@ -320,9 +221,9 @@ export class AcceptAction extends Action2 {
 			},
 			menu: [
 				{
-					id: MenuId.AideCommandPaletteSubmit,
+					id: MenuId.AideCommandPaletteToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(CONTEXT_PROBE_IS_ACTIVE, CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate()),
+					when: isProbingInReview,
 				}
 			]
 		});
@@ -338,27 +239,27 @@ export class AcceptAction extends Action2 {
 	}
 }
 
-
-export class ClearAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.clear';
+class RejectAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.reject';
 
 	constructor() {
 		super({
-			id: ClearAction.ID,
-			title: localize2('aideProbe.clear.label', "Clear"),
+			id: RejectAction.ID,
+			title: localize2('aideProbe.rejectAll.label', "Reject All"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			icon: Codicon.clearAll,
-			precondition: CONTEXT_PROBE_REQUEST_IN_PROGRESS.negate(),
+			icon: Codicon.x,
+			precondition: isProbingInReview,
 			keybinding: {
-				primary: KeyCode.Escape,
+				primary: KeyMod.Alt | KeyCode.Backspace,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
 			},
 			menu: [
 				{
-					id: MenuId.AideCommandPaletteContext,
+					id: MenuId.AideCommandPaletteToolbar,
 					group: 'navigation',
+					when: isProbingInReview,
 				}
 			]
 		});
@@ -370,19 +271,18 @@ export class ClearAction extends Action2 {
 
 		probeService.rejectCodeEdits();
 		commandPaletteService.widget?.clear();
+		commandPaletteService.hidePalette();
 	}
 }
 
 export function registerProbeActions() {
 	registerAction2(OpenCommandPaletteAction);
 	registerAction2(CloseCommandPaletteAction);
-	registerAction2(CancelAction);
-	registerAction2(ClearAction);
+	registerAction2(SubmitAction);
+
 	registerAction2(NavigateUpAction);
 	registerAction2(NavigateDownAction);
-	registerAction2(SubmitAction);
+	registerAction2(CancelAction);
 	registerAction2(AcceptAction);
 	registerAction2(RejectAction);
-	// registerAction2(EnterExploreModeAction);
-	// registerAction2(EnterEditModeAction);
 }

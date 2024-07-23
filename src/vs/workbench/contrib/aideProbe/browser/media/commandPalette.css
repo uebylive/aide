@@ -17,8 +17,8 @@
 .aide-toggle-button {
 	position: sticky;
 	display: block;
-	bottom: 10px;
-	left: calc(100% - 50px);
+	bottom: 20px;
+	left: calc(100% - 60px);
 	width: 36px;
 	height: 36px;
 	border-radius: 99999px;
@@ -29,6 +29,7 @@
 	background-repeat: no-repeat;
 	background-position: center;
 	cursor: pointer;
+	z-index: 6;
 }
 
 .aide-toggle-button:hover {
@@ -85,26 +86,14 @@
 }
 
 .command-palette-logo {
+	margin-left: 6px;
+	height: 36px;
+	width: 36px;
 	grid-area: 1 / -1 / 1 / -1;
 	background-image: url('./aideLogo.svg');
 	background-repeat: no-repeat;
 	background-position: center;
 	transition: opacity 0.3s ease;
-}
-
-.command-palette-context.active .command-palette-logo {
-	opacity: 0;
-}
-
-.command-palette-context-toolbar {
-	grid-area: 1 / -1 / 1 / -1;
-	opacity: 0;
-	transition: opacity 0.3s ease;
-	padding-inline: 6px;
-}
-
-.command-palette-context.active .command-palette-context-toolbar {
-	opacity: 1;
 }
 
 .command-palette-input {

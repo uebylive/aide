@@ -6,7 +6,7 @@
 import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
@@ -29,11 +29,11 @@ export interface IAideProbeService {
 
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
+
 	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
-	cancelCurrentRequestForSession(sessionId: string): void;
+	cancelProbe(): void;
 	acceptCodeEdits(): void;
 	rejectCodeEdits(): void;
-	clearSession(): void;
 
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
@@ -53,7 +53,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	protected readonly _onReview = this._store.add(new Emitter<IAideProbeReviewUserEvent>());
 	readonly onReview: Event<IAideProbeReviewUserEvent> = this._onReview.event;
 
-	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellationTokenSource>());
+	private _activeRequest: CancellationTokenSource | undefined;
 	private probeProvider: IAideProbeResolver | undefined;
 	private _model: AideProbeModel | undefined;
 	private readonly _modelDisposables = this._register(new DisposableStore());
@@ -165,9 +165,9 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		};
 
 		const rawResponsePromise = initiateProbeInternal();
-		this._pendingRequests.set(probeModel.sessionId, source);
+		this._activeRequest = source;
 		rawResponsePromise.finally(() => {
-			this._pendingRequests.deleteAndDispose(probeModel.sessionId);
+			this._activeRequest?.dispose();
 		});
 
 		this._initiateProbeResponseState = {
@@ -178,11 +178,12 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._initiateProbeResponseState;
 	}
 
-	cancelCurrentRequestForSession(sessionId: string): void {
-		this._pendingRequests.get(sessionId)?.cancel();
-		this._pendingRequests.deleteAndDispose(sessionId);
+	cancelProbe(): void {
+		if (this._activeRequest) {
+			this._activeRequest.cancel();
+			this._activeRequest.dispose();
+		}
 	}
-
 
 	acceptCodeEdits(): void {
 		this._onReview.fire('accept');
@@ -202,11 +203,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	clearSession(): void {
-		const sessionId = this._model?.sessionId;
 		this._model?.dispose();
 		this._model = undefined;
-		if (sessionId) {
-			this.cancelCurrentRequestForSession(sessionId);
-		}
+		this.cancelProbe();
 	}
 }

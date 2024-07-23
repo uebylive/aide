@@ -5,13 +5,13 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
+import { Event } from 'vs/base/common/event';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 import { IDimension } from 'vs/editor/common/core/dimension';
-import { Event } from 'vs/base/common/event';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -25,6 +25,7 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
+import { IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
@@ -40,8 +41,6 @@ export class AideProbeViewPane extends ViewPane {
 	private readonly markdownRenderer: MarkdownRenderer;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
-
-	private didDisplayLoading = false;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -93,12 +92,8 @@ export class AideProbeViewPane extends ViewPane {
 
 	private onDidChangeItems(): void {
 
-		if (this.viewModel?.requestInProgress) {
-			if (this.didDisplayLoading) {
-				return;
-			}
+		if (this.viewModel?.status !== IAideProbeStatus.IN_PROGRESS) {
 			this.responseWrapper.textContent = 'Loading...';
-			this.didDisplayLoading = true;
 		} else {
 			this.renderFinalAnswer();
 		}

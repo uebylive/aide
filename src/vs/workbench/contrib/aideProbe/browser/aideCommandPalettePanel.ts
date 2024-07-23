@@ -12,9 +12,6 @@ import { relativePath } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { assertIsDefined } from 'vs/base/common/types';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
-import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { FileKind } from 'vs/platform/files/common/files';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
@@ -30,17 +27,33 @@ interface ChangeSymbolInfoEvent {
 	element: IAideProbeBreakdownViewModel;
 }
 
-export class AideCommandPalettePanel extends Disposable {
+export interface IAideCommandPalettePanel {
+	readonly onDidChangeFocus: Event<ChangeSymbolInfoEvent>;
+	readonly contentHeight: number | undefined;
+	readonly maxItems: number;
+
+	show(headerText: string | undefined, isLoading: boolean): void;
+	hide(): void;
+
+	setFocus(index: number, browserEvent?: UIEvent): void;
+	updateSymbolInfo(symbolInfo: ReadonlyArray<IAideProbeBreakdownViewModel>): void;
+	filterSymbolInfo(filteredSymbols: ReadonlyArray<IAideProbeBreakdownViewModel>): void;
+	openSymbolInfoReference(element: IAideProbeBreakdownViewModel, setFocus?: boolean): Promise<void>;
+
+	emptyListPlaceholder: HTMLElement;
+}
+
+export class AideCommandPalettePanel extends Disposable implements IAideCommandPalettePanel {
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeSymbolInfoEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
+
 	private userFocusIndex: number | undefined;
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
-	container: HTMLElement;
+	private container: HTMLElement;
 	private header: HTMLElement;
 	private headerText: HTMLElement;
 	private loadingSpinner: HTMLElement | undefined;
-	private actionsToolbar: MenuWorkbenchToolBar;
 	emptyListPlaceholder: HTMLElement;
 
 	private listContainer: HTMLElement;
@@ -76,20 +89,6 @@ export class AideCommandPalettePanel extends Disposable {
 
 		const toolbarContainer = $('.symbol-info-toolbar-container');
 		this.header.appendChild(toolbarContainer);
-
-		this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideCommandPaletteActions, {
-			menuOptions: {
-				shouldForwardArgs: true
-			},
-			hiddenItemStrategy: HiddenItemStrategy.Ignore,
-			actionViewItemProvider: (action, options) => {
-				if (action instanceof MenuItemAction) {
-					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
-				}
-				return;
-			}
-		}));
-		this.actionsToolbar.getElement().classList.add('symbol-info-actions');
 
 		this.renderer = this._register(this.instantiationService.createInstance(SymbolInfoRenderer, this.resourceLabels));
 	}
@@ -278,8 +277,7 @@ export class AideCommandPalettePanel extends Disposable {
 			);
 		}
 
-		this.render(true);
-
+		this.render();
 
 		if (focusIndex !== -1) {
 			list.setFocus([focusIndex]);
@@ -307,23 +305,25 @@ export class AideCommandPalettePanel extends Disposable {
 	}
 
 
-	private render(isFiltering: boolean = false) {
+	private render() {
 		if (!this.list) {
 			return;
 		}
 		this.list.rerender();
+
 		if (this.list.length === 0) {
 			this.emptyListPlaceholder.style.visibility = 'visible';
-			this.emptyListPlaceholder.textContent = isFiltering ? 'No symbols match your query' : 'Loading...';
+			this.emptyListPlaceholder.textContent = 'No symbols match your query';
 			this.list.getHTMLElement().style.visibility = 'hidden';
 		} else {
 			this.emptyListPlaceholder.style.visibility = 'hidden';
 			this.list.getHTMLElement().style.visibility = 'visible';
 		}
+
 		this.layout();
 	}
 
-	layout(width?: number): void {
+	private layout(width?: number): void {
 		if (this.list) {
 			this.container.style.height = `${this.list.renderHeight + 36 + (this.list.length === 0 ? 42 : 0)}px`;
 			this.list.layout(this.list.renderHeight, width);

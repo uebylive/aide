@@ -13,7 +13,7 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
@@ -23,7 +23,7 @@ export interface IAideProbeViewModel {
 
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
-	readonly requestInProgress: boolean;
+	readonly status: IAideProbeStatus;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
@@ -54,8 +54,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._model.sessionId;
 	}
 
-	get requestInProgress(): boolean {
-		return this._model.requestInProgress;
+	get status(): IAideProbeStatus {
+		return this._model.status;
 	}
 
 	private _lastFileOpened: URI | undefined;
