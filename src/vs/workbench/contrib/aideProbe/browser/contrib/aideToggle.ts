@@ -27,6 +27,7 @@ export class AideToggle extends Disposable {
 
 		super();
 		this.isPaletteVisible = CONTEXT_PALETTE_IS_VISIBLE.bindTo(this.contextKeyService);
+		this.renderToggleButton();
 
 		this.contextKeyService.onDidChangeContext(e => {
 			if (e.affectsSome(new Set([CONTEXT_PALETTE_IS_VISIBLE.key])) && this.toggleButton) {
@@ -39,28 +40,32 @@ export class AideToggle extends Disposable {
 		});
 
 		this.editorService.onDidActiveEditorChange(() => {
-			if (this.isPaletteVisible.get()) {
+			this.renderToggleButton();
+		});
+	}
+
+	private renderToggleButton() {
+		if (this.isPaletteVisible.get()) {
+			return;
+		}
+
+		if (this.toggleButton) {
+			this.toggleButton.dispose();
+		}
+
+		const editor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(editor)) {
+			const editorRoot = editor.getDomNode();
+			if (!editorRoot) {
 				return;
 			}
-
-			if (this.toggleButton) {
-				this.toggleButton.dispose();
-			}
-
-			const editor = this.editorService.activeTextEditorControl;
-			if (isCodeEditor(editor)) {
-				const editorRoot = editor.getDomNode();
-				if (!editorRoot) {
-					return;
-				}
-				this.toggleButton = this._register(new Button(editorRoot, {}));
-				this.toggleButton.element.classList.add('aide-toggle-button');
-				this.toggleButton.setTitle('Kick off a task with AI');
-				this._register(this.toggleButton.onDidClick(() => {
-					this.aideCommandPaletteService.showPalette();
-				}));
-			}
-		});
+			this.toggleButton = this._register(new Button(editorRoot, {}));
+			this.toggleButton.element.classList.add('aide-toggle-button');
+			this.toggleButton.setTitle('Kick off a task with AI');
+			this._register(this.toggleButton.onDidClick(() => {
+				this.aideCommandPaletteService.showPalette();
+			}));
+		}
 	}
 }
 
