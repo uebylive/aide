@@ -6,7 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
+import { AideCommandPaletteWidget, IAideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 
 export interface IAideCommandPaletteData {
@@ -15,7 +15,7 @@ export interface IAideCommandPaletteData {
 
 export interface IAideCommandPaletteService {
 	_serviceBrand: undefined;
-	widget: AideCommandPaletteWidget | undefined;
+	widget: IAideCommandPaletteWidget | undefined;
 
 	showPalette(): void;
 	acceptInput(): void;
@@ -33,8 +33,8 @@ export class AideCommandPaletteService extends Disposable implements IAideComman
 	private _container: HTMLElement | undefined;
 	private _mounted = false;
 
-	private _widget: AideCommandPaletteWidget | undefined;
-	get widget(): AideCommandPaletteWidget | undefined {
+	private _widget: IAideCommandPaletteWidget | undefined;
+	get widget(): IAideCommandPaletteWidget | undefined {
 		return this._widget;
 	}
 

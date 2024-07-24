@@ -17,22 +17,45 @@
 .aide-toggle-button {
 	position: sticky;
 	display: block;
-	bottom: 10px;
-	left: calc(100% - 50px);
+	bottom: 14px;
+	left: calc(100% - 68px);
 	width: 36px;
 	height: 36px;
 	border-radius: 99999px;
 	border: 1px solid var(--vscode-chat-requestBorder);
 	background-color: var(--vscode-editor-background);
-	transition: border-color 0.15s ease;
 	background-image: url('./aideLogo.svg');
 	background-repeat: no-repeat;
 	background-position: center;
+	transition: border-color 0.15s ease;
 	cursor: pointer;
+	z-index: 6;
+}
+
+.aide-toggle-button::before {
+	content: '';
+	position: absolute;
+	top: -2px;
+	left: -2px;
+	right: -2px;
+	bottom: -2px;
+	border: 2px solid transparent;
+	border-radius: 50%;
+	animation: none;
+}
+
+.aide-toggle-button.loading::before {
+	border-top-color: #065F46;
+	animation: spin 1s linear infinite;
 }
 
 .aide-toggle-button:hover {
 	border-color: #065F46;
+}
+
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
 }
 
 .command-palette-container {
