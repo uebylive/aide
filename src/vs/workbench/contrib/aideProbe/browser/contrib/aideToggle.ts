@@ -4,20 +4,22 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_PALETTE_IS_VISIBLE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
+import { CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export class AideToggle extends Disposable {
 	public static readonly ID = 'workbench.contrib.aideToggle';
 
 	private toggleButton: Button | undefined;
 	private readonly isPaletteVisible: IContextKey<boolean>;
+	private readonly requestStatus: IContextKey<AideProbeStatus>;
 
 	constructor(
 		@IEditorService private readonly editorService: IEditorService,
@@ -27,6 +29,8 @@ export class AideToggle extends Disposable {
 
 		super();
 		this.isPaletteVisible = CONTEXT_PALETTE_IS_VISIBLE.bindTo(this.contextKeyService);
+		this.requestStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(this.contextKeyService);
+
 		this.renderToggleButton();
 
 		this.contextKeyService.onDidChangeContext(e => {
@@ -35,6 +39,12 @@ export class AideToggle extends Disposable {
 					dom.hide(this.toggleButton.element);
 				} else {
 					dom.show(this.toggleButton.element);
+				}
+			} else if (e.affectsSome(new Set([CONTEXT_PROBE_REQUEST_STATUS.key])) && this.toggleButton) {
+				if (this.requestStatus.get() === 'INACTIVE') {
+					this.toggleButton.element.classList.remove('loading');
+				} else {
+					this.toggleButton.element.classList.add('loading');
 				}
 			}
 		});
@@ -69,4 +79,4 @@ export class AideToggle extends Disposable {
 	}
 }
 
-registerWorkbenchContribution2(AideToggle.ID, AideToggle, WorkbenchPhase.Eventually);
+registerWorkbenchContribution2(AideToggle.ID, AideToggle, WorkbenchPhase.BlockStartup);

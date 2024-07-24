@@ -25,6 +25,7 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
+import { ActionViewItemKb } from 'vs/platform/actionbarKeybinding/browser/actionViewItemKb';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
@@ -96,6 +97,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _inputEditor: CodeEditorWidget;
 
 	private mode: IContextKey<ProbeMode>;
+	private contextElement: HTMLElement;
 
 	private submitToolbar: MenuWorkbenchToolBar;
 	private inputModel: ITextModel | undefined;
@@ -177,8 +179,25 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		dom.hide(this.panelContainer);
 		this._inputContainer = dom.append(this._innerContainer, $('.command-palette-input'));
 
+		// Context
+		this.contextElement = dom.append(this._inputContainer, $('.command-palette-context'));
+		dom.append(this.contextElement, $('.command-palette-logo'));
+
+		const contextToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, this.contextElement, MenuId.AideCommandPaletteContext, {
+			menuOptions: {
+				shouldForwardArgs: true
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action, options) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemKb, action);
+				}
+				return;
+			}
+		}));
+		contextToolbar.getElement().classList.add('command-palette-context-toolbar');
+
 		// Input editor
-		dom.append(this._inputContainer, $('.command-palette-logo'));
 		this._inputEditorContainer = dom.append(this._inputContainer, $('.command-palette-input-editor'));
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(this._inputEditorContainer));
 		const editorWrapper = dom.append(this._inputEditorContainer, $('.command-palette-input-editor-wrapper'));
@@ -515,6 +534,9 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this.focus();
 		this.layoutInputs();
 		this.isVisible.set(true);
+
+		this.onDidChangeItems();
+		this.onDidFilterItems();
 	}
 
 	hide(): void {
@@ -554,6 +576,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		const editorValue = this._inputEditor.getValue();
 		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit');
 		this.requestStatus.set('IN_PROGRESS');
+		this.contextElement.classList.add('active');
 
 		this.isPanelVisible = true;
 		dom.show(this.panelContainer);
@@ -603,6 +626,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			this.panel.hide();
 			this.isPanelVisible = false;
 		}
+		this.contextElement.classList.remove('active');
 	}
 
 	clear(): void {
@@ -614,6 +638,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this._viewModel = undefined;
 
 		this.requestStatus.set('INACTIVE');
+		this.contextElement.classList.remove('active');
 	}
 
 	public override dispose(): void {

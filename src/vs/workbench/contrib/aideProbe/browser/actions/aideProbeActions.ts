@@ -25,7 +25,7 @@ export interface IProbeActionContext {
 const isProbingInProgress = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('IN_PROGRESS');
 const isProbingInReview = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('IN_REVIEW');
 const isIdle = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('INACTIVE');
-const isProbeActive = ContextKeyExpr.and(isProbingInProgress, isProbingInReview);
+const isProbeActive = ContextKeyExpr.or(isProbingInProgress, isProbingInReview);
 
 class OpenCommandPaletteAction extends Action2 {
 	static readonly ID = 'workbench.action.aideCommandPalette.open';
@@ -38,6 +38,7 @@ class OpenCommandPaletteAction extends Action2 {
 			keybinding: {
 				weight: KeybindingWeight.ExternalExtension,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
+				when: CONTEXT_PALETTE_IS_VISIBLE.negate()
 			}
 		});
 	}
@@ -56,12 +57,19 @@ class CloseCommandPaletteAction extends Action2 {
 			title: localize2('closeCommandPalette', "Close command palette"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: isIdle,
+			precondition: CONTEXT_PALETTE_IS_VISIBLE,
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyCode.Escape,
 				when: CONTEXT_PALETTE_IS_VISIBLE
-			}
+			},
+			menu: [
+				{
+					id: MenuId.AideCommandPaletteContext,
+					group: 'navigation',
+					when: CONTEXT_PALETTE_IS_VISIBLE
+				}
+			]
 		});
 	}
 
@@ -91,8 +99,7 @@ class SubmitAction extends Action2 {
 				{
 					id: MenuId.AideCommandPaletteToolbar,
 					group: 'navigation',
-					when: isIdle,
-					order: 9
+					when: isIdle
 				},
 			]
 		});
