@@ -46,6 +46,7 @@ export type CodeEditAgentBody = {
 	user_context: UserContext;
 	active_window_data?: ActiveWindowData;
 	root_directory: string | undefined;
+	codebase_search: boolean,
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;

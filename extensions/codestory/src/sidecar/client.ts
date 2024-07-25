@@ -860,6 +860,7 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			active_window_data: activeWindowDataForProbing,
 			root_directory: vscode.workspace.rootPath,
+			codebase_search: false,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
