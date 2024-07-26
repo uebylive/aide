@@ -290,7 +290,20 @@ export const reportAgentEventsToChat = async (
 		}
 
 		// logStream?.write(JSON.stringify(event) + ',\n');
-		if (event.event.ToolEvent) {
+
+		if (event.event.FrameworkEvent) {
+			console.log('framework event', event.event.FrameworkEvent);
+			if (event.event.FrameworkEvent.RepoMapGenerationStart) {
+				response.repoMapGeneration(false);
+			} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
+				response.repoMapGeneration(true);
+			} else if (event.event.FrameworkEvent.LongContextSearchStart) {
+				response.longContextSearch(false);
+			} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
+				response.longContextSearch(true);
+			}
+
+		} else if (event.event.ToolEvent) {
 			if (event.event.ToolEvent.OpenFile) {
 				const filePath = event.event.ToolEvent.OpenFile.fs_file_path;
 				if (filePath) {

@@ -839,6 +839,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
 		threadId: string,
+		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		// console.log('starting agent code edit');
 		const baseUrl = new URL(this._url);
@@ -860,7 +861,7 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecar(variables),
 			active_window_data: activeWindowDataForProbing,
 			root_directory: vscode.workspace.rootPath,
-			codebase_search: false,
+			codebase_search: codebaseSearch,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {

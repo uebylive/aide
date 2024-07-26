@@ -163,9 +163,9 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 		if (request.editMode) {
-			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId);
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId, request.codebaseSearch);
 		} else {
-			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId);
+			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId,);
 		}
 
 		/* // Use dummy data: Start

@@ -30,7 +30,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState;
 	cancelProbe(): void;
 	acceptCodeEdits(): void;
 	rejectCodeEdits(): void;
@@ -95,7 +95,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -144,7 +144,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					});
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit, codebaseSearch);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

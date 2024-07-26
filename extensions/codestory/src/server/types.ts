@@ -28,7 +28,7 @@ type ActiveWindowData = {
 	file_path: string;
 	file_content: string;
 	language: string;
-}
+};
 
 export type ProbeAgentBody = {
 	query: string;
@@ -46,7 +46,7 @@ export type CodeEditAgentBody = {
 	user_context: UserContext;
 	active_window_data?: ActiveWindowData;
 	root_directory: string | undefined;
-	codebase_search: boolean,
+	codebase_search: boolean;
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
@@ -69,6 +69,13 @@ interface RequestEvents {
 	ProbeFinished?: RequestEventProbeFinished;
 }
 
+type FrameworkEvent = {
+	RepoMapGenerationStart: string;
+	RepoMapGenerationFinished: string;
+	LongContextSearchStart: string;
+	LongContextSearchFinished: string;
+};
+
 interface UIEvent {
 	SymbolEvent: SymbolEventRequest;
 	ToolEvent: ToolInput;
@@ -77,6 +84,7 @@ interface UIEvent {
 	SymbolEventSubStep: SymbolEventSubStepRequest;
 	RequestEvent: RequestEvents;
 	EditRequestFinished: string;
+	FrameworkEvent: FrameworkEvent;
 }
 
 interface SymbolEventSubStepRequest {
@@ -460,7 +468,7 @@ export type CodeToProbeSubSymbolRequest = {
 	xml_symbol: string;
 	query: string;
 	llm: LLMTypeVariant;
-	provider: LLMProvider
+	provider: LLMProvider;
 	api_key: LLMProviderAPIKeys;
 };
 

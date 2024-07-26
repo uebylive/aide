@@ -63,6 +63,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._lastFileOpened;
 	}
 
+	private _isRepoMapReady: boolean | undefined;
+	get isRepoMapReady(): boolean | undefined {
+		return this._isRepoMapReady;
+	}
+
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
@@ -87,6 +92,14 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		this._register(_model.onDidChange(async () => {
 
 			this._lastFileOpened = _model.response?.lastFileOpened;
+
+			if (_model.request?.codebaseSearch) {
+				this._isRepoMapReady = false;
+				if (_model.response?.longContextSearchFinished) {
+					this._isRepoMapReady = true;
+				}
+			}
+
 			const codeEdits = _model.response?.codeEdits;
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());

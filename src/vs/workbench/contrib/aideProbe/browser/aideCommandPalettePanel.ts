@@ -31,6 +31,7 @@ export interface IAideCommandPalettePanel {
 	readonly onDidChangeFocus: Event<ChangeSymbolInfoEvent>;
 	readonly contentHeight: number | undefined;
 	readonly maxItems: number;
+	isRepoMapLoading: boolean | undefined;
 
 	show(headerText: string | undefined, isLoading: boolean): void;
 	hide(): void;
@@ -49,6 +50,7 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
 	private _isFiltered = false;
+	isRepoMapLoading: boolean | undefined;
 	private userFocusIndex: number | undefined;
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
@@ -318,7 +320,10 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 
 		if (this.list.length === 0) {
 			this.emptyListPlaceholder.style.visibility = 'visible';
-			this.emptyListPlaceholder.textContent = this._isFiltered ? 'No symbols match your query' : 'Exploring the codebase';
+			this.emptyListPlaceholder.textContent = this._isFiltered ? 'No symbols match your query' : 'Planning the changes...';
+			if (this.isRepoMapLoading !== undefined && this.isRepoMapLoading) {
+				this.emptyListPlaceholder.textContent = 'Exploring the codebase...';
+			}
 			this.list.getHTMLElement().style.visibility = 'hidden';
 		} else {
 			this.emptyListPlaceholder.style.visibility = 'hidden';

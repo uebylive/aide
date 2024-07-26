@@ -62,12 +62,24 @@ export interface IAideProbeOpenFile {
 	uri: URI;
 }
 
+export interface IAideProbeRepoMapGeneration {
+	kind: 'repoMapGeneration';
+	finished: boolean;
+}
+
+export interface IAideProbeLongContextSearch {
+	kind: 'longContextSearch';
+	finished: boolean;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
 	| IAideProbeTextEdit
-	| IAideProbeOpenFile;
+	| IAideProbeOpenFile
+	| IAideProbeRepoMapGeneration
+	| IAideProbeLongContextSearch;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -82,6 +94,7 @@ export interface IAideProbeRequestModel {
 	readonly message: string;
 	readonly variables: IChatRequestVariableData;
 	readonly editMode: boolean;
+	readonly codebaseSearch: boolean;
 }
 
 export interface IAideProbeStartEditEvent {

@@ -24,6 +24,7 @@ declare module 'vscode' {
 		query: string;
 		readonly references: readonly ChatPromptReference[];
 		editMode: boolean;
+		codebaseSearch: boolean;
 	}
 
 	export interface AideProbeGoToDefinition {
@@ -57,6 +58,8 @@ declare module 'vscode' {
 
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
+		repoMapGeneration(value: boolean): void;
+		longContextSearch(value: boolean): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;

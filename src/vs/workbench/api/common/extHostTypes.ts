@@ -4757,6 +4757,20 @@ export class AideProbeOpenFilePart {
 	}
 }
 
+export class AideProbeRepoMapGenerationPart {
+	finished: boolean;
+	constructor(finished: boolean) {
+		this.finished = finished;
+	}
+}
+
+export class AideProbeLongContextSearchPart {
+	finished: boolean;
+	constructor(finished: boolean) {
+		this.finished = finished;
+	}
+}
+
 export class AideProbeGoToDefinitionPart {
 	uri: vscode.Uri;
 	range: vscode.Range;
