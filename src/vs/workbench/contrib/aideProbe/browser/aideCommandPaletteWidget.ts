@@ -620,6 +620,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 		if (this.isCodebaseSearch.get()) {
 			this.panel.isRepoMapLoading = true;
+			this.panel.isLongContextSearchLoading = false;
 		}
 
 		if (result) {
@@ -636,11 +637,21 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}
 
 		if (this.isCodebaseSearch.get()) {
-			this.panel.isRepoMapLoading = this._viewModel.isRepoMapReady;
-			this.panel.isLongContextSearchLoading = this._viewModel.isLongContextSearchLoading;
+			this.panel.isRepoMapLoading = !this._viewModel.isRepoMapReady;
+			// if repo map is ready, we start the long context search
+			if (this._viewModel.isRepoMapReady) {
+				this.panel.isLongContextSearchLoading = true;
+				this.panel.render();
+			}
+			if (this._viewModel.isLongContextSearchReady) {
+				this.panel.isLongContextSearchLoading = false;
+				this.panel.render();
+			}
+
 		}
 
 		this.requestStatus.set(this._viewModel.status);
+
 
 		if ((this._viewModel?.breakdowns.length) ?? 0 > 0) {
 			this.panel.updateSymbolInfo(this._viewModel?.breakdowns ?? []);

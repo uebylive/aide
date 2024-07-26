@@ -36,6 +36,7 @@ export interface IAideCommandPalettePanel {
 
 	show(headerText: string | undefined, isLoading: boolean): void;
 	hide(): void;
+	render(): void;
 
 	setIsFiltered(isFiltered: boolean): void;
 	setFocus(index: number, browserEvent?: UIEvent): void;
@@ -314,7 +315,7 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 	}
 
 
-	private render() {
+	render() {
 		if (!this.list) {
 			return;
 		}
@@ -330,6 +331,8 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 				} else {
 					this.emptyListPlaceholder.textContent = 'Planning the changes...';
 				}
+			} else {
+				this.emptyListPlaceholder.textContent = 'Planning the changes...';
 			}
 			if (this._isFiltered) {
 				this.emptyListPlaceholder.textContent = 'No symbols match your query';
