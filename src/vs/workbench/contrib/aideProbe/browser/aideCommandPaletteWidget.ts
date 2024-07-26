@@ -635,8 +635,9 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			return;
 		}
 
-		if (this.isCodebaseSearch.get() && this._viewModel.isRepoMapReady) {
-			this.panel.isRepoMapLoading = false;
+		if (this.isCodebaseSearch.get()) {
+			this.panel.isRepoMapLoading = this._viewModel.isRepoMapReady;
+			this.panel.isLongContextSearchLoading = this._viewModel.isLongContextSearchLoading;
 		}
 
 		this.requestStatus.set(this._viewModel.status);

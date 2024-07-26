@@ -32,6 +32,7 @@ export interface IAideCommandPalettePanel {
 	readonly contentHeight: number | undefined;
 	readonly maxItems: number;
 	isRepoMapLoading: boolean | undefined;
+	isLongContextSearchLoading: boolean | undefined;
 
 	show(headerText: string | undefined, isLoading: boolean): void;
 	hide(): void;
@@ -51,6 +52,7 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 
 	private _isFiltered = false;
 	isRepoMapLoading: boolean | undefined;
+	isLongContextSearchLoading: boolean | undefined;
 	private userFocusIndex: number | undefined;
 	private activeSymbolInfo: IAideProbeBreakdownViewModel | undefined;
 
@@ -320,9 +322,17 @@ export class AideCommandPalettePanel extends Disposable implements IAideCommandP
 
 		if (this.list.length === 0) {
 			this.emptyListPlaceholder.style.visibility = 'visible';
-			this.emptyListPlaceholder.textContent = this._isFiltered ? 'No symbols match your query' : 'Planning the changes...';
-			if (this.isRepoMapLoading !== undefined && this.isRepoMapLoading) {
-				this.emptyListPlaceholder.textContent = 'Exploring the codebase...';
+			if (this.isRepoMapLoading !== undefined) {
+				if (this.isRepoMapLoading) {
+					this.emptyListPlaceholder.textContent = 'Reading repository...';
+				} else if (this.isLongContextSearchLoading) {
+					this.emptyListPlaceholder.textContent = 'Searching the codebase...';
+				} else {
+					this.emptyListPlaceholder.textContent = 'Planning the changes...';
+				}
+			}
+			if (this._isFiltered) {
+				this.emptyListPlaceholder.textContent = 'No symbols match your query';
 			}
 			this.list.getHTMLElement().style.visibility = 'hidden';
 		} else {

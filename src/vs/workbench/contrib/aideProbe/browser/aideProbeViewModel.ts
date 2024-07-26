@@ -68,6 +68,12 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._isRepoMapReady;
 	}
 
+
+	private _isLongContextSearchLoading: boolean | undefined;
+	get isLongContextSearchLoading(): boolean | undefined {
+		return this._isLongContextSearchLoading;
+	}
+
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
@@ -95,8 +101,13 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 			if (_model.request?.codebaseSearch) {
 				this._isRepoMapReady = false;
-				if (_model.response?.longContextSearchFinished) {
+				this._isLongContextSearchLoading = false;
+
+				if (_model.response?.repoMapGenerationFinished) {
 					this._isRepoMapReady = true;
+				}
+				if (_model.response?.longContextSearchFinished) {
+					this._isLongContextSearchLoading = true;
 				}
 			}
 
