@@ -6,12 +6,9 @@
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import { authentication, AuthenticationProvider, AuthenticationProviderAuthenticationSessionsChangeEvent, AuthenticationSession, Disposable, env, Event, EventEmitter, ExtensionContext, ProgressLocation, Uri, UriHandler, window } from 'vscode';
-import * as crypto from 'crypto';
 
-const AUTH_SERVER_URL = 'http://localhost:3333';
 const AUTH_TYPE = 'codestory';
 const AUTH_NAME = 'CodeStory';
-const CLIENT_ID = 'client_01J0FW6XN8N2XJAECF7NE0Y65J';
 const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
 
 class UriEventHandler extends EventEmitter<Uri> implements UriHandler {
@@ -20,36 +17,28 @@ class UriEventHandler extends EventEmitter<Uri> implements UriHandler {
 	}
 }
 
-function generateRandomString(length: number): string {
-	const possibleCharacters =
-		'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-	let randomString = '';
-	for (let i = 0; i < length; i++) {
-		const randomIndex = Math.floor(Math.random() * possibleCharacters.length);
-		randomString += possibleCharacters[randomIndex];
-	}
-	return randomString;
-}
-
-async function generateCodeChallenge(verifier: string) {
-	// Create a SHA-256 hash of the verifier
-	const hash = crypto.createHash('sha256').update(verifier).digest();
-
-	// Convert the hash to a base64 URL-encoded string
-	const base64String = hash
-		.toString('base64')
-		.replace(/\+/g, '-')
-		.replace(/\//g, '_')
-		.replace(/=+$/, '');
-
-	return base64String;
-}
-
 interface CodeStoryAuthenticationSession extends AuthenticationSession {
 	accessToken: string;
 	refreshToken: string;
 	expiresIn: number;
 }
+
+type User = {
+	id: string;
+	first_name: string;
+	last_name: string;
+	email: string;
+	created_at: string;
+	updated_at: string;
+	email_verified: boolean;
+	profile_picture_url: string;
+};
+
+type EncodedTokenData = {
+	user: User;
+	access_token: string;
+	refresh_token: string;
+};
 
 export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable {
 	private readonly _sessionChangeEmitter = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
@@ -63,88 +52,20 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 
 	private readonly _disposable: Disposable;
 	private _pendingStates: string[] = [];
-	private _codeExchangePromises = new Map<
+	private _loginPromises = new Map<
 		string,
 		{ promise: Promise<string>; cancel: EventEmitter<void> }
 	>();
 	private _uriHandler = new UriEventHandler();
-	private _sessions: CodeStoryAuthenticationSession[] = [];
-
 	private static EXPIRATION_TIME_MS = 1000 * 60 * 5; // 5 minutes
 
 	constructor(
 		private readonly context: ExtensionContext
 	) {
 		this._disposable = Disposable.from(
-			authentication.registerAuthenticationProvider(AUTH_TYPE, AUTH_NAME, this, { supportsMultipleAccounts: false })
+			authentication.registerAuthenticationProvider(AUTH_TYPE, AUTH_NAME, this, { supportsMultipleAccounts: false }),
+			window.registerUriHandler(this._uriHandler)
 		);
-	}
-
-	async initialize() {
-		const sessions = await this.context.secrets.get(SESSIONS_SECRET_KEY);
-		this._sessions = sessions ? JSON.parse(sessions) : [];
-		await this._refreshSessions();
-	}
-
-	private async _refreshSessions(): Promise<void> {
-		if (!this._sessions.length) {
-			return;
-		}
-
-		for (const session of this._sessions) {
-			try {
-				const newSession = await this._refreshSession(session.refreshToken);
-				session.accessToken = newSession.accessToken;
-				session.refreshToken = newSession.refreshToken;
-				session.expiresIn = newSession.expiresIn;
-			} catch (e: any) {
-				if (e.message === 'Network failure') {
-					setTimeout(() => this._refreshSessions(), 60 * 1000);
-					return;
-				}
-			}
-		}
-
-		await this.context.secrets.store(
-			SESSIONS_SECRET_KEY,
-			JSON.stringify(this._sessions),
-		);
-
-		this._sessionChangeEmitter.fire({
-			added: [],
-			removed: [],
-			changed: this._sessions,
-		});
-
-		if (this._sessions[0].expiresIn) {
-			setTimeout(
-				() => this._refreshSessions(),
-				(this._sessions[0].expiresIn * 1000 * 2) / 3,
-			);
-		}
-	}
-
-	private async _refreshSession(
-		refreshToken: string,
-	): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-		const response = await fetch(new URL('/auth/refresh', AUTH_SERVER_URL), {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				refreshToken,
-			}),
-		});
-		if (!response.ok) {
-			throw new Error('Network failure');
-		}
-		const data = (await response.json()) as any;
-		return {
-			accessToken: data.accessToken,
-			refreshToken: data.refreshToken,
-			expiresIn: CodeStoryAuthProvider.EXPIRATION_TIME_MS,
-		};
 	}
 
 	async getSessions(): Promise<readonly CodeStoryAuthenticationSession[]> {
@@ -159,14 +80,12 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 
 	async createSession(scopes: readonly string[]): Promise<CodeStoryAuthenticationSession> {
 		try {
-			const codeVerifier = generateRandomString(64);
-			const codeChallenge = await generateCodeChallenge(codeVerifier);
-			const token = await this.login(codeChallenge, scopes);
-			if (!token) {
+			const encodedTokenData = await this.login(scopes);
+			if (!encodedTokenData) {
 				throw new Error(`CodeStory login failure`);
 			}
 
-			const userInfo = (await this.getUserInfo(token, codeVerifier)) as any;
+			const userInfo = (await this.getUserInfo(encodedTokenData));
 			const { user, access_token, refresh_token } = userInfo;
 
 			const session: CodeStoryAuthenticationSession = {
@@ -229,7 +148,7 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 	/**
 	 * Log in to CodeStory via AuthKit
 	 **/
-	private async login(codeChallenge: string, scopes: readonly string[] = []) {
+	private async login(scopes: readonly string[] = []) {
 		return await window.withProgress<string>(
 			{
 				location: ProgressLocation.Notification,
@@ -238,45 +157,23 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 			},
 			async (_, token) => {
 				const stateId = uuidv4();
-
 				this._pendingStates.push(stateId);
 
-				const scopeString = scopes.join(' ');
+				const url = `http://localhost:3000/authenticate?state=${stateId}`;
+				await env.openExternal(Uri.parse(url));
 
-				const url = new URL('https://api.workos.com/user_management/authorize');
-				const params = {
-					response_type: 'code',
-					client_id: CLIENT_ID,
-					redirect_uri: this.redirectUri,
-					state: stateId,
-					code_challenge: codeChallenge,
-					code_challenge_method: 'S256',
-					provider: 'authkit',
-				};
-
-				Object.keys(params).forEach((key) =>
-					url.searchParams.append(key, params[key as keyof typeof params]),
-				);
-
-				const oauthUrl = url;
-				if (oauthUrl) {
-					await env.openExternal(Uri.parse(oauthUrl.toString()));
-				} else {
-					return;
-				}
-
-				let codeExchangePromise = this._codeExchangePromises.get(scopeString);
-				if (!codeExchangePromise) {
-					codeExchangePromise = promiseFromEvent(
+				let loginPromise = this._loginPromises.get(stateId);
+				if (!loginPromise) {
+					loginPromise = promiseFromEvent(
 						this._uriHandler.event,
 						this.handleUri(scopes),
 					);
-					this._codeExchangePromises.set(scopeString, codeExchangePromise);
+					this._loginPromises.set(stateId, loginPromise);
 				}
 
 				try {
 					return await Promise.race([
-						codeExchangePromise.promise,
+						loginPromise.promise,
 						new Promise<string>((_, reject) =>
 							setTimeout(() => reject('Cancelled'), 60000),
 						),
@@ -291,8 +188,8 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 					this._pendingStates = this._pendingStates.filter(
 						(n) => n !== stateId,
 					);
-					codeExchangePromise?.cancel.fire();
-					this._codeExchangePromises.delete(scopeString);
+					loginPromise?.cancel.fire();
+					this._loginPromises.delete(stateId);
 				}
 			},
 		);
@@ -307,50 +204,40 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 		scopes: readonly string[]
 	) => PromiseAdapter<Uri, string> = () => async (uri, resolve, reject) => {
 		const query = new URLSearchParams(uri.query);
-		const access_token = query.get('code');
-		const state = query.get('state');
-
-		if (!access_token) {
+		const encodedData = query.get('data');
+		if (!encodedData) {
 			reject(new Error('No token'));
 			return;
 		}
-		if (!state) {
-			reject(new Error('No state'));
-			return;
-		}
 
-		// Check if it is a valid auth request started by the extension
-		if (!this._pendingStates.some((n) => n === state)) {
-			reject(new Error('State not found'));
-			return;
-		}
-
-		resolve(access_token);
+		resolve(encodedData);
 	};
 
 	/**
 	 * Get the user info from WorkOS
-	 * @param token
+	 * @param encodedTokenData
 	 * @returns
 	 **/
-	private async getUserInfo(token: string, codeVerifier: string) {
+	private async getUserInfo(encodedTokenData: string) {
+		// Reverse the base64 encoding
+		const tokenData = Buffer.from(encodedTokenData, 'base64').toString('utf-8');
+		const tokens = JSON.parse(tokenData) as EncodedTokenData;
+
 		const resp = await fetch(
-			'https://api.workos.com/user_management/authenticate',
+			'http://localhost:3333/account',
 			{
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					client_id: CLIENT_ID,
-					code_verifier: codeVerifier,
-					grant_type: 'authorization_code',
-					code: token,
+					user_id: tokens.user.id,
+					refresh_token: tokens.refresh_token,
 				}),
 			},
 		);
 		const text = await resp.text();
-		const data = JSON.parse(text);
+		const data = JSON.parse(text) as EncodedTokenData;
 		return data;
 	}
 }
