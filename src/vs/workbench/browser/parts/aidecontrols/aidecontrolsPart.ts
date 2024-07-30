@@ -39,6 +39,8 @@ export class AideControlsService extends MultiWindowParts<AideControlsPart> impl
 
 export class AideControlsPart extends Part implements IDisposable {
 
+	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
+
 	readonly minimumWidth: number = 300;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 	readonly minimumHeight: number = 77;

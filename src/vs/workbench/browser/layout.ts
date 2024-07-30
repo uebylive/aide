@@ -50,6 +50,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { CustomTitleBarVisibility } from '../../platform/window/common/window';
+import { AideControlsPart } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
 
 //#region Layout Implementation
 
@@ -78,6 +79,7 @@ interface ILayoutInitializationState {
 		readonly containerToRestore: {
 			sideBar?: string;
 			panel?: string;
+			aideControls?: string;
 			auxiliaryBar?: string;
 		};
 	};
@@ -717,6 +719,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			} else {
 				this.stateModel.setRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN, false);
 			}
+		}
+
+		const viewContainerToRestore = this.storageService.get(AideControlsPart.activePanelSettingsKey, StorageScope.WORKSPACE, this.viewDescriptorService.getDefaultViewContainer(ViewContainerLocation.AideControls)?.id);
+
+		if (viewContainerToRestore) {
+			this.state.initialization.views.containerToRestore.aideControls = viewContainerToRestore;
 		}
 
 		// Window border
