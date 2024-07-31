@@ -14,6 +14,7 @@ import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
+import { $ } from 'vs/base/browser/dom';
 
 
 export class AideControlsService extends MultiWindowParts<AideControlsPart> implements IAideControlsService {
@@ -32,7 +33,11 @@ export class AideControlsService extends MultiWindowParts<AideControlsPart> impl
 		this._register(this.registerPart(this.mainPart));
 	}
 
-	protected createMainControlsPart(): AideControlsPart {
+	createMainControlsPart(): AideControlsPart {
+		return this.instantiationService.createInstance(AideControlsPart);
+	}
+
+	createAuxiliaryControlsPart(): AideControlsPart {
 		return this.instantiationService.createInstance(AideControlsPart);
 	}
 }
@@ -41,9 +46,11 @@ export class AideControlsPart extends Part implements IDisposable {
 
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
+	private height = 200;
+
 	readonly minimumWidth: number = 300;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 77;
+	readonly minimumHeight: number = 100;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -78,12 +85,21 @@ export class AideControlsPart extends Part implements IDisposable {
 	override createContentArea(parent: HTMLElement): HTMLElement {
 		// Container
 		this.element = parent;
-
+		const controls = $('.controls');
+		controls.innerText = 'Hello World';
+		this.element.appendChild(controls);
 		return this.element;
 	}
 
-	override layout(width: number, height: number, top: number, left: number): void {
-		super.layout(width, height, top, left);
+	override layout(availableWidth: number, availableHeight: number, bottom: number, left: number): void {
+		const height = Math.min(availableHeight, this.height);
+		const top = bottom - height;
+		super.layout(availableWidth, height, top, left);
+		this.element.style.height = `${height}px`;
+		this.element.style.width = `${availableWidth}px`;
+		this.element.style.left = `${left}px`;
+		this.element.style.top = `${top}px`;
+
 	}
 
 	toJSON(): object {

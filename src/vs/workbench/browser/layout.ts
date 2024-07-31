@@ -20,13 +20,13 @@ import { ITitleService } from 'vs/workbench/services/title/browser/titleService'
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { StartupKind, ILifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { getMenuBarVisibility, IPath, hasNativeTitlebar, hasCustomTitlebar, TitleBarSetting } from 'vs/platform/window/common/window';
+import { getMenuBarVisibility, CustomTitleBarVisibility, IPath, hasNativeTitlebar, hasCustomTitlebar, TitleBarSetting } from 'vs/platform/window/common/window';
 import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { IBrowserWorkbenchEnvironmentService } from 'vs/workbench/services/environment/browser/environmentService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { EditorGroupLayout, GroupsOrder, IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { SerializableGrid, ISerializableView, ISerializedGrid, Orientation, ISerializedNode, ISerializedLeafNode, Direction, IViewSize, Sizing } from 'vs/base/browser/ui/grid/grid';
-import { Part } from 'vs/workbench/browser/part';
+import { IObservableView, Part } from 'vs/workbench/browser/part';
 import { IStatusbarService } from 'vs/workbench/services/statusbar/browser/statusbar';
 import { IFileService } from 'vs/platform/files/common/files';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
@@ -49,8 +49,6 @@ import { AuxiliaryBarPart } from 'vs/workbench/browser/parts/auxiliarybar/auxili
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
-import { CustomTitleBarVisibility } from '../../platform/window/common/window';
-import { AideControlsPart } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
 
 //#region Layout Implementation
 
@@ -79,7 +77,6 @@ interface ILayoutInitializationState {
 		readonly containerToRestore: {
 			sideBar?: string;
 			panel?: string;
-			aideControls?: string;
 			auxiliaryBar?: string;
 		};
 	};
@@ -264,7 +261,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private panelPartView!: ISerializableView;
 	private aideControlsPartView!: ISerializableView;
 	private auxiliaryBarPartView!: ISerializableView;
-	private editorPartView!: ISerializableView;
+	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
 
 	private environmentService!: IBrowserWorkbenchEnvironmentService;
@@ -274,7 +271,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private hostService!: IHostService;
 	private editorService!: IEditorService;
 	private mainPartEditorService!: IEditorService;
-	private aideControlsService!: IAideControlsService;
 	private editorGroupService!: IEditorGroupsService;
 	private paneCompositeService!: IPaneCompositePartService;
 	private titleService!: ITitleService;
@@ -324,7 +320,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.notificationService = accessor.get(INotificationService);
 		this.statusBarService = accessor.get(IStatusbarService);
 		accessor.get(IBannerService);
-		this.aideControlsService = accessor.get(IAideControlsService);
+		accessor.get(IAideControlsService);
 
 		// Listeners
 		this.registerLayoutListeners();
@@ -719,12 +715,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			} else {
 				this.stateModel.setRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN, false);
 			}
-		}
-
-		const viewContainerToRestore = this.storageService.get(AideControlsPart.activePanelSettingsKey, StorageScope.WORKSPACE, this.viewDescriptorService.getDefaultViewContainer(ViewContainerLocation.AideControls)?.id);
-
-		if (viewContainerToRestore) {
-			this.state.initialization.views.containerToRestore.aideControls = viewContainerToRestore;
 		}
 
 		// Window border
@@ -1550,6 +1540,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			}));
 		}
 
+		// Aide controls
+		this.mainContainer.append(this.aideControlsPartView.element);
+		this.arrangeAideControls();
+		this._register(this.editorPartView.onDidContentSizeChange(() => {
+			this.arrangeAideControls();
+		}));
 
 		this._register(this.storageService.onWillSaveState(e => {
 
@@ -2214,6 +2210,11 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		}
 
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled, this.isZenModeActive()));
+	}
+
+	private arrangeAideControls() {
+		const editorDomRect = this.editorPartView.element.getBoundingClientRect();
+		this.aideControlsPartView.layout(editorDomRect.width, editorDomRect.height, editorDomRect.bottom, editorDomRect.left);
 	}
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
