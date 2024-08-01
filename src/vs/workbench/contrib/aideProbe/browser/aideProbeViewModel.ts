@@ -119,7 +119,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				for (const symbols of _model.response.initialSymbols.values()) {
 					for (const symbol of symbols) {
 						if (!uniqueSymbols.has(symbol.symbolName)) {
-							console.log('adding symbol', symbol.symbolName);
 							uniqueSymbols.add(symbol.symbolName);
 							let reference = this._references.get(symbol.uri.toString());
 							if (!reference) {
