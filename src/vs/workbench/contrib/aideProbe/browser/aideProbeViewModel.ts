@@ -112,6 +112,28 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			const codeEdits = _model.response?.codeEdits;
+
+			if (_model.response && _model.response.breakdowns.length === 0 && _model.response.initialSymbols.size) {
+				this._breakdowns = [];
+				const uniqueSymbols = new Set<string>();
+				for (const symbols of _model.response.initialSymbols.values()) {
+					for (const symbol of symbols) {
+						if (!uniqueSymbols.has(symbol.symbolName)) {
+							console.log('adding symbol', symbol.symbolName);
+							uniqueSymbols.add(symbol.symbolName);
+							let reference = this._references.get(symbol.uri.toString());
+							if (!reference) {
+								reference = await this.textModelResolverService.createModelReference(symbol.uri);
+							}
+							const newBreakdown = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, { reference: { uri: symbol.uri, name: symbol.symbolName }, kind: 'breakdown' }, reference));
+							this._breakdowns.push(newBreakdown);
+						}
+					}
+				}
+				this._onDidChange.fire();
+				return;
+			}
+
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());
 				if (!reference) {

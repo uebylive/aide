@@ -74,6 +74,7 @@ type FrameworkEvent = {
 	RepoMapGenerationFinished: string;
 	LongContextSearchStart: string;
 	LongContextSearchFinished: string;
+	InitialSearchSymbols: InitialSearchSymbols;
 };
 
 interface UIEvent {
@@ -205,6 +206,18 @@ interface SymbolToEdit {
 	symbol_name: string;
 	instructions: string[];
 	is_new: boolean;
+}
+
+interface InitialSearchSymbols {
+	request_id: string;
+	symbols: InitialSearchSymbolInformation[];
+}
+
+interface InitialSearchSymbolInformation {
+	fs_file_path: string;
+	symbol_name: string;
+	is_new: boolean;
+	thinking: string;
 }
 
 interface SymbolToEditRequest {

@@ -292,8 +292,19 @@ export const reportAgentEventsToChat = async (
 		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.FrameworkEvent) {
-			console.log('framework event', event.event.FrameworkEvent);
-			if (event.event.FrameworkEvent.RepoMapGenerationStart) {
+
+			if (event.event.FrameworkEvent.InitialSearchSymbols) {
+				console.log(event.event.FrameworkEvent);
+				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
+					return {
+						symbolName: item.symbol_name,
+						uri: vscode.Uri.file(item.fs_file_path),
+						isNew: item.is_new,
+						thinking: item.thinking,
+					};
+				});
+				response.initialSearchSymbols(initialSearchSymbolInformation);
+			} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
 				response.repoMapGeneration(false);
 			} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
 				response.repoMapGeneration(true);
@@ -398,6 +409,6 @@ export const reportAgentEventsToChat = async (
 		}
 	}
 
-	// logStream?.write(']');
-	// logStream?.end();
+	//logStream?.write(']');
+	//logStream?.end();
 };

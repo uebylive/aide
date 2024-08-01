@@ -514,6 +514,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 				const oldRanges = edit.getRanges0() || [];
 				if (edit.isInsertion()) {
 					const wholeNewRange = newRanges[0];
+					console.log(wholeNewRange);
 					acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
 				} else if (newRanges.length > 0 && oldRanges.length > 0) {
 					const wholeNewRange = newRanges[0];

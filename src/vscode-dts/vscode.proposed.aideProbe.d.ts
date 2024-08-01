@@ -56,10 +56,19 @@ declare module 'vscode' {
 		readonly edits: WorkspaceEdit;
 	}
 
+
+	export interface AideInitialSearchSymbolInformation {
+		readonly symbolName: string;
+		readonly uri: Uri;
+		readonly isNew: boolean;
+		readonly thinking: string;
+	}
+
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
 		longContextSearch(value: boolean): void;
+		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;

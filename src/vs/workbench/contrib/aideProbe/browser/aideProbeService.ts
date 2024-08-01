@@ -124,24 +124,26 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			try {
 				const variableData: IChatRequestVariableData = { variables: [] };
 				const openEditors = this.editorService.editors;
-				for (const editor of openEditors) {
-					const resource = editor.resource;
-					if (!resource) {
-						continue;
-					}
+				if (codebaseSearch) {
+					for (const editor of openEditors) {
+						const resource = editor.resource;
+						if (!resource) {
+							continue;
+						}
 
-					const model = this.modelService.getModel(resource);
-					if (!model) {
-						continue;
-					}
+						const model = this.modelService.getModel(resource);
+						if (!model) {
+							continue;
+						}
 
-					const range = model.getFullModelRange();
-					const valueObj = { uri: resource, range: range };
-					variableData.variables.push({
-						id: 'vscode.file',
-						name: `file:${resource.path.split('/').pop()}`,
-						value: JSON.stringify(valueObj),
-					});
+						const range = model.getFullModelRange();
+						const valueObj = { uri: resource, range: range };
+						variableData.variables.push({
+							id: 'vscode.file',
+							name: `file:${resource.path.split('/').pop()}`,
+							value: JSON.stringify(valueObj),
+						});
+					}
 				}
 
 				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit, codebaseSearch);
