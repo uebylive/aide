@@ -197,6 +197,7 @@ import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/aideChat/browser/aideChat.contribution';
 import 'vs/workbench/contrib/inlineAideChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/aideProbe/browser/aideProbe.contribution';
+import 'vs/workbench/contrib/aideAddContext/browser/aideAddContext.contribution';
 
 // Interactive
 import 'vs/workbench/contrib/interactive/browser/interactive.contribution';
