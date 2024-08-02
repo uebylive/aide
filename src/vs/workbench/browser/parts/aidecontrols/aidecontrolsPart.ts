@@ -12,7 +12,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { $ } from 'vs/base/browser/dom';
-import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
 
 
 export class AideControlsService extends MultiWindowParts<AideControlsPart> implements IAideControlsService {
@@ -44,6 +44,8 @@ export class AideControlsPart extends Part implements IDisposable {
 
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
+	private readonly panel: AideEditsPanel;
+
 	private height = 200;
 
 	readonly minimumWidth: number = 300;
@@ -55,7 +57,7 @@ export class AideControlsPart extends Part implements IDisposable {
 		@IStorageService storageService: IStorageService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 		@IThemeService themeService: IThemeService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IInstantiationService instantiationService: IInstantiationService,
 	) {
 		super(
 			Parts.AIDECONTROLS_PART,
@@ -64,12 +66,14 @@ export class AideControlsPart extends Part implements IDisposable {
 			storageService,
 			layoutService
 		);
+
+		this.panel = instantiationService.createInstance(AideEditsPanel);
 	}
 
 	override createContentArea(parent: HTMLElement): HTMLElement {
 		// Container
 		this.element = parent;
-		this.instantiationService.createInstance(AideControls, this.element);
+		this.panel.create(this.element);
 		return this.element;
 	}
 

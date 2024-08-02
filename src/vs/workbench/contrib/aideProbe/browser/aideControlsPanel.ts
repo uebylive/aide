@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { $ } from 'vs/base/browser/dom';
-import { IHorizontalSashLayoutProvider, ISashEvent, Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
+import { IHorizontalSashLayoutProvider, Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
 import { Emitter } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -14,9 +14,9 @@ export enum PanelStates {
 	Loading = 'loading',
 }
 
+const DEFAULT_PANEL_HEIGHT = 200;
 
 export abstract class AideControlsPanel extends Disposable implements IHorizontalSashLayoutProvider {
-
 	private readonly element: HTMLElement;
 	private readonly _sash: Sash;
 
@@ -33,23 +33,44 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 	readonly body: PanelBody;
 
 
-	constructor(parent: HTMLElement, instantiationService: IInstantiationService) {
+	constructor(instantiationService: IInstantiationService) {
 		super();
 
 		this.element = $('.aide-controls-panel');
-		parent.appendChild(this.element);
+
 		this.header = this._register(instantiationService.createInstance(PanelHeader));
-		this.body = this._register(instantiationService.createInstance(PanelBody));
+		this.body = this._register(instantiationService.createInstance(PanelBody, DEFAULT_PANEL_HEIGHT));
 		this.element.appendChild(this.header.element);
 		this.element.appendChild(this.body.element);
 
-
 		// Create and position the sash
 		this._sash = this._register(instantiationService.createInstance(Sash, this.element, this, { orientation: Orientation.HORIZONTAL }));
-		this._sash.layout();
 
 		// Handle sash drag events
-		this._register(this._sash.onDidStart(this.onSashDragStart));
+		this._register(this._sash.onDidStart((dragStart) => {
+			const initialHeight = this.body.height;
+			const initialY = dragStart.currentY;
+			const onDragEvent = this._register(this._sash.onDidChange((dragChange) => {
+				const delta = dragChange.currentY - initialY;
+				this.body.layout(initialHeight - delta);
+			}));
+
+			const onDragEndEvent = this._register(this._sash.onDidEnd(() => {
+				onDragEvent.dispose();
+				onDragEndEvent.dispose();
+			}));
+
+		}));
+	}
+
+	create(parent: HTMLElement) {
+		parent.appendChild(this.element);
+		this.layout();
+	}
+
+	layout() {
+		this.body.layout(DEFAULT_PANEL_HEIGHT);
+		this._sash.layout();
 	}
 
 	setState(state: PanelStates) {
@@ -58,28 +79,12 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 		this.header.showSpinner(state === PanelStates.Loading);
 	}
 
-	private onSashDragStart(e: ISashEvent): void {
-		const initialY = e.currentY;
-
-		const onDragEvent = this._register(this._sash.onDidChange((e) => {
-			const delta = e.currentY - initialY;
-			console.log(delta);
-			this.body.layout(this.body.height + delta);
-		}));
-
-		const onDragEndEvent = this._register(this._sash.onDidEnd(() => {
-			onDragEvent.dispose();
-			onDragEndEvent.dispose();
-		}));
-
-	}
-
 	getHorizontalSashLeft() {
 		return 0;
 	}
 
 	getHorizontalSashTop() {
-		return this.element.offsetHeight;
+		return 0;
 	}
 
 	getHorizontalSashWidth() {
@@ -116,38 +121,28 @@ class PanelHeader extends Disposable {
 	setHeaderText(text: string) {
 		this.element.textContent = text;
 	}
-
-	public override dispose(): void {
-		super.dispose();
-		this.element.remove();
-	}
 }
 
-
-const DEFAULT_PANEL_HEIGHT = 200;
 
 class PanelBody extends Disposable {
 
 	readonly element: HTMLElement;
-	private _height = DEFAULT_PANEL_HEIGHT;
+	private _height: number;
 	get height() {
 		return this._height;
 	}
 
-	constructor() {
+	constructor(height: number) {
 		super();
 		this.element = $('.aide-controls-panel-body');
-		this.layout(this._height);
+
+		this._height = height;
+		this.layout(height);
 		this.element.style.backgroundColor = 'red';
 	}
 
 	layout(height: number) {
 		this._height = height;
 		this.element.style.height = `${height}px`;
-	}
-
-	public override dispose(): void {
-		super.dispose();
-		this.element.remove();
 	}
 }

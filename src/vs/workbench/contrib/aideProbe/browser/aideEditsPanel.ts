@@ -21,8 +21,8 @@ const $ = dom.$;
 
 export class AideEditsPanel extends AideControlsPanel {
 
-	constructor(container: HTMLElement, @IInstantiationService instantiationService: IInstantiationService) {
-		super(container, instantiationService);
+	constructor(@IInstantiationService instantiationService: IInstantiationService) {
+		super(instantiationService);
 	}
 }
 
