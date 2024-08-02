@@ -7,14 +7,12 @@ import 'vs/css!./media/aidecontrols';
 import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { PANEL_BACKGROUND, PANEL_BORDER } from 'vs/workbench/common/theme';
-import { contrastBorder } from 'vs/platform/theme/common/colorRegistry';
-import { assertIsDefined } from 'vs/base/common/types';
 import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { $ } from 'vs/base/browser/dom';
+import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 
 
 export class AideControlsService extends MultiWindowParts<AideControlsPart> implements IAideControlsService {
@@ -57,6 +55,7 @@ export class AideControlsPart extends Part implements IDisposable {
 		@IStorageService storageService: IStorageService,
 		@IWorkbenchLayoutService layoutService: IWorkbenchLayoutService,
 		@IThemeService themeService: IThemeService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super(
 			Parts.AIDECONTROLS_PART,
@@ -67,27 +66,10 @@ export class AideControlsPart extends Part implements IDisposable {
 		);
 	}
 
-	override updateStyles(): void {
-		super.updateStyles();
-
-		const container = assertIsDefined(this.getContainer());
-		container.style.backgroundColor = this.getColor(PANEL_BACKGROUND) || '';
-		const borderColor = this.getColor(PANEL_BORDER) || this.getColor(contrastBorder) || '';
-		container.style.borderLeftColor = borderColor;
-		container.style.borderRightColor = borderColor;
-
-		const title = this.getTitleArea();
-		if (title) {
-			title.style.borderTopColor = this.getColor(PANEL_BORDER) || this.getColor(contrastBorder) || '';
-		}
-	}
-
 	override createContentArea(parent: HTMLElement): HTMLElement {
 		// Container
 		this.element = parent;
-		const controls = $('.controls');
-		controls.innerText = 'Hello World';
-		this.element.appendChild(controls);
+		this.instantiationService.createInstance(AideControls, this.element);
 		return this.element;
 	}
 
