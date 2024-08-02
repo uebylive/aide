@@ -16,6 +16,8 @@ import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storag
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 
 
+const ignoredLanguages = ['plaintext', 'json', 'jsonc', 'markdown'];
+
 export class AideLSP {
 	public static readonly ID = 'workbench.contrib.aideLSP';
 	private static readonly STORAGE_KEY = 'aide.notifications.dontShowAgain';
@@ -37,6 +39,7 @@ export class AideLSP {
 		this.editorService.onDidActiveEditorChange(() => {
 			this.checkForLSP();
 		});
+
 
 		this.languageFeaturesService.referenceProvider.onDidChange(() => {
 			this.checkForLSP();
@@ -63,21 +66,24 @@ export class AideLSP {
 
 		const languageId = model.getLanguageId();
 
-		if (languageId === 'plaintext' || languageId === 'json' || languageId === 'markdown') {
+		if (ignoredLanguages.some(l => l === languageId)) {
 			return;
 		}
+
+		console.log(this.languageFeaturesService.referenceProvider.all(model));
 
 		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
 		this.isActive.set(isReferenceProviderActive);
 
-		if (!isReferenceProviderActive) {
-			this.notifiyLSPIsNotActive(languageId);
-		}
+		//if (!isReferenceProviderActive) {
+		//	this.notifiyLSPIsNotActive(languageId);
+		//}
 	}
 
 	private notifiyLSPIsNotActive(languageId: string) {
 
 		const dontShowAgain = this.storageService.getBoolean(AideLSP.STORAGE_KEY, StorageScope.PROFILE, false);
+
 
 		if (dontShowAgain) {
 			return;

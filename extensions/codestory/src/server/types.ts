@@ -218,6 +218,7 @@ interface InitialSearchSymbolInformation {
 	symbol_name: string;
 	is_new: boolean;
 	thinking: string;
+	range: Range;
 }
 
 interface SymbolToEditRequest {
