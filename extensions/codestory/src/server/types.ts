@@ -721,6 +721,11 @@ export type SidecarQuickFixInvocationResponse = {
 	invocation_success: boolean;
 };
 
+export type SidecarInlayHintsRequeest = {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+};
+
 export type SidecarApplyEditsRequest = {
 	fs_file_path: string;
 	edited_content: string;

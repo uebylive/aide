@@ -1671,6 +1671,10 @@ class InlayHintsAdapter {
 		private readonly _extension: IExtensionDescription
 	) { }
 
+	getProvider(): vscode.InlayHintsProvider {
+		return this._provider;
+	}
+
 	async provideInlayHints(resource: URI, ran: IRange, token: CancellationToken): Promise<extHostProtocol.IInlayHintsDto | undefined> {
 		const doc = this._documents.getDocument(resource);
 		const range = typeConvert.Range.to(ran);
@@ -2309,6 +2313,15 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 		const displayName = (metadata && metadata.label) || ExtHostLanguageFeatures._extLabel(extension);
 		this._proxy.$registerDocumentSymbolProvider(handle, this._transformDocumentSelector(selector, extension), displayName);
 		return this._createDisposable(handle);
+	}
+
+	getInlayHintsProvider(selector: vscode.DocumentSelector): vscode.InlayHintsProvider | null {
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof InlayHintsAdapter) {
+				return adapter.adapter.getProvider();
+			}
+		}
+		return null;
 	}
 
 	getDocumentSymbolProvider(selector: vscode.DocumentSelector): vscode.DocumentSymbolProvider[] {
