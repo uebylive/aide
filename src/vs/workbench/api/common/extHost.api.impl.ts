@@ -696,6 +696,11 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 			registerDocumentDropEditProvider(selector: vscode.DocumentSelector, provider: vscode.DocumentDropEditProvider, metadata?: vscode.DocumentDropEditProviderMetadata): vscode.Disposable {
 				return extHostLanguageFeatures.registerDocumentOnDropEditProvider(extension, selector, provider, isProposedApiEnabled(extension, 'documentPaste') ? metadata : undefined);
+			},
+			getInlayHintsProvider(selector: vscode.DocumentSelector): vscode.InlayHintsProvider | null {
+				console.log('exHost.api.impl.ts');
+				console.log('document_selector', selector.toString());
+				return extHostLanguageFeatures.getInlayHintsProvider(selector);
 			}
 		};
 

@@ -75,43 +75,43 @@ export class AideLSP {
 		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
 		this.isActive.set(isReferenceProviderActive);
 
-		//if (!isReferenceProviderActive) {
-		//	this.notifiyLSPIsNotActive(languageId);
-		//}
+		// if (!isReferenceProviderActive) {
+		// this.notifiyLSPIsNotActive(languageId);
+		// }
 	}
 
-	private notifiyLSPIsNotActive(languageId: string) {
+	// private notifiyLSPIsNotActive(languageId: string) {
 
-		const dontShowAgain = this.storageService.getBoolean(AideLSP.STORAGE_KEY, StorageScope.PROFILE, false);
+	// 	const dontShowAgain = this.storageService.getBoolean(AideLSP.STORAGE_KEY, StorageScope.PROFILE, false);
 
 
-		if (dontShowAgain) {
-			return;
-		}
+	// 	if (dontShowAgain) {
+	// 		return;
+	// 	}
 
-		this.notificationService.notify({
-			severity: Severity.Info,
-			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
-			actions: {
-				primary: [
-					{
-						label: 'Don\'t show again',
-						run: () => {
-							this.storageService.store(
-								AideLSP.STORAGE_KEY,
-								true,
-								StorageScope.PROFILE,
-								StorageTarget.USER
-							);
-						},
-						id: 'aide.notifications.dontShowAgain',
-						tooltip: '',
-						class: undefined,
-						enabled: true
-					}],
-			}
-		});
-	}
+	// 	this.notificationService.notify({
+	// 		severity: Severity.Info,
+	// 		message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
+	// 		actions: {
+	// 			primary: [
+	// 				{
+	// 					label: 'Don\'t show again',
+	// 					run: () => {
+	// 						this.storageService.store(
+	// 							AideLSP.STORAGE_KEY,
+	// 							true,
+	// 							StorageScope.PROFILE,
+	// 							StorageTarget.USER
+	// 						);
+	// 					},
+	// 					id: 'aide.notifications.dontShowAgain',
+	// 					tooltip: '',
+	// 					class: undefined,
+	// 					enabled: true
+	// 				}],
+	// 		}
+	// 	});
+	// }
 
 	private resetNotificationState() {
 		this.storageService.remove(AideLSP.STORAGE_KEY, StorageScope.PROFILE);

@@ -15,6 +15,7 @@
     "inlineCompletionsAdditions",
     "interactive",
     "chatProvider",
+    "aideGetInlayHintsProvider",
     "chatParticipantAdditions",
     "chatParticipantPrivate",
     "aideChatParticipant",
