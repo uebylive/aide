@@ -291,7 +291,7 @@ export class WorkbenchContributionsRegistry extends Disposable implements IWorkb
 		else {
 			lifecycleService.when(phase).then(() => this.doInstantiateByPhase(instantiationService, logService, environmentService, phase));
 		}
-	}
+	} // doInstantiateByPhase is where we loop over all contributions and instantiate them
 
 	private async doInstantiateByPhase(instantiationService: IInstantiationService, logService: ILogService, environmentService: IEnvironmentService, phase: LifecyclePhase): Promise<void> {
 		const contributions = this.contributionsByPhase.get(phase);

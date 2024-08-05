@@ -33,7 +33,7 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 	readonly body: PanelBody;
 
 
-	constructor(instantiationService: IInstantiationService) {
+	constructor(container: HTMLElement, instantiationService: IInstantiationService) {
 		super();
 
 		this.element = $('.aide-controls-panel');
@@ -45,6 +45,10 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 
 		// Create and position the sash
 		this._sash = this._register(instantiationService.createInstance(Sash, this.element, this, { orientation: Orientation.HORIZONTAL }));
+
+
+		container.appendChild(this.element);
+		this.layout();
 
 		// Handle sash drag events
 		this._register(this._sash.onDidStart((dragStart) => {
@@ -59,13 +63,7 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 				onDragEvent.dispose();
 				onDragEndEvent.dispose();
 			}));
-
 		}));
-	}
-
-	create(parent: HTMLElement) {
-		parent.appendChild(this.element);
-		this.layout();
 	}
 
 	layout() {

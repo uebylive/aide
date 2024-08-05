@@ -12,7 +12,8 @@ export const IAideControlsService = createDecorator<IAideControlsService>('aideC
 export interface IAideControlsService {
 
 	readonly _serviceBrand: undefined;
+	readonly mainPart: AideControlsPart;
 	getPart(container: HTMLElement): IDisposable;
 	createMainControlsPart(): AideControlsPart;
-	createAuxiliaryControlsPart(): AideControlsPart;
+	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): AideControlsPart;
 }

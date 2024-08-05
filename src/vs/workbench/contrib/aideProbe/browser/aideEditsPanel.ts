@@ -15,14 +15,20 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 
 const $ = dom.$;
 
 
 export class AideEditsPanel extends AideControlsPanel {
 
-	constructor(@IInstantiationService instantiationService: IInstantiationService) {
-		super(instantiationService);
+	static readonly ID = 'workbench.contrib.aideEditsPanel';
+
+	constructor(
+		@IAideControlsService aideControlsService: IAideControlsService,
+		@IInstantiationService instantiationService: IInstantiationService) {
+
+		super(aideControlsService.mainPart.element, instantiationService,);
 	}
 }
 

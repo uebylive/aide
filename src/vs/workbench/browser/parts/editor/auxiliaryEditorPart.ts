@@ -118,17 +118,7 @@ export class AuxiliaryEditorPart {
 		editorPart.create(editorPartContainer);
 
 		// AideControls Part
-
-		const aideControlsPart = disposables.add(this.aideControlsService.createAuxiliaryControlsPart());
-		const aideControlsPartContainer = document.createElement('div');
-		aideControlsPartContainer.classList.add('part', 'aidecontrols');
-		auxiliaryWindow.container.appendChild(aideControlsPartContainer);
-		aideControlsPart.create(aideControlsPartContainer);
-
-		disposables.add(auxiliaryWindow.onDidLayout(() => {
-			const editorDomRect = editorPart.element.getBoundingClientRect();
-			aideControlsPart.layout(editorDomRect.width, editorDomRect.height, editorDomRect.bottom, editorDomRect.left);
-		}));
+		disposables.add(this.aideControlsService.createAuxiliaryControlsPart(auxiliaryWindow.container, editorPartContainer));
 
 		// Titlebar
 		let titlebarPart: IAuxiliaryTitlebarPart | undefined = undefined;

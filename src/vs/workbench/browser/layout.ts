@@ -49,6 +49,7 @@ import { AuxiliaryBarPart } from 'vs/workbench/browser/parts/auxiliarybar/auxili
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
+import { IOverlayedView } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
 
 //#region Layout Implementation
 
@@ -259,7 +260,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	private aideControlsPartView!: ISerializableView;
+	private aideControlsPartView!: IOverlayedView;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
@@ -1026,6 +1027,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			mark('code/willRestoreViewlet');
 
+			// This is where we open the composite with the viewlet id of the container to restore
 			const viewlet = await this.paneCompositeService.openPaneComposite(this.state.initialization.views.containerToRestore.sideBar, ViewContainerLocation.Sidebar);
 			if (!viewlet) {
 				await this.paneCompositeService.openPaneComposite(this.viewDescriptorService.getDefaultViewContainer(ViewContainerLocation.Sidebar)?.id, ViewContainerLocation.Sidebar); // fallback to default viewlet as needed
@@ -2214,7 +2216,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	private arrangeAideControls() {
 		const editorDomRect = this.editorPartView.element.getBoundingClientRect();
-		this.aideControlsPartView.layout(editorDomRect.width, editorDomRect.height, editorDomRect.bottom, editorDomRect.left);
+		this.aideControlsPartView.setAvailableSize(editorDomRect.width, editorDomRect.height);
+		this.aideControlsPartView.setPosition(editorDomRect.bottom, editorDomRect.left);
 	}
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
