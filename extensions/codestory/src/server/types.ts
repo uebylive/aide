@@ -75,6 +75,7 @@ type FrameworkEvent = {
 	LongContextSearchStart: string;
 	LongContextSearchFinished: string;
 	InitialSearchSymbols: InitialSearchSymbols;
+	OpenFile: OpenFileRequestFrameworkEvent;
 };
 
 interface UIEvent {
@@ -211,6 +212,10 @@ interface SymbolToEdit {
 interface InitialSearchSymbols {
 	request_id: string;
 	symbols: InitialSearchSymbolInformation[];
+}
+
+interface OpenFileRequestFrameworkEvent {
+	fs_file_path: string;
 }
 
 interface InitialSearchSymbolInformation {
