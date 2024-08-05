@@ -35,9 +35,12 @@ type User = {
 };
 
 type EncodedTokenData = {
-	user: User;
 	access_token: string;
 	refresh_token: string;
+};
+
+type UserProfileResponse = {
+	user: User;
 };
 
 export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable {
@@ -224,21 +227,17 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 		const tokens = JSON.parse(tokenData) as EncodedTokenData;
 
 		const resp = await fetch(
-			'http://localhost:3333/account',
+			'http://localhost:3333/v1/users/me',
 			{
-				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
+					Authorization: `Bearer ${tokens.access_token}`,
 				},
-				body: JSON.stringify({
-					user_id: tokens.user.id,
-					refresh_token: tokens.refresh_token,
-				}),
 			},
 		);
 		const text = await resp.text();
-		const data = JSON.parse(text) as EncodedTokenData;
-		return data;
+		const data = JSON.parse(text) as UserProfileResponse;
+		return { ...data, ...tokens };
 	}
 }
 
