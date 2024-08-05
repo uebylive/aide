@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequeest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -116,7 +116,7 @@ export function handleRequest(
 				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/inlay_hints') {
 				const body = await readRequestBody(req);
-				const request: SidecarInlayHintsRequeest = JSON.parse(body);
+				const request: SidecarInlayHintsRequest = JSON.parse(body);
 				const response = await inlayHints(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
