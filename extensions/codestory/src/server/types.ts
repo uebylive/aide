@@ -721,9 +721,24 @@ export type SidecarQuickFixInvocationResponse = {
 	invocation_success: boolean;
 };
 
-export type SidecarInlayHintsRequeest = {
+export type SidecarInlayHintsRequest = {
 	fs_file_path: string;
 	range: SidecarRequestRange;
+};
+
+export type SidecarInlayHintsResponsePart = {
+	position: SidecarRequestPosition;
+	paddingLeft: boolean;
+	paddingRight: boolean;
+	// the value of the inlay hint
+	values: string[];
+};
+
+/**
+ * Contains the response from grabbing the inlay hints in a given range
+ */
+export type SidecarInlayHintResponse = {
+	parts: SidecarInlayHintsResponsePart[];
 };
 
 export type SidecarApplyEditsRequest = {

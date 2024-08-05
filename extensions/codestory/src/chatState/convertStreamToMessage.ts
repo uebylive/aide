@@ -314,6 +314,8 @@ export const reportAgentEventsToChat = async (
 				response.longContextSearch(true);
 			}
 
+			// TODO(zi + skcd): Make this an explicit event so we can remove serde::Serialize
+			// from the ToolOutput
 		} else if (event.event.ToolEvent) {
 			if (event.event.ToolEvent.OpenFile) {
 				const filePath = event.event.ToolEvent.OpenFile.fs_file_path;
