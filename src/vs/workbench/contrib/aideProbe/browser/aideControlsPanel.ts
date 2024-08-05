@@ -5,7 +5,7 @@
 
 import { $ } from 'vs/base/browser/dom';
 import { IHorizontalSashLayoutProvider, Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
-import { Emitter } from 'vs/base/common/event';
+import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 
@@ -14,11 +14,10 @@ export enum PanelStates {
 	Loading = 'loading',
 }
 
-const DEFAULT_PANEL_HEIGHT = 200;
-
 export abstract class AideControlsPanel extends Disposable implements IHorizontalSashLayoutProvider {
 	private readonly element: HTMLElement;
-	private readonly _sash: Sash;
+	readonly sash: Sash;
+
 
 	private _state: PanelStates = PanelStates.Idle;
 	get state(): PanelStates {
@@ -33,42 +32,45 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 	readonly body: PanelBody;
 
 
+	private _onDidResize = this._register(new Emitter<number>());
+	readonly onDidResize: Event<number> = this._onDidResize.event;
+
+
 	constructor(container: HTMLElement, instantiationService: IInstantiationService) {
 		super();
 
 		this.element = $('.aide-controls-panel');
 
 		this.header = this._register(instantiationService.createInstance(PanelHeader));
-		this.body = this._register(instantiationService.createInstance(PanelBody, DEFAULT_PANEL_HEIGHT));
+		this.body = this._register(instantiationService.createInstance(PanelBody));
 		this.element.appendChild(this.header.element);
 		this.element.appendChild(this.body.element);
 
 		// Create and position the sash
-		this._sash = this._register(instantiationService.createInstance(Sash, this.element, this, { orientation: Orientation.HORIZONTAL }));
+		this.sash = this._register(instantiationService.createInstance(Sash, this.element, this, { orientation: Orientation.HORIZONTAL }));
 
 
 		container.appendChild(this.element);
-		this.layout();
 
 		// Handle sash drag events
-		this._register(this._sash.onDidStart((dragStart) => {
+		this._register(this.sash.onDidStart((dragStart) => {
 			const initialHeight = this.body.height;
 			const initialY = dragStart.currentY;
-			const onDragEvent = this._register(this._sash.onDidChange((dragChange) => {
+			const onDragEvent = this._register(this.sash.onDidChange((dragChange) => {
 				const delta = dragChange.currentY - initialY;
-				this.body.layout(initialHeight - delta);
+				this._onDidResize.fire(initialHeight - delta);
 			}));
 
-			const onDragEndEvent = this._register(this._sash.onDidEnd(() => {
+			const onDragEndEvent = this._register(this.sash.onDidEnd(() => {
 				onDragEvent.dispose();
 				onDragEndEvent.dispose();
 			}));
 		}));
 	}
 
-	layout() {
-		this.body.layout(DEFAULT_PANEL_HEIGHT);
-		this._sash.layout();
+	layout(height: number) {
+		this.body.layout(height);
+		this.sash.layout();
 	}
 
 	setState(state: PanelStates) {
@@ -125,18 +127,16 @@ class PanelHeader extends Disposable {
 class PanelBody extends Disposable {
 
 	readonly element: HTMLElement;
-	private _height: number;
+	private _height: number = 0;
 	get height() {
 		return this._height;
 	}
 
-	constructor(height: number) {
+	constructor() {
 		super();
 		this.element = $('.aide-controls-panel-body');
-
-		this._height = height;
-		this.layout(height);
-		this.element.style.backgroundColor = 'red';
+		this.element.style.outline = '1px solid blue';
+		this.element.style.backgroundColor = 'rgba(0, 0, 255, 0.1)';
 	}
 
 	layout(height: number) {

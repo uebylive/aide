@@ -244,7 +244,7 @@ export abstract class Part extends Component implements IObservableView {
 	//#endregion
 }
 
-class PartLayout {
+export class PartLayout {
 
 	private static readonly HEADER_HEIGHT = 35;
 	private static readonly TITLE_HEIGHT = 35;

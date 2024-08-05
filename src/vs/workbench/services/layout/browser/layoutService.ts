@@ -15,8 +15,14 @@ import { CustomTitleBarVisibility, TitleBarSetting, getMenuBarVisibility, hasCus
 import { isFullscreen, isWCOEnabled } from 'vs/base/browser/browser';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IDisposable } from 'vs/base/common/lifecycle';
+import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
 
 export const IWorkbenchLayoutService = refineServiceDecorator<ILayoutService, IWorkbenchLayoutService>(ILayoutService);
+
+
+export const enum OverlayedParts {
+	AIDECONTROLS_PART = 'workbench.parts.aidecontrols',
+}
 
 export const enum Parts {
 	TITLEBAR_PART = 'workbench.parts.titlebar',
@@ -24,7 +30,6 @@ export const enum Parts {
 	ACTIVITYBAR_PART = 'workbench.parts.activitybar',
 	SIDEBAR_PART = 'workbench.parts.sidebar',
 	PANEL_PART = 'workbench.parts.panel',
-	AIDECONTROLS_PART = 'workbench.parts.aidecontrols',
 	AUXILIARYBAR_PART = 'workbench.parts.auxiliarybar',
 	EDITOR_PART = 'workbench.parts.editor',
 	STATUSBAR_PART = 'workbench.parts.statusbar'
@@ -295,6 +300,11 @@ export interface IWorkbenchLayoutService extends ILayoutService {
 	 * Register a part to participate in the layout.
 	 */
 	registerPart(part: Part): IDisposable;
+
+	/**
+	 * Register an overlayed part to participate in the layout.
+	 */
+	registerOverlayedPart(part: OverlayedPart): IDisposable;
 
 	/**
 	 * Returns whether the target window is maximized.
