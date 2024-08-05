@@ -43,8 +43,8 @@ export async function inlayHints(
 				}
 				return {
 					position,
-					paddingLeft,
-					paddingRight,
+					padding_left: paddingLeft,
+					padding_right: paddingRight,
 					values,
 				};
 			});

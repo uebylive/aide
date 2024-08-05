@@ -728,8 +728,8 @@ export type SidecarInlayHintsRequest = {
 
 export type SidecarInlayHintsResponsePart = {
 	position: SidecarRequestPosition;
-	paddingLeft: boolean;
-	paddingRight: boolean;
+	padding_left: boolean;
+	padding_right: boolean;
 	// the value of the inlay hint
 	values: string[];
 };
