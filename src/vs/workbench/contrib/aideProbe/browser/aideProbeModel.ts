@@ -44,12 +44,14 @@ export interface IAideProbeResponseModel {
 	readonly longContextSearchFinished: boolean | undefined;
 }
 
-export type AideProbeStatus = 'INACTIVE' | 'IN_PROGRESS' | 'IN_REVIEW';
-export const enum IAideProbeStatus {
+
+export const enum AideProbeStatus {
 	INACTIVE = 'INACTIVE',
 	IN_PROGRESS = 'IN_PROGRESS',
 	IN_REVIEW = 'IN_REVIEW'
 }
+
+export type IAideProbeStatus = keyof typeof AideProbeStatus;
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
@@ -258,7 +260,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
-	private _status: IAideProbeStatus = IAideProbeStatus.INACTIVE;
+	private _status: IAideProbeStatus = AideProbeStatus.INACTIVE;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -303,7 +305,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
 		}
 
-		this._status = IAideProbeStatus.IN_PROGRESS;
+		this._status = AideProbeStatus.IN_PROGRESS;
 		console.log('progress.kind', progress.kind);
 		switch (progress.kind) {
 			case 'markdownContent':
@@ -333,13 +335,13 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	}
 
 	completeResponse(): void {
-		this._status = IAideProbeStatus.IN_REVIEW;
+		this._status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
-		this._status = IAideProbeStatus.IN_REVIEW;
+		this._status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}

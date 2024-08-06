@@ -17,7 +17,6 @@ import { basename } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/commandPalette';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -44,7 +43,7 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel, IAideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeStatus, IAideProbeResponseModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
@@ -107,7 +106,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private inputModel: ITextModel | undefined;
 	private inputEditorHasFocus: IContextKey<boolean>;
 	private inputEditorHasText: IContextKey<boolean>;
-	private requestStatus: IContextKey<AideProbeStatus>;
+	private requestStatus: IContextKey<IAideProbeStatus>;
 
 	private contextSelect: SelectBox;
 
@@ -426,22 +425,6 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 				}
 			}
 
-
-			if (!CONTEXT_PROBE_IS_LSP_ACTIVE.getValue(this.contextKeyService)) {
-				const editor = this.editorService.activeTextEditorControl;
-				if (!isCodeEditor(editor)) {
-					return;
-				}
-				const model = editor.getModel();
-				if (!model) {
-					placeholder = 'Open a file to start using Aide';
-				} else {
-					const languageId = model.getLanguageId();
-					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
-					placeholder = `Language server is not active for ${capitalizedLanguageId}`;
-				}
-			}
-
 			const decoration: IDecorationOptions[] = [
 				{
 					range: {
@@ -588,14 +571,14 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	}
 
 	private _acceptInput() {
-		if (this._viewModel && this._viewModel.status !== IAideProbeStatus.INACTIVE) {
+		if (this._viewModel && this._viewModel.status !== AideProbeStatus.INACTIVE) {
 			return;
 		} else if (this._viewModel) {
 			this.clear();
 		}
 
 		const model = this.aideProbeService.startSession();
-		model.status = IAideProbeStatus.IN_PROGRESS;
+		model.status = AideProbeStatus.IN_PROGRESS;
 
 		const viewModel = this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(viewModel.onDidChange)(() => {
@@ -610,7 +593,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 		const editorValue = this._inputEditor.getValue();
 		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false);
-		this.requestStatus.set('IN_PROGRESS');
+		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 
 		this.isPanelVisible = true;
