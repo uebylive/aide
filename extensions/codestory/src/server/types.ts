@@ -28,7 +28,7 @@ type ActiveWindowData = {
 	file_path: string;
 	file_content: string;
 	language: string;
-}
+};
 
 export type ProbeAgentBody = {
 	query: string;
@@ -45,6 +45,8 @@ export type CodeEditAgentBody = {
 	request_id: string;
 	user_context: UserContext;
 	active_window_data?: ActiveWindowData;
+	root_directory: string | undefined;
+	codebase_search: boolean;
 };
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
@@ -67,6 +69,15 @@ interface RequestEvents {
 	ProbeFinished?: RequestEventProbeFinished;
 }
 
+type FrameworkEvent = {
+	RepoMapGenerationStart: string;
+	RepoMapGenerationFinished: string;
+	LongContextSearchStart: string;
+	LongContextSearchFinished: string;
+	InitialSearchSymbols: InitialSearchSymbols;
+	OpenFile: OpenFileRequestFrameworkEvent;
+};
+
 interface UIEvent {
 	SymbolEvent: SymbolEventRequest;
 	ToolEvent: ToolInput;
@@ -75,6 +86,7 @@ interface UIEvent {
 	SymbolEventSubStep: SymbolEventSubStepRequest;
 	RequestEvent: RequestEvents;
 	EditRequestFinished: string;
+	FrameworkEvent: FrameworkEvent;
 }
 
 interface SymbolEventSubStepRequest {
@@ -195,6 +207,23 @@ interface SymbolToEdit {
 	symbol_name: string;
 	instructions: string[];
 	is_new: boolean;
+}
+
+interface InitialSearchSymbols {
+	request_id: string;
+	symbols: InitialSearchSymbolInformation[];
+}
+
+interface OpenFileRequestFrameworkEvent {
+	fs_file_path: string;
+}
+
+interface InitialSearchSymbolInformation {
+	fs_file_path: string;
+	symbol_name: string;
+	is_new: boolean;
+	thinking: string;
+	range: Range;
 }
 
 interface SymbolToEditRequest {
@@ -458,7 +487,7 @@ export type CodeToProbeSubSymbolRequest = {
 	xml_symbol: string;
 	query: string;
 	llm: LLMTypeVariant;
-	provider: LLMProvider
+	provider: LLMProvider;
 	api_key: LLMProviderAPIKeys;
 };
 
@@ -695,6 +724,26 @@ export type ClassSymbolFollowupRequest = {
 export type SidecarQuickFixInvocationResponse = {
 	request_id: string;
 	invocation_success: boolean;
+};
+
+export type SidecarInlayHintsRequest = {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+};
+
+export type SidecarInlayHintsResponsePart = {
+	position: SidecarRequestPosition;
+	padding_left: boolean;
+	padding_right: boolean;
+	// the value of the inlay hint
+	values: string[];
+};
+
+/**
+ * Contains the response from grabbing the inlay hints in a given range
+ */
+export type SidecarInlayHintResponse = {
+	parts: SidecarInlayHintsResponsePart[];
 };
 
 export type SidecarApplyEditsRequest = {

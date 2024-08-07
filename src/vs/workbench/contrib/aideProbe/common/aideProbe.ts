@@ -52,6 +52,15 @@ export interface IAideProbeGoToDefinition {
 	thinking: string;
 }
 
+export interface IAideProbeInitialSymbolInformation {
+	uri: URI; symbolName: string; isNew: boolean; thinking: string;
+}
+
+export interface IAideProbeInitialSymbols {
+	kind: 'initialSymbols';
+	symbols: IAideProbeInitialSymbolInformation[];
+}
+
 export interface IAideProbeTextEdit {
 	kind: 'textEdit';
 	edits: WorkspaceEdit;
@@ -62,12 +71,25 @@ export interface IAideProbeOpenFile {
 	uri: URI;
 }
 
+export interface IAideProbeRepoMapGeneration {
+	kind: 'repoMapGeneration';
+	finished: boolean;
+}
+
+export interface IAideProbeLongContextSearch {
+	kind: 'longContextSearch';
+	finished: boolean;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
 	| IAideProbeTextEdit
-	| IAideProbeOpenFile;
+	| IAideProbeOpenFile
+	| IAideProbeRepoMapGeneration
+	| IAideProbeLongContextSearch
+	| IAideProbeInitialSymbols;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -82,6 +104,7 @@ export interface IAideProbeRequestModel {
 	readonly message: string;
 	readonly variables: IChatRequestVariableData;
 	readonly editMode: boolean;
+	readonly codebaseSearch: boolean;
 }
 
 export interface IAideProbeStartEditEvent {
@@ -106,6 +129,7 @@ export type IAideProbeResponseEvent =
 	| IAideProbeCompleteEditEvent
 	| IAideProbeUndoEditEvent
 	| IAideProbeGoToDefinition
-	| IAideProbeBreakdownContent;
+	| IAideProbeBreakdownContent
+	| IAideProbeInitialSymbols;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';

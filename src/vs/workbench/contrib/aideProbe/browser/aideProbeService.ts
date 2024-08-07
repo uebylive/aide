@@ -30,7 +30,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState;
 	cancelProbe(): void;
 	acceptCodeEdits(): void;
 	rejectCodeEdits(): void;
@@ -95,7 +95,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -124,27 +124,29 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			try {
 				const variableData: IChatRequestVariableData = { variables: [] };
 				const openEditors = this.editorService.editors;
-				for (const editor of openEditors) {
-					const resource = editor.resource;
-					if (!resource) {
-						continue;
-					}
+				if (codebaseSearch) {
+					for (const editor of openEditors) {
+						const resource = editor.resource;
+						if (!resource) {
+							continue;
+						}
 
-					const model = this.modelService.getModel(resource);
-					if (!model) {
-						continue;
-					}
+						const model = this.modelService.getModel(resource);
+						if (!model) {
+							continue;
+						}
 
-					const range = model.getFullModelRange();
-					const valueObj = { uri: resource, range: range };
-					variableData.variables.push({
-						id: 'vscode.file',
-						name: `file:${resource.path.split('/').pop()}`,
-						value: JSON.stringify(valueObj),
-					});
+						const range = model.getFullModelRange();
+						const valueObj = { uri: resource, range: range };
+						variableData.variables.push({
+							id: 'vscode.file',
+							name: `file:${resource.path.split('/').pop()}`,
+							value: JSON.stringify(valueObj),
+						});
+					}
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit, codebaseSearch);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

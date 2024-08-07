@@ -96,6 +96,19 @@ declare module 'vscode' {
 		readonly uri: Uri;
 	}
 
+	export interface AideProbeResponseRepoMapGeneration {
+		/**
+		 * Whether the repo map generation is finished
+		 */
+		readonly finished: boolean;
+	}
+
+	export interface AideProbeResponseLongContextSearch {
+		/**
+		 * Whether the repo map generation is finished
+		 */
+		readonly finished: boolean;
+	}
 
 	export interface AideChatResponseTextEdit {
 		/**

@@ -10,11 +10,13 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { CONTEXT_PROBE_IS_LSP_ACTIVE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import Severity from 'vs/base/common/severity';
-import { INotificationService } from 'vs/platform/notification/common/notification';
-import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
+// import Severity from 'vs/base/common/severity';
+// import { INotificationService } from 'vs/platform/notification/common/notification';
+import { IStorageService, StorageScope } from 'vs/platform/storage/common/storage';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 
+
+const ignoredLanguages = ['plaintext', 'json', 'jsonc', 'markdown'];
 
 export class AideLSP {
 	public static readonly ID = 'workbench.contrib.aideLSP';
@@ -27,7 +29,7 @@ export class AideLSP {
 		@IEditorService private readonly editorService: IEditorService,
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@INotificationService private readonly notificationService: INotificationService,
+		// @INotificationService private readonly notificationService: INotificationService,
 		@IStorageService private readonly storageService: IStorageService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
@@ -37,6 +39,7 @@ export class AideLSP {
 		this.editorService.onDidActiveEditorChange(() => {
 			this.checkForLSP();
 		});
+
 
 		this.languageFeaturesService.referenceProvider.onDidChange(() => {
 			this.checkForLSP();
@@ -63,49 +66,52 @@ export class AideLSP {
 
 		const languageId = model.getLanguageId();
 
-		if (languageId === 'plaintext' || languageId === 'json' || languageId === 'markdown') {
+		if (ignoredLanguages.some(l => l === languageId)) {
 			return;
 		}
+
+		console.log(this.languageFeaturesService.referenceProvider.all(model));
 
 		const isReferenceProviderActive = this.languageFeaturesService.referenceProvider.has(model);
 		this.isActive.set(isReferenceProviderActive);
 
-		if (!isReferenceProviderActive) {
-			this.notifiyLSPIsNotActive(languageId);
-		}
+		// if (!isReferenceProviderActive) {
+		// this.notifiyLSPIsNotActive(languageId);
+		// }
 	}
 
-	private notifiyLSPIsNotActive(languageId: string) {
+	// private notifiyLSPIsNotActive(languageId: string) {
 
-		const dontShowAgain = this.storageService.getBoolean(AideLSP.STORAGE_KEY, StorageScope.PROFILE, false);
+	// 	const dontShowAgain = this.storageService.getBoolean(AideLSP.STORAGE_KEY, StorageScope.PROFILE, false);
 
-		if (dontShowAgain) {
-			return;
-		}
 
-		this.notificationService.notify({
-			severity: Severity.Info,
-			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
-			actions: {
-				primary: [
-					{
-						label: 'Don\'t show again',
-						run: () => {
-							this.storageService.store(
-								AideLSP.STORAGE_KEY,
-								true,
-								StorageScope.PROFILE,
-								StorageTarget.USER
-							);
-						},
-						id: 'aide.notifications.dontShowAgain',
-						tooltip: '',
-						class: undefined,
-						enabled: true
-					}],
-			}
-		});
-	}
+	// 	if (dontShowAgain) {
+	// 		return;
+	// 	}
+
+	// 	this.notificationService.notify({
+	// 		severity: Severity.Info,
+	// 		message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
+	// 		actions: {
+	// 			primary: [
+	// 				{
+	// 					label: 'Don\'t show again',
+	// 					run: () => {
+	// 						this.storageService.store(
+	// 							AideLSP.STORAGE_KEY,
+	// 							true,
+	// 							StorageScope.PROFILE,
+	// 							StorageTarget.USER
+	// 						);
+	// 					},
+	// 					id: 'aide.notifications.dontShowAgain',
+	// 					tooltip: '',
+	// 					class: undefined,
+	// 					enabled: true
+	// 				}],
+	// 		}
+	// 	});
+	// }
 
 	private resetNotificationState() {
 		this.storageService.remove(AideLSP.STORAGE_KEY, StorageScope.PROFILE);

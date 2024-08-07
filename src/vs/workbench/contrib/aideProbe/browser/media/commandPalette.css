@@ -176,6 +176,26 @@
 	gap: 6px;
 }
 
+.command-palette-context-controls {
+	margin-top: 4px;
+	display: flex;
+	align-items: baseline;
+	justify-content: end;
+	gap: 8px;
+}
+
+.command-palette-context-controls > span:first-child {
+	white-space: nowrap;
+}
+
+.command-palette-context-select .monaco-select-box {
+	padding-left: 5px;
+	padding-block: 2px;
+	border-radius: 3px;
+	min-width: 16ch;
+	border-color: var(--vscode-chat-requestBorder) !important;
+}
+
 .command-palette-panel {
 	width: calc(100% - 18px);
 	position: absolute;

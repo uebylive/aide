@@ -290,9 +290,30 @@ export const reportAgentEventsToChat = async (
 		}
 
 		// logStream?.write(JSON.stringify(event) + ',\n');
-		if (event.event.ToolEvent) {
-			if (event.event.ToolEvent.OpenFile) {
-				const filePath = event.event.ToolEvent.OpenFile.fs_file_path;
+
+		if (event.event.FrameworkEvent) {
+
+			if (event.event.FrameworkEvent.InitialSearchSymbols) {
+				console.log(event.event.FrameworkEvent);
+				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
+					return {
+						symbolName: item.symbol_name,
+						uri: vscode.Uri.file(item.fs_file_path),
+						isNew: item.is_new,
+						thinking: item.thinking,
+					};
+				});
+				response.initialSearchSymbols(initialSearchSymbolInformation);
+			} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
+				response.repoMapGeneration(false);
+			} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
+				response.repoMapGeneration(true);
+			} else if (event.event.FrameworkEvent.LongContextSearchStart) {
+				response.longContextSearch(false);
+			} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
+				response.longContextSearch(true);
+			} else if (event.event.FrameworkEvent.OpenFile) {
+				const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
 				if (filePath) {
 					response.openFile({
 						uri: vscode.Uri.file(filePath),
@@ -385,6 +406,6 @@ export const reportAgentEventsToChat = async (
 		}
 	}
 
-	// logStream?.write(']');
-	// logStream?.end();
+	//logStream?.write(']');
+	//logStream?.end();
 };

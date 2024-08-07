@@ -21,7 +21,7 @@ import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 
@@ -39,7 +39,10 @@ export interface IAideProbeResponseModel {
 	readonly lastFileOpened?: URI;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
+	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
+	readonly repoMapGenerationFinished: boolean | undefined;
+	readonly longContextSearchFinished: boolean | undefined;
 }
 
 export type AideProbeStatus = 'INACTIVE' | 'IN_PROGRESS' | 'IN_REVIEW';
@@ -52,7 +55,6 @@ export const enum IAideProbeStatus {
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
 	onNewEvent: Event<IAideProbeResponseEvent>;
-
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
@@ -64,7 +66,8 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 		readonly sessionId: string,
 		readonly message: string,
 		readonly variables: IChatRequestVariableData,
-		readonly editMode: boolean
+		readonly editMode: boolean,
+		readonly codebaseSearch: boolean,
 	) {
 		super();
 	}
@@ -87,9 +90,24 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	get lastFileOpened(): URI | undefined {
 		return this._lastFileOpened;
 	}
-
 	set lastFileOpened(value: URI) {
 		this._lastFileOpened = value;
+	}
+
+	private _repoMapGenerationFinished: boolean | undefined;
+	get repoMapGenerationFinished(): boolean | undefined {
+		return this._repoMapGenerationFinished;
+	}
+	set repoMapGenerationFinished(value: boolean) {
+		this._repoMapGenerationFinished = value;
+	}
+
+	private _longContextSearchFinished: boolean | undefined;
+	get longContextSearchFinished(): boolean | undefined {
+		return this._longContextSearchFinished;
+	}
+	set longContextSearchFinished(value: boolean) {
+		this._longContextSearchFinished = value;
 	}
 
 	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
@@ -102,6 +120,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	private readonly _goToDefinitions: IAideProbeGoToDefinition[] = [];
 	public get goToDefinitions(): ReadonlyArray<IAideProbeGoToDefinition> {
 		return this._goToDefinitions;
+	}
+
+	private readonly _initialSymbols: Map<string, IAideProbeInitialSymbolInformation[]> = new Map();
+	public get initialSymbols(): ReadonlyMap<string, IAideProbeInitialSymbolInformation[]> {
+		return this._initialSymbols;
 	}
 
 	private progressiveEditsQueue = this._register(new Queue());
@@ -155,6 +178,22 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._goToDefinitions.push(goToDefinition);
 	}
 
+	applyInitialSymbols(initialSymbols: IAideProbeInitialSymbols) {
+		initialSymbols.symbols.forEach(symbol => {
+			const uri = symbol.uri.toString();
+			if (!this._initialSymbols.has(uri)) {
+				this._initialSymbols.set(uri, [symbol]);
+			} else {
+				const symbolInfo = this._initialSymbols.get(uri);
+				if (symbolInfo) {
+					symbolInfo.push(symbol);
+				}
+			}
+		});
+
+		this._onNewEvent.fire(initialSymbols);
+	}
+
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
@@ -175,7 +214,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				codeEdits = this._codeEdits.get(mapKey)!;
 				codeEdits.edits.push(workspaceEdit);
 			} else {
-				console.log('codeEditsStart don\'t have it');
+
 				let textModel = this._modelService.getModel(resource);
 				if (!textModel) {
 					const ref = await this._textModelService.createModelReference(resource);
@@ -287,9 +326,13 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		this._status = IAideProbeStatus.IN_PROGRESS;
 
+		console.log('acceptResponseProgress', progress);
 		switch (progress.kind) {
 			case 'markdownContent':
 				this._response.result = progress.content;
+				break;
+			case 'initialSymbols':
+				this._response.applyInitialSymbols(progress);
 				break;
 			case 'openFile':
 				this._response.lastFileOpened = progress.uri;
@@ -299,6 +342,12 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				break;
 			case 'goToDefinition':
 				this._response.applyGoToDefinition(progress);
+				break;
+			case 'repoMapGeneration':
+				this._response.repoMapGenerationFinished = progress.finished;
+				break;
+			case 'longContextSearch':
+				this._response.longContextSearchFinished = progress.finished;
 				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);

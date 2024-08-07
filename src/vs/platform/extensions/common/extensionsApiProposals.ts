@@ -21,6 +21,9 @@ const _allApiProposals = {
 	aideChatVariableResolver: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideChatVariableResolver.d.ts',
 	},
+	aideGetInlayHintsProvider: {
+		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts',
+	},
 	aideProbe: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideProbe.d.ts',
 	},

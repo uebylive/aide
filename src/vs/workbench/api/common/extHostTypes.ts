@@ -4757,6 +4757,20 @@ export class AideProbeOpenFilePart {
 	}
 }
 
+export class AideProbeRepoMapGenerationPart {
+	finished: boolean;
+	constructor(finished: boolean) {
+		this.finished = finished;
+	}
+}
+
+export class AideProbeLongContextSearchPart {
+	finished: boolean;
+	constructor(finished: boolean) {
+		this.finished = finished;
+	}
+}
+
 export class AideProbeGoToDefinitionPart {
 	uri: vscode.Uri;
 	range: vscode.Range;
@@ -4767,6 +4781,13 @@ export class AideProbeGoToDefinitionPart {
 		this.range = range;
 		this.name = name;
 		this.thinking = thinking;
+	}
+}
+
+export class AideProbeInitialSymbolsPart {
+	symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[];
+	constructor(symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[]) {
+		this.symbols = symbols;
 	}
 }
 

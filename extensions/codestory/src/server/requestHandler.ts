@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -13,6 +13,7 @@ import { goToImplementation } from './goToImplementation';
 import { quickFixInvocation, quickFixList } from './quickFix';
 import { symbolSearch } from './symbolSearch';
 import { goToReferences } from './goToReferences';
+import { inlayHints } from './inlayHints';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -113,7 +114,14 @@ export function handleRequest(
 				const response = await symbolSearch(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
-			} else {
+			} else if (req.method === 'POST' && req.url === '/inlay_hints') {
+				const body = await readRequestBody(req);
+				const request: SidecarInlayHintsRequest = JSON.parse(body);
+				const response = await inlayHints(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			}
+			else {
 				// console.log('HC request');
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ reply: 'gg_testing' }));
