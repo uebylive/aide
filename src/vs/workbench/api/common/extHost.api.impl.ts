@@ -30,6 +30,7 @@ import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
 import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
 import { IExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
 import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
+import { ExtHostCSEvents } from 'vs/workbench/api/common/extHostCSEvents';
 import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
 import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariables';
 import { ExtHostClipboard } from 'vs/workbench/api/common/extHostClipboard';
@@ -225,6 +226,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
 	const extHostSpeech = rpcProtocol.set(ExtHostContext.ExtHostSpeech, new ExtHostSpeech(rpcProtocol));
 	const extHostModelSelection = rpcProtocol.set(ExtHostContext.ExtHostModelSelection, new ExtHostModelSelection(rpcProtocol));
+	const extHostCSEvents = rpcProtocol.set(ExtHostContext.ExtHostCSEvents, new ExtHostCSEvents(rpcProtocol));
 	const extHostEmbeddings = rpcProtocol.set(ExtHostContext.ExtHostEmbeddings, new ExtHostEmbeddings(rpcProtocol));
 
 	// Check that no named customers are missing
@@ -1556,6 +1558,14 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
+		// namespace: csevents
+		const csevents: typeof vscode.csevents = {
+			registerCSEventHandler(handler: vscode.CSEventHandler) {
+				checkProposedApiEnabled(extension, 'csevents');
+				return extHostCSEvents.registerCSEventsHandler(extension, handler);
+			},
+		};
+
 		return <typeof vscode>{
 			version: initData.version,
 			// namespaces
@@ -1565,6 +1575,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			authentication,
 			commands,
 			comments,
+			csevents,
 			chat,
 			debug,
 			env,
