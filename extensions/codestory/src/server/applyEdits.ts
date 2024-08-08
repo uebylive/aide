@@ -72,7 +72,9 @@ function delay(ms: number) {
 export async function applyEdits(
 	request: SidecarApplyEditsRequest,
 	response: vscode.ProbeResponseStream,
+	limiter: Limiter<any>,
 ): Promise<SidecarApplyEditsResponse> {
+	// const limiter = new Limiter(1);
 	const filePath = request.fs_file_path;
 	const startPosition = request.selected_range.startPosition;
 	const endPosition = request.selected_range.endPosition;
@@ -103,20 +105,34 @@ export async function applyEdits(
 		});
 		console.log('applyEdits::text_lines');
 		console.log(textLines);
+		const editsPromise = [];
 		// trying to simulate code edits happening like this
 		for (const textLine of textLines) {
+			// await Promise.allSettled(editsPromise);
 			const lineNumber = textLine.line;
 			// we are at the last line where we want to go about making changes, so here we should
 			// accumulate the edits and send it over as a single edit for now
 			const content = textLine.content;
-			await delay(100);
-			const workspaceEdit = new vscode.WorkspaceEdit();
-			workspaceEdit.replace(fileUri, new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, 1000)), content);
-			console.log(workspaceEdit);
-			await response.codeEdit({ edits: workspaceEdit });
+			// const something = async () => {
+			// 	await delay(100);
+			// 	const workspaceEdit = new vscode.WorkspaceEdit();
+			// 	workspaceEdit.replace(fileUri, new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, 1)), content);
+			// 	console.log(workspaceEdit);
+			// 	editsPromise.push(response.codeEdit({ edits: workspaceEdit }));
+			// 	await response.codeEdit({ edits: workspaceEdit });
+			// };
+			await limiter.queue(async () => {
+				await delay(100);
+				const workspaceEdit = new vscode.WorkspaceEdit();
+				workspaceEdit.replace(fileUri, new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, 1000)), content);
+				console.log(workspaceEdit);
+				editsPromise.push(response.codeEdit({ edits: workspaceEdit }));
+				await response.codeEdit({ edits: workspaceEdit });
+			});
+			// editsPromise.push(something());
 		}
 		// try applying the global edit over here
-		await response.codeEdit({ edits: workspaceEdit });
+		// await response.codeEdit({ edits: workspaceEdit });
 	}
 
 
@@ -150,4 +166,101 @@ export async function applyEdits(
 		success: true,
 		new_range: newRange,
 	};
+}
+
+export interface ITask<T> {
+	(): T;
+}
+
+export interface ILimiter<T> {
+
+	readonly size: number;
+
+	queue(factory: ITask<Promise<T>>): Promise<T>;
+
+	clear(): void;
+}
+
+interface ILimitedTaskFactory<T> {
+	factory: ITask<Promise<T>>;
+	c: (value: T | Promise<T>) => void;
+	e: (error?: unknown) => void;
+}
+
+/**
+ * A helper to queue N promises and run them all with a max degree of parallelism. The helper
+ * ensures that at any time no more than M promises are running at the same time.
+ */
+export class Limiter<T> implements ILimiter<T> {
+
+	private _size = 0;
+	private _isDisposed = false;
+	private runningPromises: number;
+	private readonly maxDegreeOfParalellism: number;
+	private readonly outstandingPromises: ILimitedTaskFactory<T>[];
+	private readonly _onDrained: vscode.EventEmitter<void>;
+
+	constructor(maxDegreeOfParalellism: number) {
+		this.maxDegreeOfParalellism = maxDegreeOfParalellism;
+		this.outstandingPromises = [];
+		this.runningPromises = 0;
+		this._onDrained = new vscode.EventEmitter<void>();
+	}
+
+
+	get size(): number {
+		return this._size;
+	}
+
+	queue(factory: ITask<Promise<T>>): Promise<T> {
+		if (this._isDisposed) {
+			throw new Error('Object has been disposed');
+		}
+		this._size++;
+
+		return new Promise<T>((c, e) => {
+			this.outstandingPromises.push({ factory, c, e });
+			this.consume();
+		});
+	}
+
+	private consume(): void {
+		while (this.outstandingPromises.length && this.runningPromises < this.maxDegreeOfParalellism) {
+			const iLimitedTask = this.outstandingPromises.shift()!;
+			this.runningPromises++;
+
+			const promise = iLimitedTask.factory();
+			promise.then(iLimitedTask.c, iLimitedTask.e);
+			promise.then(() => this.consumed(), () => this.consumed());
+		}
+	}
+
+	private consumed(): void {
+		if (this._isDisposed) {
+			return;
+		}
+		this.runningPromises--;
+		if (--this._size === 0) {
+			// this._onDrained.fire();
+		}
+
+		if (this.outstandingPromises.length > 0) {
+			this.consume();
+		}
+	}
+
+	clear(): void {
+		if (this._isDisposed) {
+			throw new Error('Object has been disposed');
+		}
+		this.outstandingPromises.length = 0;
+		this._size = this.runningPromises;
+	}
+
+	dispose(): void {
+		this._isDisposed = true;
+		this.outstandingPromises.length = 0; // stop further processing
+		this._size = 0;
+		this._onDrained.dispose();
+	}
 }
