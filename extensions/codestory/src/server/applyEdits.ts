@@ -61,6 +61,11 @@ export async function applyEditsDirectly(
 	};
 }
 
+function delay(ms: number) {
+	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 /**
  * We want to apply edits to the codebase over here and try to get this ti work
  */
@@ -85,6 +90,32 @@ export async function applyEdits(
 		// we also want to save the file at this point after applying the edit
 		await vscode.workspace.save(fileUri);
 	} else {
+		// can we split it by lines here and create a streaming workspace edit just by
+		// hacking around things?
+		let startIndex = 0;
+		const startLineNumber = range.start.line;
+		const textLines = replacedText.split('\n').map((lineContent) => {
+			startIndex = startIndex + 1;
+			return {
+				line: startLineNumber + startIndex - 1,
+				content: lineContent,
+			};
+		});
+		console.log('applyEdits::text_lines');
+		console.log(textLines);
+		// trying to simulate code edits happening like this
+		for (const textLine of textLines) {
+			const lineNumber = textLine.line;
+			// we are at the last line where we want to go about making changes, so here we should
+			// accumulate the edits and send it over as a single edit for now
+			const content = textLine.content;
+			await delay(100);
+			const workspaceEdit = new vscode.WorkspaceEdit();
+			workspaceEdit.replace(fileUri, new vscode.Range(new vscode.Position(lineNumber, 0), new vscode.Position(lineNumber, 1000)), content);
+			console.log(workspaceEdit);
+			await response.codeEdit({ edits: workspaceEdit });
+		}
+		// try applying the global edit over here
 		await response.codeEdit({ edits: workspaceEdit });
 	}
 
