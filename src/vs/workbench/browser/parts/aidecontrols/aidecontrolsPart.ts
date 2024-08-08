@@ -57,7 +57,7 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 	readonly minimumWidth: number = 300;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 
-	readonly minimumHeight: number = 100;
+	readonly minimumHeight: number = 200;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(

@@ -33,7 +33,9 @@ import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-
+import 'vs/css!./media/aideControls';
+import { AideSelect } from 'vs/workbench/browser/aideSelect';
+import { Heroicon } from 'vs/workbench/browser/heroicon';
 
 const INPUT_MIN_HEIGHT = 36;
 
@@ -47,9 +49,8 @@ export class AideControls extends Disposable {
 	static readonly ID = 'workbench.contrib.aideControls';
 	private static readonly INPUT_URI = URI.parse('aideControls:input');
 
-	private element: HTMLElement;
-
-	private panelHeight = 400;
+	private margin = 14;
+	private panelHeight = 400 - this.margin * 2;
 	private inputHeight = INPUT_MIN_HEIGHT;
 
 	private part: AideControlsPart;
@@ -58,7 +59,6 @@ export class AideControls extends Disposable {
 
 	private inputHasText: IContextKey<boolean>;
 	private requestStatus: IContextKey<AideProbeStatus>;
-
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeViewModel | undefined;
@@ -104,24 +104,31 @@ export class AideControls extends Disposable {
 		// @willisTODO: Make sure we get the right part in the auxilliary editor, not just the main one
 		this.part = aideControlsService.mainPart;
 
-		const element = this.element = $('.aide-controls');
+		const element = $('.aide-controls');
+		element.style.margin = `${this.margin}px`;
 
-		this.input = this.createInput();
+		const contextSelectElement = $('.aide-controls-select');
+		element.appendChild(contextSelectElement);
+		this.createQuickContextSelect(contextSelectElement);
 
 		this.panel = instantiationService.createInstance(AideEditsPanel, element);
 		this.part.element.appendChild(element);
+		this.input = this.createInput(element);
 
 		this.layout();
 
-		this._register(this.panel.onDidResize((newPanelHeight) => {
-			this.panelHeight = newPanelHeight;
+		this._register(this.panel.onDidResize(({ newHeight }) => {
+			if (this.panel) {
+				const minHeight = this.part.minimumHeight - this.inputHeight;
+				this.panelHeight = Math.max(minHeight, newHeight);
+			}
 			this.layout();
 		}));
 	}
 
-	createInput() {
+	createInput(parent: HTMLElement) {
 		const editorOuterElement = $('.aide-controls-input');
-		this.element.appendChild(editorOuterElement);
+		parent.appendChild(editorOuterElement);
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(editorOuterElement));
 
 		const editorElement = $('.aide-controls-input-editor');
@@ -195,6 +202,24 @@ export class AideControls extends Disposable {
 		return editor;
 	}
 
+	createQuickContextSelect(parent: HTMLElement) {
+		const button = $('.quick-context-select-button');
+		const panel = $('.quick-context-select-panel');
+
+		parent.appendChild(panel);
+
+		const select = this._register(this.instantiationService.createInstance(AideSelect<IQuickContextOption>, panel, button, button, (container, item) => {
+			const content = $('.aide-item-content');
+			const icon = this.instantiationService.createInstance(Heroicon, item.icon);
+			icon.create(container);
+			content.textContent = item.label;
+			container.appendChild(content);
+			return [icon];
+		}));
+		select.list.splice(0, 0, quickContextOptions);
+		select.list.rerender();
+	}
+
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
 			const theme = this.themeService.getColorTheme();
@@ -252,16 +277,37 @@ export class AideControls extends Disposable {
 	}
 
 	layout() {
-		this.part.layout(this.part.availableWidth, this.panelHeight);
-		this.input.layout({ height: this.inputHeight, width: this.part.width });
+		this.part.layout(this.part.availableWidth, this.inputHeight);
+		const width = this.part.width - this.margin * 2;
+		this.input.layout({ height: this.inputHeight, width });
 
 		if (this.panel) {
+			this.part.layout(this.part.availableWidth, this.panelHeight + this.inputHeight + this.margin * 2);
+			this.panel.layout(this.panelHeight, width);
 			if (this.part.height <= this.part.minimumHeight) {
 				this.panel.sash.state = SashState.AtMaximum;
 				return;
 			}
 			this.panel.sash.state = SashState.Enabled;
-			this.panel.layout(this.part.height);
 		}
 	}
 }
+
+
+interface IQuickContextOption {
+	icon: string;
+	label: string;
+	value: string;
+}
+
+const quickContextOptions: IQuickContextOption[] = [{
+	icon: 'mini/square-3-stack-3d',
+	label: 'Whole codebase (may take a while)',
+	value: 'codebase',
+},
+{
+	icon: 'mini/paper-clip',
+	label: 'Specific context (coming soon)',
+	value: 'codebase'
+}
+];

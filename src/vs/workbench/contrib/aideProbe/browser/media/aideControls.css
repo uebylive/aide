@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench .aidecontrols {
-	position: absolute;
-	pointer-events: none;
+.aide-controls {
+	pointer-events: all;
 }

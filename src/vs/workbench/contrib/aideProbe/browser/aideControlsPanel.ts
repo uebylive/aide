@@ -14,6 +14,11 @@ export enum PanelStates {
 	Loading = 'loading',
 }
 
+export interface PanelSizeChange {
+	delta: number;
+	newHeight: number;
+}
+
 export abstract class AideControlsPanel extends Disposable implements IHorizontalSashLayoutProvider {
 	private readonly element: HTMLElement;
 	readonly sash: Sash;
@@ -24,6 +29,10 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 		return this._state;
 	}
 
+	get height() {
+		return this.body.height + this.header.height;
+	}
+
 	private readonly _onDidChangeState = this._register(new Emitter<PanelStates>());
 	readonly onDidChangeState = this._onDidChangeState.event;
 
@@ -32,8 +41,8 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 	readonly body: PanelBody;
 
 
-	private _onDidResize = this._register(new Emitter<number>());
-	readonly onDidResize: Event<number> = this._onDidResize.event;
+	private _onDidResize = this._register(new Emitter<PanelSizeChange>());
+	readonly onDidResize: Event<PanelSizeChange> = this._onDidResize.event;
 
 
 	constructor(container: HTMLElement, instantiationService: IInstantiationService) {
@@ -58,7 +67,7 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 			const initialY = dragStart.currentY;
 			const onDragEvent = this._register(this.sash.onDidChange((dragChange) => {
 				const delta = dragChange.currentY - initialY;
-				this._onDidResize.fire(initialHeight - delta);
+				this._onDidResize.fire({ delta, newHeight: initialHeight - delta });
 			}));
 
 			const onDragEndEvent = this._register(this.sash.onDidEnd(() => {
@@ -68,8 +77,8 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 		}));
 	}
 
-	layout(height: number) {
-		this.body.layout(height);
+	layout(height: number, width: number) {
+		this.body.layout(height, width);
 		this.sash.layout();
 	}
 
@@ -80,11 +89,11 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 	}
 
 	getHorizontalSashLeft() {
-		return 0;
+		return this.element.offsetLeft;
 	}
 
 	getHorizontalSashTop() {
-		return 0;
+		return this.element.offsetTop;
 	}
 
 	getHorizontalSashWidth() {
@@ -97,6 +106,10 @@ export abstract class AideControlsPanel extends Disposable implements IHorizonta
 class PanelHeader extends Disposable {
 
 	readonly element: HTMLElement;
+	private _height: number = 36;
+	get height() {
+		return this._height;
+	}
 
 	constructor(initialText?: string) {
 		super();
@@ -132,6 +145,11 @@ class PanelBody extends Disposable {
 		return this._height;
 	}
 
+	private _width: number = 0;
+	get width() {
+		return this._width;
+	}
+
 	constructor() {
 		super();
 		this.element = $('.aide-controls-panel-body');
@@ -139,8 +157,10 @@ class PanelBody extends Disposable {
 		this.element.style.backgroundColor = 'rgba(0, 0, 255, 0.1)';
 	}
 
-	layout(height: number) {
+	layout(height: number, width: number) {
 		this._height = height;
+		this._width = width;
 		this.element.style.height = `${height}px`;
+		this.element.style.width = `${width}px`;
 	}
 }

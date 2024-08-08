@@ -163,6 +163,7 @@ registerSingleton(IContextKeyService, ContextKeyService, InstantiationType.Delay
 registerSingleton(ITextResourceConfigurationService, TextResourceConfigurationService, InstantiationType.Delayed);
 registerSingleton(IDownloadService, DownloadService, InstantiationType.Delayed);
 registerSingleton(IOpenerService, OpenerService, InstantiationType.Delayed);
+registerSingleton(ISVGSpriteService, SvgSpriteService, InstantiationType.Delayed);
 
 //#endregion
 
@@ -406,4 +407,5 @@ import 'vs/workbench/contrib/accountEntitlements/browser/accountsEntitlements.co
 
 // Synchronized Scrolling
 import 'vs/workbench/contrib/scrollLocking/browser/scrollLocking.contribution';
+import { ISVGSpriteService, SvgSpriteService } from 'vs/workbench/browser/svgSprite';
 //#endregion
