@@ -8,6 +8,7 @@ import { CodeStoryAuthProvider } from './codestory';
 
 export function activate(context: vscode.ExtensionContext) {
 	const codestoryAuthenticationProvider = new CodeStoryAuthProvider(context);
+	codestoryAuthenticationProvider.initialize();
 	context.subscriptions.push(codestoryAuthenticationProvider);
 
 	const disposable = vscode.commands.registerCommand('codestory-authentication.login', async () => {

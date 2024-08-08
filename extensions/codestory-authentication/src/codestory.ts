@@ -5,7 +5,7 @@
 
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
-import { authentication, AuthenticationProvider, AuthenticationProviderAuthenticationSessionsChangeEvent, AuthenticationSession, Disposable, env, Event, EventEmitter, ExtensionContext, ProgressLocation, Uri, UriHandler, window } from 'vscode';
+import { authentication, AuthenticationProvider, AuthenticationProviderAuthenticationSessionsChangeEvent, AuthenticationSession, commands, Disposable, env, Event, EventEmitter, ExtensionContext, ProgressLocation, Uri, UriHandler, window } from 'vscode';
 
 const AUTH_TYPE = 'codestory';
 const AUTH_NAME = 'CodeStory';
@@ -47,12 +47,6 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 	private readonly _sessionChangeEmitter = new EventEmitter<AuthenticationProviderAuthenticationSessionsChangeEvent>();
 	readonly onDidChangeSessions = this._sessionChangeEmitter.event;
 
-	get redirectUri() {
-		const publisher = this.context.extension.packageJSON.publisher;
-		const name = this.context.extension.packageJSON.name;
-		return `${env.uriScheme}://${publisher}.${name}`;
-	}
-
 	private readonly _disposable: Disposable;
 	private _pendingStates: string[] = [];
 	private _loginPromises = new Map<
@@ -60,15 +54,84 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 		{ promise: Promise<string>; cancel: EventEmitter<void> }
 	>();
 	private _uriHandler = new UriEventHandler();
+	private _sessions: CodeStoryAuthenticationSession[] = [];
+
 	private static EXPIRATION_TIME_MS = 1000 * 60 * 5; // 5 minutes
 
-	constructor(
-		private readonly context: ExtensionContext
-	) {
+	constructor(private readonly context: ExtensionContext) {
 		this._disposable = Disposable.from(
 			authentication.registerAuthenticationProvider(AUTH_TYPE, AUTH_NAME, this, { supportsMultipleAccounts: false }),
-			window.registerUriHandler(this._uriHandler)
+			window.registerUriHandler(this._uriHandler),
+			commands.registerCommand('codestory.refreshTokens', () => this.refreshTokens())
 		);
+	}
+
+	get redirectUri() {
+		const publisher = this.context.extension.packageJSON.publisher;
+		const name = this.context.extension.packageJSON.name;
+		return `${env.uriScheme}://${publisher}.${name}`;
+	}
+
+	async initialize() {
+		const sessions = await this.context.secrets.get(SESSIONS_SECRET_KEY);
+		this._sessions = sessions ? JSON.parse(sessions) : [];
+		await this.refreshTokens();
+	}
+
+	async refreshTokens(): Promise<void> {
+		if (!this._sessions.length) {
+			return;
+		}
+
+		const refreshedSessions: CodeStoryAuthenticationSession[] = [];
+
+		for (const session of this._sessions) {
+			try {
+				const newSession = await this._refreshSession(session.refreshToken);
+				refreshedSessions.push({
+					...session,
+					accessToken: newSession.accessToken,
+					refreshToken: newSession.refreshToken,
+					expiresIn: newSession.expiresIn,
+				});
+			} catch (e: any) {
+				if (e.message === 'Network failure') {
+					window.showErrorMessage('Failed to refresh tokens. Please try again later.');
+					return;
+				}
+			}
+		}
+
+		this._sessions = refreshedSessions;
+		await this.context.secrets.store(SESSIONS_SECRET_KEY, JSON.stringify(this._sessions));
+		this._sessionChangeEmitter.fire({
+			added: [],
+			removed: [],
+			changed: this._sessions,
+		});
+	}
+
+	private async _refreshSession(
+		refreshToken: string,
+	): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
+		const response = await fetch(`http://localhost:3333/v1/auth/refresh`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				'refresh_token': refreshToken,
+			}),
+		});
+		if (!response.ok) {
+			throw new Error('Network failure');
+		}
+		const data = (await response.json()) as EncodedTokenData;
+		return {
+			accessToken: data.access_token,
+			refreshToken: data.refresh_token,
+			expiresIn: CodeStoryAuthProvider.EXPIRATION_TIME_MS,
+		};
 	}
 
 	async getSessions(): Promise<readonly CodeStoryAuthenticationSession[]> {

@@ -21,6 +21,7 @@ declare module 'vscode' {
 
 	export interface CSEventHandler {
 		handleSymbolNavigation(event: SymbolNavigationEvent): void;
+		handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): void;
 	}
 
 	export namespace csevents {

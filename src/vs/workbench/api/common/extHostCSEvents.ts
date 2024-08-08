@@ -38,6 +38,19 @@ export class ExtHostCSEvents implements ExtHostCSEventsShape {
 		provider.handleSymbolNavigation(extEvent);
 	}
 
+	$reportAgentCodeEdit(extensionId: string, event: { accepted: boolean; added: number; removed: number }): void {
+		if (this._CSEventHandlers.size === 0) {
+			throw new Error('No CS event handler registered');
+		}
+
+		const provider = this._CSEventHandlers.get(extensionId);
+		if (!provider) {
+			throw new Error('CS event handler not found');
+		}
+
+		provider.handleAgentCodeEdit(event);
+	}
+
 	registerCSEventsHandler(extension: IExtensionDescription, handler: CSEventHandler): Disposable {
 		const extensionId = extension.identifier.value;
 		this._CSEventHandlers.set(extensionId, handler);

@@ -19,6 +19,7 @@ import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 const $ = dom.$;
 
@@ -447,6 +448,25 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
+export function calculateChanges(edits: HunkInformation[]) {
+	const changes = edits.reduce((acc, edit) => {
+		const newRanges = edit.getRangesN() || [];
+		const oldRanges = edit.getRanges0() || [];
+		if (edit.isInsertion()) {
+			const wholeNewRange = newRanges[0];
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+		} else if (newRanges.length > 0 && oldRanges.length > 0) {
+			const wholeNewRange = newRanges[0];
+			const wholeOldRange = oldRanges[0];
+
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+			acc.removed += wholeOldRange.endLineNumber - wholeOldRange.startLineNumber + 1;
+		}
+		return acc;
+	}, { added: 0, removed: 0 });
+	return changes;
+}
+
 class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, ISymbolInfoTemplateData> {
 	static readonly TEMPLATE_ID = 'symbolInfoListRenderer';
 
@@ -509,21 +529,7 @@ class SymbolInfoRenderer extends Disposable implements IListRenderer<IAideProbeB
 		}
 
 		if (element.edits.length > 0) {
-			const changes = element.edits.reduce((acc, edit) => {
-				const newRanges = edit.getRangesN() || [];
-				const oldRanges = edit.getRanges0() || [];
-				if (edit.isInsertion()) {
-					const wholeNewRange = newRanges[0];
-					acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
-				} else if (newRanges.length > 0 && oldRanges.length > 0) {
-					const wholeNewRange = newRanges[0];
-					const wholeOldRange = oldRanges[0];
-
-					acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
-					acc.removed += wholeOldRange.endLineNumber - wholeOldRange.startLineNumber + 1;
-				}
-				return acc;
-			}, { added: 0, removed: 0 });
+			const changes = calculateChanges(element.edits);
 			const diffStat = calculateDiffstat(changes.added + changes.removed, changes.added, changes.removed);
 			templateData.toDispose.add(this.instantiationService.createInstance(SymbolInfoDiffStat, templateData.container, diffStat, element.edits.length));
 		}

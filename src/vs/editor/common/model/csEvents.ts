@@ -11,3 +11,9 @@ export type SymbolNavigationEvent = {
 	action: string;
 	uri: URI;
 };
+
+export type AgentCodeEditEvent = {
+	accepted: boolean;
+	added: number;
+	removed: number;
+};

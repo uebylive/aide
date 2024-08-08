@@ -23,6 +23,12 @@ export class CSEventsService implements ICSEventsService {
 			handler.reportSymbolNavigation(event);
 		}
 	}
+
+	reportAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): void {
+		for (const [_, handler] of this._handlers) {
+			handler.reportAgentCodeEdit(event);
+		}
+	}
 }
 
 registerSingleton(ICSEventsService, CSEventsService, InstantiationType.Delayed);
