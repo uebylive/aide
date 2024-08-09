@@ -34,8 +34,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/wor
 import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import 'vs/css!./media/aideControls';
-import { AideSelect } from 'vs/workbench/browser/aideSelect';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
+//import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 
 const INPUT_MIN_HEIGHT = 36;
 
@@ -93,8 +92,8 @@ export class AideControls extends Disposable {
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IModelService private readonly modelService: IModelService,
-	) {
 
+	) {
 
 		super();
 
@@ -106,14 +105,16 @@ export class AideControls extends Disposable {
 
 		const element = $('.aide-controls');
 		element.style.margin = `${this.margin}px`;
+		this.part.element.appendChild(element);
 
-		const contextSelectElement = $('.aide-controls-select');
-		element.appendChild(contextSelectElement);
-		this.createQuickContextSelect(contextSelectElement);
+		//const contextSelectElement = $('.aide-controls-select');
+		//element.appendChild(contextSelectElement);
+		//this.createQuickContextSelect(contextSelectElement);
 
 		this.panel = instantiationService.createInstance(AideEditsPanel, element);
-		this.part.element.appendChild(element);
+
 		this.input = this.createInput(element);
+
 
 		this.layout();
 
@@ -202,23 +203,7 @@ export class AideControls extends Disposable {
 		return editor;
 	}
 
-	createQuickContextSelect(parent: HTMLElement) {
-		const button = $('.quick-context-select-button');
-		const panel = $('.quick-context-select-panel');
 
-		parent.appendChild(panel);
-
-		const select = this._register(this.instantiationService.createInstance(AideSelect<IQuickContextOption>, panel, button, button, (container, item) => {
-			const content = $('.aide-item-content');
-			const icon = this.instantiationService.createInstance(Heroicon, item.icon);
-			icon.create(container);
-			content.textContent = item.label;
-			container.appendChild(content);
-			return [icon];
-		}));
-		select.list.splice(0, 0, quickContextOptions);
-		select.list.rerender();
-	}
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
@@ -292,22 +277,3 @@ export class AideControls extends Disposable {
 		}
 	}
 }
-
-
-interface IQuickContextOption {
-	icon: string;
-	label: string;
-	value: string;
-}
-
-const quickContextOptions: IQuickContextOption[] = [{
-	icon: 'mini/square-3-stack-3d',
-	label: 'Whole codebase (may take a while)',
-	value: 'codebase',
-},
-{
-	icon: 'mini/paper-clip',
-	label: 'Specific context (coming soon)',
-	value: 'codebase'
-}
-];

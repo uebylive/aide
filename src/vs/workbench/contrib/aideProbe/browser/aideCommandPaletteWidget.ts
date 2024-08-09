@@ -8,7 +8,6 @@ import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
@@ -31,18 +30,17 @@ import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/br
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
-import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel, IAideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
+import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeStatus, IAideProbeResponseModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
@@ -108,7 +106,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private inputEditorHasText: IContextKey<boolean>;
 	private requestStatus: IContextKey<IAideProbeStatus>;
 
-	private contextSelect: SelectBox;
+	//private contextSelect: SelectBox;
 
 	private _focusIndex: number | undefined;
 	get focusIndex(): number | undefined {
@@ -166,7 +164,6 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		@IThemeService private readonly themeService: IThemeService,
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super();
 
@@ -237,6 +234,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorWrapper, options, editorOptions));
 
+
 		let inputModel = this.modelService.getModel(AideCommandPaletteWidget.INPUT_EDITOR_URI);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, AideCommandPaletteWidget.INPUT_EDITOR_URI, true);
@@ -283,29 +281,33 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 		// Context select
 
-		const contextControls = dom.append(this._innerContainer, $('.command-palette-context-controls'));
-		dom.append(contextControls, $('span', undefined, 'start from'));
-		this.contextSelect = new SelectBox([], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', "Copilot model"), useCustomDrawn: true });
-		this.contextSelect.setOptions([{ text: 'Current file' }, { text: 'Whole codebase' }]);
+		//const contextControls = dom.append(this._innerContainer, $('.command-palette-context-controls'));
+		//dom.append(contextControls, $('span', undefined, 'start from'));
+		//this.contextSelect = new SelectBox([], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', "Copilot model"), useCustomDrawn: true });
+		//this.contextSelect.setOptions([{ text: 'Current file' }, { text: 'Whole codebase' }]);
+		//
+		//if (this.isCodebaseSearch.get()) {
+		//	this.contextSelect.select(1);
+		//} else {
+		//	this.contextSelect.select(0);
+		//}
+		//
+		//const contextSelectContainer = dom.append(contextControls, $('.command-palette-context-select'));
+		//this.contextSelect.render(contextSelectContainer);
 
-		if (this.isCodebaseSearch.get()) {
-			this.contextSelect.select(1);
-		} else {
-			this.contextSelect.select(0);
-		}
 
-		const contextSelectContainer = dom.append(contextControls, $('.command-palette-context-select'));
-		this.contextSelect.render(contextSelectContainer);
+		// Context select
+		this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
 
 		// Register events
 
-		this._register(this.contextSelect.onDidSelect((e) => {
-			if (e.selected === 'Whole codebase') {
-				this.isCodebaseSearch.set(true);
-			} else {
-				this.isCodebaseSearch.set(false);
-			}
-		}));
+		//this._register(this.contextSelect.onDidSelect((e) => {
+		//	if (e.selected === 'Whole codebase') {
+		//		this.isCodebaseSearch.set(true);
+		//	} else {
+		//		this.isCodebaseSearch.set(false);
+		//	}
+		//}));
 
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {

@@ -32,7 +32,10 @@ export class AideSelect<T> extends Disposable {
 	private readonly _onDidChangeFocus = this._register(new Emitter<ChangeOptionEvent<T>>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
-	constructor(panel: HTMLElement, trigger: HTMLElement, reference: HTMLElement, renderItem: RenderItemFn<T>, @IInstantiationService private readonly instantiationService: IInstantiationService) {
+	private readonly _onDidSelect = this._register(new Emitter<ChangeOptionEvent<T>>());
+	readonly onDidSelect = this._onDidSelect.event;
+
+	constructor(panel: HTMLElement, renderItem: RenderItemFn<T>, @IInstantiationService private readonly instantiationService: IInstantiationService) {
 
 		super();
 		// List
@@ -54,16 +57,16 @@ export class AideSelect<T> extends Disposable {
 		));
 
 		this._register(list.onDidChangeContentHeight(height => {
-			console.log('onDidChangeContentHeight', height);
+			//console.log('onDidChangeContentHeight', height);
 			const newHeight = Math.min(height, this.maxHeight);
 			list.layout(newHeight);
 		}));
 		this._register(renderer.onDidChangeItemHeight(event => {
-			console.log('onDidChangeItemHeight', event);
+			//console.log('onDidChangeItemHeight', event);
 			list.updateElementHeight(event.index, event.height);
 		}));
 		this._register(list.onDidChangeFocus(event => {
-			console.log('onDidChangeFocus', event);
+			//console.log('onDidChangeFocus', event);
 			if (event.indexes.length === 1) {
 				const index = event.indexes[0];
 				list.setSelection([index]);
@@ -77,12 +80,10 @@ export class AideSelect<T> extends Disposable {
 			}
 		}));
 		this._register(list.onDidOpen(event => {
-			console.log('onDidOpen', event);
-			// call on did open
+			if (this._focusIndex !== undefined && event.element) {
+				this._onDidSelect.fire({ index: this._focusIndex, element: event.element });
+			}
 		}));
-
-		list.rerender();
-		list.layout(list.renderHeight);
 	}
 }
 

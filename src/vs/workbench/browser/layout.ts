@@ -261,7 +261,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	private aideControlsPartView!: OverlayedPart;
+	//private aideControlsPartView!: OverlayedPart;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
@@ -1507,7 +1507,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const sideBar = this.getPart(Parts.SIDEBAR_PART);
 		const statusBar = this.getPart(Parts.STATUSBAR_PART);
 
-		const aideControls = this.getOverlayedPart(OverlayedParts.AIDECONTROLS_PART);
+		//const aideControls = this.getOverlayedPart(OverlayedParts.AIDECONTROLS_PART);
 
 		// View references for all parts
 		this.titleBarPartView = titleBar;
@@ -1515,7 +1515,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.sideBarPartView = sideBar;
 		this.activityBarPartView = activityBar;
 		this.editorPartView = editorPart;
-		this.aideControlsPartView = aideControls;
+		//this.aideControlsPartView = aideControls;
 		this.panelPartView = panelPart;
 		this.auxiliaryBarPartView = auxiliaryBarPart;
 		this.statusBarPartView = statusBar;
@@ -1599,20 +1599,20 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			this.initialized = true;
 
 			// Add aide controls
-			try {
-				const editorParentElement = this.editorPartView.element.parentElement;
-				if (editorParentElement) {
-					editorParentElement.insertBefore(this.aideControlsPartView.element, this.editorPartView.element.nextSibling);
-				}
-
-				this.arrangeAideControls();
-				this._register(this.editorPartView.onDidContentSizeChange(() => {
-					this.arrangeAideControls();
-				}));
-
-			} catch (error) {
-				console.error(`Could not initialize Aide controls: ${error}`);
-			}
+			//try {
+			//	const editorParentElement = this.editorPartView.element.parentElement;
+			//	if (editorParentElement) {
+			//		editorParentElement.insertBefore(this.aideControlsPartView.element, this.editorPartView.element.nextSibling);
+			//	}
+			//
+			//	this.arrangeAideControls();
+			//	this._register(this.editorPartView.onDidContentSizeChange(() => {
+			//		this.arrangeAideControls();
+			//	}));
+			//
+			//} catch (error) {
+			//	console.error(`Could not initialize Aide controls: ${error}`);
+			//}
 
 			// Emit as event
 			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);
@@ -2240,11 +2240,11 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled, this.isZenModeActive()));
 	}
 
-	private arrangeAideControls() {
-		const editorDomRect = this.editorPartView.element.getBoundingClientRect();
-		this.aideControlsPartView.setAvailableSize({ width: editorDomRect.width, height: editorDomRect.height });
-		this.aideControlsPartView.setPosition({ bottom: 0, left: 0 });
-	}
+	//private arrangeAideControls() {
+	//	const editorDomRect = this.editorPartView.element.getBoundingClientRect();
+	//	this.aideControlsPartView.setAvailableSize({ width: editorDomRect.width, height: editorDomRect.height });
+	//	this.aideControlsPartView.setPosition({ bottom: 0, left: 0 });
+	//}
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {

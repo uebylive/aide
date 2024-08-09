@@ -48,7 +48,7 @@ export class SVGSprite extends Disposable {
 
 	svg: SVGSVGElement;
 
-	constructor(href: string, deferredAttributes?: Record<string, string>) {
+	constructor(parent: HTMLElement, href: string, deferredAttributes?: Record<string, string>) {
 		super();
 		const svg = this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 		svg.setAttribute('overflow', 'visible');
@@ -59,10 +59,8 @@ export class SVGSprite extends Disposable {
 		}
 		const use = svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'use'));
 		use.setAttribute('href', `#${href}`);
-	}
 
-	create(parent: HTMLElement) {
-		parent.appendChild(this.svg);
+		parent.appendChild(svg);
 	}
 
 	public override dispose(): void {

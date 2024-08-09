@@ -18,8 +18,8 @@ function assignSize(id: string) {
 }
 
 export class Heroicon extends SVGSprite {
-	constructor(id: string, deferredAttributes?: Record<string, string>) {
+	constructor(parent: HTMLElement, id: string, deferredAttributes?: Record<string, string>) {
 		const size = assignSize(id).toString();
-		super(id, { width: size, height: size, ...deferredAttributes });
+		super(parent, id, { width: size, height: size, ...deferredAttributes });
 	}
 }

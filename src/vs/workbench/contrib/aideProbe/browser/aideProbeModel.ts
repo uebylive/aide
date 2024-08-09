@@ -9,9 +9,11 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
@@ -24,6 +26,31 @@ import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
+
+
+export interface IContentVariableReference {
+	variableName: string;
+	value?: URI | Location;
+}
+
+interface IContentReference {
+	reference: URI | Location | IContentVariableReference;
+	iconPath?: ThemeIcon | { light: URI; dark?: URI };
+	kind: 'reference';
+}
+
+export interface IVariableEntry {
+	id: string;
+	fullName?: string;
+	icon?: ThemeIcon;
+	name: string;
+	modelDescription?: string;
+	range?: IOffsetRange;
+	value: string | URI | Location | unknown;
+	references?: IContentReference[];
+	isDynamic?: boolean;
+	isFile?: boolean;
+}
 
 export interface IAideProbeEdits {
 	readonly targetUri: string;
