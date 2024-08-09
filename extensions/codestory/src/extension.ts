@@ -98,7 +98,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-
 	const csEventHandler = new CSEventHandler(context);
 	context.subscriptions.push(csEventHandler);
 
