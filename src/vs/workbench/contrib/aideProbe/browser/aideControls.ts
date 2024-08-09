@@ -100,7 +100,7 @@ export class AideControls extends Disposable {
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.requestStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
-		// @willisTODO: Make sure we get the right part in the auxilliary editor, not just the main one
+		// TODO(willis): Make sure we get the right part in the auxilliary editor, not just the main one
 		this.part = aideControlsService.mainPart;
 
 		const element = $('.aide-controls');
@@ -176,7 +176,7 @@ export class AideControls extends Disposable {
 			if (this.requestStatus.get() !== AideProbeStatus.INACTIVE && this._viewModel) {
 				const inputValue = editor.getValue();
 				this._viewModel.setFilter(inputValue);
-				// @willisTODO set is filtered on panel (?)
+				// TODO(willis) set is filtered on panel (?)
 			}
 
 			const model = editor.getModel();
@@ -225,7 +225,7 @@ export class AideControls extends Disposable {
 					placeholder = 'Open a file to start using Aide';
 				} else {
 					const languageId = model.getLanguageId();
-					// @willisTODO - make or find a capitalize util
+					// TODO(willis) - make or find a capitalize util
 					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
 
 					if (unsupportedLanguages.has(languageId)) {

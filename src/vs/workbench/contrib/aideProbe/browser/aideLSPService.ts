@@ -100,7 +100,7 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 
 		this.notificationService.notify({
 			severity: Severity.Info,
-			// @willisTODO - Localize this
+			// TODO(willis) - Localize this
 			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
 			actions: {
 				primary: [

@@ -185,7 +185,12 @@ export class ContextPicker extends Disposable {
 
 
 		// eslint-disable-next-line local/code-no-global-document-listener
-		this._register(dom.addDisposableListener(document, dom.EventType.CLICK, (e) => {
+		this._register(dom.addDisposableListener(document, dom.EventType.MOUSE_DOWN, (e) => {
+			// eslint-disable-next-line no-restricted-syntax
+			const quickInputWidget = document.querySelector('.quick-input-widget');
+			if (quickInputWidget && quickInputWidget.contains(e.target as HTMLElement)) {
+				return;
+			}
 			if (this.isPanelVisible && !button.element.contains(e.target as HTMLElement) && !this.panelElement.contains(e.target as HTMLElement)) {
 				dom.hide(this.panelElement);
 				this.isPanelVisible = false;
@@ -292,11 +297,9 @@ export class ContextPicker extends Disposable {
 			dom.hide(this.panelElement);
 		}
 
-		if (this.isQuickContextPanelVisible) {
-			dom.show(this.quickContextPanel);
+		if (!this.isQuickContextPanelVisible) {
+			dom.hide(this.quickContextPanel);
 		}
-
-
 	}
 }
 
@@ -391,8 +394,6 @@ class Renderer extends Disposable implements IListRenderer<IVariableEntry, ITemp
 
 			templateData.toDispose.add(removeButton.onDidClick((e) => {
 				this.context.remove(element);
-				templateData.toDispose.dispose();
-
 				// Set focus to the next attached context item if deletion was triggered by a keystroke (vs a mouse click)
 				if (dom.isKeyboardEvent(e)) {
 					const event = new StandardKeyboardEvent(e);
