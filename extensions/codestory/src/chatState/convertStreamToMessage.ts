@@ -289,7 +289,6 @@ export const reportAgentEventsToChat = async (
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
-			// console.log('Stopped the agent probe');
 			break;
 		}
 
@@ -593,28 +592,26 @@ class StreamProcessor {
 				this.sentEdits = true;
 				// if no anchor line, then we have to replace the current line
 				// console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
-				console.log('replaceLines::anchro_present', this.documentLineIndex);
 				this.documentLineIndex = await this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 			} else if (this.documentLineIndex >= this.documentLineLimit) {
 				if (this.sentEdits) {
-					console.log('insertLineAfter', this.documentLineIndex - 1);
 					this.documentLineIndex = await this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					// this.documentLineIndex = await this.document.appendLine(adjustedLine);
 				} else {
-					console.log('replaceLine', this.documentLineIndex);
-					this.documentLineIndex = await this.document.replaceLine(this.documentLineIndex, adjustedLine);
+					if (this.documentLineIndex > this.documentLineLimit && !this.sentEdits) {
+						this.documentLineIndex = await this.document.appendLine(adjustedLine);
+					} else {
+						this.documentLineIndex = await this.document.replaceLine(this.documentLineIndex, adjustedLine);
+					}
 				}
 				this.sentEdits = true;
 			} else {
-				console.log('replaceLine', this.documentLineIndex);
 				this.documentLineIndex = await this.document.replaceLine(this.documentLineIndex, adjustedLine);
 			}
 		} else {
 			const initialAnchor = this.findInitialAnchor(line);
 			this.previousLine = new LineIndentManager(this.document.getLine(initialAnchor).indentLevel, line);
 			const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
-			// console.log('noPreviousLine', 'replaceLine', initialAnchor, adjustedInitialLine);
-			console.log('replaceLine::no_anchor', initialAnchor);
 			this.documentLineIndex = await this.document.replaceLine(initialAnchor, adjustedInitialLine);
 		}
 	}
@@ -705,7 +702,6 @@ class DocumentManager {
 		await this.limiter.queue(async () => {
 			await this.progress.codeEdit({ edits });
 		});
-		console.log('replaceLine::new_line_number', index + 1);
 		return index + 1;
 	}
 
@@ -745,7 +741,6 @@ class DocumentManager {
 
 	// Insert a new line after a specific index
 	async insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		// console.log('sidecar.insertLineAfter');
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
