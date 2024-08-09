@@ -3,17 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Position } from 'vs/editor/common/core/position';
-import { URI } from 'vs/base/common/uri';
+//@ts-check
 
-export type SymbolNavigationEvent = {
-	position: Position;
-	action: string;
-	uri: URI;
-};
+'use strict';
 
-export type AgentCodeEditEvent = {
-	accepted: boolean;
-	added: number;
-	removed: number;
-};
+const withDefaults = require('../shared.webpack.config');
+
+module.exports = withDefaults({
+	context: __dirname,
+	entry: {
+		extension: './src/extension.ts',
+	}
+});

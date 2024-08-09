@@ -24,6 +24,9 @@ export class MainThreadCSEvents extends Disposable implements MainThreadCSEvents
 		const handler: ICSEventHandler = {
 			reportSymbolNavigation: (event) => {
 				this._proxy.$reportSymbolNavigation(extensionId, event);
+			},
+			reportAgentCodeEdit: (event) => {
+				this._proxy.$reportAgentCodeEdit(extensionId, event);
 			}
 		};
 		this._registrationsUri.set(extensionId, this._csEventsService.registerCSEventsHandler(extensionId, handler));

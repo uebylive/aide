@@ -326,7 +326,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		this._status = IAideProbeStatus.IN_PROGRESS;
 
-		console.log('acceptResponseProgress', progress);
 		switch (progress.kind) {
 			case 'markdownContent':
 				this._response.result = progress.content;
