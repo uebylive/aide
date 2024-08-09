@@ -106,11 +106,23 @@ interface SymbolEventGoToDefinitionRequest {
 	thinking: string;
 }
 
+interface EditedCodeStreamingRequestEvent {
+	Delta: string;
+}
+
+interface EditedCodeStreamingRequest {
+	edit_request_id: string;
+	range: SidecarRequestRange;
+	fs_file_path: string;
+	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
+}
+
 interface SymbolEventEditRequest {
 	RangeSelectionForEdit: RangeSelectionForEditRequest;
 	InsertCode: InsertCodeForEditRequest;
 	EditCode: EditedCodeForEditRequest;
 	CodeCorrectionTool: CodeCorrectionToolSelection;
+	EditCodeStreaming: EditedCodeStreamingRequest;
 }
 
 interface RangeSelectionForEditRequest {

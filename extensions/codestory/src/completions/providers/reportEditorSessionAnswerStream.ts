@@ -370,9 +370,6 @@ class StreamProcessor {
 				if (anchor !== null) {
 					this.sentEdits = true;
 					this.documentLineIndex = this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
-					// this is the termination condition where we check for the line
-					// count in the document, since this is not 100% correct we can make
-					// this better
 				} else if (this.documentLineIndex >= this.documentLineLimit) {
 					if (this.sentEdits) {
 						// this is wrong, we should be using append here

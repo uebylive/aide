@@ -120,7 +120,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		if (!this._openResponseStream) {
 			return;
 		}
-		await applyEdits(request, this._openResponseStream, this._limiter);
+		await applyEdits(request, this._openResponseStream);
 	}
 
 	private async showInviteCodeNotification() {
@@ -198,7 +198,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		})(jsonArr);
 		// Use dummy data: End */
 
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
