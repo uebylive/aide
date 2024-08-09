@@ -20,9 +20,16 @@ const RETRY_DELAY_MS = 1000; // 1 second
 
 export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable {
 	private _disposable: vscode.Disposable;
+	private _subscriptionsAPIBase: string | null = null;
 
 	constructor(private readonly _context: vscode.ExtensionContext) {
 		this._disposable = vscode.csevents.registerCSEventHandler(this);
+
+		if (vscode.env.uriScheme === 'aide') {
+			this._subscriptionsAPIBase = 'https://api.codestory.ai';
+		} else {
+			this._subscriptionsAPIBase = 'https://staging-api.codestory.ai';
+		}
 	}
 
 	handleSymbolNavigation(event: vscode.SymbolNavigationEvent): void {
@@ -39,7 +46,8 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	}
 
 	async handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): Promise<void> {
-		if (!event.accepted) {
+		// TODO: Temp hack to prevent sending usage events for now
+		if (!event.accepted || true) {
 			return;
 		}
 
@@ -85,7 +93,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	private async sendUsageEvent(events: UsageRequest[], session: vscode.AuthenticationSession): Promise<boolean> {
 		try {
 			const response = await fetch(
-				'http://localhost:3333/v1/usage',
+				`${this._subscriptionsAPIBase}/v1/usage`,
 				{
 					headers: {
 						'Content-Type': 'application/json',

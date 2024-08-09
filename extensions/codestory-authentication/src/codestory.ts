@@ -58,18 +58,23 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 
 	private static EXPIRATION_TIME_MS = 1000 * 60 * 5; // 5 minutes
 
+	private _subscriptionsAPIBase: string | null = null;
+	private _websiteBase: string | null = null;
+
 	constructor(private readonly context: ExtensionContext) {
 		this._disposable = Disposable.from(
 			authentication.registerAuthenticationProvider(AUTH_TYPE, AUTH_NAME, this, { supportsMultipleAccounts: false }),
 			window.registerUriHandler(this._uriHandler),
 			commands.registerCommand('codestory.refreshTokens', () => this.refreshTokens())
 		);
-	}
 
-	get redirectUri() {
-		const publisher = this.context.extension.packageJSON.publisher;
-		const name = this.context.extension.packageJSON.name;
-		return `${env.uriScheme}://${publisher}.${name}`;
+		if (env.uriScheme === 'aide') {
+			this._subscriptionsAPIBase = 'https://api.codestory.ai';
+			this._websiteBase = 'https://aide.dev';
+		} else {
+			this._subscriptionsAPIBase = 'https://staging-api.codestory.ai';
+			this._websiteBase = 'https://staging.aide.dev';
+		}
 	}
 
 	async initialize() {
@@ -114,7 +119,7 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 	private async _refreshSession(
 		refreshToken: string,
 	): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-		const response = await fetch(`http://localhost:3333/v1/auth/refresh`, {
+		const response = await fetch(`${this._subscriptionsAPIBase}/v1/auth/refresh`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -225,7 +230,7 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 				const stateId = uuidv4();
 				this._pendingStates.push(stateId);
 
-				const url = `http://localhost:3000/authenticate?state=${stateId}`;
+				const url = `${this._websiteBase}/authenticate?state=${stateId}`;
 				await env.openExternal(Uri.parse(url));
 
 				let loginPromise = this._loginPromises.get(stateId);
@@ -290,7 +295,7 @@ export class CodeStoryAuthProvider implements AuthenticationProvider, Disposable
 		const tokens = JSON.parse(tokenData) as EncodedTokenData;
 
 		const resp = await fetch(
-			'http://localhost:3333/v1/users/me',
+			`${this._subscriptionsAPIBase}/v1/users/me`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
