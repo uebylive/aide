@@ -551,7 +551,7 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 		this.setActiveInstanceByIndex(newIndex);
 	}
 
-	private _getPosition(): Position {
+	private _getPosition(): Position | undefined {
 		switch (this._terminalLocation) {
 			case ViewContainerLocation.Panel:
 				return this._panelPosition;
@@ -560,6 +560,7 @@ export class TerminalGroup extends Disposable implements ITerminalGroup {
 			case ViewContainerLocation.AuxiliaryBar:
 				return this._layoutService.getSideBarPosition() === Position.LEFT ? Position.RIGHT : Position.LEFT;
 		}
+		return undefined;
 	}
 
 	private _getOrientation(): Orientation {
