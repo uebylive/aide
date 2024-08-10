@@ -14,13 +14,15 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/com
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { AideCommandPaletteService, IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
+import { registerContextActions } from 'vs/workbench/contrib/aideProbe/browser/aideContextActions';
+//import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { AideLSPService, IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeDecorations';
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideLSP';
 import 'vs/workbench/contrib/aideProbe/browser/contrib/aideToggle';
 
 const probeViewIcon = registerIcon('probe-view-icon', Codicon.telescope, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
@@ -53,9 +55,12 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDes
 
 // Register actions
 registerProbeActions();
+registerContextActions();
 
 // Register services
 registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
 registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);
 registerSingleton(IAideCommandPaletteService, AideCommandPaletteService, InstantiationType.Delayed);
+registerSingleton(IAideLSPService, AideLSPService, InstantiationType.Eager);
 registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);
+//registerWorkbenchContribution2(AideControls.ID, AideControls, WorkbenchPhase.Eventually);

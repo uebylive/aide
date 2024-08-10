@@ -102,7 +102,7 @@ export interface IAideProbeResult {
 export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
-	readonly variables: IChatRequestVariableData;
+	readonly variableData: IChatRequestVariableData;
 	readonly editMode: boolean;
 	readonly codebaseSearch: boolean;
 }

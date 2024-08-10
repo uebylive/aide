@@ -44,6 +44,7 @@ import { IDialogService } from 'vs/platform/dialogs/common/dialogs';
 import { mainWindow } from 'vs/base/browser/window';
 import { PixelRatio } from 'vs/base/browser/pixelRatio';
 import { IHoverService, WorkbenchHoverDelegate } from 'vs/platform/hover/browser/hover';
+import { ISVGSpriteService } from 'vs/workbench/browser/svgSprite';
 import { setHoverDelegateFactory } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
 import { setBaseLayerHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegate2';
 import { AccessibilityProgressSignalScheduler } from 'vs/platform/accessibilitySignal/browser/progressAccessibilitySignalScheduler';
@@ -161,6 +162,7 @@ export class Workbench extends Layout {
 				const hoverService = accessor.get(IHoverService);
 				const dialogService = accessor.get(IDialogService);
 				const notificationService = accessor.get(INotificationService) as NotificationService;
+				const svgSpriteService = accessor.get(ISVGSpriteService);
 
 				// Default Hover Delegate must be registered before creating any workbench/layout components
 				// as these possibly will use the default hover delegate
@@ -182,6 +184,9 @@ export class Workbench extends Layout {
 
 				// Render Workbench
 				this.renderWorkbench(instantiationService, notificationService, storageService, configurationService);
+
+				// Setup SVG Sprites
+				this.setupSVGSprites(svgSpriteService);
 
 				// Workbench Layout
 				this.createWorkbenchLayout();
@@ -329,6 +334,13 @@ export class Workbench extends Layout {
 		}
 	}
 
+	private async setupSVGSprites(svgSpriteService: ISVGSpriteService) {
+		const svgElement = await svgSpriteService.addSpritesheet('vs/workbench/browser/media/heroicons.svg');
+		if (svgElement) {
+			this.mainContainer.prepend(svgElement);
+		}
+	}
+
 	private renderWorkbench(instantiationService: IInstantiationService, notificationService: NotificationService, storageService: IStorageService, configurationService: IConfigurationService): void {
 
 		// ARIA & Signals
@@ -371,11 +383,20 @@ export class Workbench extends Layout {
 			{ id: Parts.STATUSBAR_PART, role: 'status', classes: ['statusbar'] }
 		]) {
 			const partContainer = this.createPart(id, role, classes);
-
 			mark(`code/willCreatePart/${id}`);
 			this.getPart(id).create(partContainer, options);
 			mark(`code/didCreatePart/${id}`);
 		}
+
+		// Create overlayed parts
+		//for (const { id, role, classes } of [
+		//	{ id: OverlayedParts.AIDECONTROLS_PART, role: 'none', classes: ['aidecontrols'] },
+		//]) {
+		//	const partContainer = this.createPart(id, role, classes);
+		//	mark(`code/willOverlayedPart/${id}`);
+		//	this.getOverlayedPart(id).create(partContainer);
+		//	mark(`code/didCreateOverlayedPart/${id}`);
+		//}
 
 		// Notification Handlers
 		this.createNotificationsHandlers(instantiationService, notificationService);

@@ -135,7 +135,6 @@
 	background-color: var(--vscode-editor-background);
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 2px;
-	overflow: hidden;
 	display: flex;
 }
 

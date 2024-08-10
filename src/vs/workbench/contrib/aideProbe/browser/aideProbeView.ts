@@ -25,7 +25,7 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
-import { IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 
 const $ = dom.$;
@@ -92,7 +92,7 @@ export class AideProbeViewPane extends ViewPane {
 
 	private onDidChangeItems(): void {
 
-		if (this.viewModel?.status !== IAideProbeStatus.IN_PROGRESS) {
+		if (this.viewModel?.status !== AideProbeStatus.IN_PROGRESS) {
 			this.responseWrapper.textContent = 'Loading...';
 		} else {
 			this.renderFinalAnswer();

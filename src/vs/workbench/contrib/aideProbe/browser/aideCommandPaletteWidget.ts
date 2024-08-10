@@ -8,7 +8,6 @@ import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
@@ -17,7 +16,6 @@ import { basename } from 'vs/base/common/path';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/commandPalette';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -32,19 +30,18 @@ import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/br
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
-import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel, IAideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_IS_LSP_ACTIVE, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeStatus, IAideProbeResponseModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
@@ -93,6 +90,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _innerContainer!: HTMLElement;
 	private width: number = 560;
 
+	private contextPicker: ContextPicker;
+
 	private _inputContainer: HTMLElement; // contains all inputs
 	private _modeToggleContainer: HTMLElement;
 	private modeToggle: Button;
@@ -107,9 +106,9 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private inputModel: ITextModel | undefined;
 	private inputEditorHasFocus: IContextKey<boolean>;
 	private inputEditorHasText: IContextKey<boolean>;
-	private requestStatus: IContextKey<AideProbeStatus>;
+	private requestStatus: IContextKey<IAideProbeStatus>;
 
-	private contextSelect: SelectBox;
+	//private contextSelect: SelectBox;
 
 	private _focusIndex: number | undefined;
 	get focusIndex(): number | undefined {
@@ -167,7 +166,6 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		@IThemeService private readonly themeService: IThemeService,
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super();
 
@@ -238,6 +236,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorWrapper, options, editorOptions));
 
+
 		let inputModel = this.modelService.getModel(AideCommandPaletteWidget.INPUT_EDITOR_URI);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, AideCommandPaletteWidget.INPUT_EDITOR_URI, true);
@@ -284,29 +283,33 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 		// Context select
 
-		const contextControls = dom.append(this._innerContainer, $('.command-palette-context-controls'));
-		dom.append(contextControls, $('span', undefined, 'start from'));
-		this.contextSelect = new SelectBox([], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', "Copilot model"), useCustomDrawn: true });
-		this.contextSelect.setOptions([{ text: 'Current file' }, { text: 'Whole codebase' }]);
+		//const contextControls = dom.append(this._innerContainer, $('.command-palette-context-controls'));
+		//dom.append(contextControls, $('span', undefined, 'start from'));
+		//this.contextSelect = new SelectBox([], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', "Copilot model"), useCustomDrawn: true });
+		//this.contextSelect.setOptions([{ text: 'Current file' }, { text: 'Whole codebase' }]);
+		//
+		//if (this.isCodebaseSearch.get()) {
+		//	this.contextSelect.select(1);
+		//} else {
+		//	this.contextSelect.select(0);
+		//}
+		//
+		//const contextSelectContainer = dom.append(contextControls, $('.command-palette-context-select'));
+		//this.contextSelect.render(contextSelectContainer);
 
-		if (this.isCodebaseSearch.get()) {
-			this.contextSelect.select(1);
-		} else {
-			this.contextSelect.select(0);
-		}
 
-		const contextSelectContainer = dom.append(contextControls, $('.command-palette-context-select'));
-		this.contextSelect.render(contextSelectContainer);
+		// Context select
+		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
 
 		// Register events
 
-		this._register(this.contextSelect.onDidSelect((e) => {
-			if (e.selected === 'Whole codebase') {
-				this.isCodebaseSearch.set(true);
-			} else {
-				this.isCodebaseSearch.set(false);
-			}
-		}));
+		//this._register(this.contextSelect.onDidSelect((e) => {
+		//	if (e.selected === 'Whole codebase') {
+		//		this.isCodebaseSearch.set(true);
+		//	} else {
+		//		this.isCodebaseSearch.set(false);
+		//	}
+		//}));
 
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
@@ -423,22 +426,6 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 					placeholder = 'Ask to edit your codebase';
 				} else {
 					placeholder = 'Ask to explore your codebase';
-				}
-			}
-
-
-			if (!CONTEXT_PROBE_IS_LSP_ACTIVE.getValue(this.contextKeyService)) {
-				const editor = this.editorService.activeTextEditorControl;
-				if (!isCodeEditor(editor)) {
-					return;
-				}
-				const model = editor.getModel();
-				if (!model) {
-					placeholder = 'Open a file to start using Aide';
-				} else {
-					const languageId = model.getLanguageId();
-					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
-					placeholder = `Language server is not active for ${capitalizedLanguageId}`;
 				}
 			}
 
@@ -588,14 +575,14 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	}
 
 	private _acceptInput() {
-		if (this._viewModel && this._viewModel.status !== IAideProbeStatus.INACTIVE) {
+		if (this._viewModel && this._viewModel.status !== AideProbeStatus.INACTIVE) {
 			return;
 		} else if (this._viewModel) {
 			this.clear();
 		}
 
 		const model = this.aideProbeService.startSession();
-		model.status = IAideProbeStatus.IN_PROGRESS;
+		model.status = AideProbeStatus.IN_PROGRESS;
 
 		const viewModel = this.viewModel = this.instantiationService.createInstance(AideProbeViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(viewModel.onDidChange)(() => {
@@ -609,8 +596,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false);
-		this.requestStatus.set('IN_PROGRESS');
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, [...this.contextPicker.context.entries]);
+		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 
 		this.isPanelVisible = true;

@@ -1,0 +1,91 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.part.aidecontrols {
+	overflow: visible;
+}
+
+.aide-context-picker {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+}
+
+.aide-controls-context-button {
+	position: relative;
+}
+
+.aide-controls-context-split-button {
+	display: flex;
+	margin-right: 5px;
+}
+
+.aide-controls-context-type-button {
+	display: flex;
+	align-items: center;
+}
+
+.aide-option-item {
+	display: flex;
+	align-items: center;
+	padding: 2px 4px;
+	gap: 4px;
+}
+
+.aide-controls-context-badge {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	transform: translate(-50%, 50%);
+	border-radius: 99999px;
+	width: 16px;
+	aspect-ratio: 1;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	text-align: center;
+	border: 1px solid var(--vscode-chat-requestBorder);
+	background-color: var(--vscode-editor-background);
+}
+
+.aide-context-picker-quick-context-panel,
+.aide-context-picker-panel {
+	position: absolute;
+	bottom: calc(100% + 8px);
+	padding: 8px;
+	border-radius: 5px;
+	border: 1px solid var(--vscode-chat-requestBorder);
+	background-color: var(--vscode-editor-background);
+}
+
+.aide-context-picker-quick-context-panel {
+	width: 300px;
+	right: 0;
+}
+
+.aide-context-picker-panel {
+	position: absolute;
+	width: 400px;
+	right: 0;
+}
+
+.aide-context-option-item,
+.aide-context-picker-add-button {
+	display: flex;
+	align-items: center;
+}
+
+.aide-context-option-item {
+	padding: 4px 10px;
+}
+
+.aide-context-picker-add-button {
+	padding: 3px 10px;
+	border: 1px dashed var(--vscode-chat-requestBorder);
+}
+
+.aide-context-option-item .monaco-icon-label {
+	flex-grow: 2;
+}

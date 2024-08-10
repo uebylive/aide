@@ -689,7 +689,8 @@ function createDOMPurify() {
 
 
 			if (trustedTypesPolicy !== null && typeof emptyHTML === 'string') {
-				emptyHTML = trustedTypesPolicy.createHTML('');
+				// TODO(willis): Investigate why this is necessary
+				setTimeout(() => emptyHTML = trustedTypesPolicy.createHTML(''), 0);
 			}
 		} // Prevent further manipulation of configuration.
 		// Not available in IE8, Safari 5, etc.

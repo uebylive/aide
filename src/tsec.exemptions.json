@@ -32,7 +32,8 @@
 	],
 	"ban-domparser-parsefromstring": [
 		"vs/base/browser/markdownRenderer.ts",
-		"vs/base/test/browser/markdownRenderer.test.ts"
+		"vs/base/test/browser/markdownRenderer.test.ts",
+		"vs/workbench/browser/svgSprite.ts"
 	],
 	"ban-element-setattribute": [
 		"**/*.ts"

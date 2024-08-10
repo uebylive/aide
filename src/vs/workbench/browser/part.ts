@@ -26,11 +26,17 @@ export interface ILayoutContentResult {
 	readonly footerSize: IDimension;
 }
 
+
+export interface IObservableView extends ISerializableView {
+	onDidSizeChange(listener: (event: IDomPosition & IDimension) => void): IDisposable;
+	onDidContentSizeChange(listener: (event: IDimension) => void): IDisposable;
+}
+
 /**
  * Parts are layed out in the workbench and have their own layout that
  * arranges an optional title and mandatory content area to show content.
  */
-export abstract class Part extends Component implements ISerializableView {
+export abstract class Part extends Component implements IObservableView {
 
 	private _dimension: Dimension | undefined;
 	get dimension(): Dimension | undefined { return this._dimension; }
@@ -190,13 +196,20 @@ export abstract class Part extends Component implements ISerializableView {
 			this.layout(this.dimension.width, this.dimension.height, this.contentPosition.top, this.contentPosition.left);
 		}
 	}
+
+
+	protected _onDidContentSizeChange = this._register(new Emitter<IDimension>());
+	readonly onDidContentSizeChange = this._onDidContentSizeChange.event;
+
 	/**
 	 * Layout title and content area in the given dimension.
 	 */
 	protected layoutContents(width: number, height: number): ILayoutContentResult {
 		const partLayout = assertIsDefined(this.partLayout);
+		const contentSize = partLayout.layout(width, height);
+		this._onDidContentSizeChange.fire({ width, height });
 
-		return partLayout.layout(width, height);
+		return contentSize;
 	}
 
 	//#region ISerializableView
@@ -211,7 +224,13 @@ export abstract class Part extends Component implements ISerializableView {
 	abstract minimumHeight: number;
 	abstract maximumHeight: number;
 
+	protected _onDidSizeChange = this._register(new Emitter<IDomPosition & IDimension>());
+	readonly onDidSizeChange = this._onDidSizeChange.event;
+
 	layout(width: number, height: number, top: number, left: number): void {
+		if (!this._dimension || this._dimension.width !== width || this._dimension.height !== height) {
+			this._onDidSizeChange.fire({ width, height, top, left });
+		}
 		this._dimension = new Dimension(width, height);
 		this._contentPosition = { top, left };
 	}
@@ -225,7 +244,7 @@ export abstract class Part extends Component implements ISerializableView {
 	//#endregion
 }
 
-class PartLayout {
+export class PartLayout {
 
 	private static readonly HEADER_HEIGHT = 35;
 	private static readonly TITLE_HEIGHT = 35;

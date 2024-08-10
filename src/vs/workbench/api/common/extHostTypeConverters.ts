@@ -3160,7 +3160,7 @@ export namespace AideProbeRequestModel {
 		return {
 			requestId: request.sessionId,
 			query: request.message,
-			references: request.variables.variables.map(ChatAgentValueReference.to),
+			references: request.variableData.variables.map(ChatAgentValueReference.to),
 			editMode: request.editMode,
 			codebaseSearch: request.codebaseSearch,
 		};

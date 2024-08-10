@@ -9,10 +9,12 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
+import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
+import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
@@ -24,6 +26,31 @@ import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
+
+
+export interface IContentVariableReference {
+	variableName: string;
+	value?: URI | Location;
+}
+
+interface IContentReference {
+	reference: URI | Location | IContentVariableReference;
+	iconPath?: ThemeIcon | { light: URI; dark?: URI };
+	kind: 'reference';
+}
+
+export interface IVariableEntry {
+	id: string;
+	fullName?: string;
+	icon?: ThemeIcon;
+	name: string;
+	modelDescription?: string;
+	range?: IOffsetRange;
+	value: string | URI | Location | unknown;
+	references?: IContentReference[];
+	isDynamic?: boolean;
+	isFile?: boolean;
+}
 
 export interface IAideProbeEdits {
 	readonly targetUri: string;
@@ -45,12 +72,14 @@ export interface IAideProbeResponseModel {
 	readonly longContextSearchFinished: boolean | undefined;
 }
 
-export type AideProbeStatus = 'INACTIVE' | 'IN_PROGRESS' | 'IN_REVIEW';
-export const enum IAideProbeStatus {
+
+export const enum AideProbeStatus {
 	INACTIVE = 'INACTIVE',
 	IN_PROGRESS = 'IN_PROGRESS',
 	IN_REVIEW = 'IN_REVIEW'
 }
+
+export type IAideProbeStatus = keyof typeof AideProbeStatus;
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
@@ -65,7 +94,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	constructor(
 		readonly sessionId: string,
 		readonly message: string,
-		readonly variables: IChatRequestVariableData,
+		readonly variableData: IChatRequestVariableData,
 		readonly editMode: boolean,
 		readonly codebaseSearch: boolean,
 	) {
@@ -279,7 +308,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
-	private _status: IAideProbeStatus = IAideProbeStatus.INACTIVE;
+	private _status: IAideProbeStatus = AideProbeStatus.INACTIVE;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -324,7 +353,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
 		}
 
-		this._status = IAideProbeStatus.IN_PROGRESS;
+		this._status = AideProbeStatus.IN_PROGRESS;
 
 		switch (progress.kind) {
 			case 'markdownContent':
@@ -357,13 +386,13 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	}
 
 	completeResponse(): void {
-		this._status = IAideProbeStatus.IN_REVIEW;
+		this._status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
-		this._status = IAideProbeStatus.IN_REVIEW;
+		this._status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}

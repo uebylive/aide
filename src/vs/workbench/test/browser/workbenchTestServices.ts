@@ -179,6 +179,7 @@ import { TerminalLogService } from 'vs/platform/terminal/common/terminalLogServi
 import { IEnvironmentVariableService } from 'vs/workbench/contrib/terminal/common/environmentVariable';
 import { EnvironmentVariableService } from 'vs/workbench/contrib/terminal/common/environmentVariableService';
 import { ContextMenuService } from 'vs/platform/contextview/browser/contextMenuService';
+import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
 
 export function createFileEditorInput(instantiationService: IInstantiationService, resource: URI): FileEditorInput {
 	return instantiationService.createInstance(FileEditorInput, resource, undefined, undefined, undefined, undefined, undefined, undefined);
@@ -658,6 +659,7 @@ export class TestLayoutService implements IWorkbenchLayoutService {
 	centerMainEditorLayout(_active: boolean): void { }
 	resizePart(_part: Parts, _sizeChangeWidth: number, _sizeChangeHeight: number): void { }
 	registerPart(part: Part): IDisposable { return Disposable.None; }
+	registerOverlayedPart(part: OverlayedPart): IDisposable { return Disposable.None; }
 	isWindowMaximized(targetWindow: Window) { return false; }
 	updateWindowMaximizedState(targetWindow: Window, maximized: boolean): void { }
 	getVisibleNeighborPart(part: Parts, direction: Direction): Parts | undefined { return undefined; }
