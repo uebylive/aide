@@ -9,8 +9,7 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -30,7 +29,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[]): IInitiateProbeResponseState;
 	cancelProbe(): void;
 	acceptCodeEdits(): void;
 	rejectCodeEdits(): void;
@@ -95,7 +94,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[] = []): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -122,29 +121,30 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			try {
-				const variableData: IChatRequestVariableData = { variables: [] };
-				const openEditors = this.editorService.editors;
-				for (const editor of openEditors) {
-					const resource = editor.resource;
-					if (!resource) {
-						continue;
-					}
+				if (codebaseSearch) {
+					const openEditors = this.editorService.editors;
+					for (const editor of openEditors) {
+						const resource = editor.resource;
+						if (!resource) {
+							continue;
+						}
 
-					const model = this.modelService.getModel(resource);
-					if (!model) {
-						continue;
-					}
+						const model = this.modelService.getModel(resource);
+						if (!model) {
+							continue;
+						}
 
-					const range = model.getFullModelRange();
-					const valueObj = { uri: resource, range: range };
-					variableData.variables.push({
-						id: 'vscode.file',
-						name: `file:${resource.path.split('/').pop()}`,
-						value: JSON.stringify(valueObj),
-					});
+						const range = model.getFullModelRange();
+						const valueObj = { uri: resource, range: range };
+						variables.push({
+							id: 'vscode.file',
+							name: `file:${resource.path.split('/').pop()}`,
+							value: JSON.stringify(valueObj),
+						});
+					}
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, variableData, edit, codebaseSearch);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, edit, codebaseSearch);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

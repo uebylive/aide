@@ -14,7 +14,7 @@ import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
-import { IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
+import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
@@ -94,7 +94,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 	constructor(
 		readonly sessionId: string,
 		readonly message: string,
-		readonly variables: IChatRequestVariableData,
+		readonly variableData: IChatRequestVariableData,
 		readonly editMode: boolean,
 		readonly codebaseSearch: boolean,
 	) {

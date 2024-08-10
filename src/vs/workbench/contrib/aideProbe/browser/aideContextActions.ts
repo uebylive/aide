@@ -280,7 +280,7 @@ export class AttachContextAction extends Action2 {
 							resolve(await this._attachContext(commandService, item));
 						}
 					},
-					additionPicks: quickPickItems,
+					//additionPicks: quickPickItems,
 					filter: (item: IChatContextQuickPickItem) => {
 						// Avoid attaching the same context twice
 						const attachedContext = new Set(currentContext?.map((v) => v.id));

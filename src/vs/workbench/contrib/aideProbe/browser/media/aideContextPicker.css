@@ -17,6 +17,16 @@
 	position: relative;
 }
 
+.aide-controls-context-split-button {
+	display: flex;
+	margin-right: 5px;
+}
+
+.aide-controls-context-type-button {
+	display: flex;
+	align-items: center;
+}
+
 .aide-option-item {
 	display: flex;
 	align-items: center;

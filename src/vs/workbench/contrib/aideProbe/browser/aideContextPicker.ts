@@ -64,21 +64,21 @@ export class ContextPicker extends Disposable {
 
 	private isCodeBaseSearch: IContextKey<boolean>;
 
-	private context: AideContext;
+	readonly context: AideContext;
 
 	private button: Button;
 	private buttonBadge: HTMLElement;
 	private buttonIcon: Heroicon;
 
-	private isPanelVisible = false;
-	private panelElement: HTMLElement;
+	private isListVisible = false;
+	private listPanelElement: HTMLElement;
 	private list: WorkbenchList<IVariableEntry>;
 	private indexOfLastContextDeletedWithKeyboard: number = -1;
 	private readonly defaultItemHeight = 36;
 
 
-	private isQuickContextPanelVisible = false;
-	private quickContextPanel: HTMLElement;
+	private isContextTypePanelVisible = false;
+	private contextTypeDropdownPanelElement: HTMLElement;
 
 	constructor(
 		private readonly parent: HTMLElement,
@@ -93,18 +93,133 @@ export class ContextPicker extends Disposable {
 
 		this.context = this.instantiationService.createInstance(AideContext);
 
-		const element = $('.aide-context-picker');
-		this.parent.append(element);
+		const contextPickerElement = $('.aide-context-picker');
+		this.parent.append(contextPickerElement);
 
-		const { panelElement, list } = this.createPanel(element);
-		this.panelElement = panelElement;
-		this.list = list;
+		const splitButtonElement = $('.aide-controls-context-split-button');
+		contextPickerElement.appendChild(splitButtonElement);
 
-		const { button, buttonBadge, buttonIcon, quickContextPanel } = this.createContextSplitButton(element);
-		this.button = button;
-		this.buttonBadge = buttonBadge;
-		this.buttonIcon = buttonIcon;
-		this.quickContextPanel = quickContextPanel;
+		//#region context list
+
+		this.listPanelElement = $('.aide-context-picker-panel');
+		contextPickerElement.appendChild(this.listPanelElement);
+
+		const listElement = $('.aide-context-picker-list');
+		this.listPanelElement.append(listElement);
+		const renderer = this.instantiationService.createInstance(Renderer, this.context, this.indexOfLastContextDeletedWithKeyboard, this.defaultItemHeight);
+		const listDelegate = this.instantiationService.createInstance(ItemListDelegate, this.defaultItemHeight);
+		this.list = this._register(<WorkbenchList<IVariableEntry>>this.instantiationService.createInstance(
+			WorkbenchList,
+			'AideContextPicker',
+			listElement,
+			listDelegate,
+			[renderer],
+			{
+				setRowLineHeight: false,
+				supportDynamicHeights: true,
+				horizontalScrolling: false,
+				alwaysConsumeMouseWheel: false
+			}
+		));
+
+		this._register(this.list.onDidChangeContentHeight(height => {
+			this.list.layout(height);
+		}));
+		this._register(renderer.onDidChangeItemHeight(event => {
+			if (this.isListVisible) {
+				this.list.updateElementHeight(event.index, event.height);
+			}
+		}));
+
+		const addButton = this._register(this.instantiationService.createInstance(Button, this.listPanelElement, {}));
+		// TODO(willis) Add Aide-specific localization
+		addButton.label = localize('chat.addAttachment', "Add more specific context");
+		addButton.element.classList.add('aide-context-picker-add-button');
+
+		this._register(addButton.onDidClick(async () => {
+			// TODO(willis) Find a better (?) and type-safe way to do this
+			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
+			if (Array.isArray(newEntries)) {
+				newEntries.forEach(entry => this.context.add(entry));
+			}
+		}));
+
+
+		this.button = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
+		this.button.element.classList.add('aide-controls-context-button');
+
+		const buttonBadge = this.buttonBadge = $('.aide-controls-context-badge');
+		this.button.element.appendChild(buttonBadge);
+
+		this.buttonIcon = this.updateButtonIcon(this.button.element);
+
+		this._register(this.button.onDidClick(() => {
+			if (!this.isCodeBaseSearch.get()) {
+				this.toggleContextPanel();
+			}
+		}));
+
+		// eslint-disable-next-line local/code-no-global-document-listener
+		this._register(dom.addDisposableListener(document, dom.EventType.MOUSE_DOWN, (e) => {
+			// eslint-disable-next-line no-restricted-syntax
+			const quickInputWidget = document.querySelector('.quick-input-widget');
+			if (quickInputWidget && quickInputWidget.contains(e.target as HTMLElement)) {
+				return;
+			}
+			if (this.isListVisible && !this.button.element.contains(e.target as HTMLElement) && !this.listPanelElement.contains(e.target as HTMLElement)) {
+				dom.hide(this.listPanelElement);
+				this.isListVisible = false;
+			}
+		}));
+
+		// #endregion
+
+		//#region codebase search select
+
+		this.contextTypeDropdownPanelElement = $('.aide-context-picker-quick-context-panel');
+		contextPickerElement.appendChild(this.contextTypeDropdownPanelElement);
+
+		const contextTypeDropdownButton = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
+		contextTypeDropdownButton.element.classList.add('aide-controls-context-type-button');
+		this.instantiationService.createInstance(Heroicon, contextTypeDropdownButton.element, 'micro/chevron-down');
+
+		const select = this._register(this.instantiationService.createInstance(AideSelect<IQuickContextOption>, this.contextTypeDropdownPanelElement, (container, item) => {
+			const content = $('.aide-item-content');
+			const icon = this.instantiationService.createInstance(Heroicon, container, item.icon);
+			content.textContent = item.label;
+			container.appendChild(content);
+			return [icon];
+		}));
+		select.list.splice(0, 0, quickContextOptions);
+
+		contextTypeDropdownButton.onDidClick(() => {
+			if (!this.isContextTypePanelVisible) {
+				dom.show(this.contextTypeDropdownPanelElement);
+				select.list.rerender();
+			} else {
+				dom.hide(this.contextTypeDropdownPanelElement);
+			}
+			this.isContextTypePanelVisible = !this.isContextTypePanelVisible;
+		});
+
+		this._register(select.onDidSelect(({ element }) => {
+			if (element.value === 'codebase') {
+				this.isCodeBaseSearch.set(true);
+				this.context.clear();
+			} else {
+				this.isCodeBaseSearch.set(false);
+			}
+			this.isContextTypePanelVisible = false;
+			dom.hide(this.contextTypeDropdownPanelElement);
+		}));
+
+		// eslint-disable-next-line local/code-no-global-document-listener
+		this._register(dom.addDisposableListener(document, dom.EventType.CLICK, (e) => {
+			if (this.isContextTypePanelVisible && !contextTypeDropdownButton.element.contains(e.target as HTMLElement) && !this.contextTypeDropdownPanelElement.contains(e.target as HTMLElement)) {
+				dom.hide(this.contextTypeDropdownPanelElement);
+				this.isContextTypePanelVisible = false;
+			}
+		}));
 
 		this.render();
 
@@ -124,140 +239,14 @@ export class ContextPicker extends Disposable {
 		}));
 	}
 
-	createPanel(parent: HTMLElement) {
-		const panelElement = this.panelElement = $('.aide-context-picker-panel');
-		parent.appendChild(panelElement);
-
-		const listElement = $('.aide-context-picker-list');
-		panelElement.append(listElement);
-		const renderer = this.instantiationService.createInstance(Renderer, this.context, this.indexOfLastContextDeletedWithKeyboard, this.defaultItemHeight);
-		const listDelegate = this.instantiationService.createInstance(ItemListDelegate, this.defaultItemHeight);
-		const list = this.list = this._register(<WorkbenchList<IVariableEntry>>this.instantiationService.createInstance(
-			WorkbenchList,
-			'AideContextPicker',
-			listElement,
-			listDelegate,
-			[renderer],
-			{
-				setRowLineHeight: false,
-				supportDynamicHeights: true,
-				horizontalScrolling: false,
-				alwaysConsumeMouseWheel: false
-			}
-		));
-
-		this._register(list.onDidChangeContentHeight(height => {
-			list.layout(height);
-		}));
-		this._register(renderer.onDidChangeItemHeight(event => {
-			if (this.isPanelVisible) {
-				list.updateElementHeight(event.index, event.height);
-			}
-		}));
-
-		const addButton = this._register(this.instantiationService.createInstance(Button, panelElement, {}));
-		addButton.label = localize('chat.addAttachment', "Add more specific context");
-		addButton.element.classList.add('aide-context-picker-add-button');
-
-		this._register(addButton.onDidClick(async () => {
-			// @willisTODO: Find a better (?) and type-safe way to do this
-			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
-			if (Array.isArray(newEntries)) {
-				newEntries.forEach(entry => this.context.add(entry));
-			}
-		}));
-
-		return { panelElement, list };
-	}
-
-
-	private createContextSplitButton(parent: HTMLElement) {
-		const element = $('.aide-controls-context-split-button');
-		parent.appendChild(element);
-
-		const button = this.button = this._register(this.instantiationService.createInstance(Button, element, {}));
-		button.element.classList.add('aide-controls-context-button');
-
-		const buttonBadge = this.buttonBadge = $('.aide-controls-context-badge');
-		button.element.appendChild(buttonBadge);
-
-		const buttonIcon = this.buttonIcon = this.updateButtonIcon(button.element);
-
-
-		// eslint-disable-next-line local/code-no-global-document-listener
-		this._register(dom.addDisposableListener(document, dom.EventType.MOUSE_DOWN, (e) => {
-			// eslint-disable-next-line no-restricted-syntax
-			const quickInputWidget = document.querySelector('.quick-input-widget');
-			if (quickInputWidget && quickInputWidget.contains(e.target as HTMLElement)) {
-				return;
-			}
-			if (this.isPanelVisible && !button.element.contains(e.target as HTMLElement) && !this.panelElement.contains(e.target as HTMLElement)) {
-				dom.hide(this.panelElement);
-				this.isPanelVisible = false;
-			}
-		}));
-
-		this._register(button.onDidClick(() => {
-			if (!this.isCodeBaseSearch.get()) {
-				this.toggleContextPanel();
-			}
-		}));
-
-		const quickContextPanel = this.quickContextPanel = $('.aide-context-picker-quick-context-panel');
-
-		const quickContextButton = this._register(this.instantiationService.createInstance(Button, element, {}));
-		this.instantiationService.createInstance(Heroicon, quickContextButton.element, 'micro/chevron-down');
-
-		const select = this._register(this.instantiationService.createInstance(AideSelect<IQuickContextOption>, quickContextPanel, (container, item) => {
-			const content = $('.aide-item-content');
-			const icon = this.instantiationService.createInstance(Heroicon, container, item.icon);
-			content.textContent = item.label;
-			container.appendChild(content);
-			return [icon];
-		}));
-		select.list.splice(0, 0, quickContextOptions);
-
-		quickContextButton.onDidClick(() => {
-			if (!this.isQuickContextPanelVisible) {
-				dom.show(quickContextPanel);
-				select.list.rerender();
-			} else {
-				dom.hide(quickContextPanel);
-			}
-			this.isQuickContextPanelVisible = !this.isQuickContextPanelVisible;
-		});
-
-		this._register(select.onDidSelect(({ element }) => {
-			if (element.value === 'codebase') {
-				this.isCodeBaseSearch.set(true);
-			} else {
-				this.isCodeBaseSearch.set(false);
-			}
-			this.isQuickContextPanelVisible = false;
-			dom.hide(quickContextPanel);
-		}));
-
-		parent.appendChild(quickContextButton.element);
-		parent.appendChild(quickContextPanel);
-
-		// eslint-disable-next-line local/code-no-global-document-listener
-		this._register(dom.addDisposableListener(document, dom.EventType.CLICK, (e) => {
-			if (this.isQuickContextPanelVisible && !quickContextButton.element.contains(e.target as HTMLElement) && !quickContextPanel.contains(e.target as HTMLElement)) {
-				dom.hide(quickContextPanel);
-				this.isQuickContextPanelVisible = false;
-			}
-		}));
-
-		return { button, buttonIcon, quickContextPanel, buttonBadge };
-	}
-
 	private toggleContextPanel() {
-		if (!this.isPanelVisible) {
-			dom.show(this.panelElement);
+		if (!this.isListVisible) {
+			dom.show(this.listPanelElement);
 		} else {
-			dom.hide(this.panelElement);
+			dom.hide(this.listPanelElement);
 		}
-		this.isPanelVisible = !this.isPanelVisible;
+		this.isListVisible = !this.isListVisible;
+		this.render();
 	}
 
 	private updateButtonIcon(button: HTMLElement) {
@@ -269,7 +258,6 @@ export class ContextPicker extends Disposable {
 	}
 
 	render() {
-
 		const currentFileUri = getActiveEditorUri(this.editorService);
 		if (this.context.entries.size === 0 && currentFileUri) {
 			const currentFileEntry = {
@@ -293,12 +281,12 @@ export class ContextPicker extends Disposable {
 			dom.hide(this.buttonBadge);
 		}
 
-		if (!this.isPanelVisible) {
-			dom.hide(this.panelElement);
+		if (!this.isListVisible) {
+			dom.hide(this.listPanelElement);
 		}
 
-		if (!this.isQuickContextPanelVisible) {
-			dom.hide(this.quickContextPanel);
+		if (!this.isContextTypePanelVisible) {
+			dom.hide(this.contextTypeDropdownPanelElement);
 		}
 	}
 }

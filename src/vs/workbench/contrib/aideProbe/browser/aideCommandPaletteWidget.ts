@@ -90,6 +90,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _innerContainer!: HTMLElement;
 	private width: number = 560;
 
+	private contextPicker: ContextPicker;
+
 	private _inputContainer: HTMLElement; // contains all inputs
 	private _modeToggleContainer: HTMLElement;
 	private modeToggle: Button;
@@ -297,7 +299,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 
 		// Context select
-		this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
+		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
 
 		// Register events
 
@@ -594,7 +596,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, [...this.contextPicker.context.entries]);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 

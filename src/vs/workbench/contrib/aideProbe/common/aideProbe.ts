@@ -11,6 +11,7 @@ import { IValidEditOperation } from 'vs/editor/common/model';
 import { IModelContentChange } from 'vs/editor/common/textModelEvents';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 
 export interface IAideProbeData {
 	id: string;
@@ -92,7 +93,7 @@ export interface IAideProbeResult {
 export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
-	readonly variables: IChatRequestVariableData;
+	readonly variableData: IChatRequestVariableData;
 	readonly editMode: boolean;
 	readonly codebaseSearch: boolean;
 }
