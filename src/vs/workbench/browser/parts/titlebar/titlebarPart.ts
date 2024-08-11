@@ -200,7 +200,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 
 	get minimumHeight(): number {
-		const value = this.isCommandCenterVisible || (isWeb && isWCOEnabled()) ? DEFAULT_CUSTOM_TITLEBAR_HEIGHT : 30;
+		const value = this.isCommandCenterVisible || (isWeb && isWCOEnabled()) ? DEFAULT_CUSTOM_TITLEBAR_HEIGHT : 35;
 
 		return value / (this.preventZoom ? getZoomFactor(getWindow(this.element)) : 1);
 	}

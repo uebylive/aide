@@ -673,7 +673,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 			},
 			[LayoutSettings.COMMAND_CENTER]: {
 				type: 'boolean',
-				default: true,
+				default: false,
 				markdownDescription: isWeb ?
 					localize('window.commandCenterWeb', "Show command launcher together with the window title.") :
 					localize({ key: 'window.commandCenter', comment: ['{0}, {1} is a placeholder for a setting identifier.'] }, "Show command launcher together with the window title. This setting only has an effect when {0} is not set to {1}.", '`#window.customTitleBarVisibility#`', '`never`')
