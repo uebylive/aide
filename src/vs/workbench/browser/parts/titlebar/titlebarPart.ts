@@ -239,6 +239,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private readonly editorActionsChangeDisposable = this._register(new DisposableStore());
 	private actionToolBarElement!: HTMLElement;
 
+	private secondaryActionToolBar!: WorkbenchToolBar;
+	private readonly secondaryActionToolBarDisposable = this._register(new DisposableStore());
+	private secondaryActionToolBarElement!: HTMLElement;
+
 	private layoutToolbarMenu: IMenu | undefined;
 	private readonly editorToolbarMenuDisposables = this._register(new DisposableStore());
 	private readonly layoutToolbarMenuDisposables = this._register(new DisposableStore());
@@ -312,8 +316,9 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			oldPartOptions.editorActionsLocation !== newPartOptions.editorActionsLocation ||
 			oldPartOptions.showTabs !== newPartOptions.showTabs
 		) {
-			if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar) {
+			if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar) {
 				this.createActionToolBar();
+				this.createsecondaryActionToolBar();
 				this.createActionToolBarMenus({ editorActions: true });
 				this._onDidChange.fire(undefined);
 			}
@@ -334,7 +339,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		}
 
 		// Actions
-		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar) {
+		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar) {
 			const affectsLayoutControl = event.affectsConfiguration(LayoutSettings.LAYOUT_ACTIONS);
 			const affectsActivityControl = event.affectsConfiguration(LayoutSettings.ACTIVITY_BAR_LOCATION);
 
@@ -426,7 +431,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		// Create Toolbar Actions
 		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle)) {
 			this.actionToolBarElement = append(this.leftContent, $('div.action-toolbar-container'));
+			this.secondaryActionToolBarElement = append(this.rightContent, $('div.secondary-action-toolbar-container'));
+
 			this.createActionToolBar();
+			this.createsecondaryActionToolBar();
 			this.createActionToolBarMenus();
 		}
 
@@ -562,16 +570,37 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			orientation: ActionsOrientation.HORIZONTAL,
 			ariaLabel: localize('ariaLabelTitleActions', "Title actions"),
 			getKeyBinding: action => this.getKeybinding(action),
-			overflowBehavior: { maxItems: 9, exempted: [ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID, ...EDITOR_CORE_NAVIGATION_COMMANDS] },
+			overflowBehavior: { maxItems: 9, exempted: EDITOR_CORE_NAVIGATION_COMMANDS },
+			anchorAlignmentProvider: () => AnchorAlignment.LEFT,
+			telemetrySource: 'titlePart',
+			highlightToggledItems: false, // Layout actions are not shown as toggled
+			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+			hoverDelegate: this.hoverDelegate
+		}));
+	}
+
+	private createsecondaryActionToolBar() {
+
+		// Creates the secondary action tool bar. Depends on the configuration of the title bar menus
+		// Requires to be recreated whenever editor actions enablement changes
+
+		this.secondaryActionToolBarDisposable.clear();
+
+		this.secondaryActionToolBar = this.secondaryActionToolBarDisposable.add(this.instantiationService.createInstance(WorkbenchToolBar, this.secondaryActionToolBarElement, {
+			contextMenu: MenuId.TitleBarContext,
+			orientation: ActionsOrientation.HORIZONTAL,
+			ariaLabel: localize('ariaLabelTitleSecondaryActions', "Title secondary actions"),
+			getKeyBinding: action => this.getKeybinding(action),
+			overflowBehavior: { maxItems: 9, exempted: [ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID] },
 			anchorAlignmentProvider: () => AnchorAlignment.RIGHT,
 			telemetrySource: 'titlePart',
-			highlightToggledItems: this.editorActionsEnabled, // Only show toggled state for editor actions (Layout actions are not shown as toggled)
+			highlightToggledItems: this.editorActionsEnabled, // Only show toggled state for editor actions
 			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
 			hoverDelegate: this.hoverDelegate
 		}));
 
 		if (this.editorActionsEnabled) {
-			this.actionToolBarDisposable.add(this.editorGroupsContainer.onDidChangeActiveGroup(() => this.createActionToolBarMenus({ editorActions: true })));
+			this.secondaryActionToolBarDisposable.add(this.editorGroupsContainer.onDidChangeActiveGroup(() => this.createActionToolBarMenus({ editorActions: true })));
 		}
 	}
 
@@ -582,6 +611,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 		const updateToolBarActions = () => {
 			const actions: IToolbarActions = { primary: [], secondary: [] };
+			const globalActions: IToolbarActions = { primary: [], secondary: [] };
 
 			// --- Editor Actions
 			if (this.editorActionsEnabled) {
@@ -611,12 +641,13 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			// --- Activity Actions
 			if (this.activityActionsEnabled) {
 				if (isAccountsActionVisible(this.storageService)) {
-					actions.primary.push(ACCOUNTS_ACTIVITY_TILE_ACTION);
+					globalActions.primary.push(ACCOUNTS_ACTIVITY_TILE_ACTION);
 				}
-				actions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
+				globalActions.primary.push(GLOBAL_ACTIVITY_TITLE_ACTION);
 			}
 
 			this.actionToolBar.setActions(prepareActions(actions.primary), prepareActions(actions.secondary));
+			this.secondaryActionToolBar.setActions(prepareActions(globalActions.primary), prepareActions(globalActions.secondary));
 		};
 
 		// Create/Update the menus which should be in the title tool bar
