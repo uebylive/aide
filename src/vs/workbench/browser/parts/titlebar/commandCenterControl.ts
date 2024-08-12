@@ -15,7 +15,7 @@ import { DisposableStore } from 'vs/base/common/lifecycle';
 import { localize } from 'vs/nls';
 import { createActionViewItem } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { HiddenItemStrategy, MenuWorkbenchToolBar, WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuId, MenuRegistry, SubmenuItemAction } from 'vs/platform/actions/common/actions';
+import { MenuId, SubmenuItemAction } from 'vs/platform/actions/common/actions';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';

@@ -493,6 +493,38 @@
 	text-align: center;
 }
 
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
+	display: none;
+	padding-right: 2px;
+	flex-grow: 0;
+	flex-shrink: 0;
+	text-align: center;
+	position: relative;
+	z-index: 2500;
+	-webkit-app-region: no-drag;
+	height: 100%;
+	min-width: 28px;
+}
+
+.monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
+	right: 8px;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container:not(.has-no-actions) {
+	display: flex;
+	justify-content: center;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item {
+	display: flex;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item .action-label {
+	padding: 3px 8px;
+	font-size: 13px;
+	font-weight: 600;
+}
+
 .monaco-workbench .part.titlebar .window-controls-container .window-icon {
 	color: var(--vscode-titleBar-activeForeground);
 }

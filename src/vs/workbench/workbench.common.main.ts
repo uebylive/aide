@@ -26,6 +26,7 @@ import 'vs/workbench/browser/actions/workspaceActions';
 import 'vs/workbench/browser/actions/workspaceCommands';
 import 'vs/workbench/browser/actions/quickAccessActions';
 import 'vs/workbench/browser/actions/widgetNavigationCommands';
+import 'vs/workbench/browser/actions/csAccountActions';
 
 //#endregion
 
@@ -122,6 +123,7 @@ import 'vs/workbench/services/userActivity/common/userActivityService';
 import 'vs/workbench/services/userActivity/browser/userActivityBrowser';
 import 'vs/workbench/services/editor/browser/editorPaneService';
 import 'vs/workbench/services/editor/common/customEditorLabelService';
+import 'vs/workbench/services/csAccount/browser/csAccountService';
 
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { ExtensionGalleryService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
@@ -407,5 +409,7 @@ import 'vs/workbench/contrib/accountEntitlements/browser/accountsEntitlements.co
 
 // Synchronized Scrolling
 import 'vs/workbench/contrib/scrollLocking/browser/scrollLocking.contribution';
+
+// SVG Sprite
 import { ISVGSpriteService, SvgSpriteService } from 'vs/workbench/browser/svgSprite';
 //#endregion
