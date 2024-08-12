@@ -228,9 +228,11 @@ class CommandCenterCenterViewItem extends BaseActionViewItem {
 	}
 }
 
+/*
 MenuRegistry.appendMenuItem(MenuId.CommandCenter, {
 	submenu: MenuId.CommandCenterCenter,
 	title: localize('title3', "Command Center"),
 	icon: Codicon.shield,
 	order: 101,
 });
+*/

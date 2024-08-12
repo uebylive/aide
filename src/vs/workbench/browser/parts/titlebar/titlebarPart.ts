@@ -19,7 +19,7 @@ import { ThemeIcon } from 'vs/base/common/themables';
 import { TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_FOREGROUND, TITLE_BAR_INACTIVE_BACKGROUND, TITLE_BAR_BORDER, WORKBENCH_BACKGROUND } from 'vs/workbench/common/theme';
 import { isMacintosh, isWindows, isLinux, isWeb, isNative, platformLocale } from 'vs/base/common/platform';
 import { Color } from 'vs/base/common/color';
-import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, reset, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement } from 'vs/base/browser/dom';
+import { EventType, EventHelper, Dimension, append, $, addDisposableListener, prepend, getWindow, getWindowId, isAncestor, getActiveDocument, isHTMLElement } from 'vs/base/browser/dom';
 import { CustomMenubarControl } from 'vs/workbench/browser/parts/titlebar/menubarControl';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { Emitter, Event } from 'vs/base/common/event';
@@ -32,7 +32,6 @@ import { IHostService } from 'vs/workbench/services/host/browser/host';
 import { Codicon } from 'vs/base/common/codicons';
 import { getIconRegistry } from 'vs/platform/theme/common/iconRegistry';
 import { WindowTitle } from 'vs/workbench/browser/parts/titlebar/windowTitle';
-import { CommandCenterControl } from 'vs/workbench/browser/parts/titlebar/commandCenterControl';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { WorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { ACCOUNTS_ACTIVITY_ID, GLOBAL_ACTIVITY_ID } from 'vs/workbench/common/activity';
@@ -350,12 +349,14 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			}
 		}
 
+		/*
 		// Command Center
 		if (event.affectsConfiguration(LayoutSettings.COMMAND_CENTER)) {
 			this.createTitle();
 
 			this._onDidChange.fire(undefined);
 		}
+		*/
 	}
 
 	protected installMenubar(): void {
@@ -510,6 +511,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private createTitle(): void {
 		this.titleDisposables.clear();
 
+		/*
 		// Text Title
 		if (!this.isCommandCenterVisible) {
 			this.title.innerText = this.windowTitle.value;
@@ -524,6 +526,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			reset(this.title, commandCenter.element);
 			this.titleDisposables.add(commandCenter);
 		}
+		*/
 	}
 
 	private actionViewItemProvider(action: IAction, options: IBaseActionViewItemOptions): IActionViewItem | undefined {

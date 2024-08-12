@@ -671,6 +671,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 				'default': defaultWindowTitleSeparator,
 				'markdownDescription': localize("window.titleSeparator", "Separator used by {0}.", '`#window.title#`')
 			},
+			/*
 			[LayoutSettings.COMMAND_CENTER]: {
 				type: 'boolean',
 				default: false,
@@ -678,6 +679,7 @@ const registry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Con
 					localize('window.commandCenterWeb', "Show command launcher together with the window title.") :
 					localize({ key: 'window.commandCenter', comment: ['{0}, {1} is a placeholder for a setting identifier.'] }, "Show command launcher together with the window title. This setting only has an effect when {0} is not set to {1}.", '`#window.customTitleBarVisibility#`', '`never`')
 			},
+			*/
 			'window.menuBarVisibility': {
 				'type': 'string',
 				'enum': ['classic', 'visible', 'toggle', 'hidden', 'compact'],

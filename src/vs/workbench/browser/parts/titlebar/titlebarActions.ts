@@ -50,11 +50,13 @@ class ToggleConfigAction extends Action2 {
 	}
 }
 
+/*
 registerAction2(class ToggleCommandCenter extends ToggleConfigAction {
 	constructor() {
 		super(LayoutSettings.COMMAND_CENTER, localize('toggle.commandCenter', 'Command Center'), localize('toggle.commandCenterDescription', "Toggle visibility of the Command Center in title bar"), 1, false);
 	}
 });
+*/
 
 registerAction2(class ToggleLayoutControl extends ToggleConfigAction {
 	constructor() {
