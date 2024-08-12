@@ -420,10 +420,6 @@
 	margin-left: auto;
 }
 
-.monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container {
-	right: 8px;
-}
-
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container:not(.has-no-actions) {
 	display: flex;
 	justify-content: center;
@@ -495,7 +491,6 @@
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
 	display: none;
-	padding-right: 2px;
 	flex-grow: 0;
 	flex-shrink: 0;
 	text-align: center;
@@ -504,10 +499,6 @@
 	-webkit-app-region: no-drag;
 	height: 100%;
 	min-width: 28px;
-}
-
-.monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
-	right: 8px;
 }
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container:not(.has-no-actions) {
@@ -520,8 +511,8 @@
 }
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item .action-label {
-	padding: 3px 8px;
-	font-size: 13px;
+	padding: 3px 12px;
+	font-size: 14px;
 	font-weight: 600;
 }
 
