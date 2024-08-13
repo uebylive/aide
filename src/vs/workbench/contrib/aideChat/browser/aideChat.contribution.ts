@@ -23,7 +23,7 @@ import { ChatAccessibilityHelp } from 'vs/workbench/contrib/aideChat/browser/act
 import { registerChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
-import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
+//import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
 import { registerChatCopyActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCopyActions';
 import { registerChatDeveloperActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions';
 import { SubmitAction, registerChatExecuteActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
@@ -272,7 +272,7 @@ registerQuickChatActions();
 registerChatExportActions();
 registerMoveActions();
 registerNewChatActions();
-registerChatContextActions();
+//registerChatContextActions();
 registerChatDeveloperActions();
 
 registerSingleton(IAideChatService, ChatService, InstantiationType.Delayed);

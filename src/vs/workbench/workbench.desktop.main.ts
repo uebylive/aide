@@ -42,6 +42,7 @@ import 'vs/workbench/services/update/electron-sandbox/updateService';
 import 'vs/workbench/services/url/electron-sandbox/urlService';
 import 'vs/workbench/services/lifecycle/electron-sandbox/lifecycleService';
 import 'vs/workbench/services/title/electron-sandbox/titleService';
+import 'vs/workbench/services/aideBar/electron-sandbox/aideBarService';
 import 'vs/workbench/services/aideControls/electron-sandbox/aideControlsService';
 import 'vs/workbench/services/host/electron-sandbox/nativeHostService';
 import 'vs/workbench/services/request/electron-sandbox/requestService';
