@@ -123,7 +123,7 @@ import 'vs/workbench/services/userActivity/common/userActivityService';
 import 'vs/workbench/services/userActivity/browser/userActivityBrowser';
 import 'vs/workbench/services/editor/browser/editorPaneService';
 import 'vs/workbench/services/editor/common/customEditorLabelService';
-import 'vs/workbench/services/csAccount/browser/csAccountService';
+import 'vs/workbench/services/csAccount/browser/csAuthenticationService';
 
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { ExtensionGalleryService } from 'vs/platform/extensionManagement/common/extensionGalleryService';
@@ -132,6 +132,8 @@ import { IExtensionGalleryService, IGlobalExtensionEnablementService } from 'vs/
 import { ContextViewService } from 'vs/platform/contextview/browser/contextViewService';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { IListService, ListService } from 'vs/platform/list/browser/listService';
+import { CSAccountService } from 'vs/platform/codestoryAccount/browser/csAccount';
+import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { EditorWorkerService } from 'vs/editor/browser/services/editorWorkerService';
 import { MarkerDecorationsService } from 'vs/editor/common/services/markerDecorationsService';
@@ -166,6 +168,7 @@ registerSingleton(ITextResourceConfigurationService, TextResourceConfigurationSe
 registerSingleton(IDownloadService, DownloadService, InstantiationType.Delayed);
 registerSingleton(IOpenerService, OpenerService, InstantiationType.Delayed);
 registerSingleton(ISVGSpriteService, SvgSpriteService, InstantiationType.Delayed);
+registerSingleton(ICSAccountService, CSAccountService, InstantiationType.Delayed);
 
 //#endregion
 

@@ -27,7 +27,7 @@ export class ToggleCodestoryAccountCardAction extends Action2 {
 
 	run(accessor: ServicesAccessor): void {
 		const csAccountService = accessor.get(ICSAccountService);
-		csAccountService.csAccountController.show();
+		csAccountService.toggle();
 	}
 }
 

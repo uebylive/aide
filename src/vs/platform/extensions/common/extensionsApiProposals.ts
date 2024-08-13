@@ -153,6 +153,9 @@ const _allApiProposals = {
 	createFileSystemWatcher: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.createFileSystemWatcher.d.ts',
 	},
+	csAuthentication: {
+		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.csAuthentication.d.ts',
+	},
 	csevents: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.csevents.d.ts',
 	},

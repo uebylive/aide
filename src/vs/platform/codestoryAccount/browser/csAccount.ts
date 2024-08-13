@@ -9,29 +9,52 @@ import { Codicon } from 'vs/base/common/codicons';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/csAccount';
-import { ICSAccountController } from 'vs/platform/codestoryAccount/common/csAccount';
+import { CSAuthenticationSessionAccount, ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 
 const $ = dom.$;
 
-export class CSAccountController extends Disposable implements ICSAccountController {
+export class CSAccountService extends Disposable implements ICSAccountService {
+	_serviceBrand: undefined;
+
+	private authenticatedAccount: CSAuthenticationSessionAccount | undefined;
+
+	private isVisible: boolean = false;
 	private csAccountCard: HTMLElement | undefined;
-	private isSignedIn: boolean = true;
 
 	constructor(
 		@ILayoutService private readonly layoutService: ILayoutService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService
 	) {
 		super();
+
+		this.csAuthenticationService.getSession().then(session => {
+			if (session) {
+				this.authenticatedAccount = session.account;
+			} else {
+				this.authenticatedAccount = undefined;
+			}
+		});
 	}
 
-	show(): void {
+	toggle(): void {
+		if (!this.isVisible) {
+			this.show();
+			this.isVisible = true;
+		} else {
+			this.hide();
+			this.isVisible = false;
+		}
+	}
+
+	private show(): void {
 		const container = this.layoutService.activeContainer;
 		const csAccountCard = this.csAccountCard = dom.append(container, $('.cs-account-card'));
 
-		if (this.isSignedIn) {
+		if (this.authenticatedAccount) {
 			// User is signed in
 			const profileRow = dom.append(this.csAccountCard, $('.profile-row'));
 			const profilePicture = dom.append(profileRow, $('.profile-picture'));
@@ -39,8 +62,8 @@ export class CSAccountController extends Disposable implements ICSAccountControl
 			const userDetails = dom.append(profileRow, $('.user-details'));
 			const name = dom.append(userDetails, $('.name'));
 			const email = dom.append(userDetails, $('.email'));
-			name.textContent = 'John Doe'; // Replace with actual user name
-			email.textContent = 'john.doe@example.com'; // Replace with actual email
+			name.textContent = this.authenticatedAccount.label;
+			email.textContent = this.authenticatedAccount.label;
 
 			const logoutButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			logoutButton.label = 'Log Out';
@@ -53,10 +76,18 @@ export class CSAccountController extends Disposable implements ICSAccountControl
 
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';
+			this._register(loginButton.onDidClick(() => {
+				this.csAuthenticationService.createSession().then(session => {
+					this.authenticatedAccount = session.account;
+
+					this.hide();
+					this.show();
+				});
+			}));
 		}
 	}
 
-	hide(): void {
+	private hide(): void {
 		if (this.csAccountCard) {
 			this.csAccountCard.remove();
 		}
