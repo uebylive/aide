@@ -8,6 +8,7 @@ import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
+import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
@@ -16,9 +17,7 @@ import { ISecretStorageService } from 'vs/platform/secrets/common/secrets';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IURLService } from 'vs/platform/url/common/url';
 
-const AUTH_TYPE = 'codestory';
-const SESSIONS_SECRET_KEY = `${AUTH_TYPE}.sessions`;
-const EXPIRATION_TIME_MS = 1000 * 60 * 5;
+const SESSION_SECRET_KEY = 'codestory.auth.session';
 
 export class CSAuthenticationService extends Themable implements ICSAuthenticationService {
 	declare readonly _serviceBrand: undefined;
@@ -27,7 +26,7 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	private _websiteBase: string | null = null;
 
 	private _pendingStates: string[] = [];
-	private _sessions: CSAuthenticationSession[] = [];
+	private _session: CSAuthenticationSession | undefined;
 
 	constructor(
 		@IThemeService themeService: IThemeService,
@@ -48,64 +47,48 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 			this._websiteBase = 'https://aide.dev';
 		}
 
+		CommandsRegistry.registerCommand('codestory.refreshTokens', async () => {
+			await this.refreshTokens();
+		});
+
 		this.urlService.create({ path: '/authenticate-codestory' });
 		this.initialize();
 	}
 
 	private async initialize(): Promise<void> {
-		const sessions = await this.secretStorageService.get(SESSIONS_SECRET_KEY);
-		this._sessions = sessions ? JSON.parse(sessions) : [];
+		const session = await this.secretStorageService.get(SESSION_SECRET_KEY);
+		this._session = session ? JSON.parse(session) : undefined;
 		await this.refreshTokens();
 	}
 
 	async refreshTokens(): Promise<void> {
-		if (!this._sessions.length) {
+		if (!this._session) {
 			return;
 		}
 
-		const refreshedSessions: CSAuthenticationSession[] = [];
-
-		for (const session of this._sessions) {
-			try {
-				const newSession = await this._refreshSession(session.refreshToken);
-				refreshedSessions.push({
-					...session,
-					accessToken: newSession.accessToken,
-					refreshToken: newSession.refreshToken,
-					expiresIn: newSession.expiresIn,
-				});
-			} catch (e: any) {
-				if (e.message === 'Network failure') {
-					return;
-				}
+		try {
+			const response = await fetch(`${this._subscriptionsAPIBase}/v1/auth/refresh`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					'refresh_token': this._session.refreshToken,
+				}),
+			});
+			if (!response.ok) {
+				throw new Error('Network failure');
 			}
+			const data = (await response.json()) as EncodedCSTokenData;
+			const newSession = {
+				...this._session,
+				accessToken: data.access_token,
+				refreshToken: data.refresh_token,
+			};
+			await this.secretStorageService.set(SESSION_SECRET_KEY, JSON.stringify(newSession));
+		} catch (e: any) {
+			return;
 		}
-
-		this._sessions = refreshedSessions;
-		await this.secretStorageService.set(SESSIONS_SECRET_KEY, JSON.stringify(this._sessions));
-	}
-
-	private async _refreshSession(
-		refreshToken: string,
-	): Promise<{ accessToken: string; refreshToken: string; expiresIn: number }> {
-		const response = await fetch(`${this._subscriptionsAPIBase}/v1/auth/refresh`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify({
-				'refresh_token': refreshToken,
-			}),
-		});
-		if (!response.ok) {
-			throw new Error('Network failure');
-		}
-		const data = (await response.json()) as EncodedCSTokenData;
-		return {
-			accessToken: data.access_token,
-			refreshToken: data.refresh_token,
-			expiresIn: EXPIRATION_TIME_MS,
-		};
 	}
 
 	async createSession(): Promise<CSAuthenticationSession> {
@@ -122,22 +105,22 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				id: generateUuid(),
 				accessToken: access_token,
 				refreshToken: refresh_token,
-				expiresIn: EXPIRATION_TIME_MS,
-				account: {
-					label: user.first_name + ' ' + user.last_name,
-					id: user.email,
-				},
+				account: user
 			};
 
 			await this.secretStorageService.set(
-				SESSIONS_SECRET_KEY,
-				JSON.stringify([session]),
+				SESSION_SECRET_KEY,
+				JSON.stringify(session),
 			);
 
 			return session;
 		} catch (e) {
 			throw e;
 		}
+	}
+
+	async deleteSession(): Promise<void> {
+		await this.secretStorageService.delete(SESSION_SECRET_KEY);
 	}
 
 	private async login() {
@@ -209,12 +192,8 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	}
 
 	async getSession(): Promise<CSAuthenticationSession | undefined> {
-		const sessions = await this.secretStorageService.get(SESSIONS_SECRET_KEY);
-		const sessionData = sessions ? JSON.parse(sessions) : [];
-		if (sessionData.length) {
-			return sessionData[0];
-		}
-		return undefined;
+		const session = await this.secretStorageService.get(SESSION_SECRET_KEY);
+		return session ? JSON.parse(session) : undefined;
 	}
 
 	/**
@@ -242,4 +221,4 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	}
 }
 
-registerSingleton(ICSAuthenticationService, CSAuthenticationService, InstantiationType.Delayed);
+registerSingleton(ICSAuthenticationService, CSAuthenticationService, InstantiationType.Eager);

@@ -25,7 +25,8 @@
     "defaultChatParticipant",
     "chatVariableResolver",
     "modelSelection",
-    "terminalSelection"
+    "terminalSelection",
+    "csAuthentication"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",

@@ -5,17 +5,11 @@
 
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
-export interface CSAuthenticationSessionAccount {
-	label: string;
-	id: string;
-}
-
 export interface CSAuthenticationSession {
 	id: string;
 	accessToken: string;
 	refreshToken: string;
-	expiresIn: number;
-	account: CSAuthenticationSessionAccount;
+	account: CSUser;
 }
 
 export type CSUser = {
@@ -50,6 +44,7 @@ export interface ICSAuthenticationService {
 	readonly _serviceBrand: undefined;
 
 	createSession(): Promise<CSAuthenticationSession>;
+	deleteSession(sessionId: string): Promise<void>;
 	refreshTokens(): Promise<void>;
 	getSession(): Promise<CSAuthenticationSession | undefined>;
 }

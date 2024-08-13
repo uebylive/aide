@@ -31,9 +31,22 @@
 .monaco-workbench .cs-account-card > .profile-row {
 	display: flex;
 	align-items: center;
-	gap: 12px;
+	gap: 8px;
+	padding: 0 4px;
+}
+
+.monaco-workbench .cs-account-card > .profile-row > .profile-picture {
+	width: 38px;
+	height: 38px;
+	border-radius: 50%;
+	overflow: hidden;
 }
 
 .monaco-workbench .cs-account-card > .profile-row .codicon.codicon-account {
-	font-size: 24px !important;
+	font-size: 38px !important;
+}
+
+.monaco-workbench .cs-account-card > .profile-row > .user-details > .name {
+	font-weight: bold;
+	font-size: 14px;
 }

@@ -9,7 +9,7 @@ import { Codicon } from 'vs/base/common/codicons';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/csAccount';
-import { CSAuthenticationSessionAccount, ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
+import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
@@ -19,7 +19,7 @@ const $ = dom.$;
 export class CSAccountService extends Disposable implements ICSAccountService {
 	_serviceBrand: undefined;
 
-	private authenticatedAccount: CSAuthenticationSessionAccount | undefined;
+	private authenticatedSession: CSAuthenticationSession | undefined;
 
 	private isVisible: boolean = false;
 	private csAccountCard: HTMLElement | undefined;
@@ -30,14 +30,16 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService
 	) {
 		super();
+		this.refresh();
+	}
 
-		this.csAuthenticationService.getSession().then(session => {
-			if (session) {
-				this.authenticatedAccount = session.account;
-			} else {
-				this.authenticatedAccount = undefined;
-			}
-		});
+	private async refresh(): Promise<void> {
+		const session = await this.csAuthenticationService.getSession();
+		if (session) {
+			this.authenticatedSession = session;
+		} else {
+			this.authenticatedSession = undefined;
+		}
 	}
 
 	toggle(): void {
@@ -50,23 +52,45 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
-	private show(): void {
+	private async show(): Promise<void> {
 		const container = this.layoutService.activeContainer;
 		const csAccountCard = this.csAccountCard = dom.append(container, $('.cs-account-card'));
+		if (!this.authenticatedSession) {
+			await this.refresh();
+		}
 
-		if (this.authenticatedAccount) {
+		if (this.authenticatedSession) {
 			// User is signed in
+			const user = this.authenticatedSession.account;
 			const profileRow = dom.append(this.csAccountCard, $('.profile-row'));
-			const profilePicture = dom.append(profileRow, $('.profile-picture'));
-			profilePicture.classList.add(...ThemeIcon.asClassNameArray(Codicon.account));
+			if (user.profile_picture_url) {
+				const profilePicture = dom.append(profileRow, $<HTMLImageElement>('img.profile-picture'));
+				profilePicture.src = user.profile_picture_url;
+			} else {
+				const profilePicture = dom.append(profileRow, $('.profile-picture'));
+				profilePicture.classList.add(...ThemeIcon.asClassNameArray(Codicon.account));
+			}
+
 			const userDetails = dom.append(profileRow, $('.user-details'));
 			const name = dom.append(userDetails, $('.name'));
 			const email = dom.append(userDetails, $('.email'));
-			name.textContent = this.authenticatedAccount.label;
-			email.textContent = this.authenticatedAccount.label;
+			name.textContent = user.first_name + ' ' + user.last_name;
+			email.textContent = user.email;
 
 			const logoutButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			logoutButton.label = 'Log Out';
+			this._register(logoutButton.onDidClick(() => {
+				if (!this.authenticatedSession) {
+					return;
+				}
+
+				this.csAuthenticationService.deleteSession(this.authenticatedSession.id).then(() => {
+					this.authenticatedSession = undefined;
+
+					this.hide();
+					this.show();
+				});
+			}));
 		} else {
 			// User is not signed in
 			const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
@@ -78,7 +102,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			loginButton.label = 'Log In...';
 			this._register(loginButton.onDidClick(() => {
 				this.csAuthenticationService.createSession().then(session => {
-					this.authenticatedAccount = session.account;
+					this.authenticatedSession = session;
 
 					this.hide();
 					this.show();
