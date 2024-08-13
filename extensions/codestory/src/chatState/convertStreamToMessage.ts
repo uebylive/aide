@@ -345,11 +345,11 @@ export const reportAgentEventsToChat = async (
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
-			if (!symbol_identifier.fs_file_path) {
-				continue;
-			}
 
 			if (symbolEventSubStep.GoToDefinition) {
+				if (!symbol_identifier.fs_file_path) {
+					continue;
+				}
 				const goToDefinition = symbolEventSubStep.GoToDefinition;
 				const uri = vscode.Uri.file(goToDefinition.fs_file_path);
 				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
@@ -358,6 +358,9 @@ export const reportAgentEventsToChat = async (
 				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			} else if (symbolEventSubStep.Edit) {
+				if (!symbol_identifier.fs_file_path) {
+					continue;
+				}
 				const editEvent = symbolEventSubStep.Edit;
 				if (editEvent.RangeSelectionForEdit) {
 					response.breakdown({
@@ -418,6 +421,9 @@ export const reportAgentEventsToChat = async (
 					}
 				}
 			} else if (symbolEventSubStep.Probe) {
+				if (!symbol_identifier.fs_file_path) {
+					continue;
+				}
 				const probeSubStep = symbolEventSubStep.Probe;
 				const probeRequestKeys = Object.keys(probeSubStep) as (keyof typeof symbolEventSubStep.Probe)[];
 				if (!symbol_identifier.fs_file_path || probeRequestKeys.length === 0) {
@@ -437,6 +443,9 @@ export const reportAgentEventsToChat = async (
 				}
 			}
 		} else if (event.event.RequestEvent) {
+			if (!symbol_identifier.fs_file_path) {
+				continue;
+			}
 			const { ProbeFinished } = event.event.RequestEvent;
 			if (!ProbeFinished) {
 				continue;
