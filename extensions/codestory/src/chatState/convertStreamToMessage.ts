@@ -392,6 +392,16 @@ export const reportAgentEventsToChat = async (
 							)
 						});
 					} else if ('End' === editStreamEvent.event) {
+						// drain the lines which might be still present
+						const editsManager = editsMap.get(editStreamEvent.edit_request_id);
+						while (true) {
+							const currentLine = editsManager.answerSplitter.getLine();
+							if (currentLine === null) {
+								break;
+							}
+							await editsManager.streamProcessor.processLine(currentLine);
+						}
+						// delete this from our map
 						editsMap.delete(editStreamEvent.edit_request_id);
 					} else if (editStreamEvent.event.Delta) {
 						const editsManager = editsMap.get(editStreamEvent.edit_request_id);
