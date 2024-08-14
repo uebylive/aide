@@ -448,6 +448,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			this.createActionToolBarMenus();
 		}
 
+		// Title
+		this.title = append(this.leftContent, $('div.window-title'));
+		this.createTitle();
+
 		// Draggable region that we can manipulate for #52522
 		this.dragRegion = prepend(this.rootContainer, $('div.titlebar-drag-region'));
 
@@ -460,10 +464,6 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		) {
 			this.installMenubar();
 		}
-
-		// Title
-		this.title = append(this.centerContent, $('div.window-title'));
-		this.createTitle();
 
 		let primaryControlLocation = isMacintosh ? 'left' : 'right';
 		if (isMacintosh && isNative) {
@@ -520,15 +520,15 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private createTitle(): void {
 		this.titleDisposables.clear();
 
-		/*
 		// Text Title
-		if (!this.isCommandCenterVisible) {
+		// if (!this.isCommandCenterVisible) {
+		this.title.innerText = this.windowTitle.value;
+		this.titleDisposables.add(this.windowTitle.onDidChange(() => {
 			this.title.innerText = this.windowTitle.value;
-			this.titleDisposables.add(this.windowTitle.onDidChange(() => {
-				this.title.innerText = this.windowTitle.value;
-			}));
-		}
+		}));
+		// }
 
+		/*
 		// Menu Title
 		else {
 			const commandCenter = this.instantiationService.createInstance(CommandCenterControl, this.windowTitle, this.hoverDelegate);

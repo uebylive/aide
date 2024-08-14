@@ -99,23 +99,24 @@
 
 
 /* Window title text */
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
+	order: 2;
 	flex: 0 1 auto;
 	font-size: 12px;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	margin-left: auto;
+	margin-left: 16px;
 	margin-right: auto;
 }
 
-.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
-.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
+.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
 	cursor: default;
 }
 
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
 	font-size: inherit;
 	/* see #55435 */
 }
@@ -212,7 +213,7 @@
 	z-index: 2500;
 	min-width: 36px;
 	flex-wrap: nowrap;
-	order: 2;
+	order: 3;
 }
 
 .monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .menubar {
@@ -382,10 +383,6 @@
 	min-width: 28px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
-	margin-right: auto;
-}
-
 .monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
 	left: 8px;
 }
@@ -504,6 +501,18 @@
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container:not(.has-no-actions) {
 	display: flex;
 	justify-content: center;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container {
+	padding-right: 4px;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:hover {
+	background: var(--vscode-actionBar-toggledBackground);
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item.active) {
+	background: var(--vscode-actionBar-toggledBackground) !important;
 }
 
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item {
