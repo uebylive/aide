@@ -62,7 +62,6 @@ export class AideControls extends Disposable {
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeViewModel | undefined;
 	private set viewModel(viewModel: AideProbeViewModel | undefined) {
-		// @willisCheck: I edited this
 		if (this._viewModel === viewModel) {
 			return;
 		}
@@ -100,7 +99,7 @@ export class AideControls extends Disposable {
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.requestStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
-		// TODO(willis): Make sure we get the right part in the auxilliary editor, not just the main one
+		// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
 		this.part = aideControlsService.mainPart;
 
 		const element = $('.aide-controls');
@@ -176,7 +175,7 @@ export class AideControls extends Disposable {
 			if (this.requestStatus.get() !== AideProbeStatus.INACTIVE && this._viewModel) {
 				const inputValue = editor.getValue();
 				this._viewModel.setFilter(inputValue);
-				// TODO(willis) set is filtered on panel (?)
+				// TODO(@g-danna) set is filtered on panel (?)
 			}
 
 			const model = editor.getModel();
@@ -225,7 +224,7 @@ export class AideControls extends Disposable {
 					placeholder = 'Open a file to start using Aide';
 				} else {
 					const languageId = model.getLanguageId();
-					// TODO(willis) - make or find a capitalize util
+					// TODO(@g-danna) - make or find a capitalize util
 					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
 
 					if (unsupportedLanguages.has(languageId)) {

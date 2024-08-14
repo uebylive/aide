@@ -689,7 +689,7 @@ function createDOMPurify() {
 
 
 			if (trustedTypesPolicy !== null && typeof emptyHTML === 'string') {
-				// TODO(willis): Investigate why this is necessary
+				// TODO(@g-danna): Investigate why this is necessary
 				setTimeout(() => emptyHTML = trustedTypesPolicy.createHTML(''), 0);
 			}
 		} // Prevent further manipulation of configuration.

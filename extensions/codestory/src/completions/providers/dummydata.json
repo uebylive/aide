@@ -1,37 +1,14 @@
 [
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
 			"CodebaseEvent": {
 				"context": {
-					"variables": [
-						{
-							"start_position": {
-								"line": 1,
-								"character": 1,
-								"byteOffset": 0
-							},
-							"end_position": {
-								"line": 7,
-								"character": 2,
-								"byteOffset": 0
-							},
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"name": "file",
-							"type": "File",
-							"content": "   print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-							"language": "rust"
-						}
-					],
+					"variables": [],
 					"file_content_map": [
 						{
 							"file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"file_content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-							"language": "rust"
-						},
-						{
-							"file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"file_content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
+							"file_content": "fn main() {\n}",
 							"language": "rust"
 						}
 					],
@@ -45,8 +22,8 @@
 						"api_key": "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"
 					}
 				},
-				"user_query": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-				"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+				"user_query": "Write anything you want, don't break the syntax",
+				"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 				"swe_bench_test_endpoint": null,
 				"repo_map_fs_path": null,
 				"gcloud_access_token": null,
@@ -58,125 +35,46 @@
 				"full_symbol_edit": true,
 				"codebase_search": false,
 				"root_directory": "/Users/guglielmodanna/Repo/learn/rust/functions",
-				"fast_code_symbol_search_llm": {
-					"llm": "Llama3_1_70bInstruct",
-					"provider": "FireworksAI",
-					"api_key": {
-						"FireworksAI": {
-							"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
-						}
-					}
-				}
+				"fast_code_symbol_search_llm": null,
+				"file_important_search": false,
+				"big_search": false
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
-				"RequestImportantSybmolsCodeWide": {
-					"user_context": {
-						"variables": [
-							{
-								"start_position": {
-									"line": 1,
-									"character": 1,
-									"byteOffset": 0
-								},
-								"end_position": {
-									"line": 7,
-									"character": 2,
-									"byteOffset": 0
-								},
-								"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-								"name": "file",
-								"type": "File",
-								"content": "   print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-								"language": "rust"
-							}
-						],
-						"file_content_map": [
-							{
-								"file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-								"file_content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-								"language": "rust"
-							},
-							{
-								"file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-								"file_content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-								"language": "rust"
-							}
-						],
-						"terminal_selection": null,
-						"folder_paths": []
-					},
-					"user_query": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-					"llm_type": "Llama3_1_70bInstruct",
-					"llm_provider": "FireworksAI",
-					"api_key": {
-						"FireworksAI": {
-							"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
-						}
-					},
-					"file_extension_filters": [],
-					"root_request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-					"symbol_outline": "FILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn main() {\nFILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn print_labeled_measurement(value: i32, unit_label: char) {"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
 			"FrameworkEvent": {
 				"InitialSearchSymbols": {
-					"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 					"symbols": [
-						{
-							"symbol_name": "fibonacci",
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"is_new": true,
-							"thinking": "Create a new function `fibonacci` that takes an integer `n` as input and returns the nth Fibonacci sequence number.",
-							"range": null
-						},
 						{
 							"symbol_name": "main",
 							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
 							"is_new": false,
-							"thinking": "",
+							"thinking": "Add anything to the main() funciton, without breaking the syntax",
 							"range": {
 								"startPosition": {
 									"line": 0,
@@ -184,9 +82,9 @@
 									"byteOffset": 0
 								},
 								"endPosition": {
-									"line": 2,
+									"line": 1,
 									"character": 1,
-									"byteOffset": 52
+									"byteOffset": 13
 								}
 							}
 						}
@@ -196,261 +94,18 @@
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"SymbolEvent": {
-				"symbol": {
-					"symbol_name": "fibonacci",
-					"fs_file_path": null
-				},
-				"event": {
-					"InitialRequest": {
-						"original_question": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-						"plan_if_available": "Create a new function `fibonacci` that takes an integer `n` as input and returns the nth Fibonacci sequence number.",
-						"history": [],
-						"full_symbol_request": true
-					}
-				},
-				"tool_properties": {
-					"swe_bench_test_endpoint": null,
-					"swe_bench_code_editing_llm": null,
-					"swe_bench_reranking_llm": null,
-					"swe_bench_long_context_editing_llm": null,
-					"full_symbol_request": true,
-					"fast_code_symbol_search": {
-						"llm": "Llama3_1_70bInstruct",
-						"provider": "FireworksAI",
-						"api_key": {
-							"FireworksAI": {
-								"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
-							}
-						}
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"GrepSingleFile": {
-					"file_contents": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-					"file_symbol": "fibonacci"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"EditorApplyChange": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"edited_content": "}\n",
-					"selected_range": {
-						"startPosition": {
-							"line": 6,
-							"character": 0,
-							"byteOffset": 0
-						},
-						"endPosition": {
-							"line": 6,
-							"character": 1,
-							"byteOffset": 0
-						}
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "fibonacci",
-					"fs_file_path": null
-				},
-				"event": {
-					"Edit": {
-						"RangeSelectionForEdit": {
-							"range": {
-								"startPosition": {
-									"line": 7,
-									"character": 0,
-									"byteOffset": 0
-								},
-								"endPosition": {
-									"line": 7,
-									"character": 0,
-									"byteOffset": 0
-								}
-							},
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
-						}
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"CodeEditing": {
-					"code_above": "fn main() {\n    print_labeled_measurement(5, 'h');\n}\n\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}",
-					"code_below": null,
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"code_to_edit": "",
-					"extra_context": "",
-					"language": "Rust",
-					"model": "ClaudeSonnet",
-					"instruction": "Create a new function `fibonacci` that takes an integer `n` as input and returns the nth Fibonacci sequence number.",
-					"api_key": {
-						"Anthropic": {
-							"api_key": "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"
-						}
-					},
-					"provider": "Anthropic",
-					"is_swe_bench_initial_edit": false,
-					"symbol_to_edit": "fibonacci",
-					"is_new_symbol_request": null,
-					"root_request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-					"is_outline_edit": true
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"SymbolEventSubStep": {
-				"symbol_identifier": {
-					"symbol_name": "fibonacci",
-					"fs_file_path": null
-				},
-				"event": {
-					"Edit": {
-						"EditCode": {
-							"range": {
-								"startPosition": {
-									"line": 7,
-									"character": 0,
-									"byteOffset": 0
-								},
-								"endPosition": {
-									"line": 25,
-									"character": 0,
-									"byteOffset": 0
-								}
-							},
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"new_code": "fn fibonacci(n: u32) -> u32 {\n    if n == 0 {\n        return 0;\n    } else if n == 1 {\n        return 1;\n    }\n\n    let mut prev = 0;\n    let mut current = 1;\n\n    for _ in 2..=n {\n        let next = prev + current;\n        prev = current;\n        current = next;\n    }\n\n    current\n}"
-						}
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"EditorApplyChange": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"edited_content": "fn fibonacci(n: u32) -> u32 {\n    if n == 0 {\n        return 0;\n    } else if n == 1 {\n        return 1;\n    }\n\n    let mut prev = 0;\n    let mut current = 1;\n\n    for _ in 2..=n {\n        let next = prev + current;\n        prev = current;\n        current = next;\n    }\n\n    current\n}",
-					"selected_range": {
-						"startPosition": {
-							"line": 7,
-							"character": 0,
-							"byteOffset": 0
-						},
-						"endPosition": {
-							"line": 7,
-							"character": 0,
-							"byteOffset": 0
-						}
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 0,
-						"character": 7,
-						"byteOffset": 7
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
 			"SymbolEvent": {
 				"symbol": {
@@ -459,10 +114,19 @@
 				},
 				"event": {
 					"InitialRequest": {
-						"original_question": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-						"plan_if_available": "Call the `fibonacci` function in the `main` function and print the result.",
+						"original_question": "Write anything you want, don't break the syntax",
+						"plan": "Add a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program.",
 						"history": [],
-						"full_symbol_request": true
+						"full_symbol_request": true,
+						"symbols_edited_list": [
+							{
+								"symbol": "main",
+								"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+								"is_new": false,
+								"thinking": "Add a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program."
+							}
+						],
+						"is_big_search_request": false
 					}
 				},
 				"tool_properties": {
@@ -471,32 +135,25 @@
 					"swe_bench_reranking_llm": null,
 					"swe_bench_long_context_editing_llm": null,
 					"full_symbol_request": true,
-					"fast_code_symbol_search": {
-						"llm": "Llama3_1_70bInstruct",
-						"provider": "FireworksAI",
-						"api_key": {
-							"FireworksAI": {
-								"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
-							}
-						}
-					}
+					"fast_code_symbol_search": null,
+					"plan_for_input": "<step id = 1>\n<code_symbol>\nmain\n</code_symbol>\n<file_path>\n/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\n</file_path>\n<high_level_plan>\nAdd a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program.\n</high_level_plan>\n</step>"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
 			"SymbolLoctationUpdate": {
 				"snippet": {
@@ -507,14 +164,14 @@
 							"byteOffset": 0
 						},
 						"endPosition": {
-							"line": 2,
+							"line": 1,
 							"character": 1,
-							"byteOffset": 52
+							"byteOffset": 13
 						}
 					},
 					"symbol_name": "main",
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
+					"content": "fn main() {\n}",
 					"language": null,
 					"outline_node_content": {
 						"range": {
@@ -524,14 +181,14 @@
 								"byteOffset": 0
 							},
 							"endPosition": {
-								"line": 2,
+								"line": 1,
 								"character": 1,
-								"byteOffset": 52
+								"byteOffset": 13
 							}
 						},
 						"name": "main",
 						"type": "Function",
-						"content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
+						"content": "fn main() {\n}",
 						"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
 						"identifier_range": {
 							"startPosition": {
@@ -552,9 +209,9 @@
 								"byteOffset": 10
 							},
 							"endPosition": {
-								"line": 2,
+								"line": 1,
 								"character": 1,
-								"byteOffset": 52
+								"byteOffset": 13
 							}
 						},
 						"language": "rust",
@@ -569,53 +226,18 @@
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "3541194e-0281-4910-add8-5bdda8c80506"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 0,
-						"character": 7,
-						"byteOffset": 7
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-		"event": {
-			"ToolEvent": {
-				"FilterCodeSnippetsForEditingSingleSymbols": {
-					"xml_symbol": "<rerank_entry>\n<id>\n0\n</id>\n<name>\nmain\n</name>\n<file_path>\n/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs:0-2\n</file_path>\n<content>\n```\nfn main() {\n    print_labeled_measurement(5, 'h');\n}\n```\n</content>\n</rerank_entry>",
-					"query": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-					"llm": "GeminiProFlash",
-					"provider": "GoogleAIStudio",
-					"api_key": {
-						"GoogleAIStudio": {
-							"api_key": "AIzaSyCMkKfNkmjF8rTOWMg53NiYmz0Zv6xbfsE"
-						}
-					},
-					"root_request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
 			"SymbolEvent": {
 				"symbol": {
@@ -634,19 +256,27 @@
 										"byteOffset": 0
 									},
 									"endPosition": {
-										"line": 2,
+										"line": 1,
 										"character": 1,
-										"byteOffset": 52
+										"byteOffset": 13
 									}
 								},
 								"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
 								"symbol_name": "main",
 								"instructions": [
-									"Original user query:\nAdd a fn that prints the nth fibonacci sequence number and call it in main\n\nEdit selection reason:\nWe need to call the new Fibonacci function in the main function to print the nth Fibonacci sequence number."
+									"Add a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program."
 								],
 								"is_new": false,
 								"is_full_edit": true,
-								"original_user_query": "Add a fn that prints the nth fibonacci sequence number and call it in main"
+								"original_user_query": "Write anything you want, don't break the syntax",
+								"symbol_edited_list": [
+									{
+										"symbol": "main",
+										"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+										"is_new": false,
+										"thinking": "Add a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program."
+									}
+								]
 							}
 						],
 						"symbol_identifier": {
@@ -657,7 +287,7 @@
 							{
 								"symbol": "main",
 								"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-								"request": "Add a fn that prints the nth fibonacci sequence number and call it in main"
+								"request": "Add a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program."
 							}
 						]
 					}
@@ -668,32 +298,25 @@
 					"swe_bench_reranking_llm": null,
 					"swe_bench_long_context_editing_llm": null,
 					"full_symbol_request": true,
-					"fast_code_symbol_search": {
-						"llm": "Llama3_1_70bInstruct",
-						"provider": "FireworksAI",
-						"api_key": {
-							"FireworksAI": {
-								"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
-							}
-						}
-					}
+					"fast_code_symbol_search": null,
+					"plan_for_input": "<step id = 1>\n<code_symbol>\nmain\n</code_symbol>\n<file_path>\n/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\n</file_path>\n<high_level_plan>\nAdd a simple \"Hello, World!\" print statement inside the main function to demonstrate a basic Rust program.\n</high_level_plan>\n</step>"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
 			"SymbolLoctationUpdate": {
 				"snippet": {
@@ -704,14 +327,14 @@
 							"byteOffset": 0
 						},
 						"endPosition": {
-							"line": 2,
+							"line": 1,
 							"character": 1,
-							"byteOffset": 52
+							"byteOffset": 13
 						}
 					},
 					"symbol_name": "main",
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
+					"content": "fn main() {\n}",
 					"language": null,
 					"outline_node_content": {
 						"range": {
@@ -721,14 +344,14 @@
 								"byteOffset": 0
 							},
 							"endPosition": {
-								"line": 2,
+								"line": 1,
 								"character": 1,
-								"byteOffset": 52
+								"byteOffset": 13
 							}
 						},
 						"name": "main",
 						"type": "Function",
-						"content": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
+						"content": "fn main() {\n}",
 						"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
 						"identifier_range": {
 							"startPosition": {
@@ -749,9 +372,9 @@
 								"byteOffset": 10
 							},
 							"endPosition": {
-								"line": 2,
+								"line": 1,
 								"character": 1,
-								"byteOffset": 52
+								"byteOffset": 13
 							}
 						},
 						"language": "rust",
@@ -766,377 +389,84 @@
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 0,
-						"character": 7,
-						"byteOffset": 7
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 2,
-						"character": 1,
-						"byteOffset": 52
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 2,
-						"character": 1,
-						"byteOffset": 52
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 6,
-						"character": 1,
-						"byteOffset": 173
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 6,
-						"character": 1,
-						"byteOffset": 173
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 6,
-						"character": 1,
-						"byteOffset": 173
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 6,
-						"character": 1,
-						"byteOffset": 173
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 2,
-						"character": 1,
-						"byteOffset": 52
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 2,
-						"character": 1,
-						"byteOffset": 52
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 24,
-						"character": 1,
-						"byteOffset": 458
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"GoToDefinition": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423",
-					"position": {
-						"line": 24,
-						"character": 1,
-						"byteOffset": 458
-					}
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 24,
-						"character": 1,
-						"byteOffset": 458
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"SymbolImplementations": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 24,
-						"character": 1,
-						"byteOffset": 458
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"OpenFile": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
-				"ReRankingCodeSnippetsForEditing": {
-					"outline_nodes": [
-						{
-							"name": "main",
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"content": "FILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn main() {"
-						},
-						{
-							"name": "print_labeled_measurement",
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"content": "FILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn print_labeled_measurement(value: i32, unit_label: char) {"
-						},
-						{
-							"name": "fibonacci",
-							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"content": "FILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn fibonacci(n: u32) -> u32 {"
-						}
-					],
-					"code_above": null,
-					"code_below": null,
-					"code_to_edit_selection": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"user_query": "Original user query:\nAdd a fn that prints the nth fibonacci sequence number and call it in main\n\nEdit selection reason:\nWe need to call the new Fibonacci function in the main function to print the nth Fibonacci sequence number.",
-					"llm_properties": {
-						"llm": "GeminiProFlash",
-						"provider": "GoogleAIStudio",
-						"api_key": {
-							"GoogleAIStudio": {
-								"api_key": "AIzaSyCMkKfNkmjF8rTOWMg53NiYmz0Zv6xbfsE"
-							}
-						}
-					},
-					"root_request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
@@ -1153,9 +483,9 @@
 									"byteOffset": 0
 								},
 								"endPosition": {
-									"line": 2,
+									"line": 1,
 									"character": 1,
-									"byteOffset": 52
+									"byteOffset": 13
 								}
 							},
 							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
@@ -1166,81 +496,263 @@
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
-				"FilterEditOperation": {
-					"code_in_selection": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
 					"symbol_name": "main",
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"user_instruction": "Add a fn that prints the nth fibonacci sequence number and call it in main",
-					"reason_to_edit": "Original user query:\nAdd a fn that prints the nth fibonacci sequence number and call it in main\n\nEdit selection reason:\nWe need to call the new Fibonacci function in the main function to print the nth Fibonacci sequence number.",
-					"llm_properties": {
-						"llm": "Llama3_1_8bInstruct",
-						"provider": "FireworksAI",
-						"api_key": {
-							"FireworksAI": {
-								"api_key": "s8Y7yIXdL0lMeHHgvbZXS77oGtBAHAsfsLviL2AKnzuGpg1n"
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": "Start"
+						}
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": {
+								"Delta": "```\n"
 							}
 						}
-					},
-					"root_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa"
+					}
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
 		"event": {
-			"ToolEvent": {
-				"CodeEditing": {
-					"code_above": null,
-					"code_below": "\nfn print_labeled_measurement(value: i32, unit_label: char) {\n    println!(\"The measurement is: {value}{unit_label}\");\n}\nfn fibonacci(n: u32) -> u32 {\n    if n == 0 {\n        return 0;\n    } else if n == 1 {\n        return 1;\n    }\n\n    let mut prev = 0;\n    let mut current = 1;\n\n    for _ in 2..=n {\n        let next = prev + current;\n        prev = current;\n        current = next;\n    }\n\n    current\n}",
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"code_to_edit": "fn main() {\n    print_labeled_measurement(5, 'h');\n}",
-					"extra_context": "FILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn main() {\nFILEPATH: /Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs\nfn fibonacci(n: u32) -> u32 {",
-					"language": "Rust",
-					"model": "ClaudeSonnet",
-					"instruction": "Original user query:\nAdd a fn that prints the nth fibonacci sequence number and call it in main\n\nEdit selection reason:\nWe need to call the new Fibonacci function in the main function to print the nth Fibonacci sequence number.",
-					"api_key": {
-						"Anthropic": {
-							"api_key": "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"
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": {
+								"Delta": "fn main() {"
+							}
 						}
-					},
-					"provider": "Anthropic",
-					"is_swe_bench_initial_edit": false,
-					"symbol_to_edit": "main",
-					"is_new_symbol_request": null,
-					"root_request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
-					"is_outline_edit": true
+					}
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": {
+								"Delta": "\n    println!(\"Hello, World!\");"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": {
+								"Delta": "\n}"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": {
+								"Delta": "\n```"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"SymbolEventSubStep": {
+				"symbol_identifier": {
+					"symbol_name": "main",
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs"
+				},
+				"event": {
+					"Edit": {
+						"EditCodeStreaming": {
+							"edit_request_id": "0ec455ae-ee7d-4349-a83b-83be0f188352",
+							"range": {
+								"startPosition": {
+									"line": 0,
+									"character": 0,
+									"byteOffset": 0
+								},
+								"endPosition": {
+									"line": 1,
+									"character": 0,
+									"byteOffset": 0
+								}
+							},
+							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+							"event": "End"
+						}
+					}
+				}
+			}
+		}
+	},
+	{
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
 			"SymbolEventSubStep": {
 				"symbol_identifier": {
@@ -1257,13 +769,13 @@
 									"byteOffset": 0
 								},
 								"endPosition": {
-									"line": 12,
+									"line": 4,
 									"character": 0,
 									"byteOffset": 0
 								}
 							},
 							"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-							"new_code": "fn main() {\n    print_labeled_measurement(5, 'h');\n    \n    // New function to print the nth Fibonacci number\n    fn print_fibonacci(n: u32) {\n        let result = fibonacci(n);\n        println!(\"The {}th Fibonacci number is: {}\", n, result);\n    }\n    \n    // Call the new function with an example value\n    print_fibonacci(10);\n}"
+							"new_code": "\nfn main() {\n    println!(\"Hello, World!\");\n}"
 						}
 					}
 				}
@@ -1271,82 +783,64 @@
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
-				"EditorApplyChange": {
-					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"edited_content": "fn main() {\n    print_labeled_measurement(5, 'h');\n    \n    // New function to print the nth Fibonacci number\n    fn print_fibonacci(n: u32) {\n        let result = fibonacci(n);\n        println!(\"The {}th Fibonacci number is: {}\", n, result);\n    }\n    \n    // Call the new function with an example value\n    print_fibonacci(10);\n}",
-					"selected_range": {
-						"startPosition": {
-							"line": 0,
-							"character": 0,
-							"byteOffset": 0
-						},
-						"endPosition": {
-							"line": 2,
-							"character": 1,
-							"byteOffset": 52
-						}
-					},
-					"editor_url": "http://localhost:42423"
-				}
-			}
-		}
-	},
-	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
-		"event": {
-			"ToolEvent": {
+			"FrameworkEvent": {
 				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "7f7839bd-b8ad-433d-88cb-75d94a8221d2",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"ToolEvent": {
-				"GoToReference": {
+			"FrameworkEvent": {
+				"OpenFile": {
 					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
-					"position": {
-						"line": 0,
-						"character": 0,
-						"byteOffset": 0
-					},
-					"editor_url": "http://localhost:42423"
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
 				}
 			}
 		}
 	},
 	{
-		"request_id": "36e9daa6-3e92-443f-9540-1fd3baffe7fa",
+		"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1",
 		"event": {
-			"EditRequestFinished": "36e9daa6-3e92-443f-9540-1fd3baffe7fa"
+			"FrameworkEvent": {
+				"OpenFile": {
+					"fs_file_path": "/Users/guglielmodanna/Repo/learn/rust/functions/src/main.rs",
+					"request_id": "e60589ad-b55c-4be7-914e-13d5c92236f1"
+				}
+			}
+		}
+	},
+	{
+		"request_id": "3541194e-0281-4910-add8-5bdda8c80506",
+		"event": {
+			"EditRequestFinished": "3541194e-0281-4910-add8-5bdda8c80506"
 		}
 	}
 ]

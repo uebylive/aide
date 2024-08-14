@@ -132,12 +132,12 @@ export class ContextPicker extends Disposable {
 		}));
 
 		const addButton = this._register(this.instantiationService.createInstance(Button, this.listPanelElement, {}));
-		// TODO(willis) Add Aide-specific localization
+		// TODO(@g-danna) Add Aide-specific localization
 		addButton.label = localize('chat.addAttachment', "Add more specific context");
 		addButton.element.classList.add('aide-context-picker-add-button');
 
 		this._register(addButton.onDidClick(async () => {
-			// TODO(willis) Find a better (?) and type-safe way to do this
+			// TODO(@g-danna) Find a better (?) and type-safe way to do this
 			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
 			if (Array.isArray(newEntries)) {
 				newEntries.forEach(entry => this.context.add(entry));

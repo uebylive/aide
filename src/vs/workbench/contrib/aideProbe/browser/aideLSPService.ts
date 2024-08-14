@@ -18,7 +18,7 @@ export interface IAideLSPService {
 	readonly onDidChangeStatus: Event<ILanguageStatus>;
 }
 
-export interface ILanguageStatus {
+interface ILanguageStatus {
 	languageId: string;
 	isActive: boolean;
 }
@@ -100,7 +100,7 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 
 		this.notificationService.notify({
 			severity: Severity.Info,
-			// TODO(willis) - Localize this
+			// TODO(@g-danna) - Localize this
 			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
 			actions: {
 				primary: [

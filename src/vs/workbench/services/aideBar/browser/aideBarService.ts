@@ -10,7 +10,6 @@ import { AideBarPart } from 'vs/workbench/browser/parts/aidebar/aidebarPart';
 export const IAideBarService = createDecorator<IAideBarService>('aideBarService');
 
 export interface IAideBarService {
-
 	readonly _serviceBrand: undefined;
 	readonly mainPart: AideBarPart;
 	getPart(container: HTMLElement): IDisposable;

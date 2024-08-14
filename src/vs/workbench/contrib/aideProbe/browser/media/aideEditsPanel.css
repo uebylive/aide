@@ -3,8 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.part.aidebar {
-	position: relative;
-	z-index: 10;
-	overflow: visible !important;
+
+.list-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-inline: 6px;
+}
+
+.edits-list-item {
+	display: flex;
+	white-space: normal;
 }

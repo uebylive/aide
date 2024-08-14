@@ -7,4 +7,19 @@
 	position: absolute;
 	right: 34px;
 	top: 0;
+	border: 1px solid var(--vscode-chat-requestBorder);
+	border-radius: 12px;
+	background-color: var(--vscode-input-background);;
 }
+
+.aide-panel-header {
+	display: flex;
+	gap: 6px;
+	padding-inline: 6px;
+	background-color: var(--vscode-commandCenter-background);
+}
+
+.aide-panel-header :is(svg, .aide-panel-header-text)  {
+	margin-top: 6px;
+}
+

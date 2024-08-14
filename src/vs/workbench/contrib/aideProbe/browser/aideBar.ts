@@ -4,33 +4,35 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { Button } from 'vs/base/browser/ui/button/button';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { assertIsDefined } from 'vs/base/common/types';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideBarService } from 'vs/workbench/browser/parts/aidebar/aidebarPart';
+import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
+import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideBarService } from 'vs/workbench/services/aideBar/browser/aideBarService';
+import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
 
 const $ = dom.$;
-
-enum Panels {
-	Edits = 'edits',
-	None = 'none'
-}
-
-//import { AideBarPart } from 'vs/workbench/browser/parts/aidebar/aidebarPart';
 
 export class AideBar extends Disposable {
 	static readonly ID = 'workbench.contrib.aideBar';
 
 	private part = this.aideBarService.mainPart;
+	private editorPart = this.editorGroupService.mainPart;
+	// TODO(@g-danna) Replace this with proper service and event
+	private editorSize = this.editorPart.getSize(0);
+
 	private element: HTMLElement;
-	private openPanel: Panels = Panels.None;
+	private editsPanel: AideEditsPanel;
+	private openPanel: AidePanel | undefined;
 
 
 	constructor(
-		@IAideBarService private readonly aideBarService: AideBarService,
+		@IAideBarService private readonly aideBarService: IAideBarService,
+		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService,
 		@IAideProbeExplanationService explanationService: IAideProbeExplanationService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 
@@ -47,27 +49,41 @@ export class AideBar extends Disposable {
 
 		const buttonContainer = $('.aide-bar-button-container');
 		this.element.appendChild(buttonContainer);
-		const button = $('.aide-bar-button');
-		buttonContainer.appendChild(button);
+		const button = this._register(this.instantiationService.createInstance(Button, buttonContainer, { title: 'Aide Edits' }));
+		this._register(this.instantiationService.createInstance(Heroicon, button.element, 'solid/list-bullet'));
 
-		this.instantiationService.createInstance(AideEditsPanel, buttonContainer);
+		Object.assign(button.element.style, {
+			width: '32px',
+			height: '32px',
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'center',
+		});
 
-		this.element.addEventListener('click', e => {
-			if (this.openPanel === Panels.None) {
-				this.openPanel = Panels.Edits;
+		this.editsPanel = this.openPanel = this.instantiationService.createInstance(AideEditsPanel, buttonContainer);
+
+		button.onDidClick(() => {
+			if (this.editsPanel.isVisible) {
+				this.editsPanel.hide();
 			} else {
-				this.openPanel = Panels.None;
+				this.editsPanel.show();
 			}
 		});
 
-
-		this._register(this.part.onDidSizeChange(() => {
+		// TODO(@g-danna) Replace this with proper service and event
+		this._register(this.editorPart.onDidLayout((editorSize) => {
+			this.editorSize = editorSize;
 			this.layout();
 		}));
+
 		this.layout();
 	}
 
 	private layout() {
 		this.element.style.height = this.part.dimension?.height + 'px';
+		if (this.openPanel) {
+			this.openPanel.maxWidth = this.editorSize.width;
+			this.openPanel.maxHeight = this.editorSize.height;
+		}
 	}
 }

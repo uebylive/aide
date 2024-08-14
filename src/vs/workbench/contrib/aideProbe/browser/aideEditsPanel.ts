@@ -10,7 +10,7 @@ import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProb
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose, IReference } from 'vs/base/common/lifecycle';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
+import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
@@ -26,21 +26,31 @@ import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { FileKind } from 'vs/platform/files/common/files';
 import { relativePath } from 'vs/base/common/resources';
+import { Heroicon } from 'vs/workbench/browser/heroicon';
+import 'vs/css!./media/aideEditsPanel';
+import { ThemeIcon } from 'vs/base/common/themables';
+import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
 
 const $ = dom.$;
 
 export class AideEditsPanel extends AidePanel {
 
 	static readonly ID = 'workbench.contrib.aideEditsPanel';
-	private model: IAideProbeModel | undefined;
 
+	private model: IAideProbeModel | undefined;
 	private viewModel: IAideEditsViewModel | undefined;
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 
-	listFocusIndex: number | undefined;
+	planListFocusIndex: number | undefined;
+	private activePlanEntry: IAideInitialSymbolInformationViewModel | undefined;
+	private planList: WorkbenchList<IAideInitialSymbolInformationViewModel> | undefined;
+
+	breakdownsListFocusIndex: number | undefined;
 	private activeBreakdown: IAideBreakdownViewModel | undefined;
-	private list: WorkbenchList<IAideBreakdownViewModel> | undefined;
-	private readonly _onDidChangeFocus = this._register(new Emitter<IBreakdownChangeEvent>());
+	private breakdownsList: WorkbenchList<IAideBreakdownViewModel> | undefined;
+
+
+	private readonly _onDidChangeFocus = this._register(new Emitter<IListChangeEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
@@ -51,34 +61,176 @@ export class AideEditsPanel extends AidePanel {
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService) {
-		super(reference, instantiationService);
+		super(reference, instantiationService, undefined, 'Actions');
 
-
-		this._register(aideProbeService.onNewEvent((event) => {
-			console.log('AideEditsPanel.model.newEvent', event);
+		this.init();
+		this._register(aideProbeService.onNewEvent(() => {
 			if (!this.model) {
-				this.onNewRequest();
+				this.init();
 			}
 		}));
 	}
 
-	private onNewRequest() {
-		this.model = this.aideProbeService.getSession()!;
-		this.viewModel = this.instantiationService.createInstance(AideEditsViewModel, this.model);
-
-		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
-			this.updateList();
-		}));
+	private init() {
+		this.model = this.aideProbeService.getSession();
+		if (this.model) {
+			this.viewModel = this.instantiationService.createInstance(AideEditsViewModel, this.model);
+			this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
+				this.updatePlanList();
+				this.updateBreakdownsList();
+			}));
+		}
 	}
 
-	private createList() {
+	private createPlanList() {
+
+
+		const header = $('.list-header');
+		this._register(this.instantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
+		const headerText = $('.header-text');
+		headerText.textContent = 'Plan';
+		header.appendChild(headerText);
+		this.body.element.append(header);
+
+
+		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+		const listDelegate = this.instantiationService.createInstance(PlanListDelegate);
+		const renderer = this._register(this.instantiationService.createInstance(PlanListRenderer, resourceLabels));
+		const listContainer = $('.list-container');
+		this.body.element.append(listContainer);
+
+		const list = this._register(<WorkbenchList<IAideInitialSymbolInformationViewModel>>this.instantiationService.createInstance(
+			WorkbenchList,
+			'PlanList',
+			listContainer,
+			listDelegate,
+			[renderer],
+			{
+				setRowLineHeight: false,
+				supportDynamicHeights: true,
+				horizontalScrolling: false,
+				alwaysConsumeMouseWheel: false
+			}
+		));
+
+		this._register(list.onDidChangeContentHeight(height => {
+			list.layout(height);
+		}));
+		this._register(renderer.onDidChangeItemHeight(event => {
+			list.updateElementHeight(event.index, event.height);
+		}));
+		this._register(list.onDidChangeFocus(event => {
+			if (event.indexes.length === 1) {
+				const index = event.indexes[0];
+				list.setSelection([index]);
+				const element = list.element(index);
+
+				this._onDidChangeFocus.fire({ index, element });
+
+				if (event.browserEvent) {
+					this.breakdownsListFocusIndex = index;
+				}
+
+				if (element && element.uri && element.symbolName) {
+					this.openPlanReference(element, !!event.browserEvent);
+				}
+			}
+		}));
+
+		this._register(list.onDidOpen(async (event) => {
+			const { element } = event;
+			if (element && element.uri && element.symbolName) {
+				const index = this.getPlanListIndex(element);
+
+				if (event.browserEvent) {
+					this.breakdownsListFocusIndex = index;
+				}
+
+				this._onDidChangeFocus.fire({ index, element: element });
+				this.openPlanReference(element, !!event.browserEvent);
+			}
+		}));
+
+		return list;
+	}
+
+	private getPlanListIndex(element: IAideInitialSymbolInformationViewModel): number {
+		let matchIndex = -1;
+		this.viewModel?.initialSymbols.forEach((item, index) => {
+			if (item.uri.fsPath === element.uri.fsPath && item.symbolName === element.symbolName) {
+				matchIndex = index;
+			}
+		});
+		return matchIndex;
+	}
+
+	async openPlanReference(element: IAideInitialSymbolInformationViewModel, setFocus: boolean = false): Promise<void> {
+		if (this.activePlanEntry === element) {
+			return;
+		} else {
+			this.activePlanEntry = element;
+			const index = this.getPlanListIndex(element);
+			if (this.planList && index !== -1 && setFocus) {
+				this.planList.setFocus([index]);
+				//this.explanationService.changeActiveBreakdown(element);
+			}
+		}
+	}
+
+	private updatePlanList() {
+		if (!this.planList && this.viewModel?.initialSymbols.length) {
+			this.planList = this.createPlanList();
+			return;
+		}
+		if (!this.viewModel || !this.planList) {
+			return;
+		}
+		const initialSymbols = this.viewModel.initialSymbols;
+		let matchingIndex = -1;
+		if (initialSymbols.length === 0) {
+			this.planList.splice(0, 0, initialSymbols);
+		} else {
+			initialSymbols.forEach((symbol) => {
+				const matchIndex = this.getPlanListIndex(symbol);
+				if (this.planList) {
+					if (matchIndex === -1) {
+						this.planList.splice(initialSymbols.length - 1, 0, [symbol]);
+					} else {
+						this.planList.splice(matchIndex, 1, [symbol]);
+					}
+				}
+				matchingIndex = matchIndex;
+			});
+		}
+
+		if (this.planListFocusIndex !== undefined) {
+			this.planList.setFocus([this.planListFocusIndex]);
+		} else if (matchingIndex !== -1) {
+			this.planList.setFocus([matchingIndex]);
+		}
+
+		this.planList.rerender();
+	}
+
+	private createBreakdownsList() {
+
+		const header = $('.list-header');
+		this._register(this.instantiationService.createInstance(Heroicon, header, 'micro/code-bracket'));
+		const headerText = $('.header-text');
+		headerText.textContent = 'Edits';
+		header.appendChild(headerText);
+		this.body.element.append(header);
+
 		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 		const listDelegate = this.instantiationService.createInstance(BreakdownListDelegate);
-		const renderer = this._register(this.instantiationService.createInstance(BreakdownListRenderer, resourceLabels));
+		const renderer = this._register(this.instantiationService.createInstance(BreakdownListRenderer));
+		const listContainer = $('.breakdown-list-container');
+		this.body.element.append(listContainer);
+
 		const list = this._register(<WorkbenchList<IAideBreakdownViewModel>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'BreakdownsList',
-			this.body.element,
+			listContainer,
 			listDelegate,
 			[renderer],
 			{
@@ -105,7 +257,7 @@ export class AideEditsPanel extends AidePanel {
 				this._onDidChangeFocus.fire({ index, element });
 
 				if (event.browserEvent) {
-					this.listFocusIndex = index;
+					this.breakdownsListFocusIndex = index;
 				}
 
 				if (element && element.uri && element.name) {
@@ -120,7 +272,7 @@ export class AideEditsPanel extends AidePanel {
 				const index = this.getBreakdownListIndex(element);
 
 				if (event.browserEvent) {
-					this.listFocusIndex = index;
+					this.breakdownsListFocusIndex = index;
 				}
 
 				this._onDidChangeFocus.fire({ index, element: element });
@@ -147,50 +299,170 @@ export class AideEditsPanel extends AidePanel {
 		} else {
 			this.activeBreakdown = element;
 			const index = this.getBreakdownListIndex(element);
-			if (this.list && index !== -1 && setFocus) {
-				this.list.setFocus([index]);
+			if (this.breakdownsList && index !== -1 && setFocus) {
+				this.breakdownsList.setFocus([index]);
 				this.explanationService.changeActiveBreakdown(element);
 			}
 		}
 	}
 
-	private updateList() {
-		if (!this.list) {
-			this.list = this.createList();
+	private updateBreakdownsList() {
+		if (!this.breakdownsList && this.viewModel?.breakdowns.length) {
+			this.breakdownsList = this.createBreakdownsList();
 			return;
 		}
-		if (!this.viewModel) {
+		if (!this.viewModel || !this.breakdownsList) {
 			return;
 		}
 		const breakdowns = this.viewModel.breakdowns;
 		let matchingIndex = -1;
 		if (breakdowns.length === 0) {
-			this.list.splice(0, 0, breakdowns);
+			this.breakdownsList.splice(0, 0, breakdowns);
 		} else {
 			breakdowns.forEach((breakdown) => {
 				const matchIndex = this.getBreakdownListIndex(breakdown);
-				if (this.list) {
+				if (this.breakdownsList) {
 					if (matchIndex === -1) {
-						this.list.splice(breakdowns.length - 1, 0, [breakdown]);
+						this.breakdownsList.splice(breakdowns.length - 1, 0, [breakdown]);
 					} else {
-						this.list.splice(matchIndex, 1, [breakdown]);
+						this.breakdownsList.splice(matchIndex, 1, [breakdown]);
 					}
 				}
 				matchingIndex = matchIndex;
 			});
 		}
 
-		if (this.listFocusIndex !== undefined) {
-			this.list.setFocus([this.listFocusIndex]);
+		if (this.breakdownsListFocusIndex !== undefined) {
+			this.breakdownsList.setFocus([this.breakdownsListFocusIndex]);
 		} else if (matchingIndex !== -1) {
-			this.list.setFocus([matchingIndex]);
+			this.breakdownsList.setFocus([matchingIndex]);
+		}
+
+		this.breakdownsList.rerender();
+	}
+}
+
+
+interface IInitialSymbolInformationTemplateData {
+	currentItem?: IAideInitialSymbolInformationViewModel;
+	currentItemIndex?: number;
+	container: HTMLElement;
+	toDispose: DisposableStore;
+}
+
+interface IInitialSymbolInformationHeightChangeParams {
+	element: IAideInitialSymbolInformationViewModel;
+	index: number;
+	height: number;
+}
+
+class PlanListRenderer extends Disposable implements IListRenderer<IAideInitialSymbolInformationViewModel, IInitialSymbolInformationTemplateData> {
+	static readonly TEMPLATE_ID = 'breakdownListRenderer';
+
+	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IInitialSymbolInformationHeightChangeParams>());
+	readonly onDidChangeItemHeight: Event<IInitialSymbolInformationHeightChangeParams> = this._onDidChangeItemHeight.event;
+
+	constructor(
+		private readonly resourceLabels: ResourceLabels,
+		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
+	) {
+		super();
+	}
+
+	get templateId(): string {
+		return BreakdownListRenderer.TEMPLATE_ID;
+	}
+
+	renderTemplate(container: HTMLElement): IInitialSymbolInformationTemplateData {
+		const data: IInitialSymbolInformationTemplateData = Object.create(null);
+		data.toDispose = new DisposableStore();
+		data.container = dom.append(container, $('.edits-list-item'));
+		return data;
+	}
+
+
+	renderElement(element: IAideInitialSymbolInformationViewModel, index: number, templateData: IInitialSymbolInformationTemplateData) {
+		//const templateDisposables = new DisposableStore();
+
+		templateData.currentItem = element;
+		templateData.currentItemIndex = index;
+		dom.clearNode(templateData.container);
+
+		const { uri, symbolName, thinking } = element;
+
+		const themeIconClasses = ThemeIcon.asCSSSelector(SymbolKinds.toIcon(SymbolKind.Method));
+		const iconElement = $(`.plan-icon${themeIconClasses}`);
+		templateData.container.appendChild(iconElement);
+
+		const symbolElement = $('.plan-symbol');
+		templateData.container.appendChild(symbolElement);
+
+		const symbolHeader = $('.plan-symbol-header');
+		symbolHeader.textContent = symbolName;
+		symbolElement.appendChild(symbolHeader);
+
+		const symbolPath = $('.plan-symbol-path');
+		const workspaceFolder = this.contextService.getWorkspace().folders[0];
+		const workspaceFolderUri = workspaceFolder.uri;
+		const path = relativePath(workspaceFolderUri, uri);
+		if (path) {
+			symbolPath.textContent = path.toString();
+			symbolElement.appendChild(symbolPath);
+		}
+
+		if (thinking) {
+			const thinkingElement = $('.plan-thinking');
+			thinkingElement.textContent = thinking;
+			symbolElement.appendChild(thinkingElement);
+		}
+
+		this.updateItemHeight(templateData);
+	}
+
+	disposeTemplate(templateData: IInitialSymbolInformationTemplateData): void {
+		dispose(templateData.toDispose);
+	}
+
+	private updateItemHeight(templateData: IInitialSymbolInformationTemplateData): void {
+		if (!templateData.currentItem || typeof templateData.currentItemIndex !== 'number') {
+			return;
+		}
+
+		const { currentItem: element, currentItemIndex: index } = templateData;
+
+		const newHeight = templateData.container.offsetHeight || 52;
+		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
+		element.currentRenderedHeight = newHeight;
+		if (fireEvent) {
+			const disposable = templateData.toDispose.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.container), () => {
+				element.currentRenderedHeight = templateData.container.offsetHeight || 52;
+				disposable.dispose();
+				this._onDidChangeItemHeight.fire({ element, index, height: element.currentRenderedHeight });
+			}));
 		}
 	}
 }
 
-interface IBreakdownChangeEvent {
+class PlanListDelegate implements IListVirtualDelegate<IInitialSymbolInformationTemplateData> {
+	private defaultElementHeight: number = 52;
+
+	getHeight(element: IInitialSymbolInformationTemplateData): number {
+		return this.defaultElementHeight;
+	}
+
+	getTemplateId(element: IInitialSymbolInformationTemplateData): string {
+		return BreakdownListRenderer.TEMPLATE_ID;
+	}
+
+	hasDynamicHeight(element: IInitialSymbolInformationTemplateData): boolean {
+		return true;
+	}
+}
+
+
+interface IListChangeEvent {
 	index: number;
-	element: IAideBreakdownViewModel;
+	element: IAideBreakdownViewModel | IAideInitialSymbolInformationViewModel;
 }
 
 
@@ -207,17 +479,22 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
+const dummyReason = new MarkdownString('This is a dummy response, in order to debug this shit. Gotta remember to remove this.');
+
 class BreakdownListRenderer extends Disposable implements IListRenderer<IAideBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownListRenderer';
+
+	private readonly markdownRenderer: MarkdownRenderer;
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	constructor(
-		private readonly resourceLabels: ResourceLabels,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
+		this.markdownRenderer = this.instantiationService.createInstance(MarkdownRenderer, {});
 	}
 
 	get templateId(): string {
@@ -227,44 +504,54 @@ class BreakdownListRenderer extends Disposable implements IListRenderer<IAideBre
 	renderTemplate(container: HTMLElement): IBreakdownTemplateData {
 		const data: IBreakdownTemplateData = Object.create(null);
 		data.toDispose = new DisposableStore();
-		data.container = dom.append(container, $('.edits-breakdown-list-item'));
+		data.container = dom.append(container, $('.edits-list-item'));
 		return data;
 	}
 
 
 	renderElement(element: IAideBreakdownViewModel, index: number, templateData: IBreakdownTemplateData): void {
-		const templateDisposables = new DisposableStore();
-
 		templateData.currentItem = element;
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name } = element;
-		if (uri) {
-			const rowResource = $('edits-breakdown-list-resource');
-			const label = this.resourceLabels.create(rowResource, { supportHighlights: true });
-			label.element.style.display = 'flex';
+		const { uri, name, response = dummyReason } = element;
 
-			const workspaceFolder = this.contextService.getWorkspace().folders[0];
-			const workspaceFolderUri = workspaceFolder.uri;
-			const path = relativePath(workspaceFolderUri, uri);
+		const initialIconClasses = ThemeIcon.asClassNameArray(SymbolKinds.toIcon(SymbolKind.Method));
+		const iconElement = $('.plan-icon');
+		iconElement.classList.add(...initialIconClasses);
+		templateData.container.appendChild(iconElement);
 
-			label.setResource({ resource: uri, name, description: path }, {
-				fileKind: FileKind.FILE,
-				icon: SymbolKinds.toIcon(SymbolKind.Method),
-			});
-			templateDisposables.add(label);
-			templateData.container.appendChild(rowResource);
+		const symbolElement = $('.plan-symbol');
+		templateData.container.appendChild(symbolElement);
 
-			element.symbol.then(symbol => {
-				if (symbol && symbol.kind) {
-					label.setResource({ resource: uri, name, description: path }, {
-						fileKind: FileKind.FILE,
-						icon: SymbolKinds.toIcon(symbol.kind),
-					});
-				}
-			});
+		const symbolHeader = $('.plan-symbol-header');
+		symbolHeader.textContent = name;
+		symbolElement.appendChild(symbolHeader);
+
+		const symbolPath = $('.plan-symbol-path');
+		const workspaceFolder = this.contextService.getWorkspace().folders[0];
+		const workspaceFolderUri = workspaceFolder.uri;
+		const path = relativePath(workspaceFolderUri, uri);
+		if (path) {
+			symbolPath.textContent = path.toString();
+			symbolElement.appendChild(symbolPath);
 		}
+
+		if (response) {
+			const responseElement = $('.plan-response');
+			const markdownResult = this.markdownRenderer.render(response);
+			responseElement.appendChild(markdownResult.element);
+			symbolElement.appendChild(responseElement);
+		}
+
+
+		element.symbol.then(symbol => {
+			if (symbol && symbol.kind) {
+				const resolvedIconSelector = ThemeIcon.asClassNameArray(SymbolKinds.toIcon(symbol.kind));
+				iconElement.classList.remove(...initialIconClasses);
+				iconElement.classList.add(...resolvedIconSelector);
+			}
+		});
 
 		this.updateItemHeight(templateData);
 
@@ -318,6 +605,7 @@ export interface IAideEditsViewModel {
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly status: IAideProbeStatus;
+	readonly initialSymbols: ReadonlyArray<IAideInitialSymbolInformationViewModel>;
 	readonly breakdowns: ReadonlyArray<IAideBreakdownViewModel>;
 }
 
@@ -347,7 +635,7 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 		return this._lastFileOpened;
 	}
 
-	private _initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]> | undefined;
+	private _initialSymbols: IAideInitialSymbolInformationViewModel[] = [];
 	get initialSymbols() {
 		return this._initialSymbols;
 	}
@@ -365,11 +653,15 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 		super();
 
 		this._register(_model.onDidChange(async () => {
+			if (!this._model.response) {
+				return;
+			}
 
 			this._lastFileOpened = _model.response?.lastFileOpened;
 
-
-
+			if (this._model.response.initialSymbols) {
+				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, currentRenderedHeight: 0 }));
+			}
 
 			const codeEdits = _model.response?.codeEdits;
 
@@ -407,6 +699,10 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 			this._onDidChange.fire();
 		}));
 	}
+}
+
+export interface IAideInitialSymbolInformationViewModel extends IAideProbeInitialSymbolInformation {
+	currentRenderedHeight: number | undefined;
 }
 
 export interface IAideBreakdownViewModel {
