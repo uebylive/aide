@@ -11,7 +11,7 @@ import * as vscode from 'vscode';
 
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import postHogClient from '../../posthog/client';
-import { applyEdits, applyEditsDirectly } from '../../server/applyEdits';
+import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
 import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
@@ -22,6 +22,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string | undefined;
 	private active: boolean = false;
+	private _limiter = new Limiter(1);
 
 	private _requestHandler: http.Server | null = null;
 	private _openResponseStream: vscode.ProbeResponseStream | undefined;
@@ -119,7 +120,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		if (!this._openResponseStream) {
 			return;
 		}
-		applyEdits(request, this._openResponseStream);
+		await applyEdits(request, this._openResponseStream);
 	}
 
 	private async showInviteCodeNotification() {
@@ -197,7 +198,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		})(jsonArr);
 		// Use dummy data: End */
 
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({

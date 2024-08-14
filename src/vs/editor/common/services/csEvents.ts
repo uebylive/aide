@@ -9,6 +9,7 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 
 export interface ICSEventHandler {
 	reportSymbolNavigation(event: SymbolNavigationEvent): void;
+	reportAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): void;
 }
 
 export const ICSEventsService = createDecorator<ICSEventsService>('csEventsService');
@@ -16,5 +17,6 @@ export const ICSEventsService = createDecorator<ICSEventsService>('csEventsServi
 export interface ICSEventsService {
 	readonly _serviceBrand: undefined;
 	reportSymbolNavigation(event: SymbolNavigationEvent): void;
+	reportAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): void;
 	registerCSEventsHandler(extensionId: string, handler: ICSEventHandler): IDisposable;
 }

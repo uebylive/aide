@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-import { commands, csevents, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
+import { commands, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { CSChatAgentProvider } from './completions/providers/chatprovider';
@@ -22,11 +22,11 @@ import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
-import { getSymbolNavigationActionTypeLabel } from './utilities/stringifyEvent';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
+import { CSEventHandler } from './csEvents/csEventHandler';
 
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
@@ -98,23 +98,8 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-
-	csevents.registerCSEventHandler({
-		handleSymbolNavigation(event) {
-			const currentWindow = window.activeTextEditor?.document.uri.fsPath;
-			postHogClient?.capture({
-				distinctId: getUniqueId(),
-				event: 'symbol_navigation',
-				properties: {
-					action: getSymbolNavigationActionTypeLabel(event.action),
-					file_path: event.uri.fsPath,
-					current_window: currentWindow,
-				},
-			});
-			// console.log('Received symbol navigation event!');
-			// console.log(event);
-		},
-	});
+	const csEventHandler = new CSEventHandler(context);
+	context.subscriptions.push(csEventHandler);
 
 	// Get model selection configuration
 	const modelConfiguration = await modelSelection.getConfiguration();

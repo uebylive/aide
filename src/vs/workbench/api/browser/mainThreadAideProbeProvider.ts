@@ -42,8 +42,13 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 	}
 
 	async $handleProbingProgressChunk(request: IAideProbeRequestModel, progress: IAideProbeProgressDto): Promise<void> {
-		const revivedProgress = revive(progress) as IAideProbeProgress;
-		await this._pendingProgress.get(request.sessionId)?.(revivedProgress);
+		if (progress.kind === 'textEdit') {
+			const revivedProgress = revive(progress) as IAideProbeProgress;
+			await this._pendingProgress.get(request.sessionId)?.(revivedProgress);
+		} else {
+			const revivedProgress = revive(progress) as IAideProbeProgress;
+			await this._pendingProgress.get(request.sessionId)?.(revivedProgress);
+		}
 	}
 
 	$unregisterProbingProvider(handle: number): void {

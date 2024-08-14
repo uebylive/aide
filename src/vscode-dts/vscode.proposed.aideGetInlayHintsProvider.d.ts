@@ -3,17 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Position } from 'vs/editor/common/core/position';
-import { URI } from 'vs/base/common/uri';
-
-export type SymbolNavigationEvent = {
-	position: Position;
-	action: string;
-	uri: URI;
-};
-
-export type AgentCodeEditEvent = {
-	accepted: boolean;
-	added: number;
-	removed: number;
-};
+declare module 'vscode' {
+	export namespace languages {
+		export function getInlayHintsProvider(document: DocumentSelector): ProviderResult<InlayHintsProvider>;
+	}
+}

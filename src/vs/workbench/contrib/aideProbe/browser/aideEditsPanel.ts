@@ -14,7 +14,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
@@ -40,11 +40,11 @@ export class AideEditsPanel extends AidePanel {
 	listFocusIndex: number | undefined;
 	private activeBreakdown: IAideBreakdownViewModel | undefined;
 	private list: WorkbenchList<IAideBreakdownViewModel> | undefined;
-	private listViewModel: IAideBreakdownViewModel[] = [];
-	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 	private readonly _onDidChangeFocus = this._register(new Emitter<IBreakdownChangeEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
+
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 
 	constructor(
 		reference: HTMLElement,
@@ -67,10 +67,7 @@ export class AideEditsPanel extends AidePanel {
 		this.viewModel = this.instantiationService.createInstance(AideEditsViewModel, this.model);
 
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
-			if (this.viewModel) {
-				this.listViewModel = this.viewModel.breakdowns;
-				this.updateList(this.listViewModel);
-			}
+			this.updateList();
 		}));
 	}
 
@@ -136,7 +133,7 @@ export class AideEditsPanel extends AidePanel {
 
 	private getBreakdownListIndex(element: IAideBreakdownViewModel): number {
 		let matchIndex = -1;
-		this.listViewModel.forEach((item, index) => {
+		this.viewModel?.breakdowns.forEach((item, index) => {
 			if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
 				matchIndex = index;
 			}
@@ -157,25 +154,25 @@ export class AideEditsPanel extends AidePanel {
 		}
 	}
 
-	private updateList(breakdowns: IAideBreakdownViewModel[]) {
+	private updateList() {
 		if (!this.list) {
 			this.list = this.createList();
 			return;
 		}
-
+		if (!this.viewModel) {
+			return;
+		}
+		const breakdowns = this.viewModel.breakdowns;
 		let matchingIndex = -1;
-		if (this.listViewModel.length === 0) {
-			this.listViewModel = [...breakdowns];
+		if (breakdowns.length === 0) {
 			this.list.splice(0, 0, breakdowns);
 		} else {
 			breakdowns.forEach((breakdown) => {
 				const matchIndex = this.getBreakdownListIndex(breakdown);
 				if (this.list) {
 					if (matchIndex === -1) {
-						this.listViewModel.push(breakdown);
-						this.list.splice(this.listViewModel.length - 1, 0, [breakdown]);
+						this.list.splice(breakdowns.length - 1, 0, [breakdown]);
 					} else {
-						this.listViewModel[matchIndex] = breakdown;
 						this.list.splice(matchIndex, 1, [breakdown]);
 					}
 				}
@@ -350,8 +347,13 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 		return this._lastFileOpened;
 	}
 
+	private _initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]> | undefined;
+	get initialSymbols() {
+		return this._initialSymbols;
+	}
+
 	private _breakdowns: IAideBreakdownViewModel[] = [];
-	get breakdowns(): ReadonlyArray<IAideBreakdownViewModel> {
+	get breakdowns() {
 		return this._breakdowns;
 	}
 
@@ -366,6 +368,9 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 
 			this._lastFileOpened = _model.response?.lastFileOpened;
 
+
+
+
 			const codeEdits = _model.response?.codeEdits;
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -373,13 +378,11 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 				if (!reference) {
 					reference = await this.textModelResolverService.createModelReference(item.reference.uri);
 				}
-
 				const viewItem = this._register(this.instantiationService.createInstance(AideBreakdownViewModel, item, reference));
 				viewItem.symbol.then(symbol => {
 					if (!symbol) {
 						return;
 					}
-
 					const edits = codeEdits?.get(item.reference.uri.toString());
 					const hunks = edits?.hunkData.getInfo();
 					for (const hunk of hunks ?? []) {
@@ -396,10 +399,8 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 							viewItem.appendEdits([hunk]);
 						}
 					}
-
 					this._onDidChange.fire();
 				});
-
 				return viewItem;
 			}) ?? []);
 

@@ -52,6 +52,15 @@ export interface IAideProbeGoToDefinition {
 	thinking: string;
 }
 
+export interface IAideProbeInitialSymbolInformation {
+	uri: URI; symbolName: string; isNew: boolean; thinking: string;
+}
+
+export interface IAideProbeInitialSymbols {
+	kind: 'initialSymbols';
+	symbols: IAideProbeInitialSymbolInformation[];
+}
+
 export interface IAideProbeTextEdit {
 	kind: 'textEdit';
 	edits: WorkspaceEdit;
@@ -79,7 +88,8 @@ export type IAideProbeProgress =
 	| IAideProbeTextEdit
 	| IAideProbeOpenFile
 	| IAideProbeRepoMapGeneration
-	| IAideProbeLongContextSearch;
+	| IAideProbeLongContextSearch
+	| IAideProbeInitialSymbols;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -119,6 +129,7 @@ export type IAideProbeResponseEvent =
 	| IAideProbeCompleteEditEvent
 	| IAideProbeUndoEditEvent
 	| IAideProbeGoToDefinition
-	| IAideProbeBreakdownContent;
+	| IAideProbeBreakdownContent
+	| IAideProbeInitialSymbols;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';

@@ -4784,6 +4784,13 @@ export class AideProbeGoToDefinitionPart {
 	}
 }
 
+export class AideProbeInitialSymbolsPart {
+	symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[];
+	constructor(symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[]) {
+		this.symbols = symbols;
+	}
+}
+
 export class AideChatResponseTextEditPart {
 	uri: vscode.Uri;
 	edits: vscode.TextEdit[];

@@ -74,6 +74,8 @@ type FrameworkEvent = {
 	RepoMapGenerationFinished: string;
 	LongContextSearchStart: string;
 	LongContextSearchFinished: string;
+	InitialSearchSymbols: InitialSearchSymbols;
+	OpenFile: OpenFileRequestFrameworkEvent;
 };
 
 interface UIEvent {
@@ -104,11 +106,23 @@ interface SymbolEventGoToDefinitionRequest {
 	thinking: string;
 }
 
+interface EditedCodeStreamingRequestEvent {
+	Delta: string;
+}
+
+interface EditedCodeStreamingRequest {
+	edit_request_id: string;
+	range: SidecarRequestRange;
+	fs_file_path: string;
+	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
+}
+
 interface SymbolEventEditRequest {
 	RangeSelectionForEdit: RangeSelectionForEditRequest;
 	InsertCode: InsertCodeForEditRequest;
 	EditCode: EditedCodeForEditRequest;
 	CodeCorrectionTool: CodeCorrectionToolSelection;
+	EditCodeStreaming: EditedCodeStreamingRequest;
 }
 
 interface RangeSelectionForEditRequest {
@@ -205,6 +219,23 @@ interface SymbolToEdit {
 	symbol_name: string;
 	instructions: string[];
 	is_new: boolean;
+}
+
+interface InitialSearchSymbols {
+	request_id: string;
+	symbols: InitialSearchSymbolInformation[];
+}
+
+interface OpenFileRequestFrameworkEvent {
+	fs_file_path: string;
+}
+
+interface InitialSearchSymbolInformation {
+	fs_file_path: string;
+	symbol_name: string;
+	is_new: boolean;
+	thinking: string;
+	range: Range;
 }
 
 interface SymbolToEditRequest {
@@ -705,6 +736,26 @@ export type ClassSymbolFollowupRequest = {
 export type SidecarQuickFixInvocationResponse = {
 	request_id: string;
 	invocation_success: boolean;
+};
+
+export type SidecarInlayHintsRequest = {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+};
+
+export type SidecarInlayHintsResponsePart = {
+	position: SidecarRequestPosition;
+	padding_left: boolean;
+	padding_right: boolean;
+	// the value of the inlay hint
+	values: string[];
+};
+
+/**
+ * Contains the response from grabbing the inlay hints in a given range
+ */
+export type SidecarInlayHintResponse = {
+	parts: SidecarInlayHintsResponsePart[];
 };
 
 export type SidecarApplyEditsRequest = {

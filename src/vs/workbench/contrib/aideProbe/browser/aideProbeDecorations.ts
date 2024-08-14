@@ -15,10 +15,12 @@ import { Range } from 'vs/editor/common/core/range';
 import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
+import { ICSEventsService } from 'vs/editor/common/services/csEvents';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { calculateChanges } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -73,6 +75,7 @@ export class AideProbeDecorationService extends Disposable {
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
+		@ICSEventsService private readonly csEventsService: ICSEventsService
 	) {
 		super();
 
@@ -87,8 +90,8 @@ export class AideProbeDecorationService extends Disposable {
 				this.handleBreakdownEvent(event);
 			}
 		}));
-		this._register(this.aideProbeService.onReview(() => {
-			this.removeDecorations();
+		this._register(this.aideProbeService.onReview(e => {
+			this.removeDecorations(e);
 		}));
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			const activeEditor = this.editorService.activeTextEditorControl;
@@ -232,7 +235,12 @@ export class AideProbeDecorationService extends Disposable {
 		});
 	}
 
-	private removeDecorations() {
+	private removeDecorations(e: IAideProbeReviewUserEvent) {
+		// Calculate the number of changes being accepted
+		const edits = Array.from(this._hunkDisplayData.keys());
+		const changes = calculateChanges(edits);
+		this.csEventsService.reportAgentCodeEdit({ accepted: e === 'accept', ...changes });
+
 		for (const data of this._hunkDisplayData.values()) {
 			data.remove();
 		}

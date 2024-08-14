@@ -61,13 +61,15 @@ export async function applyEditsDirectly(
 	};
 }
 
+
 /**
- * We want to apply edits to the codebase over here and try to get this ti work
+ * We want to apply edits to the codebase over here and try to get this to work
  */
 export async function applyEdits(
 	request: SidecarApplyEditsRequest,
 	response: vscode.ProbeResponseStream,
 ): Promise<SidecarApplyEditsResponse> {
+	// const limiter = new Limiter(1);
 	const filePath = request.fs_file_path;
 	const startPosition = request.selected_range.startPosition;
 	const endPosition = request.selected_range.endPosition;
@@ -119,4 +121,101 @@ export async function applyEdits(
 		success: true,
 		new_range: newRange,
 	};
+}
+
+export interface ITask<T> {
+	(): T;
+}
+
+export interface ILimiter<T> {
+
+	readonly size: number;
+
+	queue(factory: ITask<Promise<T>>): Promise<T>;
+
+	clear(): void;
+}
+
+interface ILimitedTaskFactory<T> {
+	factory: ITask<Promise<T>>;
+	c: (value: T | Promise<T>) => void;
+	e: (error?: unknown) => void;
+}
+
+/**
+ * A helper to queue N promises and run them all with a max degree of parallelism. The helper
+ * ensures that at any time no more than M promises are running at the same time.
+ */
+export class Limiter<T> implements ILimiter<T> {
+
+	private _size = 0;
+	private _isDisposed = false;
+	private runningPromises: number;
+	private readonly maxDegreeOfParalellism: number;
+	private readonly outstandingPromises: ILimitedTaskFactory<T>[];
+	private readonly _onDrained: vscode.EventEmitter<void>;
+
+	constructor(maxDegreeOfParalellism: number) {
+		this.maxDegreeOfParalellism = maxDegreeOfParalellism;
+		this.outstandingPromises = [];
+		this.runningPromises = 0;
+		this._onDrained = new vscode.EventEmitter<void>();
+	}
+
+
+	get size(): number {
+		return this._size;
+	}
+
+	queue(factory: ITask<Promise<T>>): Promise<T> {
+		if (this._isDisposed) {
+			throw new Error('Object has been disposed');
+		}
+		this._size++;
+
+		return new Promise<T>((c, e) => {
+			this.outstandingPromises.push({ factory, c, e });
+			this.consume();
+		});
+	}
+
+	private consume(): void {
+		while (this.outstandingPromises.length && this.runningPromises < this.maxDegreeOfParalellism) {
+			const iLimitedTask = this.outstandingPromises.shift()!;
+			this.runningPromises++;
+
+			const promise = iLimitedTask.factory();
+			promise.then(iLimitedTask.c, iLimitedTask.e);
+			promise.then(() => this.consumed(), () => this.consumed());
+		}
+	}
+
+	private consumed(): void {
+		if (this._isDisposed) {
+			return;
+		}
+		this.runningPromises--;
+		if (--this._size === 0) {
+			// this._onDrained.fire();
+		}
+
+		if (this.outstandingPromises.length > 0) {
+			this.consume();
+		}
+	}
+
+	clear(): void {
+		if (this._isDisposed) {
+			throw new Error('Object has been disposed');
+		}
+		this.outstandingPromises.length = 0;
+		this._size = this.runningPromises;
+	}
+
+	dispose(): void {
+		this._isDisposed = true;
+		this.outstandingPromises.length = 0; // stop further processing
+		this._size = 0;
+		this._onDrained.dispose();
+	}
 }
