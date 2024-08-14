@@ -224,7 +224,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private title!: HTMLElement;
 
 	private leftContent!: HTMLElement;
-	private centerContent!: HTMLElement;
+	// private centerContent!: HTMLElement;
 	private rightContent!: HTMLElement;
 
 	protected customMenubar: CustomMenubarControl | undefined;
@@ -414,7 +414,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		this.rootContainer = append(parent, $('.titlebar-container'));
 
 		this.leftContent = append(this.rootContainer, $('.titlebar-left'));
-		this.centerContent = append(this.rootContainer, $('.titlebar-center'));
+		// this.centerContent = append(this.rootContainer, $('.titlebar-center'));
 		this.rightContent = append(this.rootContainer, $('.titlebar-right'));
 
 		// App Icon (Native Windows/Linux and Web)
