@@ -72,7 +72,7 @@ configurationRegistry.registerConfiguration({
 		'chat.editor.fontSize': {
 			type: 'number',
 			description: nls.localize('interactiveSession.editor.fontSize', "Controls the font size in pixels in chat codeblocks."),
-			default: isMacintosh ? 12 : 14,
+			default: isMacintosh ? 14 : 14,
 		},
 		'chat.editor.fontFamily': {
 			type: 'string',
