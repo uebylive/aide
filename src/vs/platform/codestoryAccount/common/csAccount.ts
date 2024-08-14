@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Event } from 'vs/base/common/event';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 export interface CSAuthenticationSession {
@@ -42,6 +43,7 @@ export interface ICSAccountService {
 export const ICSAuthenticationService = createDecorator<ICSAuthenticationService>('csAuthenticationService');
 export interface ICSAuthenticationService {
 	readonly _serviceBrand: undefined;
+	readonly onDidAuthenticate: Event<CSAuthenticationSession>;
 
 	createSession(): Promise<CSAuthenticationSession>;
 	deleteSession(sessionId: string): Promise<void>;

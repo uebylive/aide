@@ -5,6 +5,7 @@
 
 import { decodeBase64 } from 'vs/base/common/buffer';
 import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { Emitter, Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
@@ -21,6 +22,9 @@ const SESSION_SECRET_KEY = 'codestory.auth.session';
 
 export class CSAuthenticationService extends Themable implements ICSAuthenticationService {
 	declare readonly _serviceBrand: undefined;
+
+	private _onDidAuthenticate: Emitter<CSAuthenticationSession> = this._register(new Emitter<CSAuthenticationSession>());
+	readonly onDidAuthenticate: Event<CSAuthenticationSession> = this._onDidAuthenticate.event;
 
 	private _subscriptionsAPIBase: string | null = null;
 	private _websiteBase: string | null = null;
@@ -107,6 +111,7 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				refreshToken: refresh_token,
 				account: user
 			};
+			this._onDidAuthenticate.fire(session);
 
 			await this.secretStorageService.set(
 				SESSION_SECRET_KEY,

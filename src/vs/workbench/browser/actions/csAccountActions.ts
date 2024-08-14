@@ -8,6 +8,7 @@ import { localize } from 'vs/nls';
 import { Categories } from 'vs/platform/action/common/actionCommonCategories';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
+import { CS_ACCOUNT_CARD_VISIBLE } from 'vs/platform/codestoryAccount/common/csAccountContextKeys';
 
 export class ToggleCodestoryAccountCardAction extends Action2 {
 	static readonly ID = 'workbench.action.toggleCodestoryAccountCard';
@@ -18,6 +19,7 @@ export class ToggleCodestoryAccountCardAction extends Action2 {
 			id: ToggleCodestoryAccountCardAction.ID,
 			title: ToggleCodestoryAccountCardAction.LABEL,
 			category: Categories.View,
+			toggled: CS_ACCOUNT_CARD_VISIBLE,
 			menu: [{
 				id: MenuId.CodestoryAccountMenu,
 				group: 'navigation'

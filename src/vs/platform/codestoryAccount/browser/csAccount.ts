@@ -10,6 +10,8 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { ThemeIcon } from 'vs/base/common/themables';
 import 'vs/css!./media/csAccount';
 import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
+import { CS_ACCOUNT_CARD_VISIBLE } from 'vs/platform/codestoryAccount/common/csAccountContextKeys';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
@@ -21,15 +23,18 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 
 	private authenticatedSession: CSAuthenticationSession | undefined;
 
-	private isVisible: boolean = false;
+	private isVisible: IContextKey<boolean>;
 	private csAccountCard: HTMLElement | undefined;
 
 	constructor(
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService
+		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		super();
+
+		this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
 		this.refresh();
 	}
 
@@ -43,12 +48,12 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	}
 
 	toggle(): void {
-		if (!this.isVisible) {
+		if (!this.isVisible.get()) {
 			this.show();
-			this.isVisible = true;
+			this.isVisible.set(true);
 		} else {
 			this.hide();
-			this.isVisible = false;
+			this.isVisible.set(false);
 		}
 	}
 

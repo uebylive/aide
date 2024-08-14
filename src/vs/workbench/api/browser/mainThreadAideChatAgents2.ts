@@ -18,6 +18,7 @@ import { getWordAtText } from 'vs/editor/common/core/wordHelper';
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
@@ -88,11 +89,11 @@ export class MainThreadAideChatAgents2 extends Disposable implements MainThreadA
 		@IAideChatService private readonly _chatService: IAideChatService,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
 		@IAideChatWidgetService private readonly _chatWidgetService: IAideChatWidgetService,
-
-
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ILogService private readonly _logService: ILogService,
 		@IExtensionService private readonly _extensionService: IExtensionService,
+		@ICSAuthenticationService private readonly _csAuthenticationService: ICSAuthenticationService,
+		@ICSAccountService private readonly _csAccountService: ICSAccountService
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAideChatAgents2);
@@ -146,6 +147,21 @@ export class MainThreadAideChatAgents2 extends Disposable implements MainThreadA
 
 		const impl: IChatAgentImplementation = {
 			invoke: async (request, progress, history, token) => {
+				let csAuthSession = await this._csAuthenticationService.getSession();
+				if (!csAuthSession) {
+					this._csAccountService.toggle();
+					// Wait for the user to authenticate
+					await new Promise<void>((resolve) => {
+						const disposable = this._csAuthenticationService.onDidAuthenticate(session => {
+							if (session) {
+								csAuthSession = session;
+								disposable.dispose();
+								resolve();
+							}
+						});
+					});
+				}
+
 				this._pendingProgress.set(request.requestId, progress);
 				try {
 					return await this._proxy.$invokeAgent(handle, request, { history }, token) ?? {};

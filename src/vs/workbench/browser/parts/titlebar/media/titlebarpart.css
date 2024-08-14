@@ -516,6 +516,10 @@
 	font-weight: 600;
 }
 
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item .action-label.checked) {
+	background: var(--vscode-actionBar-toggledBackground) !important;
+}
+
 .monaco-workbench .part.titlebar .window-controls-container .window-icon {
 	color: var(--vscode-titleBar-activeForeground);
 }
