@@ -190,8 +190,17 @@ export class AttachContextAction extends Action2 {
 				toAttach.push({
 					...pick,
 					id: this._getFileContextId({ resource: pick.resource }),
-					value: pick.resource,
-					name: pick.label,
+					value: JSON.stringify({
+						'uri': pick.resource,
+						range: {
+							startLineNumber: 0,
+							startColumn: 0,
+							endLineNumber: 0,
+							endColumn: 0
+						}
+					}),
+					// we need to prepend `file:` to the name of the variable
+					name: 'file:' + pick.label,
 					isFile: true,
 					isDynamic: true
 				});
