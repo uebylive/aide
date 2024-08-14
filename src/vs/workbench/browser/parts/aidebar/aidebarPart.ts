@@ -50,13 +50,16 @@ export class AideBarPart extends Part implements IDisposable {
 	static readonly activePanelSettingsKey = 'workbench.aidebar.activepanelid';
 
 
-	private content: HTMLElement | undefined;
+	private _content: HTMLElement | undefined;
+	get content(): HTMLElement | undefined {
+		return this._content;
+	}
 
 
-	readonly minimumWidth: number = 300;
-	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
+	readonly minimumWidth: number = 32;
+	readonly maximumWidth: number = 32;
 
-	readonly minimumHeight: number = 200;
+	readonly minimumHeight: number = 32;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -75,13 +78,17 @@ export class AideBarPart extends Part implements IDisposable {
 
 	protected override createContentArea(parent: HTMLElement): HTMLElement {
 		this.element = parent;
-		this.content = append(this.element, $('.content'));
-		return this.content;
+		this._content = append(this.element, $('.content'));
+		return this._content;
 	}
 
 	override layout(width: number, height: number, top: number, left: number): void {
 		super.layout(width, height, top, left);
 		super.layoutContents(width, height);
+	}
+
+	get snap() {
+		return false;
 	}
 
 	toJSON(): object {

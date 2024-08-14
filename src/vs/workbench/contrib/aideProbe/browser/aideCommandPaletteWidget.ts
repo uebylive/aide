@@ -39,7 +39,7 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { AideCommandPalettePanel, IAideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
+import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
@@ -117,7 +117,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 	private panelContainer: HTMLElement;
 	private resourceLabels: ResourceLabels;
-	private panel: IAideCommandPalettePanel;
+	private panel: AideCommandPalettePanel;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeViewModel | undefined;

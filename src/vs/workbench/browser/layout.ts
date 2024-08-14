@@ -2255,7 +2255,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; aideBar: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {
-			nodes.editor.size = availableHeight;
 			return {
 				type: 'branch',
 				data: [nodes.editor, nodes.aideBar],

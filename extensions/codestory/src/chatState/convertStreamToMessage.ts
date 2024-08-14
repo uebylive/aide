@@ -292,7 +292,6 @@ export const reportAgentEventsToChat = async (
 		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.FrameworkEvent) {
-			console.log('framework event', event.event.FrameworkEvent);
 			if (event.event.FrameworkEvent.RepoMapGenerationStart) {
 				response.repoMapGeneration(false);
 			} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
@@ -302,7 +301,6 @@ export const reportAgentEventsToChat = async (
 			} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
 				response.longContextSearch(true);
 			}
-
 		} else if (event.event.ToolEvent) {
 			if (event.event.ToolEvent.OpenFile) {
 				const filePath = event.event.ToolEvent.OpenFile.fs_file_path;
