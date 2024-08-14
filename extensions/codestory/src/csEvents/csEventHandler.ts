@@ -46,8 +46,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	}
 
 	async handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): Promise<void> {
-		// TODO: Temp hack to prevent sending usage events for now
-		if (!event.accepted || true) {
+		if (!event.accepted) {
 			return;
 		}
 
@@ -74,7 +73,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			return;
 		}
 
-		const session = await vscode.authentication.getSession('codestory', []);
+		const session = await vscode.csAuthentication.getSession();
 		if (!session) {
 			console.error('Failed to get authentication session.');
 			return;
@@ -90,7 +89,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 		}
 	}
 
-	private async sendUsageEvent(events: UsageRequest[], session: vscode.AuthenticationSession): Promise<boolean> {
+	private async sendUsageEvent(events: UsageRequest[], session: vscode.CSAuthenticationSession): Promise<boolean> {
 		try {
 			const response = await fetch(
 				`${this._subscriptionsAPIBase}/v1/usage`,

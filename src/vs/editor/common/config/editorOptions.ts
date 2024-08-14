@@ -5275,7 +5275,7 @@ export const EDITOR_FONT_DEFAULTS = {
 	),
 	fontWeight: 'normal',
 	fontSize: (
-		platform.isMacintosh ? 12 : 14
+		platform.isMacintosh ? 14 : 14
 	),
 	lineHeight: 0,
 	letterSpacing: 0,

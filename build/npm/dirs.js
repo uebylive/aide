@@ -11,7 +11,6 @@ const dirs = [
 	'build',
 	'extensions',
 	'extensions/codestory',
-	'extensions/codestory-authentication',
 	'extensions/configuration-editing',
 	'extensions/css-language-features',
 	'extensions/css-language-features/server',

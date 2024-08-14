@@ -75,7 +75,7 @@ configurationRegistry.registerConfiguration({
 		'aideChat.editor.fontSize': {
 			type: 'number',
 			description: nls.localize('aideChat.editor.fontSize', "Controls the font size in pixels in chat codeblocks."),
-			default: isMacintosh ? 12 : 14,
+			default: isMacintosh ? 14 : 14,
 		},
 		'aideChat.editor.fontFamily': {
 			type: 'string',

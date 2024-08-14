@@ -30,6 +30,7 @@ import { ExtHostApiCommands } from 'vs/workbench/api/common/extHostApiCommands';
 import { IExtHostApiDeprecationService } from 'vs/workbench/api/common/extHostApiDeprecationService';
 import { IExtHostAuthentication } from 'vs/workbench/api/common/extHostAuthentication';
 import { ExtHostBulkEdits } from 'vs/workbench/api/common/extHostBulkEdits';
+import { IExtHostCSAuthentication } from 'vs/workbench/api/common/extHostCSAuthentication';
 import { ExtHostCSEvents } from 'vs/workbench/api/common/extHostCSEvents';
 import { ExtHostChatAgents2 } from 'vs/workbench/api/common/extHostChatAgents2';
 import { ExtHostChatVariables } from 'vs/workbench/api/common/extHostChatVariables';
@@ -149,6 +150,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostEditorTabs = accessor.get(IExtHostEditorTabs);
 	const extHostManagedSockets = accessor.get(IExtHostManagedSockets);
 	const extHostAuthentication = accessor.get(IExtHostAuthentication);
+	const extHostCSAuthentication = accessor.get(IExtHostCSAuthentication);
 	const extHostLanguageModels = accessor.get(IExtHostLanguageModels);
 
 	// register addressable instances
@@ -165,6 +167,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	rpcProtocol.set(ExtHostContext.ExtHostEditorTabs, extHostEditorTabs);
 	rpcProtocol.set(ExtHostContext.ExtHostManagedSockets, extHostManagedSockets);
 	rpcProtocol.set(ExtHostContext.ExtHostAuthentication, extHostAuthentication);
+	rpcProtocol.set(ExtHostContext.ExtHostCSAuthentication, extHostCSAuthentication);
 	rpcProtocol.set(ExtHostContext.ExtHostChatProvider, extHostLanguageModels);
 
 	// automatically create and register addressable instances
@@ -323,6 +326,12 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			registerAuthenticationProvider(id: string, label: string, provider: vscode.AuthenticationProvider, options?: vscode.AuthenticationProviderOptions): vscode.Disposable {
 				return extHostAuthentication.registerAuthenticationProvider(id, label, provider, options);
 			}
+		};
+
+		const csAuthentication: typeof vscode.csAuthentication = {
+			getSession() {
+				return extHostCSAuthentication.getSession();
+			},
 		};
 
 		// namespace: commands
@@ -1580,6 +1589,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			authentication,
 			commands,
 			comments,
+			csAuthentication,
 			csevents,
 			chat,
 			debug,

@@ -99,23 +99,24 @@
 
 
 /* Window title text */
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
+	order: 2;
 	flex: 0 1 auto;
 	font-size: 12px;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	margin-left: auto;
+	margin-left: 16px;
 	margin-right: auto;
 }
 
-.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
-.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-center > .window-title,
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
+.monaco-workbench.windows .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
 	cursor: default;
 }
 
-.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-center > .window-title {
+.monaco-workbench.linux .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
 	font-size: inherit;
 	/* see #55435 */
 }
@@ -212,7 +213,7 @@
 	z-index: 2500;
 	min-width: 36px;
 	flex-wrap: nowrap;
-	order: 2;
+	order: 3;
 }
 
 .monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .menubar {
@@ -299,6 +300,7 @@
 }
 
 .monaco-workbench.web .part.titlebar .titlebar-left .window-controls-container {
+	order: 0;
 	width: env(titlebar-area-x, 0px);
 	height: env(titlebar-area-height, 35px);
 }
@@ -366,7 +368,39 @@
 }
 
 /* Action Tool Bar Controls */
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
+	order: 1; /* Ensure it comes after the window controls container */
+	margin-left: env(titlebar-area-x, 0px); /* Add a margin to separate it from the window controls */
+	display: none;
+	padding-left: 2px;
+	flex-grow: 0;
+	flex-shrink: 0;
+	text-align: center;
+	position: relative;
+	z-index: 2500;
+	-webkit-app-region: no-drag;
+	height: 100%;
+	min-width: 28px;
+}
+
+.monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
+	left: 8px;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container:not(.has-no-actions) {
+	display: flex;
+	justify-content: center;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container .codicon {
+	color: inherit;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container .monaco-action-bar .action-item {
+	display: flex;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container {
 	display: none;
 	padding-right: 2px;
 	flex-grow: 0;
@@ -379,38 +413,34 @@
 	min-width: 28px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container {
 	margin-left: auto;
 }
 
-.monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container {
-	right: 8px;
-}
-
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container:not(.has-no-actions) {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container:not(.has-no-actions) {
 	display: flex;
 	justify-content: center;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .codicon {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .codicon {
 	color: inherit;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .action-item {
 	display: flex;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .badge {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .badge {
 	margin-left: 8px;
 	display: flex;
 	align-items: center;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item.icon .badge {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .action-item.icon .badge {
 	margin-left: 0px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .badge .badge-content {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .badge .badge-content {
 	padding: 3px 5px;
 	border-radius: 11px;
 	font-size: 9px;
@@ -424,7 +454,7 @@
 	position: relative;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact {
 	position: absolute;
 	top: 0;
 	bottom: 0;
@@ -436,13 +466,13 @@
 	z-index: 2;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact .badge-content::before {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact .badge-content::before {
 	mask-size: 12px;
 	-webkit-mask-size: 12px;
 	top: 2px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact .badge-content {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .secondary-action-toolbar-container .monaco-action-bar .action-item.icon .badge.compact .badge-content {
 	position: absolute;
 	top: 10px;
 	right: 0px;
@@ -454,6 +484,49 @@
 	padding: 0 2px;
 	border-radius: 16px;
 	text-align: center;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
+	display: none;
+	flex-grow: 0;
+	flex-shrink: 0;
+	text-align: center;
+	position: relative;
+	z-index: 2500;
+	-webkit-app-region: no-drag;
+	height: 100%;
+	min-width: 28px;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container:not(.has-no-actions) {
+	display: flex;
+	justify-content: center;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container {
+	padding-right: 4px;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:hover {
+	background: var(--vscode-actionBar-toggledBackground);
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item.active) {
+	background: var(--vscode-actionBar-toggledBackground) !important;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item {
+	display: flex;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item .action-label {
+	padding: 3px 12px;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item .action-label.checked) {
+	background: var(--vscode-actionBar-toggledBackground) !important;
 }
 
 .monaco-workbench .part.titlebar .window-controls-container .window-icon {
