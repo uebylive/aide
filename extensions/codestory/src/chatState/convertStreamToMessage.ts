@@ -383,6 +383,8 @@ export const reportAgentEventsToChat = async (
 					}
 					const documentLines = document.getText().split(/\r\n|\r|\n/g);
 					if ('Start' === editStreamEvent.event) {
+						console.log('editStreaming.start', editStreamEvent.fs_file_path);
+						console.log(editStreamEvent.range);
 						editsMap.set(editStreamEvent.edit_request_id, {
 							answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 							streamProcessor: new StreamProcessor(
@@ -443,9 +445,6 @@ export const reportAgentEventsToChat = async (
 				}
 			}
 		} else if (event.event.RequestEvent) {
-			if (!symbol_identifier.fs_file_path) {
-				continue;
-			}
 			const { ProbeFinished } = event.event.RequestEvent;
 			if (!ProbeFinished) {
 				continue;
