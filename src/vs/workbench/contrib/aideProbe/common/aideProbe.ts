@@ -26,14 +26,9 @@ export interface INavigateBreakdownAction {
 	status: boolean;
 }
 
-export interface ISavedFileAction {
-	type: 'fileSaved';
-	uri: URI;
-}
-
 export interface IAideProbeUserAction {
 	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction | ISavedFileAction;
+	action: IFollowAlongAction | INavigateBreakdownAction;
 }
 
 export interface IReferenceByName {

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import 'vs/css!./media/aidebar';
-import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
+import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
@@ -68,7 +68,7 @@ export class AideBarPart extends Part implements IDisposable {
 		@IThemeService themeService: IThemeService,
 	) {
 		super(
-			Parts.AIDEBAR_PART,
+			'partId', //Parts.AIDEBAR_PART,
 			{ hasTitle: false },
 			themeService,
 			storageService,
@@ -93,7 +93,7 @@ export class AideBarPart extends Part implements IDisposable {
 
 	toJSON(): object {
 		return {
-			type: Parts.AIDEBAR_PART
+			type: 'partId', //Parts.AIDEBAR_PART
 		};
 	}
 }

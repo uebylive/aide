@@ -4,17 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 .aide-controls {
-	pointer-events: all;
-	border: 1px solid var(--vscode-editorWidget-border);
-	border-radius: 12px;
-}
-
-.aide-controls-inner {
-	display: flex;
-	padding-left: 6px;
-	gap: 6px;
-	border: 1px solid var(--vscode-editorWidget-border);
-	border-radius: 8px;
+	padding-inline: 6px;
+	border-top: 1px solid var(--vscode-editorWidget-border);
 	background-color: rgb(33, 37, 43);
 }
 

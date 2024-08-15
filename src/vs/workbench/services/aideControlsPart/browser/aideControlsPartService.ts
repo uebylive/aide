@@ -14,6 +14,5 @@ export interface IAideControlsPartService {
 	readonly _serviceBrand: undefined;
 	readonly mainPart: AideControlsPart;
 	getPart(container: HTMLElement): IDisposable;
-	createMainControlsPart(): AideControlsPart;
 	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): AideControlsPart;
 }

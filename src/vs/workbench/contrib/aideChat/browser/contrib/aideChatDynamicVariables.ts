@@ -31,7 +31,6 @@ import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/br
 import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatRequestVariableValue, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
@@ -145,7 +144,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 }
 
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
-AideControls.INPUT_CONTRIBS.push(ChatDynamicVariableModel);
+//AideControls.INPUT_CONTRIBS.push(ChatDynamicVariableModel);
 
 interface MultiLevelCodeTriggerActionContext {
 	inputEditor: ICodeEditor;

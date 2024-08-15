@@ -8,7 +8,7 @@ import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -23,20 +23,14 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import 'vs/css!./media/aideControls';
-import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { IAideControlsPartService } from 'vs/workbench/services/aideControls/browser/aideControlsPartService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { isDefined } from 'vs/base/common/types';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { ILogService } from 'vs/platform/log/common/log';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
+import 'vs/css!./media/aideControls';
 
 const INPUT_MIN_HEIGHT = 36;
 
@@ -75,45 +69,25 @@ export class AideControlsService implements IAideControlsService {
 
 registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Eager);
 
-export interface IAideControls {
-	readonly inputEditor: ICodeEditor;
-	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
-}
 
-export class AideControls extends Disposable implements IAideControls {
+export class AideControls extends Disposable {
 
 	public static readonly ID = 'workbench.contrib.aideControls';
-	public static readonly INPUT_CONTRIBS: { new(...args: [IAideControls, ...any]): IChatWidgetContrib }[] = [];
-
-	get inputEditor(): ICodeEditor {
-		return this._input;
-	}
 
 	// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
 	private part = this.aideControlsPartService.mainPart;
-	// TODO(@g-danna) Replace this with a more thought out part layout logic
-	private editorPart = this.editorGroupService.mainPart;
-	private margin = 14;
-	private padding = 4;
-
 
 	private _input: CodeEditorWidget;
-	private inputContribs: IChatWidgetContrib[] = [];
 	private inputHeight = INPUT_MIN_HEIGHT;
 	private static readonly INPUT_URI = URI.parse('aideControls:input');
 
-	private contextPicker: ContextPicker;
 
-	private mode: IContextKey<ProbeMode>;
-	private isCodebaseSearch: IContextKey<boolean>;
 	private inputHasText: IContextKey<boolean>;
-	private requestStatus: IContextKey<AideProbeStatus>;
 
 	private model: AideProbeModel | undefined;
 
 	constructor(
 		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
-		@IEditorGroupsService private readonly editorGroupService: IEditorGroupsService,
 		@IAideControlsService aideControlsService: IAideControlsService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideLSPService private readonly aideLSPService: IAideLSPService,
@@ -124,46 +98,38 @@ export class AideControls extends Disposable implements IAideControls {
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IModelService private readonly modelService: IModelService,
-		@ILogService private readonly logService: ILogService,
 	) {
 
 		super();
 
 		aideControlsService.registerControls(this);
 
-		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
-		this.isCodebaseSearch = CONTEXT_PROBE_IS_CODEBASE_SEARCH.bindTo(contextKeyService);
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
-		this.requestStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
 		const element = $('.aide-controls');
-		this.part.element.appendChild(element);
-		element.style.margin = `${this.margin}px`;
-		element.style.padding = `${this.padding}px`;
+		this.part.content.appendChild(element);
 
-		const innerElement = $('.aide-controls-inner');
+		this._input = this.createInput(element);
 
-		element.appendChild(innerElement);
 
-		this.inputContribs = AideControls.INPUT_CONTRIBS.map(contrib => {
-			try {
-				return this._register(this.instantiationService.createInstance(contrib, this));
-			} catch (err) {
-				this.logService.error('Failed to instantiate probe view pane contrib', toErrorMessage(err));
-				return undefined;
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		this._input.onDidChangeModelContent(() => {
+			if (timeoutId) {
+				clearTimeout(timeoutId);
 			}
-		}).filter(isDefined);
 
+			timeoutId = setTimeout(() => {
+				console.log(this._input.getValue());
+			}, 2000);
+		});
 
-		this._input = this.createInput(innerElement);
-
-		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, innerElement));
-
-		this.layout();
-	}
-
-	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {
-		return this.inputContribs.find(c => c.id === id) as T;
+		const partSize = this.part.dimension;
+		if (partSize) {
+			this.layout(partSize.width, partSize.height);
+		}
+		this.part.onDidSizeChange((size) => {
+			this.layout(size.width, size.height);
+		});
 	}
 
 	private createInput(parent: HTMLElement) {
@@ -222,7 +188,6 @@ export class AideControls extends Disposable implements IAideControls {
 			if (currentHeight !== this.inputHeight) {
 				this.inputHeight = currentHeight;
 			}
-			this.layout();
 		}));
 
 		this._register(this.aideLSPService.onDidChangeStatus(() => {
@@ -231,11 +196,6 @@ export class AideControls extends Disposable implements IAideControls {
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.updateInputPlaceholder();
-		}));
-
-		// TODO(@g-danna) Replace this with a more thought out part layout logic
-		this._register(this.editorPart.onDidLayout(() => {
-			this.layout();
 		}));
 
 
@@ -250,30 +210,22 @@ export class AideControls extends Disposable implements IAideControls {
 		if (this.model && this.model.status !== AideProbeStatus.INACTIVE) {
 			return;
 		}
-		this.model = this.aideProbeService.startSession();
-		this.model.status = AideProbeStatus.IN_PROGRESS;
+		// this.model = this.aideProbeService.startSession();
+		// this.model.status = AideProbeStatus.IN_PROGRESS;
 
 		const editorValue = this._input.getValue();
 
 
-		const result = this.aideProbeService.initiateProbe(this.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, [...this.contextPicker.context.entries]);
+
+		//const result = this.aideProbeService.initiateProbe(this.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, []);
 		this._input.setValue('');
-		return result.responseCreatedPromise;
+		//return result.responseCreatedPromise;
 	}
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
-			const theme = this.themeService.getColorTheme();
-			const transparentForeground = theme.getColor(inputPlaceholderForeground);
 
-
-			let placeholder;
-			if (this.requestStatus.get() !== 'INACTIVE') {
-				placeholder = 'Filter through the results';
-			} else {
-				placeholder = 'Start a task';
-			}
-
+			let placeholder = 'Start a task';
 			const editor = this.editorService.activeTextEditorControl;
 			if (editor && isCodeEditor(editor)) {
 				const model = editor.getModel();
@@ -295,6 +247,8 @@ export class AideControls extends Disposable implements IAideControls {
 				}
 			}
 
+			const theme = this.themeService.getColorTheme();
+			const transparentForeground = theme.getColor(inputPlaceholderForeground);
 			const decorationOptions: IDecorationOptions[] = [
 				{
 					range: {
@@ -317,10 +271,7 @@ export class AideControls extends Disposable implements IAideControls {
 		}
 	}
 
-	layout() {
-		this.part.layout(this.part.availableWidth, this.inputHeight + (this.margin + this.padding + 2) * 2);
-		// TODO(@g-danna) Find a way to ergonomically get the width of elements
-		const inputWidth = this.part.width - (this.margin + this.padding + 2) * 2 - 36 - 24 - 12;
-		this._input.layout({ height: this.inputHeight, width: inputWidth });
+	layout(width: number, height: number) {
+		this._input.layout({ width, height });
 	}
 }
