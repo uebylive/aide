@@ -12,6 +12,7 @@ import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICS
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { INotificationService, NotificationPriority, Severity } from 'vs/platform/notification/common/notification';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 import { ISecretStorageService } from 'vs/platform/secrets/common/secrets';
@@ -39,6 +40,7 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 		@IProgressService private readonly progressService: IProgressService,
 		@IOpenerService private readonly openerService: IOpenerService,
 		@IURLService private readonly urlService: IURLService,
+		@INotificationService private readonly notificationService: INotificationService,
 	) {
 		super(themeService);
 
@@ -81,15 +83,36 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				}),
 			});
 			if (!response.ok) {
-				throw new Error('Network failure');
+				this.notificationService.notify(
+					{
+						severity: Severity.Error,
+						message: `Failed to authenticate with CodeStory. Please try logging in again.`,
+						priority: NotificationPriority.URGENT,
+					}
+				);
+				await this.deleteSession();
+				throw new Error(`Failed to authenticate with CodeStory. Please try logging in again.`);
 			}
 			const data = (await response.json()) as EncodedCSTokenData;
-			const newSession = {
-				...this._session,
+			const resp = await fetch(
+				`${this._subscriptionsAPIBase}/v1/users/me`,
+				{
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${data.access_token}`,
+					},
+				},
+			);
+			const text = await resp.text();
+			const userProfile = JSON.parse(text) as CSUserProfileResponse;
+			const newSession: CSAuthenticationSession = {
+				id: this._session.id,
 				accessToken: data.access_token,
 				refreshToken: data.refresh_token,
+				account: userProfile.user,
+				waitlistPosition: userProfile.waitlistPosition,
 			};
-			await this.secretStorageService.set(SESSION_SECRET_KEY, JSON.stringify(newSession));
+			await this.setSession(newSession);
 		} catch (e: any) {
 			return;
 		}
@@ -103,25 +126,30 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 			}
 
 			const userInfo = (await this.getUserInfo(encodedTokenData));
-			const { user, access_token, refresh_token } = userInfo;
+			const { user, access_token, refresh_token, waitlistPosition } = userInfo;
+			if (waitlistPosition > 0) {
+				this.notifyWaitlistPosition(waitlistPosition);
+			}
 
 			const session: CSAuthenticationSession = {
 				id: generateUuid(),
 				accessToken: access_token,
 				refreshToken: refresh_token,
-				account: user
+				account: user,
+				waitlistPosition,
 			};
 			this._onDidAuthenticate.fire(session);
-
-			await this.secretStorageService.set(
-				SESSION_SECRET_KEY,
-				JSON.stringify(session),
-			);
+			await this.setSession(session);
 
 			return session;
 		} catch (e) {
 			throw e;
 		}
+	}
+
+	private async setSession(session: CSAuthenticationSession) {
+		this._session = session;
+		await this.secretStorageService.set(SESSION_SECRET_KEY, JSON.stringify(session));
 	}
 
 	async deleteSession(): Promise<void> {
@@ -223,6 +251,19 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 		const text = await resp.text();
 		const data = JSON.parse(text) as CSUserProfileResponse;
 		return { ...data, ...tokens };
+	}
+
+	notifyWaitlistPosition(position?: number) {
+		this.notificationService.notify(
+			{
+				severity: Severity.Error,
+				message: `You are currently on the CodeStory waitlist ${position ? `at position ${position}` : ''}.
+Having a waitlist is currently the best way for us to sustainably manage the growth of our platform and resolving issues
+with a smaller group of users before opening up to more users. We will send you an email soon as we are ready for you!
+In the meantime, you can continue using the editor just like VSCode as they are fully compatible with each other.`,
+				priority: NotificationPriority.URGENT,
+			}
+		);
 	}
 }
 

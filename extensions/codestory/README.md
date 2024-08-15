@@ -19,5 +19,5 @@ Support will always be available on [our Slack channel](https://join.slack.com/t
 
 ## Credits
 
-Built with love, empathy and superpowers 🌺  
+Built with love, empathy and superpowers 🌺
 \- Sandeep & Naresh

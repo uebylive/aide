@@ -263,7 +263,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 	private registerViewContainer(): ViewContainer {
 		// Register View Container
-		const title = localize2('aideChat.viewContainer.label', "Aide");
+		const title = localize2('aideChat.viewContainer.label', "Chat");
 		const icon = Codicon.commentDiscussion;
 		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
 		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
