@@ -14,6 +14,7 @@ import { CS_ACCOUNT_CARD_VISIBLE } from 'vs/platform/codestoryAccount/common/csA
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
+import { INotificationService } from 'vs/platform/notification/common/notification';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 
 const $ = dom.$;
@@ -30,7 +31,8 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@INotificationService private readonly notificationService: INotificationService
 	) {
 		super();
 
@@ -54,6 +56,39 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		} else {
 			this.hide();
 			this.isVisible.set(false);
+		}
+	}
+
+	async ensureAuthenticated(): Promise<boolean> {
+		try {
+			let csAuthSession = await this.csAuthenticationService.getSession();
+			if (!csAuthSession) {
+				// Notify the user that they need to authenticate
+				this.notificationService.info('You need to log in to access this feature.');
+				// Show the account card
+				this.toggle();
+				// Wait for the user to authenticate
+				csAuthSession = await new Promise<CSAuthenticationSession>((resolve, reject) => {
+					const disposable = this.csAuthenticationService.onDidAuthenticate(session => {
+						if (session) {
+							resolve(session);
+						} else {
+							reject(new Error('Authentication failed'));
+						}
+						disposable.dispose();
+					});
+				});
+			}
+			if ((csAuthSession?.waitlistPosition ?? 0) > 0) {
+				this.csAuthenticationService.notifyWaitlistPosition(csAuthSession.waitlistPosition);
+				return false; // User is on the waitlist
+			}
+			return true; // User is authenticated and not on the waitlist
+		} catch (error) {
+			// Handle any errors that occurred during the authentication
+			console.error('Error during refresh:', error);
+			this.notificationService.error('An error occurred during the authentication process. Please try again later.');
+			return false; // Authentication failed
 		}
 	}
 

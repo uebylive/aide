@@ -11,6 +11,7 @@ export interface CSAuthenticationSession {
 	accessToken: string;
 	refreshToken: string;
 	account: CSUser;
+	waitlistPosition: number;
 }
 
 export type CSUser = {
@@ -31,6 +32,7 @@ export type EncodedCSTokenData = {
 
 export type CSUserProfileResponse = {
 	user: CSUser;
+	waitlistPosition: number;
 };
 
 export const ICSAccountService = createDecorator<ICSAccountService>('csAccountService');
@@ -38,6 +40,7 @@ export interface ICSAccountService {
 	readonly _serviceBrand: undefined;
 
 	toggle(): void;
+	ensureAuthenticated(): Promise<boolean>;
 }
 
 export const ICSAuthenticationService = createDecorator<ICSAuthenticationService>('csAuthenticationService');
@@ -49,4 +52,6 @@ export interface ICSAuthenticationService {
 	deleteSession(sessionId: string): Promise<void>;
 	refreshTokens(): Promise<void>;
 	getSession(): Promise<CSAuthenticationSession | undefined>;
+
+	notifyWaitlistPosition(position?: number): void;
 }
