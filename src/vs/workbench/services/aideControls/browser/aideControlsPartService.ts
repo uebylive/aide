@@ -7,9 +7,9 @@ import { IDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { AideControlsPart } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
 
-export const IAideControlsService = createDecorator<IAideControlsService>('aideControlsService');
+export const IAideControlsPartService = createDecorator<IAideControlsPartService>('aideControlsService');
 
-export interface IAideControlsService {
+export interface IAideControlsPartService {
 
 	readonly _serviceBrand: undefined;
 	readonly mainPart: AideControlsPart;

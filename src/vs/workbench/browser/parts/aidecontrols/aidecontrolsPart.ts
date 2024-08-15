@@ -10,10 +10,10 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { MultiWindowParts } from 'vs/workbench/browser/part';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IDisposable } from 'vs/base/common/lifecycle';
-import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControls/browser/aideControlsPartService';
 import { IOverlayedPartPosition, OverlayedPart } from 'vs/workbench/browser/overlayedPart';
 
-export class AideControlsService extends MultiWindowParts<AideControlsPart> implements IAideControlsService {
+export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
 
 	declare _serviceBrand: undefined;
 
@@ -54,10 +54,10 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
 
-	readonly minimumWidth: number = 300;
+	readonly minimumWidth: number = 0;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 
-	readonly minimumHeight: number = 200;
+	readonly minimumHeight: number = 0;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(

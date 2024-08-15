@@ -4,7 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { registerSingleton, InstantiationType } from 'vs/platform/instantiation/common/extensions';
-import { AideControlsService } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
-import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
+import { AideControlsPartService } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControls/browser/aideControlsPartService';
 
-registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Eager);
+
+registerSingleton(IAideControlsPartService, AideControlsPartService, InstantiationType.Eager);

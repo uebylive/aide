@@ -5,4 +5,19 @@
 
 .aide-controls {
 	pointer-events: all;
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 12px;
+}
+
+.aide-controls-inner {
+	display: flex;
+	padding-left: 6px;
+	gap: 6px;
+	border: 1px solid var(--vscode-editorWidget-border);
+	border-radius: 8px;
+	background-color: rgb(33, 37, 43);
+}
+
+.aide-controls :is(.monaco-editor, .monaco-editor-background) {
+	background-color: transparent;
 }

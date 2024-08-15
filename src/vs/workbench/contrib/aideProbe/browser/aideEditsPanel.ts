@@ -5,7 +5,7 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose, IReference } from 'vs/base/common/lifecycle';
@@ -21,17 +21,53 @@ import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/langua
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { FileKind } from 'vs/platform/files/common/files';
 import { relativePath } from 'vs/base/common/resources';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
-import 'vs/css!./media/aideEditsPanel';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
+import { Button } from 'vs/base/browser/ui/button/button';
+import 'vs/css!./media/aideEditsPanel';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 
 const $ = dom.$;
+
+export const IAideEditsService = createDecorator<IAideEditsService>('IAideEditsService');
+
+export interface IAideEditsService {
+	_serviceBrand: undefined;
+	registerPanel(panel: AideEditsPanel): void;
+	openPanel(): void;
+	closePanel(): void;
+}
+
+export class AideEditsService implements IAideEditsService {
+	_serviceBrand: undefined;
+	private panel: AideEditsPanel | undefined;
+
+	registerPanel(panel: AideEditsPanel): void {
+		if (!this.panel) {
+			this.panel = panel;
+		} else {
+			console.warn('AideEditsPanel already registered');
+		}
+	}
+
+	openPanel(): void {
+		if (this.panel) {
+			this.panel.show();
+		}
+	}
+
+	closePanel(): void {
+		if (this.panel) {
+			this.panel.hide();
+		}
+	}
+}
+
+registerSingleton(IAideEditsService, AideEditsService, InstantiationType.Eager);
 
 export class AideEditsPanel extends AidePanel {
 
@@ -53,15 +89,16 @@ export class AideEditsPanel extends AidePanel {
 	private readonly _onDidChangeFocus = this._register(new Emitter<IListChangeEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
 
-	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
-
 	constructor(
+		private readonly button: Button,
 		reference: HTMLElement,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@IAideEditsService aideEditsService: IAideEditsService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService) {
 		super(reference, instantiationService, undefined, 'Actions');
+
+		aideEditsService.registerPanel(this);
 
 		this.init();
 		this._register(aideProbeService.onNewEvent(() => {
@@ -74,6 +111,7 @@ export class AideEditsPanel extends AidePanel {
 	private init() {
 		this.model = this.aideProbeService.getSession();
 		if (this.model) {
+			this.button.enabled = true;
 			this.viewModel = this.instantiationService.createInstance(AideEditsViewModel, this.model);
 			this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange)(() => {
 				this.updatePlanList();
@@ -92,10 +130,8 @@ export class AideEditsPanel extends AidePanel {
 		header.appendChild(headerText);
 		this.body.element.append(header);
 
-
-		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 		const listDelegate = this.instantiationService.createInstance(PlanListDelegate);
-		const renderer = this._register(this.instantiationService.createInstance(PlanListRenderer, resourceLabels));
+		const renderer = this._register(this.instantiationService.createInstance(PlanListRenderer));
 		const listContainer = $('.list-container');
 		this.body.element.append(listContainer);
 
@@ -149,6 +185,11 @@ export class AideEditsPanel extends AidePanel {
 				this._onDidChangeFocus.fire({ index, element: element });
 				this.openPlanReference(element, !!event.browserEvent);
 			}
+		}));
+
+
+		this._register(this.onDidResize(() => {
+			list.rerender();
 		}));
 
 		return list;
@@ -221,7 +262,7 @@ export class AideEditsPanel extends AidePanel {
 		header.appendChild(headerText);
 		this.body.element.append(header);
 
-		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+
 		const listDelegate = this.instantiationService.createInstance(BreakdownListDelegate);
 		const renderer = this._register(this.instantiationService.createInstance(BreakdownListRenderer));
 		const listContainer = $('.breakdown-list-container');
@@ -275,9 +316,17 @@ export class AideEditsPanel extends AidePanel {
 					this.breakdownsListFocusIndex = index;
 				}
 
+				element.expanded = !element.expanded;
+				list.splice(index, 1, [element]);
+				list.rerender();
+
 				this._onDidChangeFocus.fire({ index, element: element });
 				this.openBreakdownReference(element, !!event.browserEvent);
 			}
+		}));
+
+		this._register(this.onDidResize(() => {
+			list.rerender();
 		}));
 
 		return list;
@@ -363,7 +412,6 @@ class PlanListRenderer extends Disposable implements IListRenderer<IAideInitialS
 	readonly onDidChangeItemHeight: Event<IInitialSymbolInformationHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	constructor(
-		private readonly resourceLabels: ResourceLabels,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 	) {
 		super();
@@ -514,7 +562,7 @@ class BreakdownListRenderer extends Disposable implements IListRenderer<IAideBre
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name, response = dummyReason } = element;
+		const { uri, name, response = dummyReason, expanded } = element;
 
 		const initialIconClasses = ThemeIcon.asClassNameArray(SymbolKinds.toIcon(SymbolKind.Method));
 		const iconElement = $('.plan-icon');
@@ -537,7 +585,7 @@ class BreakdownListRenderer extends Disposable implements IListRenderer<IAideBre
 			symbolElement.appendChild(symbolPath);
 		}
 
-		if (response) {
+		if (response && expanded) {
 			const responseElement = $('.plan-response');
 			const markdownResult = this.markdownRenderer.render(response);
 			responseElement.appendChild(markdownResult.element);
@@ -714,6 +762,7 @@ export interface IAideBreakdownViewModel {
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
 	currentRenderedHeight: number | undefined;
+	expanded: boolean;
 }
 
 export interface IAideCodeEditPreviewViewModel {
@@ -743,6 +792,8 @@ export class AideBreakdownViewModel extends Disposable implements IAideBreakdown
 	get response() {
 		return this._breakdown.response;
 	}
+
+	expanded = false;
 
 	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
 	private _symbol: DocumentSymbol | undefined;

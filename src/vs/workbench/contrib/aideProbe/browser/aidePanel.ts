@@ -89,8 +89,8 @@ export abstract class AidePanel extends Disposable {
 	readonly body: PanelBody;
 
 
-	private _onDidResize = this._register(new Emitter<number>());
-	readonly onDidResize: Event<number> = this._onDidResize.event;
+	private _onDidResize = this._register(new Emitter<IDimension>());
+	readonly onDidResize: Event<IDimension> = this._onDidResize.event;
 
 
 	constructor(private readonly reference: HTMLElement, instantiationService: IInstantiationService, initialSize?: IDimension, headerText?: string, iconId?: string) {
@@ -131,7 +131,7 @@ export abstract class AidePanel extends Disposable {
 				const delta = dragChange.currentY - initialY;
 				const newHeight = initialHeight + delta;
 				this.layout(newHeight, this._width);
-				this._onDidResize.fire(newHeight);
+				this._onDidResize.fire({ height: newHeight, width: this._width });
 			}));
 
 			const onDragEndEvent = this._register(this.bottomSash.onDidEnd(() => {
@@ -147,7 +147,7 @@ export abstract class AidePanel extends Disposable {
 				const delta = dragChange.currentX - initialX;
 				const newWidth = initialWidth - delta;
 				this.layout(this.height, newWidth);
-				this._onDidResize.fire(newWidth);
+				this._onDidResize.fire({ height: this.height, width: newWidth });
 			}));
 
 			const onDragEndEvent = this._register(this.leftSash.onDidEnd(() => {

@@ -50,6 +50,7 @@ export class AideBar extends Disposable {
 		const buttonContainer = $('.aide-bar-button-container');
 		this.element.appendChild(buttonContainer);
 		const button = this._register(this.instantiationService.createInstance(Button, buttonContainer, { title: 'Aide Edits' }));
+		button.enabled = false;
 		this._register(this.instantiationService.createInstance(Heroicon, button.element, 'solid/list-bullet'));
 
 		Object.assign(button.element.style, {
@@ -60,7 +61,7 @@ export class AideBar extends Disposable {
 			justifyContent: 'center',
 		});
 
-		this.editsPanel = this.openPanel = this.instantiationService.createInstance(AideEditsPanel, buttonContainer);
+		this.editsPanel = this.openPanel = this.instantiationService.createInstance(AideEditsPanel, button, buttonContainer);
 
 		button.onDidClick(() => {
 			if (this.editsPanel.isVisible) {

@@ -9,17 +9,18 @@
 	top: 0;
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 12px;
-	background-color: var(--vscode-input-background);;
+	background-color: rgb(33, 37, 43);
 }
 
 .aide-panel-header {
 	display: flex;
 	gap: 6px;
 	padding-inline: 6px;
+	border-top-left-radius: 12px;
+	border-top-right-radius: 12px;
 	background-color: var(--vscode-commandCenter-background);
 }
 
 .aide-panel-header :is(svg, .aide-panel-header-text)  {
 	margin-top: 6px;
 }
-
