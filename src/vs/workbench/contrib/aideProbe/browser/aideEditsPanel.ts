@@ -711,7 +711,7 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, currentRenderedHeight: 0 }));
 			}
 
-			const codeEdits = _model.response?.codeEdits;
+			//const codeEdits = _model.response?.codeEdits;
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
 				let reference = this._references.get(item.reference.uri.toString());
@@ -723,22 +723,22 @@ class AideEditsViewModel extends Disposable implements IAideEditsViewModel {
 					if (!symbol) {
 						return;
 					}
-					const edits = codeEdits?.get(item.reference.uri.toString());
-					const hunks = edits?.hunkData.getInfo();
-					for (const hunk of hunks ?? []) {
-						let wholeRange: Range | undefined;
-						const ranges = hunk.getRangesN();
-						for (const range of ranges) {
-							if (!wholeRange) {
-								wholeRange = range;
-							} else {
-								wholeRange = wholeRange.plusRange(range);
-							}
-						}
-						if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
-							viewItem.appendEdits([hunk]);
-						}
-					}
+					//const edits = codeEdits?.get(item.reference.uri.toString());
+					//const hunks = edits?.hunkData.getInfo();
+					//for (const hunk of hunks ?? []) {
+					//	let wholeRange: Range | undefined;
+					//	const ranges = hunk.getRangesN();
+					//	for (const range of ranges) {
+					//		if (!wholeRange) {
+					//			wholeRange = range;
+					//		} else {
+					//			wholeRange = wholeRange.plusRange(range);
+					//		}
+					//	}
+					//	if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+					//		viewItem.appendEdits([hunk]);
+					//	}
+					//}
 					this._onDidChange.fire();
 				});
 				return viewItem;

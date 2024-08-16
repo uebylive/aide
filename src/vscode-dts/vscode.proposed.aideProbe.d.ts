@@ -58,6 +58,7 @@ declare module 'vscode' {
 		/**
 		 * Where edits will be applied
 		 */
+		readonly iterationId: string;
 		readonly edits: WorkspaceEdit;
 	}
 

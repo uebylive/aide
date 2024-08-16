@@ -118,6 +118,11 @@ export class AideControls extends Disposable {
 				clearTimeout(timeoutId);
 			}
 
+			if (this._input.getValue().trim().length === 0) {
+				this.aideProbeService.cancelProbe();
+				return;
+			}
+
 			timeoutId = setTimeout(() => {
 				this.acceptInput();
 				if (timeoutId) {

@@ -2986,6 +2986,7 @@ export namespace AideProbeResponseTextEditPart {
 	export function from(part: vscode.AideProbeResponseTextEdit): Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
 		return {
 			kind: 'textEdit',
+			iterationId: part.iterationId,
 			edits: WorkspaceEdit.from(part.edits)
 		};
 	}

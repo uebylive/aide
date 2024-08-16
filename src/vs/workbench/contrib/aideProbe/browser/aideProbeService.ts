@@ -11,7 +11,6 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
 import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -157,22 +156,22 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					throw new Error('No probe provider registered.');
 				}
 
-				//const result = await resolver.initiate(probeModel.request, progressCallback, token);
-				//	if (token.isCancellationRequested) {
-				//		return;
-				//	} else if (result) {
-				//		probeModel.completeResponse();
-				//	}
+				const result = await resolver.initiate(probeModel.request, progressCallback, token);
+				if (token.isCancellationRequested) {
+					return;
+				} else if (result) {
+					probeModel.completeResponse();
+				}
 
 				// Mock data start
-				if (textModel) {
-					const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
-					if (token.isCancellationRequested) {
-						return;
-					} else if (result) {
-						probeModel.completeResponse();
-					}
-				}
+				//if (textModel) {
+				//		const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
+				//		if (token.isCancellationRequested) {
+				//			return;
+				//		} else if (result) {
+				//			probeModel.completeResponse();
+				//		}
+				//}
 
 				// Mock data end
 
@@ -202,8 +201,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		if (!resolver || !this._model) {
 			return new Error('Added iteration without a probe provider or active session.');
 		}
-		return mockOnUserAction({ type: 'newIteration', newPrompt });
-		//return resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+		//return mockOnUserAction({ type: 'newIteration', newPrompt });
+		return resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
 	}
 
 
