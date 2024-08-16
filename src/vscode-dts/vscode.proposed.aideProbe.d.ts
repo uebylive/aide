@@ -14,9 +14,14 @@ declare module 'vscode' {
 		status: boolean;
 	}
 
+	export interface NewIterationAction {
+		type: 'newIteration';
+		newPrompt: string;
+	}
+
 	export interface AideProbeUserAction {
 		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction;
 	}
 
 	export interface ProbeRequest {

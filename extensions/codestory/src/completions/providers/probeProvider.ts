@@ -84,13 +84,21 @@ export class AideProbeProvider implements vscode.Disposable {
 			'aideProbeProvider',
 			{
 				provideProbeResponse: this.provideProbeResponse.bind(this),
-				onDidUserAction(action) {
+				onDidUserAction(userAction) {
+
+					if (userAction.action.type === 'newIteration') {
+						// @theskcd - This is where we can accept the iteration
+						// sideCarClient.acceptIteration()
+						console.log('newIteration', userAction);
+					}
+
+
 					postHogClient?.capture({
 						distinctId: getUniqueId(),
-						event: action.action.type,
+						event: userAction.action.type,
 						properties: {
 							platform: os.platform(),
-							requestId: action.sessionId,
+							requestId: userAction.sessionId,
 						},
 					});
 				}

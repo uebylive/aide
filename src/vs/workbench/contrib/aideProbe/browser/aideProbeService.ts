@@ -30,6 +30,7 @@ export interface IAideProbeService {
 	startSession(): AideProbeModel;
 
 	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[]): IInitiateProbeResponseState;
+	addIteration(newPrompt: string): Error | void;
 	cancelProbe(): void;
 	acceptCodeEdits(): void;
 	rejectCodeEdits(): void;
@@ -178,19 +179,28 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._initiateProbeResponseState;
 	}
 
-	cancelProbe(): void {
+	addIteration(newPrompt: string) {
+		const resolver = this.probeProvider;
+		if (!resolver || !this._model) {
+			return new Error('Added iteration without a probe provider or active session.');
+		}
+		return resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+	}
+
+
+	cancelProbe() {
 		if (this._activeRequest) {
 			this._activeRequest.cancel();
 			this._activeRequest.dispose();
 		}
 	}
 
-	acceptCodeEdits(): void {
+	acceptCodeEdits() {
 		this._onReview.fire('accept');
 		this.clearSession();
 	}
 
-	rejectCodeEdits(): void {
+	rejectCodeEdits() {
 		const edits = this._model?.response?.codeEdits;
 		if (edits) {
 			for (const edit of edits.values()) {
@@ -202,7 +212,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this.clearSession();
 	}
 
-	private clearSession(): void {
+	private clearSession() {
 		this._model?.dispose();
 		this._model = undefined;
 		this.cancelProbe();

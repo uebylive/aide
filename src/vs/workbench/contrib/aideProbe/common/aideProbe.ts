@@ -26,9 +26,14 @@ export interface INavigateBreakdownAction {
 	status: boolean;
 }
 
+export interface INewIterationAction {
+	type: 'newIteration';
+	newPrompt: string;
+}
+
 export interface IAideProbeUserAction {
 	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction;
+	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction;
 }
 
 export interface IReferenceByName {

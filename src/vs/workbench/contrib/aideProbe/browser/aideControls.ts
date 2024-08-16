@@ -119,7 +119,10 @@ export class AideControls extends Disposable {
 			}
 
 			timeoutId = setTimeout(() => {
-				console.log(this._input.getValue());
+				this.acceptInput();
+				if (timeoutId) {
+					clearTimeout(timeoutId);
+				}
 			}, 2000);
 		});
 
@@ -207,19 +210,28 @@ export class AideControls extends Disposable {
 	}
 
 	private _acceptInput() {
-		if (this.model && this.model.status !== AideProbeStatus.INACTIVE) {
-			return;
-		}
-		// this.model = this.aideProbeService.startSession();
-		// this.model.status = AideProbeStatus.IN_PROGRESS;
 
+		const currentSession = this.aideProbeService.getSession();
 		const editorValue = this._input.getValue();
+		const activeEditor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(activeEditor)) { return; }
 
+		const selection = activeEditor.getSelection();
 
+		if (!selection) { return; }
 
-		//const result = this.aideProbeService.initiateProbe(this.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, []);
-		this._input.setValue('');
-		//return result.responseCreatedPromise;
+		if (!currentSession) {
+			this.model = this.aideProbeService.startSession();
+			this.model.status = AideProbeStatus.IN_PROGRESS;
+			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, [{
+				id: 'selection',
+				name: 'selection',
+				value: selection
+
+			}]);
+		} else {
+			this.aideProbeService.addIteration(editorValue);
+		}
 	}
 
 	private updateInputPlaceholder() {
