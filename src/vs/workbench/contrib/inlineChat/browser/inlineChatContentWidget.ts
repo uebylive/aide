@@ -11,9 +11,9 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore } from 'vs/base/common/lifecycle';
 import { IPosition, Position } from 'vs/editor/common/core/position';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { inlineChatBackground, InlineChatConfigKeys, MENU_INLINE_CHAT_CONTENT_STATUS, MENU_INLINE_CHAT_EXECUTE } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { inlineChatBackground, MENU_INLINE_CHAT_CONTENT_STATUS } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { Session } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { ChatWidget } from 'vs/workbench/contrib/chat/browser/chatWidget';
+import { ChatWidget, IChatWidgetLocationOptions } from 'vs/workbench/contrib/chat/browser/chatWidget';
 import { ChatAgentLocation } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { editorBackground, editorForeground, inputBackground } from 'vs/platform/theme/common/colorRegistry';
 import { ChatModel } from 'vs/workbench/contrib/chat/common/chatModel';
@@ -23,9 +23,10 @@ import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { EditorOption } from 'vs/editor/common/config/editorOptions';
 import { ScrollType } from 'vs/editor/common/editorCommon';
 import { MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuItemAction } from 'vs/platform/actions/common/actions';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { TextOnlyMenuEntryActionViewItem } from 'vs/platform/actions/browser/menuEntryActionViewItem';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 
 export class InlineChatContentWidget implements IContentWidget {
 
@@ -37,7 +38,7 @@ export class InlineChatContentWidget implements IContentWidget {
 	private readonly _inputContainer = document.createElement('div');
 	private readonly _toolbarContainer = document.createElement('div');
 
-	private _position?: IPosition;
+	private _position?: IContentWidgetPosition;
 
 	private readonly _onDidBlur = this._store.add(new Emitter<void>());
 	readonly onDidBlur: Event<void> = this._onDidBlur.event;
@@ -49,11 +50,12 @@ export class InlineChatContentWidget implements IContentWidget {
 	private readonly _widget: ChatWidget;
 
 	constructor(
-		location: ChatAgentLocation,
+		location: IChatWidgetLocationOptions,
 		private readonly _editor: ICodeEditor,
 		@IInstantiationService instaService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IConfigurationService configurationService: IConfigurationService
+		@IConfigurationService configurationService: IConfigurationService,
+		@IQuickInputService quickInputService: IQuickInputService
 	) {
 
 		this._defaultChatModel = this._store.add(instaService.createInstance(ChatModel, undefined, ChatAgentLocation.Editor));
@@ -69,17 +71,17 @@ export class InlineChatContentWidget implements IContentWidget {
 		this._widget = scopedInstaService.createInstance(
 			ChatWidget,
 			location,
-			{ resource: true },
+			undefined,
 			{
 				defaultElementHeight: 32,
 				editorOverflowWidgetsDomNode: _editor.getOverflowWidgetsDomNode(),
 				renderStyle: 'minimal',
 				renderInputOnTop: true,
 				renderFollowups: true,
-				supportsFileReferences: false,
+				supportsFileReferences: configurationService.getValue(`chat.experimental.variables.${location.location}`) === true,
 				menus: {
 					telemetrySource: 'inlineChat-content',
-					executeToolbar: MENU_INLINE_CHAT_EXECUTE,
+					executeToolbar: MenuId.ChatExecute,
 				},
 				filter: _item => false
 			},
@@ -101,24 +103,32 @@ export class InlineChatContentWidget implements IContentWidget {
 		this._domNode.appendChild(this._inputContainer);
 
 		this._toolbarContainer.classList.add('toolbar');
-		if (!configurationService.getValue<boolean>(InlineChatConfigKeys.ExpTextButtons)) {
-			this._toolbarContainer.style.display = 'none';
-			this._domNode.style.paddingBottom = '6px';
-		}
 		this._domNode.appendChild(this._toolbarContainer);
 
-		this._store.add(scopedInstaService.createInstance(MenuWorkbenchToolBar, this._toolbarContainer, MENU_INLINE_CHAT_CONTENT_STATUS, {
+		const toolbar = this._store.add(scopedInstaService.createInstance(MenuWorkbenchToolBar, this._toolbarContainer, MENU_INLINE_CHAT_CONTENT_STATUS, {
 			actionViewItemProvider: action => action instanceof MenuItemAction ? instaService.createInstance(TextOnlyMenuEntryActionViewItem, action, { conversational: true }) : undefined,
 			toolbarOptions: { primaryGroup: '0_main' },
 			icon: false,
 			label: true,
 		}));
 
+		this._store.add(toolbar.onDidChangeMenuItems(() => {
+			this._domNode.classList.toggle('contents', toolbar.getItemsLength() > 1);
+		}));
+
+		// note when the widget has been interaced with and disable "close on blur" if so
+		let widgetHasBeenInteractedWith = false;
+		this._store.add(this._widget.inputEditor.onDidChangeModelContent(() => {
+			widgetHasBeenInteractedWith ||= this._widget.inputEditor.getModel()?.getValueLength() !== 0;
+		}));
+		this._store.add(this._widget.onDidChangeContext(() => {
+			widgetHasBeenInteractedWith ||= true;
+			_editor.layoutContentWidget(this);// https://github.com/microsoft/vscode/issues/221385
+		}));
+
 		const tracker = dom.trackFocus(this._domNode);
 		this._store.add(tracker.onDidBlur(() => {
-			if (this._visible && this._widget.inputEditor.getModel()?.getValueLength() === 0
-				// && !"ON"
-			) {
+			if (this._visible && !widgetHasBeenInteractedWith && !quickInputService.currentQuickInput) {
 				this._onDidBlur.fire();
 			}
 		}));
@@ -138,13 +148,7 @@ export class InlineChatContentWidget implements IContentWidget {
 	}
 
 	getPosition(): IContentWidgetPosition | null {
-		if (!this._position) {
-			return null;
-		}
-		return {
-			position: this._position,
-			preference: [ContentWidgetPositionPreference.ABOVE]
-		};
+		return this._position ?? null;
 	}
 
 	beforeRender(): IDimension | null {
@@ -152,10 +156,11 @@ export class InlineChatContentWidget implements IContentWidget {
 		const maxHeight = this._widget.input.inputEditor.getOption(EditorOption.lineHeight) * 5;
 		const inputEditorHeight = this._widget.contentHeight;
 
-		this._widget.layout(Math.min(maxHeight, inputEditorHeight), 390);
+		const height = Math.min(maxHeight, inputEditorHeight);
+		const width = 390;
+		this._widget.layout(height, width);
 
-		// const actualHeight = this._widget.inputPartHeight;
-		// return new dom.Dimension(width, actualHeight);
+		dom.size(this._domNode, width, null);
 		return null;
 	}
 
@@ -180,18 +185,22 @@ export class InlineChatContentWidget implements IContentWidget {
 		return this._widget.inputEditor.getValue();
 	}
 
-	show(position: IPosition) {
+	show(position: IPosition, below: boolean) {
 		if (!this._visible) {
 			this._visible = true;
 			this._focusNext = true;
 
 			this._editor.revealRangeNearTopIfOutsideViewport(Range.fromPositions(position), ScrollType.Immediate);
-			this._widget.inputEditor.setValue('');
 
 			const wordInfo = this._editor.getModel()?.getWordAtPosition(position);
 
-			this._position = wordInfo ? new Position(position.lineNumber, wordInfo.startColumn) : position;
+			this._position = {
+				position: wordInfo ? new Position(position.lineNumber, wordInfo.startColumn) : position,
+				preference: [below ? ContentWidgetPositionPreference.BELOW : ContentWidgetPositionPreference.ABOVE]
+			};
+
 			this._editor.addContentWidget(this);
+			this._widget.setContext(true);
 			this._widget.setVisible(true);
 		}
 	}
@@ -200,6 +209,7 @@ export class InlineChatContentWidget implements IContentWidget {
 		if (this._visible) {
 			this._visible = false;
 			this._editor.removeContentWidget(this);
+			this._widget.inputEditor.setValue('');
 			this._widget.saveState();
 			this._widget.setVisible(false);
 		}

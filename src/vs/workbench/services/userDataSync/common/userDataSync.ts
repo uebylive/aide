@@ -56,8 +56,8 @@ export function getSyncAreaLabel(source: SyncResource): string {
 		case SyncResource.Settings: return localize('settings', "Settings");
 		case SyncResource.Keybindings: return localize('keybindings', "Keyboard Shortcuts");
 		case SyncResource.ModelSelection: return localize('modelSelection', "Model Selection");
-		case SyncResource.Snippets: return localize('snippets', "User Snippets");
-		case SyncResource.Tasks: return localize('tasks', "User Tasks");
+		case SyncResource.Snippets: return localize('snippets', "Snippets");
+		case SyncResource.Tasks: return localize('tasks', "Tasks");
 		case SyncResource.Extensions: return localize('extensions', "Extensions");
 		case SyncResource.GlobalState: return localize('ui state label', "UI State");
 		case SyncResource.Profiles: return localize('profiles', "Profiles");

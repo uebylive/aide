@@ -28,6 +28,7 @@ import { NativeWindow } from 'vs/workbench/electron-sandbox/window';
 import { ModifierKeyEmitter } from 'vs/base/browser/dom';
 import { applicationConfigurationNodeBase, securityConfigurationNodeBase } from 'vs/workbench/common/configuration';
 import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from 'vs/platform/window/electron-sandbox/window';
+import product from 'vs/platform/product/common/product';
 
 // Actions
 (function registerActions(): void {
@@ -226,7 +227,7 @@ import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from 'vs/platform/window/electron-sand
 				'type': 'boolean',
 				'default': false,
 				'scope': ConfigurationScope.APPLICATION,
-				'markdownDescription': localize('window.doubleClickIconToClose', "If enabled, this setting will close the window when the application icon in the title bar is double-clicked. The window will not be able to be dragged by the icon. This setting is effective only if `#window.titleBarStyle#` is set to `custom`.")
+				'markdownDescription': localize('window.doubleClickIconToClose', "If enabled, this setting will close the window when the application icon in the title bar is double-clicked. The window will not be able to be dragged by the icon. This setting is effective only if {0} is set to `custom`.", '`#window.titleBarStyle#`')
 			},
 			'window.titleBarStyle': {
 				'type': 'string',
@@ -234,6 +235,12 @@ import { MAX_ZOOM_LEVEL, MIN_ZOOM_LEVEL } from 'vs/platform/window/electron-sand
 				'default': isLinux ? 'custom' : 'custom',
 				'scope': ConfigurationScope.APPLICATION,
 				'description': localize('titleBarStyle', "Adjust the appearance of the window title bar to be native by the OS or custom. On Linux and Windows, this setting also affects the application and context menu appearances. Changes require a full restart to apply."),
+			},
+			'window.experimentalControlOverlay': {
+				'type': 'boolean',
+				'included': isLinux,
+				'markdownDescription': localize('window.experimentalControlOverlay', "Show the native window controls when {0} is set to `custom` (Linux only).", '`#window.titleBarStyle#`'),
+				'default': product.quality !== 'stable', // TODO@bpasero disable by default in stable for now (TODO@bpasero TODO@benibenj flip when custom title is default)
 			},
 			'window.customTitleBarVisibility': {
 				'type': 'string',

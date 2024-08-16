@@ -42,6 +42,7 @@ import { IMarkerData } from 'vs/platform/markers/common/markers';
 import { IProgressOptions, IProgressStep } from 'vs/platform/progress/common/progress';
 import * as quickInput from 'vs/platform/quickinput/common/quickInput';
 import { IRemoteConnectionData, TunnelDescription } from 'vs/platform/remote/common/remoteAuthorityResolver';
+import { AuthInfo, Credentials } from 'vs/platform/request/common/request';
 import { ClassifiedEvent, IGDPRProperty, OmitMetadata, StrictPropertyCheck } from 'vs/platform/telemetry/common/gdprTypings';
 import { TelemetryLevel } from 'vs/platform/telemetry/common/telemetry';
 import { ISerializableEnvironmentDescriptionMap, ISerializableEnvironmentVariableCollection } from 'vs/platform/terminal/common/environmentVariable';
@@ -63,7 +64,7 @@ import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/c
 import { ChatAgentVoteDirection, IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTask, IChatTaskDto, IChatUserActionEvent } from 'vs/workbench/contrib/chat/common/chatService';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { IChatMessage, IChatResponseFragment, ILanguageModelChatMetadata, ILanguageModelChatSelector, ILanguageModelsChangeEvent } from 'vs/workbench/contrib/chat/common/languageModels';
-import { IToolData, IToolDelta } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
+import { IToolData, IToolDelta, IToolResult } from 'vs/workbench/contrib/chat/common/languageModelToolsService';
 import { DebugConfigurationProviderTriggerKind, IAdapterDescriptor, IConfig, IDebugSessionReplMode, IDebugTestRunReference, IDebugVisualization, IDebugVisualizationContext, IDebugVisualizationTreeItem, MainThreadDebugVisualization } from 'vs/workbench/contrib/debug/common/debug';
 import * as notebookCommon from 'vs/workbench/contrib/notebook/common/notebookCommon';
 import { CellExecutionUpdateType } from 'vs/workbench/contrib/notebook/common/notebookExecutionService';
@@ -73,7 +74,7 @@ import { InputValidationType } from 'vs/workbench/contrib/scm/common/scm';
 import { IWorkspaceSymbol, NotebookPriorityInfo } from 'vs/workbench/contrib/search/common/search';
 import { IRawClosedNotebookFileMatch } from 'vs/workbench/contrib/search/common/searchNotebookHelpers';
 import { IKeywordRecognitionEvent, ISpeechProviderMetadata, ISpeechToTextEvent, ITextToSpeechEvent } from 'vs/workbench/contrib/speech/common/speechService';
-import { CoverageDetails, ExtensionRunTestsRequest, ICallProfileRunHandler, IFileCoverage, ISerializedTestResults, IStartControllerTests, ITestItem, ITestMessage, ITestRunProfile, ITestRunTask, ResolvedTestRunRequest, TestMessageFollowupRequest, TestMessageFollowupResponse, TestResultState, TestsDiffOp } from 'vs/workbench/contrib/testing/common/testTypes';
+import { CoverageDetails, ExtensionRunTestsRequest, ICallProfileRunHandler, IFileCoverage, ISerializedTestResults, IStartControllerTests, ITestItem, ITestMessage, ITestRunProfile, ITestRunTask, ResolvedTestRunRequest, TestControllerCapability, TestMessageFollowupRequest, TestMessageFollowupResponse, TestResultState, TestsDiffOp } from 'vs/workbench/contrib/testing/common/testTypes';
 import { Timeline, TimelineChangeEvent, TimelineOptions, TimelineProviderDescriptor } from 'vs/workbench/contrib/timeline/common/timeline';
 import { TypeHierarchyItem } from 'vs/workbench/contrib/typeHierarchy/common/typeHierarchy';
 import { RelatedInformationResult, RelatedInformationType } from 'vs/workbench/services/aiRelatedInformation/common/aiRelatedInformation';
@@ -152,11 +153,12 @@ export interface MainThreadCommentsShape extends IDisposable {
 	$registerCommentController(handle: number, id: string, label: string, extensionId: string): void;
 	$unregisterCommentController(handle: number): void;
 	$updateCommentControllerFeatures(handle: number, features: CommentProviderFeatures): void;
-	$createCommentThread(handle: number, commentThreadHandle: number, threadId: string, resource: UriComponents, range: IRange | ICellRange | undefined, extensionId: ExtensionIdentifier, isTemplate: boolean, editorId?: string): languages.CommentThread<IRange | ICellRange> | undefined;
+	$createCommentThread(handle: number, commentThreadHandle: number, threadId: string, resource: UriComponents, range: IRange | ICellRange | undefined, comments: languages.Comment[], extensionId: ExtensionIdentifier, isTemplate: boolean, editorId?: string): languages.CommentThread<IRange | ICellRange> | undefined;
 	$updateCommentThread(handle: number, commentThreadHandle: number, threadId: string, resource: UriComponents, changes: CommentThreadChanges): void;
 	$deleteCommentThread(handle: number, commentThreadHandle: number): void;
 	$updateCommentingRanges(handle: number, resourceHints?: languages.CommentingRangeResourceHint): void;
-	$revealCommentThread(handle: number, commentThreadHandle: number, options: languages.CommentThreadRevealOptions): Promise<void>;
+	$revealCommentThread(handle: number, commentThreadHandle: number, commentUniqueIdInThread: number, options: languages.CommentThreadRevealOptions): Promise<void>;
+	$hideCommentThread(handle: number, commentThreadHandle: number): void;
 }
 
 export interface AuthenticationForceNewSessionOptions {
@@ -170,7 +172,6 @@ export interface MainThreadAuthenticationShape extends IDisposable {
 	$ensureProvider(id: string): Promise<void>;
 	$sendDidChangeSessions(providerId: string, event: AuthenticationSessionsChangeEvent): void;
 	$getSession(providerId: string, scopes: readonly string[], extensionId: string, extensionName: string, options: { createIfNone?: boolean; forceNewSession?: boolean | AuthenticationForceNewSessionOptions; clearSessionPreference?: boolean }): Promise<AuthenticationSession | undefined>;
-	$getSessions(providerId: string, scopes: readonly string[], extensionId: string, extensionName: string): Promise<AuthenticationSession[]>;
 	$getAccounts(providerId: string): Promise<ReadonlyArray<AuthenticationSessionAccount>>;
 	$removeSession(providerId: string, sessionId: string): Promise<void>;
 }
@@ -461,7 +462,7 @@ export interface MainThreadLanguageFeaturesShape extends IDisposable {
 	$resolvePasteFileData(handle: number, requestId: number, dataId: string): Promise<VSBuffer>;
 	$resolveDocumentOnDropFileData(handle: number, requestId: number, dataId: string): Promise<VSBuffer>;
 	$setLanguageConfiguration(handle: number, languageId: string, configuration: ILanguageConfigurationDto): void;
-	$registerMappedEditsProvider(handle: number, selector: IDocumentFilterDto[]): void;
+	$registerMappedEditsProvider(handle: number, selector: IDocumentFilterDto[], displayName: string): void;
 }
 
 export interface MainThreadLanguagesShape extends IDisposable {
@@ -1265,6 +1266,8 @@ export interface IDynamicChatAgentProps {
 
 export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: IDynamicChatAgentProps | undefined): void;
+	$registerChatParticipantDetectionProvider(handle: number): void;
+	$unregisterChatParticipantDetectionProvider(handle: number): void;
 	$registerAgentCompletionsProvider(handle: number, id: string, triggerCharacters: string[]): void;
 	$unregisterAgentCompletionsProvider(handle: number, id: string): void;
 	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void;
@@ -1297,14 +1300,25 @@ export type IChatAgentHistoryEntryDto = {
 };
 
 export interface ExtHostChatAgentsShape2 {
-	$invokeAgent(handle: number, request: IChatAgentRequest, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
-	$provideFollowups(request: IChatAgentRequest, handle: number, result: IChatAgentResult, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
+	$invokeAgent(handle: number, request: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
+	$provideFollowups(request: Dto<IChatAgentRequest>, handle: number, result: IChatAgentResult, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
 	$acceptFeedback(handle: number, result: IChatAgentResult, vote: ChatAgentVoteDirection, reportIssue?: boolean): void;
 	$acceptAction(handle: number, result: IChatAgentResult, action: IChatUserActionEvent): void;
 	$invokeCompletionProvider(handle: number, query: string, token: CancellationToken): Promise<IChatAgentCompletionItem[]>;
 	$provideWelcomeMessage(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined>;
 	$provideSampleQuestions(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
 	$releaseSession(sessionId: string): void;
+	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
+}
+export interface IChatParticipantMetadata {
+	participant: string;
+	command?: string;
+	disambiguation: { categoryName: string; description: string; examples: string[] }[];
+}
+
+export interface IChatParticipantDetectionResult {
+	participant: string;
+	command?: string;
 }
 
 export type IChatVariableResolverProgressDto =
@@ -1317,8 +1331,8 @@ export interface MainThreadChatVariablesShape extends IDisposable {
 }
 
 export interface MainThreadLanguageModelToolsShape extends IDisposable {
-	$getTools(): Promise<IToolData[]>;
-	$invokeTool(name: string, parameters: any, token: CancellationToken): Promise<string>;
+	$getTools(): Promise<Dto<IToolData>[]>;
+	$invokeTool(name: string, parameters: any, token: CancellationToken): Promise<IToolResult>;
 	$registerTool(id: string): void;
 	$unregisterTool(name: string): void;
 }
@@ -1331,7 +1345,7 @@ export interface ExtHostChatVariablesShape {
 
 export interface ExtHostLanguageModelToolsShape {
 	$acceptToolDelta(delta: IToolDelta): Promise<void>;
-	$invokeTool(id: string, parameters: any, token: CancellationToken): Promise<string>;
+	$invokeTool(id: string, parameters: any, token: CancellationToken): Promise<IToolResult>;
 }
 
 export interface MainThreadUrlsShape extends IDisposable {
@@ -1529,6 +1543,8 @@ export interface MainThreadWorkspaceShape extends IDisposable {
 	$saveAll(includeUntitled?: boolean): Promise<boolean>;
 	$updateWorkspaceFolders(extensionName: string, index: number, deleteCount: number, workspaceFoldersToAdd: { uri: UriComponents; name?: string }[]): Promise<void>;
 	$resolveProxy(url: string): Promise<string | undefined>;
+	$lookupAuthorization(authInfo: AuthInfo): Promise<Credentials | undefined>;
+	$lookupKerberosAuthorization(url: string): Promise<string | undefined>;
 	$loadCertificates(): Promise<string[]>;
 	$requestWorkspaceTrust(options?: WorkspaceTrustRequestOptions): Promise<boolean | undefined>;
 	$registerEditSessionIdentityProvider(handle: number, scheme: string): void;
@@ -1657,6 +1673,7 @@ export type SCMRawResourceSplices = [
 export interface SCMHistoryItemGroupDto {
 	readonly id: string;
 	readonly name: string;
+	readonly revision?: string;
 	readonly base?: Omit<Omit<SCMHistoryItemGroupDto, 'base'>, 'remote'>;
 	readonly remote?: Omit<Omit<SCMHistoryItemGroupDto, 'base'>, 'remote'>;
 }
@@ -2481,6 +2498,7 @@ export interface ExtHostSCMShape {
 	$provideHistoryItemSummary(sourceControlHandle: number, historyItemId: string, historyItemParentId: string | undefined, token: CancellationToken): Promise<SCMHistoryItemDto | undefined>;
 	$provideHistoryItemChanges(sourceControlHandle: number, historyItemId: string, historyItemParentId: string | undefined, token: CancellationToken): Promise<SCMHistoryItemChangeDto[] | undefined>;
 	$resolveHistoryItemGroupCommonAncestor(sourceControlHandle: number, historyItemGroupId1: string, historyItemGroupId2: string | undefined, token: CancellationToken): Promise<{ id: string; ahead: number; behind: number } | undefined>;
+	$resolveHistoryItemGroupCommonAncestor2(sourceControlHandle: number, historyItemGroupIds: string[], token: CancellationToken): Promise<string | undefined>;
 }
 
 export interface ExtHostQuickDiffShape {
@@ -2876,7 +2894,7 @@ export const enum ExtHostTestingResource {
 export interface ExtHostTestingShape {
 	$runControllerTests(req: IStartControllerTests[], token: CancellationToken): Promise<{ error?: string }[]>;
 	$startContinuousRun(req: ICallProfileRunHandler[], token: CancellationToken): Promise<{ error?: string }[]>;
-	$cancelExtensionTestRun(runId: string | undefined): void;
+	$cancelExtensionTestRun(runId: string | undefined, taskId: string | undefined): void;
 	/** Handles a diff of tests, as a result of a subscribeToDiffs() call */
 	$acceptDiff(diff: TestsDiffOp.Serialized[]): void;
 	/** Expands a test item's children, by the given number of levels. */
@@ -2893,6 +2911,8 @@ export interface ExtHostTestingShape {
 	$syncTests(): Promise<void>;
 	/** Sets the active test run profiles */
 	$setDefaultRunProfiles(profiles: Record</* controller id */string, /* profile id */ number[]>): void;
+	$getTestsRelatedToCode(uri: UriComponents, position: IPosition, token: CancellationToken): Promise<string[]>;
+	$getCodeRelatedToTest(testId: string, token: CancellationToken): Promise<ILocationDto[]>;
 
 	// --- test results:
 
@@ -2921,14 +2941,14 @@ export interface IStringDetails {
 
 export interface ITestControllerPatch {
 	label?: string;
-	canRefresh?: boolean;
+	capabilities?: TestControllerCapability;
 }
 
 export interface MainThreadTestingShape {
 	// --- test lifecycle:
 
 	/** Registers that there's a test controller with the given ID */
-	$registerTestController(controllerId: string, label: string, canRefresh: boolean): void;
+	$registerTestController(controllerId: string, label: string, capability: TestControllerCapability): void;
 	/** Updates the label of an existing test controller. */
 	$updateController(controllerId: string, patch: ITestControllerPatch): void;
 	/** Diposes of the test controller with the given ID */

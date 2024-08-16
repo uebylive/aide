@@ -130,7 +130,7 @@ export class Session {
 
 	private _lastInput: SessionPrompt | undefined;
 	private _isUnstashed: boolean = false;
-	private readonly _exchange: SessionExchange[] = [];
+	private readonly _exchanges: SessionExchange[];
 	private readonly _startTime = new Date();
 	private readonly _teldata: TelemetryData;
 
@@ -147,13 +147,15 @@ export class Session {
 		 */
 		readonly textModel0: ITextModel,
 		/**
-		 * The document into which AI edits went, when live this is `targetUri` otherwise it is a temporary document
+		 * The model of the editor
 		 */
 		readonly textModelN: ITextModel,
 		readonly agent: IChatAgent,
 		readonly wholeRange: SessionWholeRange,
 		readonly hunkData: HunkData,
 		readonly chatModel: ChatModel,
+		exchanges?: SessionExchange[],
+		lastInput?: SessionPrompt,
 	) {
 		this.textModelNAltVersion = textModelN.getAlternativeVersionId();
 		this._teldata = {
@@ -170,6 +172,8 @@ export class Session {
 			discardedHunks: 0,
 			responseTypes: ''
 		};
+		this._exchanges = exchanges ?? [];
+		this._lastInput = lastInput;
 	}
 
 	addInput(input: SessionPrompt): void {
@@ -191,17 +195,39 @@ export class Session {
 
 	addExchange(exchange: SessionExchange): void {
 		this._isUnstashed = false;
-		const newLen = this._exchange.push(exchange);
+		const newLen = this._exchanges.push(exchange);
 		this._teldata.rounds += `${newLen}|`;
 		// this._teldata.responseTypes += `${exchange.response instanceof ReplyResponse ? exchange.response.responseType : InlineChatResponseTypes.Empty}|`;
 	}
 
-	get exchanges(): readonly SessionExchange[] {
-		return this._exchange;
+	get exchanges(): SessionExchange[] {
+		return this._exchanges;
 	}
 
 	get lastExchange(): SessionExchange | undefined {
-		return this._exchange[this._exchange.length - 1];
+		return this._exchanges[this._exchanges.length - 1];
+	}
+
+	async undoChangesUntil(requestId: string): Promise<boolean> {
+		const idx = this._exchanges.findIndex(candidate => candidate.prompt.request.id === requestId);
+		if (idx < 0) {
+			return false;
+		}
+		// undo till this point
+		this.hunkData.ignoreTextModelNChanges = true;
+		try {
+			const targetAltVersion = this._exchanges[idx].prompt.modelAltVersionId;
+			while (targetAltVersion < this.textModelN.getAlternativeVersionId() && this.textModelN.canUndo()) {
+				await this.textModelN.undo();
+			}
+		} finally {
+			this.hunkData.ignoreTextModelNChanges = false;
+		}
+		// TODO@jrieken cannot do this yet because some parts still rely on
+		// exchanges being around...
+		// // remove this and following exchanges
+		// this._exchanges.length = idx;
+		return true;
 	}
 
 	get hasChangedText(): boolean {
@@ -251,7 +277,7 @@ export class Session {
 			when: this._startTime,
 			exchanges: []
 		};
-		for (const exchange of this._exchange) {
+		for (const exchange of this._exchanges) {
 			const response = exchange.response;
 			if (response instanceof ReplyResponse) {
 				result.exchanges.push({ prompt: exchange.prompt.value, res: response.chatResponse });

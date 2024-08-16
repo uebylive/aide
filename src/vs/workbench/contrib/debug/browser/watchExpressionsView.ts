@@ -87,8 +87,8 @@ export class WatchExpressionsView extends ViewPane {
 		container.classList.add('debug-watch');
 		const treeContainer = renderViewTree(container);
 
-		const expressionsRenderer = this.instantiationService.createInstance(WatchExpressionsRenderer);
 		const linkDetector = this.instantiationService.createInstance(LinkDetector);
+		const expressionsRenderer = this.instantiationService.createInstance(WatchExpressionsRenderer, linkDetector);
 		this.tree = <WorkbenchAsyncDataTree<IDebugService | IExpression, IExpression, FuzzyScore>>this.instantiationService.createInstance(WorkbenchAsyncDataTree, 'WatchExpressions', treeContainer, new WatchExpressionsDelegate(),
 			[
 				expressionsRenderer,
@@ -279,6 +279,7 @@ export class WatchExpressionsRenderer extends AbstractExpressionsRenderer {
 	static readonly ID = 'watchexpression';
 
 	constructor(
+		private readonly linkDetector: LinkDetector,
 		@IMenuService private readonly menuService: IMenuService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IDebugService debugService: IDebugService,
@@ -329,10 +330,10 @@ export class WatchExpressionsRenderer extends AbstractExpressionsRenderer {
 		}
 
 		data.label.set(text, highlights, title);
-		renderExpressionValue(expression, data.value, {
+		renderExpressionValue(data.elementDisposable, expression, data.value, {
 			showChanged: true,
 			maxValueLength: MAX_VALUE_RENDER_LENGTH_IN_VIEWLET,
-			hover: data.elementDisposable,
+			linkDetector: this.linkDetector,
 			colorize: true
 		}, this.hoverService);
 	}
@@ -373,11 +374,11 @@ export class WatchExpressionsRenderer extends AbstractExpressionsRenderer {
 
 	protected override renderActionBar(actionBar: ActionBar, expression: IExpression) {
 		const contextKeyService = getContextForWatchExpressionMenu(this.contextKeyService, expression);
-		const menu = this.menuService.createMenu(MenuId.DebugWatchContext, contextKeyService);
+		const context = expression;
+		const menu = this.menuService.getMenuActions(MenuId.DebugWatchContext, contextKeyService, { arg: context, shouldForwardArgs: false });
 
 		const primary: IAction[] = [];
-		const context = expression;
-		createAndFillInContextMenuActions(menu, { arg: context, shouldForwardArgs: false }, { primary, secondary: [] }, 'inline');
+		createAndFillInContextMenuActions(menu, { primary, secondary: [] }, 'inline');
 
 		actionBar.clear();
 		actionBar.context = context;

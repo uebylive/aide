@@ -3,18 +3,55 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/workbench/contrib/welcomeGettingStarted/common/media/theme_picker';
-import 'vs/workbench/contrib/welcomeGettingStarted/common/media/notebookProfile';
+import themePickerContent from 'vs/workbench/contrib/welcomeGettingStarted/common/media/theme_picker';
+import notebookProfileContent from 'vs/workbench/contrib/welcomeGettingStarted/common/media/notebookProfile';
 import { localize } from 'vs/nls';
 import { Codicon } from 'vs/base/common/codicons';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
-// import { NotebookSetting } from 'vs/workbench/contrib/notebook/common/notebookCommon';
+import { URI } from 'vs/base/common/uri';
 
+interface IGettingStartedContentProvider {
+	(): string;
+}
+
+class GettingStartedContentProviderRegistry {
+
+	private readonly providers = new Map<string, IGettingStartedContentProvider>();
+
+	registerProvider(moduleId: string, provider: IGettingStartedContentProvider): void {
+		this.providers.set(moduleId, provider);
+	}
+
+	getProvider(moduleId: string): IGettingStartedContentProvider | undefined {
+		return this.providers.get(moduleId);
+	}
+}
+export const gettingStartedContentRegistry = new GettingStartedContentProviderRegistry();
+
+export async function moduleToContent(resource: URI): Promise<string> {
+	if (!resource.query) {
+		throw new Error('Getting Started: invalid resource');
+	}
+
+	const query = JSON.parse(resource.query);
+	if (!query.moduleId) {
+		throw new Error('Getting Started: invalid resource');
+	}
+
+	const provider = gettingStartedContentRegistry.getProvider(query.moduleId);
+	if (!provider) {
+		throw new Error(`Getting Started: no provider registered for ${query.moduleId}`);
+	}
+
+	return provider();
+}
+
+gettingStartedContentRegistry.registerProvider('vs/workbench/contrib/welcomeGettingStarted/common/media/theme_picker', themePickerContent);
+gettingStartedContentRegistry.registerProvider('vs/workbench/contrib/welcomeGettingStarted/common/media/notebookProfile', notebookProfileContent);
 
 const setupIcon = registerIcon('getting-started-setup', Codicon.zap, localize('getting-started-setup-icon', "Icon used for the setup category of welcome page"));
 // const beginnerIcon = registerIcon('getting-started-beginner', Codicon.lightbulb, localize('getting-started-beginner-icon', "Icon used for the beginner category of welcome page"));
-
 
 export type BuiltinGettingStartedStep = {
 	id: string;
@@ -210,9 +247,10 @@ export const walkthroughs: GettingStartedWalkthroughContent = [
 					}
 				},
 				{
-					'id': 'Switch models',
-					title: localize('gettingStarted.switchModels.title', "Switch models"),
-					description: localize('gettingStarted.switchModels.description', "Switch between different models\n{0}", Button(localize('aiModelSelection', "Switch models"), 'command:workbench.action.openModelSelection')),
+					id: 'workspaceTrust',
+					title: localize('gettingStarted.workspaceTrust.title', "Safely browse and edit code"),
+					description: localize('gettingStarted.workspaceTrust.description.interpolated', "{0} lets you decide whether your project folders should **allow or restrict** automatic code execution __(required for extensions, debugging, etc)__.\nOpening a file/folder will prompt to grant trust. You can always {1} later.", Button(localize('workspaceTrust', "Workspace Trust"), 'https://code.visualstudio.com/docs/editor/workspace-trust'), Button(localize('enableTrust', "enable trust"), 'command:toSide:workbench.action.manageTrustedDomain')),
+					when: 'workspacePlatform != \'webworker\' && !isWorkspaceTrusted && workspaceFolderCount == 0',
 					media: {
 						type: 'svg', altText: 'Switch between different models', path: 'switchModels.svg'
 					},
