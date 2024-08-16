@@ -123,7 +123,7 @@ export class AideControls extends Disposable {
 				if (timeoutId) {
 					clearTimeout(timeoutId);
 				}
-			}, 2000);
+			}, 1000);
 		});
 
 		const partSize = this.part.dimension;
@@ -215,6 +215,7 @@ export class AideControls extends Disposable {
 		const editorValue = this._input.getValue();
 		const activeEditor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(activeEditor)) { return; }
+		const textModel = activeEditor.getModel();
 
 		const selection = activeEditor.getSelection();
 
@@ -227,8 +228,7 @@ export class AideControls extends Disposable {
 				id: 'selection',
 				name: 'selection',
 				value: selection
-
-			}]);
+			}], textModel);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}

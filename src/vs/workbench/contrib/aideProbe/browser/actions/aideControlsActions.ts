@@ -14,6 +14,7 @@ import { IView } from 'vs/workbench/common/views';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { IAideEditsService } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
 import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -59,6 +60,29 @@ class SubmitAction extends Action2 {
 	}
 }
 
+class UndoAction extends Action2 {
+	static readonly ID = 'workbench.action.aideControls.undo';
+
+	constructor() {
+		super({
+			id: UndoAction.ID,
+			title: 'Undo',
+			f1: false,
+			category: PROBE_CATEGORY,
+			keybinding: {
+				when: CONTEXT_PROBE_INPUT_HAS_TEXT,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyZ,
+				weight: KeybindingWeight.EditorContrib
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const probeService = accessor.get(IAideProbeService);
+		probeService.undoEdit();
+	}
+}
+
 class CancelAction extends Action2 {
 	static readonly ID = 'workbench.action.aideControls.cancel';
 
@@ -94,4 +118,5 @@ class CancelAction extends Action2 {
 export function registerAideControlsActions() {
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
+	registerAction2(UndoAction);
 }
