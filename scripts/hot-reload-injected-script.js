@@ -306,7 +306,7 @@ module.exports.run = async function (debugSession, ctx) {
 			 * @param {string} message
 			 */
 			function setMessage(message) {
-				const domElem = /** @type {HTMLDivElement | undefined} */ (document.querySelector('.titlebar-center .window-title'));
+				const domElem = /** @type {HTMLDivElement | undefined} */ (document.querySelector('.titlebar-left .window-title'));
 				if (!domElem) { return; }
 				if (!hotReloadData.timeout) {
 					hotReloadData.originalWindowTitle = domElem.innerText;
