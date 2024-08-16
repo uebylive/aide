@@ -9,7 +9,7 @@ import * as os from 'os';
 import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
-import { readJsonFile, reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
 import postHogClient from '../../posthog/client';
 import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
@@ -141,41 +141,41 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		const threadId = uuid.v4();
 
-		//let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
-		//if (request.editMode) {
-		//	probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId, request.codebaseSearch);
-		//} else {
-		//	probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId,);
-		//}
-
-		// Use dummy data: Start
-		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
-		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-		if (!extensionRoot || !workspaceRoot) {
-			return {};
+		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		if (request.editMode) {
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId, request.codebaseSearch);
+		} else {
+			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId,);
 		}
 
-		const that = this;
-		const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
-		const probeResponse = (async function* (arr) {
-			for (const original of arr) {
-				const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
-				const item = JSON.parse(itemString) as SideCarAgentEvent;
-				if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
-					const editSubStep = item.event.SymbolEventSubStep.event.Edit;
-					if (editSubStep.EditCode) {
-						const editEvent = editSubStep.EditCode;
-						that.provideEdit({
-							apply_directly: false,
-							fs_file_path: editEvent.fs_file_path,
-							selected_range: editEvent.range,
-							edited_content: editEvent.new_code
-						});
-					}
-				}
-				yield item;
-			}
-		})(jsonArr);
+		// Use dummy data: Start
+		//const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+		//const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+		//if (!extensionRoot || !workspaceRoot) {
+		//	return {};
+		//}
+		//
+		//const that = this;
+		//const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
+		//const probeResponse = (async function* (arr) {
+		//	for (const original of arr) {
+		//		const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
+		//		const item = JSON.parse(itemString) as SideCarAgentEvent;
+		//		if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
+		//			const editSubStep = item.event.SymbolEventSubStep.event.Edit;
+		//			if (editSubStep.EditCode) {
+		//				const editEvent = editSubStep.EditCode;
+		//				that.provideEdit({
+		//					apply_directly: false,
+		//					fs_file_path: editEvent.fs_file_path,
+		//					selected_range: editEvent.range,
+		//					edited_content: editEvent.new_code
+		//				});
+		//			}
+		//		}
+		//		yield item;
+		//	}
+		//})(jsonArr);
 		// Use dummy data: End
 
 		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient, this._limiter);
