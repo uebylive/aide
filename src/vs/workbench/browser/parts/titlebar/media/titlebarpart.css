@@ -100,14 +100,15 @@
 
 /* Window title text */
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .window-title {
-	order: 2;
+	order: 4;
 	flex: 0 1 auto;
 	font-size: 12px;
+	font-weight: 600;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
-	margin-left: 16px;
-	margin-right: auto;
+	margin-left: 12px;
+	margin-right: 12px;
 }
 
 .monaco-workbench.web .part.titlebar > .titlebar-container > .titlebar-left > .window-title,
@@ -369,10 +370,11 @@
 
 /* Action Tool Bar Controls */
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
-	order: 1; /* Ensure it comes after the window controls container */
+	order: 2; /* Ensure it comes after the window controls container */
 	margin-left: env(titlebar-area-x, 0px); /* Add a margin to separate it from the window controls */
 	display: none;
-	padding-left: 2px;
+	padding-left: 4px;
+	padding-right: 4px;
 	flex-grow: 0;
 	flex-shrink: 0;
 	text-align: center;
@@ -380,7 +382,6 @@
 	z-index: 2500;
 	-webkit-app-region: no-drag;
 	height: 100%;
-	min-width: 28px;
 }
 
 .monaco-workbench.mac:not(.web) .part.titlebar > .titlebar-container > .titlebar-left > .action-toolbar-container {
@@ -507,14 +508,6 @@
 	padding-right: 4px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:hover {
-	background: var(--vscode-actionBar-toggledBackground);
-}
-
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item.active) {
-	background: var(--vscode-actionBar-toggledBackground) !important;
-}
-
 .monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item {
 	display: flex;
 }
@@ -525,7 +518,7 @@
 	font-weight: 600;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container:has(> .action-item .action-label.checked) {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container .action-item:has(> .action-label.checked) {
 	background: var(--vscode-actionBar-toggledBackground) !important;
 }
 
