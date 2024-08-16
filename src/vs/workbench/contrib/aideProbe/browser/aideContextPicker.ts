@@ -61,7 +61,6 @@ function getActiveEditorUri(editorService: IEditorService): URI | undefined {
 
 export class ContextPicker extends Disposable {
 
-
 	private isCodeBaseSearch: IContextKey<boolean>;
 
 	readonly context: AideContext;
@@ -132,12 +131,12 @@ export class ContextPicker extends Disposable {
 		}));
 
 		const addButton = this._register(this.instantiationService.createInstance(Button, this.listPanelElement, {}));
-		// TODO(willis) Add Aide-specific localization
+		// TODO(@g-danna) Add Aide-specific localization
 		addButton.label = localize('chat.addAttachment', "Add more specific context");
 		addButton.element.classList.add('aide-context-picker-add-button');
 
 		this._register(addButton.onDidClick(async () => {
-			// TODO(willis) Find a better (?) and type-safe way to do this
+			// TODO(@g-danna) Find a better (?) and type-safe way to do this
 			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
 			if (Array.isArray(newEntries)) {
 				newEntries.forEach(entry => this.context.add(entry));
@@ -147,6 +146,7 @@ export class ContextPicker extends Disposable {
 
 		this.button = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
 		this.button.element.classList.add('aide-controls-context-button');
+		this.button.enabled = !this.isCodeBaseSearch.get();
 
 		const buttonBadge = this.buttonBadge = $('.aide-controls-context-badge');
 		this.button.element.appendChild(buttonBadge);
@@ -226,6 +226,7 @@ export class ContextPicker extends Disposable {
 		this._register(this.contextKeyService.onDidChangeContext((event) => {
 			if (event.affectsSome(new Set([CONTEXT_PROBE_IS_CODEBASE_SEARCH.key]))) {
 				this.updateButtonIcon(this.button.element);
+				this.button.enabled = !this.isCodeBaseSearch.get();
 				this.render();
 			}
 		}));

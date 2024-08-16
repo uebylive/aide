@@ -10,21 +10,31 @@
 .aide-context-picker {
 	position: relative;
 	display: inline-flex;
-	align-items: center;
-}
-
-.aide-controls-context-button {
-	position: relative;
 }
 
 .aide-controls-context-split-button {
 	display: flex;
-	margin-right: 5px;
+	height: 100%;
+}
+
+:is(.aide-controls-context-button, .aide-controls-context-type-button):not(.disabled):hover {
+	background-color: var(--vscode-list-activeSelectionBackground);
+	cursor: pointer;
+}
+
+.aide-controls-context-button {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
 }
 
 .aide-controls-context-type-button {
 	display: flex;
 	align-items: center;
+	justify-content: start;
+	width: 24px;
 }
 
 .aide-option-item {
