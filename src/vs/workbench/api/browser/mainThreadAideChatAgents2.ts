@@ -18,6 +18,7 @@ import { getWordAtText } from 'vs/editor/common/core/wordHelper';
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ILogService } from 'vs/platform/log/common/log';
@@ -25,7 +26,7 @@ import { ExtHostAideChatAgentsShape2, ExtHostContext, IChatProgressDto, IDynamic
 import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
 import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
 import { AddDynamicVariableAction, IAddDynamicVariableContext } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { AideChatAgentLocation, IChatAgentImplementation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
+import { AideChatAgentLocation, IAideChatAgentService, IChatAgentImplementation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { ChatRequestAgentPart } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
 import { IAideChatContentReference, IAideChatFollowup, IAideChatProgress, IAideChatService, IAideChatTask, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -88,11 +89,10 @@ export class MainThreadAideChatAgents2 extends Disposable implements MainThreadA
 		@IAideChatService private readonly _chatService: IAideChatService,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
 		@IAideChatWidgetService private readonly _chatWidgetService: IAideChatWidgetService,
-
-
 		@IInstantiationService private readonly _instantiationService: IInstantiationService,
 		@ILogService private readonly _logService: ILogService,
 		@IExtensionService private readonly _extensionService: IExtensionService,
+		@ICSAccountService private readonly _csAccountService: ICSAccountService,
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAideChatAgents2);
@@ -146,6 +146,11 @@ export class MainThreadAideChatAgents2 extends Disposable implements MainThreadA
 
 		const impl: IChatAgentImplementation = {
 			invoke: async (request, progress, history, token) => {
+				const authenticated = await this._csAccountService.ensureAuthenticated();
+				if (!authenticated) {
+					return {};
+				}
+
 				this._pendingProgress.set(request.requestId, progress);
 				try {
 					return await this._proxy.$invokeAgent(handle, request, { history }, token) ?? {};

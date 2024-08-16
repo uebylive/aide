@@ -25,7 +25,8 @@
     "defaultChatParticipant",
     "chatVariableResolver",
     "modelSelection",
-    "terminalSelection"
+    "terminalSelection",
+    "csAuthentication"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
@@ -72,7 +73,7 @@
     "aideChatParticipants": [
       {
         "id": "aide",
-        "name": "Aide",
+        "name": "Chat",
         "description": "What can I help you with today?",
         "isDefault": true,
         "locations": [
@@ -93,11 +94,6 @@
       "type": "object",
       "title": "Aide Extension settings",
       "properties": {
-        "aide.probeInviteCode": {
-          "type": "string",
-          "default": "",
-          "description": "The invite code for the probing feature"
-        },
         "aide.resetNotifications": {
           "type": "boolean",
           "default": false,

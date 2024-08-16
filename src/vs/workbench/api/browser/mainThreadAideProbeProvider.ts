@@ -5,6 +5,7 @@
 
 import { Disposable } from 'vs/base/common/lifecycle';
 import { revive } from 'vs/base/common/marshalling';
+import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import { IAideProbeResolver, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
@@ -17,7 +18,8 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 
 	constructor(
 		extHostContext: IExtHostContext,
-		@IAideProbeService private readonly _aideProbeService: IAideProbeService
+		@IAideProbeService private readonly _aideProbeService: IAideProbeService,
+		@ICSAccountService private readonly _csAccountService: ICSAccountService
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAideProbeProvider);
@@ -26,6 +28,11 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 	$registerProbingProvider(handle: number, data: IAideProbeData): void {
 		const impl: IAideProbeResolver = {
 			initiate: async (request, progress, token) => {
+				const authenticated = await this._csAccountService.ensureAuthenticated();
+				if (!authenticated) {
+					return {};
+				}
+
 				this._pendingProgress.set(request.sessionId, progress);
 				try {
 					return await this._proxy.$initiateProbe(handle, request, token) ?? {};

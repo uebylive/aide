@@ -32,12 +32,14 @@ import { ExtHostAuthentication, IExtHostAuthentication } from 'vs/workbench/api/
 import { ExtHostLanguageModels, IExtHostLanguageModels } from 'vs/workbench/api/common/extHostLanguageModels';
 import { IExtHostTerminalShellIntegration, ExtHostTerminalShellIntegration } from 'vs/workbench/api/common/extHostTerminalShellIntegration';
 import { ExtHostTesting, IExtHostTesting } from 'vs/workbench/api/common/extHostTesting';
+import { ExtHostCSAuthentication, IExtHostCSAuthentication } from 'vs/workbench/api/common/extHostCSAuthentication';
 
 registerSingleton(IExtHostLocalizationService, ExtHostLocalizationService, InstantiationType.Delayed);
 registerSingleton(ILoggerService, ExtHostLoggerService, InstantiationType.Delayed);
 registerSingleton(IExtHostApiDeprecationService, ExtHostApiDeprecationService, InstantiationType.Delayed);
 registerSingleton(IExtHostCommands, ExtHostCommands, InstantiationType.Eager);
 registerSingleton(IExtHostAuthentication, ExtHostAuthentication, InstantiationType.Eager);
+registerSingleton(IExtHostCSAuthentication, ExtHostCSAuthentication, InstantiationType.Eager);
 registerSingleton(IExtHostLanguageModels, ExtHostLanguageModels, InstantiationType.Eager);
 registerSingleton(IExtHostConfiguration, ExtHostConfiguration, InstantiationType.Eager);
 registerSingleton(IExtHostConsumerFileSystem, ExtHostConsumerFileSystem, InstantiationType.Eager);

@@ -28,7 +28,6 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 
-
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
 export async function activate(context: ExtensionContext) {
@@ -196,6 +195,14 @@ export async function activate(context: ExtensionContext) {
 			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
 		})
 	);
+
+	workspace.onDidSaveTextDocument(async (textDocument) => {
+		const time = new Date();
+		const path = textDocument.uri.fsPath;
+		console.log(`File ${path} saved at ${time}`);
+		// @sartoshi-foot-dao
+		// sidecarClient.doSomethingWith(path, time);
+	});
 
 	window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor) {

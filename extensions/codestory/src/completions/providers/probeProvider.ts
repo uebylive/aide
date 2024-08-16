@@ -15,13 +15,11 @@ import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits
 import { handleRequest } from '../../server/requestHandler';
 import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
-import { getInviteCode } from '../../utilities/getInviteCode';
 import { getUniqueId } from '../../utilities/uniqueId';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string | undefined;
-	private active: boolean = false;
 	private _limiter = new Limiter(1);
 
 	private _requestHandler: http.Server | null = null;
@@ -98,18 +96,6 @@ export class AideProbeProvider implements vscode.Disposable {
 				}
 			}
 		);
-
-		this.checkActivation();
-
-		vscode.workspace.onDidChangeConfiguration((event) => {
-			if (event.affectsConfiguration('aide')) {
-				this.checkActivation();
-			}
-		});
-	}
-
-	private checkActivation() {
-		this.active = Boolean(getInviteCode());
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest) {
@@ -121,16 +107,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			return;
 		}
 		await applyEdits(request, this._openResponseStream);
-	}
-
-	private async showInviteCodeNotification() {
-		const message = vscode.l10n.t('You need an invite code to use this feature. If you have it already, please enter it in the settings at \'aide.probeInviteCode\'.');
-		const configureButton = vscode.l10n.t('Configure');
-
-		const choice = await vscode.window.showInformationMessage(message, configureButton);
-		if (choice === configureButton) {
-			vscode.commands.executeCommand('workbench.action.openSettings', 'aide.probeInviteCode');
-		}
 	}
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
@@ -154,11 +130,6 @@ export class AideProbeProvider implements vscode.Disposable {
 				requestId: request.requestId,
 			},
 		});
-
-		if (!this.active) {
-			this.showInviteCodeNotification();
-			return {};
-		}
 
 		const threadId = uuid.v4();
 

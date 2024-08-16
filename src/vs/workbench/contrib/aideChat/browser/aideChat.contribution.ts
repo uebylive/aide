@@ -75,7 +75,7 @@ configurationRegistry.registerConfiguration({
 		'aideChat.editor.fontSize': {
 			type: 'number',
 			description: nls.localize('aideChat.editor.fontSize', "Controls the font size in pixels in chat codeblocks."),
-			default: isMacintosh ? 12 : 14,
+			default: isMacintosh ? 14 : 14,
 		},
 		'aideChat.editor.fontFamily': {
 			type: 'string',
@@ -125,7 +125,7 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	EditorPaneDescriptor.create(
 		ChatEditor,
 		AideChatEditorInput.EditorID,
-		nls.localize('aideChat', "Aide")
+		nls.localize('aideChat', "Chat")
 	),
 	[
 		new SyncDescriptor(AideChatEditorInput)
@@ -146,7 +146,7 @@ class ChatResolverContribution extends Disposable {
 			`${Schemas.vscodeChatSesssion}:**/**`,
 			{
 				id: AideChatEditorInput.EditorID,
-				label: nls.localize('aideChat', "Aide"),
+				label: nls.localize('aideChat', "Chat"),
 				priority: RegisteredEditorPriority.builtin
 			},
 			{

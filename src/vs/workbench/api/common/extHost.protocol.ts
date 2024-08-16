@@ -30,6 +30,7 @@ import { IModelChangedEvent } from 'vs/editor/common/model/mirrorTextModel';
 import { IAccessibilityInformation } from 'vs/platform/accessibility/common/accessibility';
 import { ILocalizedString } from 'vs/platform/action/common/action';
 import { IModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
+import { CSAuthenticationSession } from 'vs/platform/codestoryAccount/common/csAccount';
 import { ConfigurationTarget, IConfigurationChange, IConfigurationData, IConfigurationOverrides } from 'vs/platform/configuration/common/configuration';
 import { ConfigurationScope } from 'vs/platform/configuration/common/configurationRegistry';
 import { IExtensionIdWithVersion } from 'vs/platform/extensionManagement/common/extensionStorage';
@@ -172,6 +173,10 @@ export interface MainThreadAuthenticationShape extends IDisposable {
 	$getSessions(providerId: string, scopes: readonly string[], extensionId: string, extensionName: string): Promise<AuthenticationSession[]>;
 	$getAccounts(providerId: string): Promise<ReadonlyArray<AuthenticationSessionAccount>>;
 	$removeSession(providerId: string, sessionId: string): Promise<void>;
+}
+
+export interface MainThreadCSAuthenticationShape extends IDisposable {
+	$getSession(): Promise<CSAuthenticationSession | undefined>;
 }
 
 export interface MainThreadSecretStateShape extends IDisposable {
@@ -1977,6 +1982,9 @@ export interface ExtHostAuthenticationShape {
 	$onDidChangeAuthenticationSessions(id: string, label: string): Promise<void>;
 }
 
+export interface ExtHostCSAuthenticationShape {
+}
+
 export interface ExtHostAiRelatedInformationShape {
 	$provideAiRelatedInformation(handle: number, query: string, token: CancellationToken): Promise<RelatedInformationResult[]>;
 }
@@ -2999,6 +3007,7 @@ export const MainContext = {
 	MainThreadComments: createProxyIdentifier<MainThreadCommentsShape>('MainThreadComments'),
 	MainThreadConfiguration: createProxyIdentifier<MainThreadConfigurationShape>('MainThreadConfiguration'),
 	MainThreadConsole: createProxyIdentifier<MainThreadConsoleShape>('MainThreadConsole'),
+	MainThreadCSAuthentication: createProxyIdentifier<MainThreadCSAuthenticationShape>('MainThreadCSAuthentication'),
 	MainThreadDebugService: createProxyIdentifier<MainThreadDebugServiceShape>('MainThreadDebugService'),
 	MainThreadDecorations: createProxyIdentifier<MainThreadDecorationsShape>('MainThreadDecorations'),
 	MainThreadDiagnostics: createProxyIdentifier<MainThreadDiagnosticsShape>('MainThreadDiagnostics'),
@@ -3128,6 +3137,7 @@ export const ExtHostContext = {
 	ExtHostTunnelService: createProxyIdentifier<ExtHostTunnelServiceShape>('ExtHostTunnelService'),
 	ExtHostManagedSockets: createProxyIdentifier<ExtHostManagedSocketsShape>('ExtHostManagedSockets'),
 	ExtHostAuthentication: createProxyIdentifier<ExtHostAuthenticationShape>('ExtHostAuthentication'),
+	ExtHostCSAuthentication: createProxyIdentifier<ExtHostCSAuthenticationShape>('ExtHostCSAuthentication'),
 	ExtHostTimeline: createProxyIdentifier<ExtHostTimelineShape>('ExtHostTimeline'),
 	ExtHostTesting: createProxyIdentifier<ExtHostTestingShape>('ExtHostTesting'),
 	ExtHostTelemetry: createProxyIdentifier<ExtHostTelemetryShape>('ExtHostTelemetry'),
