@@ -406,6 +406,7 @@ export const reportAgentEventsToChat = async (
 							}
 							await editsManager.streamProcessor.processLine(currentLine);
 						}
+						editsManager.streamProcessor.cleanup();
 						// delete this from our map
 						editsMap.delete(editStreamEvent.edit_request_id);
 					} else if (editStreamEvent.event.Delta) {
@@ -592,6 +593,13 @@ class StreamProcessor {
 		this.previousLine = null;
 		this.documentLineIndex = this.document.firstSentLineIndex;
 		this.sentEdits = false;
+	}
+
+	async cleanup() {
+		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
+		if (this.documentLineIndex < this.documentLineLimit) {
+			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
+		}
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
