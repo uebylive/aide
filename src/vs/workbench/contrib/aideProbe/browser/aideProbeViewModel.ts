@@ -14,16 +14,16 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
 	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
-
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly status: IAideProbeStatus;
+	readonly initialSymbols: ReadonlyArray<IAideProbeInitialSymbolsViewModel>;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
@@ -77,6 +77,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
+	}
+
+	private _initialSymbols: IAideProbeInitialSymbolsViewModel[] = [];
+	get initialSymbols() {
+		return this._initialSymbols;
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
@@ -174,6 +179,10 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 }
 
+export interface IAideProbeInitialSymbolsViewModel extends IAideProbeInitialSymbolInformation {
+	currentRenderedHeight: number | undefined;
+}
+
 export interface IAideProbeBreakdownViewModel {
 	readonly uri: URI;
 	readonly name: string;
@@ -183,6 +192,7 @@ export interface IAideProbeBreakdownViewModel {
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
 	currentRenderedHeight: number | undefined;
+	expanded: boolean;
 }
 
 export interface IAideProbeCodeEditPreviewViewModel {
@@ -212,6 +222,8 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	get response() {
 		return this._breakdown.response;
 	}
+
+	expanded = false;
 
 	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
 	private _symbol: DocumentSymbol | undefined;

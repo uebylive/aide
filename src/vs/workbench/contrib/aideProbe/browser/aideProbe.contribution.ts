@@ -19,28 +19,27 @@ import { registerContextActions } from 'vs/workbench/contrib/aideProbe/browser/a
 import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { AideLSPService, IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeDecorations';
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 //import 'vs/workbench/contrib/aideProbe/browser/contrib/aideToggle';
 
-const probeViewIcon = registerIcon('probe-view-icon', Codicon.telescope, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
+const probeViewIcon = registerIcon('probe-view-icon', Codicon.lightbulbSparkle, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
 
 const viewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: VIEWLET_ID,
-	title: nls.localize2('probe', "Search with AI"),
+	title: nls.localize2('probe', "Aide"),
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [VIEWLET_ID, { mergeViewWithContainerWhenSingleView: true }]),
 	hideIfEmpty: true,
 	icon: probeViewIcon,
 	order: 1,
-}, ViewContainerLocation.Sidebar, { doNotRegisterOpenCommand: true });
+}, ViewContainerLocation.AuxiliaryBar, { doNotRegisterOpenCommand: true });
 
 const viewDescriptor: IViewDescriptor = {
 	id: VIEW_ID,
 	containerIcon: probeViewIcon,
-	name: nls.localize2('probe', "Search with AI"),
+	name: nls.localize2('probe', "Aide"),
 	ctorDescriptor: new SyncDescriptor(AideProbeViewPane),
 	canToggleVisibility: false,
 	canMoveView: true,
@@ -48,7 +47,7 @@ const viewDescriptor: IViewDescriptor = {
 		id: viewContainer.id,
 		order: 2
 	},
-	when: CONTEXT_PROBE_REQUEST_STATUS.notEqualsTo('INACTIVE'),
+	//when: CONTEXT_PROBE_REQUEST_STATUS.notEqualsTo('INACTIVE'),
 };
 
 // Register search default location to sidebar

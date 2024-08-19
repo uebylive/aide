@@ -121,8 +121,6 @@ export class AideEditsPanel extends AidePanel {
 	}
 
 	private createPlanList() {
-
-
 		const header = $('.list-header');
 		this._register(this.instantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
 		const headerText = $('.header-text');

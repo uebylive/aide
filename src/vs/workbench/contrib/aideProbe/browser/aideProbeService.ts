@@ -13,7 +13,7 @@ import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
+// import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
 import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
@@ -192,7 +192,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				// 		probeModel.completeResponse();
 				// 	}
 				// }
-
 				// Mock data end
 
 			} catch (error) {
@@ -222,7 +221,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			return;
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
-		// return mockOnUserAction({ type: 'newIteration', newPrompt });
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
 	}
 

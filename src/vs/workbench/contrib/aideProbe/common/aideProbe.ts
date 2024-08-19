@@ -58,7 +58,10 @@ export interface IAideProbeGoToDefinition {
 }
 
 export interface IAideProbeInitialSymbolInformation {
-	uri: URI; symbolName: string; isNew: boolean; thinking: string;
+	uri: URI;
+	symbolName: string;
+	isNew: boolean;
+	thinking: string;
 }
 
 export interface IAideProbeInitialSymbols {
