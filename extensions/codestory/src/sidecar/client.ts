@@ -834,6 +834,26 @@ export class SideCarClient {
 		}
 	}
 
+	async codeSculptingFollowup(
+		instruction: string,
+		request_id: string,
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/code_sculpting_followup';
+		const url = baseUrl.toString();
+		const body = {
+			request_id,
+			instruction,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+	}
+
 	async *startAgentCodeEdit(
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],

@@ -92,14 +92,15 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 		}), token);
 	}
 
-	$onUserAction(handle: number, action: IAideProbeUserAction): void {
+	async $onUserAction(handle: number, action: IAideProbeUserAction): Promise<void> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;
 		}
 
 		const extAction = typeConvert.AideProbeUserAction.to(action);
-		provider.provider.onDidUserAction(extAction);
+		await provider.provider.onDidUserAction(extAction);
+		return;
 	}
 
 	registerProbingProvider(extension: IExtensionDescription, id: string, provider: vscode.ProbeResponseHandler): IDisposable {

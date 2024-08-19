@@ -1488,7 +1488,7 @@ export interface MainThreadAideProbeProviderShape extends IDisposable {
 
 export interface ExtHostAideProbeProviderShape {
 	$initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined>;
-	$onUserAction(handle: number, action: IAideProbeUserAction): void;
+	$onUserAction(handle: number, action: IAideProbeUserAction): Promise<void>;
 }
 
 ///////////////////////// END AIDE /////////////////////////

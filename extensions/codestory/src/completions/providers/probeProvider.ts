@@ -84,26 +84,27 @@ export class AideProbeProvider implements vscode.Disposable {
 			'aideProbeProvider',
 			{
 				provideProbeResponse: this.provideProbeResponse.bind(this),
-				onDidUserAction(userAction) {
-
-					if (userAction.action.type === 'newIteration') {
-						// @theskcd - This is where we can accept the iteration
-						// sideCarClient.acceptIteration()
-						console.log('newIteration', userAction);
-					}
-
-
-					postHogClient?.capture({
-						distinctId: getUniqueId(),
-						event: userAction.action.type,
-						properties: {
-							platform: os.platform(),
-							requestId: userAction.sessionId,
-						},
-					});
-				}
+				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
+	}
+
+	async userFollowup(userAction: vscode.AideProbeUserAction) {
+		if (userAction.action.type === 'newIteration') {
+			// @theskcd - This is where we can accept the iteration
+			console.log('newIteration', userAction);
+			await this._sideCarClient.codeSculptingFollowup(userAction.action.newPrompt, userAction.sessionId);
+		}
+
+
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: userAction.action.type,
+			properties: {
+				platform: os.platform(),
+				requestId: userAction.sessionId,
+			},
+		});
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest) {

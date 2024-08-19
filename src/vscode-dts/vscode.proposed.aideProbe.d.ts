@@ -91,7 +91,7 @@ declare module 'vscode' {
 
 	export interface ProbeResponseHandler {
 		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
-		onDidUserAction: (action: AideProbeUserAction) => void;
+		onDidUserAction: (action: AideProbeUserAction) => ProviderResult<void>;
 	}
 
 	export namespace aideProbe {

@@ -40,8 +40,8 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 					this._pendingProgress.delete(request.sessionId);
 				}
 			},
-			onUserAction: (action: IAideProbeUserAction) => {
-				this._proxy.$onUserAction(handle, action);
+			onUserAction: async (action: IAideProbeUserAction) => {
+				await this._proxy.$onUserAction(handle, action);
 			}
 		};
 
