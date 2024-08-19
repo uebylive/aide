@@ -15,7 +15,7 @@ import { generateUuid } from 'vs/base/common/uuid';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
 import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
+import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
@@ -54,9 +54,7 @@ export interface IAideProbeEdits {
 	readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
 	//readonly hunkData: HunkData;
-	readonly undoEdits: IValidEditOperation[];
-	readonly iterationId: string;
-	readonly edits: IWorkspaceTextEdit[];
+	readonly edits: Array<IWorkspaceTextEdit & { iterationId: string }>;
 	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
@@ -155,8 +153,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._initialSymbols;
 	}
 
-	private _iterations: Set<string> = new Set();
-	private _iterationsOrder: string[] = [];
+
+	private _iterations: string[] = [];
+	private _iterationsSet: Set<string> = new Set();
 	//private _currentIterationIndex = 0;
 	private progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
@@ -229,17 +228,17 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
 				this.progressiveEditsQueue.queue(async () => {
-					await this.processWorkspaceEdit(workspaceEdit, codeEdit.iterationId);
+					await this.processWorkspaceEdit(workspaceEdit, codeEdit.edits.iterationId);
 				});
 			}
 		}
 	}
 
 	async undoEdit() {
-		if (this._iterationsOrder.length === 0) {
+		if (this._iterations.length === 0) {
 			return;
 		}
-		const iterationId = this._iterationsOrder.pop();
+		const iterationId = this._iterations.pop();
 		if (iterationId) {
 			await this.undoIteration(iterationId);
 		}
@@ -248,59 +247,42 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	private async undoIteration(iterationId: string) {
 		for (const [mapKey, codeEdits] of this._codeEdits.entries()) {
-			if (codeEdits.iterationId === iterationId && codeEdits.undoEdits) {
-				// Apply undo edits
-				codeEdits.textModelN.pushEditOperations(null, codeEdits.undoEdits, () => null);
+			for (const [index, edit] of codeEdits.edits.entries()) {
+				console.log(edit, index, codeEdits.textModelN.canUndo());
+				if (edit.iterationId === iterationId) {
 
-				//console.log(codeEdits.textModelN.getValue());
-				// Save the changes
-				// await this._textFileService.save(codeEdits.textModelN.uri);
+					// TODO(@g-danna) Push reverse of edits to textModelN instead of blindly undoing?
+					if (codeEdits.textModelN.canUndo()) {
+						codeEdits.textModelN.undo();
+					}
 
-				// Remove this iteration from the set and order
-				this._iterations.delete(iterationId);
-				this._iterationsOrder = this._iterationsOrder.filter(id => id !== iterationId);
+					codeEdits.edits.splice(index, 1);
 
-				// Remove the edits for this iteration
-				this._codeEdits.delete(mapKey);
+					if (codeEdits.edits.length === 0) {
+						this._codeEdits.delete(mapKey);
+					}
+				}
 			}
 		}
-
-
-		//const codeEdits = this._codeEdits.values();
-		//for (const codeEdit of codeEdits) {
-		//	if (codeEdit && codeEdit.iterationId === iterationId) {
-		//		const textModel0 = codeEdit.textModel0;
-		//		const textModelN = codeEdit.textModelN;
-		//		const edits = codeEdit.edits;
-		//		for (const edit of edits) {
-		//			const editOperation: IIdentifiedSingleEditOperation = {
-		//				range: edit.textEdit.range,
-		//				text: edit.textEdit.text
-		//			};
-		//			textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-		//				this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdit.targetUri), edits: undoEdits });
-		//				return null;
-		//			});
-		//		}
-		//		await this._textFileService.save(textModelN.uri);
-		//	}
-		//}
+		this._iterationsSet.delete(iterationId);
+		this._iterations = this._iterations.filter(id => id !== iterationId);
+		console.log(this._codeEdits);
 	}
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit, iterationId: string) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
-			if (!this._iterations.has(iterationId)) {
-				this._iterations.add(iterationId);
-				this._iterationsOrder.push(iterationId);
-				//this._currentIterationIndex = this._iterationsOrder.length - 1;
+			if (!this._iterationsSet.has(iterationId)) {
+				this._iterationsSet.add(iterationId);
+				this._iterations.push(iterationId);
 			}
+
 			const resource = workspaceEdit.resource;
 			const mapKey = `${resource.toString()}`;
 
 			let codeEdits: IAideProbeEdits;
 			if (this._codeEdits.has(mapKey)) {
 				codeEdits = this._codeEdits.get(mapKey)!;
-				codeEdits.edits.push(workspaceEdit);
+				codeEdits.edits.push({ ...workspaceEdit, iterationId });
 			} else {
 				let textModel = this._modelService.getModel(resource);
 				if (!textModel) {
@@ -321,13 +303,13 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					targetUri: resource.toString(),
 					textModel0,
 					textModelN,
-					iterationId,
-					undoEdits: [],
 					//hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
-					edits: [workspaceEdit]
+					edits: [{ ...workspaceEdit, iterationId }]
 				};
 				this._codeEdits.set(mapKey, codeEdits);
 			}
+
+			console.log(this._codeEdits);
 
 			const editOperation: IIdentifiedSingleEditOperation = {
 				range: workspaceEdit.textEdit.range,
@@ -335,11 +317,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			};
 
 			//codeEdits.hunkData.ignoreTextModelNChanges = true;
-			codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-				codeEdits.undoEdits.push(...undoEdits);
-				this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
+			codeEdits.textModelN.pushEditOperations(null, [editOperation], (edits) => {
+				this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits });
 				return null;
 			});
+
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
 					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
@@ -347,14 +329,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			}));
 			await this._textFileService.save(codeEdits.textModelN.uri);
 
-			//const sha1 = new DefaultModelSHA1Computer();
-			//const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
-			//	? sha1.computeSHA1(codeEdits.textModel0)
-			//	: generateUuid();
-			//const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
-			//const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
-			//await codeEdits.hunkData.recompute(editState, diff);
-			//codeEdits.hunkData.ignoreTextModelNChanges = false;
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 		}
 	}

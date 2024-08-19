@@ -68,8 +68,7 @@ export interface IAideProbeInitialSymbols {
 
 export interface IAideProbeTextEdit {
 	kind: 'textEdit';
-	iterationId: string;
-	edits: WorkspaceEdit;
+	edits: WorkspaceEdit & { iterationId: string };
 }
 
 export interface IAideProbeOpenFile {

@@ -33,8 +33,8 @@ async function generateEdits(textModel: ITextModel): Promise<IAideProbeTextEdit>
 
 	return {
 		kind: 'textEdit',
-		iterationId: `it-${iteration}`,
 		edits: {
+			iterationId: `it-${iteration}`,
 			edits: Array.from({ length: getRandomInt(1, 2) }, generateEdit),
 		}
 	};
