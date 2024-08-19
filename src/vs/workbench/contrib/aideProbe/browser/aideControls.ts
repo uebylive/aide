@@ -231,8 +231,17 @@ export class AideControls extends Disposable {
 			this.model.status = AideProbeStatus.IN_PROGRESS;
 			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, [{
 				id: 'selection',
-				name: 'selection',
-				value: selection
+				// follow the same schema as the chat variables
+				name: 'file',
+				value: JSON.stringify({
+					uri: textModel?.uri,
+					range: {
+						startLineNumber: selection.startLineNumber,
+						startColumn: selection.startColumn,
+						endLineNumber: selection.endLineNumber,
+						endColumn: selection.endColumn,
+					},
+				})
 			}], textModel);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
