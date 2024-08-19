@@ -98,6 +98,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._modelDisposables.add(this._model.onNewEvent(edits => {
 			this._onNewEvent.fire(edits);
 		}));
+
+		console.log(this._model.sessionId);
 		return this._model;
 	}
 
