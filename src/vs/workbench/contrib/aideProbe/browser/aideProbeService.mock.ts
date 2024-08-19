@@ -18,6 +18,8 @@ let iteration = 0;
 
 async function generateEdits(textModel: ITextModel): Promise<IAideProbeTextEdit> {
 
+	const amount = getRandomInt(1, 3);
+
 	function generateEdit() {
 		const line = getRandomInt(1, textModel.getLineCount());
 		const text = possibleEdits[getRandomInt(0, possibleEdits.length)];
@@ -35,7 +37,8 @@ async function generateEdits(textModel: ITextModel): Promise<IAideProbeTextEdit>
 		kind: 'textEdit',
 		edits: {
 			iterationId: `it-${iteration}`,
-			edits: Array.from({ length: getRandomInt(1, 2) }, generateEdit),
+			edits: Array.from({ length: amount }, generateEdit),
+			complete: true,
 		}
 	};
 }

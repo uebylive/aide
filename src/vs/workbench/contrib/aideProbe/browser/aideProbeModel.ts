@@ -7,7 +7,6 @@ import { Queue } from 'vs/base/common/async';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
@@ -16,14 +15,11 @@ import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
 import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -51,7 +47,7 @@ export interface IVariableEntry {
 
 export interface IAideProbeEdits {
 	readonly targetUri: string;
-	readonly textModel0: ITextModel;
+	//readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
 	//readonly hunkData: HunkData;
 	readonly edits: Array<IWorkspaceTextEdit & { iterationId: string }>;
@@ -165,7 +161,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
-		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService
 	) {
 		super();
@@ -227,7 +222,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
-				this.progressiveEditsQueue.queue(async () => {
+				await this.progressiveEditsQueue.queue(async () => {
 					await this.processWorkspaceEdit(workspaceEdit, codeEdit.edits.iterationId);
 				});
 			}
@@ -236,26 +231,22 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	async undoEdit() {
 		if (this._iterations.length === 0) {
-			return;
+			return undefined;
 		}
 		const iterationId = this._iterations.pop();
 		if (iterationId) {
-			await this.undoIteration(iterationId);
+			return await this.undoIteration(iterationId);
 		}
+		return undefined;
 	}
 
 
 	private async undoIteration(iterationId: string) {
+		let resource: URI | undefined;
 		for (const [mapKey, codeEdits] of this._codeEdits.entries()) {
 			for (const [index, edit] of codeEdits.edits.entries()) {
-				console.log(edit, index, codeEdits.textModelN.canUndo());
 				if (edit.iterationId === iterationId) {
-
-					// TODO(@g-danna) Push reverse of edits to textModelN instead of blindly undoing?
-					if (codeEdits.textModelN.canUndo()) {
-						codeEdits.textModelN.undo();
-					}
-
+					resource = edit.resource;
 					codeEdits.edits.splice(index, 1);
 
 					if (codeEdits.edits.length === 0) {
@@ -266,14 +257,14 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		}
 		this._iterationsSet.delete(iterationId);
 		this._iterations = this._iterations.filter(id => id !== iterationId);
-		console.log(this._codeEdits);
+		return resource;
 	}
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit, iterationId: string) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
 			if (!this._iterationsSet.has(iterationId)) {
-				this._iterationsSet.add(iterationId);
 				this._iterations.push(iterationId);
+				this._iterationsSet.add(iterationId);
 			}
 
 			const resource = workspaceEdit.resource;
@@ -292,16 +283,16 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				}
 				const textModelN = textModel;
 
-				const id = generateUuid();
-				const textModel0 = this._register(this._modelService.createModel(
-					createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
-					{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
-					resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
-				));
+				//const id = generateUuid();
+				//const textModel0 = this._register(this._modelService.createModel(
+				//	createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
+				//	{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
+				//	resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
+				//));
 
 				codeEdits = {
 					targetUri: resource.toString(),
-					textModel0,
+					//textModel0,
 					textModelN,
 					//hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
 					edits: [{ ...workspaceEdit, iterationId }]
@@ -327,7 +318,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
 				}
 			}));
-			await this._textFileService.save(codeEdits.textModelN.uri);
+			//await this._textFileService.save(codeEdits.textModelN.uri);
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 		}

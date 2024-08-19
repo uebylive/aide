@@ -7,6 +7,8 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -118,6 +120,23 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				}
 
 				await probeModel.acceptResponseProgress(progress);
+
+
+				if (progress.kind === 'textEdit') {
+					if (progress.edits.complete) {
+						const workSpaceEdit = progress.edits.edits.find(edit => ResourceTextEdit.is(edit));
+						if (workSpaceEdit) {
+							const openEditor = this.editorService.activeTextEditorControl;
+							if (isCodeEditor(openEditor)) {
+								const model = openEditor?.getModel();
+								if (model && model.uri.toString() === workSpaceEdit.resource.toString()) {
+									openEditor.pushUndoStop();
+								}
+							}
+						}
+					}
+				}
+
 				completeResponseCreated();
 			};
 
@@ -232,9 +251,16 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this.clearSession();
 	}
 
-	undoEdit() {
-		//this._model?.response?.undoEdit();
-		// make this async now make this return anerror
+	async undoEdit() {
+		const resource = await this._model?.response?.undoEdit();
+
+		const openEditor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(openEditor)) {
+			const model = openEditor?.getModel();
+			if (model && model.uri.toString() === resource?.toString()) {
+				model.undo();
+			}
+		}
 	}
 
 	private clearSession() {
