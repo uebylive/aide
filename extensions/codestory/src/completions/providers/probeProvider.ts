@@ -143,13 +143,11 @@ export class AideProbeProvider implements vscode.Disposable {
 		// if there is a selection present in the references: this is what it looks like:
 		const isAnchorEditing = isAnchorBasedEditing(request.references);
 
-		const threadId = uuid.v4();
-
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 		if (request.editMode) {
-			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId, request.codebaseSearch, isAnchorEditing);
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.codebaseSearch, isAnchorEditing);
 		} else {
-			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId,);
+			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
 		}
 
 		// Use dummy data: Start
@@ -182,7 +180,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		// })(jsonArr);
 		// Use dummy data: End
 
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient, this._limiter);
+		await reportAgentEventsToChat(request.editMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
