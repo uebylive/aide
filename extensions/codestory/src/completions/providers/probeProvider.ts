@@ -6,7 +6,6 @@
 import * as http from 'http';
 import * as net from 'net';
 import * as os from 'os';
-import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';

@@ -597,7 +597,7 @@ class StreamProcessor {
 
 	async cleanup() {
 		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
-		if (this.documentLineIndex < this.documentLineLimit) {
+		if (this.documentLineIndex <= this.documentLineLimit) {
 			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
 		}
 	}
