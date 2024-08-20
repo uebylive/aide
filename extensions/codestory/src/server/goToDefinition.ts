@@ -8,14 +8,14 @@ import { SidecarGoToDefinitionRequest, SidecarGoToDefinitionResponse } from './t
 import { shouldTrackFile } from '../utilities/openTabs';
 
 export async function goToDefinition(request: SidecarGoToDefinitionRequest): Promise<SidecarGoToDefinitionResponse> {
-	const locations: vscode.LocationLink[] = await vscode.commands.executeCommand(
+	const locations: any[] = await vscode.commands.executeCommand(
 		'vscode.executeDefinitionProvider',
 		vscode.Uri.file(request.fs_file_path),
 		new vscode.Position(request.position.line, request.position.character),
 	);
 	const definitions = await Promise.all(locations.map(async (location) => {
-		const uri = location.targetUri;
-		const range = location.targetRange;
+		const uri = location.targetUri ?? location.uri;
+		const range = location.targetRange ?? location.range;
 		// we have to always open the text document first, this ends up sending
 		// it over to the sidecar as a side-effect but that is fine
 
