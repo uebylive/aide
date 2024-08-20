@@ -236,10 +236,12 @@ export class AideControls extends Disposable {
 				value: JSON.stringify({
 					uri: textModel?.uri,
 					range: {
-						startLineNumber: selection.startLineNumber,
-						startColumn: selection.startColumn,
-						endLineNumber: selection.endLineNumber,
-						endColumn: selection.endColumn,
+						// selection is 1 indexed and not 0 indexed and also depends
+						// on the orientation
+						startLineNumber: Math.min(selection.startLineNumber - 1, selection.endLineNumber - 1),
+						startColumn: selection.startColumn - 1,
+						endLineNumber: Math.max(selection.endLineNumber - 1, selection.startLineNumber - 1),
+						endColumn: selection.endColumn - 1,
 					},
 				})
 			}], textModel);

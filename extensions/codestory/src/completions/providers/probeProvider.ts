@@ -215,7 +215,7 @@ export class AideProbeProvider implements vscode.Disposable {
 function isAnchorBasedEditing(references: readonly vscode.ChatPromptReference[]): boolean {
 	if (references.length === 1) {
 		const firstReference = references[0];
-		if (firstReference.name === 'selection') {
+		if (firstReference.id === 'selection') {
 			return true;
 		} else {
 			return false;
