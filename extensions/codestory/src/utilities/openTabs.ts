@@ -25,6 +25,13 @@ export interface FileContents {
 }
 
 export function shouldTrackFile(uri: vscode.Uri): boolean {
+	if (uri === undefined) {
+		return false;
+	}
+	if (uri.scheme === undefined) {
+		return false;
+	}
+
 	if (!['file'].includes(uri.scheme)) {
 		return false;
 	}
