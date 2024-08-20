@@ -13,8 +13,8 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
@@ -102,6 +102,10 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 		this._register(_model.onDidChange(async () => {
 
+			if (!this._model.response) {
+				return;
+			}
+
 			this._lastFileOpened = _model.response?.lastFileOpened;
 
 			if (_model.request?.codebaseSearch) {
@@ -118,24 +122,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 			//const codeEdits = _model.response?.codeEdits;
 
-			if (_model.response && _model.response.breakdowns.length === 0 && _model.response.initialSymbols.size) {
-				this._breakdowns = [];
-				const uniqueSymbols = new Set<string>();
-				for (const symbols of _model.response.initialSymbols.values()) {
-					for (const symbol of symbols) {
-						if (!uniqueSymbols.has(symbol.symbolName)) {
-							uniqueSymbols.add(symbol.symbolName);
-							let reference = this._references.get(symbol.uri.toString());
-							if (!reference) {
-								reference = await this.textModelResolverService.createModelReference(symbol.uri);
-							}
-							const newBreakdown = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, { reference: { uri: symbol.uri, name: symbol.symbolName }, kind: 'breakdown' }, reference));
-							this._breakdowns.push(newBreakdown);
-						}
-					}
-				}
-				this._onDidChange.fire();
-				return;
+			if (this._model.response.initialSymbols) {
+				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, currentRenderedHeight: 0 }));
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -167,7 +155,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 					//		viewItem.appendEdits([hunk]);
 					//	}
 					//}
-
 					this._onDidChange.fire();
 				});
 

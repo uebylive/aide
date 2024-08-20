@@ -13,6 +13,7 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
+import { randomInt } from 'node:crypto';
 //import { addDecoration } from './decorations/add';
 
 
@@ -285,7 +286,7 @@ export const reportAgentEventsToChat = async (
 	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
-		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(1, 2) * 100));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);

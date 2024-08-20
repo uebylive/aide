@@ -6,7 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, dispose, IReference } from 'vs/base/common/lifecycle';
 import { CancellationToken } from 'vs/base/common/cancellation';
@@ -14,7 +14,7 @@ import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';

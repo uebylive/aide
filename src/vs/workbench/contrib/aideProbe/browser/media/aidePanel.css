@@ -9,6 +9,7 @@
 	top: 0;
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 12px;
+	/* TODO(@g-danna): This should be a variable or set programmatically from the theme */
 	background-color: rgb(33, 37, 43);
 }
 

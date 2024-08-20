@@ -23,15 +23,21 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeModel, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 import 'vs/css!./media/aideControls';
+import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
+import { Heroicon } from 'vs/workbench/browser/heroicon';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { AideProbeStatus, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
+
+const MAX_WIDTH = 800;
 const INPUT_MIN_HEIGHT = 36;
 
 const inputPlaceholder = {
@@ -81,8 +87,14 @@ export class AideControls extends Disposable {
 	private inputHeight = INPUT_MIN_HEIGHT;
 	private static readonly INPUT_URI = URI.parse('aideControls:input');
 
+	private submitButton: Button;
+	private submitButtonIcon: Heroicon | undefined;
+	private contextPicker: ContextPicker;
+
 
 	private inputHasText: IContextKey<boolean>;
+	private inputHasFocus: IContextKey<boolean>;
+	private probeStatus: IContextKey<IAideProbeStatus>;
 
 	private model: AideProbeModel | undefined;
 
@@ -105,30 +117,20 @@ export class AideControls extends Disposable {
 		aideControlsService.registerControls(this);
 
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
+		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
 		const element = $('.aide-controls');
+
 		this.part.content.appendChild(element);
 
 		this._input = this.createInput(element);
 
-
-		let timeoutId: ReturnType<typeof setTimeout> | null = null;
 		this._input.onDidChangeModelContent(() => {
-			if (timeoutId) {
-				clearTimeout(timeoutId);
-			}
-
 			if (this._input.getValue().trim().length === 0) {
-				this.aideProbeService.cancelProbe();
+				this.aideProbeService.rejectCodeEdits();
 				return;
 			}
-
-			timeoutId = setTimeout(() => {
-				this.acceptInput();
-				if (timeoutId) {
-					clearTimeout(timeoutId);
-				}
-			}, 1000);
 		});
 
 		const partSize = this.part.dimension;
@@ -138,6 +140,48 @@ export class AideControls extends Disposable {
 		this.part.onDidSizeChange((size) => {
 			this.layout(size.width, size.height);
 		});
+
+		this.submitButton = new Button(element, {});
+		this.submitButton.element.classList.add('aide-controls-submit-button');
+		this.updateSubmitButtonIcon(this.submitButton);
+
+		this.checkActivation();
+
+		this.editorService.onDidActiveEditorChange(() => {
+			this.checkActivation();
+		});
+
+		this.submitButton.onDidClick(() => {
+			if (!this.model) {
+				this._acceptInput();
+			} else if (this.model.status === AideProbeStatus.IN_PROGRESS) {
+				this.aideProbeService.rejectCodeEdits();
+			} else {
+				this._acceptInput();
+				// Trigger fix the world
+			}
+		});
+
+		this._register(this.contextKeyService.onDidChangeContext((event) => {
+			if (event.affectsSome(new Set([CONTEXT_PROBE_REQUEST_STATUS.key]))) {
+				this.updateSubmitButtonIcon(this.submitButton);
+			}
+		}));
+
+		this._register(this._input.onDidFocusEditorText(() => {
+			this.inputHasFocus.set(true);
+		}));
+
+		this._register(this._input.onDidBlurEditorText(() => {
+			this.inputHasFocus.set(false);
+		}));
+
+		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, element));
+	}
+
+	private checkActivation() {
+		const activeEditor = this.editorService.activeTextEditorControl;
+		this.submitButton.enabled = isCodeEditor(activeEditor);
 	}
 
 	private createInput(parent: HTMLElement) {
@@ -228,7 +272,7 @@ export class AideControls extends Disposable {
 
 		if (!currentSession) {
 			this.model = this.aideProbeService.startSession();
-			this.model.status = AideProbeStatus.IN_PROGRESS;
+
 			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, [{
 				id: 'selection',
 				// follow the same schema as the chat variables
@@ -250,13 +294,37 @@ export class AideControls extends Disposable {
 		}
 	}
 
+	private updateSubmitButtonIcon(button: Button) {
+
+		if (this.submitButtonIcon) {
+			this.submitButtonIcon.dispose();
+		}
+		let iconId = 'mini/play';
+
+		switch (this.probeStatus.get()) {
+			case AideProbeStatus.IN_PROGRESS:
+				iconId = 'mini/stop';
+				break;
+			case AideProbeStatus.INACTIVE:
+				iconId = 'mini/play';
+				break;
+			case AideProbeStatus.IN_REVIEW:
+			default:
+				iconId = 'mini/play'; // Replace with cog and play
+				break;
+		}
+
+		return this.submitButtonIcon = this.instantiationService.createInstance(Heroicon, button.element, iconId);
+	}
+
+
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
 
 			let placeholder = 'Start a task';
 			const editor = this.editorService.activeTextEditorControl;
-			if (editor && isCodeEditor(editor)) {
-				const model = editor.getModel();
+			if (!editor || (editor && isCodeEditor(editor))) {
+				const model = editor?.getModel();
 				if (!model) {
 					placeholder = 'Open a file to start using Aide';
 				} else {
@@ -300,6 +368,7 @@ export class AideControls extends Disposable {
 	}
 
 	layout(width: number, height: number) {
-		this._input.layout({ width, height });
+		const newWidth = Math.min(width, MAX_WIDTH);
+		this._input.layout({ width: newWidth - 60 - 36 - 12, height });
 	}
 }

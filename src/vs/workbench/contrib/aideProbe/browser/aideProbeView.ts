@@ -4,10 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
-import { MarkdownString } from 'vs/base/common/htmlContent';
+import { KeyCode } from 'vs/base/common/keyCodes';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { relativePath } from 'vs/base/common/resources';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
@@ -33,9 +34,10 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { AideProbeStatus, IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
 
@@ -51,11 +53,9 @@ export class AideProbeViewPane extends ViewPane {
 	private viewModel: AideProbeViewModel | undefined;
 
 	planListFocusIndex: number | undefined;
-	private activePlanEntry: IAideProbeInitialSymbolsViewModel | undefined;
 	private planList: WorkbenchList<IAideProbeInitialSymbolsViewModel> | undefined;
 
 	breakdownsListFocusIndex: number | undefined;
-	private activeBreakdown: IAideProbeBreakdownViewModel | undefined;
 	private breakdownsList: WorkbenchList<IAideProbeBreakdownViewModel> | undefined;
 
 
@@ -140,6 +140,8 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 		this._register(list.onDidChangeFocus(event => {
 			if (event.indexes.length === 1) {
+				this.breakdownsList?.setFocus([]);
+				this.breakdownsList?.setSelection([]);
 				const index = event.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
@@ -147,12 +149,24 @@ export class AideProbeViewPane extends ViewPane {
 				this._onDidChangeFocus.fire({ index, element });
 
 				if (event.browserEvent) {
-					this.breakdownsListFocusIndex = index;
+					console.log('planListBrowserEvent');
+					this.planListFocusIndex = index;
 				}
 
 				if (element && element.uri && element.symbolName) {
 					this.openPlanReference(element, !!event.browserEvent);
 				}
+			}
+		}));
+
+
+		this._register(list.onKeyDown((e) => {
+			const event = new StandardKeyboardEvent(e);
+			if (event.equals(KeyCode.DownArrow) && this.planListFocusIndex === list.length - 1) {
+				this.planList?.setFocus([]);
+				this.planList?.setSelection([]);
+				this.breakdownsList?.setFocus([0]);
+				this.breakdownsList?.setSelection([0]);
 			}
 		}));
 
@@ -162,7 +176,7 @@ export class AideProbeViewPane extends ViewPane {
 				const index = this.getPlanListIndex(element);
 
 				if (event.browserEvent) {
-					this.breakdownsListFocusIndex = index;
+					this.planListFocusIndex = index;
 				}
 
 				this._onDidChangeFocus.fire({ index, element: element });
@@ -184,15 +198,10 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	async openPlanReference(element: IAideProbeInitialSymbolsViewModel, setFocus: boolean = false): Promise<void> {
-		if (this.activePlanEntry === element) {
-			return;
-		} else {
-			this.activePlanEntry = element;
-			const index = this.getPlanListIndex(element);
-			if (this.planList && index !== -1 && setFocus) {
-				this.planList.setFocus([index]);
-				//this.explanationService.changeActiveBreakdown(element);
-			}
+		const index = this.getPlanListIndex(element);
+		if (this.planList && index !== -1 && setFocus) {
+			this.planList.setFocus([index]);
+			//this.explanationService.changeActiveBreakdown(element);
 		}
 	}
 
@@ -268,6 +277,8 @@ export class AideProbeViewPane extends ViewPane {
 		}));
 		this._register(list.onDidChangeFocus(event => {
 			if (event.indexes.length === 1) {
+				this.planList?.setFocus([]);
+				this.planList?.setSelection([]);
 				const index = event.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
@@ -276,12 +287,24 @@ export class AideProbeViewPane extends ViewPane {
 				this._onDidChangeFocus.fire({ index, element });
 
 				if (event.browserEvent) {
+					console.log('breakdownsListBrowserEvent');
 					this.breakdownsListFocusIndex = index;
 				}
 
-				if (element && element.uri && element.name) {
-					this.openBreakdownReference(element, !!event.browserEvent);
+				if (event.browserEvent && element && element.uri && element.name) {
+					this.openBreakdownReference(element);
 				}
+			}
+		}));
+
+		this._register(list.onKeyDown((e) => {
+			const event = new StandardKeyboardEvent(e);
+			if (event.equals(KeyCode.UpArrow) && this.breakdownsListFocusIndex === 0) {
+				event.preventDefault();
+				this.planList?.focusLast();
+				this.planList?.setSelection([this.planList.length - 1]);
+				this.breakdownsList?.setFocus([]);
+				this.breakdownsList?.setSelection([]);
 			}
 		}));
 
@@ -299,7 +322,9 @@ export class AideProbeViewPane extends ViewPane {
 				list.rerender();
 
 				this._onDidChangeFocus.fire({ index, element: element });
-				this.openBreakdownReference(element, !!event.browserEvent);
+				if (event.browserEvent) {
+					this.openBreakdownReference(element);
+				}
 			}
 		}));
 
@@ -316,17 +341,13 @@ export class AideProbeViewPane extends ViewPane {
 		return matchIndex;
 	}
 
-	async openBreakdownReference(element: IAideProbeBreakdownViewModel, setFocus: boolean = false): Promise<void> {
-		if (this.activeBreakdown === element) {
-			return;
-		} else {
-			this.activeBreakdown = element;
-			const index = this.getBreakdownListIndex(element);
-			if (this.breakdownsList && index !== -1 && setFocus) {
-				this.breakdownsList.setFocus([index]);
-				this.explanationService.changeActiveBreakdown(element);
-			}
+	async openBreakdownReference(element: IAideProbeBreakdownViewModel): Promise<void> {
+
+		const index = this.getBreakdownListIndex(element);
+		if (this.breakdownsList && index !== -1) {
+			this.explanationService.changeActiveBreakdown(element);
 		}
+
 	}
 
 	private updateBreakdownsList() {
@@ -406,9 +427,10 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	protected override layoutBody(height: number, width: number): void {
+		this.breakdownsList?.rerender();
+		this.planList?.rerender();
 		super.layoutBody(height, width);
 		this.dimensions = { width, height };
-
 		this.scrollableElement.scanDomNode();
 	}
 }
@@ -550,7 +572,7 @@ interface IItemHeightChangeParams {
 	height: number;
 }
 
-const dummyReason = new MarkdownString('This is a dummy response, in order to debug this shit. Gotta remember to remove this.');
+// const dummyReason = new MarkdownString('This is a dummy response, in order to debug this shit. Gotta remember to remove this.');
 
 class BreakdownListRenderer extends Disposable implements IListRenderer<IAideProbeBreakdownViewModel, IBreakdownTemplateData> {
 	static readonly TEMPLATE_ID = 'breakdownListRenderer';
@@ -585,7 +607,7 @@ class BreakdownListRenderer extends Disposable implements IListRenderer<IAidePro
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		const { uri, name, response = dummyReason, expanded } = element;
+		const { uri, name, response, expanded } = element;
 
 		const initialIconClasses = ThemeIcon.asClassNameArray(SymbolKinds.toIcon(SymbolKind.Method));
 		const iconElement = $('.plan-icon');

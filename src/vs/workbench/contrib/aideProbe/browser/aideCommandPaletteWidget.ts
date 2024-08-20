@@ -41,11 +41,12 @@ import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibil
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { AideProbeStatus, IAideProbeResponseModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeStatus, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -99,7 +100,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _inputEditor: CodeEditorWidget;
 
 	private mode: IContextKey<ProbeMode>;
-	private isCodebaseSearch: IContextKey<boolean>;
+	private contextType: IContextKey<string>;
 	private contextElement: HTMLElement;
 
 	private submitToolbar: MenuWorkbenchToolBar;
@@ -170,7 +171,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		super();
 
 		this.isVisible = CONTEXT_PALETTE_IS_VISIBLE.bindTo(contextKeyService);
-		this.isCodebaseSearch = CONTEXT_PROBE_IS_CODEBASE_SEARCH.bindTo(contextKeyService);
+		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
 		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.inputEditorHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
@@ -596,7 +597,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, [...this.contextPicker.context.entries], null);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.contextType.get() === 'codebase' || false, [...this.contextPicker.context.entries], null);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 
@@ -605,7 +606,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this.panel.show(editorValue, true);
 		this._inputEditor.setValue('');
 
-		if (this.isCodebaseSearch.get()) {
+		if (this.contextType.get() === 'codebase') {
 			this.panel.isRepoMapLoading = true;
 			this.panel.isLongContextSearchLoading = false;
 		}
@@ -623,7 +624,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			return;
 		}
 
-		if (this.isCodebaseSearch.get()) {
+		if (this.contextType.get() === 'codebase') {
 			this.panel.isRepoMapLoading = !this._viewModel.isRepoMapReady;
 			// if repo map is ready, we start the long context search
 			if (this._viewModel.isRepoMapReady) {

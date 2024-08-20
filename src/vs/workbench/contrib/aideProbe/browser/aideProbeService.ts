@@ -14,7 +14,7 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 // import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
-import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeStatus, IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export type ProbeMode = 'edit' | 'explore';
@@ -95,11 +95,10 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 
 		this._model = this.instantiationService.createInstance(AideProbeModel);
+		this._model.status = AideProbeStatus.IN_PROGRESS;
 		this._modelDisposables.add(this._model.onNewEvent(edits => {
 			this._onNewEvent.fire(edits);
 		}));
-
-		console.log(this._model.sessionId);
 		return this._model;
 	}
 

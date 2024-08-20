@@ -11,6 +11,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { $, append } from 'vs/base/browser/dom';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
+import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 
 export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
 
@@ -77,6 +78,7 @@ export class AideControlsPart extends Part implements IDisposable {
 
 	protected override createContentArea(parent: HTMLElement): HTMLElement {
 		this.element = parent;
+		this.element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || 'transparent';
 		this._content = append(this.element, $('.content'));
 		return this._content;
 	}

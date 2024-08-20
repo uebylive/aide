@@ -9,13 +9,33 @@
 	align-items: center;
 	gap: 6px;
 	padding-inline: 6px;
+	padding-top: 6px;
+	padding-bottom: 8px;
 }
 
 .edits-list-item {
 	display: flex;
 	white-space: normal;
+	gap: 6px;
+	padding-top: 6px;
+	padding-bottom: 12px;
 }
 
+.edits-list-item .plan-icon {
+	padding-left: 6px;
+}
+
+.edits-list-item .plan-symbol {
+	padding-right: 6px;
+}
+
+.edits-list-item .plan-symbol-path {
+	color: var(--vscode-debugIcon-breakpointUnverifiedForeground);
+}
+
+.selected .edits-list-item .plan-symbol-path {
+	color: var(--vscode-debugIcon-breakpointUnverifiedForeground);
+}
 
 .aide-probe-view .aide-probe-input-part {
 	display: flex;
@@ -136,10 +156,6 @@
 	font-size: 16px;
 	color: var(--vscode-editorGhostText-foreground);
 	padding: 0 6px;
-}
-
-.aide-probe-view .responseWrapper {
-	margin: 0 20px;
 }
 
 @keyframes fadeInFromBottom {

@@ -11,7 +11,7 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export class AideToggle extends Disposable {

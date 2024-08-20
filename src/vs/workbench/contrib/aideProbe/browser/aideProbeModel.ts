@@ -17,9 +17,11 @@ import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/comm
 import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -64,15 +66,6 @@ export interface IAideProbeResponseModel {
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;
 }
-
-
-export const enum AideProbeStatus {
-	INACTIVE = 'INACTIVE',
-	IN_PROGRESS = 'IN_PROGRESS',
-	IN_REVIEW = 'IN_REVIEW'
-}
-
-export type IAideProbeStatus = keyof typeof AideProbeStatus;
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
@@ -300,8 +293,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				this._codeEdits.set(mapKey, codeEdits);
 			}
 
-			console.log(this._codeEdits);
-
 			const editOperation: IIdentifiedSingleEditOperation = {
 				range: workspaceEdit.textEdit.range,
 				text: workspaceEdit.textEdit.text
@@ -332,9 +323,12 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
+	protected readonly _onDidChangeStatus = this._store.add(new Emitter<IAideProbeStatus>());
+	readonly onDidChangeStatus: Event<IAideProbeStatus> = this._onDidChangeStatus.event;
+
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
-	private _status: IAideProbeStatus = AideProbeStatus.INACTIVE;
+	private _status: IContextKey<IAideProbeStatus>;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -354,19 +348,26 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	}
 
 	get status() {
-		return this._status;
+		return this._status.get() || AideProbeStatus.INACTIVE;
 	}
 
-	set status(_status: IAideProbeStatus) {
-		this._status = _status;
+	set status(newStatus: IAideProbeStatus) {
+		const didChange = this._status.get() !== newStatus;
+		this._status.set(newStatus);
+		if (didChange) {
+			this._onDidChangeStatus.fire(newStatus);
+		}
 	}
 
 	constructor(
-		@IInstantiationService private readonly _instantiationService: IInstantiationService
+		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IContextKeyService contextKeyService: IContextKeyService
 	) {
 		super();
 
 		this._sessionId = generateUuid();
+		this._status = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
+
 	}
 
 	async acceptResponseProgress(progress: IAideProbeProgress): Promise<void> {
@@ -379,7 +380,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
 		}
 
-		this._status = AideProbeStatus.IN_PROGRESS;
+		this.status = AideProbeStatus.IN_PROGRESS;
 
 		switch (progress.kind) {
 			case 'markdownContent':
@@ -412,13 +413,13 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	}
 
 	completeResponse(): void {
-		this._status = AideProbeStatus.IN_REVIEW;
+		this.status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
-		this._status = AideProbeStatus.IN_REVIEW;
+		this.status = AideProbeStatus.IN_REVIEW;
 
 		this._onDidChange.fire();
 	}

@@ -141,3 +141,11 @@ export type IAideProbeResponseEvent =
 	| IAideProbeInitialSymbols;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
+
+export const enum AideProbeStatus {
+	INACTIVE = 'INACTIVE',
+	IN_PROGRESS = 'IN_PROGRESS',
+	IN_REVIEW = 'IN_REVIEW'
+}
+
+export type IAideProbeStatus = keyof typeof AideProbeStatus;

@@ -15,6 +15,7 @@ import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aid
 import { IAideEditsService } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
 import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -23,8 +24,8 @@ export interface IProbeActionContext {
 	inputValue?: string;
 }
 
-const isProbingInProgress = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('IN_PROGRESS');
-const isIdle = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('INACTIVE');
+const isProbingInProgress = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.IN_PROGRESS);
+const isIdle = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.INACTIVE);
 
 class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideControls.submit';

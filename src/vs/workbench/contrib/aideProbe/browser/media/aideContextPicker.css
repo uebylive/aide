@@ -10,6 +10,7 @@
 .aide-context-picker {
 	position: relative;
 	display: inline-flex;
+	height: 36px;
 }
 
 .aide-controls-context-split-button {
@@ -40,7 +41,7 @@
 .aide-option-item {
 	display: flex;
 	align-items: center;
-	padding: 2px 4px;
+	padding: 4px;
 	gap: 4px;
 }
 
@@ -72,13 +73,13 @@
 
 .aide-context-picker-quick-context-panel {
 	width: 300px;
-	right: 0;
+	right: 12px;
 }
 
 .aide-context-picker-panel {
 	position: absolute;
 	width: 400px;
-	right: 0;
+	right: 12px;
 }
 
 .aide-context-option-item,
