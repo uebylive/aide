@@ -4,11 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 .aide-controls {
+	margin: auto;
 	display: flex;
 	align-items: start;
 	justify-content: center;
-	padding-inline: 6px;
-	border-top: 1px solid var(--vscode-editorWidget-border);
+	padding: 6px;
+	padding-bottom: 0;
+	outline: 1px solid var(--vscode-editorWidget-border);
+	transform: translateY(1px);
 }
 
 .aide-controls :is(.monaco-editor, .monaco-editor-background) {

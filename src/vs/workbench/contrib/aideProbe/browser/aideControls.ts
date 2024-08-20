@@ -5,7 +5,6 @@
 
 import { $ } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
@@ -21,7 +20,7 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
@@ -35,6 +34,7 @@ import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContex
 import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { AideProbeStatus, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 
 
 const MAX_WIDTH = 800;
@@ -76,12 +76,13 @@ export class AideControlsService implements IAideControlsService {
 registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Eager);
 
 
-export class AideControls extends Disposable {
+export class AideControls extends Themable {
 
 	public static readonly ID = 'workbench.contrib.aideControls';
 
 	// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
 	private part = this.aideControlsPartService.mainPart;
+	private element: HTMLElement;
 
 	private _input: CodeEditorWidget;
 	private inputHeight = INPUT_MIN_HEIGHT;
@@ -108,11 +109,12 @@ export class AideControls extends Disposable {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IThemeService private readonly themeService: IThemeService,
+		@IThemeService themeService: IThemeService,
 		@IModelService private readonly modelService: IModelService,
 	) {
 
-		super();
+		super(themeService);
+		this.themeService = themeService;
 
 		aideControlsService.registerControls(this);
 
@@ -120,7 +122,8 @@ export class AideControls extends Disposable {
 		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
-		const element = $('.aide-controls');
+		const element = this.element = $('.aide-controls');
+		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
 		this.part.content.appendChild(element);
 
@@ -356,6 +359,7 @@ export class AideControls extends Disposable {
 
 	layout(width: number, height: number) {
 		const newWidth = Math.min(width, MAX_WIDTH);
-		this._input.layout({ width: newWidth - 60 - 36 - 12, height });
+		this.element.style.width = `${newWidth}px`;
+		this._input.layout({ width: newWidth - 60 - 36 - 12, height: height - 6 });
 	}
 }
