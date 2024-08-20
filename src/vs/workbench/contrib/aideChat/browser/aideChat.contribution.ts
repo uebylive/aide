@@ -48,7 +48,6 @@ import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorHover';
-import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -257,7 +256,7 @@ workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlas
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(AideChatEditorInput.TypeID, ChatEditorInputSerializer);
 registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointHandler, WorkbenchPhase.BlockStartup);
 
-registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
+//registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
 registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
 registerWorkbenchContribution2(LanguageModelToolsExtensionPointHandler.ID, LanguageModelToolsExtensionPointHandler, WorkbenchPhase.Eventually);
 

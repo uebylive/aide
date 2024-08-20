@@ -28,6 +28,7 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import 'vs/css!./media/aideContextPicker';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { CONTEXT_PROBE_CONTEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 
 const $ = dom.$;
 
@@ -47,6 +48,11 @@ const quickContextOptions: IQuickContextOption[] = [
 		icon: 'mini/paper-clip',
 		label: 'Specific context',
 		value: 'specific-context'
+	},
+	{
+		icon: 'mini/cursor-selection',
+		label: 'Current selection',
+		value: 'current-selection'
 	}
 ];
 
@@ -62,6 +68,7 @@ function getActiveEditorUri(editorService: IEditorService): URI | undefined {
 export class ContextPicker extends Disposable {
 
 	private contextType: IContextKey<string>;
+	private previousContextType: string | undefined;
 
 	readonly context: AideContext;
 
@@ -79,18 +86,30 @@ export class ContextPicker extends Disposable {
 	private isContextTypePanelVisible = false;
 	private contextTypeDropdownPanelElement: HTMLElement;
 
+	private hasValidSelection = false;
+	private readonly editorDisposables = this._register(new DisposableStore());
+
 	constructor(
 		private readonly parent: HTMLElement,
 		@IEditorService private readonly editorService: IEditorService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@ICommandService private readonly commandService: ICommandService,
+		@IAideLSPService private readonly aideLSPService: IAideLSPService,
 	) {
 		super();
 
 		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
+		this.previousContextType = this.contextType.get();
 
 		this.context = this.instantiationService.createInstance(AideContext);
+
+
+		this.editorService.onDidActiveEditorChange(() => {
+			this.checkSelection();
+		});
+
+		this.checkSelection();
 
 		const contextPickerElement = $('.aide-context-picker');
 		this.parent.append(contextPickerElement);
@@ -203,14 +222,24 @@ export class ContextPicker extends Disposable {
 		});
 
 		this._register(select.onDidSelect(({ element }) => {
-			if (element.value === 'codebase') {
-				this.contextType.set('codebase');
-				this.context.clear();
-			} else {
-				this.contextType.set('specific');
-				if (!this.isListVisible) {
-					this.toggleContextPanel();
-				}
+			switch (element.value) {
+				case 'codebase':
+					this.contextType.set('codebase');
+					this.context.clear();
+					break;
+				case 'specific':
+					this.contextType.set('specific');
+					if (!this.isListVisible) {
+						this.toggleContextPanel();
+					}
+					break;
+				case 'selection':
+					if (this.hasValidSelection) {
+						this.contextType.set('selection');
+					}
+					break;
+				default:
+					break;
 			}
 			this.isContextTypePanelVisible = false;
 			dom.hide(this.contextTypeDropdownPanelElement);
@@ -240,16 +269,62 @@ export class ContextPicker extends Disposable {
 
 		this.checkActivation();
 
+		this._register(this.aideLSPService.onDidChangeStatus(() => {
+			this.checkActivation();
+		}));
+
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.checkActivation();
 			this.render();
 		}));
 	}
 
+	private checkSelection() {
+		this.editorDisposables.clear();
+		const editor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(editor)) {
+			const textModel = editor.getModel();
+			this.editorDisposables.add(editor.onDidChangeCursorSelection(({ selection }) => {
+				this.hasValidSelection = !selection.isEmpty();
+				if (this.hasValidSelection && this.aideLSPService.isActiveForCurrentEditor()) {
+					if (this.contextType.get() !== 'selection') {
+						this.previousContextType = this.contextType.get() ?? 'specific';
+						this.contextType.set('selection');
+					}
+					this.context.clear();
+					this.context.add({
+						id: 'selection',
+						// follow the same schema as the chat variables
+						name: 'file',
+						value: JSON.stringify({
+							uri: textModel?.uri,
+							range: {
+								// selection is 1 indexed and not 0 indexed and also depends
+								// on the orientation
+								startLineNumber: Math.min(selection.startLineNumber - 1, selection.endLineNumber - 1),
+								startColumn: selection.startColumn - 1,
+								endLineNumber: Math.max(selection.endLineNumber - 1, selection.startLineNumber - 1),
+								endColumn: selection.endColumn - 1,
+							},
+						})
+					});
+				} else {
+					if (this.contextType.get() === 'selection' && this.previousContextType) {
+						this.contextType.set(this.previousContextType);
+					}
+				}
+			}));
+		} else {
+			this.hasValidSelection = false;
+		}
+	}
+
 	private checkActivation() {
+		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
 		const activeEditor = this.editorService.activeTextEditorControl;
-		this.button.enabled = isCodeEditor(activeEditor);
-		this.contextTypeDropdownButton.enabled = isCodeEditor(activeEditor);
+		const isActive = isLSPActive && isCodeEditor(activeEditor);
+		this.button.enabled = isActive;
+		this.contextTypeDropdownButton.enabled = isActive;
 	}
 
 	private toggleContextPanel() {
@@ -266,7 +341,16 @@ export class ContextPicker extends Disposable {
 		if (this.buttonIcon) {
 			this.buttonIcon.dispose();
 		}
-		const iconId = this.contextType.get() === 'codebase' ? 'mini/square-3-stack-3d' : 'mini/paper-clip';
+		let iconId = 'mini/paper-clip';
+		switch (this.contextType.get()) {
+			case 'codebase':
+				iconId = 'mini/square-3-stack-3d';
+				break;
+			case 'selection':
+				iconId = 'mini/cursor-selection';
+				break;
+
+		}
 		return this.buttonIcon = this.instantiationService.createInstance(Heroicon, button, iconId);
 	}
 
@@ -287,7 +371,7 @@ export class ContextPicker extends Disposable {
 
 		this.updateButtonIcon(this.button.element);
 
-		if (this.contextType.get() !== 'codebase' && this.context.entries.size) {
+		if (this.contextType.get() === 'specific' && this.context.entries.size) {
 			dom.show(this.buttonBadge);
 			this.buttonBadge.textContent = this.context.entries.size.toString();
 		} else {

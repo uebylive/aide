@@ -180,8 +180,9 @@ export class AideControls extends Disposable {
 	}
 
 	private checkActivation() {
+		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
 		const activeEditor = this.editorService.activeTextEditorControl;
-		this.submitButton.enabled = isCodeEditor(activeEditor);
+		this.submitButton.enabled = isCodeEditor(activeEditor) && isLSPActive;
 	}
 
 	private createInput(parent: HTMLElement) {
@@ -244,6 +245,7 @@ export class AideControls extends Disposable {
 
 		this._register(this.aideLSPService.onDidChangeStatus(() => {
 			this.updateInputPlaceholder();
+			this.checkActivation();
 		}));
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
@@ -273,22 +275,7 @@ export class AideControls extends Disposable {
 		if (!currentSession) {
 			this.model = this.aideProbeService.startSession();
 
-			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, [{
-				id: 'selection',
-				// follow the same schema as the chat variables
-				name: 'file',
-				value: JSON.stringify({
-					uri: textModel?.uri,
-					range: {
-						// selection is 1 indexed and not 0 indexed and also depends
-						// on the orientation
-						startLineNumber: Math.min(selection.startLineNumber - 1, selection.endLineNumber - 1),
-						startColumn: selection.startColumn - 1,
-						endLineNumber: Math.max(selection.endLineNumber - 1, selection.startLineNumber - 1),
-						endColumn: selection.endColumn - 1,
-					},
-				})
-			}], textModel);
+			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, Array.from(this.contextPicker.context.entries), textModel);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
