@@ -106,15 +106,26 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 	}
 
-	async provideEdit(request: SidecarApplyEditsRequest) {
+	async provideEdit(request: SidecarApplyEditsRequest): Promise<{
+		fs_file_path: String;
+		success: boolean;
+	}> {
 		if (request.apply_directly) {
 			applyEditsDirectly(request);
-			return;
+			return {
+				fs_file_path: request.fs_file_path,
+				success: true,
+			};
 		}
 		if (!this._openResponseStream) {
-			return;
+			console.log('returning early over here');
+			return {
+				fs_file_path: request.fs_file_path,
+				success: true,
+			};
 		}
-		await applyEdits(request, this._openResponseStream);
+		const response = await applyEdits(request, this._openResponseStream);
+		return response;
 	}
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
