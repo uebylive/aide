@@ -69,7 +69,7 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 			this.addContextButton.label = this.addContextLabel;
 		}
 
-		this.inlineChatLabel = `${keybindingService.lookupKeybinding(inlineChatCommandId)?.getLabel() ?? ''} Edit Code`;
+		this.inlineChatLabel = `${keybindingService.lookupKeybinding(inlineChatCommandId)?.getLabel() ?? ''} Anchored editing`;
 		if (this.inlineChatButton) {
 			this.inlineChatButton.label = this.inlineChatLabel;
 		}
