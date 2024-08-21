@@ -244,8 +244,8 @@ export class ContextPicker extends Disposable {
 		}));
 
 		this._register(this.context.onDidChange(() => {
-			const files = Array.from(this.context.entries).filter(entry => entry.isFile).map(entry => entry.resource.fsPath) as unknown as string[];
-			this.aideProbeService.onContextChange(files);
+			const files = Array.from(this.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+			this.aideProbeService.onContextChange(files.map(entry => entry.resource.fsPath));
 			this.render();
 		}));
 
