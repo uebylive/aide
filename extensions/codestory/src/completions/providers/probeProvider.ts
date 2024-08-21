@@ -45,7 +45,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 	}
 
-	private async getNextOpenPort(startFrom: number = 42423) {
+	private async getNextOpenPort(startFrom: number = 42427) {
 		let openPort: number | null = null;
 		while (startFrom < 65535 || !!openPort) {
 			if (await this.isPortOpen(startFrom)) {
