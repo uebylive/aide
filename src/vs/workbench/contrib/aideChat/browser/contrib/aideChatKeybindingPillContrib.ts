@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { themeColorFromId } from 'vs/base/common/themables';
+import { URI } from 'vs/base/common/uri';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IEditorContribution, IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
@@ -12,11 +13,13 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
 import { CONTEXT_PROBE_HAS_VALID_SELECTION } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { Selection } from 'vs/editor/common/core/selection';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
 
 
 const editLineDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-anchor-lines',
+	className: 'aide-probe-breakdown',
 	isWholeLine: true,
 	overviewRuler: {
 		position: OverviewRulerLane.Full,
@@ -28,7 +31,11 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 	}
 });
 
-export class KeybindingPillContribution implements IEditorContribution {
+export interface IKeybindingPillContribution extends IEditorContribution {
+	showAnchorEditingDecoration(uri: URI, selection: Selection): void;
+}
+
+export class KeybindingPillContribution implements IKeybindingPillContribution {
 	public static readonly ID = 'editor.contrib.keybindingPill';
 
 	private pillWidget: KeybindingPillWidget | null | undefined;
@@ -43,37 +50,33 @@ export class KeybindingPillContribution implements IEditorContribution {
 
 		this.hasValidSelection = CONTEXT_PROBE_HAS_VALID_SELECTION.bindTo(contextKeyService);
 
-		this.aideProbeService.onDidStartProbing(() => {
-			this.showAnchorEditingDecoration();
-		});
 
 		this.editor.onDidChangeCursorSelection(event => {
 			if (event.selection.isEmpty()) {
 				this.hasValidSelection.set(false);
-				aideProbeService.setCurrentSelection(undefined);
+				aideProbeService.anchorEditingSelection = undefined;
 				this.pillWidget?.hide();
 				this.hideAnchorEditingDecoration();
 			} else {
 				const uri = editor.getModel()?.uri;
 				if (uri) {
 					this.hasValidSelection.set(true);
-					aideProbeService.setCurrentSelection({ uri, selection: event.selection });
 					this.pillWidget?.showAt(event.selection.getPosition());
-					this.showAnchorEditingDecoration();
+					this.showAnchorEditingDecoration(uri, event.selection);
 				}
 				this.hideAnchorEditingDecoration();
 			}
 		});
 	}
 
-	showAnchorEditingDecoration() {
-		const uri = this.editor.getModel()?.uri;
-		const currentSelection = this.aideProbeService.currentSelection?.selection;
-		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection?.selection;
-
-		if (uri?.toString() === this.aideProbeService.anchorEditingSelection?.uri.toString() && currentSelection && anchorEditingSelection && currentSelection.equalsSelection(anchorEditingSelection)) {
+	showAnchorEditingDecoration(uri: URI, selection: Selection) {
+		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
+		if (!anchorEditingSelection) {
+			return;
+		}
+		if (uri.toString() === anchorEditingSelection.uri.toString() && selection.equalsSelection(anchorEditingSelection.selection)) {
 			this.decorationsCollection.append([{
-				range: anchorEditingSelection,
+				range: anchorEditingSelection.selection,
 				options: editLineDecorationOptions
 			}]);
 		}

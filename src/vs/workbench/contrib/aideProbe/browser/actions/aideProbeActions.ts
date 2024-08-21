@@ -5,16 +5,19 @@
 
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ILocalizedString, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
+import { IKeybindingPillContribution, KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { CONTEXT_PROBE_HAS_VALID_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -81,11 +84,25 @@ class EnterAnchoredEditing extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const contextKeyService = accessor.get(IContextKeyService);
-		CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.ANCHORED);
 
+		const aideProbeService = accessor.get(IAideProbeService);
 		const aideControlsService = accessor.get(IAideControlsService);
-		aideControlsService.focusInput();
+		const editorService = accessor.get(IEditorService);
+		const contextKeyService = accessor.get(IContextKeyService);
+
+		const editor = editorService.activeTextEditorControl;
+		if (isCodeEditor(editor)) {
+			const model = editor.getModel();
+			const selection = editor.getSelection();
+			if (model && selection) {
+				aideProbeService.anchorEditingSelection = { uri: model.uri, selection };
+				CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.ANCHORED);
+				aideControlsService.focusInput();
+				editor.getContribution<IKeybindingPillContribution>(KeybindingPillContribution.ID)?.showAnchorEditingDecoration(model.uri, selection);
+			}
+
+
+		}
 	}
 }
 

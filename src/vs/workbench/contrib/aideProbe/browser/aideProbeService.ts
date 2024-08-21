@@ -37,9 +37,6 @@ export interface IAideProbeService {
 	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[]): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
 
-
-	setCurrentSelection(selection: AnchorEditingSelection | undefined): void;
-	currentSelection: AnchorEditingSelection | undefined;
 	anchorEditingSelection: AnchorEditingSelection | undefined;
 
 	cancelProbe(): void;
@@ -79,11 +76,10 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	private readonly _modelDisposables = this._register(new DisposableStore());
 	private _initiateProbeResponseState: IInitiateProbeResponseState | undefined;
 
-	get currentSelection() {
-		return this._currentSelection;
-	}
-	private _currentSelection: AnchorEditingSelection | undefined;
 
+	set anchorEditingSelection(selection: AnchorEditingSelection | undefined) {
+		this._anchorEditingSelection = selection;
+	}
 	get anchorEditingSelection() {
 		return this._anchorEditingSelection;
 	}
@@ -201,9 +197,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					}
 				}
 
-				if (mode === AideProbeMode.ANCHORED && this._currentSelection) {
-					this._anchorEditingSelection = this._currentSelection;
-					const { uri, selection } = this._currentSelection;
+				if (mode === AideProbeMode.ANCHORED && this._anchorEditingSelection) {
+					const { uri, selection } = this._anchorEditingSelection;
 					variables.push({
 						id: 'selection',
 						// follow the same schema as the chat variables
@@ -255,6 +250,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		};
 
 		const rawResponsePromise = initiateProbeInternal();
+		this._onDidStartProbing.fire();
 		this._activeRequest = source;
 		rawResponsePromise.finally(() => {
 			this._activeRequest?.dispose();
@@ -276,11 +272,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
 	}
-
-	setCurrentSelection(selection: AnchorEditingSelection): void {
-		this._currentSelection = selection;
-	}
-
 
 	cancelProbe() {
 		if (this._activeRequest) {
