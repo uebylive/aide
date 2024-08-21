@@ -95,6 +95,11 @@ export class AideProbeProvider implements vscode.Disposable {
 			await this._sideCarClient.codeSculptingFollowup(userAction.action.newPrompt, userAction.sessionId);
 		}
 
+		if (userAction.action.type === 'contextChange') {
+			console.log('contextChange');
+			await this._sideCarClient.warmupCodeSculptingCache(userAction.sessionId, userAction.action.newContext);
+		}
+
 
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
