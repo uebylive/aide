@@ -70,14 +70,14 @@ class EnterAnchoredEditing extends Action2 {
 	constructor() {
 		super({
 			id: EnterAnchoredEditing.ID,
-			title: 'Enter anchored editing',
+			title: localize2('Enter anchored editing', 'Enter anchored editing'),
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-				weight: KeybindingWeight.WorkbenchContrib,
+				weight: KeybindingWeight.ExternalExtension,
 				when: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
 			},
 		});

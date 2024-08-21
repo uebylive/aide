@@ -27,9 +27,10 @@ import { AideSelect } from 'vs/workbench/browser/aideSelect';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
 import 'vs/css!./media/aideContextPicker';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_PROBE_CONTEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 
 const $ = dom.$;
 
@@ -61,10 +62,22 @@ function getActiveEditorUri(editorService: IEditorService): URI | undefined {
 	return model ? model.uri : undefined;
 }
 
-export class ContextPicker extends Disposable {
+
+export interface IContextPicker extends IWorkbenchContribution {
+	context: AideContext;
+	openContextList(): void;
+	closeContextList(): void;
+}
+
+
+export class ContextPicker extends Disposable implements IContextPicker {
+
+	public static ID = 'workbench.aide.contextPicker';
 
 	private contextType: IContextKey<string>;
+	private isListFocused: IContextKey<boolean>;
 
+	readonly element: HTMLElement;
 	readonly context: AideContext;
 
 	private button: Button;
@@ -82,7 +95,6 @@ export class ContextPicker extends Disposable {
 	private contextTypeDropdownPanelElement: HTMLElement;
 
 	constructor(
-		private readonly parent: HTMLElement,
 		@IEditorService private readonly editorService: IEditorService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -93,11 +105,10 @@ export class ContextPicker extends Disposable {
 		super();
 
 		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
-
 		this.context = this.instantiationService.createInstance(AideContext);
+		this.isListFocused = CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS.bindTo(contextKeyService);
 
-		const contextPickerElement = $('.aide-context-picker');
-		this.parent.append(contextPickerElement);
+		const contextPickerElement = this.element = $('.aide-context-picker');
 
 		const splitButtonElement = $('.aide-controls-context-split-button');
 		contextPickerElement.appendChild(splitButtonElement);
@@ -125,6 +136,18 @@ export class ContextPicker extends Disposable {
 			}
 		));
 
+		this.list.onDidChangeFocus((event) => {
+			if (event.indexes.length) {
+				this.isListFocused.set(true);
+			} else {
+				this.isListFocused.set(false);
+			}
+		});
+
+		this.list.onDidBlur(() => {
+			this.isListFocused.set(false);
+		});
+
 		this._register(this.list.onDidChangeContentHeight(height => {
 			this.list.layout(height);
 		}));
@@ -140,11 +163,7 @@ export class ContextPicker extends Disposable {
 		addButton.element.classList.add('aide-context-picker-add-button');
 
 		this._register(addButton.onDidClick(async () => {
-			// TODO(@g-danna) Find a better (?) and type-safe way to do this
-			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
-			if (Array.isArray(newEntries)) {
-				newEntries.forEach(entry => this.context.add(entry));
-			}
+			this.commandService.executeCommand('workbench.action.aideControls.attachContext');
 		}));
 
 
@@ -259,6 +278,24 @@ export class ContextPicker extends Disposable {
 			this.checkActivation();
 			this.render();
 		}));
+	}
+
+	openContextList(): void {
+		if (!this.isListVisible) {
+			this.toggleContextPanel();
+		}
+		this.list.setFocus([this.context.entries.size - 1]);
+		this.list.setSelection([this.context.entries.size - 1]);
+	}
+
+	closeContextList(): void {
+		if (this.isListVisible) {
+			this.toggleContextPanel();
+		}
+	}
+
+	append(parent: HTMLElement) {
+		parent.append(this.element);
 	}
 
 	//private checkSelection() {

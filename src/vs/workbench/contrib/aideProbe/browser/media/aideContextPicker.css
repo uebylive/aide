@@ -47,8 +47,8 @@
 
 .aide-controls-context-badge {
 	position: absolute;
-	left: 0;
-	bottom: 0;
+	left: 6px;
+	bottom: 6px;
 	transform: translate(-50%, 50%);
 	border-radius: 99999px;
 	width: 16px;

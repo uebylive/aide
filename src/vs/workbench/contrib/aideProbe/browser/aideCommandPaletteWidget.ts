@@ -40,7 +40,6 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
 import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
@@ -91,7 +90,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _innerContainer!: HTMLElement;
 	private width: number = 560;
 
-	private contextPicker: ContextPicker;
+	//private contextPicker: ContextPicker;
 
 	private _inputContainer: HTMLElement; // contains all inputs
 	private _modeToggleContainer: HTMLElement;
@@ -300,7 +299,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 
 		// Context select
-		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
+		//this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
 
 		// Register events
 
@@ -597,7 +596,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, [...this.contextPicker.context.entries]);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, []);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 

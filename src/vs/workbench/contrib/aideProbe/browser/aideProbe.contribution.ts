@@ -15,6 +15,7 @@ import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer
 import { registerAideControlsActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideControlsActions';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { registerContextActions } from 'vs/workbench/contrib/aideProbe/browser/aideContextActions';
+import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { AideLSPService, IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
@@ -63,5 +64,6 @@ registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, Ins
 //registerSingleton(IAideCommandPaletteService, AideCommandPaletteService, InstantiationType.Delayed);
 registerSingleton(IAideLSPService, AideLSPService, InstantiationType.Eager);
 registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);
+registerWorkbenchContribution2(ContextPicker.ID, ContextPicker, WorkbenchPhase.Eventually);
 registerWorkbenchContribution2(AideControls.ID, AideControls, WorkbenchPhase.Eventually);
 //registerWorkbenchContribution2(AideBar.ID, AideBar, WorkbenchPhase.Eventually);

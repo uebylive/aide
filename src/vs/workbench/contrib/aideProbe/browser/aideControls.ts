@@ -23,7 +23,7 @@ import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inpu
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
@@ -35,6 +35,7 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { AideProbeStatus, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
+import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 
 
 const MAX_WIDTH = 800;
@@ -186,7 +187,8 @@ export class AideControls extends Themable {
 			this.inputHasFocus.set(false);
 		}));
 
-		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, element));
+		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
+		this.contextPicker.append(element);
 	}
 
 	private checkActivation() {
@@ -281,8 +283,12 @@ export class AideControls extends Themable {
 		const activeEditor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(activeEditor)) { return; }
 		if (!currentSession) {
+			let variables: IVariableEntry[] = [];
+			if (this.contextPicker) {
+				variables = Array.from(this.contextPicker.context.entries);
+			}
 			this.model = this.aideProbeService.startSession();
-			this.aideProbeService.initiateProbe(this.model, editorValue, Array.from(this.contextPicker.context.entries));
+			this.aideProbeService.initiateProbe(this.model, editorValue, variables);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
