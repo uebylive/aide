@@ -77,6 +77,7 @@ type FrameworkEvent = {
 	LongContextSearchFinished: string;
 	InitialSearchSymbols: InitialSearchSymbols;
 	OpenFile: OpenFileRequestFrameworkEvent;
+	CodeIterationFinished: string;
 };
 
 interface UIEvent {
