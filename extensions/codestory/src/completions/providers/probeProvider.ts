@@ -191,7 +191,8 @@ export class AideProbeProvider implements vscode.Disposable {
 		//})(jsonArr);
 		// Use dummy data: End
 
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._limiter);
+		const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
+		await reportAgentEventsToChat(isEditMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
