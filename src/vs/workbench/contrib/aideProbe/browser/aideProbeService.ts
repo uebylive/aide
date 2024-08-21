@@ -9,17 +9,14 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 // import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
 import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-
-export type ProbeMode = 'edit' | 'explore';
 
 
 export interface IAideProbeResolver {
@@ -37,7 +34,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[], textModel: ITextModel | null): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[]): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
 
 
@@ -63,6 +60,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
 	private mode: IContextKey<IAideProbeMode>;
+	private contextType: IContextKey<string>;
 
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
@@ -96,6 +94,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		super();
 
 		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
+		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
 	}
 
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): IDisposable {
@@ -127,7 +126,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[] = []): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = []): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -171,6 +170,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			});
 
 			const mode = this.mode.get() || AideProbeMode.AGENTIC;
+			const codebaseSearch = this.contextType.get() === 'codebase' || false;
 
 			try {
 				if (codebaseSearch) {

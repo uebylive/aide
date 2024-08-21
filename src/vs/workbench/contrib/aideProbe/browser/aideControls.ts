@@ -269,16 +269,10 @@ export class AideControls extends Themable {
 		const editorValue = this._input.getValue();
 		const activeEditor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(activeEditor)) { return; }
-		const textModel = activeEditor.getModel();
-
-		const selection = activeEditor.getSelection();
-
-		if (!selection) { return; }
-
 		if (!currentSession) {
 			this.model = this.aideProbeService.startSession();
 
-			this.aideProbeService.initiateProbe(this.model, editorValue, true, false, Array.from(this.contextPicker.context.entries), textModel);
+			this.aideProbeService.initiateProbe(this.model, editorValue, Array.from(this.contextPicker.context.entries));
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
