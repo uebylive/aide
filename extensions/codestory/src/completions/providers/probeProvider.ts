@@ -152,10 +152,10 @@ export class AideProbeProvider implements vscode.Disposable {
 		console.log(request.requestId);
 
 		//if there is a selection present in the references: this is what it looks like:
-		const isAnchorEditing = isAnchorBasedEditing(request.references);
+		const isAnchorEditing = isAnchorBasedEditing(request.mode);
 
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
-		if (request.editMode) {
+		if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
 			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.codebaseSearch, isAnchorEditing);
 		} else {
 			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
@@ -213,14 +213,9 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 }
 
-function isAnchorBasedEditing(references: readonly vscode.ChatPromptReference[]): boolean {
-	if (references.length === 1) {
-		const firstReference = references[0];
-		if (firstReference.id === 'selection') {
-			return true;
-		} else {
-			return false;
-		}
+function isAnchorBasedEditing(mode: vscode.AideProbeMode): boolean {
+	if (mode === 'ANCHORED') {
+		return true;
 	} else {
 		return false;
 	}
