@@ -5,6 +5,7 @@
 
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
+import { Selection } from 'vs/editor/common/core/selection';
 import { Range } from 'vs/editor/common/core/range';
 import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
@@ -111,8 +112,8 @@ export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
 	readonly variableData: IChatRequestVariableData;
-	readonly editMode: boolean;
 	readonly codebaseSearch: boolean;
+	readonly mode: IAideProbeMode;
 }
 
 export interface IAideProbeStartEditEvent {
@@ -141,6 +142,20 @@ export type IAideProbeResponseEvent =
 	| IAideProbeInitialSymbols;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
+
+
+export interface AnchorEditingSelection {
+	uri: URI;
+	selection: Selection;
+}
+
+export const enum AideProbeMode {
+	EXPLORE = 'EXPLORE',
+	AGENTIC = 'AGENTIC',
+	ANCHORED = 'ANCHORED'
+}
+
+export type IAideProbeMode = keyof typeof AideProbeMode;
 
 export const enum AideProbeStatus {
 	INACTIVE = 'INACTIVE',

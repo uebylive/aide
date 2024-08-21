@@ -301,7 +301,9 @@ export class ContextPicker extends Disposable {
 		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
 		const activeEditor = this.editorService.activeTextEditorControl;
 		const isActive = isLSPActive && isCodeEditor(activeEditor);
-		this.button.enabled = isActive;
+		if (this.contextType.get() !== 'codebase') {
+			this.button.enabled = isActive;
+		}
 		this.contextTypeDropdownButton.enabled = isActive;
 	}
 

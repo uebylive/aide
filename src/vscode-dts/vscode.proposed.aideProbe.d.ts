@@ -4,6 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+
+	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED';
+
 	export interface FollowAlongAction {
 		type: 'followAlong';
 		status: boolean;
@@ -28,7 +31,7 @@ declare module 'vscode' {
 		requestId: string;
 		query: string;
 		readonly references: readonly ChatPromptReference[];
-		editMode: boolean;
+		mode: AideProbeMode;
 		codebaseSearch: boolean;
 	}
 

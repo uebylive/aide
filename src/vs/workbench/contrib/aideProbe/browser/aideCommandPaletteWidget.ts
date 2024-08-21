@@ -44,9 +44,9 @@ import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContex
 import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { IAideProbeStatus, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeStatus, AideProbeStatus, IAideProbeMode, AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -70,7 +70,7 @@ export interface IAideCommandPaletteWidget {
 
 	show(): void;
 	hide(): void;
-	setMode(mode: ProbeMode): void;
+	setMode(mode: IAideProbeMode): void;
 	acceptInput(): string | Promise<IAideProbeResponseModel> | undefined;
 	cancelRequest(): void;
 	clear(): void;
@@ -99,7 +99,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _inputEditorContainer: HTMLElement;
 	private _inputEditor: CodeEditorWidget;
 
-	private mode: IContextKey<ProbeMode>;
+	private mode: IContextKey<IAideProbeMode>;
 	private contextType: IContextKey<string>;
 	private contextElement: HTMLElement;
 
@@ -262,7 +262,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		this._register(modeToggle.onDidClick(() => {
-			this.mode.set(this.mode.get() === 'explore' ? 'edit' : 'explore');
+			this.mode.set(this.mode.get() === AideProbeMode.EXPLORE ? AideProbeMode.AGENTIC : AideProbeMode.EXPLORE);
 			this.updateModeFlag();
 		}));
 
@@ -407,7 +407,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this.panel.setFocus(index, browserEvent);
 	}
 
-	setMode(mode: ProbeMode) {
+	setMode(mode: IAideProbeMode) {
 		this.mode.set(mode);
 		this.updateInputEditorPlaceholder();
 		this.updateModeFlag();
@@ -423,7 +423,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			if (this.requestStatus.get() !== 'INACTIVE') {
 				placeholder = 'Filter through the results';
 			} else {
-				if (this.mode.get() === 'edit') {
+				if (this.mode.get() === AideProbeMode.AGENTIC) {
 					placeholder = 'Ask to edit your codebase';
 				} else {
 					placeholder = 'Ask to explore your codebase';
@@ -538,8 +538,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 
 	private updateModeFlag(): void {
-		this.modeToggle.label = this.mode.get() === 'explore' ? localize('exploreMode', "Explore mode") : localize('editMode', "Edit mode");
-		this.modeToggle.element.classList.toggle('edit-mode', this.mode.get() === 'edit');
+		this.modeToggle.label = this.mode.get() === AideProbeMode.EXPLORE ? localize('exploreMode', "Explore mode") : localize('editMode', "Edit mode");
+		this.modeToggle.element.classList.toggle('edit-mode', this.mode.get() === AideProbeMode.AGENTIC);
 		this.updateInputEditorPlaceholder();
 		this.layoutInputs();
 	}
@@ -597,7 +597,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.contextType.get() === 'codebase' || false, [...this.contextPicker.context.entries], null);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === AideProbeMode.AGENTIC, this.contextType.get() === 'codebase' || false, [...this.contextPicker.context.entries], null);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 

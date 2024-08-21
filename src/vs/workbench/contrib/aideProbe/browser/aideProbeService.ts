@@ -14,8 +14,10 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 // import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
-import { AideProbeStatus, IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 
 export type ProbeMode = 'edit' | 'explore';
 
@@ -27,6 +29,7 @@ export interface IAideProbeResolver {
 
 export const IAideProbeService = createDecorator<IAideProbeService>('IAideProbeService');
 
+
 export interface IAideProbeService {
 	_serviceBrand: undefined;
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
@@ -36,6 +39,12 @@ export interface IAideProbeService {
 
 	initiateProbe(model: IAideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[], textModel: ITextModel | null): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
+
+
+	setCurrentSelection(selection: AnchorEditingSelection | undefined): void;
+	currentSelection: AnchorEditingSelection | undefined;
+	anchorEditingSelection: AnchorEditingSelection | undefined;
+
 	cancelProbe(): void;
 	undoEdit(): void;
 	acceptCodeEdits(): void;
@@ -53,6 +62,8 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
+	private mode: IContextKey<IAideProbeMode>;
+
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
@@ -61,16 +72,30 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	private _activeRequest: CancellationTokenSource | undefined;
 	private probeProvider: IAideProbeResolver | undefined;
+
 	private _model: AideProbeModel | undefined;
 	private readonly _modelDisposables = this._register(new DisposableStore());
 	private _initiateProbeResponseState: IInitiateProbeResponseState | undefined;
+
+	get currentSelection() {
+		return this._currentSelection;
+	}
+	private _currentSelection: AnchorEditingSelection | undefined;
+
+	get anchorEditingSelection() {
+		return this._anchorEditingSelection;
+	}
+	private _anchorEditingSelection: AnchorEditingSelection | undefined;
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
 		@IEditorService private readonly editorService: IEditorService,
+		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
 		super();
+
+		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 	}
 
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): IDisposable {
@@ -102,7 +127,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[] = [], textModel: ITextModel): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, edit: boolean, codebaseSearch: boolean, variables: IVariableEntry[] = []): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -145,6 +170,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				probeModel.cancelRequest();
 			});
 
+			const mode = this.mode.get() || AideProbeMode.AGENTIC;
+
 			try {
 				if (codebaseSearch) {
 					const openEditors = this.editorService.editors;
@@ -170,7 +197,28 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					}
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, edit, codebaseSearch);
+				if (mode === AideProbeMode.ANCHORED && this._currentSelection) {
+					this._anchorEditingSelection = this._currentSelection;
+					const { uri, selection } = this._currentSelection;
+					variables.push({
+						id: 'selection',
+						// follow the same schema as the chat variables
+						name: 'file',
+						value: JSON.stringify({
+							uri,
+							range: {
+								// selection is 1 indexed and not 0 indexed and also depends
+								// on the orientation
+								startLineNumber: Math.min(selection.startLineNumber - 1, selection.endLineNumber - 1),
+								startColumn: selection.startColumn - 1,
+								endLineNumber: Math.max(selection.endLineNumber - 1, selection.startLineNumber - 1),
+								endColumn: selection.endColumn - 1,
+							},
+						})
+					});
+				}
+
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, codebaseSearch, mode);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {
@@ -223,6 +271,10 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+	}
+
+	setCurrentSelection(selection: AnchorEditingSelection): void {
+		this._currentSelection = selection;
 	}
 
 

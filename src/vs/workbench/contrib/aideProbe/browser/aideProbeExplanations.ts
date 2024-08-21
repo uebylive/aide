@@ -18,6 +18,7 @@ import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aide
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -70,7 +71,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 
 		let codeEditor: ICodeEditor | null;
 		const activeSession = this.aideProbeService.getSession();
-		const editMode = activeSession?.request?.editMode;
+		const editMode = activeSession?.request?.mode !== AideProbeMode.EXPLORE;
 
 		let breakdownPosition: Position = new Position(1, 1);
 		if (editMode) {
@@ -95,7 +96,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 			}
 
 			if (codeEditor && symbol && breakdownPosition) {
-				if (activeSession?.request?.editMode) {
+				if (activeSession?.request?.mode !== AideProbeMode.EXPLORE) {
 					return;
 				}
 

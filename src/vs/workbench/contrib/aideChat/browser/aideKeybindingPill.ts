@@ -13,7 +13,8 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 
 export const addContextCommandId = 'workbench.action.aideChat.addContext';
-export const inlineChatCommandId = 'inlineChat.start';
+export const anchoredEditingCommandId = 'workbench.action.aideProbe.enterAnchoredEditing';
+// export const agenticEditingCommandId = 'workbench.action.aideProbe.enterAgenticEditing';
 
 export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	public static readonly ID = 'editor.contrib.keybindingPillWidget';
@@ -23,10 +24,12 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 
 	private isVisible: boolean = false;
 	private addContextButton: Button | undefined;
-	private inlineChatButton: Button | undefined;
+	private anchoredEditingButton: Button | undefined;
+	//private agenticEditingButton: Button | undefined;
 
 	private addContextLabel?: string;
-	private inlineChatLabel?: string;
+	private anchoredEditingLabel?: string;
+	//private agenticEditingLabel?: string;
 
 	constructor(
 		private readonly _editor: ICodeEditor,
@@ -44,21 +47,35 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 	}
 
 	private renderButtons() {
-		this.inlineChatButton = new Button(this._domNode, defaultButtonStyles);
+		this.anchoredEditingButton = new Button(this._domNode, defaultButtonStyles);
+		//this.agenticEditingButton = new Button(this._domNode, defaultButtonStyles);
 		this.addContextButton = new Button(this._domNode, defaultButtonStyles);
-		this._toDispose.add(this.inlineChatButton);
-		this._toDispose.add(this.inlineChatButton.onDidClick(() => {
-			this._editor.trigger('keyboard', inlineChatCommandId, null);
+
+		this._toDispose.add(this.anchoredEditingButton);
+		this._toDispose.add(this.anchoredEditingButton.onDidClick(() => {
+			this._editor.trigger('keyboard', anchoredEditingCommandId, null);
 			this.hide();
 		}));
+
+		//this._toDispose.add(this.agenticEditingButton);
+		//this._toDispose.add(this.agenticEditingButton.onDidClick(() => {
+		//	this._editor.trigger('keyboard', agenticEditingCommandId, null);
+		//	this.hide();
+		//}));
+
+
 		this._toDispose.add(this.addContextButton);
 		this._toDispose.add(this.addContextButton.onDidClick(() => {
 			this._editor.trigger('keyboard', addContextCommandId, null);
 			this.hide();
 		}));
 
-		this.inlineChatButton.enabled = true;
-		this.inlineChatButton.element.classList.add('keybinding-pill');
+		this.anchoredEditingButton.enabled = true;
+		this.anchoredEditingButton.element.classList.add('keybinding-pill');
+
+		// this.agenticEditingButton.enabled = true;
+		// this.agenticEditingButton.element.classList.add('keybinding-pill');
+
 		this.addContextButton.enabled = true;
 		this.addContextButton.element.classList.add('keybinding-pill');
 	}
@@ -69,10 +86,15 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 			this.addContextButton.label = this.addContextLabel;
 		}
 
-		this.inlineChatLabel = `${keybindingService.lookupKeybinding(inlineChatCommandId)?.getLabel() ?? ''} Anchored editing`;
-		if (this.inlineChatButton) {
-			this.inlineChatButton.label = this.inlineChatLabel;
+		this.anchoredEditingLabel = `${keybindingService.lookupKeybinding(anchoredEditingCommandId)?.getLabel() ?? ''} Anchored editing`;
+		if (this.anchoredEditingButton) {
+			this.anchoredEditingButton.label = this.anchoredEditingLabel;
 		}
+
+		//this.agenticEditingLabel = `${keybindingService.lookupKeybinding(agenticEditingCommandId)?.getLabel() ?? ''} Agentic editing`;
+		//if (this.agenticEditingButton) {
+		//	this.agenticEditingButton.label = this.agenticEditingLabel;
+		//}
 	}
 
 	override dispose(): void {
@@ -80,6 +102,8 @@ export class KeybindingPillWidget extends Disposable implements IContentWidget {
 		this._toDispose.dispose();
 
 		this.addContextButton = undefined;
+		this.anchoredEditingButton = undefined;
+		//this.agenticEditingButton = undefined;
 
 		this._editor.removeContentWidget(this);
 	}

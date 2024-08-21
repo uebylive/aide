@@ -7,16 +7,14 @@ import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { ILocalizedString, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys';
+import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-// import { IAideCommandPaletteService } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteService';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_HAS_VALID_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -27,61 +25,9 @@ export interface IProbeActionContext {
 
 const isProbingInProgress = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.IN_PROGRESS);
 const isProbingInReview = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.IN_PROGRESS);
-//const isInactive = CONTEXT_PROBE_REQUEST_STATUS.isEqualTo('INACTIVE');
 const isIdle = CONTEXT_PROBE_REQUEST_STATUS.notEqualsTo(AideProbeStatus.IN_PROGRESS);
 const isProbeActive = ContextKeyExpr.or(isProbingInProgress, isProbingInReview);
 
-class OpenCommandPaletteAction extends Action2 {
-	static readonly ID = 'workbench.action.aideCommandPalette.open';
-	constructor() {
-		super({
-			id: OpenCommandPaletteAction.ID,
-			title: localize2('openCommandPalette', "Open command palette"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			keybinding: {
-				weight: KeybindingWeight.ExternalExtension,
-				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-				when: CONTEXT_PALETTE_IS_VISIBLE.negate()
-			}
-		});
-	}
-
-	override async run(accessor: ServicesAccessor): Promise<void> {
-		//const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		//commandPaletteService.showPalette();
-	}
-}
-
-class CloseCommandPaletteAction extends Action2 {
-	static readonly ID = 'workbench.action.aideCommandPalette.close';
-	constructor() {
-		super({
-			id: CloseCommandPaletteAction.ID,
-			title: localize2('closeCommandPalette', "Close command palette"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			precondition: CONTEXT_PALETTE_IS_VISIBLE,
-			keybinding: {
-				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyCode.Escape,
-				when: CONTEXT_PALETTE_IS_VISIBLE
-			},
-			menu: [
-				{
-					id: MenuId.AideCommandPaletteContext,
-					group: 'navigation',
-					when: CONTEXT_PALETTE_IS_VISIBLE
-				}
-			]
-		});
-	}
-
-	override async run(accessor: ServicesAccessor): Promise<void> {
-		//const commandPaletteService = accessor.get(IAideCommandPaletteService);
-		//commandPaletteService.hidePalette();
-	}
-}
 
 class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';
@@ -112,6 +58,56 @@ class SubmitAction extends Action2 {
 	async run(accessor: ServicesAccessor) {
 		const aideControls = accessor.get(IAideControlsService);
 		aideControls.acceptInput();
+	}
+}
+
+class EnterAnchoredEditing extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.enterAnchoredEditing';
+
+	constructor() {
+		super({
+			id: EnterAnchoredEditing.ID,
+			title: 'Enter anchored editing',
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
+				weight: KeybindingWeight.EditorContrib,
+				when: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const contextKeyService = accessor.get(IContextKeyService);
+		CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.ANCHORED);
+	}
+}
+
+class EnterAgenticEditing extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.enterAgenticEditing';
+
+	constructor() {
+		super({
+			id: EnterAgenticEditing.ID,
+			title: 'Enter agentic editing',
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: isIdle,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
+				weight: KeybindingWeight.EditorContrib,
+				when: isIdle,
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const contextKeyService = accessor.get(IContextKeyService);
+		CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.AGENTIC);
 	}
 }
 
@@ -287,12 +283,9 @@ class RejectAction extends Action2 {
 }
 
 export function registerProbeActions() {
-
-	if (IsDevelopmentContext) {
-		registerAction2(OpenCommandPaletteAction);
-		registerAction2(CloseCommandPaletteAction);
-	}
 	registerAction2(SubmitAction);
+	registerAction2(EnterAgenticEditing);
+	registerAction2(EnterAnchoredEditing);
 
 	registerAction2(NavigateUpAction);
 	registerAction2(NavigateDownAction);
@@ -300,3 +293,56 @@ export function registerProbeActions() {
 	registerAction2(AcceptAction);
 	registerAction2(RejectAction);
 }
+
+
+// class OpenCommandPaletteAction extends Action2 {
+// static readonly ID = 'workbench.action.aideCommandPalette.open';
+// constructor() {
+// super({
+// id: OpenCommandPaletteAction.ID,
+// title: localize2('openCommandPalette', "Open command palette"),
+// f1: false,
+// category: PROBE_CATEGORY,
+// keybinding: {
+// weight: KeybindingWeight.ExternalExtension,
+// primary: KeyMod.CtrlCmd | KeyCode.KeyK,
+// when: CONTEXT_PALETTE_IS_VISIBLE.negate()
+// }
+// });
+// }
+//
+// override async run(accessor: ServicesAccessor): Promise<void> {
+// const commandPaletteService = accessor.get(IAideCommandPaletteService);
+// commandPaletteService.showPalette();
+// }
+// }
+//
+// class CloseCommandPaletteAction extends Action2 {
+// static readonly ID = 'workbench.action.aideCommandPalette.close';
+// constructor() {
+// super({
+// id: CloseCommandPaletteAction.ID,
+// title: localize2('closeCommandPalette', "Close command palette"),
+// f1: false,
+// category: PROBE_CATEGORY,
+// precondition: CONTEXT_PALETTE_IS_VISIBLE,
+// keybinding: {
+// weight: KeybindingWeight.WorkbenchContrib,
+// primary: KeyCode.Escape,
+// when: CONTEXT_PALETTE_IS_VISIBLE
+// },
+// menu: [
+// {
+// id: MenuId.AideCommandPaletteContext,
+// group: 'navigation',
+// when: CONTEXT_PALETTE_IS_VISIBLE
+// }
+// ]
+// });
+// }
+//
+// override async run(accessor: ServicesAccessor): Promise<void> {
+// const commandPaletteService = accessor.get(IAideCommandPaletteService);
+// commandPaletteService.hidePalette();
+// }
+// }

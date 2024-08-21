@@ -21,7 +21,7 @@ import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/c
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -81,8 +81,8 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 		readonly sessionId: string,
 		readonly message: string,
 		readonly variableData: IChatRequestVariableData,
-		readonly editMode: boolean,
 		readonly codebaseSearch: boolean,
+		readonly mode: IAideProbeMode
 	) {
 		super();
 	}
