@@ -39,7 +39,7 @@ class SubmitAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_INPUT_HAS_TEXT, isIdle),
+			precondition: CONTEXT_PROBE_INPUT_HAS_TEXT,
 			keybinding: {
 				primary: KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib,
@@ -74,7 +74,7 @@ class EnterAnchoredEditing extends Action2 {
 			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-				weight: KeybindingWeight.EditorContrib,
+				weight: KeybindingWeight.WorkbenchContrib,
 				when: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isIdle),
 			},
 		});
@@ -83,6 +83,9 @@ class EnterAnchoredEditing extends Action2 {
 	async run(accessor: ServicesAccessor) {
 		const contextKeyService = accessor.get(IContextKeyService);
 		CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.ANCHORED);
+
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.focusInput();
 	}
 }
 
@@ -99,7 +102,7 @@ class EnterAgenticEditing extends Action2 {
 			precondition: isIdle,
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
-				weight: KeybindingWeight.EditorContrib,
+				weight: KeybindingWeight.WorkbenchContrib,
 				when: isIdle,
 			},
 		});
@@ -108,6 +111,9 @@ class EnterAgenticEditing extends Action2 {
 	async run(accessor: ServicesAccessor) {
 		const contextKeyService = accessor.get(IContextKeyService);
 		CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.AGENTIC);
+
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.focusInput();
 	}
 }
 

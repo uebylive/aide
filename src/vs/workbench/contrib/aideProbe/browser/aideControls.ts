@@ -51,6 +51,7 @@ export interface IAideControlsService {
 	_serviceBrand: undefined;
 	registerControls(controls: AideControls): void;
 	acceptInput(): void;
+	focusInput(): void;
 }
 
 export class AideControlsService implements IAideControlsService {
@@ -68,6 +69,12 @@ export class AideControlsService implements IAideControlsService {
 	acceptInput(): void {
 		if (this.controls) {
 			this.controls.acceptInput();
+		}
+	}
+
+	focusInput(): void {
+		if (this.controls) {
+			this.controls.focusInput();
 		}
 	}
 }
@@ -263,6 +270,10 @@ export class AideControls extends Themable {
 		return this._acceptInput();
 	}
 
+	focusInput() {
+		this._input.focus();
+	}
+
 	private _acceptInput() {
 
 		const currentSession = this.aideProbeService.getSession();
@@ -271,7 +282,6 @@ export class AideControls extends Themable {
 		if (!isCodeEditor(activeEditor)) { return; }
 		if (!currentSession) {
 			this.model = this.aideProbeService.startSession();
-
 			this.aideProbeService.initiateProbe(this.model, editorValue, Array.from(this.contextPicker.context.entries));
 		} else {
 			this.aideProbeService.addIteration(editorValue);

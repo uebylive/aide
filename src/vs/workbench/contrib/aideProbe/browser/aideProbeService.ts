@@ -49,6 +49,7 @@ export interface IAideProbeService {
 
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
+	readonly onDidStartProbing: Event<void>;
 }
 
 export interface IInitiateProbeResponseState {
@@ -61,6 +62,9 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	private mode: IContextKey<IAideProbeMode>;
 	private contextType: IContextKey<string>;
+
+	protected readonly _onDidStartProbing = this._store.add(new Emitter<void>());
+	readonly onDidStartProbing: Event<void> = this._onDidStartProbing.event;
 
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
