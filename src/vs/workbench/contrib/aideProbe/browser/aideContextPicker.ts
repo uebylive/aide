@@ -29,6 +29,7 @@ import 'vs/css!./media/aideContextPicker';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { CONTEXT_PROBE_CONTEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 
 const $ = dom.$;
 
@@ -87,6 +88,7 @@ export class ContextPicker extends Disposable {
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@ICommandService private readonly commandService: ICommandService,
 		@IAideLSPService private readonly aideLSPService: IAideLSPService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 	) {
 		super();
 
@@ -242,6 +244,8 @@ export class ContextPicker extends Disposable {
 		}));
 
 		this._register(this.context.onDidChange(() => {
+			const files = Array.from(this.context.entries).filter(entry => entry.isFile);
+			this.aideProbeService.onContextChange(files.map(f => f.id));
 			this.render();
 		}));
 

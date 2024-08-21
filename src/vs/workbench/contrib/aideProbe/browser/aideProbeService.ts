@@ -36,6 +36,7 @@ export interface IAideProbeService {
 
 	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[]): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
+	onContextChange(newContext: string[]): Promise<void>;
 
 	anchorEditingSelection: AnchorEditingSelection | undefined;
 
@@ -271,6 +272,15 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+	}
+
+	async onContextChange(newContext: string[]) {
+		const resolver = this.probeProvider;
+		if (!resolver || !this._model) {
+			return;
+			// return new Error('Added iteration without a probe provider or active session.');
+		}
+		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'contextChange', newContext } });
 	}
 
 	cancelProbe() {

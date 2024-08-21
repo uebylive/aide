@@ -32,9 +32,14 @@ export interface INewIterationAction {
 	newPrompt: string;
 }
 
+export interface IContextChangeAction {
+	type: 'contextChange';
+	newContext: string[];
+}
+
 export interface IAideProbeUserAction {
 	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction;
+	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IContextChangeAction;
 }
 
 export interface IReferenceByName {

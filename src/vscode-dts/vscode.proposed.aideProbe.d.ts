@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+
 declare module 'vscode' {
 
 	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED';
@@ -22,9 +23,25 @@ declare module 'vscode' {
 		newPrompt: string;
 	}
 
+	interface ChatContentVariableReference {
+		variableName: string;
+		value?: Uri | Location;
+	}
+
+	interface AideChatContentReference {
+		reference: Uri | Location | ChatContentVariableReference;
+		iconPath?: ThemeIcon | { light: Uri; dark?: Uri };
+		kind: 'reference';
+	}
+
+	export interface ContextChangedAction {
+		type: 'contextChange';
+		newContext: string[];
+	}
+
 	export interface AideProbeUserAction {
 		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction;
 	}
 
 	export interface ProbeRequest {
