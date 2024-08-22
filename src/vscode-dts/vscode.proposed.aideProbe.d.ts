@@ -6,7 +6,7 @@
 
 declare module 'vscode' {
 
-	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED';
+	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED' | 'FOLLOW_UP';
 
 	export interface FollowAlongAction {
 		type: 'followAlong';

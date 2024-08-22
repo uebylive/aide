@@ -7,16 +7,14 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-// import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
 import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { ITextModel } from 'vs/editor/common/model';
 
 
 export interface IAideProbeResolver {
@@ -34,17 +32,14 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[]): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[], textModel: ITextModel | null): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
 	makeFollowupRequest(): Promise<void>;
 	onContextChange(newContext: string[]): Promise<void>;
 
 	anchorEditingSelection: AnchorEditingSelection | undefined;
 
-	cancelProbe(): void;
-	undoEdit(): void;
-	acceptCodeEdits(): void;
-	rejectCodeEdits(): void;
+	clearSession(): void;
 
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
@@ -128,7 +123,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = []): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = [], textModel: ITextModel | null): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -145,25 +140,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				if (token.isCancellationRequested) {
 					return;
 				}
-
 				await probeModel.acceptResponseProgress(progress);
-
-
-				if (progress.kind === 'textEdit') {
-					if (progress.edits.complete) {
-						const workSpaceEdit = progress.edits.edits.find(edit => ResourceTextEdit.is(edit));
-						if (workSpaceEdit) {
-							const openEditor = this.editorService.activeTextEditorControl;
-							if (isCodeEditor(openEditor)) {
-								const model = openEditor?.getModel();
-								if (model && model.uri.toString() === workSpaceEdit.resource.toString()) {
-									openEditor.pushUndoStop();
-								}
-							}
-						}
-					}
-				}
-
 				completeResponseCreated();
 			};
 
@@ -234,14 +211,14 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				}
 
 				// Mock data start
-				// if (textModel) {
-				// 	const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
-				// 	if (token.isCancellationRequested) {
-				// 		return;
-				// 	} else if (result) {
-				// 		probeModel.completeResponse();
-				// 	}
-				// }
+				//if (textModel) {
+				//	const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
+				//	if (token.isCancellationRequested) {
+				//		return;
+				//	} else if (result) {
+				//		probeModel.completeResponse();
+				//	}
+				//}
 				// Mock data end
 
 			} catch (error) {
@@ -273,6 +250,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
 		this._model.status = AideProbeStatus.IN_PROGRESS;
+		//mockOnUserAction({ type: 'newIteration', newPrompt });
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
 	}
 
@@ -280,10 +258,11 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		const resolver = this.probeProvider;
 		if (!resolver || !this._model) {
 			return;
-			// return new Error('Added iteration without a probe provider or active session.');
+		} else {
+			this._model.status = AideProbeStatus.IN_PROGRESS;
+			return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
 		}
-		this._model.status = AideProbeStatus.IN_PROGRESS;
-		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
+
 
 	}
 
@@ -303,38 +282,28 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 	}
 
-	acceptCodeEdits() {
-		this._onReview.fire('accept');
-		this.clearSession();
-	}
+	//acceptCodeEdits() {
+	//	this._onReview.fire('accept');
+	//	this.clearSession();
+	//}
+	//
+	//rejectCodeEdits() {
+	//	//const edits = this._model?.response?.codeEdits;
+	//	//if (edits) {
+	//	//	for (const edit of edits.values()) {
+	//	//	/edit?.hunkData.discardAll();
+	//	//	}
+	//	//}
+	//
+	//	this._onReview.fire('reject');
+	//	this.clearSession();
+	//}
 
-	rejectCodeEdits() {
-		//const edits = this._model?.response?.codeEdits;
-		//if (edits) {
-		//	for (const edit of edits.values()) {
-		//	/edit?.hunkData.discardAll();
-		//	}
-		//}
-
-		this._onReview.fire('reject');
-		this.clearSession();
-	}
-
-	async undoEdit() {
-		const resource = await this._model?.response?.undoEdit();
-
-		const openEditor = this.editorService.activeTextEditorControl;
-		if (isCodeEditor(openEditor)) {
-			const model = openEditor?.getModel();
-			if (model && model.uri.toString() === resource?.toString()) {
-				model.undo();
-			}
+	clearSession() {
+		if (this._model) {
+			this._model.dispose();
+			this._model = undefined;
 		}
-	}
-
-	private clearSession() {
-		this._model?.dispose();
-		this._model = undefined;
 		this.cancelProbe();
 	}
 }

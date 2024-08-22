@@ -596,7 +596,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, []);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, [], null);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 
@@ -659,10 +659,10 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	}
 
 	cancelRequest(): void {
-		this.aideProbeService.cancelProbe();
+		//this.aideProbeService.cancelProbe();
 		const codeEdits = this._viewModel?.model.response?.codeEdits;
 		if (!codeEdits || codeEdits.size === 0) {
-			this.aideProbeService.rejectCodeEdits();
+			//this.aideProbeService.rejectCodeEdits();
 			this.clear();
 
 			this.panel.hide();
@@ -673,7 +673,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 	clear(): void {
 		this.explanationService.clear();
-		this.aideProbeService.cancelProbe();
+		//this.aideProbeService.cancelProbe();
 		this.updateInputEditorPlaceholder();
 
 		this._viewModel?.dispose();

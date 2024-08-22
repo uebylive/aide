@@ -81,7 +81,7 @@ export interface IAideProbeInitialSymbols {
 
 export interface IAideProbeTextEdit {
 	kind: 'textEdit';
-	edits: WorkspaceEdit & { iterationId: string; complete: boolean };
+	edits: WorkspaceEdit;
 }
 
 export interface IAideProbeOpenFile {
@@ -167,7 +167,8 @@ export interface AnchorEditingSelection {
 export const enum AideProbeMode {
 	EXPLORE = 'EXPLORE',
 	AGENTIC = 'AGENTIC',
-	ANCHORED = 'ANCHORED'
+	ANCHORED = 'ANCHORED',
+	FOLLOW_UP = 'FOLLOW_UP'
 }
 
 export type IAideProbeMode = keyof typeof AideProbeMode;

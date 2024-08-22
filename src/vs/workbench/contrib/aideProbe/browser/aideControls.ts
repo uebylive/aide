@@ -38,6 +38,7 @@ import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 
 const MAX_WIDTH = 800;
@@ -169,7 +170,7 @@ export class AideControls extends Themable {
 			this.checkActivation();
 		}));
 
-		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
+		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService).set(AideProbeStatus.INACTIVE);
 	}
 
 	private checkActivation() {
@@ -265,11 +266,10 @@ export class AideControls extends Themable {
 				variables = Array.from(this.contextPicker.context.entries);
 			}
 			this.model = this.aideProbeService.startSession();
-			this.aideProbeService.initiateProbe(this.model, editorValue, variables);
+			this.aideProbeService.initiateProbe(this.model, editorValue, variables, activeEditor.getModel());
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
-
 		showProbeView(this.viewsService);
 	}
 
@@ -342,7 +342,7 @@ export class AideControls extends Themable {
 		this._register(toolbar.onDidChangeMenuItems(() => {
 			const width = toolbar.getItemsWidth();
 			const numberOfItems = toolbar.getItemsLength();
-			toolbar.getElement().style.width = `${width + Math.min(0, numberOfItems - 1) * 8}px`;
+			toolbar.getElement().style.width = `${width + Math.max(0, numberOfItems - 1) * 8}px`;
 		}));
 	}
 

@@ -44,7 +44,7 @@ class SubmitAction extends Action2 {
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(isProbeIdle, CONTEXT_PROBE_INPUT_HAS_TEXT),
 			keybinding: {
-				primary: KeyMod.Shift | KeyCode.Enter,
+				primary: KeyMod.CtrlCmd | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
 			},
@@ -76,7 +76,7 @@ class IterateAction extends Action2 {
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(isProbeIterationFinished, CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED), CONTEXT_PROBE_INPUT_HAS_TEXT),
 			keybinding: {
-				primary: KeyMod.Shift | KeyCode.Enter,
+				primary: KeyMod.CtrlCmd | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
 			},
@@ -96,15 +96,9 @@ class IterateAction extends Action2 {
 	}
 }
 
-const cancelPrecondition = ContextKeyExpr.or(
-	ContextKeyExpr.and(isProbeInProgress, CONTEXT_PROBE_MODE.notEqualsTo(AideProbeMode.ANCHORED)),
-	ContextKeyExpr.and(isProbeInactive.negate(), isProbeIterationFinished.negate(), CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-);
 
 class CancelAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.cancel';
-
-
 
 	constructor() {
 		super({
@@ -113,9 +107,9 @@ class CancelAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.x,
-			precondition: cancelPrecondition,
+			precondition: isProbeInProgress,
 			keybinding: {
-				primary: KeyMod.Shift | KeyCode.Escape,
+				primary: KeyMod.CtrlCmd | KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS
 			},
@@ -123,7 +117,7 @@ class CancelAction extends Action2 {
 				{
 					id: MenuId.AideControlsToolbar,
 					group: 'navigation',
-					when: cancelPrecondition,
+					when: isProbeInProgress,
 				}
 			]
 		});
@@ -131,7 +125,7 @@ class CancelAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const aideProbeService = accessor.get(IAideProbeService);
-		aideProbeService.cancelProbe();
+		aideProbeService.clearSession();
 	}
 }
 
@@ -145,9 +139,55 @@ class RequestFollowUpAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(isProbeIterationFinished, CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+			precondition: ContextKeyExpr.or(
+				isProbeIdle,
+				ContextKeyExpr.and(isProbeIterationFinished, CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+			),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyS,
+				weight: KeybindingWeight.EditorContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
+			},
+			menu: [
+				{
+					id: MenuId.AideControlsToolbar,
+					group: 'navigation',
+					when: ContextKeyExpr.or(
+						ContextKeyExpr.and(isProbeIterationFinished, CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+						isProbeIdle
+					),
+				},
+			]
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const aideProbeService = accessor.get(IAideProbeService);
+		const currentSession = aideProbeService.getSession();
+		if (!currentSession) {
+			const contextKeyService = accessor.get(IContextKeyService);
+			CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.FOLLOW_UP);
+			const aideControls = accessor.get(IAideControlsService);
+			aideControls.acceptInput();
+		} else {
+			aideProbeService.makeFollowupRequest();
+		}
+	}
+}
+
+class StopIterationAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.stop';
+
+	constructor() {
+		super({
+			id: StopIterationAction.ID,
+			title: localize2('aideProbe.stop.label', "Close"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(isProbeIterationFinished, CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyCode.Escape,
 				weight: KeybindingWeight.EditorContrib,
 				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
 			},
@@ -163,7 +203,13 @@ class RequestFollowUpAction extends Action2 {
 
 	async run(accessor: ServicesAccessor) {
 		const aideProbeService = accessor.get(IAideProbeService);
-		aideProbeService.makeFollowupRequest();
+		aideProbeService.clearSession();
+
+		const editorService = accessor.get(IEditorService);
+		const editor = editorService.activeTextEditorControl;
+		if (isCodeEditor(editor)) {
+			editor.getContribution<IKeybindingPillContribution>(KeybindingPillContribution.ID)?.hideAnchorEditingDecoration();
+		}
 	}
 }
 
@@ -177,11 +223,11 @@ class EnterAnchoredEditing extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isProbeInactive),
+			precondition: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isProbeIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
 				weight: KeybindingWeight.ExternalExtension,
-				when: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isProbeInactive),
+				when: ContextKeyExpr.and(CONTEXT_PROBE_HAS_VALID_SELECTION, isProbeIdle),
 			},
 		});
 	}
@@ -235,28 +281,6 @@ class EnterAgenticEditing extends Action2 {
 	}
 }
 
-//class UndoAction extends Action2 {
-//	static readonly ID = 'workbench.action.aideControls.undo';
-//
-//	constructor() {
-//		super({
-//			id: UndoAction.ID,
-//			title: 'Undo',
-//			f1: false,
-//			category: PROBE_CATEGORY,
-//			keybinding: {
-//				when: CONTEXT_PROBE_INPUT_HAS_TEXT,
-//				primary: KeyMod.CtrlCmd | KeyCode.KeyZ,
-//				weight: KeybindingWeight.EditorContrib
-//			},
-//		});
-//	}
-//
-//	async run(accessor: ServicesAccessor) {
-//		const probeService = accessor.get(IAideProbeService);
-//		probeService.undoEdit();
-//	}
-//}
 
 export function registerProbeActions() {
 	registerAction2(EnterAgenticEditing);
@@ -264,5 +288,6 @@ export function registerProbeActions() {
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);
+	registerAction2(StopIterationAction);
 	registerAction2(RequestFollowUpAction);
 }

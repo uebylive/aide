@@ -7,14 +7,17 @@ import { Queue } from 'vs/base/common/async';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
+import { Schemas } from 'vs/base/common/network';
 import { equals } from 'vs/base/common/objects';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
-import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
 import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
+import { IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
+import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
+import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -22,6 +25,9 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
+
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -49,10 +55,11 @@ export interface IVariableEntry {
 
 export interface IAideProbeEdits {
 	readonly targetUri: string;
-	//readonly textModel0: ITextModel;
+	readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
-	//readonly hunkData: HunkData;
-	readonly edits: Array<IWorkspaceTextEdit & { iterationId: string }>;
+	readonly hunkData: HunkData;
+	readonly edits: IWorkspaceTextEdit[];
+	readonly undoEdits: IValidEditOperation[];
 	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
@@ -142,10 +149,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._initialSymbols;
 	}
 
-
-	private _iterations: string[] = [];
-	private _iterationsSet: Set<string> = new Set();
-	//private _currentIterationIndex = 0;
 	private progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
@@ -154,7 +157,10 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
-		@ITextModelService private readonly _textModelService: ITextModelService
+		@ITextModelService private readonly _textModelService: ITextModelService,
+		@ITextFileService private readonly _textFileService: ITextFileService,
+		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
+		@IBulkEditService private readonly _bulkEditService: IBulkEditService,
 	) {
 		super();
 	}
@@ -212,61 +218,27 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._onNewEvent.fire(initialSymbols);
 	}
 
+
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
 				await this.progressiveEditsQueue.queue(async () => {
-					await this.processWorkspaceEdit(workspaceEdit, codeEdit.edits.iterationId);
+					await this.processWorkspaceEdit(workspaceEdit);
 				});
 			}
 		}
 	}
 
-	async undoEdit() {
-		if (this._iterations.length === 0) {
-			return undefined;
-		}
-		const iterationId = this._iterations.pop();
-		if (iterationId) {
-			return await this.undoIteration(iterationId);
-		}
-		return undefined;
-	}
 
-
-	private async undoIteration(iterationId: string) {
-		let resource: URI | undefined;
-		for (const [mapKey, codeEdits] of this._codeEdits.entries()) {
-			for (const [index, edit] of codeEdits.edits.entries()) {
-				if (edit.iterationId === iterationId) {
-					resource = edit.resource;
-					codeEdits.edits.splice(index, 1);
-
-					if (codeEdits.edits.length === 0) {
-						this._codeEdits.delete(mapKey);
-					}
-				}
-			}
-		}
-		this._iterationsSet.delete(iterationId);
-		this._iterations = this._iterations.filter(id => id !== iterationId);
-		return resource;
-	}
-
-	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit, iterationId: string) {
+	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
-			if (!this._iterationsSet.has(iterationId)) {
-				this._iterations.push(iterationId);
-				this._iterationsSet.add(iterationId);
-			}
-
 			const resource = workspaceEdit.resource;
 			const mapKey = `${resource.toString()}`;
 
 			let codeEdits: IAideProbeEdits;
 			if (this._codeEdits.has(mapKey)) {
 				codeEdits = this._codeEdits.get(mapKey)!;
-				codeEdits.edits.push({ ...workspaceEdit, iterationId });
+				codeEdits.edits.push(workspaceEdit);
 			} else {
 				let textModel = this._modelService.getModel(resource);
 				if (!textModel) {
@@ -275,44 +247,55 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					ref.dispose();
 				}
 				const textModelN = textModel;
+				textModelN.pushStackElement();
 
-				//const id = generateUuid();
-				//const textModel0 = this._register(this._modelService.createModel(
-				//	createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
-				//	{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
-				//	resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
-				//));
+				const id = generateUuid();
+				const textModel0 = this._register(this._modelService.createModel(
+					createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
+					{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
+					resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
+				));
 
 				codeEdits = {
 					targetUri: resource.toString(),
-					//textModel0,
+					textModel0,
 					textModelN,
-					//hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
-					edits: [{ ...workspaceEdit, iterationId }]
+					edits: [workspaceEdit],
+					undoEdits: [],
+					hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
 				};
 				this._codeEdits.set(mapKey, codeEdits);
 			}
 
-			const editOperation: IIdentifiedSingleEditOperation = {
-				range: workspaceEdit.textEdit.range,
-				text: workspaceEdit.textEdit.text
-			};
 
-			//codeEdits.hunkData.ignoreTextModelNChanges = true;
-			codeEdits.textModelN.pushEditOperations(null, [editOperation], (edits) => {
-				this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits });
-				return null;
-			});
+			codeEdits.hunkData.ignoreTextModelNChanges = true;
+			const newUndoEdits = codeEdits.textModelN.applyEdits([workspaceEdit.textEdit], true);
+			codeEdits.undoEdits.push(...newUndoEdits);
 
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
 					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
 				}
 			}));
-			//await this._textFileService.save(codeEdits.textModelN.uri);
+			await this._textFileService.save(codeEdits.textModelN.uri);
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 		}
+	}
+
+	async applyIterationFinished() {
+		let bulkEdits: IWorkspaceTextEdit[] = [];
+		const resources = new Set<URI>();
+		for (const edit of this._codeEdits.values()) {
+			if (!resources.has(edit.textModelN.uri)) {
+				resources.add(edit.textModelN.uri);
+			}
+			edit.textModelN.applyEdits(edit.undoEdits);
+			bulkEdits = bulkEdits.concat(edit.edits);
+		}
+
+		await this._bulkEditService.apply({ edits: bulkEdits });
+		this._codeEdits.clear();
 	}
 }
 
@@ -353,8 +336,8 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	set status(newStatus: IAideProbeStatus) {
 		const didChange = this._status.get() !== newStatus;
-		this._status.set(newStatus);
 		if (didChange) {
+			this._status.set(newStatus);
 			this._onDidChangeStatus.fire(newStatus);
 		}
 	}
@@ -405,6 +388,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				this._response.longContextSearchFinished = progress.finished;
 				break;
 			case 'iterationFinished':
+				await this._response.applyIterationFinished();
 				this.status = AideProbeStatus.ITERATION_FINISHED;
 				break;
 			case 'textEdit':

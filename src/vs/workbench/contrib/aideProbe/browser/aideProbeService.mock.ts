@@ -36,9 +36,7 @@ async function generateEdits(textModel: ITextModel): Promise<IAideProbeTextEdit>
 	return {
 		kind: 'textEdit',
 		edits: {
-			iterationId: `it-${iteration}`,
 			edits: Array.from({ length: amount }, generateEdit),
-			complete: true,
 		}
 	};
 }

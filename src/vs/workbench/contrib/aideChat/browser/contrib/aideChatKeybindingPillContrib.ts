@@ -11,7 +11,7 @@ import { MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
-import { CONTEXT_PROBE_HAS_VALID_SELECTION } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_HAS_VALID_SELECTION, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { Selection } from 'vs/editor/common/core/selection';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
@@ -33,6 +33,7 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 
 export interface IKeybindingPillContribution extends IEditorContribution {
 	showAnchorEditingDecoration(uri: URI, selection: Selection): void;
+	hideAnchorEditingDecoration(): void;
 }
 
 export class KeybindingPillContribution implements IKeybindingPillContribution {
@@ -43,12 +44,24 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 	private decorationsCollection: IEditorDecorationsCollection;
 	private hasValidSelection: IContextKey<boolean>;
 
-	constructor(editor: ICodeEditor, @IAideProbeService private readonly aideProbeService: IAideProbeService, @IContextKeyService contextKeyService: IContextKeyService) {
+	constructor(
+		editor: ICodeEditor,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@IContextKeyService contextKeyService: IContextKeyService
+	) {
 		this.editor = editor;
 		this.decorationsCollection = this.editor.createDecorationsCollection();
 		this.pillWidget = this.editor.getContribution<KeybindingPillWidget>(KeybindingPillWidget.ID);
 
 		this.hasValidSelection = CONTEXT_PROBE_HAS_VALID_SELECTION.bindTo(contextKeyService);
+
+		contextKeyService.onDidChangeContext(e => {
+			if (e.affectsSome(new Set([CONTEXT_PROBE_MODE.key]))) {
+				if (CONTEXT_PROBE_MODE.bindTo(contextKeyService).get()) {
+					this.pillWidget?.hide();
+				}
+			}
+		});
 
 
 		this.editor.onDidChangeCursorSelection(event => {
