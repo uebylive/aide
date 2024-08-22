@@ -849,8 +849,8 @@ export class SideCarClient {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				body: JSON.stringify(body),
-			}
+			},
+			body: JSON.stringify(body),
 		});
 	}
 
