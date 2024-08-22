@@ -19,6 +19,7 @@ import { getUniqueId } from '../../utilities/uniqueId';
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string | undefined;
+	private _rootPath: string;
 	private _limiter = new Limiter(1);
 
 	private _requestHandler: http.Server | null = null;
@@ -59,8 +60,10 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	constructor(
 		sideCarClient: SideCarClient,
+		rootPath: string,
 	) {
 		this._sideCarClient = sideCarClient;
+		this._rootPath = rootPath;
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
@@ -98,6 +101,11 @@ export class AideProbeProvider implements vscode.Disposable {
 		if (userAction.action.type === 'contextChange') {
 			console.log('contextChange');
 			await this._sideCarClient.warmupCodeSculptingCache(userAction.sessionId, userAction.action.newContext);
+		}
+
+		if (userAction.action.type === 'followUpRequest') {
+			console.log('followUpRequest');
+			await this._sideCarClient.codeSculptingFollowups(userAction.sessionId, this._rootPath);
 		}
 
 

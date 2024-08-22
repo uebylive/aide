@@ -185,7 +185,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	const probeProvider = new AideProbeProvider(sidecarClient);
+	const probeProvider = new AideProbeProvider(sidecarClient, rootPath);
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands

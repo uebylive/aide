@@ -834,6 +834,26 @@ export class SideCarClient {
 		}
 	}
 
+	async codeSculptingFollowups(
+		request_id: string,
+		root_directory: string,
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/code_sculpting_heal';
+		const url = baseUrl.toString();
+		const body = {
+			request_id,
+			root_directory,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				body: JSON.stringify(body),
+			}
+		});
+	}
+
 	async warmupCodeSculptingCache(
 		request_id: string,
 		file_paths: string[],
