@@ -25,6 +25,10 @@
 	justify-content: end;
 }
 
+.aide-controls-toolbar .actions-container {
+	gap: 8px;
+}
+
 .aide-controls-submit-button {
 	padding: 8px;
 	display: flex;

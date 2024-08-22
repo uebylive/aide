@@ -12,7 +12,6 @@ import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
 import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
-import { registerAideControlsActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideControlsActions';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { registerContextActions } from 'vs/workbench/contrib/aideProbe/browser/aideContextActions';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
@@ -56,7 +55,6 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDes
 // Register actions
 registerProbeActions();
 registerContextActions();
-registerAideControlsActions();
 
 // Register services
 registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);

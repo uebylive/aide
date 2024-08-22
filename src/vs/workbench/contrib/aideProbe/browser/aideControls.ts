@@ -22,7 +22,7 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -168,6 +168,8 @@ export class AideControls extends Themable {
 			this.updateInputPlaceholder();
 			this.checkActivation();
 		}));
+
+		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 	}
 
 	private checkActivation() {
@@ -339,7 +341,8 @@ export class AideControls extends Themable {
 
 		this._register(toolbar.onDidChangeMenuItems(() => {
 			const width = toolbar.getItemsWidth();
-			toolbar.getElement().style.width = `${width}px`;
+			const numberOfItems = toolbar.getItemsLength();
+			toolbar.getElement().style.width = `${width + Math.min(0, numberOfItems - 1) * 8}px`;
 		}));
 	}
 
