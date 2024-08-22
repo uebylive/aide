@@ -37,9 +37,13 @@ export interface IContextChangeAction {
 	newContext: string[];
 }
 
+export interface IFollowUpRequestAction {
+	type: 'followUpRequest';
+}
+
 export interface IAideProbeUserAction {
 	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IContextChangeAction;
+	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IContextChangeAction | IFollowUpRequestAction;
 }
 
 export interface IReferenceByName {
@@ -95,6 +99,11 @@ export interface IAideProbeLongContextSearch {
 	finished: boolean;
 }
 
+export interface IAideProbeIterationFinished {
+	kind: 'iterationFinished';
+	finished: boolean;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
@@ -103,7 +112,8 @@ export type IAideProbeProgress =
 	| IAideProbeOpenFile
 	| IAideProbeRepoMapGeneration
 	| IAideProbeLongContextSearch
-	| IAideProbeInitialSymbols;
+	| IAideProbeInitialSymbols
+	| IAideProbeIterationFinished;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -165,6 +175,7 @@ export type IAideProbeMode = keyof typeof AideProbeMode;
 export const enum AideProbeStatus {
 	INACTIVE = 'INACTIVE',
 	IN_PROGRESS = 'IN_PROGRESS',
+	ITERATION_FINISHED = 'ITERATION_FINISHED',
 	IN_REVIEW = 'IN_REVIEW'
 }
 

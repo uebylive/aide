@@ -243,6 +243,7 @@ export class MenuId {
 	static readonly AideProbePrimary = new MenuId('AideProbePrimary');
 	static readonly AideCommandPaletteContext = new MenuId('AideCommandPaletteContext');
 	static readonly AideCommandPaletteToolbar = new MenuId('AideCommandPaletteToolbar');
+	static readonly AideControlsToolbar = new MenuId('AideControlsToolbar');
 
 
 	/**

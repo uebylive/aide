@@ -22,7 +22,7 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -31,11 +31,13 @@ import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 import 'vs/css!./media/aideControls';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { AideProbeStatus, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 
 const MAX_WIDTH = 800;
@@ -96,14 +98,13 @@ export class AideControls extends Themable {
 	private inputHeight = INPUT_MIN_HEIGHT;
 	private static readonly INPUT_URI = URI.parse('aideControls:input');
 
-	private submitButton: Button;
-	private submitButtonIcon: Heroicon | undefined;
 	private contextPicker: ContextPicker;
 
+	//private toolbar: MenuWorkbenchToolBar;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
-	private probeStatus: IContextKey<IAideProbeStatus>;
+	private areControlsActive: IContextKey<boolean>;
 
 	private model: AideProbeModel | undefined;
 
@@ -118,6 +119,7 @@ export class AideControls extends Themable {
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IThemeService themeService: IThemeService,
+		@IViewsService private readonly viewsService: IViewsService,
 		@IModelService private readonly modelService: IModelService,
 	) {
 
@@ -126,23 +128,20 @@ export class AideControls extends Themable {
 
 		aideControlsService.registerControls(this);
 
+		this.areControlsActive = CONTEXT_PROBE_ARE_CONTROLS_ACTIVE.bindTo(contextKeyService);
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
-		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 
 		const element = this.element = $('.aide-controls');
+		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
-		this.part.content.appendChild(element);
+		const inputElement = $('.aide-controls-input-container');
+		element.appendChild(inputElement);
+		const toolbarElement = $('.aide-controls-toolbar');
+		element.appendChild(toolbarElement);
 
-		this._input = this.createInput(element);
-
-		this._input.onDidChangeModelContent(() => {
-			if (this._input.getValue().trim().length === 0) {
-				this.aideProbeService.rejectCodeEdits();
-				return;
-			}
-		});
+		this._input = this.createInput(inputElement);
 
 		const partSize = this.part.dimension;
 		if (partSize) {
@@ -152,49 +151,29 @@ export class AideControls extends Themable {
 			this.layout(size.width, size.height);
 		});
 
-		this.submitButton = new Button(element, {});
-		this.submitButton.element.classList.add('aide-controls-submit-button');
-		this.updateSubmitButtonIcon(this.submitButton);
+		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
+		this.contextPicker.append(inputElement);
+
+		this.createToolbar(toolbarElement);
 
 		this.checkActivation();
+		this.updateInputPlaceholder();
 
-		this.editorService.onDidActiveEditorChange(() => {
+		this._register(this.aideLSPService.onDidChangeStatus(() => {
+			this.updateInputPlaceholder();
 			this.checkActivation();
-		});
-
-		this.submitButton.onDidClick(() => {
-			if (!this.model) {
-				this._acceptInput();
-			} else if (this.model.status === AideProbeStatus.IN_PROGRESS) {
-				this.aideProbeService.rejectCodeEdits();
-			} else {
-				this._acceptInput();
-				// Trigger fix the world
-			}
-		});
-
-		this._register(this.contextKeyService.onDidChangeContext((event) => {
-			if (event.affectsSome(new Set([CONTEXT_PROBE_REQUEST_STATUS.key]))) {
-				this.updateSubmitButtonIcon(this.submitButton);
-			}
 		}));
 
-		this._register(this._input.onDidFocusEditorText(() => {
-			this.inputHasFocus.set(true);
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.updateInputPlaceholder();
+			this.checkActivation();
 		}));
-
-		this._register(this._input.onDidBlurEditorText(() => {
-			this.inputHasFocus.set(false);
-		}));
-
-		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
-		this.contextPicker.append(element);
 	}
 
 	private checkActivation() {
 		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
 		const activeEditor = this.editorService.activeTextEditorControl;
-		this.submitButton.enabled = isCodeEditor(activeEditor) && isLSPActive;
+		this.areControlsActive.set(isCodeEditor(activeEditor) && isLSPActive);
 	}
 
 	private createInput(parent: HTMLElement) {
@@ -238,7 +217,6 @@ export class AideControls extends Themable {
 		editor.render();
 
 		this.codeEditorService.registerDecorationType(inputPlaceholder.description, inputPlaceholder.decorationType, {});
-		this.updateInputPlaceholder();
 
 		this._register(editor.onDidChangeModelContent(() => {
 			const currentHeight = Math.max(editor.getContentHeight(), INPUT_MIN_HEIGHT);
@@ -255,15 +233,13 @@ export class AideControls extends Themable {
 			}
 		}));
 
-		this._register(this.aideLSPService.onDidChangeStatus(() => {
-			this.updateInputPlaceholder();
-			this.checkActivation();
+		this._register(editor.onDidFocusEditorText(() => {
+			this.inputHasFocus.set(true);
 		}));
 
-		this._register(this.editorService.onDidActiveEditorChange(() => {
-			this.updateInputPlaceholder();
+		this._register(editor.onDidBlurEditorText(() => {
+			this.inputHasFocus.set(false);
 		}));
-
 
 		return editor;
 	}
@@ -277,7 +253,6 @@ export class AideControls extends Themable {
 	}
 
 	private _acceptInput() {
-
 		const currentSession = this.aideProbeService.getSession();
 		const editorValue = this._input.getValue();
 		const activeEditor = this.editorService.activeTextEditorControl;
@@ -292,29 +267,8 @@ export class AideControls extends Themable {
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
-	}
 
-	private updateSubmitButtonIcon(button: Button) {
-
-		if (this.submitButtonIcon) {
-			this.submitButtonIcon.dispose();
-		}
-		let iconId = 'mini/play';
-
-		switch (this.probeStatus.get()) {
-			case AideProbeStatus.IN_PROGRESS:
-				iconId = 'mini/stop';
-				break;
-			case AideProbeStatus.INACTIVE:
-				iconId = 'mini/play';
-				break;
-			case AideProbeStatus.IN_REVIEW:
-			default:
-				iconId = 'mini/play'; // Replace with cog and play
-				break;
-		}
-
-		return this.submitButtonIcon = this.instantiationService.createInstance(Heroicon, button.element, iconId);
+		showProbeView(this.viewsService);
 	}
 
 
@@ -367,9 +321,31 @@ export class AideControls extends Themable {
 		}
 	}
 
+	private createToolbar(parent: HTMLElement) {
+		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+			menuOptions: {
+				shouldForwardArgs: true,
+
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+				return;
+			}
+		}));
+		toolbar.getElement().classList.add('aide-controls-submit-toolbar');
+
+		this._register(toolbar.onDidChangeMenuItems(() => {
+			const width = toolbar.getItemsWidth();
+			toolbar.getElement().style.width = `${width}px`;
+		}));
+	}
+
 	layout(width: number, height: number) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		this._input.layout({ width: newWidth - 60 - 36 - 12, height: height - 6 });
+		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 });
 	}
 }

@@ -404,6 +404,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			case 'longContextSearch':
 				this._response.longContextSearchFinished = progress.finished;
 				break;
+			case 'iterationFinished':
+				this.status = AideProbeStatus.ITERATION_FINISHED;
+				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);
 				break;

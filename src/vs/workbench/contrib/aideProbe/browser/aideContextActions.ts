@@ -23,7 +23,7 @@ import { compare } from 'vs/base/common/strings';
 import { IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { ContextPicker, IContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -189,7 +189,7 @@ export class AttachContextAction extends Action2 {
 		const commandService = accessor.get(ICommandService);
 		const contextKeyService = accessor.get(IContextKeyService);
 
-		CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService).set('specific');
+		CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService).set('specific');
 
 		const quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[] = [];
 		for (const variable of chatVariablesService.getVariables()) {
@@ -331,7 +331,7 @@ class ApplyWholeCodebaseSearch extends Action2 {
 
 	async run(accessor: ServicesAccessor) {
 		const contextKeyService = accessor.get(IContextKeyService);
-		CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService).set('codebase');
+		CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService).set('codebase');
 		const aideControlsService = accessor.get(IAideControlsService);
 		aideControlsService.focusInput();
 		const contextPicker = getWorkbenchContribution<IContextPicker>(ContextPicker.ID);

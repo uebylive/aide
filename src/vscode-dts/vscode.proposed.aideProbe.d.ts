@@ -39,9 +39,13 @@ declare module 'vscode' {
 		newContext: string[];
 	}
 
+	export interface FollowUpRequestAction {
+		type: 'followUpRequest';
+	}
+
 	export interface AideProbeUserAction {
 		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction;
 	}
 
 	export interface ProbeRequest {
@@ -94,6 +98,7 @@ declare module 'vscode' {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
 		longContextSearch(value: boolean): void;
+		codeIterationFinished(value: boolean): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;

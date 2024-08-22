@@ -326,6 +326,8 @@ export const reportAgentEventsToChat = async (
 						uri: vscode.Uri.file(filePath),
 					});
 				}
+			} else if (event.event.FrameworkEvent.CodeIterationFinished) {
+				response.codeIterationFinished(true);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;

@@ -47,6 +47,11 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					const dto = typeConvert.AideProbeLongContextSearchPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
+				codeIterationFinished(value) {
+					const part = new extHostTypes.AideProbeIterationFinishedPart(value);
+					const dto = typeConvert.AideProbeIterationFinishedPart.from(part);
+					that._proxy.$handleProbingProgressChunk(request, dto);
+				},
 				initialSearchSymbols(value) {
 					const part = new extHostTypes.AideProbeInitialSymbolsPart(value);
 					const dto = typeConvert.AideProbeInitialSymbolsPart.from(part.symbols);

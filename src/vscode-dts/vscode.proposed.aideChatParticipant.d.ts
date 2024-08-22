@@ -110,6 +110,10 @@ declare module 'vscode' {
 		readonly finished: boolean;
 	}
 
+	export interface AideProbeCodeIterationFinishedPart {
+		readonly finished: boolean;
+	}
+
 	export interface AideChatResponseTextEdit {
 		/**
 		 * The file where the agent went to the definition.

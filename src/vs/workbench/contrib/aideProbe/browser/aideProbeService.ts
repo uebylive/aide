@@ -15,7 +15,7 @@ import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeRespo
 // import { mockInitiateProbe, mockOnUserAction } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService.mock';
 import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 
 
@@ -36,6 +36,7 @@ export interface IAideProbeService {
 
 	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[]): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
+	makeFollowupRequest(): Promise<void>;
 	onContextChange(newContext: string[]): Promise<void>;
 
 	anchorEditingSelection: AnchorEditingSelection | undefined;
@@ -95,7 +96,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		super();
 
 		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
-		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
+		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 	}
 
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): IDisposable {
@@ -271,7 +272,19 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			return;
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
+		this._model.status = AideProbeStatus.IN_PROGRESS;
 		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+	}
+
+	async makeFollowupRequest() {
+		const resolver = this.probeProvider;
+		if (!resolver || !this._model) {
+			return;
+			// return new Error('Added iteration without a probe provider or active session.');
+		}
+		this._model.status = AideProbeStatus.IN_PROGRESS;
+		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
+
 	}
 
 	async onContextChange(newContext: string[]) {

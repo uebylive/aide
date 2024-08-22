@@ -5,17 +5,24 @@
 
 .aide-controls {
 	margin: auto;
-	display: flex;
-	align-items: start;
-	justify-content: center;
-	padding: 6px;
-	padding-bottom: 0;
+	padding: 8px;
 	outline: 1px solid var(--vscode-editorWidget-border);
 	transform: translateY(1px);
+	box-sizing: border-box;
 }
 
 .aide-controls :is(.monaco-editor, .monaco-editor-background) {
 	background-color: transparent;
+}
+
+.aide-controls-input-container {
+	display: flex;
+	align-items: start;
+}
+
+.aide-controls-toolbar {
+	display: flex;
+	justify-content: end;
 }
 
 .aide-controls-submit-button {

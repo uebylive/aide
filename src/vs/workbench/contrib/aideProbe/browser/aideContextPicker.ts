@@ -27,7 +27,7 @@ import { AideSelect } from 'vs/workbench/browser/aideSelect';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
 import 'vs/css!./media/aideContextPicker';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_PROBE_CONTEXT, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
@@ -104,7 +104,7 @@ export class ContextPicker extends Disposable implements IContextPicker {
 	) {
 		super();
 
-		this.contextType = CONTEXT_PROBE_CONTEXT.bindTo(contextKeyService);
+		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 		this.context = this.instantiationService.createInstance(AideContext);
 		this.isListFocused = CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS.bindTo(contextKeyService);
 
@@ -255,7 +255,7 @@ export class ContextPicker extends Disposable implements IContextPicker {
 		this.render();
 
 		this._register(this.contextKeyService.onDidChangeContext((event) => {
-			if (event.affectsSome(new Set([CONTEXT_PROBE_CONTEXT.key]))) {
+			if (event.affectsSome(new Set([CONTEXT_PROBE_CONTEXT_TYPE.key]))) {
 				this.updateButtonIcon(this.button.element);
 				this.button.enabled = this.contextType.get() !== 'codebase';
 				this.render();
