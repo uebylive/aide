@@ -81,6 +81,9 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					const dto = typeConvert.AideProbeResponseTextEditPart.from(value);
 					await that._proxy.$handleProbingProgressChunk(request, dto);
 				},
+				async addToUndoStack(value) {
+					// TODO(willis): Figure out how to pipe this
+				}
 			},
 			token
 		);

@@ -412,6 +412,16 @@ export const reportAgentEventsToChat = async (
 						editsManager.streamProcessor.cleanup();
 						// delete this from our map
 						editsMap.delete(editStreamEvent.edit_request_id);
+						// we have the updated code (we know this will be always present, the types are a bit meh)
+						const updatedCode = editStreamEvent.updated_code as string;
+						const edit = new vscode.WorkspaceEdit();
+						const sidecarRange = editStreamEvent.range;
+						edit.replace(vscode.Uri.file(fileDocument), new vscode.Range(new vscode.Position(sidecarRange.startPosition.line, sidecarRange.startPosition.character), new vscode.Position(sidecarRange.endPosition.line, sidecarRange.endPosition.character)), updatedCode);
+						await limiter.queue(async () => {
+							await response.addToUndoStack({
+								edits: edit
+							});
+						});
 					} else if (editStreamEvent.event.Delta) {
 						const editsManager = editsMap.get(editStreamEvent.edit_request_id);
 						if (editsManager !== undefined) {

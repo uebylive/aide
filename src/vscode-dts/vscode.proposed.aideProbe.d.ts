@@ -86,6 +86,17 @@ declare module 'vscode' {
 		readonly edits: WorkspaceEdit;
 	}
 
+	/**
+	 * This event is required to add the edits to the undo stack
+	 * This is always required if we are streaming since streamed edits
+	 * do not get stored on the undo stack
+	 *
+	 * When applying edits directly we do not need to do this
+	 */
+	export interface AideProbeAddEditToUndoStack {
+		readonly edits: WorkspaceEdit;
+	}
+
 
 	export interface AideInitialSearchSymbolInformation {
 		readonly symbolName: string;
@@ -104,6 +115,7 @@ declare module 'vscode' {
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;
 		codeEdit(value: AideProbeResponseTextEdit): Thenable<void>;
+		addToUndoStack(value: AideProbeAddEditToUndoStack): Thenable<void>;
 	}
 
 	export interface ProbeErrorDetails {

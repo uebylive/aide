@@ -117,6 +117,7 @@ interface EditedCodeStreamingRequest {
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
+	updated_code: string | null | undefined;
 }
 
 interface SymbolEventEditRequest {
