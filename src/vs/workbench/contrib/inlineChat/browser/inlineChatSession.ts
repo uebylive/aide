@@ -632,7 +632,7 @@ export class HunkData {
 		return edits;
 	}
 
-	discardAll() {
+	discardAll(pushToUndoStack = true): IValidEditOperation[] {
 		const edits: ISingleEditOperation[][] = [];
 		for (const item of this.getInfo()) {
 			if (item.getState() === HunkState.Pending) {
@@ -640,10 +640,14 @@ export class HunkData {
 			}
 		}
 		const undoEdits: IValidEditOperation[][] = [];
-		this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
-			undoEdits.push(_undoEdits);
-			return null;
-		});
+		if (pushToUndoStack) {
+			this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
+				undoEdits.push(_undoEdits);
+				return null;
+			});
+		} else {
+			undoEdits.push(this._textModelN.applyEdits(edits.flat(), true));
+		}
 		return undoEdits.flat();
 	}
 

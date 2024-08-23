@@ -2991,6 +2991,15 @@ export namespace AideProbeResponseTextEditPart {
 	}
 }
 
+export namespace AideProbeIterationFinishedPart {
+	export function from(part: vscode.AideProbeIterationFinished): Omit<Dto<IAideProbeIterationFinished>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
+		return {
+			kind: 'iterationFinished',
+			edits: WorkspaceEdit.from(part.edits)
+		};
+	}
+}
+
 export namespace AideProbeOpenFilePart {
 	export function from(part: vscode.AideProbeResponseOpenFile): Dto<IAideProbeOpenFile> {
 		return {
@@ -3013,15 +3022,6 @@ export namespace AideProbeLongContextSearchPart {
 	export function from(part: vscode.AideProbeResponseLongContextSearch): Dto<IAideProbeLongContextSearch> {
 		return {
 			kind: 'longContextSearch',
-			finished: part.finished
-		};
-	}
-}
-
-export namespace AideProbeIterationFinishedPart {
-	export function from(part: vscode.AideProbeCodeIterationFinishedPart): Dto<IAideProbeIterationFinished> {
-		return {
-			kind: 'iterationFinished',
 			finished: part.finished
 		};
 	}

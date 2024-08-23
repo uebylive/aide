@@ -101,7 +101,7 @@ export interface IAideProbeLongContextSearch {
 
 export interface IAideProbeIterationFinished {
 	kind: 'iterationFinished';
-	finished: boolean;
+	edits: WorkspaceEdit;
 }
 
 export type IAideProbeProgress =

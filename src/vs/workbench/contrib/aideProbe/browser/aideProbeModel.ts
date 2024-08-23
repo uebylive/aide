@@ -14,20 +14,21 @@ import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
 import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
-import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IModelDeltaDecoration, ITextModel, IValidEditOperation } from 'vs/editor/common/model';
+import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
+import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IChatTextEditGroupState } from 'vs/workbench/contrib/chat/common/chatModel';
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -58,8 +59,6 @@ export interface IAideProbeEdits {
 	readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
 	readonly hunkData: HunkData;
-	readonly edits: IWorkspaceTextEdit[];
-	readonly undoEdits: IValidEditOperation[];
 	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
@@ -238,7 +237,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			let codeEdits: IAideProbeEdits;
 			if (this._codeEdits.has(mapKey)) {
 				codeEdits = this._codeEdits.get(mapKey)!;
-				codeEdits.edits.push(workspaceEdit);
 			} else {
 				let textModel = this._modelService.getModel(resource);
 				if (!textModel) {
@@ -247,7 +245,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					ref.dispose();
 				}
 				const textModelN = textModel;
-				textModelN.pushStackElement();
 
 				const id = generateUuid();
 				const textModel0 = this._register(this._modelService.createModel(
@@ -260,8 +257,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					targetUri: resource.toString(),
 					textModel0,
 					textModelN,
-					edits: [workspaceEdit],
-					undoEdits: [],
 					hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
 				};
 				this._codeEdits.set(mapKey, codeEdits);
@@ -269,33 +264,46 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 
 			codeEdits.hunkData.ignoreTextModelNChanges = true;
-			const newUndoEdits = codeEdits.textModelN.applyEdits([workspaceEdit.textEdit], true);
-			codeEdits.undoEdits.push(...newUndoEdits);
+			codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
+			console.log(workspaceEdit.textEdit);
 
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
 					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
 				}
 			}));
-			await this._textFileService.save(codeEdits.textModelN.uri);
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
+
+			codeEdits.hunkData.ignoreTextModelNChanges = true;
+
+			await this._textFileService.save(codeEdits.textModelN.uri);
+
+			const sha1 = new DefaultModelSHA1Computer();
+			const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
+				? sha1.computeSHA1(codeEdits.textModel0)
+				: generateUuid();
+			const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
+			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+			await codeEdits.hunkData.recompute(editState, diff);
+			codeEdits.hunkData.ignoreTextModelNChanges = false;
+			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
+
 		}
 	}
 
-	async applyIterationFinished() {
-		let bulkEdits: IWorkspaceTextEdit[] = [];
-		const resources = new Set<URI>();
-		for (const edit of this._codeEdits.values()) {
-			if (!resources.has(edit.textModelN.uri)) {
-				resources.add(edit.textModelN.uri);
+	async addToUndoStack() {
+		const redoEdits: WorkspaceEdit = { edits: [] };
+		for (const aideEdit of this._codeEdits.values()) {
+			const operations = aideEdit.hunkData.discardAll(false);
+			for (const operation of operations) {
+				redoEdits.edits.push({ resource: aideEdit.textModelN.uri, textEdit: operation, versionId: undefined });
 			}
-			edit.textModelN.applyEdits(edit.undoEdits);
-			bulkEdits = bulkEdits.concat(edit.edits);
 		}
-
-		await this._bulkEditService.apply({ edits: bulkEdits });
-		this._codeEdits.clear();
+		await this._bulkEditService.apply(redoEdits);
+		for (const aideEdit of this._codeEdits.values()) {
+			this._textFileService.save(aideEdit.textModelN.uri);
+		}
 	}
 }
 
@@ -388,7 +396,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				this._response.longContextSearchFinished = progress.finished;
 				break;
 			case 'iterationFinished':
-				await this._response.applyIterationFinished();
+				await this._response.addToUndoStack();
 				this.status = AideProbeStatus.ITERATION_FINISHED;
 				break;
 			case 'textEdit':
@@ -401,13 +409,11 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	completeResponse(): void {
 		this.status = AideProbeStatus.IN_REVIEW;
-
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
 		this.status = AideProbeStatus.IN_REVIEW;
-
 		this._onDidChange.fire();
 	}
 }

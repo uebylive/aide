@@ -1478,7 +1478,8 @@ export type IAideChatProgressDto =
 	| IAideChatTaskDto;
 
 export type IAideProbeTextEditDto = Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: IWorkspaceEditDto };
-export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeOpenFile | IAideProbeRepoMapGeneration | IAideProbeLongContextSearch | IAideProbeInitialSymbols | IAideProbeIterationFinished> | IAideProbeTextEditDto;
+export type IAideProbeIterationFinishedDto = Omit<Dto<IAideProbeIterationFinished>, 'edits'> & { edits: IWorkspaceEditDto };
+export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeOpenFile | IAideProbeRepoMapGeneration | IAideProbeLongContextSearch | IAideProbeInitialSymbols> | IAideProbeTextEditDto | IAideProbeIterationFinishedDto;
 
 export interface MainThreadAideProbeProviderShape extends IDisposable {
 	$registerProbingProvider(handle: number, data: IAideProbeData): void;

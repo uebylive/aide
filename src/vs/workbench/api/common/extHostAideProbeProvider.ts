@@ -48,8 +48,7 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				codeIterationFinished(value) {
-					const part = new extHostTypes.AideProbeIterationFinishedPart(value);
-					const dto = typeConvert.AideProbeIterationFinishedPart.from(part);
+					const dto = typeConvert.AideProbeIterationFinishedPart.from(value);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				initialSearchSymbols(value) {
@@ -80,9 +79,6 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 				async codeEdit(value) {
 					const dto = typeConvert.AideProbeResponseTextEditPart.from(value);
 					await that._proxy.$handleProbingProgressChunk(request, dto);
-				},
-				async addToUndoStack(value) {
-					// TODO(willis): Figure out how to pipe this
 				}
 			},
 			token

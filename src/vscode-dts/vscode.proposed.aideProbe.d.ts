@@ -86,6 +86,10 @@ declare module 'vscode' {
 		readonly edits: WorkspaceEdit;
 	}
 
+	export interface AideProbeIterationFinished {
+		readonly edits: WorkspaceEdit;
+	}
+
 	/**
 	 * This event is required to add the edits to the undo stack
 	 * This is always required if we are streaming since streamed edits
@@ -109,13 +113,12 @@ declare module 'vscode' {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
 		longContextSearch(value: boolean): void;
-		codeIterationFinished(value: boolean): void;
+		codeIterationFinished(value: AideProbeIterationFinished): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;
 		codeEdit(value: AideProbeResponseTextEdit): Thenable<void>;
-		addToUndoStack(value: AideProbeAddEditToUndoStack): Thenable<void>;
 	}
 
 	export interface ProbeErrorDetails {
@@ -123,6 +126,7 @@ declare module 'vscode' {
 	}
 
 	export interface ProbeResult {
+		iterationEdits?: WorkspaceEdit;
 		errorDetails?: ProbeErrorDetails;
 	}
 

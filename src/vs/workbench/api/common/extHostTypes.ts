@@ -4771,15 +4771,6 @@ export class AideProbeLongContextSearchPart {
 	}
 }
 
-
-export class AideProbeIterationFinishedPart {
-	finished: boolean;
-	constructor(finished: boolean) {
-		this.finished = finished;
-	}
-}
-
-
 export class AideProbeGoToDefinitionPart {
 	uri: vscode.Uri;
 	range: vscode.Range;

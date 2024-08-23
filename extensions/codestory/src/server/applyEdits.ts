@@ -68,6 +68,7 @@ export async function applyEditsDirectly(
 export async function applyEdits(
 	request: SidecarApplyEditsRequest,
 	response: vscode.ProbeResponseStream,
+	iterationEdits: vscode.WorkspaceEdit,
 ): Promise<SidecarApplyEditsResponse> {
 	// const limiter = new Limiter(1);
 	const filePath = request.fs_file_path;
@@ -81,6 +82,7 @@ export async function applyEdits(
 
 	const workspaceEdit = new vscode.WorkspaceEdit();
 	workspaceEdit.replace(fileUri, range, replacedText);
+	iterationEdits.replace(fileUri, range, replacedText);
 	if (request.apply_directly) {
 		// apply the edits to it
 		await vscode.workspace.applyEdit(workspaceEdit);

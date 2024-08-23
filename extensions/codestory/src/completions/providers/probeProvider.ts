@@ -24,6 +24,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	private _requestHandler: http.Server | null = null;
 	private _openResponseStream: vscode.ProbeResponseStream | undefined;
+	private _iterationEdits = new vscode.WorkspaceEdit();
 
 	private async isPortOpen(port: number): Promise<boolean> {
 		return new Promise((resolve, _) => {
@@ -105,6 +106,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		if (userAction.action.type === 'followUpRequest') {
 			console.log('followUpRequest');
+			this._iterationEdits = new vscode.WorkspaceEdit();
 			await this._sideCarClient.codeSculptingFollowups(userAction.sessionId, this._rootPath);
 		}
 
@@ -137,7 +139,7 @@ export class AideProbeProvider implements vscode.Disposable {
 				success: true,
 			};
 		}
-		const response = await applyEdits(request, this._openResponseStream);
+		const response = await applyEdits(request, this._openResponseStream, this._iterationEdits);
 		return response;
 	}
 
@@ -205,7 +207,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		// Use dummy data: End
 
 		const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
-		await reportAgentEventsToChat(isEditMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._limiter);
+		await reportAgentEventsToChat(isEditMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._iterationEdits, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -219,7 +221,9 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-		return {};
+		return {
+			iterationEdits: this._iterationEdits,
+		};
 	}
 
 	dispose() {
