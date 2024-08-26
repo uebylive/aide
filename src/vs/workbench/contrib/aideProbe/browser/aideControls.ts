@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $ } from 'vs/base/browser/dom';
+import { $, hide, show } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
@@ -22,7 +22,7 @@ import { ServiceCollection } from 'vs/platform/instantiation/common/serviceColle
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -38,7 +38,10 @@ import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus, IAideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { DisposableStore } from 'vs/base/common/lifecycle';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 
 
 const MAX_WIDTH = 800;
@@ -95,17 +98,24 @@ export class AideControls extends Themable {
 	private part = this.aideControlsPartService.mainPart;
 	private element: HTMLElement;
 
+	private anchoredSymbolsButton: Button;
+
 	private _input: CodeEditorWidget;
 	private inputHeight = INPUT_MIN_HEIGHT;
 	private static readonly INPUT_URI = URI.parse('aideControls:input');
 
 	private contextPicker: ContextPicker;
 
+
 	//private toolbar: MenuWorkbenchToolBar;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
 	private areControlsActive: IContextKey<boolean>;
+	private probeMode: IContextKey<IAideProbeMode>;
+
+	private readonly activeEditorDisposables = this._register(new DisposableStore());
+	private probeHasSelection: IContextKey<boolean>;
 
 	private model: AideProbeModel | undefined;
 
@@ -122,6 +132,7 @@ export class AideControls extends Themable {
 		@IThemeService themeService: IThemeService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IModelService private readonly modelService: IModelService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 
 		super(themeService);
@@ -132,10 +143,20 @@ export class AideControls extends Themable {
 		this.areControlsActive = CONTEXT_PROBE_ARE_CONTROLS_ACTIVE.bindTo(contextKeyService);
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.probeHasSelection = CONTEXT_PROBE_HAS_SELECTION.bindTo(contextKeyService);
+		this.probeMode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 
 		const element = this.element = $('.aide-controls');
 		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
+
+
+		const anchoredSymbolElement = $('.aide-controls-anchored-symbol');
+		element.appendChild(anchoredSymbolElement);
+		this.anchoredSymbolsButton = this.createAnchoredSymbolsButton(anchoredSymbolElement);
+
+
+
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
@@ -159,6 +180,7 @@ export class AideControls extends Themable {
 
 		this.checkActivation();
 		this.updateInputPlaceholder();
+		this.checkEditorSelection();
 
 		this._register(this.aideLSPService.onDidChangeStatus(() => {
 			this.updateInputPlaceholder();
@@ -168,9 +190,67 @@ export class AideControls extends Themable {
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.updateInputPlaceholder();
 			this.checkActivation();
+			this.checkEditorSelection();
+		}));
+
+		this.updateAnchoredSymbolsButton(anchoredSymbolElement);
+
+		this._register(this.aideProbeService.onDidSetAnchoredSelection(() => {
+			this.updateAnchoredSymbolsButton(anchoredSymbolElement);
+			if (partSize) {
+				this.layout(partSize.width, partSize.height);
+			}
 		}));
 
 		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService).set(AideProbeStatus.INACTIVE);
+	}
+
+	private createAnchoredSymbolsButton(parent: HTMLElement) {
+		const button = this.anchoredSymbolsButton = this.instantiationService.createInstance(Button, parent, { title: 'Removed anchored symbol selection' });
+		button.element.classList.add('aide-controls-anchored-symbol-button');
+		const symbolsElement = $('span.aide-controls-anchored-symbol-symbols');
+		button.element.appendChild(symbolsElement);
+
+		const uriElement = $('span.aide-controls-anchored-symbol-uri');
+		button.element.appendChild(uriElement);
+
+		button.enabled = this.probeMode.get() === AideProbeMode.ANCHORED;
+
+		this._register(button.onDidClick(() => {
+			this.commandService.executeCommand('workbench.action.aideProbe.exitAnchoredEditing');
+		}));
+
+		return button;
+	}
+
+	private updateAnchoredSymbolsButton(anchoredSymbolElement: HTMLElement) {
+		const button = this.anchoredSymbolsButton;
+		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
+		if (anchorEditingSelection) {
+			button.enabled = true;
+			const uriElement = button.element.querySelector('.aide-controls-anchored-symbol-uri')!;
+			uriElement.textContent = anchorEditingSelection.uri.path;
+			if (anchorEditingSelection.symbolNames.length > 0) {
+				const symbolsElement = button.element.querySelector('.aide-controls-anchored-symbol-symbols')!;
+				symbolsElement.textContent = anchorEditingSelection.symbolNames.join(', ');
+			}
+			show(anchoredSymbolElement);
+		} else {
+			button.enabled = false;
+			hide(anchoredSymbolElement);
+		}
+	}
+
+	private checkEditorSelection() {
+		const activeEditor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(activeEditor)) {
+			this.activeEditorDisposables.add(activeEditor.onDidChangeCursorSelection((event) => {
+				const isValid = event.selection !== null && !event.selection.isEmpty();
+				this.probeHasSelection.set(isValid);
+			}));
+		} else {
+			this.activeEditorDisposables.clear();
+		}
 	}
 
 	private checkActivation() {
@@ -349,6 +429,7 @@ export class AideControls extends Themable {
 	layout(width: number, height: number) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 });
+		const hasAnchoredSymbols = this.aideProbeService.anchorEditingSelection;
+		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 - (hasAnchoredSymbols ? 42 : 0) });
 	}
 }

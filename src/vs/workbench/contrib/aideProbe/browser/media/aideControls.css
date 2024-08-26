@@ -15,6 +15,40 @@
 	background-color: transparent;
 }
 
+.aide-controls-anchored-symbol {
+	margin-bottom: 6px;
+}
+
+.aide-controls-anchored-symbol-button {
+	height: 36px;
+	display: flex;
+	gap: 6px;
+	padding-inline: 8px;
+	box-sizing: border-box;
+	border-radius: 3px;
+	width: 100%;
+	align-items: center;
+	background-color: var(--vscode-editor-background);
+}
+
+.aide-controls-anchored-symbol-button:hover {
+	background-color: var(--vscode-editorInlayHint-background);
+}
+
+.aide-controls-anchored-symbol-symbols {
+	white-space: nowrap;
+	margin-right: auto;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
+.aide-controls-anchored-symbol-uri {
+	white-space: nowrap;
+	margin-left: auto;
+	text-overflow: ellipsis;
+	overflow: hidden;
+}
+
 .aide-controls-input-container {
 	display: flex;
 	align-items: start;

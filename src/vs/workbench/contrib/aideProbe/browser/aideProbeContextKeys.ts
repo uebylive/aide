@@ -10,8 +10,7 @@ import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from
 export const CONTEXT_PROBE_MODE = new RawContextKey<IAideProbeMode>('aideProbeMode', AideProbeMode.AGENTIC, { type: 'string', description: localize('aideProbeMode', "Either explore, agentic editing or anchored editing") });
 export const CONTEXT_PROBE_CONTEXT_TYPE = new RawContextKey<'specific' | 'codebase'>('aideProbeContext', 'specific', { type: 'string', description: localize('aideProbeContext', "Type of context used for probing.") });
 
-
-export const CONTEXT_PROBE_HAS_VALID_SELECTION = new RawContextKey<boolean>('aideProbeHasValidSelection', false, { type: 'boolean', description: localize('aideProbeHasValidSelection', "True when the editor has a valid selection.") });
+export const CONTEXT_PROBE_HAS_SELECTION = new RawContextKey<boolean>('aideProbeHasSelection', false, { type: 'boolean', description: localize('aideProbeHasSelection', "True when the AI agent has a selection.") });
 export const CONTEXT_PROBE_ARE_CONTROLS_ACTIVE = new RawContextKey<boolean>('aideProbeAreControlsActive', false, { type: 'boolean', description: localize('aideProbeAreControlsActive', "True when the AI agent's controls are active.") });
 
 export const CONTEXT_PROBE_INPUT_HAS_TEXT = new RawContextKey<boolean>('aideProbeInputHasText', false, { type: 'boolean', description: localize('aideProbeInputHasText', "True when the AI search input has text.") });

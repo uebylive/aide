@@ -43,6 +43,7 @@ export interface IAideProbeService {
 
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
+	readonly onDidSetAnchoredSelection: Event<AnchorEditingSelection | undefined>;
 	readonly onDidStartProbing: Event<void>;
 }
 
@@ -66,6 +67,9 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	protected readonly _onReview = this._store.add(new Emitter<IAideProbeReviewUserEvent>());
 	readonly onReview: Event<IAideProbeReviewUserEvent> = this._onReview.event;
 
+	protected readonly _onDidSetAnchoredSelection = this._store.add(new Emitter<AnchorEditingSelection | undefined>());
+	readonly onDidSetAnchoredSelection: Event<AnchorEditingSelection | undefined> = this._onDidSetAnchoredSelection.event;
+
 	private _activeRequest: CancellationTokenSource | undefined;
 	private probeProvider: IAideProbeResolver | undefined;
 
@@ -76,6 +80,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 
 	set anchorEditingSelection(selection: AnchorEditingSelection | undefined) {
 		this._anchorEditingSelection = selection;
+		this._onDidSetAnchoredSelection.fire(selection);
 	}
 	get anchorEditingSelection() {
 		return this._anchorEditingSelection;
@@ -283,7 +288,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	}
 
 	//acceptCodeEdits() {
-	//	this._onReview.fire('accept');
+	//
 	//	this.clearSession();
 	//}
 	//
@@ -304,6 +309,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			this._model.dispose();
 			this._model = undefined;
 		}
+		this._onReview.fire('accept');
 		this.cancelProbe();
 	}
 }

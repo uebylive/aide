@@ -4,14 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { themeColorFromId } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IEditorContribution, IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
-import { CONTEXT_PROBE_HAS_VALID_SELECTION, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { Selection } from 'vs/editor/common/core/selection';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
@@ -19,7 +18,8 @@ import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } fr
 
 const editLineDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-anchor-lines',
-	className: 'aide-probe-breakdown',
+	blockClassName: 'aide-probe-anchor-lines-block',
+	className: 'aide-probe-anchor-line',
 	isWholeLine: true,
 	overviewRuler: {
 		position: OverviewRulerLane.Full,
@@ -32,7 +32,7 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 });
 
 export interface IKeybindingPillContribution extends IEditorContribution {
-	showAnchorEditingDecoration(uri: URI, selection: Selection): void;
+	showAnchorEditingDecoration(selection: Selection): void;
 	hideAnchorEditingDecoration(): void;
 }
 
@@ -42,7 +42,6 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 	private pillWidget: KeybindingPillWidget | null | undefined;
 	private editor: ICodeEditor;
 	private decorationsCollection: IEditorDecorationsCollection;
-	private hasValidSelection: IContextKey<boolean>;
 
 	constructor(
 		editor: ICodeEditor,
@@ -53,7 +52,6 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 		this.decorationsCollection = this.editor.createDecorationsCollection();
 		this.pillWidget = this.editor.getContribution<KeybindingPillWidget>(KeybindingPillWidget.ID);
 
-		this.hasValidSelection = CONTEXT_PROBE_HAS_VALID_SELECTION.bindTo(contextKeyService);
 
 		contextKeyService.onDidChangeContext(e => {
 			if (e.affectsSome(new Set([CONTEXT_PROBE_MODE.key]))) {
@@ -66,33 +64,28 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 
 		this.editor.onDidChangeCursorSelection(event => {
 			if (event.selection.isEmpty()) {
-				this.hasValidSelection.set(false);
-				aideProbeService.anchorEditingSelection = undefined;
 				this.pillWidget?.hide();
-				this.hideAnchorEditingDecoration();
 			} else {
+				this.pillWidget?.showAt(event.selection.getPosition());
+			}
+
+			const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
+			if (anchorEditingSelection) {
 				const uri = editor.getModel()?.uri;
-				if (uri) {
-					this.hasValidSelection.set(true);
-					this.pillWidget?.showAt(event.selection.getPosition());
-					this.showAnchorEditingDecoration(uri, event.selection);
+				if (uri?.toString() === anchorEditingSelection.uri.toString()) {
+					this.showAnchorEditingDecoration(anchorEditingSelection.selection);
+				} else {
+					this.hideAnchorEditingDecoration();
 				}
-				this.hideAnchorEditingDecoration();
 			}
 		});
 	}
 
-	showAnchorEditingDecoration(uri: URI, selection: Selection) {
-		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
-		if (!anchorEditingSelection) {
-			return;
-		}
-		if (uri.toString() === anchorEditingSelection.uri.toString() && selection.equalsSelection(anchorEditingSelection.selection)) {
-			this.decorationsCollection.append([{
-				range: anchorEditingSelection.selection,
-				options: editLineDecorationOptions
-			}]);
-		}
+	showAnchorEditingDecoration(selection: Selection) {
+		this.decorationsCollection.append([{
+			range: selection,
+			options: editLineDecorationOptions
+		}]);
 	}
 
 	hideAnchorEditingDecoration() {

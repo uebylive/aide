@@ -253,6 +253,11 @@
 	border-radius: 4px;
 }
 
-.monaco-workbench .aide-probe-breakdown {
+.monaco-workbench :is(.aide-probe-breakdown, .aide-probe-anchor-line) {
 	background-color: var(--vscode-editorInlayHint-background);
+}
+
+.monaco-workbench .aide-probe-anchor-lines-block {
+	border-block: 1px solid var(--vscode-editorOverviewRuler-incomingContentForeground);
+	/* --vscode-editorOverviewRuler-rangeHighlightForeground */
 }

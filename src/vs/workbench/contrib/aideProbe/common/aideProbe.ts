@@ -162,6 +162,7 @@ export type IAideProbeReviewUserEvent = 'accept' | 'reject';
 export interface AnchorEditingSelection {
 	uri: URI;
 	selection: Selection;
+	symbolNames: string[];
 }
 
 export const enum AideProbeMode {

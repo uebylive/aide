@@ -39,7 +39,11 @@ import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe
 
 const $ = dom.$;
 
+
 export class AideProbeViewPane extends ViewPane {
+
+	static readonly id = 'workbench.aideProbeViewPane';
+
 	private container!: HTMLElement;
 	private resultWrapper!: HTMLElement;
 	private responseWrapper!: HTMLElement;
@@ -260,6 +264,9 @@ export class AideProbeViewPane extends ViewPane {
 		if (this.dimensions) {
 			this.layoutBody(this.dimensions.height, this.dimensions.width);
 		}
+	}
+
+	clear(): void {
 	}
 
 	private renderFinalAnswer(): void {
