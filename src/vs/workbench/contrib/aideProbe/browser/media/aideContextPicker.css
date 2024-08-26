@@ -5,6 +5,8 @@
 
 .part.aidecontrols {
 	overflow: visible;
+	background-color: var(--vscode-sideBar-background) !important;
+	border-top: 1px solid var(--vscode-editorWidget-border);
 }
 
 .aide-context-picker {

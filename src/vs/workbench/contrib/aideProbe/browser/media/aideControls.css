@@ -6,9 +6,9 @@
 .aide-controls {
 	margin: auto;
 	padding: 8px;
-	outline: 1px solid var(--vscode-editorWidget-border);
 	transform: translateY(1px);
 	box-sizing: border-box;
+	background-color: var(--vscode-sideBar-background) !important;
 }
 
 .aide-controls :is(.monaco-editor, .monaco-editor-background) {
