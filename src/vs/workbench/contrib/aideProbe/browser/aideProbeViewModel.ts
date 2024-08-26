@@ -182,6 +182,16 @@ export interface IAideProbeBreakdownViewModel {
 	expanded: boolean;
 }
 
+export type AideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel;
+
+export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymbolsViewModel {
+	return !!item && typeof (item as IAideProbeInitialSymbolsViewModel).symbolName !== 'undefined';
+}
+
+export function isBreakdownVM(item: unknown): item is IAideProbeBreakdownViewModel {
+	return !!item && typeof (item as AideProbeBreakdownViewModel).edits !== 'undefined';
+}
+
 export interface IAideProbeCodeEditPreviewViewModel {
 	readonly uri: URI;
 	readonly range: Range;
