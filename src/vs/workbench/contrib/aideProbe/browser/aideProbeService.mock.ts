@@ -58,7 +58,7 @@ export async function mockInitiateProbe(request: IAideProbeRequestModel, progres
 	return new Promise(() => { });
 }
 
-export function mockOnUserAction(action: INewIterationAction) {
+export function mockOnSessionAction(action: INewIterationAction) {
 	iteration++;
 	if (!generator) {
 		console.error('No generator');

@@ -8,7 +8,7 @@ import { revive } from 'vs/base/common/marshalling';
 import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
 import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import { IAideProbeResolver, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
 
 @extHostNamedCustomer(MainContext.MainThreadProbeProvider)
@@ -39,6 +39,9 @@ export class MainThreadAideProbeProvider extends Disposable implements MainThrea
 				} finally {
 					this._pendingProgress.delete(request.sessionId);
 				}
+			},
+			onSessionAction: async (action: IAideProbeSessionAction) => {
+				await this._proxy.$onSessionAction(handle, action);
 			},
 			onUserAction: async (action: IAideProbeUserAction) => {
 				await this._proxy.$onUserAction(handle, action);

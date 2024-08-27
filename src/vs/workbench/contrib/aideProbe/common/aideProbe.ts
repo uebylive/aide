@@ -41,10 +41,12 @@ export interface IFollowUpRequestAction {
 	type: 'followUpRequest';
 }
 
-export interface IAideProbeUserAction {
+export interface IAideProbeSessionAction {
 	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IContextChangeAction | IFollowUpRequestAction;
+	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IFollowUpRequestAction;
 }
+
+export type IAideProbeUserAction = IContextChangeAction;
 
 export interface IReferenceByName {
 	name: string;

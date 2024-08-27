@@ -87,36 +87,46 @@ export class AideProbeProvider implements vscode.Disposable {
 			'aideProbeProvider',
 			{
 				provideProbeResponse: this.provideProbeResponse.bind(this),
+				onDidSessionAction: this.sessionFollowup.bind(this),
 				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
 	}
 
-	async userFollowup(userAction: vscode.AideProbeUserAction) {
-		if (userAction.action.type === 'newIteration') {
+	async sessionFollowup(sessionAction: vscode.AideProbeSessionAction) {
+		if (sessionAction.action.type === 'newIteration') {
 			// @theskcd - This is where we can accept the iteration
-			console.log('newIteration', userAction);
-			await this._sideCarClient.codeSculptingFollowup(userAction.action.newPrompt, userAction.sessionId);
+			console.log('newIteration', sessionAction);
+			await this._sideCarClient.codeSculptingFollowup(sessionAction.action.newPrompt, sessionAction.sessionId);
 		}
 
-		if (userAction.action.type === 'contextChange') {
-			console.log('contextChange');
-			await this._sideCarClient.warmupCodeSculptingCache(userAction.sessionId, userAction.action.newContext);
-		}
-
-		if (userAction.action.type === 'followUpRequest') {
+		if (sessionAction.action.type === 'followUpRequest') {
 			console.log('followUpRequest');
 			this._iterationEdits = new vscode.WorkspaceEdit();
-			await this._sideCarClient.codeSculptingFollowups(userAction.sessionId, this._rootPath);
+			await this._sideCarClient.codeSculptingFollowups(sessionAction.sessionId, this._rootPath);
 		}
 
 
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
-			event: userAction.action.type,
+			event: sessionAction.action.type,
 			properties: {
 				platform: os.platform(),
-				requestId: userAction.sessionId,
+				requestId: sessionAction.sessionId,
+			},
+		});
+	}
+
+	async userFollowup(userAction: vscode.AideProbeUserAction) {
+		if (userAction.type === 'contextChange') {
+			console.log('contextChange');
+			await this._sideCarClient.warmupCodeSculptingCache(userAction.newContext);
+		}
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: userAction.type,
+			properties: {
+				platform: os.platform(),
 			},
 		});
 	}

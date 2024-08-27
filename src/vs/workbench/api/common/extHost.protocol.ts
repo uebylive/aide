@@ -56,7 +56,7 @@ import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, I
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeIterationFinished, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeIterationFinished, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { CallHierarchyItem } from 'vs/workbench/contrib/callHierarchy/common/callHierarchy';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
@@ -1489,6 +1489,7 @@ export interface MainThreadAideProbeProviderShape extends IDisposable {
 
 export interface ExtHostAideProbeProviderShape {
 	$initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined>;
+	$onSessionAction(handle: number, action: IAideProbeSessionAction): Promise<void>;
 	$onUserAction(handle: number, action: IAideProbeUserAction): Promise<void>;
 }
 

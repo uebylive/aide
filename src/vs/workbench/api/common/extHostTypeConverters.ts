@@ -41,7 +41,7 @@ import { IViewBadge } from 'vs/workbench/common/views';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideProbeBreakdownContent, IAideProbeIterationFinished, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeIterationFinished, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
@@ -3176,12 +3176,19 @@ export namespace AideProbeRequestModel {
 	}
 }
 
-export namespace AideProbeUserAction {
-	export function to(userAction: IAideProbeUserAction): vscode.AideProbeUserAction {
+export namespace AideProbeSessionAction {
+	export function to(userAction: IAideProbeSessionAction): vscode.AideProbeSessionAction {
 		return {
 			sessionId: userAction.sessionId,
 			action: userAction.action,
 		};
+	}
+}
+
+
+export namespace AideProbeUserAction {
+	export function to(userAction: IAideProbeUserAction): vscode.AideProbeUserAction {
+		return userAction;
 	}
 }
 

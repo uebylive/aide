@@ -43,10 +43,12 @@ declare module 'vscode' {
 		type: 'followUpRequest';
 	}
 
-	export interface AideProbeUserAction {
+	export interface AideProbeSessionAction {
 		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | FollowUpRequestAction;
 	}
+
+	export type AideProbeUserAction = ContextChangedAction;
 
 	export interface ProbeRequest {
 		requestId: string;
@@ -132,7 +134,8 @@ declare module 'vscode' {
 
 	export interface ProbeResponseHandler {
 		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
-		onDidUserAction: (action: AideProbeUserAction) => ProviderResult<void>;
+		onDidSessionAction: (action: AideProbeSessionAction) => ProviderResult<void>;
+		onDidUserAction(action: AideProbeUserAction): ProviderResult<void>;
 	}
 
 	export namespace aideProbe {

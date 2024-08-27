@@ -265,7 +265,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 			codeEdits.hunkData.ignoreTextModelNChanges = true;
 			codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
-			console.log(workspaceEdit.textEdit);
+			//console.log(workspaceEdit.textEdit);
 
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
@@ -275,7 +275,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
-			codeEdits.hunkData.ignoreTextModelNChanges = true;
+			//codeEdits.hunkData.ignoreTextModelNChanges = true;
 
 			await this._textFileService.save(codeEdits.textModelN.uri);
 
@@ -286,7 +286,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
 			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
 			await codeEdits.hunkData.recompute(editState, diff);
-			codeEdits.hunkData.ignoreTextModelNChanges = false;
+			//codeEdits.hunkData.ignoreTextModelNChanges = false;
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
 		}
@@ -372,8 +372,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		}
 
 		this.status = AideProbeStatus.IN_PROGRESS;
-
-		console.log(progress);
 
 		switch (progress.kind) {
 			case 'markdownContent':

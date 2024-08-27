@@ -277,7 +277,6 @@ class EnterAnchoredEditing extends Action2 {
 
 		const symbolNames: string[] = [];
 		for (const symbol of outlineModel.getTopLevelSymbols()) {
-			console.log(symbol.name);
 			if (selection.intersectRanges(symbol.range)) {
 				symbolNames.push(symbol.name);
 			}

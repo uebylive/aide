@@ -10,7 +10,7 @@ import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/
 import { IModelService } from 'vs/editor/common/services/model';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -19,6 +19,7 @@ import { ITextModel } from 'vs/editor/common/model';
 
 export interface IAideProbeResolver {
 	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => Promise<void>, token: CancellationToken) => Promise<IAideProbeResult>;
+	onSessionAction: (action: IAideProbeSessionAction) => Promise<void>;
 	onUserAction: (action: IAideProbeUserAction) => Promise<void>;
 }
 
@@ -256,7 +257,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 		this._model.status = AideProbeStatus.IN_PROGRESS;
 		//mockOnUserAction({ type: 'newIteration', newPrompt });
-		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
+		return await resolver.onSessionAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
 	}
 
 	async makeFollowupRequest() {
@@ -265,19 +266,12 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			return;
 		} else {
 			this._model.status = AideProbeStatus.IN_PROGRESS;
-			return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
+			return await resolver.onSessionAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
 		}
-
-
 	}
 
 	async onContextChange(newContext: string[]) {
-		const resolver = this.probeProvider;
-		if (!resolver || !this._model) {
-			return;
-			// return new Error('Added iteration without a probe provider or active session.');
-		}
-		return await resolver.onUserAction({ sessionId: this._model.sessionId, action: { type: 'contextChange', newContext } });
+		return await this.probeProvider?.onUserAction({ type: 'contextChange', newContext });
 	}
 
 	cancelProbe() {

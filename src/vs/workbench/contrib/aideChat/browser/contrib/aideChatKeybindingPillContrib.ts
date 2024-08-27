@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { themeColorFromId } from 'vs/base/common/themables';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
+import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IEditorContribution, IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
 import { MinimapPosition, OverviewRulerLane } from 'vs/editor/common/model';
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
@@ -63,10 +63,10 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 
 
 		this.editor.onDidChangeCursorSelection(event => {
-			if (event.selection.isEmpty()) {
-				this.pillWidget?.hide();
-			} else {
+			if (isCodeEditor(editor) && !event.selection.isEmpty()) {
 				this.pillWidget?.showAt(event.selection.getPosition());
+			} else {
+				this.pillWidget?.hide();
 			}
 
 			const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;

@@ -10,7 +10,7 @@ import { IExtensionDescription } from 'vs/platform/extensions/common/extensions'
 import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import type * as vscode from 'vscode';
 
 export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideProbeProviderShape {
@@ -94,6 +94,17 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 
 			return { errorDetails };
 		}), token);
+	}
+
+	async $onSessionAction(handle: number, action: IAideProbeSessionAction): Promise<void> {
+		const provider = this._providers.get(handle);
+		if (!provider) {
+			return;
+		}
+
+		const extAction = typeConvert.AideProbeSessionAction.to(action);
+		await provider.provider.onDidSessionAction(extAction);
+		return;
 	}
 
 	async $onUserAction(handle: number, action: IAideProbeUserAction): Promise<void> {
