@@ -19,7 +19,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { AnchorSessionStart, CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
 
 export enum CompletionStopReason {
 	/**
@@ -856,23 +856,38 @@ export class SideCarClient {
 
 	async anchorSessionStart(
 		request_id: string,
-		root_directory: string,
+		variables: readonly vscode.ChatPromptReference[],
+		editorUrl: string,
 	) {
-		console.log('requesting anchor_session_start');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/anchor_session_start';
 		const url = baseUrl.toString();
-		const body = {
+
+		const activeWindowData = getCurrentActiveWindow();
+		let activeWindowDataForProbing = undefined;
+		if (activeWindowData !== undefined) {
+			activeWindowDataForProbing = {
+				file_path: activeWindowData.file_path,
+				file_content: activeWindowData.file_content,
+				language: activeWindowData.language,
+			};
+		}
+
+		const body: AnchorSessionStart = {
+			editor_url: editorUrl,
 			request_id,
-			root_directory,
+			user_context: await convertVSCodeVariableToSidecar(variables),
+			active_window_data: activeWindowDataForProbing,
+			root_directory: vscode.workspace.rootPath,
 		};
+
 		await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(body),
-		}).then((r) => console.log(r)).catch((e) => console.log(e));
+		});
 	}
 
 	async warmupCodeSculptingCache(
