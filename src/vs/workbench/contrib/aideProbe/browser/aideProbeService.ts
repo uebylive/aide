@@ -41,6 +41,7 @@ export interface IAideProbeService {
 	anchorEditingSelection: AnchorEditingSelection | undefined;
 
 	clearSession(): void;
+	rejectCodeEdits(): void;
 
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
@@ -281,26 +282,31 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			this._activeRequest.cancel();
 			this._activeRequest.dispose();
 		}
+		if (this._model) {
+			this._model.status = AideProbeStatus.INACTIVE;
+		}
 	}
 
 	//acceptCodeEdits() {
-	//
-	//	this.clearSession();
-	//}
-	//
-	//rejectCodeEdits() {
-	//	//const edits = this._model?.response?.codeEdits;
-	//	//if (edits) {
-	//	//	for (const edit of edits.values()) {
-	//	//	/edit?.hunkData.discardAll();
-	//	//	}
-	//	//}
-	//
-	//	this._onReview.fire('reject');
 	//	this.clearSession();
 	//}
 
+	rejectCodeEdits() {
+		this.cancelProbe();
+		this._model?.response?.addToUndoStack();
+		const edits = this._model?.response?.codeEdits;
+		if (edits) {
+			for (const edit of edits.values()) {
+				edit?.hunkData.discardAll();
+			}
+		}
+		this._model?.clearResponse();
+		this._onReview.fire('reject');
+		this.clearSession();
+	}
+
 	clearSession() {
+		this.anchorEditingSelection = undefined;
 		if (this._model) {
 			this._model.dispose();
 			this._model = undefined;

@@ -418,7 +418,10 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._onDidChange.fire();
 	}
 
-	completeResponse(): void {
+	async completeResponse() {
+		if (this._response) {
+			await this._response.addToUndoStack();
+		}
 		this.status = AideProbeStatus.IN_REVIEW;
 		this._onDidChange.fire();
 	}

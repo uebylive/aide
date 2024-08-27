@@ -204,8 +204,9 @@ export class AideControls extends Themable {
 			}
 			this.aideProbeService.onContextChange(newContext);
 			this.updateAnchoredSymbolsButton(anchoredSymbolElement);
-			if (partSize) {
-				this.layout(partSize.width, partSize.height);
+			if (this.part.dimension) {
+				const { width, height } = this.part.dimension;
+				this.layout(width, height);
 			}
 		}));
 
@@ -436,7 +437,8 @@ export class AideControls extends Themable {
 	layout(width: number, height: number) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		const hasAnchoredSymbols = this.aideProbeService.anchorEditingSelection;
+		const hasAnchoredSymbols = Boolean(this.aideProbeService.anchorEditingSelection);
 		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 - (hasAnchoredSymbols ? 42 : 0) });
+
 	}
 }

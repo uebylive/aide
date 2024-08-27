@@ -10,6 +10,7 @@ import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
@@ -145,7 +146,18 @@ class CancelAction extends Action2 {
 
 	async run(accessor: ServicesAccessor, ...args: any[]) {
 		const aideProbeService = accessor.get(IAideProbeService);
+		aideProbeService.rejectCodeEdits();
 		aideProbeService.clearSession();
+
+		const commandService = accessor.get(ICommandService);
+		commandService.executeCommand(ExitAnchoredEditing.ID);
+
+		const viewsService = accessor.get(IViewsService);
+		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
+		if (aideProbeView) {
+			aideProbeView.clear();
+		}
+
 		logProbeContext(accessor);
 	}
 }
@@ -192,12 +204,12 @@ class RequestFollowUpAction extends Action2 {
 	}
 }
 
-class StopIterationAction extends Action2 {
+class ClearIterationAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.stop';
 
 	constructor() {
 		super({
-			id: StopIterationAction.ID,
+			id: ClearIterationAction.ID,
 			title: localize2('aideProbe.stop.label', "Clear"),
 			f1: false,
 			category: PROBE_CATEGORY,
@@ -220,7 +232,10 @@ class StopIterationAction extends Action2 {
 
 	async run(accessor: ServicesAccessor) {
 		const aideProbeService = accessor.get(IAideProbeService);
-		aideProbeService.clearSession();
+		aideProbeService.rejectCodeEdits();
+
+		const commandService = accessor.get(ICommandService);
+		commandService.executeCommand(ExitAnchoredEditing.ID);
 
 		const viewsService = accessor.get(IViewsService);
 		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
@@ -376,7 +391,7 @@ export function registerProbeActions() {
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);
-	registerAction2(StopIterationAction);
+	registerAction2(ClearIterationAction);
 	registerAction2(RequestFollowUpAction);
 	registerAction2(ExitAnchoredEditing);
 }
