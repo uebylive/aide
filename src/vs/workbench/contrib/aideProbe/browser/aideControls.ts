@@ -195,7 +195,14 @@ export class AideControls extends Themable {
 
 		this.updateAnchoredSymbolsButton(anchoredSymbolElement);
 
-		this._register(this.aideProbeService.onDidSetAnchoredSelection(() => {
+		this._register(this.aideProbeService.onDidSetAnchoredSelection((event) => {
+			const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+			const newContext = filesInContext.map(entry => entry.resource.fsPath);
+			const anchoredSelectionFile = event?.uri.fsPath;
+			if (anchoredSelectionFile) {
+				newContext.push(anchoredSelectionFile);
+			}
+			this.aideProbeService.onContextChange(newContext);
 			this.updateAnchoredSymbolsButton(anchoredSymbolElement);
 			if (partSize) {
 				this.layout(partSize.width, partSize.height);
