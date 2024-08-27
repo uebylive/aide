@@ -854,6 +854,27 @@ export class SideCarClient {
 		});
 	}
 
+	async anchorSessionStart(
+		request_id: string,
+		root_directory: string,
+	) {
+		console.log('requesting anchor_session_start');
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/anchor_session_start';
+		const url = baseUrl.toString();
+		const body = {
+			request_id,
+			root_directory,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		}).then((r) => console.log(r)).catch((e) => console.log(e));
+	}
+
 	async warmupCodeSculptingCache(
 		request_id: string,
 		file_paths: string[],

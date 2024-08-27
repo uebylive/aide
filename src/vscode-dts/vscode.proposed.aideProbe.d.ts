@@ -45,7 +45,12 @@ declare module 'vscode' {
 
 	export interface AideProbeUserAction {
 		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction | AnchorSessionStart;
+	}
+
+	export interface AnchorSessionStart {
+		type: 'anchorSessionStart';
+		status: boolean;
 	}
 
 	export interface ProbeRequest {

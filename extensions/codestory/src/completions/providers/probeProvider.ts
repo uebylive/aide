@@ -110,6 +110,10 @@ export class AideProbeProvider implements vscode.Disposable {
 			await this._sideCarClient.codeSculptingFollowups(userAction.sessionId, this._rootPath);
 		}
 
+		if (userAction.action.type === 'anchorSessionStart') {
+			console.log("anchorSessionStart");
+			await this._sideCarClient.anchorSessionStart(userAction.sessionId, this._rootPath);
+		}
 
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
@@ -148,6 +152,8 @@ export class AideProbeProvider implements vscode.Disposable {
 			return;
 		}
 
+		console.log("provideProbeResponse");
+
 		this._openResponseStream = response;
 		let { query } = request;
 		// console.log('userQuery', query);
@@ -170,7 +176,13 @@ export class AideProbeProvider implements vscode.Disposable {
 		const isAnchorEditing = isAnchorBasedEditing(request.mode);
 
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+
+		console.log({ request });
+
 		if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
+			let rootDir = vscode.workspace.rootPath;
+			// send sidecar request
+			let _ = this._sideCarClient.anchorSessionStart(request.requestId, rootDir ?? "");
 			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.codebaseSearch, isAnchorEditing);
 		} else {
 			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
