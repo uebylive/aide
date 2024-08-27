@@ -81,7 +81,7 @@ export class AideProbeDecorationService extends Disposable {
 
 		this._register(this.aideProbeService.onNewEvent((event) => {
 			if (event.kind === 'completeEdit') {
-				this.handleEditCompleteEvent(event);
+				//this.handleEditCompleteEvent(event);
 			} else if (event.kind === 'undoEdit') {
 				this.handleUndoEditEvent(event);
 			} else if (event.kind === 'goToDefinition') {
