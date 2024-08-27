@@ -7,7 +7,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { Selection } from 'vs/editor/common/core/selection';
 import { Range } from 'vs/editor/common/core/range';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
+import { TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
 import { IModelContentChange } from 'vs/editor/common/textModelEvents';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
@@ -150,13 +150,20 @@ export interface IAideProbeUndoEditEvent {
 	changes: IModelContentChange[];
 }
 
+export interface IAideProbeEditEvent {
+	kind: 'edit';
+	resource: URI;
+	edit: TextEdit;
+}
+
 export type IAideProbeResponseEvent =
 	| IAideProbeStartEditEvent
 	| IAideProbeCompleteEditEvent
 	| IAideProbeUndoEditEvent
 	| IAideProbeGoToDefinition
 	| IAideProbeBreakdownContent
-	| IAideProbeInitialSymbols;
+	| IAideProbeInitialSymbols
+	| IAideProbeEditEvent;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
 

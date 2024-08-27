@@ -223,7 +223,9 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			if (ResourceTextEdit.is(workspaceEdit)) {
 				await this.progressiveEditsQueue.queue(async () => {
 					await this.processWorkspaceEdit(workspaceEdit);
+
 				});
+				this._onNewEvent.fire({ kind: 'edit', resource: workspaceEdit.resource, edit: workspaceEdit.textEdit });
 			}
 		}
 	}
@@ -379,7 +381,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		if (!this._response) {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
-			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
+			this._register(this._response.onNewEvent(responseEvent => this._onNewEvent.fire(responseEvent)));
 		}
 
 		this.status = AideProbeStatus.IN_PROGRESS;
