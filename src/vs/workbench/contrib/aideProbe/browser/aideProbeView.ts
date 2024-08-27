@@ -49,7 +49,7 @@ export class AideProbeViewPane extends ViewPane {
 	private resultWrapper!: HTMLElement;
 	private responseWrapper!: HTMLElement;
 	private scrollableElement!: DomScrollableElement;
-	private dimensions: IDimension | undefined;
+	private dimensions!: IDimension;
 
 	private model: IAideProbeModel | undefined;
 	private viewModel: AideProbeViewModel | undefined;
@@ -127,9 +127,7 @@ export class AideProbeViewPane extends ViewPane {
 			}
 		));
 
-		this._register(list.onDidChangeContentHeight(height => {
-			list.layout(height);
-		}));
+		list.layout(this.dimensions?.height - 36);
 		this._register(renderer.onDidChangeItemHeight(event => {
 			list.updateElementHeight(event.index, event.height);
 		}));
@@ -275,6 +273,9 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	clear(): void {
+		this.list?.splice(0, this.list.length);
+		this.list?.rerender();
+		this.list?.layout(0, this.dimensions?.width);
 	}
 
 	private renderFinalAnswer(): void {
@@ -286,9 +287,10 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	protected override layoutBody(height: number, width: number): void {
-		this.list?.rerender();
 		super.layoutBody(height, width);
 		this.dimensions = { width, height };
+		this.list?.layout(this.dimensions.height - 36);
+		this.list?.rerender();
 		this.scrollableElement.scanDomNode();
 	}
 }
