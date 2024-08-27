@@ -123,7 +123,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			//const codeEdits = _model.response?.codeEdits;
 
 			if (this._model.response.initialSymbols) {
-				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, currentRenderedHeight: 0 }));
+				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, type: 'initialSymbol', currentRenderedHeight: 0 }));
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -167,10 +167,12 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 }
 
 export interface IAideProbeInitialSymbolsViewModel extends IAideProbeInitialSymbolInformation {
+	type: 'initialSymbol';
 	currentRenderedHeight: number | undefined;
 }
 
 export interface IAideProbeBreakdownViewModel {
+	type: 'breakdown';
 	readonly uri: URI;
 	readonly name: string;
 	readonly query?: IMarkdownString;
@@ -182,7 +184,8 @@ export interface IAideProbeBreakdownViewModel {
 	expanded: boolean;
 }
 
-export type AideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel;
+
+export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel;
 
 export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymbolsViewModel {
 	return !!item && typeof (item as IAideProbeInitialSymbolsViewModel).symbolName !== 'undefined';
@@ -200,6 +203,9 @@ export interface IAideProbeCodeEditPreviewViewModel {
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
+
+	readonly type = 'breakdown';
+
 	get uri() {
 		return this._breakdown.reference.uri;
 	}

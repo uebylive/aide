@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
@@ -12,12 +13,15 @@ import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/brow
 import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
 import { ScrollType } from 'vs/editor/common/editorCommon';
+import { IModelService } from 'vs/editor/common/services/model';
+import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
@@ -26,6 +30,7 @@ export interface IAideProbeExplanationService {
 	_serviceBrand: undefined;
 
 	changeActiveBreakdown(content: IAideProbeBreakdownViewModel): void;
+	displayInitialSymbol(content: IAideProbeInitialSymbolsViewModel): void;
 	clear(): void;
 }
 
@@ -44,6 +49,9 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		@ITextModelService private readonly textModelService: ITextModelService,
+		@IModelService private readonly modelService: IModelService,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService
 	) {
 		super();
 
@@ -84,7 +92,8 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				}
 				codeEditor = await this.openCodeEditor(uri);
 			} else {
-				codeEditor = await this.openCodeEditor(uri);
+				const symbol = await element.symbol;
+				codeEditor = await this.openCodeEditor(uri, symbol?.range);
 			}
 		} else {
 			const symbol = await element.symbol;
@@ -107,6 +116,26 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				this.explanationWidget.show();
 				this.explanationWidget.showProbingSymbols(symbol);
 			}
+		}
+	}
+
+
+	async displayInitialSymbol(element: IAideProbeInitialSymbolsViewModel) {
+		let textModel = this.modelService.getModel(element.uri);
+		if (!textModel) {
+			const ref = await this.textModelService.createModelReference(element.uri);
+			textModel = ref.object.textEditorModel;
+			ref.dispose();
+		}
+
+		const outlineModel = await this.outlineModelService.getOrCreate(textModel, CancellationToken.None);
+		const symbols = outlineModel.asListOfDocumentSymbols();
+		const symbol = symbols.find(symbol => symbol.name === element.symbolName);
+
+		if (!symbol) {
+			await this.openCodeEditor(element.uri);
+		} else {
+			await this.openCodeEditor(element.uri, symbol.range);
 		}
 	}
 

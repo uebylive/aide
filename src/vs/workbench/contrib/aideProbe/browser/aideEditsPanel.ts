@@ -752,6 +752,7 @@ export interface IAideInitialSymbolInformationViewModel extends IAideProbeInitia
 }
 
 export interface IAideBreakdownViewModel {
+	type: 'breakdown';
 	readonly uri: URI;
 	readonly name: string;
 	readonly query?: IMarkdownString;
@@ -771,6 +772,7 @@ export interface IAideCodeEditPreviewViewModel {
 }
 
 export class AideBreakdownViewModel extends Disposable implements IAideBreakdownViewModel {
+	readonly type = 'breakdown';
 	get uri() {
 		return this._breakdown.reference.uri;
 	}

@@ -278,7 +278,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
-			codeEdits.hunkData.ignoreTextModelNChanges = true;
+			//codeEdits.hunkData.ignoreTextModelNChanges = true;
 
 			await this._textFileService.save(codeEdits.textModelN.uri);
 
@@ -290,7 +290,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
 			await codeEdits.hunkData.recompute(editState, diff);
 
-			codeEdits.hunkData.ignoreTextModelNChanges = false;
+			//codeEdits.hunkData.ignoreTextModelNChanges = false;
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
@@ -300,7 +300,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	async addToUndoStack() {
 		const redoEdits: WorkspaceEdit = { edits: [] };
 		for (const aideEdit of this._codeEdits.values()) {
-			const operations = aideEdit.hunkData.discardAll(false);
+			const operations = aideEdit.hunkData.discardAll(false); // hello
 			for (const operation of operations) {
 				redoEdits.edits.push({ resource: aideEdit.textModelN.uri, textEdit: operation, versionId: undefined });
 			}

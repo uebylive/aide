@@ -32,9 +32,10 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
@@ -54,7 +55,7 @@ export class AideProbeViewPane extends ViewPane {
 	private viewModel: AideProbeViewModel | undefined;
 
 	listFocusIndex: number | undefined;
-	private list: WorkbenchList<AideProbeListItem> | undefined;
+	private list: WorkbenchList<IAideProbeListItem> | undefined;
 
 	private readonly _onDidChangeFocus = this._register(new Emitter<IListChangeEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
@@ -75,6 +76,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
+		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
@@ -111,7 +113,7 @@ export class AideProbeViewPane extends ViewPane {
 		const listContainer = $('.list-container');
 		this.responseWrapper.append(listContainer);
 
-		const list = this._register(<WorkbenchList<AideProbeListItem>>this.instantiationService.createInstance(
+		const list = this._register(<WorkbenchList<IAideProbeListItem>>this.instantiationService.createInstance(
 			WorkbenchList,
 			'PlanList',
 			listContainer,
@@ -171,7 +173,7 @@ export class AideProbeViewPane extends ViewPane {
 		return list;
 	}
 
-	private getListIndex(element: AideProbeListItem): number {
+	private getListIndex(element: IAideProbeListItem): number {
 		let matchIndex = -1;
 		if (isInitialSymbolsVM(element)) {
 			this.viewModel?.initialSymbols.forEach((item, index) => {
@@ -189,10 +191,16 @@ export class AideProbeViewPane extends ViewPane {
 		return matchIndex;
 	}
 
-	async openListItemReference(element: AideProbeListItem, setFocus: boolean = false): Promise<void> {
+	async openListItemReference(element: IAideProbeListItem, setFocus: boolean = false): Promise<void> {
 		const index = this.getListIndex(element);
+
 		if (this.list && index !== -1 && setFocus) {
 			this.list.setFocus([index]);
+			if (element.type === 'breakdown') {
+				this.explanationService.changeActiveBreakdown(element);
+			} else if (element.type === 'initialSymbol') {
+				this.explanationService.displayInitialSymbol(element);
+			}
 		}
 	}
 
@@ -286,24 +294,24 @@ export class AideProbeViewPane extends ViewPane {
 }
 
 interface IAideProbeListItemTemplate {
-	currentItem?: AideProbeListItem;
+	currentItem?: IAideProbeListItem;
 	currentItemIndex?: number;
 	container: HTMLElement;
 	toDispose: DisposableStore;
 }
 
 interface IProbeListItemHeightChangeParams {
-	element: AideProbeListItem;
+	element: IAideProbeListItem;
 	index: number;
 	height: number;
 }
 
 interface IListChangeEvent {
 	index: number;
-	element: AideProbeListItem;
+	element: IAideProbeListItem;
 }
 
-class ProbeListRenderer extends Disposable implements IListRenderer<AideProbeListItem, IAideProbeListItemTemplate> {
+class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeListItem, IAideProbeListItemTemplate> {
 	static readonly TEMPLATE_ID = 'probeListRenderer';
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IProbeListItemHeightChangeParams>());
@@ -327,7 +335,7 @@ class ProbeListRenderer extends Disposable implements IListRenderer<AideProbeLis
 		return data;
 	}
 
-	renderElement(element: AideProbeListItem, index: number, templateData: IAideProbeListItemTemplate) {
+	renderElement(element: IAideProbeListItem, index: number, templateData: IAideProbeListItemTemplate) {
 		templateData.currentItem = element;
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
@@ -435,18 +443,18 @@ class ProbeListRenderer extends Disposable implements IListRenderer<AideProbeLis
 	}
 }
 
-class ProbeListDelegate implements IListVirtualDelegate<AideProbeListItem> {
+class ProbeListDelegate implements IListVirtualDelegate<IAideProbeListItem> {
 	private defaultElementHeight: number = 52;
 
-	getHeight(element: AideProbeListItem): number {
+	getHeight(element: IAideProbeListItem): number {
 		return this.defaultElementHeight;
 	}
 
-	getTemplateId(element: AideProbeListItem): string {
+	getTemplateId(element: IAideProbeListItem): string {
 		return ProbeListRenderer.TEMPLATE_ID;
 	}
 
-	hasDynamicHeight(element: AideProbeListItem): boolean {
+	hasDynamicHeight(element: IAideProbeListItem): boolean {
 		return true;
 	}
 }
