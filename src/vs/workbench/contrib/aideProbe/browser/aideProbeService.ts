@@ -255,6 +255,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 			return;
 			// return new Error('Added iteration without a probe provider or active session.');
 		}
+		this._model.clearResponse();
 		this._model.status = AideProbeStatus.IN_PROGRESS;
 		//mockOnUserAction({ type: 'newIteration', newPrompt });
 		return await resolver.onSessionAction({ sessionId: this._model.sessionId, action: { type: 'newIteration', newPrompt } });
@@ -265,6 +266,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		if (!resolver || !this._model) {
 			return;
 		} else {
+			this._model.clearResponse();
 			this._model.status = AideProbeStatus.IN_PROGRESS;
 			return await resolver.onSessionAction({ sessionId: this._model.sessionId, action: { type: 'followUpRequest' } });
 		}
