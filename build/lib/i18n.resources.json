@@ -183,6 +183,10 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/astNavigation",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/contrib/aideChat",
 			"project": "vscode-workbench"
 		},
