@@ -10,4 +10,7 @@ export const IASTNavigationService = createDecorator<IASTNavigationService>('ast
 export interface IASTNavigationService {
 	_serviceBrand: undefined;
 	readonly toggleASTNavigationMode: () => void;
+
+	moveUp: () => void;
+	moveDown: () => void;
 }

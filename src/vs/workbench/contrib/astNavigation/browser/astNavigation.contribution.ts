@@ -5,8 +5,8 @@
 
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { registerASTNavigationActions } from 'vs/workbench/contrib/astNavigation/browser/actions/astNavigationActions';
+import { ASTNavigationService } from 'vs/workbench/contrib/astNavigation/browser/astNavigationServiceImpl';
 import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
-import { ASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationServiceImpl';
 
 registerASTNavigationActions();
 
