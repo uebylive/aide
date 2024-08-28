@@ -157,11 +157,9 @@ export class AideProbeProvider implements vscode.Disposable {
 			return;
 		}
 
-		console.log("provideProbeResponse");
-
 		this._openResponseStream = response;
 		let { query } = request;
-		// console.log('userQuery', query);
+
 		query = query.trim();
 
 		const startTime = process.hrtime();
@@ -175,7 +173,6 @@ export class AideProbeProvider implements vscode.Disposable {
 				requestId: request.requestId,
 			},
 		});
-		console.log(request.requestId);
 
 		//if there is a selection present in the references: this is what it looks like:
 		const isAnchorEditing = isAnchorBasedEditing(request.mode);
