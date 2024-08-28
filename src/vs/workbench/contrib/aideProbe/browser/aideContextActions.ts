@@ -16,7 +16,6 @@ import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
 import { IQuickInputService, IQuickPickItem, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
 import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
 import { compare } from 'vs/base/common/strings';
@@ -28,6 +27,7 @@ import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { ContextPicker, IContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 
 const AIDE_CONTEXT_CATEGORY = localize2('chat.category', 'Chat');
@@ -185,7 +185,7 @@ export class AttachContextAction extends Action2 {
 
 	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
 		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IChatVariablesService);
+		const chatVariablesService = accessor.get(IAideChatVariablesService);
 		const commandService = accessor.get(ICommandService);
 		const contextKeyService = accessor.get(IContextKeyService);
 

@@ -23,10 +23,10 @@ import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IChatTextEditGroupState } from 'vs/workbench/contrib/chat/common/chatModel';
+
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
 

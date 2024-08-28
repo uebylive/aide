@@ -8,6 +8,7 @@ import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Event } from 'vs/base/common/event';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -39,9 +40,11 @@ import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/brows
 import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { AideProbeMode, AideProbeStatus, IAideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { DisposableStore } from 'vs/base/common/lifecycle';
+import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { ICommandService } from 'vs/platform/commands/common/commands';
+import { IParsedChatRequest } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
+import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aideProbeRequestParser';
 
 
 const MAX_WIDTH = 800;
@@ -56,6 +59,7 @@ export const IAideControlsService = createDecorator<IAideControlsService>('IAide
 
 export interface IAideControlsService {
 	_serviceBrand: undefined;
+	controls: AideControls | undefined;
 	registerControls(controls: AideControls): void;
 	acceptInput(): void;
 	focusInput(): void;
@@ -63,25 +67,29 @@ export interface IAideControlsService {
 
 export class AideControlsService implements IAideControlsService {
 	_serviceBrand: undefined;
-	private controls: AideControls | undefined;
+	private _controls: AideControls | undefined;
+
+	get controls() {
+		return this._controls;
+	}
 
 	registerControls(controls: AideControls): void {
-		if (!this.controls) {
-			this.controls = controls;
+		if (!this._controls) {
+			this._controls = controls;
 		} else {
 			console.warn('AideControls already registered');
 		}
 	}
 
 	acceptInput(): void {
-		if (this.controls) {
-			this.controls.acceptInput();
+		if (this._controls) {
+			this._controls.acceptInput();
 		}
 	}
 
 	focusInput(): void {
-		if (this.controls) {
-			this.controls.focusInput();
+		if (this._controls) {
+			this._controls.focusInput();
 		}
 	}
 }
@@ -89,8 +97,29 @@ export class AideControlsService implements IAideControlsService {
 
 registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Eager);
 
+export interface IAideControlsContrib extends IDisposable {
+	readonly id: string;
 
-export class AideControls extends Themable {
+	/**
+	 * A piece of state which is related to the input editor of the chat widget
+	 */
+	getInputState?(): any;
+
+	onDidChangeInputState?: Event<void>;
+
+	/**
+	 * Called with the result of getInputState when navigating input history.
+	 */
+	setInputState?(s: any): void;
+}
+
+
+export interface IAideControls {
+	readonly inputEditor: CodeEditorWidget;
+	getContrib<T extends IAideControlsContrib>(id: string): T | undefined;
+}
+
+export class AideControls extends Themable implements IAideControls {
 
 	public static readonly ID = 'workbench.contrib.aideControls';
 
@@ -100,9 +129,30 @@ export class AideControls extends Themable {
 
 	private anchoredSymbolsButton: Button;
 
+
+	public static readonly INPUT_CONTRIBS: { new(...args: [IAideControls, ...any]): IAideControlsContrib }[] = [];
+	private contribs: ReadonlyArray<IAideControlsContrib> = [];
+	getContrib<T extends IAideControlsContrib>(id: string): T | undefined {
+		return this.contribs.find(c => c.id === id) as T;
+	}
+
 	private _input: CodeEditorWidget;
+	get inputEditor() {
+		return this._input;
+	}
 	private inputHeight = INPUT_MIN_HEIGHT;
-	private static readonly INPUT_URI = URI.parse('aideControls:input');
+	static readonly INPUT_SCHEME = 'aideControlsInput';
+	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
+
+
+	private parsedChatRequest: IParsedChatRequest | undefined;
+	get parsedInput() {
+		if (this.parsedChatRequest === undefined) {
+			this.parsedChatRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(this.inputEditor.getValue());
+		}
+
+		return this.parsedChatRequest;
+	}
 
 	private contextPicker: ContextPicker;
 
@@ -278,6 +328,7 @@ export class AideControls extends Themable {
 		const defaultOptions = getSimpleEditorOptions(this.configurationService);
 		const options: IEditorConstructionOptions = {
 			...defaultOptions,
+			overflowWidgetsDomNode: editorElement,
 			readOnly: false,
 			ariaLabel: localize('chatInput', "Start a task or exploration"),
 			fontFamily: DEFAULT_FONT_FAMILY,
