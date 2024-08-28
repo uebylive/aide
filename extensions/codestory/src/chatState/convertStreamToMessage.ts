@@ -301,7 +301,6 @@ export const reportAgentEventsToChat = async (
 		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.FrameworkEvent) {
-
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
 				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
 					return {
@@ -329,6 +328,8 @@ export const reportAgentEventsToChat = async (
 				}
 			} else if (event.event.FrameworkEvent.CodeIterationFinished) {
 				response.codeIterationFinished({ edits: iterationEdits });
+			} else if (event.event.FrameworkEvent.ReferenceFound) {
+				console.log(event.event.FrameworkEvent.ReferenceFound);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
