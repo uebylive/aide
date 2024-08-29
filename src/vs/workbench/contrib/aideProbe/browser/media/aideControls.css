@@ -22,7 +22,7 @@
 	margin-bottom: 6px;
 }
 
-.aide-controls-anchored-symbol .monaco-icon-label {
+:is(.aide-controls-anchored-symbol .monaco-icon-label, .aide-controls-probe-mode-header) {
 	font-size: 11px;
 	display: flex;
 	padding: 0 6px 0px 2px;
@@ -30,9 +30,29 @@
 	text-align: center;
 	justify-content: center;
 	align-items: center;
-	color: var(--vscode-button-secondaryForeground);
-	background-color: var(--vscode-button-secondaryBackground);
-	border: 1px solid var(--vscode-button-border, transparent);
+}
+
+.aide-controls-anchored-symbol-button {
+	background-color: var(--vscode-editor-background);
+}
+
+.aide-controls-probe-mode-header {
+	color: var(--vscode-debugIcon-breakpointDisabledForeground);
+	border: 1px dashed var(--vscode-editor-background);
+	transition: ease all 0.2s;
+}
+
+.aide-controls-probe-mode-header:hover {
+	color: var(--vscode-editor-foreground);
+	border-color: var(--vscode-editor-foreground);
+}
+
+.aide-controls-probe-mode {
+	flex: 1;
+}
+
+.aide-controls-anchored-symbol-button:hover {
+	background-color: var(--vscode-editorInlayHint-background);
 }
 
 .aide-controls-anchored-symbol .monaco-icon-label::before {
