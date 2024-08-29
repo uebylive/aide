@@ -135,6 +135,11 @@ interface SymbolEventEditRequest {
 	EditCode: EditedCodeForEditRequest;
 	CodeCorrectionTool: CodeCorrectionToolSelection;
 	EditCodeStreaming: EditedCodeStreamingRequest;
+	ThinkingForEdit: ThinkingForEditRequest;
+}
+
+interface ThinkingForEditRequest {
+	thinking: string;
 }
 
 interface RangeSelectionForEditRequest {
