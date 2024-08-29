@@ -13,4 +13,6 @@ export interface IASTNavigationService {
 
 	moveUp: () => void;
 	moveDown: () => void;
+	moveInto: () => void;
+	moveOut: () => void;
 }

@@ -26,14 +26,15 @@ class ToggleASTNavigationMode extends Action2 {
 			f1: true,
 			category: AST_NAVIGATION_CATEGORY,
 			toggled: ContextKeyExpr.equals(CONTEXT_AST_NAVIGATION_MODE.key, true),
-			icon: Codicon.preview,
+			icon: Codicon.symbolKeyword,
 			menu: {
-				id: MenuId.LayoutControlMenu,
-				group: 'z_end',
+				id: MenuId.EditorTitle,
+				group: 'navigation',
+				order: 0
 			},
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.WinCtrl | KeyCode.KeyM,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyE,
 			}
 		});
 	}
@@ -88,8 +89,54 @@ export class MoveDownAction extends EditorAction {
 	}
 }
 
+export class MoveIntoAction extends EditorAction {
+	static readonly ID = 'editor.action.astNavigationInto';
+	constructor() {
+		super({
+			id: MoveIntoAction.ID,
+			label: nls.localize('moveInto', "Move Into"),
+			alias: 'Move Into',
+			precondition: CONTEXT_AST_NAVIGATION_MODE,
+			kbOpts: {
+				kbExpr: EditorContextKeys.focus,
+				primary: KeyCode.RightArrow,
+				weight: KeybindingWeight.WorkbenchContrib + 1
+			}
+		});
+	}
+
+	public run(accessor: ServicesAccessor): void {
+		const astNavigationService = accessor.get(IASTNavigationService);
+		astNavigationService.moveInto();
+	}
+}
+
+export class MoveOutAction extends EditorAction {
+	static readonly ID = 'editor.action.astNavigationOut';
+	constructor() {
+		super({
+			id: MoveOutAction.ID,
+			label: nls.localize('moveOut', "Move Out"),
+			alias: 'Move Out',
+			precondition: CONTEXT_AST_NAVIGATION_MODE,
+			kbOpts: {
+				kbExpr: EditorContextKeys.focus,
+				primary: KeyCode.LeftArrow,
+				weight: KeybindingWeight.WorkbenchContrib + 1
+			}
+		});
+	}
+
+	public run(accessor: ServicesAccessor): void {
+		const astNavigationService = accessor.get(IASTNavigationService);
+		astNavigationService.moveOut();
+	}
+}
+
 export function registerASTNavigationActions() {
 	registerAction2(ToggleASTNavigationMode);
 	registerEditorAction(MoveUpAction);
 	registerEditorAction(MoveDownAction);
+	registerEditorAction(MoveIntoAction);
+	registerEditorAction(MoveOutAction);
 }
