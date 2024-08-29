@@ -367,6 +367,15 @@ export const reportAgentEventsToChat = async (
 					continue;
 				}
 				const editEvent = symbolEventSubStep.Edit;
+				if (editEvent.ThinkingForEdit) {
+					response.breakdown({
+						reference: {
+							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+							name: symbol_identifier.symbol_name
+						},
+						response: new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking),
+					});
+				}
 				if (editEvent.RangeSelectionForEdit) {
 					response.breakdown({
 						reference: {
