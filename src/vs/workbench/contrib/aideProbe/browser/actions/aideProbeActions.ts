@@ -265,11 +265,7 @@ class EnterAnchoredEditing extends Action2 {
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
 				weight: KeybindingWeight.ExternalExtension, // Necessary to override the default keybinding
-<<<<<<< HEAD
-				when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-=======
 				//when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
->>>>>>> 0dc95398b22 (change selection mid iterations)
 			},
 		});
 	}
