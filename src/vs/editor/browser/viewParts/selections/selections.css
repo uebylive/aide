@@ -11,11 +11,11 @@
 	position: absolute;
 }
 
-.monaco-editor .focused .selected-text {
+body:not(.astNavigationMode) .monaco-editor .focused .selected-text {
 	background-color: var(--vscode-editor-selectionBackground);
 }
 
-.monaco-editor .selected-text {
+body:not(.astNavigationMode) .monaco-editor .selected-text {
 	background-color: var(--vscode-editor-inactiveSelectionBackground);
 }
 

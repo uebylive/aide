@@ -205,6 +205,9 @@ import 'vs/workbench/contrib/inlineAideChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/aideProbe/browser/aideProbe.contribution';
 import 'vs/workbench/contrib/aideAddContext/browser/aideAddContext.contribution';
 
+// AST Navigation
+import 'vs/workbench/contrib/astNavigation/browser/astNavigation.contribution';
+
 // Interactive
 import 'vs/workbench/contrib/interactive/browser/interactive.contribution';
 

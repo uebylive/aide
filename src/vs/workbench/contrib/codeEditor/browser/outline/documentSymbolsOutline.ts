@@ -363,7 +363,7 @@ class DocumentSymbolsOutline implements IOutline<DocumentSymbolItem> {
 						this._breadcrumbsDataSource.update(model, this._editor.getPosition());
 						this._onDidChange.fire({ affectOnlyActiveElement: true });
 					}
-				}, 150);
+				}, 0);
 			}));
 
 			// update properties, send event
