@@ -5,8 +5,9 @@
 
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
+import { Selection } from 'vs/editor/common/core/selection';
 import { Range } from 'vs/editor/common/core/range';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
+import { TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
 import { IModelContentChange } from 'vs/editor/common/textModelEvents';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
@@ -26,10 +27,26 @@ export interface INavigateBreakdownAction {
 	status: boolean;
 }
 
-export interface IAideProbeUserAction {
-	sessionId: string;
-	action: IFollowAlongAction | INavigateBreakdownAction;
+export interface INewIterationAction {
+	type: 'newIteration';
+	newPrompt: string;
 }
+
+export interface IContextChangeAction {
+	type: 'contextChange';
+	newContext: string[];
+}
+
+export interface IFollowUpRequestAction {
+	type: 'followUpRequest';
+}
+
+export interface IAideProbeSessionAction {
+	sessionId: string;
+	action: IFollowAlongAction | INavigateBreakdownAction | INewIterationAction | IFollowUpRequestAction;
+}
+
+export type IAideProbeUserAction = IContextChangeAction;
 
 export interface IReferenceByName {
 	name: string;
@@ -53,7 +70,10 @@ export interface IAideProbeGoToDefinition {
 }
 
 export interface IAideProbeInitialSymbolInformation {
-	uri: URI; symbolName: string; isNew: boolean; thinking: string;
+	uri: URI;
+	symbolName: string;
+	isNew: boolean;
+	thinking: string;
 }
 
 export interface IAideProbeInitialSymbols {
@@ -81,6 +101,11 @@ export interface IAideProbeLongContextSearch {
 	finished: boolean;
 }
 
+export interface IAideProbeIterationFinished {
+	kind: 'iterationFinished';
+	edits: WorkspaceEdit;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
@@ -89,7 +114,8 @@ export type IAideProbeProgress =
 	| IAideProbeOpenFile
 	| IAideProbeRepoMapGeneration
 	| IAideProbeLongContextSearch
-	| IAideProbeInitialSymbols;
+	| IAideProbeInitialSymbols
+	| IAideProbeIterationFinished;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
@@ -103,8 +129,8 @@ export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
 	readonly variableData: IChatRequestVariableData;
-	readonly editMode: boolean;
 	readonly codebaseSearch: boolean;
+	readonly mode: IAideProbeMode;
 }
 
 export interface IAideProbeStartEditEvent {
@@ -124,12 +150,44 @@ export interface IAideProbeUndoEditEvent {
 	changes: IModelContentChange[];
 }
 
+export interface IAideProbeEditEvent {
+	kind: 'edit';
+	resource: URI;
+	edit: TextEdit;
+}
+
 export type IAideProbeResponseEvent =
 	| IAideProbeStartEditEvent
 	| IAideProbeCompleteEditEvent
 	| IAideProbeUndoEditEvent
 	| IAideProbeGoToDefinition
 	| IAideProbeBreakdownContent
-	| IAideProbeInitialSymbols;
+	| IAideProbeInitialSymbols
+	| IAideProbeEditEvent;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
+
+
+export interface AnchorEditingSelection {
+	uri: URI;
+	selection: Selection;
+	symbolNames: string[];
+}
+
+export const enum AideProbeMode {
+	EXPLORE = 'EXPLORE',
+	AGENTIC = 'AGENTIC',
+	ANCHORED = 'ANCHORED',
+	FOLLOW_UP = 'FOLLOW_UP'
+}
+
+export type IAideProbeMode = keyof typeof AideProbeMode;
+
+export const enum AideProbeStatus {
+	INACTIVE = 'INACTIVE',
+	IN_PROGRESS = 'IN_PROGRESS',
+	ITERATION_FINISHED = 'ITERATION_FINISHED',
+	IN_REVIEW = 'IN_REVIEW'
+}
+
+export type IAideProbeStatus = keyof typeof AideProbeStatus;

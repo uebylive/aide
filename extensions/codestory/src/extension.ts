@@ -185,7 +185,7 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	const probeProvider = new AideProbeProvider(sidecarClient);
+	const probeProvider = new AideProbeProvider(sidecarClient, rootPath);
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands
@@ -196,13 +196,13 @@ export async function activate(context: ExtensionContext) {
 		})
 	);
 
-	workspace.onDidSaveTextDocument(async (textDocument) => {
-		const time = new Date();
-		const path = textDocument.uri.fsPath;
-		console.log(`File ${path} saved at ${time}`);
-		// @sartoshi-foot-dao
-		// sidecarClient.doSomethingWith(path, time);
-	});
+	//workspace.onDidSaveTextDocument(async (textDocument) => {
+	//	const time = new Date();
+	//	const path = textDocument.uri.fsPath;
+	//	console.log(`File ${path} saved at ${time}`);
+	//	// @sartoshi-foot-dao
+	//	// sidecarClient.doSomethingWith(path, time);
+	//});
 
 	window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor) {

@@ -5,11 +5,14 @@
 
 .part.aidecontrols {
 	overflow: visible;
+	background-color: var(--vscode-sideBar-background) !important;
+	border-top: 1px solid var(--vscode-editorWidget-border);
 }
 
 .aide-context-picker {
 	position: relative;
 	display: inline-flex;
+	height: 36px;
 }
 
 .aide-controls-context-split-button {
@@ -40,14 +43,14 @@
 .aide-option-item {
 	display: flex;
 	align-items: center;
-	padding: 2px 4px;
+	padding: 4px;
 	gap: 4px;
 }
 
 .aide-controls-context-badge {
 	position: absolute;
-	left: 0;
-	bottom: 0;
+	left: 6px;
+	bottom: 6px;
 	transform: translate(-50%, 50%);
 	border-radius: 99999px;
 	width: 16px;
@@ -72,13 +75,13 @@
 
 .aide-context-picker-quick-context-panel {
 	width: 300px;
-	right: 0;
+	right: 12px;
 }
 
 .aide-context-picker-panel {
 	position: absolute;
 	width: 400px;
-	right: 0;
+	right: 12px;
 }
 
 .aide-context-option-item,

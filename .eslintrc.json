@@ -674,6 +674,7 @@
 							"@xterm/addon-webgl",
 							"@xterm/headless",
 							"@xterm/xterm",
+							"@floating-ui/dom",
 							"yauzl",
 							"yazl",
 							"zlib"

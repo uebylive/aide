@@ -39,13 +39,13 @@ import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
 import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { AideCommandPalettePanel, IAideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_IS_CODEBASE_SEARCH, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { AideProbeStatus, IAideProbeResponseModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeService, ProbeMode } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeStatus, AideProbeStatus, IAideProbeMode, AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -69,7 +69,7 @@ export interface IAideCommandPaletteWidget {
 
 	show(): void;
 	hide(): void;
-	setMode(mode: ProbeMode): void;
+	setMode(mode: IAideProbeMode): void;
 	acceptInput(): string | Promise<IAideProbeResponseModel> | undefined;
 	cancelRequest(): void;
 	clear(): void;
@@ -90,7 +90,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _innerContainer!: HTMLElement;
 	private width: number = 560;
 
-	private contextPicker: ContextPicker;
+	//private contextPicker: ContextPicker;
 
 	private _inputContainer: HTMLElement; // contains all inputs
 	private _modeToggleContainer: HTMLElement;
@@ -98,8 +98,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	private _inputEditorContainer: HTMLElement;
 	private _inputEditor: CodeEditorWidget;
 
-	private mode: IContextKey<ProbeMode>;
-	private isCodebaseSearch: IContextKey<boolean>;
+	private mode: IContextKey<IAideProbeMode>;
+	private contextType: IContextKey<string>;
 	private contextElement: HTMLElement;
 
 	private submitToolbar: MenuWorkbenchToolBar;
@@ -117,7 +117,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 	private panelContainer: HTMLElement;
 	private resourceLabels: ResourceLabels;
-	private panel: IAideCommandPalettePanel;
+	private panel: AideCommandPalettePanel;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideProbeViewModel | undefined;
@@ -170,7 +170,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		super();
 
 		this.isVisible = CONTEXT_PALETTE_IS_VISIBLE.bindTo(contextKeyService);
-		this.isCodebaseSearch = CONTEXT_PROBE_IS_CODEBASE_SEARCH.bindTo(contextKeyService);
+		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.inputEditorHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
@@ -261,7 +261,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		this._register(modeToggle.onDidClick(() => {
-			this.mode.set(this.mode.get() === 'explore' ? 'edit' : 'explore');
+			this.mode.set(this.mode.get() === AideProbeMode.EXPLORE ? AideProbeMode.AGENTIC : AideProbeMode.EXPLORE);
 			this.updateModeFlag();
 		}));
 
@@ -299,7 +299,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 
 		// Context select
-		this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
+		//this.contextPicker = this._register(this.instantiationService.createInstance(ContextPicker, this._inputContainer));
 
 		// Register events
 
@@ -406,7 +406,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this.panel.setFocus(index, browserEvent);
 	}
 
-	setMode(mode: ProbeMode) {
+	setMode(mode: IAideProbeMode) {
 		this.mode.set(mode);
 		this.updateInputEditorPlaceholder();
 		this.updateModeFlag();
@@ -422,7 +422,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			if (this.requestStatus.get() !== 'INACTIVE') {
 				placeholder = 'Filter through the results';
 			} else {
-				if (this.mode.get() === 'edit') {
+				if (this.mode.get() === AideProbeMode.AGENTIC) {
 					placeholder = 'Ask to edit your codebase';
 				} else {
 					placeholder = 'Ask to explore your codebase';
@@ -537,8 +537,8 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 
 	private updateModeFlag(): void {
-		this.modeToggle.label = this.mode.get() === 'explore' ? localize('exploreMode', "Explore mode") : localize('editMode', "Edit mode");
-		this.modeToggle.element.classList.toggle('edit-mode', this.mode.get() === 'edit');
+		this.modeToggle.label = this.mode.get() === AideProbeMode.EXPLORE ? localize('exploreMode', "Explore mode") : localize('editMode', "Edit mode");
+		this.modeToggle.element.classList.toggle('edit-mode', this.mode.get() === AideProbeMode.AGENTIC);
 		this.updateInputEditorPlaceholder();
 		this.layoutInputs();
 	}
@@ -596,7 +596,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		}));
 
 		const editorValue = this._inputEditor.getValue();
-		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, this.mode.get() === 'edit', this.isCodebaseSearch.get() || false, [...this.contextPicker.context.entries]);
+		const result = this.aideProbeService.initiateProbe(viewModel.model, editorValue, [], null);
 		this.requestStatus.set(AideProbeStatus.IN_PROGRESS);
 		this.contextElement.classList.add('active');
 
@@ -605,7 +605,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		this.panel.show(editorValue, true);
 		this._inputEditor.setValue('');
 
-		if (this.isCodebaseSearch.get()) {
+		if (this.contextType.get() === 'codebase') {
 			this.panel.isRepoMapLoading = true;
 			this.panel.isLongContextSearchLoading = false;
 		}
@@ -623,7 +623,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 			return;
 		}
 
-		if (this.isCodebaseSearch.get()) {
+		if (this.contextType.get() === 'codebase') {
 			this.panel.isRepoMapLoading = !this._viewModel.isRepoMapReady;
 			// if repo map is ready, we start the long context search
 			if (this._viewModel.isRepoMapReady) {
@@ -659,10 +659,10 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 	}
 
 	cancelRequest(): void {
-		this.aideProbeService.cancelProbe();
+		//this.aideProbeService.cancelProbe();
 		const codeEdits = this._viewModel?.model.response?.codeEdits;
 		if (!codeEdits || codeEdits.size === 0) {
-			this.aideProbeService.rejectCodeEdits();
+			//this.aideProbeService.rejectCodeEdits();
 			this.clear();
 
 			this.panel.hide();
@@ -673,7 +673,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 
 	clear(): void {
 		this.explanationService.clear();
-		this.aideProbeService.cancelProbe();
+		//this.aideProbeService.cancelProbe();
 		this.updateInputEditorPlaceholder();
 
 		this._viewModel?.dispose();

@@ -13,17 +13,17 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;
 	readonly onChangeActiveBreakdown: Event<IAideProbeBreakdownViewModel>;
-
 	readonly model: IAideProbeModel;
 	readonly sessionId: string;
 	readonly status: IAideProbeStatus;
+	readonly initialSymbols: ReadonlyArray<IAideProbeInitialSymbolsViewModel>;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
@@ -79,6 +79,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._breakdowns;
 	}
 
+	private _initialSymbols: IAideProbeInitialSymbolsViewModel[] = [];
+	get initialSymbols() {
+		return this._initialSymbols;
+	}
+
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this.breakdowns.filter(b => {
 			if (!this._filter) {
@@ -97,6 +102,10 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 		this._register(_model.onDidChange(async () => {
 
+			if (!this._model.response) {
+				return;
+			}
+
 			this._lastFileOpened = _model.response?.lastFileOpened;
 
 			if (_model.request?.codebaseSearch) {
@@ -111,26 +120,10 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 			}
 
-			const codeEdits = _model.response?.codeEdits;
+			//const codeEdits = _model.response?.codeEdits;
 
-			if (_model.response && _model.response.breakdowns.length === 0 && _model.response.initialSymbols.size) {
-				this._breakdowns = [];
-				const uniqueSymbols = new Set<string>();
-				for (const symbols of _model.response.initialSymbols.values()) {
-					for (const symbol of symbols) {
-						if (!uniqueSymbols.has(symbol.symbolName)) {
-							uniqueSymbols.add(symbol.symbolName);
-							let reference = this._references.get(symbol.uri.toString());
-							if (!reference) {
-								reference = await this.textModelResolverService.createModelReference(symbol.uri);
-							}
-							const newBreakdown = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, { reference: { uri: symbol.uri, name: symbol.symbolName }, kind: 'breakdown' }, reference));
-							this._breakdowns.push(newBreakdown);
-						}
-					}
-				}
-				this._onDidChange.fire();
-				return;
+			if (this._model.response.initialSymbols) {
+				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, type: 'initialSymbol', currentRenderedHeight: 0 }));
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -145,24 +138,23 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 						return;
 					}
 
-					const edits = codeEdits?.get(item.reference.uri.toString());
-					const hunks = edits?.hunkData.getInfo();
-					for (const hunk of hunks ?? []) {
-						let wholeRange: Range | undefined;
-						const ranges = hunk.getRangesN();
-						for (const range of ranges) {
-							if (!wholeRange) {
-								wholeRange = range;
-							} else {
-								wholeRange = wholeRange.plusRange(range);
-							}
-						}
-
-						if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
-							viewItem.appendEdits([hunk]);
-						}
-					}
-
+					//const edits = codeEdits?.get(item.reference.uri.toString());
+					//const hunks = edits?.hunkData.getInfo();
+					//for (const hunk of hunks ?? []) {
+					//	let wholeRange: Range | undefined;
+					//	const ranges = hunk.getRangesN();
+					//	for (const range of ranges) {
+					//		if (!wholeRange) {
+					//			wholeRange = range;
+					//		} else {
+					//			wholeRange = wholeRange.plusRange(range);
+					//		}
+					//	}
+					//
+					//	if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+					//		viewItem.appendEdits([hunk]);
+					//	}
+					//}
 					this._onDidChange.fire();
 				});
 
@@ -174,7 +166,13 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 }
 
+export interface IAideProbeInitialSymbolsViewModel extends IAideProbeInitialSymbolInformation {
+	type: 'initialSymbol';
+	currentRenderedHeight: number | undefined;
+}
+
 export interface IAideProbeBreakdownViewModel {
+	type: 'breakdown';
 	readonly uri: URI;
 	readonly name: string;
 	readonly query?: IMarkdownString;
@@ -183,6 +181,18 @@ export interface IAideProbeBreakdownViewModel {
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
 	currentRenderedHeight: number | undefined;
+	expanded: boolean;
+}
+
+
+export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel;
+
+export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymbolsViewModel {
+	return !!item && typeof (item as IAideProbeInitialSymbolsViewModel).symbolName !== 'undefined';
+}
+
+export function isBreakdownVM(item: unknown): item is IAideProbeBreakdownViewModel {
+	return !!item && typeof (item as AideProbeBreakdownViewModel).edits !== 'undefined';
 }
 
 export interface IAideProbeCodeEditPreviewViewModel {
@@ -193,6 +203,9 @@ export interface IAideProbeCodeEditPreviewViewModel {
 }
 
 export class AideProbeBreakdownViewModel extends Disposable implements IAideProbeBreakdownViewModel {
+
+	readonly type = 'breakdown';
+
 	get uri() {
 		return this._breakdown.reference.uri;
 	}
@@ -212,6 +225,8 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	get response() {
 		return this._breakdown.response;
 	}
+
+	expanded = false;
 
 	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
 	private _symbol: DocumentSymbol | undefined;

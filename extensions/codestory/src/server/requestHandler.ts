@@ -33,7 +33,10 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 
 // Async handler function to handle incoming requests
 export function handleRequest(
-	provideEdit: (request: SidecarApplyEditsRequest) => Promise<void>
+	provideEdit: (request: SidecarApplyEditsRequest) => Promise<{
+		fs_file_path: String;
+		success: boolean;
+	}>
 ) {
 	return async (req: http.IncomingMessage, res: http.ServerResponse) => {
 		try {
@@ -98,6 +101,8 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarApplyEditsRequest = JSON.parse(body);
 				const response = await provideEdit(request);
+				console.log('applyEdits', response);
+				console.log(response);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/go_to_references') {

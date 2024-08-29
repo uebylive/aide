@@ -144,6 +144,7 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 }
 
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
+//AideControls.INPUT_CONTRIBS.push(ChatDynamicVariableModel);
 
 interface MultiLevelCodeTriggerActionContext {
 	inputEditor: ICodeEditor;

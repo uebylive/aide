@@ -12,12 +12,11 @@ import { isWindows, isLinux, isMacintosh, isWeb, isIOS } from 'vs/base/common/pl
 import { EditorInputCapabilities, GroupIdentifier, isResourceEditorInput, IUntypedEditorInput, pathsToEditors } from 'vs/workbench/common/editor';
 import { SidebarPart } from 'vs/workbench/browser/parts/sidebar/sidebarPart';
 import { PanelPart } from 'vs/workbench/browser/parts/panel/panelPart';
-import { Position, Parts, PanelOpensMaximizedOptions, IWorkbenchLayoutService, positionFromString, positionToString, panelOpensMaximizedFromString, PanelAlignment, ActivityBarPosition, LayoutSettings, MULTI_WINDOW_PARTS, SINGLE_WINDOW_PARTS, ZenModeSettings, EditorTabsMode, EditorActionsLocation, shouldShowCustomTitleBar, OverlayedParts } from 'vs/workbench/services/layout/browser/layoutService';
+import { Position, Parts, PanelOpensMaximizedOptions, IWorkbenchLayoutService, positionFromString, positionToString, panelOpensMaximizedFromString, PanelAlignment, ActivityBarPosition, LayoutSettings, MULTI_WINDOW_PARTS, SINGLE_WINDOW_PARTS, ZenModeSettings, EditorTabsMode, EditorActionsLocation, shouldShowCustomTitleBar } from 'vs/workbench/services/layout/browser/layoutService';
 import { isTemporaryWorkspace, IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/common/workspace';
 import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
 import { IConfigurationChangeEvent, IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ITitleService } from 'vs/workbench/services/title/browser/titleService';
-import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { StartupKind, ILifecycleService } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { getMenuBarVisibility, CustomTitleBarVisibility, IPath, hasNativeTitlebar, hasCustomTitlebar, TitleBarSetting } from 'vs/platform/window/common/window';
@@ -49,7 +48,7 @@ import { AuxiliaryBarPart } from 'vs/workbench/browser/parts/auxiliarybar/auxili
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
-import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 
 //#region Layout Implementation
 
@@ -251,7 +250,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	//#endregion
 
 	private readonly parts = new Map<string, Part>();
-	private readonly overlayedParts = new Map<string, OverlayedPart>();
+	//private readonly overlayedParts = new Map<string, OverlayedPart>();
 
 	private initialized = false;
 	private workbenchGrid!: SerializableGrid<ISerializableView>;
@@ -261,7 +260,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	//private aideControlsPartView!: OverlayedPart;
+	private aideControlsPartView!: ISerializableView;
+	//private aideBarPartView!: ISerializableView;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
@@ -322,7 +322,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.notificationService = accessor.get(INotificationService);
 		this.statusBarService = accessor.get(IStatusbarService);
 		accessor.get(IBannerService);
-		accessor.get(IAideControlsService);
+		accessor.get(IAideControlsPartService);
+		//accessor.get(IAideBarPartService);
 
 		// Listeners
 		this.registerLayoutListeners();
@@ -1115,25 +1116,24 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		if (!part) {
 			throw new Error(`Unknown part ${key}`);
 		}
-
 		return part;
 	}
 
-	registerOverlayedPart(part: OverlayedPart): IDisposable {
-		const id = part.getId();
-		this.overlayedParts.set(id, part);
-
-		return toDisposable(() => this.parts.delete(id));
-	}
-
-	protected getOverlayedPart(key: OverlayedParts): OverlayedPart {
-		const part = this.overlayedParts.get(key);
-		if (!part) {
-			throw new Error(`Unknown overlayed part ${key}`);
-		}
-
-		return part;
-	}
+	//registerOverlayedPart(part: OverlayedPart): IDisposable {
+	//	const id = part.getId();
+	//	this.overlayedParts.set(id, part);
+	//
+	//	return toDisposable(() => this.parts.delete(id));
+	//}
+	//
+	//protected getOverlayedPart(key: OverlayedParts): OverlayedPart {
+	//	const part = this.overlayedParts.get(key);
+	//	if (!part) {
+	//		throw new Error(`Unknown overlayed part ${key}`);
+	//	}
+	//
+	//	return part;
+	//}
 
 	registerNotifications(delegate: { onDidChangeNotificationsVisibility: Event<boolean> }): void {
 		this._register(delegate.onDidChangeNotificationsVisibility(visible => this._onDidChangeNotificationsVisibility.fire(visible)));
@@ -1294,6 +1294,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 				(this.isVisible(Parts.SIDEBAR_PART) ? this.sideBarPartView.minimumWidth : 0) +
 				(this.isVisible(Parts.PANEL_PART) && isColumn ? this.panelPartView.minimumWidth : 0) +
 				(this.isVisible(Parts.AUXILIARYBAR_PART) ? this.auxiliaryBarPartView.minimumWidth : 0);
+			// = this.aideBarPartView.minimumWidth;
 
 			const takenHeight =
 				(this.isVisible(Parts.TITLEBAR_PART, targetWindow) ? this.titleBarPartView.minimumHeight : 0) +
@@ -1503,11 +1504,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const editorPart = this.getPart(Parts.EDITOR_PART);
 		const activityBar = this.getPart(Parts.ACTIVITYBAR_PART);
 		const panelPart = this.getPart(Parts.PANEL_PART);
+		const aideControls = this.getPart(Parts.AIDECONTROLS_PART);
+		//const aideBarPart = this.getPart(Parts.AIDEBAR_PART);
 		const auxiliaryBarPart = this.getPart(Parts.AUXILIARYBAR_PART);
 		const sideBar = this.getPart(Parts.SIDEBAR_PART);
 		const statusBar = this.getPart(Parts.STATUSBAR_PART);
 
-		//const aideControls = this.getOverlayedPart(OverlayedParts.AIDECONTROLS_PART);
 
 		// View references for all parts
 		this.titleBarPartView = titleBar;
@@ -1515,8 +1517,9 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.sideBarPartView = sideBar;
 		this.activityBarPartView = activityBar;
 		this.editorPartView = editorPart;
-		//this.aideControlsPartView = aideControls;
+		this.aideControlsPartView = aideControls;
 		this.panelPartView = panelPart;
+		//this.aideBarPartView = aideBarPart;
 		this.auxiliaryBarPartView = auxiliaryBarPart;
 		this.statusBarPartView = statusBar;
 
@@ -1528,6 +1531,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			[Parts.PANEL_PART]: this.panelPartView,
 			[Parts.SIDEBAR_PART]: this.sideBarPartView,
 			[Parts.STATUSBAR_PART]: this.statusBarPartView,
+			[Parts.AIDECONTROLS_PART]: this.aideControlsPartView,
+			//[Parts.AIDEBAR_PART]: this.aideBarPartView,
 			[Parts.AUXILIARYBAR_PART]: this.auxiliaryBarPartView
 		};
 
@@ -2248,7 +2253,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {
-			nodes.editor.size = availableHeight;
 			return nodes.editor;
 		}
 
@@ -2281,7 +2285,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		};
 	}
 
-	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
+	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; aideControls: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
 		const activityBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN) ? 0 : nodes.activityBar.size;
 		const sideBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN) ? 0 : nodes.sideBar.size;
 		const auxiliaryBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN) ? 0 : nodes.auxiliaryBar.size;
@@ -2319,7 +2323,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 					editor: nodes.editor,
 					sideBar: sideBarNextToEditor ? nodes.sideBar : undefined,
 					auxiliaryBar: auxiliaryBarNextToEditor ? nodes.auxiliaryBar : undefined
-				}, availableHeight - panelSize, editorSectionWidth), nodes.panel],
+				}, availableHeight - panelSize, editorSectionWidth), nodes.aideControls, nodes.panel],
 				size: editorSectionWidth
 			});
 
@@ -2390,6 +2394,13 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			visible: !this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN)
 		};
 
+		const aideControlsNode: ISerializedLeafNode = {
+			type: 'leaf',
+			data: { type: Parts.AIDECONTROLS_PART },
+			size: 36,
+			visible: true
+		};
+
 		const auxiliaryBarNode: ISerializedLeafNode = {
 			type: 'leaf',
 			data: { type: Parts.AUXILIARYBAR_PART },
@@ -2414,6 +2425,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const middleSection: ISerializedNode[] = this.arrangeMiddleSectionNodes({
 			activityBar: activityBarNode,
 			auxiliaryBar: auxiliaryBarNode,
+			aideControls: aideControlsNode,
 			editor: editorNode,
 			panel: panelNode,
 			sideBar: sideBarNode

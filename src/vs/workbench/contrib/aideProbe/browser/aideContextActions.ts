@@ -12,25 +12,30 @@ import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
 import { Command } from 'vs/editor/common/languages';
 import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from 'vs/editor/contrib/quickAccess/browser/gotoSymbolQuickAccess';
 import { localize, localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
+import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
 import { IQuickInputService, IQuickPickItem, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { IChatVariablesService } from 'vs/workbench/contrib/chat/common/chatVariables';
 import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
 import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { EditorType } from 'vs/editor/common/editorCommon';
 import { compare } from 'vs/base/common/strings';
 import { IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
+import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
+import { ContextPicker, IContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
+import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 
 const AIDE_CONTEXT_CATEGORY = localize2('chat.category', 'Chat');
 
 export function registerContextActions() {
 	registerAction2(AttachContextAction);
-	registerAction2(AttachFileAction);
-	registerAction2(AttachSelectionAction);
+	registerAction2(ApplyWholeCodebaseSearch);
+	registerAction2(ReturnToPrompt);
 }
 
 export type IChatContextQuickPickItem = IFileQuickPickItem | IDynamicVariableQuickPickItem | IStaticVariableQuickPickItem | IGotoSymbolQuickPickItem | ISymbolQuickPickItem | IQuickAccessQuickPickItem;
@@ -75,57 +80,6 @@ export interface IQuickAccessQuickPickItem extends IQuickPickItem {
 	prefix: string;
 }
 
-class AttachFileAction extends Action2 {
-
-	static readonly ID = 'workbench.action.aideControls.attachFile';
-
-	constructor() {
-		super({
-			id: AttachFileAction.ID,
-			title: localize2('workbench.action.aideControls.attachFile.label', "Attach File"),
-			category: AIDE_CONTEXT_CATEGORY,
-			f1: false
-		});
-	}
-
-	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
-		//const variablesService = accessor.get(IChatVariablesService);
-		const textEditorService = accessor.get(IEditorService);
-
-		const activeUri = textEditorService.activeEditor?.resource;
-		if (textEditorService.activeTextEditorControl?.getEditorType() === EditorType.ICodeEditor && activeUri && [Schemas.file, Schemas.vscodeRemote].includes(activeUri.scheme)) {
-			//variablesService.attachContext('file', activeUri, ChatAgentLocation.Panel);
-		}
-	}
-}
-
-class AttachSelectionAction extends Action2 {
-
-	static readonly ID = 'workbench.action.aideControls.attachSelection';
-
-	constructor() {
-		super({
-			id: AttachSelectionAction.ID,
-			title: localize2('workbench.action.aideControls.attachSelection.label', "Add Selection to Chat"),
-			category: AIDE_CONTEXT_CATEGORY,
-			f1: false
-		});
-	}
-
-	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
-		//const variablesService = accessor.get(IChatVariablesService);
-		const textEditorService = accessor.get(IEditorService);
-
-		const activeEditor = textEditorService.activeTextEditorControl;
-		const activeUri = textEditorService.activeEditor?.resource;
-		if (textEditorService.activeTextEditorControl?.getEditorType() === EditorType.ICodeEditor && activeUri && [Schemas.file, Schemas.vscodeRemote].includes(activeUri.scheme)) {
-			const selection = activeEditor?.getSelection();
-			if (selection) {
-				//variablesService.attachContext('file', { uri: activeUri, range: selection }, ChatAgentLocation.Panel);
-			}
-		}
-	}
-}
 
 export class AttachContextAction extends Action2 {
 
@@ -137,13 +91,11 @@ export class AttachContextAction extends Action2 {
 			title: localize2('workbench.action.aideControls.attachContext.label', "Attach Context"),
 			icon: Codicon.attach,
 			category: AIDE_CONTEXT_CATEGORY,
-			menu: [
-				{
-					//when: ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel), CONTEXT_IN_QUICK_CHAT.isEqualTo(false)),
-					id: MenuId.ChatExecute,
-					group: 'navigation',
-				},
-			]
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyCode.Slash,
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
+			},
 		});
 	}
 
@@ -231,10 +183,13 @@ export class AttachContextAction extends Action2 {
 		return toAttach;
 	}
 
-	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<IVariableEntry[] | undefined> {
+	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
 		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IChatVariablesService);
+		const chatVariablesService = accessor.get(IAideChatVariablesService);
 		const commandService = accessor.get(ICommandService);
+		const contextKeyService = accessor.get(IContextKeyService);
+
+		CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService).set('specific');
 
 		const quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[] = [];
 		for (const variable of chatVariablesService.getVariables()) {
@@ -269,7 +224,12 @@ export class AttachContextAction extends Action2 {
 
 			return compare(first, second);
 		}));
-		return newEntries;
+
+		const contextPicker = getWorkbenchContribution<IContextPicker>(ContextPicker.ID);
+		if (Array.isArray(newEntries)) {
+			newEntries.forEach(entry => contextPicker.context.add(entry));
+		}
+		contextPicker.openContextList();
 	}
 
 	private async _show(quickInputService: IQuickInputService, commandService: ICommandService, quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[], query: string = '', currentContext?: IVariableEntry[]): Promise<IVariableEntry[] | undefined> {
@@ -317,5 +277,64 @@ export class AttachContextAction extends Action2 {
 				}
 			});
 		});
+	}
+}
+
+
+class ReturnToPrompt extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.returnToPrompt';
+
+	constructor() {
+		super({
+			id: ReturnToPrompt.ID,
+			title: localize2('Return to prompt', 'Return to prompt'),
+			f1: false,
+			category: AIDE_CONTEXT_CATEGORY,
+			icon: Codicon.send,
+			precondition: CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS,
+			keybinding: {
+				primary: KeyCode.Escape,
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS,
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.focusInput();
+		const contextPicker = getWorkbenchContribution<IContextPicker>(ContextPicker.ID);
+		contextPicker.closeContextList();
+	}
+}
+
+
+
+
+class ApplyWholeCodebaseSearch extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.applyWholeCodebase';
+
+	constructor() {
+		super({
+			id: ApplyWholeCodebaseSearch.ID,
+			title: localize2('Enter anchored editing', 'Enter anchored editing'),
+			f1: false,
+			category: AIDE_CONTEXT_CATEGORY,
+			icon: Codicon.send,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyCode.Period,
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: CONTEXT_PROBE_INPUT_HAS_FOCUS,
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const contextKeyService = accessor.get(IContextKeyService);
+		CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService).set('codebase');
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.focusInput();
+		const contextPicker = getWorkbenchContribution<IContextPicker>(ContextPicker.ID);
+		contextPicker.closeContextList();
 	}
 }

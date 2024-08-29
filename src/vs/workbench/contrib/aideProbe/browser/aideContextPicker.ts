@@ -27,7 +27,10 @@ import { AideSelect } from 'vs/workbench/browser/aideSelect';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
 import 'vs/css!./media/aideContextPicker';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_PROBE_IS_CODEBASE_SEARCH } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 
 const $ = dom.$;
 
@@ -46,7 +49,7 @@ const quickContextOptions: IQuickContextOption[] = [
 	{
 		icon: 'mini/paper-clip',
 		label: 'Specific context',
-		value: 'specific-context'
+		value: 'specific'
 	}
 ];
 
@@ -59,10 +62,22 @@ function getActiveEditorUri(editorService: IEditorService): URI | undefined {
 	return model ? model.uri : undefined;
 }
 
-export class ContextPicker extends Disposable {
 
-	private isCodeBaseSearch: IContextKey<boolean>;
+export interface IContextPicker extends IWorkbenchContribution {
+	context: AideContext;
+	openContextList(): void;
+	closeContextList(): void;
+}
 
+
+export class ContextPicker extends Disposable implements IContextPicker {
+
+	public static ID = 'workbench.aide.contextPicker';
+
+	private contextType: IContextKey<string>;
+	private isListFocused: IContextKey<boolean>;
+
+	readonly element: HTMLElement;
 	readonly context: AideContext;
 
 	private button: Button;
@@ -75,25 +90,25 @@ export class ContextPicker extends Disposable {
 	private indexOfLastContextDeletedWithKeyboard: number = -1;
 	private readonly defaultItemHeight = 36;
 
-
+	private contextTypeDropdownButton: Button;
 	private isContextTypePanelVisible = false;
 	private contextTypeDropdownPanelElement: HTMLElement;
 
 	constructor(
-		private readonly parent: HTMLElement,
 		@IEditorService private readonly editorService: IEditorService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@ICommandService private readonly commandService: ICommandService,
+		@IAideLSPService private readonly aideLSPService: IAideLSPService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 	) {
 		super();
 
-		this.isCodeBaseSearch = CONTEXT_PROBE_IS_CODEBASE_SEARCH.bindTo(contextKeyService);
-
+		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 		this.context = this.instantiationService.createInstance(AideContext);
+		this.isListFocused = CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS.bindTo(contextKeyService);
 
-		const contextPickerElement = $('.aide-context-picker');
-		this.parent.append(contextPickerElement);
+		const contextPickerElement = this.element = $('.aide-context-picker');
 
 		const splitButtonElement = $('.aide-controls-context-split-button');
 		contextPickerElement.appendChild(splitButtonElement);
@@ -121,6 +136,18 @@ export class ContextPicker extends Disposable {
 			}
 		));
 
+		this.list.onDidChangeFocus((event) => {
+			if (event.indexes.length) {
+				this.isListFocused.set(true);
+			} else {
+				this.isListFocused.set(false);
+			}
+		});
+
+		this.list.onDidBlur(() => {
+			this.isListFocused.set(false);
+		});
+
 		this._register(this.list.onDidChangeContentHeight(height => {
 			this.list.layout(height);
 		}));
@@ -136,17 +163,13 @@ export class ContextPicker extends Disposable {
 		addButton.element.classList.add('aide-context-picker-add-button');
 
 		this._register(addButton.onDidClick(async () => {
-			// TODO(@g-danna) Find a better (?) and type-safe way to do this
-			const newEntries = await this.commandService.executeCommand('workbench.action.aideControls.attachContext') as unknown as IVariableEntry[];
-			if (Array.isArray(newEntries)) {
-				newEntries.forEach(entry => this.context.add(entry));
-			}
+			this.commandService.executeCommand('workbench.action.aideControls.attachContext');
 		}));
 
 
 		this.button = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
 		this.button.element.classList.add('aide-controls-context-button');
-		this.button.enabled = !this.isCodeBaseSearch.get();
+		this.button.enabled = this.contextType.get() !== 'codebase';
 
 		const buttonBadge = this.buttonBadge = $('.aide-controls-context-badge');
 		this.button.element.appendChild(buttonBadge);
@@ -154,7 +177,7 @@ export class ContextPicker extends Disposable {
 		this.buttonIcon = this.updateButtonIcon(this.button.element);
 
 		this._register(this.button.onDidClick(() => {
-			if (!this.isCodeBaseSearch.get()) {
+			if (this.contextType.get() !== 'codebase') {
 				this.toggleContextPanel();
 			}
 		}));
@@ -179,7 +202,7 @@ export class ContextPicker extends Disposable {
 		this.contextTypeDropdownPanelElement = $('.aide-context-picker-quick-context-panel');
 		contextPickerElement.appendChild(this.contextTypeDropdownPanelElement);
 
-		const contextTypeDropdownButton = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
+		const contextTypeDropdownButton = this.contextTypeDropdownButton = this._register(this.instantiationService.createInstance(Button, splitButtonElement, {}));
 		contextTypeDropdownButton.element.classList.add('aide-controls-context-type-button');
 		this.instantiationService.createInstance(Heroicon, contextTypeDropdownButton.element, 'micro/chevron-down');
 
@@ -203,11 +226,19 @@ export class ContextPicker extends Disposable {
 		});
 
 		this._register(select.onDidSelect(({ element }) => {
-			if (element.value === 'codebase') {
-				this.isCodeBaseSearch.set(true);
-				this.context.clear();
-			} else {
-				this.isCodeBaseSearch.set(false);
+			switch (element.value) {
+				case 'codebase':
+					this.contextType.set('codebase');
+					this.context.clear();
+					break;
+				case 'specific':
+					this.contextType.set('specific');
+					if (!this.isListVisible) {
+						this.toggleContextPanel();
+					}
+					break;
+				default:
+					break;
 			}
 			this.isContextTypePanelVisible = false;
 			dom.hide(this.contextTypeDropdownPanelElement);
@@ -224,20 +255,97 @@ export class ContextPicker extends Disposable {
 		this.render();
 
 		this._register(this.contextKeyService.onDidChangeContext((event) => {
-			if (event.affectsSome(new Set([CONTEXT_PROBE_IS_CODEBASE_SEARCH.key]))) {
+			if (event.affectsSome(new Set([CONTEXT_PROBE_CONTEXT_TYPE.key]))) {
 				this.updateButtonIcon(this.button.element);
-				this.button.enabled = !this.isCodeBaseSearch.get();
+				this.button.enabled = this.contextType.get() !== 'codebase';
 				this.render();
 			}
 		}));
 
 		this._register(this.context.onDidChange(() => {
+			const files = Array.from(this.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+			this.aideProbeService.onContextChange(files.map(entry => entry.resource.fsPath));
 			this.render();
 		}));
 
+		this.checkActivation();
+
+		this._register(this.aideLSPService.onDidChangeStatus(() => {
+			this.checkActivation();
+		}));
+
 		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.checkActivation();
 			this.render();
 		}));
+	}
+
+	openContextList(): void {
+		if (!this.isListVisible) {
+			this.toggleContextPanel();
+		}
+		this.list.setFocus([this.context.entries.size - 1]);
+		this.list.setSelection([this.context.entries.size - 1]);
+	}
+
+	closeContextList(): void {
+		if (this.isListVisible) {
+			this.toggleContextPanel();
+		}
+	}
+
+	append(parent: HTMLElement) {
+		parent.append(this.element);
+	}
+
+	//private checkSelection() {
+	//	this.editorDisposables.clear();
+	//	const editor = this.editorService.activeTextEditorControl;
+	//	if (isCodeEditor(editor)) {
+	//		const textModel = editor.getModel();
+	//		this.editorDisposables.add(editor.onDidChangeCursorSelection(({ selection }) => {
+	//			this.hasValidSelection = !selection.isEmpty();
+	//			if (this.hasValidSelection && this.aideLSPService.isActiveForCurrentEditor()) {
+	//				if (this.contextType.get() !== 'selection') {
+	//					this.previousContextType = this.contextType.get() ?? 'specific';
+	//					this.contextType.set('selection');
+	//				}
+	//				this.context.clear();
+	//				this.context.add({
+	//					id: 'selection',
+	//					// follow the same schema as the chat variables
+	//					name: 'file',
+	//					value: JSON.stringify({
+	//						uri: textModel?.uri,
+	//						range: {
+	//							// selection is 1 indexed and not 0 indexed and also depends
+	//							// on the orientation
+	//							startLineNumber: Math.min(selection.startLineNumber - 1, selection.endLineNumber - 1),
+	//							startColumn: selection.startColumn - 1,
+	//							endLineNumber: Math.max(selection.endLineNumber - 1, selection.startLineNumber - 1),
+	//							endColumn: selection.endColumn - 1,
+	//						},
+	//					})
+	//				});
+	//			} else {
+	//				if (this.contextType.get() === 'selection' && this.previousContextType) {
+	//					this.contextType.set(this.previousContextType);
+	//				}
+	//			}
+	//		}));
+	//	} else {
+	//		this.hasValidSelection = false;
+	//	}
+	//}
+
+	private checkActivation() {
+		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
+		const activeEditor = this.editorService.activeTextEditorControl;
+		const isActive = isLSPActive && isCodeEditor(activeEditor);
+		if (this.contextType.get() !== 'codebase') {
+			this.button.enabled = isActive;
+		}
+		this.contextTypeDropdownButton.enabled = isActive;
 	}
 
 	private toggleContextPanel() {
@@ -254,7 +362,12 @@ export class ContextPicker extends Disposable {
 		if (this.buttonIcon) {
 			this.buttonIcon.dispose();
 		}
-		const iconId = this.isCodeBaseSearch.get() ? 'mini/square-3-stack-3d' : 'mini/paper-clip';
+		let iconId = 'mini/paper-clip';
+		switch (this.contextType.get()) {
+			case 'codebase':
+				iconId = 'mini/square-3-stack-3d';
+				break;
+		}
 		return this.buttonIcon = this.instantiationService.createInstance(Heroicon, button, iconId);
 	}
 
@@ -275,7 +388,7 @@ export class ContextPicker extends Disposable {
 
 		this.updateButtonIcon(this.button.element);
 
-		if (!this.isCodeBaseSearch.get() && this.context.entries.size) {
+		if (this.contextType.get() === 'specific' && this.context.entries.size) {
 			dom.show(this.buttonBadge);
 			this.buttonBadge.textContent = this.context.entries.size.toString();
 		} else {

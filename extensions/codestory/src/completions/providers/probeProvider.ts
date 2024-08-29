@@ -6,7 +6,6 @@
 import * as http from 'http';
 import * as net from 'net';
 import * as os from 'os';
-import * as uuid from 'uuid';
 import * as vscode from 'vscode';
 
 import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
@@ -20,10 +19,12 @@ import { getUniqueId } from '../../utilities/uniqueId';
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string | undefined;
+	private _rootPath: string;
 	private _limiter = new Limiter(1);
 
 	private _requestHandler: http.Server | null = null;
 	private _openResponseStream: vscode.ProbeResponseStream | undefined;
+	private _iterationEdits = new vscode.WorkspaceEdit();
 
 	private async isPortOpen(port: number): Promise<boolean> {
 		return new Promise((resolve, _) => {
@@ -46,7 +47,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 	}
 
-	private async getNextOpenPort(startFrom: number = 42423) {
+	private async getNextOpenPort(startFrom: number = 42427) {
 		let openPort: number | null = null;
 		while (startFrom < 65535 || !!openPort) {
 			if (await this.isPortOpen(startFrom)) {
@@ -60,8 +61,10 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	constructor(
 		sideCarClient: SideCarClient,
+		rootPath: string,
 	) {
 		this._sideCarClient = sideCarClient;
+		this._rootPath = rootPath;
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
@@ -84,29 +87,69 @@ export class AideProbeProvider implements vscode.Disposable {
 			'aideProbeProvider',
 			{
 				provideProbeResponse: this.provideProbeResponse.bind(this),
-				onDidUserAction(action) {
-					postHogClient?.capture({
-						distinctId: getUniqueId(),
-						event: action.action.type,
-						properties: {
-							platform: os.platform(),
-							requestId: action.sessionId,
-						},
-					});
-				}
+				onDidSessionAction: this.sessionFollowup.bind(this),
+				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
 	}
 
-	async provideEdit(request: SidecarApplyEditsRequest) {
+	async sessionFollowup(sessionAction: vscode.AideProbeSessionAction) {
+		if (sessionAction.action.type === 'newIteration') {
+			// @theskcd - This is where we can accept the iteration
+			console.log('newIteration', sessionAction);
+			await this._sideCarClient.codeSculptingFollowup(sessionAction.action.newPrompt, sessionAction.sessionId);
+		}
+
+		if (sessionAction.action.type === 'followUpRequest') {
+			console.log('followUpRequest');
+			this._iterationEdits = new vscode.WorkspaceEdit();
+			await this._sideCarClient.codeSculptingFollowups(sessionAction.sessionId, this._rootPath);
+		}
+
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: sessionAction.action.type,
+			properties: {
+				platform: os.platform(),
+				requestId: sessionAction.sessionId,
+			},
+		});
+	}
+
+	async userFollowup(userAction: vscode.AideProbeUserAction) {
+		if (userAction.type === 'contextChange') {
+			console.log('contextChange');
+			await this._sideCarClient.warmupCodeSculptingCache(userAction.newContext);
+		}
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: userAction.type,
+			properties: {
+				platform: os.platform(),
+			},
+		});
+	}
+
+	async provideEdit(request: SidecarApplyEditsRequest): Promise<{
+		fs_file_path: String;
+		success: boolean;
+	}> {
 		if (request.apply_directly) {
 			applyEditsDirectly(request);
-			return;
+			return {
+				fs_file_path: request.fs_file_path,
+				success: true,
+			};
 		}
 		if (!this._openResponseStream) {
-			return;
+			console.log('returning early over here');
+			return {
+				fs_file_path: request.fs_file_path,
+				success: true,
+			};
 		}
-		await applyEdits(request, this._openResponseStream);
+		const response = await applyEdits(request, this._openResponseStream, this._iterationEdits);
+		return response;
 	}
 
 	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
@@ -116,7 +159,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		this._openResponseStream = response;
 		let { query } = request;
-		// console.log('userQuery', query);
+
 		query = query.trim();
 
 		const startTime = process.hrtime();
@@ -131,45 +174,49 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-		const threadId = uuid.v4();
+		//if there is a selection present in the references: this is what it looks like:
+		const isAnchorEditing = isAnchorBasedEditing(request.mode);
 
 		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
-		if (request.editMode) {
-			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, threadId, request.codebaseSearch);
+
+		if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
+			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.codebaseSearch, isAnchorEditing);
 		} else {
-			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, threadId,);
+			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
 		}
 
-		/* // Use dummy data: Start
-		const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
-		const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-		if (!extensionRoot || !workspaceRoot) {
-			return {};
-		}
+		// Use dummy data: Start
+		//const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
+		//const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+		//if (!extensionRoot || !workspaceRoot) {
+		//	return {};
+		//}
+		//
+		//const that = this;
+		//const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
+		//const probeResponse = (async function* (arr) {
+		//	for (const original of arr) {
+		//		const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
+		//		const item = JSON.parse(itemString) as SideCarAgentEvent;
+		//		if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
+		//			const editSubStep = item.event.SymbolEventSubStep.event.Edit;
+		//			if (editSubStep.EditCode) {
+		//				const editEvent = editSubStep.EditCode;
+		//				that.provideEdit({
+		//					apply_directly: false,
+		//					fs_file_path: editEvent.fs_file_path,
+		//					selected_range: editEvent.range,
+		//					edited_content: editEvent.new_code
+		//				});
+		//			}
+		//		}
+		//		yield item;
+		//	}
+		//})(jsonArr);
+		// Use dummy data: End
 
-		const that = this;
-		const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
-		const probeResponse = (async function* (arr) {
-			for (const original of arr) {
-				const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
-				const item = JSON.parse(itemString) as SideCarAgentEvent;
-				if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
-					const editSubStep = item.event.SymbolEventSubStep.event.Edit;
-					if (editSubStep.EditCode) {
-						const editEvent = editSubStep.EditCode;
-						that.provideEdit({
-							fs_file_path: editEvent.fs_file_path,
-							selected_range: editEvent.range,
-							edited_content: editEvent.new_code
-						});
-					}
-				}
-				yield item;
-			}
-		})(jsonArr);
-		// Use dummy data: End */
-
-		await reportAgentEventsToChat(request.editMode, probeResponse, response, threadId, token, this._sideCarClient, this._limiter);
+		const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
+		await reportAgentEventsToChat(isEditMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._iterationEdits, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -183,10 +230,20 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 
-		return {};
+		return {
+			iterationEdits: this._iterationEdits,
+		};
 	}
 
 	dispose() {
 		this._requestHandler?.close();
+	}
+}
+
+function isAnchorBasedEditing(mode: vscode.AideProbeMode): boolean {
+	if (mode === 'ANCHORED') {
+		return true;
+	} else {
+		return false;
 	}
 }

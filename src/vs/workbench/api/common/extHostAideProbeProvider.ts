@@ -10,7 +10,7 @@ import { IExtensionDescription } from 'vs/platform/extensions/common/extensions'
 import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import type * as vscode from 'vscode';
 
 export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideProbeProviderShape {
@@ -47,6 +47,10 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					const dto = typeConvert.AideProbeLongContextSearchPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
+				codeIterationFinished(value) {
+					const dto = typeConvert.AideProbeIterationFinishedPart.from(value);
+					that._proxy.$handleProbingProgressChunk(request, dto);
+				},
 				initialSearchSymbols(value) {
 					const part = new extHostTypes.AideProbeInitialSymbolsPart(value);
 					const dto = typeConvert.AideProbeInitialSymbolsPart.from(part.symbols);
@@ -75,7 +79,7 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 				async codeEdit(value) {
 					const dto = typeConvert.AideProbeResponseTextEditPart.from(value);
 					await that._proxy.$handleProbingProgressChunk(request, dto);
-				},
+				}
 			},
 			token
 		);
@@ -92,14 +96,26 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 		}), token);
 	}
 
-	$onUserAction(handle: number, action: IAideProbeUserAction): void {
+	async $onSessionAction(handle: number, action: IAideProbeSessionAction): Promise<void> {
+		const provider = this._providers.get(handle);
+		if (!provider) {
+			return;
+		}
+
+		const extAction = typeConvert.AideProbeSessionAction.to(action);
+		await provider.provider.onDidSessionAction(extAction);
+		return;
+	}
+
+	async $onUserAction(handle: number, action: IAideProbeUserAction): Promise<void> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;
 		}
 
 		const extAction = typeConvert.AideProbeUserAction.to(action);
-		provider.provider.onDidUserAction(extAction);
+		await provider.provider.onDidUserAction(extAction);
+		return;
 	}
 
 	registerProbingProvider(extension: IExtensionDescription, id: string, provider: vscode.ProbeResponseHandler): IDisposable {

@@ -125,6 +125,10 @@ class CodeLensAdapter {
 		private readonly _logService: ILogService,
 	) { }
 
+	getProvider(): vscode.CodeLensProvider {
+		return this._provider;
+	}
+
 	async provideCodeLenses(resource: URI, token: CancellationToken): Promise<extHostProtocol.ICodeLensListDto | undefined> {
 		const doc = this._documents.getDocument(resource);
 
@@ -2318,6 +2322,15 @@ export class ExtHostLanguageFeatures implements extHostProtocol.ExtHostLanguageF
 	getInlayHintsProvider(selector: vscode.DocumentSelector): vscode.InlayHintsProvider | null {
 		for (const adapter of this._adapter.values()) {
 			if (adapter.adapter instanceof InlayHintsAdapter) {
+				return adapter.adapter.getProvider();
+			}
+		}
+		return null;
+	}
+
+	getCodeLensProvider(selector: vscode.DocumentSelector): vscode.CodeLensProvider | null {
+		for (const adapter of this._adapter.values()) {
+			if (adapter.adapter instanceof CodeLensAdapter) {
 				return adapter.adapter.getProvider();
 			}
 		}

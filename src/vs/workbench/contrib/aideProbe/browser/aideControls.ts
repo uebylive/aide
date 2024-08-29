@@ -3,13 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $ } from 'vs/base/browser/dom';
+import { $, hide, show } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { SashState } from 'vs/base/browser/ui/sash/sash';
-import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Event } from 'vs/base/common/event';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
@@ -19,23 +18,36 @@ import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController
 import { localize } from 'vs/nls';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { AideControlsPart } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
-import { AideControlsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideControlsPanel';
-import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
+import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
+import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 import 'vs/css!./media/aideControls';
-//import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
+import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
+import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
+import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
+import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
+import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
+import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { AideProbeMode, AideProbeStatus, IAideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { ICommandService } from 'vs/platform/commands/common/commands';
+import { IParsedChatRequest } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
+import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aideProbeRequestParser';
 
+
+const MAX_WIDTH = 800;
 const INPUT_MIN_HEIGHT = 36;
 
 const inputPlaceholder = {
@@ -43,91 +55,269 @@ const inputPlaceholder = {
 	decorationType: 'aide-controls-input-editor',
 };
 
-export class AideControls extends Disposable {
+export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 
-	static readonly ID = 'workbench.contrib.aideControls';
-	private static readonly INPUT_URI = URI.parse('aideControls:input');
+export interface IAideControlsService {
+	_serviceBrand: undefined;
+	controls: AideControls | undefined;
+	registerControls(controls: AideControls): void;
+	acceptInput(): void;
+	focusInput(): void;
+}
 
-	private margin = 14;
-	private panelHeight = 400 - this.margin * 2;
+export class AideControlsService implements IAideControlsService {
+	_serviceBrand: undefined;
+	private _controls: AideControls | undefined;
+
+	get controls() {
+		return this._controls;
+	}
+
+	registerControls(controls: AideControls): void {
+		if (!this._controls) {
+			this._controls = controls;
+		} else {
+			console.warn('AideControls already registered');
+		}
+	}
+
+	acceptInput(): void {
+		if (this._controls) {
+			this._controls.acceptInput();
+		}
+	}
+
+	focusInput(): void {
+		if (this._controls) {
+			this._controls.focusInput();
+		}
+	}
+}
+
+
+registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Eager);
+
+export interface IAideControlsContrib extends IDisposable {
+	readonly id: string;
+
+	/**
+	 * A piece of state which is related to the input editor of the chat widget
+	 */
+	getInputState?(): any;
+
+	onDidChangeInputState?: Event<void>;
+
+	/**
+	 * Called with the result of getInputState when navigating input history.
+	 */
+	setInputState?(s: any): void;
+}
+
+
+export interface IAideControls {
+	readonly inputEditor: CodeEditorWidget;
+	getContrib<T extends IAideControlsContrib>(id: string): T | undefined;
+}
+
+export class AideControls extends Themable implements IAideControls {
+
+	public static readonly ID = 'workbench.contrib.aideControls';
+
+	// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
+	private part = this.aideControlsPartService.mainPart;
+	private element: HTMLElement;
+
+	private anchoredSymbolsButton: Button;
+
+
+	public static readonly INPUT_CONTRIBS: { new(...args: [IAideControls, ...any]): IAideControlsContrib }[] = [];
+	private contribs: ReadonlyArray<IAideControlsContrib> = [];
+	getContrib<T extends IAideControlsContrib>(id: string): T | undefined {
+		return this.contribs.find(c => c.id === id) as T;
+	}
+
+	private _input: CodeEditorWidget;
+	get inputEditor() {
+		return this._input;
+	}
 	private inputHeight = INPUT_MIN_HEIGHT;
+	static readonly INPUT_SCHEME = 'aideControlsInput';
+	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
 
-	private part: AideControlsPart;
-	private input: CodeEditorWidget;
-	private panel: AideControlsPanel | undefined;
+
+	private parsedChatRequest: IParsedChatRequest | undefined;
+	get parsedInput() {
+		if (this.parsedChatRequest === undefined) {
+			this.parsedChatRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(this.inputEditor.getValue());
+		}
+
+		return this.parsedChatRequest;
+	}
+
+	private contextPicker: ContextPicker;
+
+
+	//private toolbar: MenuWorkbenchToolBar;
 
 	private inputHasText: IContextKey<boolean>;
-	private requestStatus: IContextKey<AideProbeStatus>;
+	private inputHasFocus: IContextKey<boolean>;
+	private areControlsActive: IContextKey<boolean>;
+	private probeMode: IContextKey<IAideProbeMode>;
 
-	private readonly viewModelDisposables = this._register(new DisposableStore());
-	private _viewModel: AideProbeViewModel | undefined;
-	private set viewModel(viewModel: AideProbeViewModel | undefined) {
-		// @willisCheck: I edited this
-		if (this._viewModel === viewModel) {
-			return;
-		}
+	private readonly activeEditorDisposables = this._register(new DisposableStore());
+	private probeHasSelection: IContextKey<boolean>;
 
-		this.viewModelDisposables.clear();
-
-		if (viewModel === undefined) {
-			this._viewModel?.dispose();
-			this._viewModel = undefined;
-		} else {
-			this._viewModel = viewModel;
-			this.viewModelDisposables.add(viewModel);
-		}
-	}
-
-	get viewModel(): AideProbeViewModel | undefined {
-		return this._viewModel;
-	}
+	private model: AideProbeModel | undefined;
 
 	constructor(
+		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
 		@IAideControlsService aideControlsService: IAideControlsService,
+		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideLSPService private readonly aideLSPService: IAideLSPService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IEditorService private readonly editorService: IEditorService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IThemeService private readonly themeService: IThemeService,
+		@IThemeService themeService: IThemeService,
+		@IViewsService private readonly viewsService: IViewsService,
 		@IModelService private readonly modelService: IModelService,
-
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 
-		super();
+		super(themeService);
+		this.themeService = themeService;
 
+		aideControlsService.registerControls(this);
+
+		this.areControlsActive = CONTEXT_PROBE_ARE_CONTROLS_ACTIVE.bindTo(contextKeyService);
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
-		this.requestStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
+		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this.probeHasSelection = CONTEXT_PROBE_HAS_SELECTION.bindTo(contextKeyService);
+		this.probeMode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 
-		// TODO(willis): Make sure we get the right part in the auxilliary editor, not just the main one
-		this.part = aideControlsService.mainPart;
-
-		const element = $('.aide-controls');
-		element.style.margin = `${this.margin}px`;
-		this.part.element.appendChild(element);
-
-		//const contextSelectElement = $('.aide-controls-select');
-		//element.appendChild(contextSelectElement);
-		//this.createQuickContextSelect(contextSelectElement);
-
-		this.panel = instantiationService.createInstance(AideEditsPanel, element);
-
-		this.input = this.createInput(element);
+		const element = this.element = $('.aide-controls');
+		this.part.content.appendChild(element);
+		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
 
-		this.layout();
+		const anchoredSymbolElement = $('.aide-controls-anchored-symbol');
+		element.appendChild(anchoredSymbolElement);
+		this.anchoredSymbolsButton = this.createAnchoredSymbolsButton(anchoredSymbolElement);
 
-		this._register(this.panel.onDidResize(({ newHeight }) => {
-			if (this.panel) {
-				const minHeight = this.part.minimumHeight - this.inputHeight;
-				this.panelHeight = Math.max(minHeight, newHeight);
-			}
-			this.layout();
+
+
+
+		const inputElement = $('.aide-controls-input-container');
+		element.appendChild(inputElement);
+		const toolbarElement = $('.aide-controls-toolbar');
+		element.appendChild(toolbarElement);
+
+		this._input = this.createInput(inputElement);
+
+		const partSize = this.part.dimension;
+		if (partSize) {
+			this.layout(partSize.width, partSize.height);
+		}
+		this.part.onDidSizeChange((size) => {
+			this.layout(size.width, size.height);
+		});
+
+		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
+		this.contextPicker.append(inputElement);
+
+		this.createToolbar(toolbarElement);
+
+		this.checkActivation();
+		this.updateInputPlaceholder();
+		this.checkEditorSelection();
+
+		this._register(this.aideLSPService.onDidChangeStatus(() => {
+			this.updateInputPlaceholder();
+			this.checkActivation();
 		}));
+
+		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.updateInputPlaceholder();
+			this.checkActivation();
+			this.checkEditorSelection();
+		}));
+
+		this.updateAnchoredSymbolsButton(anchoredSymbolElement);
+
+		this._register(this.aideProbeService.onDidSetAnchoredSelection((event) => {
+			const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+			const newContext = filesInContext.map(entry => entry.resource.fsPath);
+			const anchoredSelectionFile = event?.uri.fsPath;
+			if (anchoredSelectionFile) {
+				newContext.push(anchoredSelectionFile);
+			}
+			this.aideProbeService.onContextChange(newContext);
+			this.updateAnchoredSymbolsButton(anchoredSymbolElement);
+			if (this.part.dimension) {
+				const { width, height } = this.part.dimension;
+				this.layout(width, height);
+			}
+		}));
+
+		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService).set(AideProbeStatus.INACTIVE);
 	}
 
-	createInput(parent: HTMLElement) {
+	private createAnchoredSymbolsButton(parent: HTMLElement) {
+		const button = this.anchoredSymbolsButton = this.instantiationService.createInstance(Button, parent, { title: 'Removed anchored symbol selection' });
+		button.element.classList.add('aide-controls-anchored-symbol-button');
+		const symbolsElement = $('span.aide-controls-anchored-symbol-symbols');
+		button.element.appendChild(symbolsElement);
+
+		const uriElement = $('span.aide-controls-anchored-symbol-uri');
+		button.element.appendChild(uriElement);
+
+		button.enabled = this.probeMode.get() === AideProbeMode.ANCHORED;
+
+		this._register(button.onDidClick(() => {
+			this.commandService.executeCommand('workbench.action.aideProbe.exitAnchoredEditing');
+		}));
+
+		return button;
+	}
+
+	private updateAnchoredSymbolsButton(anchoredSymbolElement: HTMLElement) {
+		const button = this.anchoredSymbolsButton;
+		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
+		if (anchorEditingSelection) {
+			button.enabled = true;
+			const uriElement = button.element.querySelector('.aide-controls-anchored-symbol-uri')!;
+			uriElement.textContent = anchorEditingSelection.uri.path;
+			if (anchorEditingSelection.symbolNames.length > 0) {
+				const symbolsElement = button.element.querySelector('.aide-controls-anchored-symbol-symbols')!;
+				symbolsElement.textContent = anchorEditingSelection.symbolNames.join(', ');
+			}
+			show(anchoredSymbolElement);
+		} else {
+			button.enabled = false;
+			hide(anchoredSymbolElement);
+		}
+	}
+
+	private checkEditorSelection() {
+		const activeEditor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(activeEditor)) {
+			this.activeEditorDisposables.add(activeEditor.onDidChangeCursorSelection((event) => {
+				const isValid = event.selection !== null && !event.selection.isEmpty();
+				this.probeHasSelection.set(isValid);
+			}));
+		} else {
+			this.activeEditorDisposables.clear();
+		}
+	}
+
+	private checkActivation() {
+		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
+		const activeEditor = this.editorService.activeTextEditorControl;
+		this.areControlsActive.set(isCodeEditor(activeEditor) && isLSPActive);
+	}
+
+	private createInput(parent: HTMLElement) {
 		const editorOuterElement = $('.aide-controls-input');
 		parent.appendChild(editorOuterElement);
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(editorOuterElement));
@@ -138,6 +328,7 @@ export class AideControls extends Disposable {
 		const defaultOptions = getSimpleEditorOptions(this.configurationService);
 		const options: IEditorConstructionOptions = {
 			...defaultOptions,
+			overflowWidgetsDomNode: editorElement,
 			readOnly: false,
 			ariaLabel: localize('chatInput', "Start a task or exploration"),
 			fontFamily: DEFAULT_FONT_FAMILY,
@@ -158,7 +349,7 @@ export class AideControls extends Disposable {
 		};
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
-		const editor = this.input = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, options, editorOptions));
+		const editor = this._input = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, options, editorOptions));
 		let editorModel = this.modelService.getModel(AideControls.INPUT_URI);
 		if (!editorModel) {
 			editorModel = this.modelService.createModel('', null, AideControls.INPUT_URI, true);
@@ -168,16 +359,9 @@ export class AideControls extends Disposable {
 		editor.render();
 
 		this.codeEditorService.registerDecorationType(inputPlaceholder.description, inputPlaceholder.decorationType, {});
-		this.updateInputPlaceholder();
 
 		this._register(editor.onDidChangeModelContent(() => {
 			const currentHeight = Math.max(editor.getContentHeight(), INPUT_MIN_HEIGHT);
-
-			if (this.requestStatus.get() !== AideProbeStatus.INACTIVE && this._viewModel) {
-				const inputValue = editor.getValue();
-				this._viewModel.setFilter(inputValue);
-				// TODO(willis) set is filtered on panel (?)
-			}
 
 			const model = editor.getModel();
 			const inputHasText = !!model && model.getValue().trim().length > 0;
@@ -189,43 +373,58 @@ export class AideControls extends Disposable {
 			if (currentHeight !== this.inputHeight) {
 				this.inputHeight = currentHeight;
 			}
-			this.layout();
 		}));
 
-		this._register(this.aideLSPService.onDidChangeStatus(() => {
-			this.updateInputPlaceholder();
+		this._register(editor.onDidFocusEditorText(() => {
+			this.inputHasFocus.set(true);
 		}));
 
-		this._register(this.editorService.onDidActiveEditorChange(() => {
-			this.updateInputPlaceholder();
+		this._register(editor.onDidBlurEditorText(() => {
+			this.inputHasFocus.set(false);
 		}));
 
 		return editor;
 	}
 
+	acceptInput() {
+		return this._acceptInput();
+	}
+
+	focusInput() {
+		this._input.focus();
+	}
+
+	private _acceptInput() {
+		const currentSession = this.aideProbeService.getSession();
+		const editorValue = this._input.getValue();
+		const activeEditor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(activeEditor)) { return; }
+		if (!currentSession) {
+			let variables: IVariableEntry[] = [];
+			if (this.contextPicker) {
+				variables = Array.from(this.contextPicker.context.entries);
+			}
+			this.model = this.aideProbeService.startSession();
+			this.aideProbeService.initiateProbe(this.model, editorValue, variables, activeEditor.getModel());
+		} else {
+			this.aideProbeService.addIteration(editorValue);
+		}
+		showProbeView(this.viewsService);
+	}
 
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
-			const theme = this.themeService.getColorTheme();
-			const transparentForeground = theme.getColor(inputPlaceholderForeground);
 
-
-			let placeholder;
-			if (this.requestStatus.get() !== 'INACTIVE') {
-				placeholder = 'Filter through the results';
-			} else {
-				placeholder = 'Start a task';
-			}
-
+			let placeholder = 'Start a task';
 			const editor = this.editorService.activeTextEditorControl;
-			if (editor && isCodeEditor(editor)) {
-				const model = editor.getModel();
+			if (!editor || (editor && isCodeEditor(editor))) {
+				const model = editor?.getModel();
 				if (!model) {
 					placeholder = 'Open a file to start using Aide';
 				} else {
 					const languageId = model.getLanguageId();
-					// TODO(willis) - make or find a capitalize util
+					// TODO(@g-danna) - make or find a capitalize util
 					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
 
 					if (unsupportedLanguages.has(languageId)) {
@@ -239,6 +438,8 @@ export class AideControls extends Disposable {
 				}
 			}
 
+			const theme = this.themeService.getColorTheme();
+			const transparentForeground = theme.getColor(inputPlaceholderForeground);
 			const decorationOptions: IDecorationOptions[] = [
 				{
 					range: {
@@ -255,25 +456,40 @@ export class AideControls extends Disposable {
 					}
 				}
 			];
-			this.input.setDecorationsByType(inputPlaceholder.description, inputPlaceholder.decorationType, decorationOptions);
+			this._input.setDecorationsByType(inputPlaceholder.description, inputPlaceholder.decorationType, decorationOptions);
 		} else {
-			this.input.removeDecorationsByType(inputPlaceholder.decorationType);
+			this._input.removeDecorationsByType(inputPlaceholder.decorationType);
 		}
 	}
 
-	layout() {
-		this.part.layout(this.part.availableWidth, this.inputHeight);
-		const width = this.part.width - this.margin * 2;
-		this.input.layout({ height: this.inputHeight, width });
+	private createToolbar(parent: HTMLElement) {
+		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+			menuOptions: {
+				shouldForwardArgs: true,
 
-		if (this.panel) {
-			this.part.layout(this.part.availableWidth, this.panelHeight + this.inputHeight + this.margin * 2);
-			this.panel.layout(this.panelHeight, width);
-			if (this.part.height <= this.part.minimumHeight) {
-				this.panel.sash.state = SashState.AtMaximum;
+			},
+			hiddenItemStrategy: HiddenItemStrategy.Ignore,
+			actionViewItemProvider: (action) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
 				return;
 			}
-			this.panel.sash.state = SashState.Enabled;
-		}
+		}));
+		toolbar.getElement().classList.add('aide-controls-submit-toolbar');
+
+		this._register(toolbar.onDidChangeMenuItems(() => {
+			const width = toolbar.getItemsWidth();
+			const numberOfItems = toolbar.getItemsLength();
+			toolbar.getElement().style.width = `${width + Math.max(0, numberOfItems - 1) * 8}px`;
+		}));
+	}
+
+	layout(width: number, height: number) {
+		const newWidth = Math.min(width, MAX_WIDTH);
+		this.element.style.width = `${newWidth}px`;
+		const hasAnchoredSymbols = Boolean(this.aideProbeService.anchorEditingSelection);
+		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 - (hasAnchoredSymbols ? 42 : 0) });
+
 	}
 }

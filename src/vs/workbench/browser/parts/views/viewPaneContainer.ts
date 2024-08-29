@@ -53,10 +53,14 @@ export interface IViewPaneContainerOptions extends IPaneViewOptions {
 	mergeViewWithContainerWhenSingleView: boolean;
 }
 
+/**
+ * Represents an item in the view pane container.
+ */
 interface IViewPaneItem {
 	pane: ViewPane;
 	disposable: IDisposable;
 }
+
 
 const enum DropDirection {
 	UP,

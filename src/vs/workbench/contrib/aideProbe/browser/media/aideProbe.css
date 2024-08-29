@@ -3,6 +3,40 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+
+.list-header {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding-inline: 6px;
+	padding-top: 6px;
+	padding-bottom: 8px;
+}
+
+.edits-list-item {
+	display: flex;
+	white-space: normal;
+	gap: 6px;
+	padding-top: 6px;
+	padding-bottom: 12px;
+}
+
+.edits-list-item .plan-icon {
+	padding-left: 6px;
+}
+
+.edits-list-item .plan-symbol {
+	padding-right: 6px;
+}
+
+.edits-list-item .plan-symbol-path {
+	color: var(--vscode-debugIcon-breakpointUnverifiedForeground);
+}
+
+.selected .edits-list-item .plan-symbol-path {
+	color: var(--vscode-debugIcon-breakpointUnverifiedForeground);
+}
+
 .aide-probe-view .aide-probe-input-part {
 	display: flex;
 	flex-direction: column;
@@ -124,10 +158,6 @@
 	padding: 0 6px;
 }
 
-.aide-probe-view .responseWrapper {
-	margin: 0 20px;
-}
-
 @keyframes fadeInFromBottom {
 	0% {
 		opacity: 0;
@@ -223,6 +253,11 @@
 	border-radius: 4px;
 }
 
-.monaco-workbench .aide-probe-breakdown {
+.monaco-workbench :is(.aide-probe-breakdown, .aide-probe-anchor-line) {
 	background-color: var(--vscode-editorInlayHint-background);
+}
+
+.monaco-workbench .aide-probe-anchor-lines-block {
+	border-block: 1px solid var(--vscode-editorOverviewRuler-incomingContentForeground);
+	/* --vscode-editorOverviewRuler-rangeHighlightForeground */
 }

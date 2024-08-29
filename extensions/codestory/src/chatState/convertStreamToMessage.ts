@@ -13,6 +13,7 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
+import { randomInt } from 'node:crypto';
 //import { addDecoration } from './decorations/add';
 
 
@@ -257,6 +258,7 @@ export const reportAgentEventsToChat = async (
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
+	iterationEdits: vscode.WorkspaceEdit,
 	// we need to use a limiter here to make sure that the edits happen
 	// one at a time and the stream does not close on the editor side since
 	// we are sending async edits and they might go out of scope
@@ -285,7 +287,7 @@ export const reportAgentEventsToChat = async (
 	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
-		// await new Promise((resolve) => setTimeout(resolve, randomInt(0, 2) * 10));
+		await new Promise((resolve) => setTimeout(resolve, randomInt(1, 2) * 100));
 		// now we ping the sidecar that the probing needs to stop
 		if (token.isCancellationRequested) {
 			await sidecarClient.stopAgentProbe(threadId);
@@ -299,7 +301,6 @@ export const reportAgentEventsToChat = async (
 		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.FrameworkEvent) {
-
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
 				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
 					return {
@@ -325,6 +326,10 @@ export const reportAgentEventsToChat = async (
 						uri: vscode.Uri.file(filePath),
 					});
 				}
+			} else if (event.event.FrameworkEvent.CodeIterationFinished) {
+				response.codeIterationFinished({ edits: iterationEdits });
+			} else if (event.event.FrameworkEvent.ReferenceFound) {
+				console.log(event.event.FrameworkEvent.ReferenceFound);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
@@ -394,6 +399,7 @@ export const reportAgentEventsToChat = async (
 								vscode.Uri.file(editStreamEvent.fs_file_path),
 								editStreamEvent.range,
 								limiter,
+								iterationEdits,
 							)
 						});
 					} else if ('End' === editStreamEvent.event) {
@@ -409,6 +415,7 @@ export const reportAgentEventsToChat = async (
 						editsManager.streamProcessor.cleanup();
 						// delete this from our map
 						editsMap.delete(editStreamEvent.edit_request_id);
+						// we have the updated code (we know this will be always present, the types are a bit meh)
 					} else if (editStreamEvent.event.Delta) {
 						const editsManager = editsMap.get(editStreamEvent.edit_request_id);
 						if (editsManager !== undefined) {
@@ -576,6 +583,7 @@ class StreamProcessor {
 		uri: vscode.Uri,
 		range: SidecarRequestRange,
 		limiter: Limiter<any>,
+		iterationEdits: vscode.WorkspaceEdit,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -585,6 +593,7 @@ class StreamProcessor {
 			indentStyle,
 			uri,
 			limiter,
+			iterationEdits,
 		);
 		this.documentLineLimit = Math.min(range.endPosition.line, this.document.getLineCount() - 1);
 
@@ -597,12 +606,17 @@ class StreamProcessor {
 
 	async cleanup() {
 		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
-		if (this.documentLineIndex < this.documentLineLimit) {
+		console.log(this.documentLineIndex, this.documentLineLimit);
+		if (this.documentLineIndex <= this.documentLineLimit) {
 			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
 		}
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
+		console.table({
+			'event_name': 'process_line',
+			'line_content': answerStreamLine.line,
+		});
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -619,7 +633,7 @@ class StreamProcessor {
 				// if no anchor line, then we have to replace the current line
 				// console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 				this.documentLineIndex = await this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
-			} else if (this.documentLineIndex >= this.documentLineLimit) {
+			} else if (this.documentLineIndex > this.documentLineLimit) {
 				if (this.sentEdits) {
 					this.documentLineIndex = await this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					// this.documentLineIndex = await this.document.appendLine(adjustedLine);
@@ -675,6 +689,7 @@ class DocumentManager {
 	firstRangeLine: number;
 	uri: vscode.Uri;
 	limiter: Limiter<any>;
+	iterationEdits: vscode.WorkspaceEdit;
 
 	constructor(
 		progress: vscode.ProbeResponseStream,
@@ -684,11 +699,13 @@ class DocumentManager {
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
 		limiter: Limiter<any>,
+		iterationEdits: vscode.WorkspaceEdit,
 	) {
 		this.limiter = limiter;
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
+		this.iterationEdits = iterationEdits;
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = lines;
@@ -725,19 +742,41 @@ class DocumentManager {
 	// Replace a specific line and report the change
 	async replaceLine(index: number, newLine: AdjustedLineContent) {
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
-		console.log('sidecar.replaceLine', index);
-		const edits = new vscode.WorkspaceEdit();
-		// console.log('What line are we replaceLine', newLine.adjustedContent);
-		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits });
+		//console.log('sidecar.replaceLine', index);
+		console.table({
+			'edit': 'replace_line',
+			'index': index,
+			'content': newLine.adjustedContent,
 		});
-		return index + 1;
+		const edits = new vscode.WorkspaceEdit();
+		if (newLine.adjustedContent === '') {
+			// console.log('What line are we replaceLine', newLine.adjustedContent);
+			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+			return index + 1;
+		} else {
+			// console.log('What line are we replaceLine', newLine.adjustedContent);
+			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+			return index + 1;
+		}
 	}
 
 	// Replace multiple lines starting from a specific index
 	async replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
-		console.log('sidecar.replaceLine', startIndex, endIndex);
+		//console.log('sidecar.replaceLine', startIndex, endIndex);
+		console.table({
+			'edit': 'replace_lines',
+			'start_index': startIndex,
+			'end_index': endIndex,
+			'content': newLine.adjustedContent,
+		});
 		if (startIndex === endIndex) {
 			return await this.replaceLine(startIndex, newLine);
 		} else {
@@ -749,8 +788,9 @@ class DocumentManager {
 			const edits = new vscode.WorkspaceEdit();
 			// console.log('sidecar.What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
 			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits });
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
 			});
 			return startIndex + 1;
 		}
@@ -758,26 +798,38 @@ class DocumentManager {
 
 	// Add a new line at the end
 	async appendLine(newLine: AdjustedLineContent) {
-		console.log('sidecar.appendLine', this.lines.length - 1);
+		//console.log('sidecar.appendLine', this.lines.length - 1);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
+		console.table({
+			'edit': 'append_line',
+			'start_index': this.lines.length - 2,
+			'content': newLine.adjustedContent,
+		});
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
+		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
 		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits });
+			await this.progress.codeEdit({ edits, iterationId: 'mock' });
 		});
 		return this.lines.length;
 	}
 
 	// Insert a new line after a specific index
 	async insertLineAfter(index: number, newLine: AdjustedLineContent) {
-		console.log('insertLineAfter', index);
+		//console.log('insertLineAfter', index);
+		console.table({
+			'edit': 'insert_line_after',
+			'index': index,
+			'content': newLine.adjustedContent,
+		});
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
 		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits });
+			await this.progress.codeEdit({ edits, iterationId: 'mock' });
 		});
 		return index + 2;
 	}

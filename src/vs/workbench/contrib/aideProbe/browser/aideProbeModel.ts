@@ -12,21 +12,23 @@ import { equals } from 'vs/base/common/objects';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import { generateUuid } from 'vs/base/common/uuid';
-import { ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
+import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
 import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
-import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
+import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
 import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
 import { IModelService } from 'vs/editor/common/services/model';
 import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-
 
 export interface IContentVariableReference {
 	variableName: string;
@@ -54,10 +56,9 @@ export interface IVariableEntry {
 
 export interface IAideProbeEdits {
 	readonly targetUri: string;
-	readonly textModel0: ITextModel;
 	readonly textModelN: ITextModel;
-	readonly hunkData: HunkData;
-	readonly edits: IWorkspaceTextEdit[];
+	textModel0: ITextModel;
+	hunkData: HunkData;
 	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
@@ -71,15 +72,6 @@ export interface IAideProbeResponseModel {
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;
 }
-
-
-export const enum AideProbeStatus {
-	INACTIVE = 'INACTIVE',
-	IN_PROGRESS = 'IN_PROGRESS',
-	IN_REVIEW = 'IN_REVIEW'
-}
-
-export type IAideProbeStatus = keyof typeof AideProbeStatus;
 
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
@@ -95,8 +87,8 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 		readonly sessionId: string,
 		readonly message: string,
 		readonly variableData: IChatRequestVariableData,
-		readonly editMode: boolean,
 		readonly codebaseSearch: boolean,
+		readonly mode: IAideProbeMode
 	) {
 		super();
 	}
@@ -164,9 +156,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 	constructor(
 		@IModelService private readonly _modelService: IModelService,
-		@ITextFileService private readonly _textFileService: ITextFileService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
-		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService) {
+		@ITextFileService private readonly _textFileService: ITextFileService,
+		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
+		@IBulkEditService private readonly _bulkEditService: IBulkEditService,
+	) {
 		super();
 	}
 
@@ -223,15 +217,20 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._onNewEvent.fire(initialSymbols);
 	}
 
+
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
-				this.progressiveEditsQueue.queue(async () => {
+				await this.progressiveEditsQueue.queue(async () => {
 					await this.processWorkspaceEdit(workspaceEdit);
+
 				});
+				this._onNewEvent.fire({ kind: 'edit', resource: workspaceEdit.resource, edit: workspaceEdit.textEdit });
 			}
 		}
 	}
+
+
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
@@ -241,9 +240,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			let codeEdits: IAideProbeEdits;
 			if (this._codeEdits.has(mapKey)) {
 				codeEdits = this._codeEdits.get(mapKey)!;
-				codeEdits.edits.push(workspaceEdit);
 			} else {
-
 				let textModel = this._modelService.getModel(resource);
 				if (!textModel) {
 					const ref = await this._textModelService.createModelReference(resource);
@@ -259,31 +256,32 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
 				));
 
+				textModel.pushStackElement();
+
 				codeEdits = {
 					targetUri: resource.toString(),
 					textModel0,
 					textModelN,
 					hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
-					edits: [workspaceEdit]
 				};
 				this._codeEdits.set(mapKey, codeEdits);
 			}
 
-			const editOperation: IIdentifiedSingleEditOperation = {
-				range: workspaceEdit.textEdit.range,
-				text: workspaceEdit.textEdit.text
-			};
 
 			codeEdits.hunkData.ignoreTextModelNChanges = true;
-			codeEdits.textModelN.pushEditOperations(null, [editOperation], (undoEdits) => {
-				this._onNewEvent.fire({ kind: 'startEdit', resource: URI.parse(codeEdits.targetUri), edits: undoEdits });
-				return null;
-			});
+			codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
+			//console.log(workspaceEdit.textEdit);
+
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
 					this._onNewEvent.fire({ kind: 'undoEdit', resource: URI.parse(codeEdits.targetUri), changes: e.changes });
 				}
 			}));
+
+			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
+
+			//codeEdits.hunkData.ignoreTextModelNChanges = true;
+
 			await this._textFileService.save(codeEdits.textModelN.uri);
 
 			const sha1 = new DefaultModelSHA1Computer();
@@ -291,10 +289,28 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				? sha1.computeSHA1(codeEdits.textModel0)
 				: generateUuid();
 			const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
-			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
 			await codeEdits.hunkData.recompute(editState, diff);
-			codeEdits.hunkData.ignoreTextModelNChanges = false;
+
+			//codeEdits.hunkData.ignoreTextModelNChanges = false;
+
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
+
+		}
+	}
+
+	async addToUndoStack() {
+		const redoEdits: WorkspaceEdit = { edits: [] };
+		for (const aideEdit of this._codeEdits.values()) {
+			const operations = aideEdit.hunkData.discardAll(false); // hello
+			for (const operation of operations) {
+				redoEdits.edits.push({ resource: aideEdit.textModelN.uri, textEdit: operation, versionId: undefined });
+			}
+		}
+		await this._bulkEditService.apply(redoEdits);
+
+		for (const aideEdit of this._codeEdits.values()) {
+			this._textFileService.save(aideEdit.textModelN.uri);
 		}
 	}
 }
@@ -306,9 +322,12 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
+	protected readonly _onDidChangeStatus = this._store.add(new Emitter<IAideProbeStatus>());
+	readonly onDidChangeStatus: Event<IAideProbeStatus> = this._onDidChangeStatus.event;
+
 	private _request: AideProbeRequestModel | undefined;
 	private _response: AideProbeResponseModel | undefined;
-	private _status: IAideProbeStatus = AideProbeStatus.INACTIVE;
+	private _status: IContextKey<IAideProbeStatus>;
 
 	private _sessionId: string;
 	get sessionId(): string {
@@ -327,20 +346,32 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		return this._response;
 	}
 
-	get status() {
-		return this._status;
+	clearResponse() {
+		this._response?.dispose();
+		this._response = undefined;
 	}
 
-	set status(_status: IAideProbeStatus) {
-		this._status = _status;
+	get status() {
+		return this._status.get() || AideProbeStatus.INACTIVE;
+	}
+
+	set status(newStatus: IAideProbeStatus) {
+		const didChange = this._status.get() !== newStatus;
+		if (didChange) {
+			this._status.set(newStatus);
+			this._onDidChangeStatus.fire(newStatus);
+		}
 	}
 
 	constructor(
-		@IInstantiationService private readonly _instantiationService: IInstantiationService
+		@IInstantiationService private readonly _instantiationService: IInstantiationService,
+		@IContextKeyService contextKeyService: IContextKeyService
 	) {
 		super();
 
 		this._sessionId = generateUuid();
+		this._status = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
+
 	}
 
 	async acceptResponseProgress(progress: IAideProbeProgress): Promise<void> {
@@ -350,10 +381,10 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 		if (!this._response) {
 			this._response = this._register(this._instantiationService.createInstance(AideProbeResponseModel));
-			this._register(this._response.onNewEvent(edits => this._onNewEvent.fire(edits)));
+			this._register(this._response.onNewEvent(responseEvent => this._onNewEvent.fire(responseEvent)));
 		}
 
-		this._status = AideProbeStatus.IN_PROGRESS;
+		this.status = AideProbeStatus.IN_PROGRESS;
 
 		switch (progress.kind) {
 			case 'markdownContent':
@@ -377,6 +408,10 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			case 'longContextSearch':
 				this._response.longContextSearchFinished = progress.finished;
 				break;
+			case 'iterationFinished':
+				await this._response.addToUndoStack();
+				this.status = AideProbeStatus.ITERATION_FINISHED;
+				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);
 				break;
@@ -385,15 +420,16 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 		this._onDidChange.fire();
 	}
 
-	completeResponse(): void {
-		this._status = AideProbeStatus.IN_REVIEW;
-
+	async completeResponse() {
+		if (this._response) {
+			await this._response.addToUndoStack();
+		}
+		this.status = AideProbeStatus.IN_REVIEW;
 		this._onDidChange.fire();
 	}
 
 	cancelRequest(): void {
-		this._status = AideProbeStatus.IN_REVIEW;
-
+		this.status = AideProbeStatus.IN_REVIEW;
 		this._onDidChange.fire();
 	}
 }

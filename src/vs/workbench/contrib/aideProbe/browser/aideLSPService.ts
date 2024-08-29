@@ -15,17 +15,18 @@ export interface IAideLSPService {
 
 	readonly map: Map<string, boolean>;
 	getStatus(languageId: string): boolean;
+	isActiveForCurrentEditor(): boolean;
 	readonly onDidChangeStatus: Event<ILanguageStatus>;
 }
 
-export interface ILanguageStatus {
+interface ILanguageStatus {
 	languageId: string;
 	isActive: boolean;
 }
 
 export const IAideLSPService = createDecorator<IAideLSPService>('IAideLSPService');
 
-export const unsupportedLanguages = new Set(['plaintext', 'json', 'markdown']);
+export const unsupportedLanguages = new Set(['plaintext', 'json', 'markdown', 'ignore']);
 
 export class AideLSPService extends Disposable implements IAideLSPService {
 	_serviceBrand: undefined;
@@ -89,6 +90,21 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 		return this.map.get(languageId) ?? false;
 	}
 
+	isActiveForCurrentEditor(): boolean {
+		const editor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(editor)) {
+			return false;
+		}
+
+		const model = editor.getModel();
+		if (!model) {
+			return false;
+		}
+
+		const languageId = model.getLanguageId();
+		return this.getStatus(languageId);
+	}
+
 	/*
 	private notifiyLSPIsNotActive(languageId: string) {
 
@@ -100,7 +116,7 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 
 		this.notificationService.notify({
 			severity: Severity.Info,
-			// TODO(willis) - Localize this
+			// TODO(@g-danna) - Localize this
 			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
 			actions: {
 				primary: [

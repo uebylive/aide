@@ -3,7 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+
 declare module 'vscode' {
+
+	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED' | 'FOLLOW_UP';
+
 	export interface FollowAlongAction {
 		type: 'followAlong';
 		status: boolean;
@@ -14,16 +18,48 @@ declare module 'vscode' {
 		status: boolean;
 	}
 
-	export interface AideProbeUserAction {
-		sessionId: string;
-		action: FollowAlongAction | NavigateBreakdownAction;
+	export interface NewIterationAction {
+		type: 'newIteration';
+		newPrompt: string;
 	}
+
+	interface ChatContentVariableReference {
+		variableName: string;
+		value?: Uri | Location;
+	}
+
+	interface AideChatContentReference {
+		reference: Uri | Location | ChatContentVariableReference;
+		iconPath?: ThemeIcon | { light: Uri; dark?: Uri };
+		kind: 'reference';
+	}
+
+	export interface ContextChangedAction {
+		type: 'contextChange';
+		newContext: string[];
+	}
+
+	export interface FollowUpRequestAction {
+		type: 'followUpRequest';
+	}
+
+	export interface AideProbeSessionAction {
+		sessionId: string;
+		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction | AnchorSessionStart;
+	}
+
+	export interface AnchorSessionStart {
+		type: 'anchorSessionStart';
+		status: boolean;
+	}
+
+	export type AideProbeUserAction = ContextChangedAction;
 
 	export interface ProbeRequest {
 		requestId: string;
 		query: string;
 		readonly references: readonly ChatPromptReference[];
-		editMode: boolean;
+		mode: AideProbeMode;
 		codebaseSearch: boolean;
 	}
 
@@ -53,6 +89,22 @@ declare module 'vscode' {
 		/**
 		 * Where edits will be applied
 		 */
+		readonly iterationId: string;
+		readonly edits: WorkspaceEdit;
+	}
+
+	export interface AideProbeIterationFinished {
+		readonly edits: WorkspaceEdit;
+	}
+
+	/**
+	 * This event is required to add the edits to the undo stack
+	 * This is always required if we are streaming since streamed edits
+	 * do not get stored on the undo stack
+	 *
+	 * When applying edits directly we do not need to do this
+	 */
+	export interface AideProbeAddEditToUndoStack {
 		readonly edits: WorkspaceEdit;
 	}
 
@@ -68,6 +120,7 @@ declare module 'vscode' {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
 		longContextSearch(value: boolean): void;
+		codeIterationFinished(value: AideProbeIterationFinished): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
@@ -80,12 +133,14 @@ declare module 'vscode' {
 	}
 
 	export interface ProbeResult {
+		iterationEdits?: WorkspaceEdit;
 		errorDetails?: ProbeErrorDetails;
 	}
 
 	export interface ProbeResponseHandler {
 		provideProbeResponse(request: ProbeRequest, response: ProbeResponseStream, token: CancellationToken): ProviderResult<ProbeResult | void>;
-		onDidUserAction: (action: AideProbeUserAction) => void;
+		onDidSessionAction: (action: AideProbeSessionAction) => ProviderResult<void>;
+		onDidUserAction(action: AideProbeUserAction): ProviderResult<void>;
 	}
 
 	export namespace aideProbe {

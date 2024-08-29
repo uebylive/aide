@@ -3,34 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/aidecontrols';
-import { IWorkbenchLayoutService, OverlayedParts } from 'vs/workbench/services/layout/browser/layoutService';
+import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts } from 'vs/workbench/browser/part';
+import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IDisposable } from 'vs/base/common/lifecycle';
-import { IAideControlsService } from 'vs/workbench/services/aideControls/browser/aideControlsService';
-import { IOverlayedPartPosition, OverlayedPart } from 'vs/workbench/browser/overlayedPart';
+import { $, append } from 'vs/base/browser/dom';
+import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
+import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
 
-export class AideControlsService extends MultiWindowParts<AideControlsPart> implements IAideControlsService {
+export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
 
 	declare _serviceBrand: undefined;
 
-	readonly mainPart = this._register(this.createMainControlsPart());
+	readonly mainPart = this._register(this.instantiationService.createInstance(AideControlsPart));
 
 	constructor(
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IStorageService storageService: IStorageService,
 		@IThemeService themeService: IThemeService,
 	) {
-		super('workbench.aideControlsService', themeService, storageService);
+		super('workbench.aideControlsPartService', themeService, storageService);
 
 		this._register(this.registerPart(this.mainPart));
-	}
-
-	createMainControlsPart(): AideControlsPart {
-		return this.instantiationService.createInstance(AideControlsPart);
 	}
 
 	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): AideControlsPart {
@@ -49,15 +45,21 @@ export type AideControlsPosition = {
 };
 
 
-export class AideControlsPart extends OverlayedPart implements IDisposable {
+export class AideControlsPart extends Part implements IDisposable {
 
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
 
-	readonly minimumWidth: number = 300;
+	private _content!: HTMLElement;
+	get content(): HTMLElement {
+		return this._content;
+	}
+
+
+	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 
-	readonly minimumHeight: number = 200;
+	readonly minimumHeight: number = 120;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -66,28 +68,35 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 		@IThemeService themeService: IThemeService,
 	) {
 		super(
-			OverlayedParts.AIDECONTROLS_PART,
+			Parts.AIDECONTROLS_PART,
+			{ hasTitle: false },
 			themeService,
 			storageService,
 			layoutService
 		);
 	}
 
-	override layout(width: number, height: number): void {
-		super.layout(width, height);
-		this.applyPosition('top', this.position.top);
-		this.applyPosition('bottom', this.position.bottom);
-		this.applyPosition('left', this.position.left);
-		this.applyPosition('right', this.position.right);
-		this.element.style.height = `${this.height}px`;
-		this.element.style.width = `${this.width}px`;
+	protected override createContentArea(parent: HTMLElement): HTMLElement {
+		this.element = parent;
+
+		this.getColor(editorBackground);
+		this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
+		this._content = append(this.element, $('.content'));
+		return this._content;
 	}
 
-	private applyPosition(key: keyof IOverlayedPartPosition, value: number | undefined) {
-		if (value !== undefined) {
-			this.element.style[key] = `${value}px`;
-		} else {
-			this.element.style[key] = '';
-		}
+	override layout(width: number, height: number, top: number, left: number): void {
+		super.layout(width, height, top, left);
+		super.layoutContents(width, height);
+	}
+
+	get snap() {
+		return false;
+	}
+
+	toJSON(): object {
+		return {
+			type: Parts.AIDECONTROLS_PART,
+		};
 	}
 }

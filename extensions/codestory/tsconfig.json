@@ -23,6 +23,7 @@
 		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts",
 		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",
-		"../../src/vscode-dts/vscode.proposed.csAuthentication.d.ts",
+		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.csAuthentication.d.ts"
 	]
 }

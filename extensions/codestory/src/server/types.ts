@@ -47,7 +47,16 @@ export type CodeEditAgentBody = {
 	active_window_data?: ActiveWindowData;
 	root_directory: string | undefined;
 	codebase_search: boolean;
+	anchor_editing: boolean;
 };
+
+export type AnchorSessionStart = {
+	editor_url: string;
+	request_id: string;
+	user_context: UserContext;
+	active_window_data?: ActiveWindowData;
+	root_directory: string | undefined;
+}
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
 
@@ -76,6 +85,8 @@ type FrameworkEvent = {
 	LongContextSearchFinished: string;
 	InitialSearchSymbols: InitialSearchSymbols;
 	OpenFile: OpenFileRequestFrameworkEvent;
+	CodeIterationFinished: string;
+	ReferenceFound: FoundReference;
 };
 
 interface UIEvent {
@@ -115,6 +126,7 @@ interface EditedCodeStreamingRequest {
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
+	updated_code: string | null | undefined;
 }
 
 interface SymbolEventEditRequest {
@@ -227,6 +239,11 @@ interface InitialSearchSymbols {
 }
 
 interface OpenFileRequestFrameworkEvent {
+	fs_file_path: string;
+}
+
+interface FoundReference {
+	request_id: string;
 	fs_file_path: string;
 }
 

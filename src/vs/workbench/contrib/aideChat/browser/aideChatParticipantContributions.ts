@@ -150,7 +150,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 						containerIcon: this._viewContainer.icon,
 						ctorDescriptor: new SyncDescriptor(ChatViewPane),
 						canToggleVisibility: false,
-						canMoveView: true,
+						canMoveView: false,
 						order: 100
 					};
 					viewsRegistry.registerViews([this._welcomeViewDescriptor], this._viewContainer);
@@ -274,7 +274,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.AuxiliaryBar);
+		}, ViewContainerLocation.Sidebar);
 
 		return viewContainer;
 	}
@@ -295,7 +295,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			singleViewPaneContainerTitle: this._viewContainer.title.value,
 			name: { value: name, original: name },
 			canToggleVisibility: false,
-			canMoveView: true,
+			canMoveView: false,
 			ctorDescriptor: new SyncDescriptor(ChatViewPane),
 		}];
 		this.hasRegisteredDefaultParticipantView = true;

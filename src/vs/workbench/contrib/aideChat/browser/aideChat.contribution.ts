@@ -23,7 +23,7 @@ import { ChatAccessibilityHelp } from 'vs/workbench/contrib/aideChat/browser/act
 import { registerChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
-import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
+//import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
 import { registerChatCopyActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCopyActions';
 import { registerChatDeveloperActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions';
 import { SubmitAction, registerChatExecuteActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
@@ -48,7 +48,6 @@ import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorHover';
-import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
 import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -64,6 +63,7 @@ import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/aideCh
 import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import '../common/aideChatColors';
+import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -272,7 +272,7 @@ registerQuickChatActions();
 registerChatExportActions();
 registerMoveActions();
 registerNewChatActions();
-registerChatContextActions();
+//registerChatContextActions();
 registerChatDeveloperActions();
 
 registerSingleton(IAideChatService, ChatService, InstantiationType.Delayed);

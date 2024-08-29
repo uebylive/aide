@@ -579,33 +579,38 @@ export class HunkData {
 			this._textModel0.changeDecorations(accessor0 => {
 
 				// clean up old decorations
-				for (const { textModelNDecorations, textModel0Decorations } of this._data.values()) {
-					textModelNDecorations.forEach(accessorN.removeDecoration, accessorN);
-					textModel0Decorations.forEach(accessor0.removeDecoration, accessor0);
-				}
-
-				this._data.clear();
-
-				// add new decorations
-				for (const hunk of hunks) {
-
-					const textModelNDecorations: string[] = [];
-					const textModel0Decorations: string[] = [];
-
-					textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, this._textModelN), HunkData._HUNK_TRACKED_RANGE));
-					textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, this._textModel0), HunkData._HUNK_TRACKED_RANGE));
-
-					for (const change of hunk.changes) {
-						textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
-						textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
+				// this throws if we are writing more code than EOF
+				try {
+					for (const { textModelNDecorations, textModel0Decorations } of this._data.values()) {
+						textModelNDecorations.forEach(accessorN.removeDecoration, accessorN);
+						textModel0Decorations.forEach(accessor0.removeDecoration, accessor0);
 					}
 
-					this._data.set(hunk, {
-						editState,
-						textModelNDecorations,
-						textModel0Decorations,
-						state: HunkState.Pending
-					});
+					this._data.clear();
+
+					// add new decorations
+					for (const hunk of hunks) {
+
+						const textModelNDecorations: string[] = [];
+						const textModel0Decorations: string[] = [];
+
+						textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, this._textModelN), HunkData._HUNK_TRACKED_RANGE));
+						textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, this._textModel0), HunkData._HUNK_TRACKED_RANGE));
+
+						for (const change of hunk.changes) {
+							textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
+							textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
+						}
+
+						this._data.set(hunk, {
+							editState,
+							textModelNDecorations,
+							textModel0Decorations,
+							state: HunkState.Pending
+						});
+					}
+				} catch (exception) {
+					console.error(exception);
 				}
 			});
 		});
@@ -632,7 +637,7 @@ export class HunkData {
 		return edits;
 	}
 
-	discardAll() {
+	discardAll(pushToUndoStack = true): IValidEditOperation[] {
 		const edits: ISingleEditOperation[][] = [];
 		for (const item of this.getInfo()) {
 			if (item.getState() === HunkState.Pending) {
@@ -640,10 +645,14 @@ export class HunkData {
 			}
 		}
 		const undoEdits: IValidEditOperation[][] = [];
-		this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
-			undoEdits.push(_undoEdits);
-			return null;
-		});
+		if (pushToUndoStack) {
+			this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
+				undoEdits.push(_undoEdits);
+				return null;
+			});
+		} else {
+			undoEdits.push(this._textModelN.applyEdits(edits.flat(), true));
+		}
 		return undoEdits.flat();
 	}
 
