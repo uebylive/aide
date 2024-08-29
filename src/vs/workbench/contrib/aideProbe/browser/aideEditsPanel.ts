@@ -348,7 +348,7 @@ export class AideEditsPanel extends AidePanel {
 			const index = this.getBreakdownListIndex(element);
 			if (this.breakdownsList && index !== -1 && setFocus) {
 				this.breakdownsList.setFocus([index]);
-				this.explanationService.changeActiveBreakdown(element);
+				this.explanationService.changeActiveBreakdown({ ...element, index: undefined });
 			}
 		}
 	}
