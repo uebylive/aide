@@ -9,7 +9,7 @@ import { EditorAction, registerEditorAction, ServicesAccessor } from 'vs/editor/
 import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
 import * as nls from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
+import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
 import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
@@ -42,6 +42,31 @@ class ToggleASTNavigationMode extends Action2 {
 	run(accessor: ServicesAccessor) {
 		const astNavigationService = accessor.get(IASTNavigationService);
 		astNavigationService.toggleASTNavigationMode();
+	}
+}
+
+class DisableASTNavigationMode extends Action2 {
+	static readonly ID = 'astNavigation.disableMode';
+
+	constructor() {
+		super({
+			id: DisableASTNavigationMode.ID,
+			title: nls.localize2('disableASTNavigation', "Disable AST Navigation"),
+			precondition: ContextKeyExpr.and(EditorContextKeys.focus, CONTEXT_AST_NAVIGATION_MODE),
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyCode.Escape,
+			}
+		});
+	}
+
+	run(accessor: ServicesAccessor) {
+		const contextKeyService = accessor.get(IContextKeyService);
+		const astNavigationService = accessor.get(IASTNavigationService);
+
+		if (contextKeyService.getContextKeyValue(CONTEXT_AST_NAVIGATION_MODE.key)) {
+			astNavigationService.toggleASTNavigationMode();
+		}
 	}
 }
 
@@ -135,6 +160,7 @@ export class MoveOutAction extends EditorAction {
 
 export function registerASTNavigationActions() {
 	registerAction2(ToggleASTNavigationMode);
+	registerAction2(DisableASTNavigationMode);
 	registerEditorAction(MoveUpAction);
 	registerEditorAction(MoveDownAction);
 	registerEditorAction(MoveIntoAction);

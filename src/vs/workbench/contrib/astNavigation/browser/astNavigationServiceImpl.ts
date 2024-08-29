@@ -117,12 +117,12 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			if (isCodeEditor(editor)) {
 				const selection = editor.getSelection();
 				if (selection) {
-					const endPosition = selection.getEndPosition();
+					const startPosition = selection.getStartPosition();
 					editor.setSelection({
-						startLineNumber: endPosition.lineNumber,
-						startColumn: endPosition.column,
-						endLineNumber: endPosition.lineNumber,
-						endColumn: endPosition.column
+						startLineNumber: startPosition.lineNumber,
+						startColumn: startPosition.column,
+						endLineNumber: startPosition.lineNumber,
+						endColumn: startPosition.column
 					});
 				}
 			}
