@@ -219,20 +219,16 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._onNewEvent.fire(initialSymbols);
 	}
 
-
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
 				await this.progressiveEditsQueue.queue(async () => {
 					await this.processWorkspaceEdit(workspaceEdit);
-
 				});
 				this._onNewEvent.fire({ kind: 'edit', resource: workspaceEdit.resource, edit: workspaceEdit.textEdit });
 			}
 		}
 	}
-
-
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
@@ -272,7 +268,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 			codeEdits.hunkData.ignoreTextModelNChanges = true;
 			codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
-			//console.log(workspaceEdit.textEdit);
 
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
@@ -280,27 +275,30 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				}
 			}));
 
-			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
-
-			const sha1 = new DefaultModelSHA1Computer();
-			const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
-				? sha1.computeSHA1(codeEdits.textModel0)
-				: generateUuid();
-			const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
-			const diff = await this._editorWorkerService.computeDiff(codeEdits.textModel0.uri, codeEdits.textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+			const { editState, diff } = await this.calculateDiff(codeEdits.textModel0, codeEdits.textModelN);
 			await codeEdits.hunkData.recompute(editState, diff);
 
 			codeEdits.hunkData.ignoreTextModelNChanges = false;
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
-
 		}
+	}
+
+	private async calculateDiff(textModel0: ITextModel, textModelN: ITextModel) {
+		const sha1 = new DefaultModelSHA1Computer();
+		const textModel0Sha1 = sha1.canComputeSHA1(textModel0)
+			? sha1.computeSHA1(textModel0)
+			: generateUuid();
+		const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
+		const diff = await this._editorWorkerService.computeDiff(textModel0.uri, textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
+		return { editState, diff };
 	}
 
 	async addToUndoStack() {
 		const redoEdits: WorkspaceEdit = { edits: [] };
+		this._onNewEvent.fire({ kind: 'discardAll' });
 		for (const aideEdit of this._codeEdits.values()) {
-			const operations = aideEdit.hunkData.discardAll(false); // hello
+			const operations = aideEdit.hunkData.discardAll(false);
 			for (const operation of operations) {
 				redoEdits.edits.push({ resource: aideEdit.textModelN.uri, textEdit: operation, versionId: undefined });
 			}

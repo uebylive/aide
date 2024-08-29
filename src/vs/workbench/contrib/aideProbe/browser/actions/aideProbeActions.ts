@@ -37,7 +37,6 @@ const isProbeIterationFinished = CTX.CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(Aide
 const isProbeInactive = CTX.CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.INACTIVE);
 const isProbeIdle = ContextKeyExpr.or(isProbeInactive, CTX.CONTEXT_PROBE_REQUEST_STATUS.isEqualTo(AideProbeStatus.IN_REVIEW));
 
-
 function logProbeContext(accessor: ServicesAccessor) {
 	const contextKeyService = accessor.get(IContextKeyService);
 	if (IsDevelopmentContext.getValue(contextKeyService)) {
@@ -46,10 +45,9 @@ function logProbeContext(accessor: ServicesAccessor) {
 			const raw = CTX[ctxKey as keyof typeof CTX];
 			context[raw.key] = raw.getValue(contextKeyService);
 		}
-		console.table(context);
+		// console.table(context);
 	}
 }
-
 
 class SubmitAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.submit';

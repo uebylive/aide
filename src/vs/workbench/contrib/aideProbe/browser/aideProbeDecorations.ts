@@ -20,7 +20,7 @@ import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/
 import { calculateChanges } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkState, HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { overviewRulerInlineChatDiffInserted, minimapInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -81,13 +81,15 @@ export class AideProbeDecorationService extends Disposable {
 
 		this._register(this.aideProbeService.onNewEvent((event) => {
 			if (event.kind === 'completeEdit') {
-				//this.handleEditCompleteEvent(event);
+				this.handleEditCompleteEvent(event);
 			} else if (event.kind === 'undoEdit') {
 				this.handleUndoEditEvent(event);
 			} else if (event.kind === 'goToDefinition') {
 				this.handleGoToDefinitionEvent(event);
 			} else if (event.kind === 'breakdown') {
 				this.handleBreakdownEvent(event);
+			} else if (event.kind === 'discardAll') {
+				this.discardAllDecorations();
 			}
 		}));
 		this._register(this.aideProbeService.onReview(e => {
@@ -122,28 +124,24 @@ export class AideProbeDecorationService extends Disposable {
 		return await this.codeEditorService.openCodeEditor({ resource, options: { preserveFocus: true } }, null);
 	}
 
-	//private async handleEditCompleteEvent(event: IAideProbeCompleteEditEvent) {
-	//	const currentSession = this.aideProbeService.getSession();
-	//	if (!currentSession) {
-	//		return;
-	//	}
-	//
-	//	const allEdits = currentSession.response?.codeEdits;
-	//	const fileEdits = allEdits?.get(event.resource.toString());
-	//	//if (!fileEdits || !fileEdits.hunkData.getInfo().length) {
-	//	//	return;
-	//	//}
-	//
-	//	if (!fileEdits) {
-	//		return;
-	//	}
-	//
-	//	const { resource } = event;
-	//	const editor = await this.getCodeEditor(resource);
-	//	if (editor) {
-	//		this.updateDecorations(editor, fileEdits);
-	//	}
-	//}
+	private async handleEditCompleteEvent(event: IAideProbeCompleteEditEvent) {
+		const currentSession = this.aideProbeService.getSession();
+		if (!currentSession) {
+			return;
+		}
+
+		const allEdits = currentSession.response?.codeEdits;
+		const fileEdits = allEdits?.get(event.resource.toString());
+		if (!fileEdits) {
+			return;
+		}
+
+		const { resource } = event;
+		const editor = await this.getCodeEditor(resource);
+		if (editor) {
+			this.updateDecorations(editor, fileEdits);
+		}
+	}
 
 	private async handleUndoEditEvent(event: IAideProbeUndoEditEvent) {
 		const currentSession = this.aideProbeService.getSession();
@@ -246,10 +244,18 @@ export class AideProbeDecorationService extends Disposable {
 		const changes = calculateChanges(edits);
 		this.csEventsService.reportAgentCodeEdit({ accepted: e === 'accept', ...changes });
 
+		// Remove all decorations
+		this.discardAllDecorations();
+	}
+
+	private discardAllDecorations() {
 		for (const data of this._hunkDisplayData.values()) {
 			data.remove();
 		}
 		for (const decorations of this.breakdownDecorations.values()) {
+			decorations.clear();
+		}
+		for (const decorations of this.goToDefinitionDecorations.values()) {
 			decorations.clear();
 		}
 	}
