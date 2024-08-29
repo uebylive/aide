@@ -156,6 +156,10 @@ export interface IAideProbeEditEvent {
 	edit: TextEdit;
 }
 
+export interface IAideProbeDiscardAll {
+	kind: 'discardAll';
+}
+
 export type IAideProbeResponseEvent =
 	| IAideProbeStartEditEvent
 	| IAideProbeCompleteEditEvent
@@ -163,7 +167,8 @@ export type IAideProbeResponseEvent =
 	| IAideProbeGoToDefinition
 	| IAideProbeBreakdownContent
 	| IAideProbeInitialSymbols
-	| IAideProbeEditEvent;
+	| IAideProbeEditEvent
+	| IAideProbeDiscardAll;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
 
