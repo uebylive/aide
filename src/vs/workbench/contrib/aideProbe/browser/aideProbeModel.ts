@@ -217,20 +217,16 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._onNewEvent.fire(initialSymbols);
 	}
 
-
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
 		for (const workspaceEdit of codeEdit.edits.edits) {
 			if (ResourceTextEdit.is(workspaceEdit)) {
 				await this.progressiveEditsQueue.queue(async () => {
 					await this.processWorkspaceEdit(workspaceEdit);
-
 				});
 				this._onNewEvent.fire({ kind: 'edit', resource: workspaceEdit.resource, edit: workspaceEdit.textEdit });
 			}
 		}
 	}
-
-
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit | IWorkspaceFileEdit) {
 		if (ResourceTextEdit.is(workspaceEdit)) {
@@ -267,10 +263,8 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 				this._codeEdits.set(mapKey, codeEdits);
 			}
 
-
 			codeEdits.hunkData.ignoreTextModelNChanges = true;
 			codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
-			//console.log(workspaceEdit.textEdit);
 
 			this._register(codeEdits.textModelN.onDidChangeContent(e => {
 				if (e.isUndoing) {
@@ -291,7 +285,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 			codeEdits.hunkData.ignoreTextModelNChanges = false;
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
-
 		}
 	}
 
