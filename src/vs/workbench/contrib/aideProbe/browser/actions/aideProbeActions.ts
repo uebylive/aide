@@ -262,11 +262,11 @@ class EnterAnchoredEditing extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: isProbeIdle,
+			//precondition: isProbeIdle,
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
 				weight: KeybindingWeight.ExternalExtension, // Necessary to override the default keybinding
-				when: isProbeIdle,
+				//when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
 			},
 		});
 	}
@@ -302,11 +302,15 @@ class EnterAnchoredEditing extends Action2 {
 		}
 
 		aideProbeService.anchorEditingSelection = { uri: model.uri, selection, symbols };
-		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.ANCHORED);
-		aideControlsService.focusInput();
 
-		if (keybindingPillContribution) {
-			keybindingPillContribution.showAnchorEditingDecoration(aideProbeService.anchorEditingSelection);
+		const probeMode = CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService);
+
+		if (probeMode.get() === AideProbeMode.ANCHORED || CTX.CONTEXT_PROBE_REQUEST_STATUS.getValue(contextKeyService) !== AideProbeStatus.IN_PROGRESS) {
+			probeMode.set(AideProbeMode.ANCHORED);
+			aideControlsService.focusInput();
+			if (keybindingPillContribution) {
+				keybindingPillContribution.showAnchorEditingDecoration(aideProbeService.anchorEditingSelection);
+			}
 		}
 	}
 }
