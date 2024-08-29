@@ -17,8 +17,8 @@ import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } fr
 import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
 import { AideControls, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { ChatRequestVariablePart } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+// import { ChatRequestVariablePart } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
+// import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 const probeVariableLeader = '#';
 
@@ -86,60 +86,60 @@ class BuiltinDynamicCompletions extends Disposable {
 
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltinDynamicCompletions, LifecyclePhase.Eventually);
 
-class VariableCompletions extends Disposable {
+// class VariableCompletions extends Disposable {
 
-	private static readonly VariableNameDef = new RegExp(`${probeVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+// 	private static readonly VariableNameDef = new RegExp(`${probeVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
-	constructor(
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
-		@IAideControlsService private readonly aideControlsService: IAideControlsService,
-		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
-	) {
-		super();
+// 	constructor(
+// 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+// 		@IAideControlsService private readonly aideControlsService: IAideControlsService,
+// 		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
+// 	) {
+// 		super();
 
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: AideControls.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: 'probeVariables',
-			triggerCharacters: [probeVariableLeader],
-			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
-
-
-				const widget = this.aideControlsService.controls;
-				if (!widget) {
-					return null;
-				}
-
-				const range = computeCompletionRanges(model, position, VariableCompletions.VariableNameDef);
-				if (!range) {
-					return null;
-				}
+// 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: AideControls.INPUT_SCHEME, hasAccessToAllModels: true }, {
+// 			_debugDisplayName: 'probeVariables',
+// 			triggerCharacters: [probeVariableLeader],
+// 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
 
 
-				const usedVariables = widget.parsedInput.parts.filter((p): p is ChatRequestVariablePart => p instanceof ChatRequestVariablePart);
-				const variableItems = Array.from(this.chatVariablesService.getVariables())
-					// This doesn't look at dynamic variables like `file`, where multiple makes sense.
-					.filter(v => !usedVariables.some(usedVar => usedVar.variableName === v.name))
-					.filter(v => !v.isSlow)
-					.map((v): CompletionItem => {
-						const withLeader = `${probeVariableLeader}${v.name}`;
-						return {
-							label: withLeader,
-							range,
-							insertText: withLeader + ' ',
-							detail: v.description,
-							kind: CompletionItemKind.Text, // The icons are disabled here anyway
-							sortText: 'z'
-						};
-					});
+// 				const widget = this.aideControlsService.controls;
+// 				if (!widget) {
+// 					return null;
+// 				}
 
-				return {
-					suggestions: variableItems
-				};
-			}
-		}));
-	}
-}
+// 				const range = computeCompletionRanges(model, position, VariableCompletions.VariableNameDef);
+// 				if (!range) {
+// 					return null;
+// 				}
 
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
+
+// 				const usedVariables = widget.parsedInput.parts.filter((p): p is ChatRequestVariablePart => p instanceof ChatRequestVariablePart);
+// 				const variableItems = Array.from(this.chatVariablesService.getVariables())
+// 					// This doesn't look at dynamic variables like `file`, where multiple makes sense.
+// 					.filter(v => !usedVariables.some(usedVar => usedVar.variableName === v.name))
+// 					.filter(v => !v.isSlow)
+// 					.map((v): CompletionItem => {
+// 						const withLeader = `${probeVariableLeader}${v.name}`;
+// 						return {
+// 							label: withLeader,
+// 							range,
+// 							insertText: withLeader + ' ',
+// 							detail: v.description,
+// 							kind: CompletionItemKind.Text, // The icons are disabled here anyway
+// 							sortText: 'z'
+// 						};
+// 					});
+
+// 				return {
+// 					suggestions: variableItems
+// 				};
+// 			}
+// 		}));
+// 	}
+// }
+
+// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(VariableCompletions, LifecyclePhase.Eventually);
 
 
 export function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp): { insert: Range; replace: Range; varWord: IWordAtPosition | null } | undefined {

@@ -12,8 +12,8 @@ import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
 import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { Selection } from 'vs/editor/common/core/selection';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
+import { AnchorEditingSelection } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 
 const editLineDecorationOptions = ModelDecorationOptions.register({
@@ -32,7 +32,7 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 });
 
 export interface IKeybindingPillContribution extends IEditorContribution {
-	showAnchorEditingDecoration(selection: Selection): void;
+	showAnchorEditingDecoration(anchorEditingSelection: AnchorEditingSelection | undefined): void;
 	hideAnchorEditingDecoration(): void;
 }
 
@@ -68,24 +68,27 @@ export class KeybindingPillContribution implements IKeybindingPillContribution {
 			} else {
 				this.pillWidget?.hide();
 			}
+			this.showAnchorEditingDecoration(this.aideProbeService.anchorEditingSelection);
+		});
 
-			const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
-			if (anchorEditingSelection) {
-				const uri = editor.getModel()?.uri;
-				if (uri?.toString() === anchorEditingSelection.uri.toString()) {
-					this.showAnchorEditingDecoration(anchorEditingSelection.selection);
-				} else {
-					this.hideAnchorEditingDecoration();
-				}
-			}
+		this.aideProbeService.onDidSetAnchoredSelection(() => {
+			this.showAnchorEditingDecoration(this.aideProbeService.anchorEditingSelection);
 		});
 	}
 
-	showAnchorEditingDecoration(selection: Selection) {
-		this.decorationsCollection.append([{
-			range: selection,
-			options: editLineDecorationOptions
-		}]);
+	showAnchorEditingDecoration(anchorEditingSelection: AnchorEditingSelection | undefined) {
+		if (anchorEditingSelection) {
+			const uri = this.editor.getModel()?.uri;
+			if (uri?.toString() === anchorEditingSelection.uri.toString()) {
+				this.hideAnchorEditingDecoration();
+				this.decorationsCollection.append([{
+					range: anchorEditingSelection.selection,
+					options: editLineDecorationOptions
+				}]);
+			} else {
+				this.hideAnchorEditingDecoration();
+			}
+		}
 	}
 
 	hideAnchorEditingDecoration() {

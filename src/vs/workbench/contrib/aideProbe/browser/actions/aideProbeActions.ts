@@ -308,7 +308,7 @@ class EnterAnchoredEditing extends Action2 {
 		aideControlsService.focusInput();
 
 		if (keybindingPillContribution) {
-			keybindingPillContribution.showAnchorEditingDecoration(selection);
+			keybindingPillContribution.showAnchorEditingDecoration(aideProbeService.anchorEditingSelection);
 		}
 	}
 }

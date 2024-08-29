@@ -127,11 +127,17 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._modelDisposables.add(this._model.onNewEvent(event => {
 
 			if (this.anchorEditingSelection && event.kind === 'edit') {
-				if (event.edit.range.startColumn < this.anchorEditingSelection.selection.startColumn) {
-					this.anchorEditingSelection.selection.setStartPosition(event.edit.range.startColumn, 0);
+				if (event.edit.range.startLineNumber < this.anchorEditingSelection.selection.startLineNumber) {
+					this.anchorEditingSelection = {
+						...this.anchorEditingSelection,
+						selection: this.anchorEditingSelection.selection.setStartPosition(event.edit.range.startLineNumber, 0),
+					};
 				}
-				if (event.edit.range.endColumn > this.anchorEditingSelection.selection.endColumn) {
-					this.anchorEditingSelection.selection.setEndPosition(event.edit.range.endColumn, 9999999);
+				if (event.edit.range.endLineNumber > this.anchorEditingSelection.selection.endLineNumber) {
+					this.anchorEditingSelection = {
+						...this.anchorEditingSelection,
+						selection: this.anchorEditingSelection.selection.setEndPosition(event.edit.range.endLineNumber + 1, 9999999),
+					};
 				}
 			}
 
