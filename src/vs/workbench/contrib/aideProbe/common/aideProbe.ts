@@ -7,7 +7,7 @@ import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { URI } from 'vs/base/common/uri';
 import { Selection } from 'vs/editor/common/core/selection';
 import { Range } from 'vs/editor/common/core/range';
-import { TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
+import { DocumentSymbol, TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
 import { IValidEditOperation } from 'vs/editor/common/model';
 import { IModelContentChange } from 'vs/editor/common/textModelEvents';
 import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
@@ -176,7 +176,7 @@ export type IAideProbeReviewUserEvent = 'accept' | 'reject';
 export interface AnchorEditingSelection {
 	uri: URI;
 	selection: Selection;
-	symbolNames: string[];
+	symbols: DocumentSymbol[];
 }
 
 export const enum AideProbeMode {

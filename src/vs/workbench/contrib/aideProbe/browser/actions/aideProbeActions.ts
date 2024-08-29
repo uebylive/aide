@@ -7,6 +7,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
 import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
@@ -287,11 +288,10 @@ class EnterAnchoredEditing extends Action2 {
 		if (!model || !selection) { return; }
 
 		const outlineModel = await outlineModelService.getOrCreate(model, CancellationToken.None);
-
-		const symbolNames: string[] = [];
+		const symbols: DocumentSymbol[] = [];
 		for (const symbol of outlineModel.getTopLevelSymbols()) {
 			if (selection.intersectRanges(symbol.range)) {
-				symbolNames.push(symbol.name);
+				symbols.push(symbol);
 			}
 		}
 
@@ -301,7 +301,7 @@ class EnterAnchoredEditing extends Action2 {
 			keybindingPillContribution.hideAnchorEditingDecoration();
 		}
 
-		aideProbeService.anchorEditingSelection = { uri: model.uri, selection, symbolNames };
+		aideProbeService.anchorEditingSelection = { uri: model.uri, selection, symbols };
 
 		const probeMode = CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 
