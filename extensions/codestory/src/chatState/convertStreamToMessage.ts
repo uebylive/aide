@@ -380,7 +380,7 @@ export const reportAgentEventsToChat = async (
 					response.breakdown({
 						reference: {
 							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
+							name: symbol_identifier.symbol_name,
 						}
 					});
 				} else if (editEvent.EditCodeStreaming) {
