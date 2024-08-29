@@ -86,6 +86,20 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			this.previewDisposable?.dispose();
 			this.currentNode = parentNode.children[currentIndex - 1];
 			this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+		} else if (parentNode.parent) {
+			const grandParentNode = parentNode.parent;
+			const parentIndex = grandParentNode.children.indexOf(parentNode);
+
+			if (parentIndex > 0) {
+				const previousSiblingNode = grandParentNode.children[parentIndex - 1];
+				this.previewDisposable?.dispose();
+				this.currentNode = previousSiblingNode;
+				this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+			} else {
+				this.previewDisposable?.dispose();
+				this.currentNode = parentNode;
+				this.previewDisposable = this.activeOutline?.preview(parentNode.element);
+			}
 		}
 	}
 
@@ -101,6 +115,20 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			this.previewDisposable?.dispose();
 			this.currentNode = parentNode.children[currentIndex + 1];
 			this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+		} else if (parentNode.parent) {
+			const grandParentNode = parentNode.parent;
+			const parentIndex = grandParentNode.children.indexOf(parentNode);
+
+			if (parentIndex < grandParentNode.children.length - 1) {
+				const nextSiblingNode = grandParentNode.children[parentIndex + 1];
+				this.previewDisposable?.dispose();
+				this.currentNode = nextSiblingNode;
+				this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+			} else {
+				this.previewDisposable?.dispose();
+				this.currentNode = parentNode;
+				this.previewDisposable = this.activeOutline?.preview(parentNode.element);
+			}
 		}
 	}
 
@@ -155,8 +183,14 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 				const breadcrumbElements = this.activeOutline?.config.breadcrumbsDataSource.getBreadcrumbElements();
 				if (breadcrumbElements && breadcrumbElements.length > 0) {
 					this.previewDisposable?.dispose();
-					this.currentNode = this.findNodeByElement(this.outlineRoot!, breadcrumbElements[0]);
-					this.previewDisposable = outline.preview(breadcrumbElements[0]);
+					const lastBreadcrumbElement = breadcrumbElements[breadcrumbElements.length - 1];
+					const lastBreadcrumbNode = this.findNodeByElement(this.outlineRoot!, lastBreadcrumbElement);
+					if (!lastBreadcrumbNode) {
+						return;
+					}
+
+					this.currentNode = lastBreadcrumbNode;
+					this.previewDisposable = this.activeOutline?.preview(lastBreadcrumbNode.element);
 				}
 			}
 		}));
@@ -185,8 +219,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		return root;
 	}
 
-	private findNodeByElement(root: TreeNode<any>, element: any): TreeNode<any> {
-		if (root.element === element) {
+	private findNodeByElement(root: TreeNode<any>, element: any): TreeNode<any> | undefined {
+		if (root.element?.id === element.id) {
 			return root;
 		}
 		for (const child of root.children) {
@@ -195,6 +229,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 				return found;
 			}
 		}
-		return root;
+		return undefined;
 	}
 }
