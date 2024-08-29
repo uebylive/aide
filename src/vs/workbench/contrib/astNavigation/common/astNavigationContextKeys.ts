@@ -5,4 +5,5 @@
 
 import { RawContextKey } from 'vs/platform/contextkey/common/contextkey';
 
-export const CONTEXT_AST_NAVIGATION_MODE = new RawContextKey<boolean>('astNavigationMode', true, { type: 'boolean', description: 'AST Navigation Mode' });
+export const CONTEXT_AST_NAVIGATION_MODE = new RawContextKey<boolean>('astNavigationMode', false, { type: 'boolean', description: 'AST Navigation Mode' });
+export const CONTEXT_CAN_AST_NAVIGATE = new RawContextKey<boolean>('canAstNavigate', false, { type: 'boolean', description: 'Can AST Navigate' });

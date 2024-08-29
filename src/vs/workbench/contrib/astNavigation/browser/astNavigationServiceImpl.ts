@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { getActiveWindow } from 'vs/base/browser/dom';
+import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IEditorPane } from 'vs/workbench/common/editor';
-import { CONTEXT_AST_NAVIGATION_MODE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
+import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
 import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
@@ -40,6 +40,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	private previewDisposable: IDisposable | undefined;
 
 	private _astNavigationMode: IContextKey<boolean>;
+	private _canASTNavigate: IContextKey<boolean>;
 
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -49,20 +50,38 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	) {
 		super();
 		this._astNavigationMode = CONTEXT_AST_NAVIGATION_MODE.bindTo(this.contextKeyService);
+		this._canASTNavigate = CONTEXT_CAN_AST_NAVIGATE.bindTo(this.contextKeyService);
 
 		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateOutline()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateOutline()));
 		this.recreateOutline();
 	}
 
-	private recreateOutline(): void {
+	private recreateOutline() {
+		this._canASTNavigate.set(false);
 		this.clearActiveOutline();
+
 		const activeEditor = this.editorService.activeEditorPane;
 		if (!activeEditor) {
 			return;
 		}
 
-		this.renderActiveEditorOutline(activeEditor);
+		const control = activeEditor.getControl();
+		let editor: ICodeEditor | undefined;
+		if (isCodeEditor(control)) {
+			editor = control;
+		}
+		if (!editor) {
+			return;
+		}
+		const buffer = editor.getModel();
+		if (!buffer) {
+			return;
+		}
+		const hasSymbolProvider = this.languageFeaturesService.documentSymbolProvider.has(buffer);
+		if (hasSymbolProvider) {
+			this.renderActiveEditorOutline(activeEditor);
+		}
 	}
 
 	private clearActiveOutline(): void {
@@ -170,22 +189,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	private async renderActiveEditorOutline(pane: IEditorPane): Promise<void> {
-		const control = pane.getControl();
-		let editor: ICodeEditor | undefined;
-		if (isCodeEditor(control)) {
-			editor = control;
-		}
-		if (!editor) {
-			return;
-		}
-		const buffer = editor.getModel();
-		if (!buffer) {
-			return;
-		}
-		if (!this.languageFeaturesService.documentSymbolProvider.has(buffer)) {
-			return;
-		}
-
 		const outline = this.activeOutline = await this.outlineService.createOutline(pane, OutlineTarget.Breadcrumbs, CancellationToken.None);
 		if (!outline) {
 			return;
@@ -198,17 +201,25 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 
 			this.rebuildOutlineTree(outline);
 			if (e.affectOnlyActiveElement) {
-				const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-				if (nodeAtCurrentPosition) {
-					this.previewNode(nodeAtCurrentPosition);
-				}
+				scheduleAtNextAnimationFrame(getActiveWindow(), () => {
+					const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
+					if (nodeAtCurrentPosition) {
+						this.previewNode(nodeAtCurrentPosition);
+					}
+				});
 			}
 		}));
 
 		this.rebuildOutlineTree(outline);
 		if (this.outlineRoot) {
 			const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-			this.previewNode(nodeAtCurrentPosition ?? this.outlineRoot.children[0]);
+			if (nodeAtCurrentPosition) {
+				this.previewNode(nodeAtCurrentPosition);
+				this._canASTNavigate.set(true);
+			} else if (this.outlineRoot.children.length > 0) {
+				this.previewNode(this.outlineRoot.children[0]);
+				this._canASTNavigate.set(true);
+			}
 		}
 	}
 

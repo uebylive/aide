@@ -11,7 +11,7 @@ import * as nls from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CONTEXT_AST_NAVIGATION_MODE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
+import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
 import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
 
 const AST_NAVIGATION_CATEGORY = nls.localize2('astNavigation', "AST Navigation");
@@ -22,7 +22,7 @@ class ToggleASTNavigationMode extends Action2 {
 	constructor() {
 		super({
 			id: ToggleASTNavigationMode.ID,
-			title: nls.localize2('toggleASTNavigationMode', "Toggle AST Navigation Mode"),
+			title: nls.localize2('toggleASTNavigation', "Toggle AST Navigation"),
 			f1: true,
 			category: AST_NAVIGATION_CATEGORY,
 			toggled: ContextKeyExpr.equals(CONTEXT_AST_NAVIGATION_MODE.key, true),
@@ -54,9 +54,9 @@ export class MoveUpAction extends EditorAction {
 			alias: 'Move Up',
 			precondition: CONTEXT_AST_NAVIGATION_MODE,
 			kbOpts: {
-				kbExpr: EditorContextKeys.focus,
+				kbExpr: ContextKeyExpr.and(EditorContextKeys.focus, CONTEXT_CAN_AST_NAVIGATE),
 				primary: KeyCode.UpArrow,
-				weight: KeybindingWeight.WorkbenchContrib + 1
+				weight: KeybindingWeight.WorkbenchContrib
 			}
 		});
 	}
@@ -76,9 +76,9 @@ export class MoveDownAction extends EditorAction {
 			alias: 'Move Down',
 			precondition: CONTEXT_AST_NAVIGATION_MODE,
 			kbOpts: {
-				kbExpr: EditorContextKeys.focus,
+				kbExpr: ContextKeyExpr.and(EditorContextKeys.focus, CONTEXT_CAN_AST_NAVIGATE),
 				primary: KeyCode.DownArrow,
-				weight: KeybindingWeight.WorkbenchContrib + 1
+				weight: KeybindingWeight.WorkbenchContrib
 			}
 		});
 	}
@@ -98,9 +98,9 @@ export class MoveIntoAction extends EditorAction {
 			alias: 'Move Into',
 			precondition: CONTEXT_AST_NAVIGATION_MODE,
 			kbOpts: {
-				kbExpr: EditorContextKeys.focus,
+				kbExpr: ContextKeyExpr.and(EditorContextKeys.focus, CONTEXT_CAN_AST_NAVIGATE),
 				primary: KeyCode.RightArrow,
-				weight: KeybindingWeight.WorkbenchContrib + 1
+				weight: KeybindingWeight.WorkbenchContrib
 			}
 		});
 	}
@@ -120,9 +120,9 @@ export class MoveOutAction extends EditorAction {
 			alias: 'Move Out',
 			precondition: CONTEXT_AST_NAVIGATION_MODE,
 			kbOpts: {
-				kbExpr: EditorContextKeys.focus,
+				kbExpr: ContextKeyExpr.and(EditorContextKeys.focus, CONTEXT_CAN_AST_NAVIGATE),
 				primary: KeyCode.LeftArrow,
-				weight: KeybindingWeight.WorkbenchContrib + 1
+				weight: KeybindingWeight.WorkbenchContrib
 			}
 		});
 	}
