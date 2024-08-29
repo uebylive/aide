@@ -606,12 +606,17 @@ class StreamProcessor {
 
 	async cleanup() {
 		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
+		console.log(this.documentLineIndex, this.documentLineLimit);
 		if (this.documentLineIndex <= this.documentLineLimit) {
 			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
 		}
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
+		console.table({
+			'event_name': 'process_line',
+			'line_content': answerStreamLine.line,
+		});
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -628,7 +633,7 @@ class StreamProcessor {
 				// if no anchor line, then we have to replace the current line
 				// console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 				this.documentLineIndex = await this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
-			} else if (this.documentLineIndex >= this.documentLineLimit) {
+			} else if (this.documentLineIndex > this.documentLineLimit) {
 				if (this.sentEdits) {
 					this.documentLineIndex = await this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					// this.documentLineIndex = await this.document.appendLine(adjustedLine);
@@ -738,6 +743,11 @@ class DocumentManager {
 	async replaceLine(index: number, newLine: AdjustedLineContent) {
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		//console.log('sidecar.replaceLine', index);
+		console.table({
+			'edit': 'replace_line',
+			'index': index,
+			'content': newLine.adjustedContent,
+		});
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('What line are we replaceLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
@@ -751,6 +761,12 @@ class DocumentManager {
 	// Replace multiple lines starting from a specific index
 	async replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
 		//console.log('sidecar.replaceLine', startIndex, endIndex);
+		console.table({
+			'edit': 'replace_lines',
+			'start_index': startIndex,
+			'end_index': endIndex,
+			'content': newLine.adjustedContent,
+		});
 		if (startIndex === endIndex) {
 			return await this.replaceLine(startIndex, newLine);
 		} else {
@@ -775,6 +791,11 @@ class DocumentManager {
 		//console.log('sidecar.appendLine', this.lines.length - 1);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
+		console.table({
+			'edit': 'append_line',
+			'start_index': this.lines.length - 2,
+			'content': newLine.adjustedContent,
+		});
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
 		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
@@ -787,6 +808,11 @@ class DocumentManager {
 	// Insert a new line after a specific index
 	async insertLineAfter(index: number, newLine: AdjustedLineContent) {
 		//console.log('insertLineAfter', index);
+		console.table({
+			'edit': 'insert_line_after',
+			'index': index,
+			'content': newLine.adjustedContent,
+		});
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
