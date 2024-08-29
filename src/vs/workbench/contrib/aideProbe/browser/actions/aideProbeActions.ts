@@ -265,7 +265,7 @@ class EnterAnchoredEditing extends Action2 {
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
 				weight: KeybindingWeight.ExternalExtension, // Necessary to override the default keybinding
-				when: isProbeIdle,
+				when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
 			},
 		});
 	}
