@@ -87,6 +87,7 @@ type FrameworkEvent = {
 	OpenFile: OpenFileRequestFrameworkEvent;
 	CodeIterationFinished: string;
 	ReferenceFound: FoundReference;
+	ReferenceFilterDescription: string;
 };
 
 interface UIEvent {
