@@ -239,7 +239,16 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	private buildTreeFromElements(elements: any[], root: TreeNode<any>): TreeNode<any> {
-		for (const element of elements) {
+		const sortedElements = elements.sort((a, b) => {
+			const rangeA = a.symbol.range;
+			const rangeB = b.symbol.range;
+			if (rangeA.startLineNumber !== rangeB.startLineNumber) {
+				return rangeA.startLineNumber - rangeB.startLineNumber;
+			}
+			return rangeA.startColumn - rangeB.startColumn;
+		});
+
+		for (const element of sortedElements) {
 			const node = new TreeNode(element);
 			node.parent = root;
 			root.addChild(node);
