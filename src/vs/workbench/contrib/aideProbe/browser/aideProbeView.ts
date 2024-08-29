@@ -163,6 +163,11 @@ export class AideProbeViewPane extends ViewPane {
 					this.listFocusIndex = index;
 				}
 
+				element.expanded = !element.expanded;
+				if (this.list) {
+					this.list.splice(index, 1, [element]);
+					this.list.rerender();
+				}
 				this._onDidChangeFocus.fire({ index, element: element });
 				this.openListItemReference(element, !!event.browserEvent);
 			}
@@ -213,18 +218,25 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		const items = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+
+		console.log(items.length);
+
 		let matchingIndex = -1;
 
 		if (items.length === 0) {
 			this.list.splice(0, 0, items);
 		} else {
-			items.forEach((symbol) => {
-				const matchIndex = this.getListIndex(symbol);
+			items.forEach((item, index) => {
+				item.index = index;
+				const matchIndex = this.getListIndex(item);
 				if (this.list) {
 					if (matchIndex === -1) {
-						this.list.splice(items.length - 1, 0, [symbol]);
+						this.list.splice(items.length - 1, 0, [item]);
 					} else {
-						this.list.splice(matchIndex, 1, [symbol]);
+						if (matchIndex === this.listFocusIndex) {
+							item.expanded = true;
+						}
+						this.list.splice(matchIndex, 1, [item]);
 					}
 				}
 				matchingIndex = matchIndex;

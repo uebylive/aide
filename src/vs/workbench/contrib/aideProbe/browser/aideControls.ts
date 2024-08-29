@@ -39,7 +39,7 @@ import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { AideProbeMode, AideProbeStatus, IAideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { ICommandService } from 'vs/platform/commands/common/commands';
@@ -163,6 +163,7 @@ export class AideControls extends Themable implements IAideControls {
 	private inputHasFocus: IContextKey<boolean>;
 	private areControlsActive: IContextKey<boolean>;
 	private probeMode: IContextKey<IAideProbeMode>;
+	private probeStatus: IContextKey<IAideProbeStatus>;
 
 	private readonly activeEditorDisposables = this._register(new DisposableStore());
 	private probeHasSelection: IContextKey<boolean>;
@@ -252,7 +253,11 @@ export class AideControls extends Themable implements IAideControls {
 			if (anchoredSelectionFile) {
 				newContext.push(anchoredSelectionFile);
 			}
-			this.aideProbeService.onContextChange(newContext);
+
+			if (this.probeStatus.get() !== AideProbeStatus.IN_PROGRESS) {
+				this.aideProbeService.onContextChange(newContext);
+			}
+
 			this.updateAnchoredSymbolsButton(anchoredSymbolElement);
 			if (this.part.dimension) {
 				const { width, height } = this.part.dimension;
@@ -260,7 +265,9 @@ export class AideControls extends Themable implements IAideControls {
 			}
 		}));
 
-		CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService).set(AideProbeStatus.INACTIVE);
+
+		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
+		this.probeStatus.set(AideProbeStatus.INACTIVE);
 	}
 
 	private createAnchoredSymbolsButton(parent: HTMLElement) {

@@ -123,7 +123,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			//const codeEdits = _model.response?.codeEdits;
 
 			if (this._model.response.initialSymbols) {
-				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, type: 'initialSymbol', currentRenderedHeight: 0 }));
+				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, type: 'initialSymbol', index: undefined, expanded: false, currentRenderedHeight: 0 }));
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -168,7 +168,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 
 export interface IAideProbeInitialSymbolsViewModel extends IAideProbeInitialSymbolInformation {
 	type: 'initialSymbol';
+	index: number | undefined;
 	currentRenderedHeight: number | undefined;
+	expanded: boolean;
 }
 
 export interface IAideProbeBreakdownViewModel {
@@ -180,6 +182,7 @@ export interface IAideProbeBreakdownViewModel {
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
+	index: number | undefined;
 	currentRenderedHeight: number | undefined;
 	expanded: boolean;
 }
@@ -227,6 +230,7 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	}
 
 	expanded = false;
+	index: number | undefined;
 
 	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
 	private _symbol: DocumentSymbol | undefined;
