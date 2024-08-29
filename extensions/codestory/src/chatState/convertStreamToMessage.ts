@@ -749,13 +749,23 @@ class DocumentManager {
 			'content': newLine.adjustedContent,
 		});
 		const edits = new vscode.WorkspaceEdit();
-		// console.log('What line are we replaceLine', newLine.adjustedContent);
-		edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-		this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits, iterationId: 'mock' });
-		});
-		return index + 1;
+		if (newLine.adjustedContent === '') {
+			// console.log('What line are we replaceLine', newLine.adjustedContent);
+			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+			return index + 1;
+		} else {
+			// console.log('What line are we replaceLine', newLine.adjustedContent);
+			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+			return index + 1;
+		}
 	}
 
 	// Replace multiple lines starting from a specific index
