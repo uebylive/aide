@@ -280,8 +280,6 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 
 			this._onNewEvent.fire({ kind: 'completeEdit', resource: URI.parse(codeEdits.targetUri) });
 
-			await this._textFileService.save(codeEdits.textModelN.uri);
-
 			const sha1 = new DefaultModelSHA1Computer();
 			const textModel0Sha1 = sha1.canComputeSHA1(codeEdits.textModel0)
 				? sha1.computeSHA1(codeEdits.textModel0)
