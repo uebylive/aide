@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { TimeoutTimer } from 'vs/base/common/async';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
+import { getActiveWindow } from 'vs/base/browser/dom';
+import { CancellationToken } from 'vs/base/common/cancellation';
+import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -52,6 +52,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 
 		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateOutline()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateOutline()));
+		this.recreateOutline();
 	}
 
 	private recreateOutline(): void {
@@ -67,11 +68,46 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	private clearActiveOutline(): void {
 		this.outlineRoot = undefined;
 		this.currentNode = undefined;
+		this.activeOutline?.dispose();
+		this.activeOutline = undefined;
+		this.previewDisposable?.dispose();
 		this.activeEditorDisposables.clear();
 	}
 
+	private previewNode(node: TreeNode<any>): void {
+		this.currentNode = node;
+		this.previewDisposable?.dispose();
+		this.previewDisposable = this.activeOutline?.preview(node.element);
+		const editor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(editor)) {
+			editor.setSelection(node.element.symbol.range);
+		}
+	}
+
 	toggleASTNavigationMode(): void {
-		this._astNavigationMode.set(!this._astNavigationMode.get());
+		const currentMode = this._astNavigationMode.get();
+		const isAstNavigationMode = !currentMode;
+		this._astNavigationMode.set(isAstNavigationMode);
+		if (isAstNavigationMode) {
+			getActiveWindow().document.body.classList.add('astNavigationMode');
+			this.recreateOutline();
+		} else {
+			getActiveWindow().document.body.classList.remove('astNavigationMode');
+			this.clearActiveOutline();
+			const editor = this.editorService.activeTextEditorControl;
+			if (isCodeEditor(editor)) {
+				const selection = editor.getSelection();
+				if (selection) {
+					const endPosition = selection.getEndPosition();
+					editor.setSelection({
+						startLineNumber: endPosition.lineNumber,
+						startColumn: endPosition.column,
+						endLineNumber: endPosition.lineNumber,
+						endColumn: endPosition.column
+					});
+				}
+			}
+		}
 	}
 
 	moveUp(): void {
@@ -83,22 +119,16 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		const currentIndex = parentNode.children.indexOf(this.currentNode);
 
 		if (currentIndex > 0) {
-			this.previewDisposable?.dispose();
-			this.currentNode = parentNode.children[currentIndex - 1];
-			this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+			this.previewNode(parentNode.children[currentIndex - 1]);
 		} else if (parentNode.parent) {
 			const grandParentNode = parentNode.parent;
 			const parentIndex = grandParentNode.children.indexOf(parentNode);
 
 			if (parentIndex > 0) {
 				const previousSiblingNode = grandParentNode.children[parentIndex - 1];
-				this.previewDisposable?.dispose();
-				this.currentNode = previousSiblingNode;
-				this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+				this.previewNode(previousSiblingNode);
 			} else {
-				this.previewDisposable?.dispose();
-				this.currentNode = parentNode;
-				this.previewDisposable = this.activeOutline?.preview(parentNode.element);
+				this.previewNode(parentNode);
 			}
 		}
 	}
@@ -112,40 +142,30 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		const currentIndex = parentNode.children.indexOf(this.currentNode);
 
 		if (currentIndex < parentNode.children.length - 1) {
-			this.previewDisposable?.dispose();
-			this.currentNode = parentNode.children[currentIndex + 1];
-			this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+			this.previewNode(parentNode.children[currentIndex + 1]);
 		} else if (parentNode.parent) {
 			const grandParentNode = parentNode.parent;
 			const parentIndex = grandParentNode.children.indexOf(parentNode);
 
 			if (parentIndex < grandParentNode.children.length - 1) {
 				const nextSiblingNode = grandParentNode.children[parentIndex + 1];
-				this.previewDisposable?.dispose();
-				this.currentNode = nextSiblingNode;
-				this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+				this.previewNode(nextSiblingNode);
 			} else {
-				this.previewDisposable?.dispose();
-				this.currentNode = parentNode;
-				this.previewDisposable = this.activeOutline?.preview(parentNode.element);
+				this.previewNode(parentNode);
 			}
 		}
 	}
 
 	moveInto(): void {
 		if (this.currentNode && this.currentNode.children.length > 0) {
-			this.previewDisposable?.dispose();
-			this.currentNode = this.currentNode.children[0];
-			this.previewDisposable = this.activeOutline?.preview(this.currentNode.element);
+			this.previewNode(this.currentNode.children[0]);
 		}
 	}
 
 	moveOut(): void {
 		if (this.currentNode && this.currentNode.parent?.element) {
-			this.previewDisposable?.dispose();
 			const parentNode = this.currentNode.parent;
-			this.currentNode = parentNode;
-			this.previewDisposable = this.activeOutline?.preview(parentNode.element);
+			this.previewNode(parentNode);
 		}
 	}
 
@@ -166,40 +186,41 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 
-		const cts = new CancellationTokenSource();
-		const timeoutTimer = new TimeoutTimer();
-
-		this.activeEditorDisposables.add(timeoutTimer);
-		this.activeEditorDisposables.add(toDisposable(() => cts.dispose(true)));
-
 		const outline = this.activeOutline = await this.outlineService.createOutline(pane, OutlineTarget.Breadcrumbs, CancellationToken.None);
 		if (!outline) {
 			return;
 		}
 		this.activeEditorDisposables.add(outline);
 		this.activeEditorDisposables.add(outline.onDidChange(e => {
+			if (!this._astNavigationMode.get()) {
+				return;
+			}
+
 			this.rebuildOutlineTree(outline);
 			if (e.affectOnlyActiveElement) {
-				const breadcrumbElements = this.activeOutline?.config.breadcrumbsDataSource.getBreadcrumbElements();
-				if (breadcrumbElements && breadcrumbElements.length > 0) {
-					this.previewDisposable?.dispose();
-					const lastBreadcrumbElement = breadcrumbElements[breadcrumbElements.length - 1];
-					const lastBreadcrumbNode = this.findNodeByElement(this.outlineRoot!, lastBreadcrumbElement);
-					if (!lastBreadcrumbNode) {
-						return;
-					}
-
-					this.currentNode = lastBreadcrumbNode;
-					this.previewDisposable = this.activeOutline?.preview(lastBreadcrumbNode.element);
+				const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
+				if (nodeAtCurrentPosition) {
+					this.previewNode(nodeAtCurrentPosition);
 				}
 			}
 		}));
 
 		this.rebuildOutlineTree(outline);
 		if (this.outlineRoot) {
-			this.currentNode = this.outlineRoot.children[0];
-			this.previewDisposable = outline.preview(this.currentNode.element);
+			const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
+			this.previewNode(nodeAtCurrentPosition ?? this.outlineRoot.children[0]);
 		}
+	}
+
+	private getNodeAtCurrentPosition(): TreeNode<any> | undefined {
+		const breadcrumbElements = this.activeOutline?.config.breadcrumbsDataSource.getBreadcrumbElements();
+		if (breadcrumbElements && breadcrumbElements.length > 0) {
+			const lastBreadcrumbElement = breadcrumbElements[breadcrumbElements.length - 1];
+			const lastBreadcrumbNode = this.findNodeByElement(this.outlineRoot!, lastBreadcrumbElement);
+			return lastBreadcrumbNode;
+		}
+
+		return undefined;
 	}
 
 	private rebuildOutlineTree(outline: IOutline<any>): void {
