@@ -230,7 +230,7 @@ class ClearIterationAction extends Action2 {
 
 	async run(accessor: ServicesAccessor) {
 		const aideProbeService = accessor.get(IAideProbeService);
-		aideProbeService.rejectCodeEdits();
+		aideProbeService.clearSession();
 
 		const commandService = accessor.get(ICommandService);
 		commandService.executeCommand(ExitAnchoredEditing.ID);

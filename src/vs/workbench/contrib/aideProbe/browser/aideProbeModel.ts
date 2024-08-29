@@ -23,6 +23,7 @@ import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
@@ -160,6 +161,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		@ITextFileService private readonly _textFileService: ITextFileService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@IBulkEditService private readonly _bulkEditService: IBulkEditService,
+		@IUndoRedoService private readonly undoRedoService: IUndoRedoService
 	) {
 		super();
 	}
@@ -252,7 +254,8 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 					resource.with({ scheme: Schemas.vscode, authority: 'aide-probe-commandpalette', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
 				));
 
-				textModel.pushStackElement();
+
+				this.undoRedoService.createSnapshot(textModelN.uri);
 
 				codeEdits = {
 					targetUri: resource.toString(),
