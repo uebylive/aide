@@ -330,6 +330,8 @@ export const reportAgentEventsToChat = async (
 				response.codeIterationFinished({ edits: iterationEdits });
 			} else if (event.event.FrameworkEvent.ReferenceFound) {
 				console.log(event.event.FrameworkEvent.ReferenceFound);
+			} else if (event.event.FrameworkEvent.ReferenceFilterDescription) {
+				console.log(event.event.FrameworkEvent.ReferenceFilterDescription)
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;

@@ -244,8 +244,7 @@ interface OpenFileRequestFrameworkEvent {
 }
 
 interface FoundReference {
-	request_id: string;
-	fs_file_path: string;
+	[fs_file_path: string]: number;
 }
 
 interface InitialSearchSymbolInformation {
