@@ -5,10 +5,10 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { Codicon } from 'vs/base/common/codicons';
+import { ButtonBar } from 'vs/base/browser/ui/button/button';
+import { CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideControls';
@@ -17,24 +17,27 @@ import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
+import { Selection } from 'vs/editor/common/core/selection';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
 import { SymbolKinds } from 'vs/editor/common/languages';
 import { IModelService } from 'vs/editor/common/services/model';
+import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { FileKind } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
-import { IResourceLabel, ResourceLabels } from 'vs/workbench/browser/labels';
+import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
@@ -49,6 +52,7 @@ import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aidePro
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const $ = dom.$;
@@ -68,6 +72,7 @@ export interface IAideControlsService {
 	registerControls(controls: AideControls): void;
 	acceptInput(): void;
 	focusInput(): void;
+	blurInput(): void;
 }
 
 export class AideControlsService implements IAideControlsService {
@@ -76,6 +81,11 @@ export class AideControlsService implements IAideControlsService {
 
 	get controls() {
 		return this._controls;
+	}
+
+	constructor(
+		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
+	) {
 	}
 
 	registerControls(controls: AideControls): void {
@@ -95,6 +105,15 @@ export class AideControlsService implements IAideControlsService {
 	focusInput(): void {
 		if (this._controls) {
 			this._controls.focusInput();
+		}
+	}
+
+	blurInput(): void {
+		if (this._controls) {
+			const activeEditor = this.codeEditorService.listCodeEditors().find(editor => !editor.hasTextFocus());
+			if (activeEditor) {
+				activeEditor.focus();
+			}
 		}
 	}
 }
@@ -175,8 +194,11 @@ export class AideControls extends Themable implements IAideControls {
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 	private resourceLabels: ResourceLabels | undefined;
-	private anchoredSymbolLabels: IResourceLabel[] = [];
-	private anchoredSymbols: { resource: URI; name: string }[] = [];
+	private anchoredContextContainer: HTMLElement | undefined;
+	private readonly resourceLabelDisposables = this._register(new DisposableStore());
+	private readonly currentOutline = new MutableDisposable<IOutline<any>>();
+	private readonly outlineDisposables = this._register(new DisposableStore());
+	private outlineCancellationTokenSource: CancellationTokenSource | undefined;
 
 	constructor(
 		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
@@ -191,7 +213,8 @@ export class AideControls extends Themable implements IAideControls {
 		@IThemeService themeService: IThemeService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IModelService private readonly modelService: IModelService,
-		@ICommandService private readonly commandService: ICommandService,
+		@IOutlineService private readonly outlineService: IOutlineService,
+		@IKeybindingService private readonly keybindingService: IKeybindingService,
 	) {
 		super(themeService);
 
@@ -204,13 +227,14 @@ export class AideControls extends Themable implements IAideControls {
 		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.probeHasSelection = CONTEXT_PROBE_HAS_SELECTION.bindTo(contextKeyService);
 		this.probeMode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
+		this.probeMode.set(AideProbeMode.ANCHORED);
 
 		const element = this.element = $('.aide-controls');
 		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
-		const anchoredSymbolsContainer = $('.aide-controls-anchored-symbol');
-		element.appendChild(anchoredSymbolsContainer);
+		this.anchoredContextContainer = $('.aide-controls-anchored-symbol');
+		element.appendChild(this.anchoredContextContainer);
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
@@ -230,9 +254,38 @@ export class AideControls extends Themable implements IAideControls {
 		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
 		this.contextPicker.append(inputElement);
 
+		const toggleBarElement = $('.aide-controls-toggle-bar');
+		toolbarElement.appendChild(toggleBarElement);
+		const toggleBar = this.instantiationService.createInstance(ButtonBar, toggleBarElement);
+		const anchorMode = this._register(toggleBar.addButton({
+			...defaultButtonStyles,
+		}));
+		anchorMode.label = 'Anchored editing';
+		anchorMode.onDidClick(() => {
+			this.probeMode.set(AideProbeMode.ANCHORED);
+		});
+		const agentMode = this._register(toggleBar.addButton({
+			...defaultButtonStyles,
+			secondary: true
+		}));
+		agentMode.label = 'Agentic editing';
+		agentMode.element.style.opacity = '0.4';
+		agentMode.onDidClick(() => {
+			this.probeMode.set(AideProbeMode.AGENTIC);
+		});
+		this.contextKeyService.onDidChangeContext(e => {
+			if (e.affectsSome(new Set([CONTEXT_PROBE_MODE.key]))) {
+				anchorMode.element.style.opacity = this.probeMode.get() === AideProbeMode.ANCHORED ? '1' : '0.4';
+				agentMode.element.style.opacity = this.probeMode.get() === AideProbeMode.AGENTIC ? '1' : '0.4';
+			} else if (e.affectsSome(new Set([CONTEXT_PROBE_INPUT_HAS_FOCUS.key]))) {
+				this.updateInputPlaceholder();
+			}
+		});
+
 		this.createToolbar(toolbarElement);
 
 		this.checkActivation();
+		this.updateOutline();
 		this.updateInputPlaceholder();
 		this.checkEditorSelection();
 
@@ -242,12 +295,11 @@ export class AideControls extends Themable implements IAideControls {
 		}));
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
+			this.updateOutline();
 			this.updateInputPlaceholder();
 			this.checkActivation();
 			this.checkEditorSelection();
 		}));
-
-		this.updateAnchoredSymbolsButton(anchoredSymbolsContainer);
 
 		this._register(this.aideProbeService.onDidSetAnchoredSelection((event) => {
 			const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
@@ -261,55 +313,95 @@ export class AideControls extends Themable implements IAideControls {
 				this.aideProbeService.onContextChange(newContext);
 			}
 
-			this.updateAnchoredSymbolsButton(anchoredSymbolsContainer);
 			if (this.part.dimension) {
 				const { width, height } = this.part.dimension;
 				this.layout(width, height);
 			}
 		}));
 
-
 		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 		this.probeStatus.set(AideProbeStatus.INACTIVE);
 	}
 
-	private updateAnchoredSymbolsButton(container: HTMLElement) {
-		const resourceLabels = this.resourceLabels;
-		const anchorEditingSelection = this.aideProbeService.anchorEditingSelection;
-		if (!resourceLabels || !anchorEditingSelection) {
+	private updateOutline() {
+		this.outlineDisposables.clear();
+		this.outlineCancellationTokenSource?.dispose();
+
+		const newCts = this.outlineCancellationTokenSource = new CancellationTokenSource();
+		const editor = this.editorService.activeEditorPane;
+		if (editor) {
+			this.outlineService.createOutline(editor, OutlineTarget.Breadcrumbs, newCts.token).then(outline => {
+				if (newCts.token.isCancellationRequested) {
+					outline?.dispose();
+					outline = undefined;
+				}
+				this.currentOutline.value = outline;
+				this.updateAnchoredContext();
+				if (outline) {
+					this.outlineDisposables.add(outline.onDidChange(() => {
+						this.updateAnchoredContext();
+					}));
+				} else {
+					this.clearAnchors();
+				}
+			}).catch(() => {
+				this.currentOutline.clear();
+				this.updateAnchoredContext();
+			});
+		}
+	}
+
+	private clearAnchors() {
+		this.resourceLabelDisposables.clear();
+		this.resourceLabels?.clear();
+		if (this.anchoredContextContainer) {
+			dom.clearNode(this.anchoredContextContainer);
+		}
+	}
+
+	private updateAnchoredContext() {
+		if (!this.anchoredContextContainer || !this.currentOutline.value || !this.resourceLabels) {
+			this.clearAnchors();
 			return;
 		}
 
-		const uri = anchorEditingSelection.uri;
-		anchorEditingSelection?.symbols.forEach(symbol => {
-			if (
-				this.anchoredSymbols.some(
-					anchoredSymbol => anchoredSymbol.resource.toString() === uri.toString() && anchoredSymbol.name === symbol.name
-				)
-			) {
-				return;
-			} else if (this.anchoredSymbols.length === 0) {
-				const clearButton = this._register(new Button(container, { supportIcons: true }));
-				clearButton.icon = Codicon.close;
-				this._register(clearButton.onDidClick(() => {
-					if (this.probeMode.get() === AideProbeMode.ANCHORED) {
-						dom.clearNode(container);
-						this.anchoredSymbols = [];
-						this.anchoredSymbolLabels.forEach(label => label.dispose());
-						this.anchoredSymbolLabels = [];
-						this.commandService.executeCommand('workbench.action.aideProbe.exitAnchoredEditing');
-					}
-				}));
-			}
+		const editor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(editor)) {
+			this.clearAnchors();
+			return;
+		}
 
-			const symbolLabel = resourceLabels.create(container, { supportHighlights: true });
-			symbolLabel.setResource({ resource: uri, name: symbol.name, description: basenameOrAuthority(uri) }, {
+		const resource = editor.getModel()?.uri;
+		if (!resource) {
+			this.clearAnchors();
+			return;
+		}
+
+		const breadcrumbsElements = this.currentOutline.value.config.breadcrumbsDataSource.getBreadcrumbElements();
+		if (breadcrumbsElements && breadcrumbsElements.length > 0) {
+			this.clearAnchors();
+
+			const outline = breadcrumbsElements[0] as OutlineElement;
+			const symbol = outline.symbol;
+			const symbolLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
+			symbolLabel.setResource({ resource, name: symbol.name, description: basenameOrAuthority(resource) }, {
 				fileKind: FileKind.FILE,
 				icon: SymbolKinds.toIcon(symbol.kind),
 			});
-			this.anchoredSymbols.push({ resource: uri, name: symbol.name });
-			this.anchoredSymbolLabels.push(symbolLabel);
-		});
+			this.aideProbeService.anchorEditingSelection = {
+				uri: resource, selection: new Selection(
+					symbol.range.startLineNumber,
+					symbol.range.startColumn,
+					symbol.range.endLineNumber,
+					symbol.range.endColumn,
+				), symbols: [symbol]
+			};
+		}
+
+		if (this.part.dimension) {
+			const { width, height } = this.part.dimension;
+			this.layout(width, height);
+		}
 	}
 
 	private checkEditorSelection() {
@@ -428,8 +520,13 @@ export class AideControls extends Themable implements IAideControls {
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
-
 			let placeholder = 'Start a task';
+			if (!this.inputHasFocus.get()) {
+				const keybinding = this.keybindingService.lookupKeybinding('workbench.action.aideProbe.focus');
+				if (keybinding) {
+					placeholder += ` (${keybinding.getLabel()})`;
+				}
+			}
 			const editor = this.editorService.activeTextEditorControl;
 			if (!editor || (editor && isCodeEditor(editor))) {
 				const model = editor?.getModel();
@@ -501,8 +598,6 @@ export class AideControls extends Themable implements IAideControls {
 	layout(width: number, height: number) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		const hasAnchoredSymbols = Boolean(this.aideProbeService.anchorEditingSelection);
-		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 - (hasAnchoredSymbols ? 42 : 0) });
-
+		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
 	}
 }

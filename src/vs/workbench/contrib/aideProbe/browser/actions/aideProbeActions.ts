@@ -3,30 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { DocumentSymbol } from 'vs/editor/common/languages';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ICommandService } from 'vs/platform/commands/common/commands';
 import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys';
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-import { IKeybindingPillContribution, KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
-const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
+const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
 
 export interface IProbeActionContext {
 	view?: IView;
@@ -47,6 +40,32 @@ function logProbeContext(accessor: ServicesAccessor) {
 			context[raw.key] = raw.getValue(contextKeyService);
 		}
 		// console.table(context);
+	}
+}
+
+class BlurAction extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.blur';
+
+	constructor() {
+		super({
+			id: BlurAction.ID,
+			title: localize2('aideProbe.blur.label', "Blur"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
+			keybinding: {
+				primary: KeyCode.Escape,
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		console.log('blur');
+		const aideControls = accessor.get(IAideControlsService);
+		aideControls.blurInput();
 	}
 }
 
@@ -148,9 +167,6 @@ class CancelAction extends Action2 {
 		aideProbeService.rejectCodeEdits();
 		aideProbeService.clearSession();
 
-		const commandService = accessor.get(ICommandService);
-		commandService.executeCommand(ExitAnchoredEditing.ID);
-
 		const viewsService = accessor.get(IViewsService);
 		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
 		if (aideProbeView) {
@@ -215,7 +231,7 @@ class ClearIterationAction extends Action2 {
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
 			keybinding: {
-				primary: KeyCode.Escape,
+				primary: KeyMod.WinCtrl | KeyCode.KeyL,
 				weight: KeybindingWeight.WorkbenchContrib,
 				when: CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS,
 			},
@@ -233,167 +249,73 @@ class ClearIterationAction extends Action2 {
 		const aideProbeService = accessor.get(IAideProbeService);
 		aideProbeService.clearSession();
 
-		const commandService = accessor.get(ICommandService);
-		commandService.executeCommand(ExitAnchoredEditing.ID);
-
 		const viewsService = accessor.get(IViewsService);
 		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
 		if (aideProbeView) {
 			aideProbeView.clear();
 		}
 
-
-		const editorService = accessor.get(IEditorService);
-		const editor = editorService.activeTextEditorControl;
-		if (isCodeEditor(editor)) {
-			editor.getContribution<IKeybindingPillContribution>(KeybindingPillContribution.ID)?.hideAnchorEditingDecoration();
-		}
 		logProbeContext(accessor);
 	}
 }
 
-class EnterAnchoredEditing extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.enterAnchoredEditing';
+class FocusAideControls extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.focus';
 
 	constructor() {
 		super({
-			id: EnterAnchoredEditing.ID,
-			title: localize2('Enter anchored editing', 'Enter anchored editing'),
+			id: FocusAideControls.ID,
+			title: localize2('aideProbe.focus.label', "Focus Aide Controls"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			//precondition: isProbeIdle,
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-				weight: KeybindingWeight.ExternalExtension, // Necessary to override the default keybinding
-				//when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+				weight: KeybindingWeight.WorkbenchContrib + 1,
 			},
 		});
 	}
 
 	async run(accessor: ServicesAccessor) {
-
-		const aideProbeService = accessor.get(IAideProbeService);
-		const aideControlsService = accessor.get(IAideControlsService);
-		const editorService = accessor.get(IEditorService);
-		const contextKeyService = accessor.get(IContextKeyService);
-		const outlineModelService = accessor.get(IOutlineModelService);
-
-		const editor = editorService.activeTextEditorControl;
-		if (!isCodeEditor(editor)) {
-			return;
-		}
-		const model = editor.getModel();
-		const selection = editor.getSelection();
-		if (!model || !selection) { return; }
-
-		const outlineModel = await outlineModelService.getOrCreate(model, CancellationToken.None);
-		const symbols: DocumentSymbol[] = [];
-		for (const symbol of outlineModel.getTopLevelSymbols()) {
-			if (selection.intersectRanges(symbol.range)) {
-				symbols.push(symbol);
-			}
-		}
-
-		const keybindingPillContribution = editor.getContribution<IKeybindingPillContribution>(KeybindingPillContribution.ID);
-
-		if (keybindingPillContribution) {
-			keybindingPillContribution.hideAnchorEditingDecoration();
-		}
-
-		aideProbeService.anchorEditingSelection = { uri: model.uri, selection, symbols };
-
-		const probeMode = CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService);
-
-		if (probeMode.get() === AideProbeMode.ANCHORED || CTX.CONTEXT_PROBE_REQUEST_STATUS.getValue(contextKeyService) !== AideProbeStatus.IN_PROGRESS) {
-			probeMode.set(AideProbeMode.ANCHORED);
-			aideControlsService.focusInput();
-			if (keybindingPillContribution) {
-				keybindingPillContribution.showAnchorEditingDecoration(aideProbeService.anchorEditingSelection);
-			}
-		}
-	}
-}
-
-
-class ExitAnchoredEditing extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.exitAnchoredEditing';
-
-	constructor() {
-		super({
-			id: ExitAnchoredEditing.ID,
-			title: localize2('Exit anchored editing', 'Exit anchored editing'),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			keybinding: {
-				primary: KeyCode.Escape,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-			},
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-
-		const aideProbeService = accessor.get(IAideProbeService);
-		const editorService = accessor.get(IEditorService);
-		const contextKeyService = accessor.get(IContextKeyService);
-
-		if (CTX.CONTEXT_PROBE_REQUEST_STATUS.getValue(contextKeyService) !== AideProbeStatus.INACTIVE) {
-			aideProbeService.clearSession();
-		}
-
-		const editor = editorService.activeTextEditorControl;
-		if (isCodeEditor(editor)) {
-			const keybindingPillContribution = editor.getContribution<IKeybindingPillContribution>(KeybindingPillContribution.ID);
-			if (keybindingPillContribution) {
-				keybindingPillContribution.hideAnchorEditingDecoration();
-			}
-		}
-		aideProbeService.anchorEditingSelection = undefined;
-		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.AGENTIC);
-		logProbeContext(accessor);
-	}
-}
-
-class EnterAgenticEditing extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.enterAgenticEditing';
-
-	constructor() {
-		super({
-			id: EnterAgenticEditing.ID,
-			title: 'Enter agentic editing',
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			precondition: isProbeInactive,
-			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.KeyI,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: isProbeInactive,
-			},
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const contextKeyService = accessor.get(IContextKeyService);
-		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.AGENTIC);
-
 		const aideControlsService = accessor.get(IAideControlsService);
 		aideControlsService.focusInput();
 		logProbeContext(accessor);
 	}
 }
 
+class ToggleAideProbeMode extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.toggleMode';
+
+	constructor() {
+		super({
+			id: ToggleAideProbeMode.ID,
+			title: localize2('aideProbe.toggleMode.label', "Toggle Aide Probe Mode"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyK,
+				weight: KeybindingWeight.WorkbenchContrib,
+				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const contextKeyService = accessor.get(IContextKeyService);
+		const currentMode = CTX.CONTEXT_PROBE_MODE.getValue(contextKeyService);
+		const newMode = currentMode === AideProbeMode.AGENTIC ? AideProbeMode.ANCHORED : AideProbeMode.AGENTIC;
+		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(newMode);
+		logProbeContext(accessor);
+	}
+}
 
 export function registerProbeActions() {
-	registerAction2(EnterAgenticEditing);
-	registerAction2(EnterAnchoredEditing);
+	registerAction2(FocusAideControls);
+	registerAction2(BlurAction);
+	registerAction2(ToggleAideProbeMode);
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);
 	registerAction2(ClearIterationAction);
 	registerAction2(RequestFollowUpAction);
-	registerAction2(ExitAnchoredEditing);
 }

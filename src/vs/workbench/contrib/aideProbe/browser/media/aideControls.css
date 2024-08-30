@@ -19,7 +19,6 @@
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	margin-bottom: 6px;
 }
 
 .aide-controls-anchored-symbol .monaco-icon-label {
@@ -52,11 +51,26 @@
 
 .aide-controls-toolbar {
 	display: flex;
-	justify-content: end;
+	justify-content: space-between;
 }
 
 .aide-controls-toolbar .actions-container {
 	gap: 8px;
+}
+
+.aide-controls-toggle-bar {
+	display: flex;
+	align-items: center;
+}
+
+.aide-controls-toggle-bar .monaco-button {
+	padding: 0px 4px;
+	white-space: nowrap;
+	font-size: 11px;
+}
+
+.aide-controls-toggle-bar .monaco-text-button {
+	border-radius: 0px;
 }
 
 .aide-controls-submit-button {

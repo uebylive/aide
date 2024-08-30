@@ -22,7 +22,7 @@ class ToggleASTNavigationMode extends Action2 {
 	constructor() {
 		super({
 			id: ToggleASTNavigationMode.ID,
-			title: nls.localize2('toggleASTNavigation', "Toggle AST Navigation"),
+			title: nls.localize2('toggleASTNavigation', "(Experimental) Toggle AST Navigation"),
 			f1: true,
 			category: AST_NAVIGATION_CATEGORY,
 			toggled: ContextKeyExpr.equals(CONTEXT_AST_NAVIGATION_MODE.key, true),

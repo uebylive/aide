@@ -12,7 +12,7 @@
 .aide-context-picker {
 	position: relative;
 	display: inline-flex;
-	height: 36px;
+	height: 24px;
 }
 
 .aide-controls-context-split-button {
@@ -30,13 +30,13 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 36px;
+	width: 24px;
 }
 
 .aide-controls-context-type-button {
 	display: flex;
 	align-items: center;
-	justify-content: start;
+	justify-content: center;
 	width: 24px;
 }
 
