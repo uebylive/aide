@@ -403,7 +403,7 @@ export class AideControls extends Themable implements IAideControls {
 		hide(this.anchoredModeSymbolElement);
 		show(this.probeModeHeaderElement);
 		const kbElement = this.updateHeaderKeybinding(showEnterAnchored ? enterAnchoredEditingCommand : enterAgenticEditingCommand);
-		this.probeModeHeaderElement.querySelector('.aide-controls-probe-mode')!.textContent = `${showEnterAnchored ? 'Enter anchored' : 'Agentic'} editig`;
+		this.probeModeHeaderElement.querySelector('.aide-controls-probe-mode')!.textContent = `${showEnterAnchored ? 'Enter anchored' : 'Agentic'} editing`;
 		const kbContainer = this.probeModeHeaderElement.querySelector('.aide-controls-probe-mode-keybinding') as HTMLElement;
 		clearNode(kbContainer);
 		if (kbElement) {
