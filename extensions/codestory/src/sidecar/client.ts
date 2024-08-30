@@ -972,7 +972,41 @@ export class SideCarClient {
 				if (lineSinglePartTrimmed === '') {
 					continue;
 				}
+				const currentTime = Date.now();
+				console.log('startAgentCodeEdit::event_received', (currentTime * 1.0) / 1000);
+				const startTime = performance.now();
 				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				let eventType = 'unknown';
+				if ('request_id' in conversationMessage) {
+					if (conversationMessage.event.CodebaseEvent) {
+						eventType = 'CodebaseEvent';
+					}
+					if (conversationMessage.event.EditRequestFinished) {
+						eventType = 'EditRequestFinished';
+					}
+					if (conversationMessage.event.FrameworkEvent) {
+						eventType = 'FrameworkEvent';
+					}
+					if (conversationMessage.event.RequestEvent) {
+						eventType = 'RequestEvent';
+					}
+					if (conversationMessage.event.SymbolEvent) {
+						eventType = 'SymbolEvent';
+					}
+					if (conversationMessage.event.SymbolEventSubStep) {
+						eventType = 'SymbolEventSubStep';
+					}
+					if (conversationMessage.event.SymbolLoctationUpdate) {
+						eventType = 'SymbolLocationUpdate';
+					}
+					if (conversationMessage.event.ToolEvent) {
+						eventType = 'ToolEvent';
+					}
+				}
+				console.log('startAgentCodeEdit::eventType::', eventType);
+				const endTime = performance.now();
+				console.log('startAgentCodeEdit::json_parse::time_taken(', endTime - startTime);
+				console.table(conversationMessage);
 				yield conversationMessage;
 			}
 		}

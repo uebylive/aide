@@ -248,7 +248,7 @@ export class AideEditsPanel extends AidePanel {
 			this.planList.setFocus([matchingIndex]);
 		}
 
-		this.planList.rerender();
+		// this.planList.rerender();
 	}
 
 	private createBreakdownsList() {
@@ -358,34 +358,35 @@ export class AideEditsPanel extends AidePanel {
 			this.breakdownsList = this.createBreakdownsList();
 			return;
 		}
-		if (!this.viewModel || !this.breakdownsList) {
-			return;
-		}
-		const breakdowns = this.viewModel.breakdowns;
-		let matchingIndex = -1;
-		if (breakdowns.length === 0) {
-			this.breakdownsList.splice(0, 0, breakdowns);
-		} else {
-			breakdowns.forEach((breakdown) => {
-				const matchIndex = this.getBreakdownListIndex(breakdown);
-				if (this.breakdownsList) {
-					if (matchIndex === -1) {
-						this.breakdownsList.splice(breakdowns.length - 1, 0, [breakdown]);
-					} else {
-						this.breakdownsList.splice(matchIndex, 1, [breakdown]);
-					}
-				}
-				matchingIndex = matchIndex;
-			});
-		}
+		return;
+		// if (!this.viewModel || !this.breakdownsList) {
+		// 	return;
+		// }
+		// const breakdowns = this.viewModel.breakdowns;
+		// let matchingIndex = -1;
+		// if (breakdowns.length === 0) {
+		// 	this.breakdownsList.splice(0, 0, breakdowns);
+		// } else {
+		// 	breakdowns.forEach((breakdown) => {
+		// 		const matchIndex = this.getBreakdownListIndex(breakdown);
+		// 		if (this.breakdownsList) {
+		// 			if (matchIndex === -1) {
+		// 				this.breakdownsList.splice(breakdowns.length - 1, 0, [breakdown]);
+		// 			} else {
+		// 				this.breakdownsList.splice(matchIndex, 1, [breakdown]);
+		// 			}
+		// 		}
+		// 		matchingIndex = matchIndex;
+		// 	});
+		// }
 
-		if (this.breakdownsListFocusIndex !== undefined) {
-			this.breakdownsList.setFocus([this.breakdownsListFocusIndex]);
-		} else if (matchingIndex !== -1) {
-			this.breakdownsList.setFocus([matchingIndex]);
-		}
+		// if (this.breakdownsListFocusIndex !== undefined) {
+		// 	this.breakdownsList.setFocus([this.breakdownsListFocusIndex]);
+		// } else if (matchingIndex !== -1) {
+		// 	this.breakdownsList.setFocus([matchingIndex]);
+		// }
 
-		this.breakdownsList.rerender();
+		// this.breakdownsList.rerender();
 	}
 }
 

@@ -221,35 +221,35 @@ export class AideProbeViewPane extends ViewPane {
 
 		console.log(items.length);
 
-		let matchingIndex = -1;
+		// let matchingIndex = -1;
 
-		if (items.length === 0) {
-			this.list.splice(0, 0, items);
-		} else {
-			items.forEach((item, index) => {
-				item.index = index;
-				const matchIndex = this.getListIndex(item);
-				if (this.list) {
-					if (matchIndex === -1) {
-						this.list.splice(items.length - 1, 0, [item]);
-					} else {
-						if (matchIndex === this.listFocusIndex) {
-							item.expanded = true;
-						}
-						this.list.splice(matchIndex, 1, [item]);
-					}
-				}
-				matchingIndex = matchIndex;
-			});
-		}
+		// if (items.length === 0) {
+		// 	this.list.splice(0, 0, items);
+		// } else {
+		// 	items.forEach((item, index) => {
+		// 		item.index = index;
+		// 		const matchIndex = this.getListIndex(item);
+		// 		if (this.list) {
+		// 			if (matchIndex === -1) {
+		// 				this.list.splice(items.length - 1, 0, [item]);
+		// 			} else {
+		// 				if (matchIndex === this.listFocusIndex) {
+		// 					item.expanded = true;
+		// 				}
+		// 				this.list.splice(matchIndex, 1, [item]);
+		// 			}
+		// 		}
+		// 		matchingIndex = matchIndex;
+		// 	});
+		// }
 
-		if (this.listFocusIndex !== undefined) {
-			this.list.setFocus([this.listFocusIndex]);
-		} else if (matchingIndex !== -1) {
-			this.list.setFocus([matchingIndex]);
-		}
+		// if (this.listFocusIndex !== undefined) {
+		// 	this.list.setFocus([this.listFocusIndex]);
+		// } else if (matchingIndex !== -1) {
+		// 	this.list.setFocus([matchingIndex]);
+		// }
 
-		this.list.rerender();
+		// this.list.rerender();
 	}
 
 	protected override renderBody(container: HTMLElement): void {

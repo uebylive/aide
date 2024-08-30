@@ -340,13 +340,13 @@ export const reportAgentEventsToChat = async (
 			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 			// If this is a symbol event then we have to make sure that we are getting the probe request over here
 			if (!editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
-				response.breakdown({
-					reference: {
-						uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: symbolEvent.Probe.symbol_identifier.symbol_name,
-					},
-					query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
-				});
+				// response.breakdown({
+				// 	reference: {
+				// 		uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+				// 		name: symbolEvent.Probe.symbol_identifier.symbol_name,
+				// 	},
+				// 	query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
+				// });
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
@@ -355,12 +355,12 @@ export const reportAgentEventsToChat = async (
 				if (!symbol_identifier.fs_file_path) {
 					continue;
 				}
-				const goToDefinition = symbolEventSubStep.GoToDefinition;
-				const uri = vscode.Uri.file(goToDefinition.fs_file_path);
-				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
-				const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
-				const range = new vscode.Range(startPosition, endPosition);
-				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
+				// const goToDefinition = symbolEventSubStep.GoToDefinition;
+				// const uri = vscode.Uri.file(goToDefinition.fs_file_path);
+				// const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
+				// const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
+				// const range = new vscode.Range(startPosition, endPosition);
+				// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			} else if (symbolEventSubStep.Edit) {
 				if (!symbol_identifier.fs_file_path) {
@@ -368,21 +368,21 @@ export const reportAgentEventsToChat = async (
 				}
 				const editEvent = symbolEventSubStep.Edit;
 				if (editEvent.ThinkingForEdit) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						response: new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking),
-					});
+					// response.breakdown({
+					// 	reference: {
+					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+					// 		name: symbol_identifier.symbol_name
+					// 	},
+					// 	response: new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking),
+					// });
 				}
 				if (editEvent.RangeSelectionForEdit) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name,
-						}
-					});
+					// response.breakdown({
+					// 	reference: {
+					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+					// 		name: symbol_identifier.symbol_name,
+					// 	}
+					// });
 				} else if (editEvent.EditCodeStreaming) {
 					// we have to do some state management over here
 					// we send 3 distinct type of events over here
@@ -761,18 +761,20 @@ class DocumentManager {
 		if (newLine.adjustedContent === '') {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
-			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
-			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			});
+			await vscode.workspace.applyEdit(edits);
+			// this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			// await this.limiter.queue(async () => {
+			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			// });
 			return index + 1;
 		} else {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			});
+			await vscode.workspace.applyEdit(edits);
+			// this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			// await this.limiter.queue(async () => {
+			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			// });
 			return index + 1;
 		}
 	}
@@ -797,10 +799,11 @@ class DocumentManager {
 			const edits = new vscode.WorkspaceEdit();
 			// console.log('sidecar.What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			});
+			await vscode.workspace.applyEdit(edits);
+			// this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			// await this.limiter.queue(async () => {
+			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			// });
 			return startIndex + 1;
 		}
 	}
@@ -817,10 +820,11 @@ class DocumentManager {
 		});
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
-		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
-		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits, iterationId: 'mock' });
-		});
+		await vscode.workspace.applyEdit(edits);
+		// this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
+		// await this.limiter.queue(async () => {
+		// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
+		// });
 		return this.lines.length;
 	}
 
@@ -836,10 +840,11 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		await this.limiter.queue(async () => {
-			await this.progress.codeEdit({ edits, iterationId: 'mock' });
-		});
+		await vscode.workspace.applyEdit(edits);
+		// this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		// await this.limiter.queue(async () => {
+		// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
+		// });
 		return index + 2;
 	}
 }
