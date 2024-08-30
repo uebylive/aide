@@ -13,8 +13,6 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
-import { randomInt } from 'node:crypto';
-//import { addDecoration } from './decorations/add';
 
 
 export const reportFromStreamToSearchProgress = async (
