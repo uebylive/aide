@@ -219,7 +219,8 @@ export class AideProbeViewPane extends ViewPane {
 
 		const items = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
 
-		console.log(items.length);
+		const startTime = performance.now();
+		console.log('AideProbeViewPane::updateListStart');
 
 		let matchingIndex = -1;
 
@@ -243,6 +244,10 @@ export class AideProbeViewPane extends ViewPane {
 			});
 		}
 
+		// isBreakDownVM
+		// and we want to rerender just the element with only the element we are focussed
+		// right now
+
 		if (this.listFocusIndex !== undefined) {
 			this.list.setFocus([this.listFocusIndex]);
 		} else if (matchingIndex !== -1) {
@@ -250,6 +255,7 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		this.list.rerender();
+		console.log('AideProbeViewPane::updateListEnd', ((performance.now() - startTime) * 1.0) / 1000);
 	}
 
 	protected override renderBody(container: HTMLElement): void {
