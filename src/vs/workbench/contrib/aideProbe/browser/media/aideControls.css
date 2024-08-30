@@ -22,12 +22,7 @@
 	margin-bottom: 6px;
 }
 
-.aide-controls-anchored-symbol .monaco-button {
-	display: flex;
-	padding: 6px;
-}
-
-:is(.aide-controls-anchored-symbol  .aide-controls-probe-mode-header) {
+:is(.aide-controls-anchored-symbol .monaco-icon-label, .aide-controls-probe-mode-header) {
 	font-size: 11px;
 	display: flex;
 	padding: 0 6px 0px 2px;
