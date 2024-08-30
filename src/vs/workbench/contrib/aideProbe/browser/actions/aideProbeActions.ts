@@ -25,6 +25,7 @@ import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aidePr
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'AI Search');
 
@@ -386,6 +387,29 @@ class EnterAgenticEditing extends Action2 {
 	}
 }
 
+class ClearList extends Action2 {
+	constructor() {
+		super({
+			id: `workbench.action.aideProbe.clearList`,
+			title: localize2('aideProbe.clearList.label', "Clear list..."),
+			menu: {
+				id: MenuId.ViewTitle,
+				when: ContextKeyExpr.equals('view', VIEW_ID),
+				group: 'navigation',
+				order: -1
+			},
+			category: PROBE_CATEGORY,
+			icon: Codicon.x,
+			f1: false,
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const probeView = accessor.get(IViewsService).getViewWithId<AideProbeViewPane>(VIEW_ID);
+		probeView?.showWelcome();
+	}
+}
+
 
 export function registerProbeActions() {
 	registerAction2(EnterAgenticEditing);
@@ -396,4 +420,5 @@ export function registerProbeActions() {
 	registerAction2(ClearIterationAction);
 	registerAction2(RequestFollowUpAction);
 	registerAction2(ExitAnchoredEditing);
+	registerAction2(ClearList);
 }

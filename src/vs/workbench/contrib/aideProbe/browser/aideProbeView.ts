@@ -112,8 +112,6 @@ export class AideProbeViewPane extends ViewPane {
 				this.updateList();
 			}));
 		}
-
-
 	}
 
 	// TODO(@g-danna) Use built-in welcome APIs?
@@ -172,7 +170,7 @@ export class AideProbeViewPane extends ViewPane {
 		dom.show(this.responseWrapper);
 	}
 
-	private showWelcome() {
+	showWelcome() {
 		dom.show(this.welcomeElement);
 		dom.hide(this.responseWrapper);
 	}
