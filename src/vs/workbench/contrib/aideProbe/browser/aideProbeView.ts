@@ -45,8 +45,8 @@ import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe
 const $ = dom.$;
 
 const welcomeActions = [
-	{ title: 'Anchored editing', actionId: 'workbench.action.aideProbe.enterAnchoredEditing', descrption: 'Select a code range and quickly iterate over it.' },
-	{ title: 'Agentic editing', actionId: 'workbench.action.aideProbe.enterAgenticEditing', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
+	{ title: 'Anchored editing', actionId: 'workbench.action.aideProbe.focus', descrption: 'Quickly iterate over the code at the current location or under selection.' },
+	{ title: 'Toggle editing mode', actionId: 'workbench.action.aideProbe.toggleMode', descrption: 'Switch between anchored and agentic editing modes.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
 	{ title: 'Toggle AST Navigation', beta: true, actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
