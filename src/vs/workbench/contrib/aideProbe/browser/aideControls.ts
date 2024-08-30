@@ -582,6 +582,13 @@ export class AideControls extends Themable implements IAideControls {
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
+
+		if (this.probeMode.get() === AideProbeMode.ANCHORED && this.aideProbeService.anchorEditingSelection) {
+			this.aideProbeService.fireNewEvent(
+				{ kind: 'anchorStart', selection: this.aideProbeService.anchorEditingSelection }
+			);
+		}
+
 		showProbeView(this.viewsService);
 	}
 

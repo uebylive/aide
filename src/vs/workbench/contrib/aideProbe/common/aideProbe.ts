@@ -160,6 +160,11 @@ export interface IAideProbeDiscardAll {
 	kind: 'discardAll';
 }
 
+export interface IAideProbeAnchorStart {
+	kind: 'anchorStart';
+	selection: AnchorEditingSelection;
+}
+
 export type IAideProbeResponseEvent =
 	| IAideProbeStartEditEvent
 	| IAideProbeCompleteEditEvent
@@ -168,7 +173,8 @@ export type IAideProbeResponseEvent =
 	| IAideProbeBreakdownContent
 	| IAideProbeInitialSymbols
 	| IAideProbeEditEvent
-	| IAideProbeDiscardAll;
+	| IAideProbeDiscardAll
+	| IAideProbeAnchorStart;
 
 export type IAideProbeReviewUserEvent = 'accept' | 'reject';
 

@@ -43,6 +43,8 @@ export interface IAideProbeService {
 	clearSession(): void;
 	rejectCodeEdits(): void;
 
+	fireNewEvent(event: IAideProbeResponseEvent): void;
+
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
 	readonly onDidSetAnchoredSelection: Event<AnchorEditingSelection | undefined>;
@@ -330,5 +332,9 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		}
 		this._onReview.fire('accept');
 		this.cancelProbe();
+	}
+
+	fireNewEvent(event: IAideProbeResponseEvent) {
+		this._onNewEvent.fire(event);
 	}
 }

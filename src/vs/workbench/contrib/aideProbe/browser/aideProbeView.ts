@@ -46,8 +46,13 @@ import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/c
 const $ = dom.$;
 
 const welcomeActions = [
-	{ title: 'Anchored editing', actionId: 'workbench.action.aideProbe.enterAnchoredEditing', descrption: 'Select a code range and quickly iterate over it.' },
-	{ title: 'Agentic editing', flag: 'beta', actionId: 'workbench.action.aideProbe.enterAgenticEditing', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
+	{
+		title: 'AI editing', actionId: 'workbench.action.aideProbe.focus', children: [
+			{ title: 'Anchored editing', descrption: 'Select a code range and quickly iterate over it.' },
+			{ title: 'Agentic editing', flag: 'beta', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
+		],
+	},
+	{ title: 'Toggle editing mode', actionId: 'workbench.action.aideProbe.toggleMode', descrption: 'Switch between anchored and agentic editing modes.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
 	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
@@ -131,40 +136,55 @@ export class AideProbeViewPane extends ViewPane {
 		element.appendChild(listContainer);
 
 		for (const welcomeItem of welcomeActions) {
-			const button = this._register(this.instantiationService.createInstance(Button, listContainer, { title: welcomeItem.title }));
-
-			const header = $('.welcome-item-header');
-
-			const title = $('.welcome-item-title');
-			title.textContent = welcomeItem.title;
-			header.appendChild(title);
-
-			if (welcomeItem.flag) {
-				const flag = $('.flag-tag');
-				flag.textContent = welcomeItem.flag;
-				title.appendChild(flag);
-			}
-
-			const kb = this.keybindingService.lookupKeybinding(welcomeItem.actionId, this.contextKeyService);
-			if (kb) {
-				const k = this._register(new KeybindingLabel($('div'), OS, { disableTitle: true, ...unthemedKeybindingLabelOptions }));
-				k.set(kb);
-				if (k.element) {
-					header.appendChild(k.element);
+			const button = this.renderListItem(welcomeItem, listContainer);
+			if (welcomeItem.children) {
+				const childrenList = $('.welcome-children-list');
+				button.element.appendChild(childrenList);
+				for (const child of welcomeItem.children) {
+					this.renderListItem(child, childrenList);
 				}
 			}
+		}
+		return element;
+	}
 
-			button.element.appendChild(header);
+	private renderListItem(welcomeItem: { title: string; actionId: string; descrption?: string; flag?: string }, listContainer: HTMLElement) {
+		const button = this._register(this.instantiationService.createInstance(Button, listContainer, { title: welcomeItem.title }));
 
+		const header = $('.welcome-item-header');
+
+		const title = $('.welcome-item-title');
+		title.textContent = welcomeItem.title;
+		header.appendChild(title);
+
+		if (welcomeItem.flag) {
+			const flag = $('.flag-tag');
+			flag.textContent = welcomeItem.flag;
+			title.appendChild(flag);
+		}
+
+		const kb = this.keybindingService.lookupKeybinding(welcomeItem.actionId, this.contextKeyService);
+		if (kb) {
+			const k = this._register(new KeybindingLabel($('div'), OS, { disableTitle: true, ...unthemedKeybindingLabelOptions }));
+			k.set(kb);
+			if (k.element) {
+				header.appendChild(k.element);
+			}
+		}
+
+		button.element.appendChild(header);
+
+		if (welcomeItem.descrption) {
 			const description = $('.welcome-item-description');
 			description.textContent = welcomeItem.descrption;
 			button.element.appendChild(description);
-
-			this._register(button.onDidClick(() => {
-				this.commandService.executeCommand(welcomeItem.actionId);
-			}));
 		}
-		return element;
+
+		this._register(button.onDidClick(() => {
+			this.commandService.executeCommand(welcomeItem.actionId);
+		}));
+
+		return button;
 	}
 
 	private showList() {

@@ -20,7 +20,7 @@ import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/
 import { calculateChanges } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeAnchorStart, IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkState, HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { overviewRulerInlineChatDiffInserted, minimapInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -56,6 +56,21 @@ const goToDefinitionDecorationOptions = ModelDecorationOptions.register({
 	className: 'aide-probe-go-to-definition'
 });
 
+const probeAnchorDecorationOptions = ModelDecorationOptions.register({
+	description: 'aide-probe-anchor-lines',
+	blockClassName: 'aide-probe-anchor-lines-block',
+	className: 'aide-probe-anchor-line',
+	isWholeLine: true,
+	overviewRuler: {
+		position: OverviewRulerLane.Full,
+		color: themeColorFromId(overviewRulerInlineChatDiffInserted),
+	},
+	minimap: {
+		position: MinimapPosition.Inline,
+		color: themeColorFromId(minimapInlineChatDiffInserted),
+	}
+});
+
 type HunkDisplayData = {
 	decorationIds: string[];
 	hunk: HunkInformation;
@@ -69,6 +84,7 @@ export class AideProbeDecorationService extends Disposable {
 	private readonly _hunkDisplayData = new Map<HunkInformation, HunkDisplayData>();
 	private breakdownDecorations: Map<string, IEditorDecorationsCollection> = new Map();
 	private goToDefinitionDecorations: Map<string, IEditorDecorationsCollection> = new Map();
+	private anchorDecorations: IEditorDecorationsCollection | undefined;
 
 	constructor(
 		@IEditorService private readonly editorService: IEditorService,
@@ -90,6 +106,8 @@ export class AideProbeDecorationService extends Disposable {
 				this.handleBreakdownEvent(event);
 			} else if (event.kind === 'discardAll') {
 				this.discardAllDecorations();
+			} else if (event.kind === 'anchorStart') {
+				this.handleAnchorSelection(event);
 			}
 		}));
 		this._register(this.aideProbeService.onReview(e => {
@@ -184,6 +202,29 @@ export class AideProbeDecorationService extends Disposable {
 		});
 	}
 
+	private async handleAnchorSelection(event: IAideProbeAnchorStart) {
+		const selection = event.selection;
+		if (selection) {
+			this.anchorDecorations?.clear();
+
+			const uri = selection.uri;
+			const editor = await this.getCodeEditor(uri);
+			if (editor) {
+				this.anchorDecorations = editor.createDecorationsCollection();
+				const editorSelection = selection.selection;
+				const editorSelectionRange = Range.fromPositions(
+					new Position(editorSelection.startLineNumber, editorSelection.startColumn),
+					new Position(editorSelection.endLineNumber, editorSelection.endColumn),
+				);
+				const newDecoration: IModelDeltaDecoration = {
+					range: editorSelectionRange,
+					options: probeAnchorDecorationOptions
+				};
+				this.anchorDecorations.append([newDecoration]);
+			}
+		}
+	}
+
 	private updateDecorations(editor: ICodeEditor, fileEdits: IAideProbeEdits) {
 		editor.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
@@ -258,6 +299,7 @@ export class AideProbeDecorationService extends Disposable {
 		for (const decorations of this.goToDefinitionDecorations.values()) {
 			decorations.clear();
 		}
+		this.anchorDecorations?.clear();
 	}
 
 	private async handleBreakdownEvent(event: IAideProbeBreakdownContent) {
