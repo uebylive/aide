@@ -36,11 +36,12 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
 
@@ -309,6 +310,9 @@ export class AideProbeViewPane extends ViewPane {
 						this.list.splice(items.length - 1, 0, [item]);
 					} else {
 						if (matchIndex === this.listFocusIndex) {
+							item.expanded = true;
+						}
+						if (items.length === 1 && CONTEXT_PROBE_MODE.getValue(this.contextKeyService) === AideProbeMode.ANCHORED) {
 							item.expanded = true;
 						}
 						this.list.splice(matchIndex, 1, [item]);
