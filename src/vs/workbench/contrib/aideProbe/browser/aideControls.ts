@@ -410,6 +410,7 @@ export class AideControls extends Themable implements IAideControls {
 		if (!selection) {
 			if (!this.currentOutline.value) {
 				this.clearAnchors();
+				this.layout();
 				return;
 			}
 
@@ -424,6 +425,7 @@ export class AideControls extends Themable implements IAideControls {
 					fileKind: FileKind.FILE,
 					icon: SymbolKinds.toIcon(symbol.kind),
 				});
+
 				this.aideProbeService.anchorEditingSelection = {
 					uri: resource, selection: new Selection(
 						symbol.range.startLineNumber,
@@ -432,8 +434,10 @@ export class AideControls extends Themable implements IAideControls {
 						symbol.range.endColumn,
 					), symbols: [symbol]
 				};
+				this.layout();
 			} else {
 				this.clearAnchors();
+				this.layout();
 			}
 		} else {
 			this.clearAnchors();
@@ -462,6 +466,7 @@ export class AideControls extends Themable implements IAideControls {
 			}
 
 			this.aideProbeService.anchorEditingSelection = anchorEditingSelection;
+			this.layout();
 		}
 	}
 
@@ -658,7 +663,7 @@ export class AideControls extends Themable implements IAideControls {
 		}));
 	}
 
-	layout(width: number, height: number) {
+	layout(width: number = this.part.width, height: number = this.part.height) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
 		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });

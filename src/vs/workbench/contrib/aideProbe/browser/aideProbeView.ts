@@ -46,9 +46,10 @@ const $ = dom.$;
 
 const welcomeActions = [
 	{ title: 'Anchored editing', actionId: 'workbench.action.aideProbe.enterAnchoredEditing', descrption: 'Select a code range and quickly iterate over it.' },
-	{ title: 'Agentic editing', actionId: 'workbench.action.aideProbe.enterAgenticEditing', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
+	{ title: 'Agentic editing', flag: 'beta', actionId: 'workbench.action.aideProbe.enterAgenticEditing', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
-	{ title: 'Toggle AST Navigation', beta: true, actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
+	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
+	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
 
 
@@ -137,10 +138,10 @@ export class AideProbeViewPane extends ViewPane {
 			title.textContent = welcomeItem.title;
 			header.appendChild(title);
 
-			if (welcomeItem.beta) {
-				const beta = $('.beta-tag');
-				beta.textContent = 'Beta';
-				title.appendChild(beta);
+			if (welcomeItem.flag) {
+				const flag = $('.flag-tag');
+				flag.textContent = welcomeItem.flag;
+				title.appendChild(flag);
 			}
 
 			const kb = this.keybindingService.lookupKeybinding(welcomeItem.actionId, this.contextKeyService);
