@@ -6,7 +6,7 @@
 import * as dom from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { ButtonBar } from 'vs/base/browser/ui/button/button';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
+import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
@@ -19,9 +19,9 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
 import { Selection } from 'vs/editor/common/core/selection';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { SymbolKinds } from 'vs/editor/common/languages';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
 import { IModelService } from 'vs/editor/common/services/model';
-import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { IOutlineModelService, OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
 import { localize } from 'vs/nls';
 import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
@@ -46,7 +46,7 @@ import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe'
 import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IParsedChatRequest } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
 import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aideProbeRequestParser';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
@@ -214,6 +214,7 @@ export class AideControls extends Themable implements IAideControls {
 		@IViewsService private readonly viewsService: IViewsService,
 		@IModelService private readonly modelService: IModelService,
 		@IOutlineService private readonly outlineService: IOutlineService,
+		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 	) {
 		super(themeService);
@@ -301,26 +302,26 @@ export class AideControls extends Themable implements IAideControls {
 			this.checkEditorSelection();
 		}));
 
-		this._register(this.aideProbeService.onDidSetAnchoredSelection((event) => {
-			const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
-			const newContext = filesInContext.map(entry => entry.resource.fsPath);
-			const anchoredSelectionFile = event?.uri.fsPath;
-			if (anchoredSelectionFile) {
-				newContext.push(anchoredSelectionFile);
-			}
-
-			if (this.probeStatus.get() !== AideProbeStatus.IN_PROGRESS) {
-				this.aideProbeService.onContextChange(newContext);
-			}
-
-			if (this.part.dimension) {
-				const { width, height } = this.part.dimension;
-				this.layout(width, height);
-			}
-		}));
-
 		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 		this.probeStatus.set(AideProbeStatus.INACTIVE);
+	}
+
+	private sendContextChange() {
+		const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+		const newContext = filesInContext.map(entry => entry.resource.fsPath);
+		const anchoredSelectionFile = this.aideProbeService.anchorEditingSelection?.uri.fsPath;
+		if (anchoredSelectionFile) {
+			newContext.push(anchoredSelectionFile);
+		}
+
+		if (this.probeStatus.get() !== AideProbeStatus.IN_PROGRESS) {
+			this.aideProbeService.onContextChange(newContext);
+		}
+
+		if (this.part.dimension) {
+			const { width, height } = this.part.dimension;
+			this.layout(width, height);
+		}
 	}
 
 	private updateOutline() {
@@ -348,6 +349,12 @@ export class AideControls extends Themable implements IAideControls {
 				this.currentOutline.clear();
 				this.updateAnchoredContext();
 			});
+
+			if (editor.onDidChangeSelection) {
+				this.outlineDisposables.add(editor.onDidChangeSelection(() => {
+					this.updateAnchoredContext();
+				}));
+			}
 		}
 	}
 
@@ -359,8 +366,8 @@ export class AideControls extends Themable implements IAideControls {
 		}
 	}
 
-	private updateAnchoredContext() {
-		if (!this.anchoredContextContainer || !this.currentOutline.value || !this.resourceLabels) {
+	private async updateAnchoredContext() {
+		if (!this.anchoredContextContainer || !this.resourceLabels) {
 			this.clearAnchors();
 			return;
 		}
@@ -371,31 +378,74 @@ export class AideControls extends Themable implements IAideControls {
 			return;
 		}
 
+		const model = editor.getModel();
 		const resource = editor.getModel()?.uri;
-		if (!resource) {
+		if (!model || !resource) {
 			this.clearAnchors();
 			return;
 		}
 
-		const breadcrumbsElements = this.currentOutline.value.config.breadcrumbsDataSource.getBreadcrumbElements();
-		if (breadcrumbsElements && breadcrumbsElements.length > 0) {
+		const activeSelection = editor.getSelection();
+		let selection: Selection | null = activeSelection;
+		if (activeSelection && activeSelection.isEmpty()) {
+			selection = null;
+		}
+
+		if (!selection) {
+			if (!this.currentOutline.value) {
+				this.clearAnchors();
+				return;
+			}
+
+			const breadcrumbsElements = this.currentOutline.value.config.breadcrumbsDataSource.getBreadcrumbElements();
+			if (breadcrumbsElements && breadcrumbsElements.length > 0) {
+				this.clearAnchors();
+
+				const outline = breadcrumbsElements[0] as OutlineElement;
+				const symbol = outline.symbol;
+				const symbolLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
+				symbolLabel.setResource({ resource, name: symbol.name, description: basenameOrAuthority(resource) }, {
+					fileKind: FileKind.FILE,
+					icon: SymbolKinds.toIcon(symbol.kind),
+				});
+				this.aideProbeService.anchorEditingSelection = {
+					uri: resource, selection: new Selection(
+						symbol.range.startLineNumber,
+						symbol.range.startColumn,
+						symbol.range.endLineNumber,
+						symbol.range.endColumn,
+					), symbols: [symbol]
+				};
+			} else {
+				this.clearAnchors();
+			}
+		} else {
 			this.clearAnchors();
 
-			const outline = breadcrumbsElements[0] as OutlineElement;
-			const symbol = outline.symbol;
 			const symbolLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
-			symbolLabel.setResource({ resource, name: symbol.name, description: basenameOrAuthority(resource) }, {
+
+			const label = `${basenameOrAuthority(resource)}:${selection.startLineNumber}-${selection.endLineNumber}`;
+			symbolLabel.setResource({ resource, name: label, description: basenameOrAuthority(resource) }, {
 				fileKind: FileKind.FILE,
-				icon: SymbolKinds.toIcon(symbol.kind),
+				icon: SymbolKinds.toIcon(SymbolKind.File),
 			});
-			this.aideProbeService.anchorEditingSelection = {
-				uri: resource, selection: new Selection(
-					symbol.range.startLineNumber,
-					symbol.range.startColumn,
-					symbol.range.endLineNumber,
-					symbol.range.endColumn,
-				), symbols: [symbol]
+			const anchorEditingSelection: AnchorEditingSelection = {
+				uri: resource, selection: selection, symbols: []
 			};
+
+			const outlineModel = await this.outlineModelService.getOrCreate(model, this.outlineCancellationTokenSource?.token ?? CancellationToken.None);
+			if (outlineModel) {
+				const symbols: DocumentSymbol[] = [];
+				for (const symbol of outlineModel.getTopLevelSymbols()) {
+					if (selection.intersectRanges(symbol.range)) {
+						symbols.push(symbol);
+					}
+				}
+
+				anchorEditingSelection.symbols = symbols;
+			}
+
+			this.aideProbeService.anchorEditingSelection = anchorEditingSelection;
 		}
 
 		if (this.part.dimension) {
@@ -473,7 +523,9 @@ export class AideControls extends Themable implements IAideControls {
 			editorElement.classList.toggle('has-text', inputHasText);
 			this.inputHasText.set(inputHasText);
 			this.updateInputPlaceholder();
-
+			if (inputHasText && model.getValue().trim().length === 1) {
+				this.sendContextChange();
+			}
 
 			if (currentHeight !== this.inputHeight) {
 				this.inputHeight = currentHeight;
