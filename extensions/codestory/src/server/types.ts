@@ -87,6 +87,7 @@ type FrameworkEvent = {
 	OpenFile: OpenFileRequestFrameworkEvent;
 	CodeIterationFinished: string;
 	ReferenceFound: FoundReference;
+	RelevantReference: RelevantReference;
 };
 
 interface UIEvent {
@@ -250,6 +251,12 @@ interface OpenFileRequestFrameworkEvent {
 interface FoundReference {
 	request_id: string;
 	fs_file_path: string;
+}
+
+interface RelevantReference {
+	fs_file_path: string,
+	symbol_name: string,
+	reason: string,
 }
 
 interface InitialSearchSymbolInformation {
