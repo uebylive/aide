@@ -148,7 +148,7 @@ export class AideProbeViewPane extends ViewPane {
 		return element;
 	}
 
-	private renderListItem(welcomeItem: { title: string; actionId: string; descrption?: string; flag?: string }, listContainer: HTMLElement) {
+	private renderListItem(welcomeItem: any, listContainer: HTMLElement) {
 		const button = this._register(this.instantiationService.createInstance(Button, listContainer, { title: welcomeItem.title }));
 
 		const header = $('.welcome-item-header');
