@@ -5,11 +5,14 @@
 
 import * as dom from 'vs/base/browser/dom';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
+import { Button } from 'vs/base/browser/ui/button/button';
+import { KeybindingLabel, unthemedKeybindingLabelOptions } from 'vs/base/browser/ui/keybindingLabel/keybindingLabel';
 import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
+import { OS } from 'vs/base/common/platform';
 import { relativePath } from 'vs/base/common/resources';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { ThemeIcon } from 'vs/base/common/themables';
@@ -17,6 +20,7 @@ import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { IDimension } from 'vs/editor/common/core/dimension';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
@@ -40,6 +44,13 @@ import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe
 
 const $ = dom.$;
 
+const welcomeActions = [
+	{ title: 'Anchored editing', actionId: 'workbench.action.aideProbe.enterAnchoredEditing', descrption: 'Select a code range and quickly iterate over it.' },
+	{ title: 'Agentic editing', actionId: 'workbench.action.aideProbe.enterAgenticEditing', descrption: 'Kick off tasks without providing a focus area. Takes a bit longer.' },
+	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
+	{ title: 'Toggle AST Navigation', beta: true, actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
+];
+
 
 export class AideProbeViewPane extends ViewPane {
 
@@ -53,6 +64,8 @@ export class AideProbeViewPane extends ViewPane {
 
 	private model: IAideProbeModel | undefined;
 	private viewModel: AideProbeViewModel | undefined;
+
+	private welcomeElement!: HTMLElement;
 
 	listFocusIndex: number | undefined;
 	private list: WorkbenchList<IAideProbeListItem> | undefined;
@@ -75,6 +88,7 @@ export class AideProbeViewPane extends ViewPane {
 		@IOpenerService openerService: IOpenerService,
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
+		@ICommandService private readonly commandService: ICommandService,
 		@IHoverService hoverService: IHoverService,
 		@IAideProbeExplanationService private readonly explanationService: IAideProbeExplanationService,
 	) {
@@ -98,6 +112,67 @@ export class AideProbeViewPane extends ViewPane {
 				this.updateList();
 			}));
 		}
+	}
+
+	// TODO(@g-danna) Use built-in welcome APIs?
+	private createWelcome(parent: HTMLElement) {
+		const element = this.welcomeElement = $('.aide-welcome');
+		parent.appendChild(element);
+		const header = $('.list-header');
+		this._register(this.instantiationService.createInstance(Heroicon, header, 'micro/bolt'));
+		const headerText = $('.header-text');
+		headerText.textContent = 'Welcome to Aide';
+		header.appendChild(headerText);
+		element.appendChild(header);
+
+		const listContainer = $('.list-container');
+		element.appendChild(listContainer);
+
+		for (const welcomeItem of welcomeActions) {
+			const button = this._register(this.instantiationService.createInstance(Button, listContainer, { title: welcomeItem.title }));
+
+			const header = $('.welcome-item-header');
+
+			const title = $('.welcome-item-title');
+			title.textContent = welcomeItem.title;
+			header.appendChild(title);
+
+			if (welcomeItem.beta) {
+				const beta = $('.beta-tag');
+				beta.textContent = 'Beta';
+				title.appendChild(beta);
+			}
+
+			const kb = this.keybindingService.lookupKeybinding(welcomeItem.actionId, this.contextKeyService);
+			if (kb) {
+				const k = this._register(new KeybindingLabel($('div'), OS, { disableTitle: true, ...unthemedKeybindingLabelOptions }));
+				k.set(kb);
+				if (k.element) {
+					header.appendChild(k.element);
+				}
+			}
+
+			button.element.appendChild(header);
+
+			const description = $('.welcome-item-description');
+			description.textContent = welcomeItem.descrption;
+			button.element.appendChild(description);
+
+			this._register(button.onDidClick(() => {
+				this.commandService.executeCommand(welcomeItem.actionId);
+			}));
+		}
+		return element;
+	}
+
+	private showList() {
+		dom.hide(this.welcomeElement);
+		dom.show(this.responseWrapper);
+	}
+
+	showWelcome() {
+		dom.show(this.welcomeElement);
+		dom.hide(this.responseWrapper);
 	}
 
 	private createList() {
@@ -210,6 +285,7 @@ export class AideProbeViewPane extends ViewPane {
 	private updateList() {
 		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdowns.length)) {
 			this.list = this.createList();
+			this.showList();
 			return;
 		}
 
@@ -218,9 +294,6 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		const items = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
-
-		const startTime = performance.now();
-		console.log('AideProbeViewPane::updateListStart');
 
 		let matchingIndex = -1;
 
@@ -255,12 +328,13 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		this.list.rerender();
-		console.log('AideProbeViewPane::updateListEnd', ((performance.now() - startTime) * 1.0) / 1000);
 	}
 
 	protected override renderBody(container: HTMLElement): void {
 		super.renderBody(container);
 		this.container = dom.append(container, $('.aide-probe-view'));
+
+		this.welcomeElement = this.createWelcome(this.container);
 
 		this.resultWrapper = $('.resultWrapper', { tabIndex: 0 });
 		this.scrollableElement = this._register(new DomScrollableElement(

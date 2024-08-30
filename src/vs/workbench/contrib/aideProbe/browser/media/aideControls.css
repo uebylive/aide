@@ -5,10 +5,16 @@
 
 .aide-controls {
 	margin: auto;
+	position: relative;
 	padding: 8px;
-	transform: translateY(1px);
 	box-sizing: border-box;
+	border-radius: 4px;
+	border: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background) !important;
+}
+
+.aide-controls:focus-within {
+	border-color: var(--vscode-peekView-border);
 }
 
 .aide-controls :is(.monaco-editor, .monaco-editor-background) {
