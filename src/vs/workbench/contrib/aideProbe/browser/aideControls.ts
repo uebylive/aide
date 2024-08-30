@@ -54,6 +54,7 @@ import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
+import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
 
 const MAX_WIDTH = 800;
 const INPUT_MIN_HEIGHT = 36;
@@ -142,7 +143,6 @@ export class AideControls extends Themable implements IAideControls {
 	private probeModeHeaderElement: HTMLElement;
 	private anchoredModeSymbolElement: HTMLElement;
 
-
 	public static readonly INPUT_CONTRIBS: { new(...args: [IAideControls, ...any]): IAideControlsContrib }[] = [];
 	private contribs: ReadonlyArray<IAideControlsContrib> = [];
 	getContrib<T extends IAideControlsContrib>(id: string): T | undefined {
@@ -183,6 +183,9 @@ export class AideControls extends Themable implements IAideControls {
 
 	private model: AideProbeModel | undefined;
 
+
+	private topSash: Sash;
+
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 	private resourceLabels: ResourceLabels | undefined;
@@ -218,7 +221,7 @@ export class AideControls extends Themable implements IAideControls {
 		this.probeMode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 
 		const element = this.element = $('.aide-controls');
-		this.part.content.appendChild(element);
+		this.part.element.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
 
@@ -246,10 +249,26 @@ export class AideControls extends Themable implements IAideControls {
 
 		this._input = this.createInput(inputElement);
 
-		const partSize = this.part.dimension;
-		if (partSize) {
-			this.layout(partSize.width, partSize.height);
-		}
+
+		this.topSash = instantiationService.createInstance(Sash, this.element, { getHorizontalSashTop: () => 0, getHorizontalSashWidth: () => this.element.offsetWidth }, { orientation: Orientation.HORIZONTAL });
+
+		this._register(this.topSash.onDidStart((dragStart) => {
+			const initialHeight = this.part.height;
+			const initialY = dragStart.currentY;
+			const onDragEvent = this._register(this.topSash.onDidChange((dragChange) => {
+				const delta = dragChange.currentY - initialY;
+				const newHeight = initialHeight - delta;
+				this.part.layout(undefined, newHeight);
+			}));
+
+			const onDragEndEvent = this._register(this.topSash.onDidEnd(() => {
+				onDragEvent.dispose();
+				onDragEndEvent.dispose();
+			}));
+		}));
+
+		this.layout(this.part.width, this.part.height);
+
 		this.part.onDidSizeChange((size: IDimension) => {
 			this.layout(size.width, size.height);
 		});
@@ -296,10 +315,7 @@ export class AideControls extends Themable implements IAideControls {
 			}
 
 			this.updateProbeModeDisplay();
-			if (this.part.dimension) {
-				const { width, height } = this.part.dimension;
-				this.layout(width, height);
-			}
+			this.layout(this.part.width, this.part.height);
 		}));
 
 
@@ -596,6 +612,6 @@ export class AideControls extends Themable implements IAideControls {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
 		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 32 - 42 });
-
+		this.topSash.layout();
 	}
 }
