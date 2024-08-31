@@ -6,9 +6,31 @@
 import { EventEmitter, languages, Uri, workspace } from 'vscode';
 import { SidecarGetOutlineNodesRequest, SidecarGetOutlineNodesResponse } from './types';
 
+function getDocumentSelector(fsFilePath: string): string {
+	if (fsFilePath.endsWith('rs')) {
+		return 'rust';
+	}
+	if (fsFilePath.endsWith('ts')) {
+		return 'typescript';
+	}
+	if (fsFilePath.endsWith('js')) {
+		return 'javascript';
+	}
+	if (fsFilePath.endsWith('go')) {
+		return 'go';
+	}
+	if (fsFilePath.endsWith('py')) {
+		return 'python';
+	}
+	return '*';
+}
+
 export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): Promise<SidecarGetOutlineNodesResponse> {
-	const documentSymbolProviders = languages.getDocumentSymbolProvider('*');
 	const filePath = request.fs_file_path;
+	const languageFilter = getDocumentSelector(filePath);
+	const documentSymbolProviders = languages.getDocumentSymbolProvider(
+		{ scheme: 'file', language: languageFilter }
+	);
 	const uri = Uri.file(filePath);
 
 	if (documentSymbolProviders.length === 0) {
