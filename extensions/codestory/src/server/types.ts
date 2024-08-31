@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { DocumentSymbol, SymbolInformation } from 'vscode';
 import { LLMProviderAPIKeys } from '../sidecar/providerConfigTypes';
 import { LLMProvider, LLMTypeVariant, SidecarVariableTypes } from '../sidecar/types';
 
@@ -433,6 +434,14 @@ export interface CodeSymbolImportantWideSearch {
 	api_key: LLMProviderAPIKeys;
 	file_extension_filters: Set<string>;
 }
+
+export type SidecarGetOutlineNodesRequest = {
+	fs_file_path: string;
+};
+
+export type SidecarGetOutlineNodesResponse = {
+	outline_nodes: SymbolInformation[] | DocumentSymbol[] | null | undefined;
+};
 
 export type SidecarGoToDefinitionRequest = {
 	fs_file_path: string;
