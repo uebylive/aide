@@ -37,6 +37,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		return {
 			file_content: textDocument.getText(),
 			outline_nodes: [],
+			language: textDocument.languageId,
 		};
 	}
 	const firstDocumentProvider = documentSymbolProviders[0];
@@ -49,6 +50,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		return {
 			file_content: textDocument.getText(),
 			outline_nodes: documentSymbols,
+			language: textDocument.languageId,
 		};
 		// now we want to parse the document symbols and maybe map it back to outline
 		// nodes here but thats too much, so we send it back to the rust side for handling
@@ -59,6 +61,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 	}
 	return {
 		file_content: textDocument.getText(),
-		outline_nodes: []
+		outline_nodes: [],
+		language: textDocument.languageId,
 	};
 }
