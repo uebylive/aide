@@ -440,6 +440,7 @@ export type SidecarGetOutlineNodesRequest = {
 };
 
 export type SidecarGetOutlineNodesResponse = {
+	file_content: string;
 	outline_nodes: SymbolInformation[] | DocumentSymbol[] | null | undefined;
 };
 
