@@ -32,14 +32,14 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		{ scheme: 'file', language: languageFilter }
 	);
 	const uri = Uri.file(filePath);
-
+	const textDocument = await workspace.openTextDocument(uri);
 	if (documentSymbolProviders.length === 0) {
 		return {
+			file_content: textDocument.getText(),
 			outline_nodes: [],
 		};
 	}
 	const firstDocumentProvider = documentSymbolProviders[0];
-	const textDocument = await workspace.openTextDocument(uri);
 	const evenEmitter = new EventEmitter();
 	try {
 		const documentSymbols = await firstDocumentProvider.provideDocumentSymbols(textDocument, {
@@ -47,6 +47,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 			onCancellationRequested: evenEmitter.event,
 		});
 		return {
+			file_content: textDocument.getText(),
 			outline_nodes: documentSymbols,
 		};
 		// now we want to parse the document symbols and maybe map it back to outline
@@ -57,6 +58,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		console.error(exception);
 	}
 	return {
+		file_content: textDocument.getText(),
 		outline_nodes: []
 	};
 }
