@@ -7,9 +7,7 @@ import { EventEmitter, languages, Uri, workspace } from 'vscode';
 import { SidecarGetOutlineNodesRequest, SidecarGetOutlineNodesResponse } from './types';
 
 export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): Promise<SidecarGetOutlineNodesResponse> {
-	const documentSymbolProviders = languages.getDocumentSymbolProvider(
-		'typescript'
-	);
+	const documentSymbolProviders = languages.getDocumentSymbolProvider('*');
 	const filePath = request.fs_file_path;
 	const uri = Uri.file(filePath);
 
