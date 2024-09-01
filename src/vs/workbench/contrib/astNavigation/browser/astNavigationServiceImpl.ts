@@ -54,6 +54,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 
 		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateOutline()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateOutline()));
+		// TODO(codestory): re-render the outline nodes when the text on the active editor is changing or we have an
+		// edit finished event
 		this.recreateOutline();
 	}
 
