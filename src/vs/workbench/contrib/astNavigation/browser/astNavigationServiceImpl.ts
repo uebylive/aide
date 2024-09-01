@@ -96,7 +96,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		const root = new FoldingNode({ start: 0, end: Infinity, kind: undefined });
 		const stack: FoldingNode[] = [root];
 
-		for (const range of ranges.sort((a, b) => a.start - b.end)) {
+		for (const range of ranges) {
 			while (stack.length > 1 && range.start > stack[stack.length - 1].range.end) {
 				stack.pop();
 			}
