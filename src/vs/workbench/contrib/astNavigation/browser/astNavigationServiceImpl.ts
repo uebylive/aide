@@ -2,11 +2,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
-import * as dom from 'vs/base/browser/dom';
+import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { FoldingRange } from 'vs/editor/common/languages';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
@@ -33,6 +32,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	private readonly activeEditorDisposables = this._register(new DisposableStore());
 	private foldingRoot: FoldingNode | undefined;
 	private currentNode: FoldingNode | undefined;
+	private previewDisposable: IDisposable | undefined;
 
 	private _astNavigationMode: IContextKey<boolean>;
 	private _canASTNavigate: IContextKey<boolean>;
@@ -54,41 +54,50 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this._canASTNavigate.set(false);
 		this.clearFoldingStructure();
 
-		const activeEditor = this.editorService.activeTextEditorControl;
-		if (!isCodeEditor(activeEditor)) {
+		const activeEditor = this.editorService.activeEditorPane;
+		if (!activeEditor) {
 			return;
 		}
 
-		const model = activeEditor.getModel();
+		const control = activeEditor.getControl();
+		let editor: ICodeEditor | undefined;
+		if (isCodeEditor(control)) {
+			editor = control;
+		}
+		if (!editor) {
+			return;
+		}
+
+		const model = editor.getModel();
 		if (!model) {
 			return;
 		}
 
-		const languageId = model.getLanguageId();
-
-		const foldingRangeProviders = this.languageFeaturesService.foldingRangeProvider.getForLanguageId({
-			'scheme': 'file',
-			'language': languageId,
-		});
+		const foldingRangeProviders = this.languageFeaturesService.foldingRangeProvider.getForLanguageId({ 'scheme': 'file', 'language': model.getLanguageId());
 		if (foldingRangeProviders.length === 0) {
 			return;
 		}
-		const foldingRangeProvider = foldingRangeProviders[0];
-		const foldingRanges = await foldingRangeProvider.provideFoldingRanges(model, {}, CancellationToken.None);
-		if (!foldingRanges) {
-			return;
-		}
 
+		const foldingRanges = await foldingRangeProviders[0].provideFoldingRanges(model, {}, CancellationToken.None) ?? [];
 		this.foldingRoot = this.buildFoldingTree(foldingRanges);
 		if (this.foldingRoot && this.foldingRoot.children.length > 0) {
-			this.previewNode(this.foldingRoot.children[0]);
-			this._canASTNavigate.set(true);
+			scheduleAtNextAnimationFrame(getActiveWindow(), () => {
+				const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
+				if (nodeAtCurrentPosition) {
+					this.previewNode(nodeAtCurrentPosition);
+					this._canASTNavigate.set(true);
+				} else if (this.foldingRoot!.children.length > 0) {
+					this.previewNode(this.foldingRoot!.children[0]);
+					this._canASTNavigate.set(true);
+				}
+			});
 		}
 	}
 
 	private clearFoldingStructure(): void {
 		this.foldingRoot = undefined;
 		this.currentNode = undefined;
+		this.previewDisposable?.dispose();
 		this.activeEditorDisposables.clear();
 	}
 
@@ -96,7 +105,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		const root = new FoldingNode({ start: 0, end: Infinity, kind: undefined });
 		const stack: FoldingNode[] = [root];
 
-		for (const range of ranges) {
+		for (const range of ranges.sort((a, b) => a.start - b.start)) {
 			while (stack.length > 1 && range.start > stack[stack.length - 1].range.end) {
 				stack.pop();
 			}
@@ -111,27 +120,68 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 
 	private previewNode(node: FoldingNode): void {
 		this.currentNode = node;
+		this.previewDisposable?.dispose();
 		const editor = this.editorService.activeTextEditorControl;
 		if (isCodeEditor(editor)) {
-			editor.revealLineInCenter(node.range.start);
-			editor.setSelection({
-				startLineNumber: node.range.start,
-				startColumn: 1,
-				endLineNumber: node.range.end,
-				endColumn: 1
-			});
+			const nodeRange = {
+				selectionStartLineNumber: node.range.start,
+				selectionStartColumn: 0,
+				positionLineNumber: node.range.end,
+				positionColumn: 0,
+			};
+			editor.setSelection(nodeRange);
 		}
+	}
+
+	private getNodeAtCurrentPosition(): FoldingNode | undefined {
+		const editor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(editor)) {
+			return undefined;
+		}
+
+		const position = editor.getPosition();
+		if (!position) {
+			return undefined;
+		}
+
+		return this.findDeepestNodeContainingLine(this.foldingRoot!, position.lineNumber);
+	}
+
+	private findDeepestNodeContainingLine(node: FoldingNode, lineNumber: number): FoldingNode | undefined {
+		if (node.range.start <= lineNumber && lineNumber <= node.range.end) {
+			for (const child of node.children) {
+				const deeperNode = this.findDeepestNodeContainingLine(child, lineNumber);
+				if (deeperNode) {
+					return deeperNode;
+				}
+			}
+			return node;
+		}
+		return undefined;
 	}
 
 	toggleASTNavigationMode(): void {
 		const isAstNavigationMode = !this._astNavigationMode.get();
 		this._astNavigationMode.set(isAstNavigationMode);
 		if (isAstNavigationMode) {
-			dom.getActiveWindow().document.body.classList.add('astNavigationMode');
+			getActiveWindow().document.body.classList.add('astNavigationMode');
 			this.updateFoldingStructure();
 		} else {
-			dom.getActiveWindow().document.body.classList.remove('astNavigationMode');
+			getActiveWindow().document.body.classList.remove('astNavigationMode');
 			this.clearFoldingStructure();
+			const editor = this.editorService.activeTextEditorControl;
+			if (isCodeEditor(editor)) {
+				const selection = editor.getSelection();
+				if (selection) {
+					const startPosition = selection.getStartPosition();
+					editor.setSelection({
+						startLineNumber: startPosition.lineNumber,
+						startColumn: startPosition.column,
+						endLineNumber: startPosition.lineNumber,
+						endColumn: startPosition.column
+					});
+				}
+			}
 		}
 	}
 
