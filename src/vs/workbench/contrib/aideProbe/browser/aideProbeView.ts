@@ -7,7 +7,7 @@ import * as dom from 'vs/base/browser/dom';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { KeybindingLabel, unthemedKeybindingLabelOptions } from 'vs/base/browser/ui/keybindingLabel/keybindingLabel';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { IListMouseEvent, IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
@@ -27,7 +27,7 @@ import { IContextMenuService } from 'vs/platform/contextview/browser/contextView
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
+import { IOpenEvent, WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -251,26 +251,35 @@ export class AideProbeViewPane extends ViewPane {
 			}
 		}));
 
-		this._register(list.onDidOpen(async (event) => {
-			const { element } = event;
-			if (element && element.uri) {
-				const index = this.getListIndex(element);
+		this._register(list.onMouseDown((event) => {
+			this.onOpen(event);
+		}));
 
-				if (event.browserEvent) {
-					this.listFocusIndex = index;
-				}
-
-				element.expanded = !element.expanded;
-				if (this.list) {
-					this.list.splice(index, 1, [element]);
-					this.list.rerender();
-				}
-				this._onDidChangeFocus.fire({ index, element: element });
-				this.openListItemReference(element, !!event.browserEvent);
-			}
+		this._register(list.onDidOpen((event) => {
+			this.onOpen(event);
 		}));
 
 		return list;
+	}
+
+	private onOpen(event: IOpenEvent<IAideProbeListItem | undefined> | IListMouseEvent<IAideProbeListItem>) {
+		const { element } = event;
+		if (element && element.uri) {
+			const index = this.getListIndex(element);
+
+			if (event.browserEvent) {
+				this.listFocusIndex = index;
+			}
+
+			element.expanded = !element.expanded;
+			if (this.list) {
+				this.list.splice(index, 1, [element]);
+				this.list.rerender();
+			}
+			this._onDidChangeFocus.fire({ index, element: element });
+			console.log('will openListItemReference');
+			this.openListItemReference(element, !!event.browserEvent);
+		}
 	}
 
 	private getListIndex(element: IAideProbeListItem): number {

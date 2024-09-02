@@ -149,6 +149,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._initialSymbols;
 	}
 
+	private _referencesFound: Record<string, number> = {};
+	public get referencesFound(): Record<string, number> {
+		return this._referencesFound;
+	}
+
 	private progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
@@ -217,6 +222,10 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		});
 
 		this._onNewEvent.fire(initialSymbols);
+	}
+
+	applyReferenceFound(references: Record<string, number>) {
+		this._referencesFound = references;
 	}
 
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
@@ -407,6 +416,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			case 'iterationFinished':
 				await this._response.addToUndoStack();
 				this.status = AideProbeStatus.ITERATION_FINISHED;
+				break;
+			case 'referenceFound':
+				this._response.applyReferenceFound(progress.references);
 				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);

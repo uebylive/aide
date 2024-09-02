@@ -249,10 +249,7 @@ interface OpenFileRequestFrameworkEvent {
 	fs_file_path: string;
 }
 
-interface FoundReference {
-	request_id: string;
-	fs_file_path: string;
-}
+type FoundReference = Record<string, number>;
 
 interface RelevantReference {
 	fs_file_path: string,
