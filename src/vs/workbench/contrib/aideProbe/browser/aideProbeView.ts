@@ -325,9 +325,9 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
-		if (this.viewModel.referencesFound) {
-			items.unshift(this.viewModel.referencesFound);
-		}
+		//if (this.viewModel.referencesFound) {
+		//	items.unshift(this.viewModel.referencesFound);
+		//}
 
 		let matchingIndex = -1;
 
