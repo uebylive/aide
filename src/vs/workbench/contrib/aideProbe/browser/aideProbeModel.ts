@@ -26,7 +26,8 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideFollowup } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -71,7 +72,7 @@ export interface IAideProbeResponseModel {
 	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
 	readonly referencesFound: Record<string, number> | undefined;
 	readonly relevantReferences: Record<string, number> | undefined;
-	readonly followups: Map<string, IReferenceByName[]> | undefined;
+	readonly followups: Map<string, IAideFollowup[]> | undefined;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;
@@ -163,8 +164,8 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._relevantReferences;
 	}
 
-	private _followups: Map<string, IReferenceByName[]> | undefined;
-	public get followups(): Map<string, IReferenceByName[]> | undefined {
+	private _followups: Map<string, IAideFollowup[]> | undefined;
+	public get followups(): Map<string, IAideFollowup[]> | undefined {
 		return this._followups;
 	}
 
@@ -246,7 +247,7 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._relevantReferences = references;
 	}
 
-	applyFollowups(followups: Map<string, IReferenceByName[]>) {
+	applyFollowups(followups: Map<string, IAideFollowup[]>) {
 		this._followups = followups;
 	}
 
@@ -446,7 +447,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				await this._response.applyCodeEdit(progress);
 				break;
 		}
-
+		console.log('AideProbeModel: acceptResponseProgress', progress);
 		this._onDidChange.fire();
 	}
 

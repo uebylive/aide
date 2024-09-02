@@ -16,6 +16,7 @@ import { OS } from 'vs/base/common/platform';
 import { relativePath } from 'vs/base/common/resources';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { ThemeIcon } from 'vs/base/common/themables';
+import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { IDimension } from 'vs/editor/common/core/dimension';
@@ -36,11 +37,13 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { IAideChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideFollowupReferencesContentPart, ContentReferencesListPool } from 'vs/workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart';
 import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, IAideFollowup, isFollowupsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
@@ -57,6 +60,41 @@ const welcomeActions = [
 	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
+
+
+const relevantReferencesVMMock: IAideRelevantReferencesViewModel = {
+	type: 'relevantReferences',
+	references: {
+		'path/to/file': 2,
+		'path/to/another/file': 9,
+		'path/to/one/last/file': 5,
+	},
+	index: undefined,
+	currentRenderedHeight: undefined,
+	expanded: false
+};
+
+const fakeFollowups: Map<string, IAideFollowup[]> = new Map();
+
+fakeFollowups.set('reason 1', [
+	{ reference: { name: 'symbol', uri: URI.parse('path/to/file') }, complete: true },
+	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/another/file') }, complete: false },
+	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/yet/another/file') }, complete: false },
+]);
+
+fakeFollowups.set('reason 2', [
+	{ reference: { name: 'symbol', uri: URI.parse('path/to/yet/another/file') }, complete: false },
+	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/yet/another/file') }, complete: true },
+	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/one/final/file') }, complete: false },
+]);
+
+const followupsVMMock: IAideFollowupsViewModel = {
+	type: 'followups',
+	followups: fakeFollowups,
+	index: undefined,
+	currentRenderedHeight: undefined,
+	expanded: false
+};
 
 
 export class AideProbeViewPane extends ViewPane {
@@ -266,7 +304,11 @@ export class AideProbeViewPane extends ViewPane {
 	private onOpen(event: IOpenEvent<IAideProbeListItem | undefined> | IListMouseEvent<IAideProbeListItem>) {
 		const { element } = event;
 		if (element && (element.type === 'breakdown' || element.type === 'initialSymbol')) {
-			const index = this.getListIndex(element);
+			let index = this.getListIndex(element);
+			if (Boolean(this.viewModel?.referencesFound)) {
+				// Account for references found occupying the first slot
+				index += 1;
+			}
 			if (event.browserEvent) {
 				this.listFocusIndex = index;
 			}
@@ -324,10 +366,20 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
-		//if (this.viewModel.referencesFound) {
-		//	items.unshift(this.viewModel.referencesFound);
-		//}
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns, followupsVMMock];
+
+		// Make sure referencesFound is always the first item
+		if (this.viewModel.referencesFound) {
+			items.unshift(this.viewModel.referencesFound);
+		}
+
+		// Make sure relevantReferences is always the last item
+		if (this.viewModel.relevantReferences && !this.viewModel.followups) {
+			items.push(this.viewModel.relevantReferences);
+		}
+		if (this.viewModel.followups) {
+			items.push(this.viewModel.followups);
+		}
 
 		let matchingIndex = -1;
 
@@ -336,15 +388,37 @@ export class AideProbeViewPane extends ViewPane {
 		} else {
 			items.forEach((item, index) => {
 				item.index = index;
-				const matchIndex = this.getListIndex(item);
+
+				// Account for references found occupying the first slot
+				const hasReferencesFound = Boolean(this.viewModel?.referencesFound);
+				let matchIndex = -1;
+
+				if (isReferenceFoundVM(item)) {
+					matchIndex = 0;
+				}
+
+				if (isInitialSymbolsVM(item) || isBreakdownVM(item)) {
+					matchIndex = this.getListIndex(item);
+					if (hasReferencesFound) {
+						matchIndex = + 1;
+					}
+				}
+
+
+				if (isReferenceFoundVM(item) || isFollowupsVM(item)) {
+					matchIndex = items.length - 1;
+				}
+
 				if (this.list) {
 					if (matchIndex === -1) {
-						this.list.splice(items.length - 1, 0, [item]);
+						// it's -2 instead of -1 because I'm appending a mock followupsVMMock
+						this.list.splice(items.length - 2, 0, [item]);
 					} else {
 						if (matchIndex === this.listFocusIndex) {
 							item.expanded = true;
 						}
-						if (items.length === 1 && CONTEXT_PROBE_MODE.getValue(this.contextKeyService) === AideProbeMode.ANCHORED) {
+						const hasOneBreakdownEntry = hasReferencesFound ? items.length === 2 : items.length === 1;
+						if (hasOneBreakdownEntry && CONTEXT_PROBE_MODE.getValue(this.contextKeyService) === AideProbeMode.ANCHORED) {
 							item.expanded = true;
 						}
 						this.list.splice(matchIndex, 1, [item]);
@@ -353,10 +427,6 @@ export class AideProbeViewPane extends ViewPane {
 				matchingIndex = matchIndex;
 			});
 		}
-
-		// isBreakDownVM
-		// and we want to rerender just the element with only the element we are focussed
-		// right now
 
 		if (this.listFocusIndex !== undefined) {
 			this.list.setFocus([this.listFocusIndex]);
@@ -447,10 +517,12 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IProbeListItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IProbeListItemHeightChangeParams> = this._onDidChangeItemHeight.event;
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
 		private readonly markdownRenderer: ChatMarkdownRenderer,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 	}
@@ -471,12 +543,23 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		templateData.currentItemIndex = index;
 		dom.clearNode(templateData.container);
 
-		if (isInitialSymbolsVM(element)) {
-			this.renderInitialSymbol(element, templateData);
-		} else if (isBreakdownVM(element)) {
-			this.renderBreakdown(element, templateData);
+		switch (element.type) {
+			case 'initialSymbol':
+				this.renderInitialSymbol(element, templateData);
+				break;
+			case 'breakdown':
+				this.renderBreakdown(element, templateData);
+				break;
+			case 'referencesFound':
+				this.renderReferenceFound(element, templateData);
+				break;
+			case 'relevantReferences':
+				this.renderRelevantReferences(element, templateData);
+				break;
+			case 'followups':
+				this.renderFollowups(element, templateData);
+				break;
 		}
-
 		this.updateItemHeight(templateData);
 	}
 
@@ -548,6 +631,74 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 				iconElement.classList.add(...resolvedIconSelector);
 			}
 		});
+	}
+
+	renderReferenceFound(element: IAideReferencesFoundViewModel, templateData: IAideProbeListItemTemplate): void {
+		const { references } = element;
+
+		const iconElement = $('.plan-icon');
+		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/list-bullet');
+		templateData.container.appendChild(iconElement);
+
+		const symbolElement = $('.plan-symbol');
+		templateData.container.appendChild(symbolElement);
+
+		const symbolHeader = $('.plan-symbol-header');
+		symbolHeader.textContent = 'References';
+		symbolElement.appendChild(symbolHeader);
+
+		const response = $('.plan-response');
+		response.textContent = `${Object.keys(references).length} files contain references to these symbols`;
+		templateData.container.appendChild(response);
+
+	}
+
+	renderRelevantReferences(element: IAideRelevantReferencesViewModel, templateData: IAideProbeListItemTemplate): void {
+		const { references } = element;
+
+		const iconElement = $('.plan-icon');
+		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/cog-6-tooth');
+		templateData.container.appendChild(iconElement);
+
+		const symbolElement = $('.plan-symbol');
+		templateData.container.appendChild(symbolElement);
+
+		const symbolHeader = $('.plan-symbol-header');
+		symbolHeader.textContent = 'Relevant references';
+		symbolElement.appendChild(symbolHeader);
+
+		const response = $('.plan-response');
+		response.textContent = `${Object.keys(references).length} files are affected by the changes`;
+		templateData.container.appendChild(response);
+	}
+
+	renderFollowups(element: IAideFollowupsViewModel, templateData: IAideProbeListItemTemplate): void {
+		const { followups } = element;
+
+		const iconElement = $('.plan-icon');
+		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/cog-6-tooth');
+		templateData.container.appendChild(iconElement);
+
+		const symbolElement = $('.plan-symbol');
+		templateData.container.appendChild(symbolElement);
+
+		const symbolHeader = $('.plan-symbol-header');
+		symbolHeader.textContent = 'Relevant references';
+		symbolElement.appendChild(symbolHeader);
+
+
+		for (const [, followup] of followups.entries()) {
+			const references = followup.map(ref => ({ kind: 'reference', reference: ref.reference.uri })) as IAideChatContentReference[];
+
+			const contentReferencesListPool = this._register(this.instantiationService.createInstance(ContentReferencesListPool, this._onDidChangeVisibility.event));
+			const referencesPart = this.instantiationService.createInstance(AideFollowupReferencesContentPart, references, undefined, false, contentReferencesListPool);
+			referencesPart.addDisposable(referencesPart.onDidChangeHeight(() => {
+				this.updateItemHeight(templateData);
+			}));
+			templateData.container.appendChild(referencesPart.domNode);
+		}
+
+		//templateData.container.appendChild(response);
 	}
 
 	disposeTemplate(templateData: IAideProbeListItemTemplate): void {

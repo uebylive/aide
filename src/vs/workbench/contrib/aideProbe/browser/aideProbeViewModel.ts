@@ -230,9 +230,14 @@ interface IAideReferencesViewModel {
 }
 
 
+export interface IAideFollowup {
+	reference: IReferenceByName;
+	complete: boolean;
+}
+
 export interface IAideFollowupsViewModel {
 	type: 'followups';
-	readonly followups: Map<string, IReferenceByName[]>;
+	readonly followups: Map<string, IAideFollowup[]>;
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
 	expanded: boolean;
@@ -246,7 +251,19 @@ export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymb
 }
 
 export function isBreakdownVM(item: unknown): item is IAideProbeBreakdownViewModel {
-	return !!item && typeof (item as AideProbeBreakdownViewModel).edits !== 'undefined';
+	return !!item && typeof (item as IAideProbeBreakdownViewModel).edits !== 'undefined';
+}
+
+export function isReferenceFoundVM(item: unknown): item is IAideReferencesFoundViewModel {
+	return !!item && (item as IAideReferencesFoundViewModel).type === 'referencesFound';
+}
+
+export function isRelevantReferencesVM(item: unknown): item is IAideRelevantReferencesViewModel {
+	return !!item && (item as IAideRelevantReferencesViewModel).type === 'relevantReferences';
+}
+
+export function isFollowupsVM(item: unknown): item is IAideFollowupsViewModel {
+	return !!item && (item as IAideFollowupsViewModel).type === 'followups';
 }
 
 export interface IAideProbeCodeEditPreviewViewModel {

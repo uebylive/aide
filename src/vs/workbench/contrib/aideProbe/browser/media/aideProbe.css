@@ -85,6 +85,10 @@
 	text-overflow: ellipsis;
 }
 
+.plan-response {
+	margin-top: 6px;
+}
+
 .edits-list-item .plan-symbol-path {
 	color: var(--vscode-debugIcon-breakpointUnverifiedForeground);
 }
