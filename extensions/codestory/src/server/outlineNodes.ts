@@ -4,7 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EventEmitter, languages, Uri, workspace } from 'vscode';
-import { SidecarGetOutlineNodesRequest, SidecarGetOutlineNodesResponse } from './types';
+import { SidecarGetOutlineNodesRequest, SidecarGetOutlineNodesResponse, SidecarOutlineNodesWithContentRequest } from './types';
+import * as os from 'os';
+import * as path from 'path';
 
 function getDocumentSelector(fsFilePath: string): string {
 	if (fsFilePath.endsWith('rs')) {
@@ -65,3 +67,61 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		language: textDocument.languageId,
 	};
 }
+
+export async function getOutlineNodesFromContent(request: SidecarOutlineNodesWithContentRequest): Promise<SidecarGetOutlineNodesResponse> {
+	const content = request.content;
+	const fileExtension = request.file_extension;
+	const tempUri = Uri.file(path.join(os.tmpdir(), `temp_file_${Date.now()}.${fileExtension}`));
+
+	try {
+		// Create a temporary file using VSCode API
+		await workspace.fs.writeFile(tempUri, Buffer.from(content));
+
+		const languageFilter = getDocumentSelector(tempUri.fsPath);
+		const documentSymbolProviders = languages.getDocumentSymbolProvider(
+			{ scheme: 'file', language: languageFilter }
+		);
+		const textDocument = await workspace.openTextDocument(tempUri);
+
+		if (documentSymbolProviders.length === 0) {
+			return {
+				file_content: content,
+				outline_nodes: [],
+				language: textDocument.languageId,
+			};
+		}
+
+		const firstDocumentProvider = documentSymbolProviders[0];
+		const evenEmitter = new EventEmitter();
+
+		try {
+			const documentSymbols = await firstDocumentProvider.provideDocumentSymbols(textDocument, {
+				isCancellationRequested: false,
+				onCancellationRequested: evenEmitter.event,
+			});
+
+			return {
+				file_content: content,
+				outline_nodes: documentSymbols,
+				language: textDocument.languageId,
+			};
+		} catch (exception) {
+			console.log('getOutlineNodesFromContentException');
+			console.error(exception);
+		}
+
+		return {
+			file_content: content,
+			outline_nodes: [],
+			language: textDocument.languageId,
+		};
+	} finally {
+		// Clean up: remove the temporary file using VSCode API
+		try {
+			await workspace.fs.delete(tempUri);
+		} catch (error) {
+			console.error('Error deleting temporary file:', error);
+		}
+	}
+}
+

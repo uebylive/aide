@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -14,7 +14,7 @@ import { quickFixInvocation, quickFixList } from './quickFix';
 import { symbolSearch } from './symbolSearch';
 import { goToReferences } from './goToReferences';
 import { inlayHints } from './inlayHints';
-import { getOutlineNodes } from './outlineNodes';
+import { getOutlineNodes, getOutlineNodesFromContent } from './outlineNodes';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -131,6 +131,13 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarGetOutlineNodesRequest = JSON.parse(body);
 				const response = await getOutlineNodes(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/get_outline_nodes_content') {
+				console.log('get_outline_node_content');
+				const body = await readRequestBody(req);
+				const request: SidecarOutlineNodesWithContentRequest = JSON.parse(body);
+				const response = await getOutlineNodesFromContent(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else {

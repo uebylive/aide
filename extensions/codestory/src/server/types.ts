@@ -435,6 +435,11 @@ export interface CodeSymbolImportantWideSearch {
 	file_extension_filters: Set<string>;
 }
 
+export type SidecarOutlineNodesWithContentRequest = {
+	content: string;
+	file_extension: string;
+}
+
 export type SidecarGetOutlineNodesRequest = {
 	fs_file_path: string;
 };
