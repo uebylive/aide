@@ -14,7 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
@@ -84,9 +84,19 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._initialSymbols;
 	}
 
-	private _referencesFound: IAideReferenceFoundViewModel | undefined;
+	private _referencesFound: IAideReferencesFoundViewModel | undefined;
 	get referencesFound() {
 		return this._referencesFound;
+	}
+
+	private _relevantReferences: IAideRelevantReferencesViewModel | undefined;
+	get relevantReferences() {
+		return this._relevantReferences;
+	}
+
+	private _followups: IAideFollowupsViewModel | undefined;
+	get followups() {
+		return this._followups;
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
@@ -132,7 +142,15 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			if (this._model.response.referencesFound) {
-				this._referencesFound = { references: this._model.response.referencesFound, type: 'reference', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				this._referencesFound = { references: this._model.response.referencesFound, type: 'referencesFound', index: undefined, expanded: false, currentRenderedHeight: 0 };
+			}
+
+			if (this._model.response.relevantReferences) {
+				this._relevantReferences = { references: this._model.response.relevantReferences, type: 'relevantReferences', index: undefined, expanded: false, currentRenderedHeight: 0 };
+			}
+
+			if (this._model.response.followups) {
+				this._followups = { followups: this._model.response.followups, type: 'followups', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -196,8 +214,15 @@ export interface IAideProbeBreakdownViewModel {
 	expanded: boolean;
 }
 
-export interface IAideReferenceFoundViewModel {
-	type: 'reference';
+export interface IAideReferencesFoundViewModel extends IAideReferencesViewModel {
+	type: 'referencesFound';
+}
+
+export interface IAideRelevantReferencesViewModel extends IAideReferencesViewModel {
+	type: 'relevantReferences';
+}
+
+interface IAideReferencesViewModel {
 	readonly references: Record<string, number>;
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
@@ -205,7 +230,16 @@ export interface IAideReferenceFoundViewModel {
 }
 
 
-export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferenceFoundViewModel;
+export interface IAideFollowupsViewModel {
+	type: 'followups';
+	readonly followups: Map<string, IReferenceByName[]>;
+	index: number | undefined;
+	currentRenderedHeight: number | undefined;
+	expanded: boolean;
+}
+
+
+export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel;
 
 export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymbolsViewModel {
 	return !!item && typeof (item as IAideProbeInitialSymbolsViewModel).symbolName !== 'undefined';

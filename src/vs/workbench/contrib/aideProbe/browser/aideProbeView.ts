@@ -40,7 +40,7 @@ import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferenceFoundViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
@@ -324,7 +324,7 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferenceFoundViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
 		if (this.viewModel.referencesFound) {
 			items.unshift(this.viewModel.referencesFound);
 		}
