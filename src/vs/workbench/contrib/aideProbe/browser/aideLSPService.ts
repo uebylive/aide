@@ -87,7 +87,7 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 	}
 
 	getStatus(languageId: string): boolean {
-		const referenceProviders = this.languageFeaturesService.referenceProvider.getForLanguageSelector({ 'scheme': 'file', 'language': languageId });
+		const referenceProviders = this.languageFeaturesService.referenceProvider.getForLanguageId({ 'scheme': 'file', 'language': languageId });
 		if (referenceProviders.length !== 0) {
 			return true;
 		} else {
