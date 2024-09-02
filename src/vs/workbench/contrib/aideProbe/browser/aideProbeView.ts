@@ -40,7 +40,7 @@ import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferenceFoundViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
@@ -233,12 +233,13 @@ export class AideProbeViewPane extends ViewPane {
 				const index = event.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
+				if (element.type === 'breakdown' || element.type === 'initialSymbol') {
+					this._onDidChangeFocus.fire({ index, element });
 
-				this._onDidChangeFocus.fire({ index, element });
-
-				if (event.browserEvent && element && element.uri) {
-					this.listFocusIndex = index;
-					this.openListItemReference(element, !!event.browserEvent);
+					if (event.browserEvent && element && element.uri) {
+						this.listFocusIndex = index;
+						this.openListItemReference(element, !!event.browserEvent);
+					}
 				}
 			}
 		}));
@@ -264,9 +265,8 @@ export class AideProbeViewPane extends ViewPane {
 
 	private onOpen(event: IOpenEvent<IAideProbeListItem | undefined> | IListMouseEvent<IAideProbeListItem>) {
 		const { element } = event;
-		if (element && element.uri) {
+		if (element && (element.type === 'breakdown' || element.type === 'initialSymbol')) {
 			const index = this.getListIndex(element);
-
 			if (event.browserEvent) {
 				this.listFocusIndex = index;
 			}
@@ -324,7 +324,10 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferenceFoundViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		if (this.viewModel.referencesFound) {
+			items.unshift(this.viewModel.referencesFound);
+		}
 
 		let matchingIndex = -1;
 

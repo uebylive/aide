@@ -84,6 +84,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._initialSymbols;
 	}
 
+	private _referencesFound: IAideReferenceFoundViewModel | undefined;
+	get referencesFound() {
+		return this._referencesFound;
+	}
+
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this.breakdowns.filter(b => {
 			if (!this._filter) {
@@ -120,10 +125,14 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 			}
 
-			//const codeEdits = _model.response?.codeEdits;
+			const codeEdits = _model.response?.codeEdits;
 
 			if (this._model.response.initialSymbols) {
 				this._initialSymbols = Array.from(this._model.response.initialSymbols.values()).flat().map(item => ({ ...item, type: 'initialSymbol', index: undefined, expanded: false, currentRenderedHeight: 0 }));
+			}
+
+			if (this._model.response.referencesFound) {
+				this._referencesFound = { references: this._model.response.referencesFound, type: 'reference', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
@@ -138,23 +147,23 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 						return;
 					}
 
-					//const edits = codeEdits?.get(item.reference.uri.toString());
-					//const hunks = edits?.hunkData.getInfo();
-					//for (const hunk of hunks ?? []) {
-					//	let wholeRange: Range | undefined;
-					//	const ranges = hunk.getRangesN();
-					//	for (const range of ranges) {
-					//		if (!wholeRange) {
-					//			wholeRange = range;
-					//		} else {
-					//			wholeRange = wholeRange.plusRange(range);
-					//		}
-					//	}
-					//
-					//	if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
-					//		viewItem.appendEdits([hunk]);
-					//	}
-					//}
+					const edits = codeEdits?.get(item.reference.uri.toString());
+					const hunks = edits?.hunkData.getInfo();
+					for (const hunk of hunks ?? []) {
+						let wholeRange: Range | undefined;
+						const ranges = hunk.getRangesN();
+						for (const range of ranges) {
+							if (!wholeRange) {
+								wholeRange = range;
+							} else {
+								wholeRange = wholeRange.plusRange(range);
+							}
+						}
+
+						if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+							viewItem.appendEdits([hunk]);
+						}
+					}
 					this._onDidChange.fire();
 				});
 
@@ -187,8 +196,16 @@ export interface IAideProbeBreakdownViewModel {
 	expanded: boolean;
 }
 
+export interface IAideReferenceFoundViewModel {
+	type: 'reference';
+	readonly references: Record<string, number>;
+	index: number | undefined;
+	currentRenderedHeight: number | undefined;
+	expanded: boolean;
+}
 
-export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel;
+
+export type IAideProbeListItem = IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferenceFoundViewModel;
 
 export function isInitialSymbolsVM(item: unknown): item is IAideProbeInitialSymbolsViewModel {
 	return !!item && typeof (item as IAideProbeInitialSymbolsViewModel).symbolName !== 'undefined';

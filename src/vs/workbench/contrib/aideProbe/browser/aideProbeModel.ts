@@ -69,6 +69,7 @@ export interface IAideProbeResponseModel {
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
+	readonly referencesFound: Record<string, number>;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;

@@ -57,7 +57,7 @@ export type AnchorSessionStart = {
 	user_context: UserContext;
 	active_window_data?: ActiveWindowData;
 	root_directory: string | undefined;
-}
+};
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
 
@@ -252,9 +252,9 @@ interface OpenFileRequestFrameworkEvent {
 type FoundReference = Record<string, number>;
 
 interface RelevantReference {
-	fs_file_path: string,
-	symbol_name: string,
-	reason: string,
+	fs_file_path: string;
+	symbol_name: string;
+	reason: string;
 }
 
 interface InitialSearchSymbolInformation {
@@ -435,7 +435,7 @@ export interface CodeSymbolImportantWideSearch {
 export type SidecarOutlineNodesWithContentRequest = {
 	content: string;
 	file_extension: string;
-}
+};
 
 export type SidecarGetOutlineNodesRequest = {
 	fs_file_path: string;
