@@ -152,12 +152,18 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	private constructTree(ranges: IRange[]): ASTNode {
-		const root = new ASTNode({ startLineNumber: 0, startColumn: 0, endLineNumber: Infinity, endColumn: 0 });
+		ranges.sort(Range.compareRangesUsingStarts);
+		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
+		const root = new ASTNode({
+			startLineNumber: ranges[0].startLineNumber,
+			startColumn: 0,
+			endLineNumber: ranges[ranges.length - 1].endLineNumber,
+			endColumn: 0
+		});
+
 		const stack: ASTNode[] = [root];
 		const nodeMap = new Map<string, ASTNode>();
 
-		ranges.sort(Range.compareRangesUsingStarts);
-		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
 		for (const range of ranges) {
 			const rangeKey = `${range.startLineNumber}-${range.startColumn}-${range.endLineNumber}-${range.endColumn}`;
 			let currentNode = nodeMap.get(rangeKey);
@@ -293,33 +299,43 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 
-		const siblings = this.currentNode.parent.children;
-		const currentIndex = siblings.indexOf(this.currentNode);
+		const parentNode = this.currentNode.parent;
+		const currentIndex = parentNode.children.indexOf(this.currentNode);
 
 		if (currentIndex > 0) {
-			this.previewNode(siblings[currentIndex - 1]);
-		} else if (this.currentNode.parent.parent) {
-			this.previewNode(this.currentNode.parent);
+			this.previewNode(parentNode.children[currentIndex - 1]);
+		} else if (parentNode.parent) {
+			const grandParentNode = parentNode.parent;
+			const parentIndex = grandParentNode.children.indexOf(parentNode);
+
+			if (parentIndex > 0) {
+				const previousSiblingNode = grandParentNode.children[parentIndex - 1];
+				this.previewNode(previousSiblingNode);
+			} else {
+				this.previewNode(parentNode);
+			}
 		}
 	}
 
 	moveDown(): void {
-		if (!this.currentNode) {
+		if (!this.currentNode || !this.currentNode.parent) {
 			return;
 		}
 
-		if (this.currentNode.children.length > 0) {
-			this.previewNode(this.currentNode.children[0]);
-		} else if (this.currentNode.parent) {
-			let current: ASTNode | null = this.currentNode;
-			while (current.parent) {
-				const siblings = current.parent.children;
-				const currentIndex = siblings.indexOf(current);
-				if (currentIndex < siblings.length - 1) {
-					this.previewNode(siblings[currentIndex + 1]);
-					return;
-				}
-				current = current.parent;
+		const parentNode = this.currentNode.parent;
+		const currentIndex = parentNode.children.indexOf(this.currentNode);
+
+		if (currentIndex < parentNode.children.length - 1) {
+			this.previewNode(parentNode.children[currentIndex + 1]);
+		} else if (parentNode.parent) {
+			const grandParentNode = parentNode.parent;
+			const parentIndex = grandParentNode.children.indexOf(parentNode);
+
+			if (parentIndex < grandParentNode.children.length - 1) {
+				const nextSiblingNode = grandParentNode.children[parentIndex + 1];
+				this.previewNode(nextSiblingNode);
+			} else {
+				this.previewNode(parentNode);
 			}
 		}
 	}
@@ -332,7 +348,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 
 	moveOut(): void {
 		if (this.currentNode && this.currentNode.parent) {
-			this.previewNode(this.currentNode.parent);
+			const parentNode = this.currentNode.parent;
+			this.previewNode(parentNode);
 		}
 	}
 }
