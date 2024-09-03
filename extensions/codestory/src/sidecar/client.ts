@@ -897,12 +897,14 @@ export class SideCarClient {
 
 	async warmupCodeSculptingCache(
 		file_paths: string[],
+		editorUrl: string,
 	) {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/code_sculpting_warmup';
 		const url = baseUrl.toString();
 		const body = {
 			file_paths,
+			editor_url: editorUrl,
 		};
 		await fetch(url, {
 			method: 'POST',

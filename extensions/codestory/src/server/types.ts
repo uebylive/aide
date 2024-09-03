@@ -57,7 +57,7 @@ export type AnchorSessionStart = {
 	user_context: UserContext;
 	active_window_data?: ActiveWindowData;
 	root_directory: string | undefined;
-}
+};
 
 export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
 
@@ -89,7 +89,16 @@ type FrameworkEvent = {
 	CodeIterationFinished: string;
 	ReferenceFound: FoundReference;
 	RelevantReference: RelevantReference;
+	GroupedReferences: GroupedReferences;
 };
+
+// key represents a REASON
+type GroupedReferences = { [key: string]: Location[] };
+
+interface Location {
+	fs_file_path: string;
+	symbol_name: string;
+}
 
 interface UIEvent {
 	SymbolEvent: SymbolEventRequest;
@@ -123,12 +132,11 @@ interface EditedCodeStreamingRequestEvent {
 	Delta: string;
 }
 
-interface EditedCodeStreamingRequest {
+export interface EditedCodeStreamingRequest {
 	edit_request_id: string;
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
-	updated_code: string | null | undefined;
 }
 
 interface SymbolEventEditRequest {
@@ -249,15 +257,12 @@ interface OpenFileRequestFrameworkEvent {
 	fs_file_path: string;
 }
 
-interface FoundReference {
-	request_id: string;
-	fs_file_path: string;
-}
+type FoundReference = Record<string, number>;
 
 interface RelevantReference {
-	fs_file_path: string,
-	symbol_name: string,
-	reason: string,
+	fs_file_path: string;
+	symbol_name: string;
+	reason: string;
 }
 
 interface InitialSearchSymbolInformation {
@@ -434,6 +439,11 @@ export interface CodeSymbolImportantWideSearch {
 	api_key: LLMProviderAPIKeys;
 	file_extension_filters: Set<string>;
 }
+
+export type SidecarOutlineNodesWithContentRequest = {
+	content: string;
+	file_extension: string;
+};
 
 export type SidecarGetOutlineNodesRequest = {
 	fs_file_path: string;

@@ -4757,6 +4757,13 @@ export class AideProbeOpenFilePart {
 	}
 }
 
+export class AideReferenceFoundPart {
+	references: Record<string, number>;
+	constructor(references: Record<string, number>) {
+		this.references = references;
+	}
+}
+
 export class AideProbeRepoMapGenerationPart {
 	finished: boolean;
 	constructor(finished: boolean) {

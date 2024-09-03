@@ -91,6 +91,11 @@ export interface IAideProbeOpenFile {
 	uri: URI;
 }
 
+export interface IAideReferenceFound {
+	kind: 'referenceFound';
+	references: Record<string, number>;
+}
+
 export interface IAideProbeRepoMapGeneration {
 	kind: 'repoMapGeneration';
 	finished: boolean;
@@ -114,6 +119,7 @@ export type IAideProbeProgress =
 	| IAideProbeOpenFile
 	| IAideProbeRepoMapGeneration
 	| IAideProbeLongContextSearch
+	| IAideReferenceFound
 	| IAideProbeInitialSymbols
 	| IAideProbeIterationFinished;
 
