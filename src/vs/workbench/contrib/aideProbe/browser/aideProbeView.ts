@@ -10,6 +10,7 @@ import { KeybindingLabel, unthemedKeybindingLabelOptions } from 'vs/base/browser
 import { IListMouseEvent, IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
+import { localize } from 'vs/nls';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { OS } from 'vs/base/common/platform';
@@ -37,14 +38,14 @@ import { Heroicon } from 'vs/workbench/browser/heroicon';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { IAideChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { AideFollowupReferencesContentPart, ContentReferencesListPool } from 'vs/workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart';
+import { AideReferencesContentPart, IAideFollowupContentReference, IAideReferenceFoundContentReference } from 'vs/workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart';
 import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, IAideFollowup, isFollowupsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, IAideFollowupViewModel, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 
 const $ = dom.$;
 
@@ -65,27 +66,27 @@ const welcomeActions = [
 const relevantReferencesVMMock: IAideRelevantReferencesViewModel = {
 	type: 'relevantReferences',
 	references: {
-		'path/to/file': 2,
-		'path/to/another/file': 9,
-		'path/to/one/last/file': 5,
+		'path/to/file': { uri: URI.parse('path/to/file'), occurencies: 2 },
+		'path/to/another/file': { uri: URI.parse('path/to/another/file'), occurencies: 9 },
+		'path/to/one/last/file': { uri: URI.parse('path/to/one/last/file'), occurencies: 5 },
 	},
 	index: undefined,
 	currentRenderedHeight: undefined,
 	expanded: false
 };
 
-const fakeFollowups: Map<string, IAideFollowup[]> = new Map();
+const fakeFollowups: Map<string, IAideFollowupViewModel[]> = new Map();
 
 fakeFollowups.set('reason 1', [
-	{ reference: { name: 'symbol', uri: URI.parse('path/to/file') }, complete: true },
-	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/another/file') }, complete: false },
-	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/yet/another/file') }, complete: false },
+	{ reference: { name: 'symbol', uri: URI.parse('path/to/file') }, state: 'idle' },
+	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/another/file') }, state: 'loading' },
+	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'complete' },
 ]);
 
 fakeFollowups.set('reason 2', [
-	{ reference: { name: 'symbol', uri: URI.parse('path/to/yet/another/file') }, complete: false },
-	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/yet/another/file') }, complete: true },
-	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/one/final/file') }, complete: false },
+	{ reference: { name: 'symbol', uri: URI.parse('path/to/yet/another/file') }, state: 'idle' },
+	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'loading' },
+	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/one/final/file') }, state: 'complete' },
 ]);
 
 const followupsVMMock: IAideFollowupsViewModel = {
@@ -96,10 +97,7 @@ const followupsVMMock: IAideFollowupsViewModel = {
 	expanded: false
 };
 
-
 export class AideProbeViewPane extends ViewPane {
-
-	static readonly id = 'workbench.aideProbeViewPane';
 
 	private container!: HTMLElement;
 	private resultWrapper!: HTMLElement;
@@ -117,6 +115,9 @@ export class AideProbeViewPane extends ViewPane {
 
 	private readonly _onDidChangeFocus = this._register(new Emitter<IListChangeEvent>());
 	readonly onDidChangeFocus = this._onDidChangeFocus.event;
+
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 
 	private readonly markdownRenderer: ChatMarkdownRenderer;
 	private readonly viewModelDisposables = this._register(new DisposableStore());
@@ -219,7 +220,9 @@ export class AideProbeViewPane extends ViewPane {
 		}
 
 		this._register(button.onDidClick(() => {
-			this.commandService.executeCommand(welcomeItem.actionId);
+			if (welcomeItem.actionId) {
+				this.commandService.executeCommand(welcomeItem.actionId);
+			}
 		}));
 
 		return button;
@@ -236,19 +239,21 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private createList() {
+		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService])));
+
 		const header = $('.list-header');
-		this._register(this.instantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
+		this._register(scopedInstantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
 		const headerText = $('.header-text');
 		headerText.textContent = 'Plan';
 		header.appendChild(headerText);
 		this.responseWrapper.append(header);
 
-		const listDelegate = this.instantiationService.createInstance(ProbeListDelegate);
-		const renderer = this._register(this.instantiationService.createInstance(ProbeListRenderer, this.markdownRenderer));
+		const listDelegate = scopedInstantiationService.createInstance(ProbeListDelegate);
+		const renderer = this._register(scopedInstantiationService.createInstance(ProbeListRenderer, this.onDidChangeVisibility, this.markdownRenderer));
 		const listContainer = $('.list-container');
 		this.responseWrapper.append(listContainer);
 
-		const list = this._register(<WorkbenchList<IAideProbeListItem>>this.instantiationService.createInstance(
+		const list = this._register(<WorkbenchList<IAideProbeListItem>>scopedInstantiationService.createInstance(
 			WorkbenchList,
 			'PlanList',
 			listContainer,
@@ -359,7 +364,6 @@ export class AideProbeViewPane extends ViewPane {
 		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdowns.length)) {
 			this.list = this.createList();
 			this.showList();
-			return;
 		}
 
 		if (!this.viewModel || !this.list) {
@@ -380,6 +384,8 @@ export class AideProbeViewPane extends ViewPane {
 		if (this.viewModel.followups) {
 			items.push(this.viewModel.followups);
 		}
+
+		console.log('updating list');
 
 		let matchingIndex = -1;
 
@@ -405,7 +411,7 @@ export class AideProbeViewPane extends ViewPane {
 				}
 
 
-				if (isReferenceFoundVM(item) || isFollowupsVM(item)) {
+				if (isRelevantReferencesVM(item) || isFollowupsVM(item)) {
 					matchIndex = items.length - 1;
 				}
 
@@ -475,6 +481,9 @@ export class AideProbeViewPane extends ViewPane {
 		this.list?.splice(0, this.list.length);
 		this.list?.rerender();
 		this.list?.layout(0, this.dimensions?.width);
+		this.list?.dispose();
+		this.list = undefined;
+		this.showWelcome();
 	}
 
 	private renderFinalAnswer(): void {
@@ -517,12 +526,13 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IProbeListItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IProbeListItemHeightChangeParams> = this._onDidChangeItemHeight.event;
-	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
+		private readonly _onDidChangeVisibility: Event<boolean>,
 		private readonly markdownRenderer: ChatMarkdownRenderer,
 		@IWorkspaceContextService private readonly contextService: IWorkspaceContextService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ICommandService private readonly commandService: ICommandService
 	) {
 		super();
 	}
@@ -533,7 +543,7 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 
 	renderTemplate(container: HTMLElement): IAideProbeListItemTemplate {
 		const data: IAideProbeListItemTemplate = Object.create(null);
-		data.toDispose = new DisposableStore();
+		data.toDispose = this._register(new DisposableStore());
 		data.container = dom.append(container, $('.edits-list-item'));
 		return data;
 	}
@@ -563,7 +573,7 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		this.updateItemHeight(templateData);
 	}
 
-	renderInitialSymbol(element: IAideProbeInitialSymbolsViewModel, templateData: IAideProbeListItemTemplate): void {
+	private renderInitialSymbol(element: IAideProbeInitialSymbolsViewModel, templateData: IAideProbeListItemTemplate): void {
 		const { uri, symbolName, thinking } = element;
 
 		const themeIconClasses = ThemeIcon.asCSSSelector(SymbolKinds.toIcon(SymbolKind.Method));
@@ -593,7 +603,7 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		}
 	}
 
-	renderBreakdown(element: IAideProbeBreakdownViewModel, templateData: IAideProbeListItemTemplate): void {
+	private renderBreakdown(element: IAideProbeBreakdownViewModel, templateData: IAideProbeListItemTemplate): void {
 		const { uri, name, response, expanded } = element;
 
 		const initialIconClasses = ThemeIcon.asClassNameArray(SymbolKinds.toIcon(SymbolKind.Method));
@@ -633,11 +643,9 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		});
 	}
 
-	renderReferenceFound(element: IAideReferencesFoundViewModel, templateData: IAideProbeListItemTemplate): void {
-		const { references } = element;
-
+	private renderReferenceFound(element: IAideReferencesFoundViewModel, templateData: IAideProbeListItemTemplate): void {
 		const iconElement = $('.plan-icon');
-		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/list-bullet');
+		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/code-bracket');
 		templateData.container.appendChild(iconElement);
 
 		const symbolElement = $('.plan-symbol');
@@ -647,14 +655,24 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		symbolHeader.textContent = 'References';
 		symbolElement.appendChild(symbolHeader);
 
-		const response = $('.plan-response');
-		response.textContent = `${Object.keys(references).length} files contain references to these symbols`;
-		templateData.container.appendChild(response);
+		const references = Object.values(element.references).map(ref => ({ kind: 'found-reference', reference: ref.uri, occurencies: ref.occurencies })) as IAideReferenceFoundContentReference[];
 
+		const label = Object.keys(references).length > 1
+			? localize('usedFoundReferencesReferencesPlural', "{0} files contain references to these symbols", references.length)
+			: localize('usedFoundReferencesReferencesSingular', "{0} file contains references to these symbols ", 1);
+
+
+		const referencesPart = this.instantiationService.createInstance(AideReferencesContentPart, references, label, false, this._onDidChangeVisibility);
+		if (!element.toDispose || element.toDispose.isDisposed) {
+			element.toDispose = new DisposableStore();
+		}
+		templateData.toDispose.add(referencesPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+		}));
+		symbolElement.appendChild(referencesPart.domNode);
 	}
 
 	renderRelevantReferences(element: IAideRelevantReferencesViewModel, templateData: IAideProbeListItemTemplate): void {
-		const { references } = element;
 
 		const iconElement = $('.plan-icon');
 		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/cog-6-tooth');
@@ -667,41 +685,91 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 		symbolHeader.textContent = 'Relevant references';
 		symbolElement.appendChild(symbolHeader);
 
-		const response = $('.plan-response');
-		response.textContent = `${Object.keys(references).length} files are affected by the changes`;
-		templateData.container.appendChild(response);
+		const references = Object.values(element.references).map(ref => ({ kind: 'found-reference', reference: ref.uri, occurencies: ref.occurencies })) as IAideReferenceFoundContentReference[];
+
+		const label = Object.keys(references).length > 1
+			? localize('usedFoundReferencesReferencesPlural', "{0} files contain references to these symbols", references.length)
+			: localize('usedFoundReferencesReferencesSingular', "{0} file contains references to these symbols ", 1);
+
+
+		const referencesPart = this.instantiationService.createInstance(AideReferencesContentPart, references, label, false, this._onDidChangeVisibility);
+		if (!element.toDispose || element.toDispose.isDisposed) {
+			element.toDispose = new DisposableStore();
+		}
+		templateData.toDispose.add(referencesPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+		}));
+		symbolElement.appendChild(referencesPart.domNode);
 	}
 
-	renderFollowups(element: IAideFollowupsViewModel, templateData: IAideProbeListItemTemplate): void {
+	private renderFollowups(element: IAideFollowupsViewModel, templateData: IAideProbeListItemTemplate): void {
 		const { followups } = element;
 
 		const iconElement = $('.plan-icon');
-		this.instantiationService.createInstance(Heroicon, iconElement, 'micro/cog-6-tooth');
+		this._register(this.instantiationService.createInstance(Heroicon, iconElement, 'micro/cog-6-tooth'));
 		templateData.container.appendChild(iconElement);
 
 		const symbolElement = $('.plan-symbol');
 		templateData.container.appendChild(symbolElement);
 
 		const symbolHeader = $('.plan-symbol-header');
-		symbolHeader.textContent = 'Relevant references';
+		symbolHeader.textContent = 'Followups';
 		symbolElement.appendChild(symbolHeader);
 
+		let index = 0;
 
-		for (const [, followup] of followups.entries()) {
-			const references = followup.map(ref => ({ kind: 'reference', reference: ref.reference.uri })) as IAideChatContentReference[];
-
-			const contentReferencesListPool = this._register(this.instantiationService.createInstance(ContentReferencesListPool, this._onDidChangeVisibility.event));
-			const referencesPart = this.instantiationService.createInstance(AideFollowupReferencesContentPart, references, undefined, false, contentReferencesListPool);
-			referencesPart.addDisposable(referencesPart.onDidChangeHeight(() => {
-				this.updateItemHeight(templateData);
-			}));
-			templateData.container.appendChild(referencesPart.domNode);
+		if (!element.toDispose || element.toDispose.isDisposed) {
+			element.toDispose = new DisposableStore();
 		}
 
-		//templateData.container.appendChild(response);
+		for (const [reason, followup] of followups.entries()) {
+			const reasonElement = $('.followup-response');
+			if (index === 0) {
+				reasonElement.classList.add('first-response');
+			}
+			reasonElement.textContent = reason;
+			symbolElement.appendChild(reasonElement);
+
+			const references = followup.map(ref => ({ kind: 'followup-reference', reference: ref.reference.uri, state: ref.state })) as IAideFollowupContentReference[];
+
+			const label = followup.length > 1
+				? localize('usedFollowupsReferencesPlural', "Affects {0} references", followup.length)
+				: localize('usedFollowupsReferencesSingular', "Affects {0} reference", 1);
+
+
+			const referencesPart = this.instantiationService.createInstance(AideReferencesContentPart, references, label, false, this._onDidChangeVisibility);
+
+			const countCompleted = references.reduce((count, obj) =>
+				obj.state === 'complete' ? count + 1 : count, 0);
+			if (countCompleted > 0) {
+				referencesPart.updateLoading(countCompleted / references.length * 100);
+			}
+			element.toDispose.add(referencesPart);
+
+			element.toDispose.add(referencesPart);
+			templateData.toDispose.add(referencesPart.onDidChangeHeight(() => {
+				this.updateItemHeight(templateData);
+			}));
+			symbolElement.appendChild(referencesPart.domNode);
+			index++;
+		}
+
+		const followupsButton = this.instantiationService.createInstance(Button, symbolElement, { title: 'Fix all' });
+		element.toDispose.add(followupsButton);
+		followupsButton.element.textContent = 'Fix all';
+		element.toDispose.add(followupsButton.onDidClick(() => {
+			this.commandService.executeCommand('workbench.action.aideProbe.followups');
+		}));
+	}
+
+	disposeElement(element: IAideProbeListItem, index: number): void {
+		if (element.type === 'followups' || element.type === 'relevantReferences' || element.type === 'referencesFound') {
+			element.toDispose?.dispose();
+		}
 	}
 
 	disposeTemplate(templateData: IAideProbeListItemTemplate): void {
+		console.log('disposing template');
 		dispose(templateData.toDispose);
 	}
 

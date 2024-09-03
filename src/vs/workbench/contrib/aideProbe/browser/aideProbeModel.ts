@@ -26,8 +26,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IAideFollowup } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -43,6 +42,7 @@ interface IContentReference {
 	kind: 'reference';
 }
 
+// TODO(@g-danna) use the aideChat one or make our own
 export interface IVariableEntry {
 	id: string;
 	fullName?: string;
@@ -54,6 +54,11 @@ export interface IVariableEntry {
 	references?: IContentReference[];
 	isDynamic?: boolean;
 	isFile?: boolean;
+}
+
+export interface IAideFollowup {
+	reference: IReferenceByName;
+	complete: boolean;
 }
 
 export interface IAideProbeEdits {
@@ -347,6 +352,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
+	protected readonly _onClearResponse = this._store.add(new Emitter<void>());
+	readonly onClearResponse: Event<void> = this._onClearResponse.event;
+
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
 
@@ -376,6 +384,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 
 	clearResponse() {
 		this._response?.dispose();
+		this._onClearResponse.fire();
 		this._response = undefined;
 	}
 
@@ -447,7 +456,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				await this._response.applyCodeEdit(progress);
 				break;
 		}
-		console.log('AideProbeModel: acceptResponseProgress', progress);
+		//console.log('AideProbeModel: acceptResponseProgress', progress);
 		this._onDidChange.fire();
 	}
 

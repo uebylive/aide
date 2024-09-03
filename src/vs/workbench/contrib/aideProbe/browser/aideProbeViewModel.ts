@@ -6,7 +6,7 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, IReference } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IReference } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol } from 'vs/editor/common/languages';
@@ -14,7 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
@@ -26,6 +26,8 @@ export interface IAideProbeViewModel {
 	readonly initialSymbols: ReadonlyArray<IAideProbeInitialSymbolsViewModel>;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
+
+export type IFollowupState = 'idle' | 'loading' | 'complete';
 
 export class AideProbeViewModel extends Disposable implements IAideProbeViewModel {
 	private _filter: string | undefined;
@@ -142,18 +144,44 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			if (this._model.response.referencesFound) {
-				this._referencesFound = { references: this._model.response.referencesFound, type: 'referencesFound', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				const references: IAideReferencesFoundViewModel['references'] = {};
+				if (Object.keys(this._references).length !== 0) {
+					for (const [uri, occurencies] of Object.entries(this._model.response.referencesFound)) {
+						references[uri] = { uri: URI.parse(uri), occurencies };
+					}
+					this._referencesFound = { references, type: 'referencesFound', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				}
 			}
 
 			if (this._model.response.relevantReferences) {
-				this._relevantReferences = { references: this._model.response.relevantReferences, type: 'relevantReferences', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				const references: IAideRelevantReferencesViewModel['references'] = {};
+				for (const [uri, occurencies] of Object.entries(this._model.response.relevantReferences)) {
+					references[uri] = { uri: URI.parse(uri), occurencies };
+				}
+				this._relevantReferences = { references, type: 'relevantReferences', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
 			if (this._model.response.followups) {
-				this._followups = { followups: this._model.response.followups, type: 'followups', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				if (this._relevantReferences) {
+					// Clear relevant references if there are followups
+					this._relevantReferences = undefined;
+				}
+				const followups: Map<string, IAideFollowupViewModel[]> = new Map();
+				for (const [key, value] of this._model.response.followups.entries()) {
+					followups.set(key, value.map(({ reference, complete }) => {
+						let state: IFollowupState = 'idle';
+						if (this._model.request?.mode === AideProbeMode.FOLLOW_UP) {
+							state = complete ? 'complete' : 'loading';
+						}
+						return { reference, state };
+					}));
+				}
+
+				this._followups = { followups, type: 'followups', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
+				console.log('setting breakdowns');
 				let reference = this._references.get(item.reference.uri.toString());
 				if (!reference) {
 					reference = await this.textModelResolverService.createModelReference(item.reference.uri);
@@ -223,24 +251,27 @@ export interface IAideRelevantReferencesViewModel extends IAideReferencesViewMod
 }
 
 interface IAideReferencesViewModel {
-	readonly references: Record<string, number>;
+	readonly references: Record<string, { uri: URI; occurencies: number }>;
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
 	expanded: boolean;
+	toDispose?: DisposableStore;
 }
 
 
-export interface IAideFollowup {
+export interface IAideFollowupViewModel {
 	reference: IReferenceByName;
-	complete: boolean;
+	state: IFollowupState;
 }
+
 
 export interface IAideFollowupsViewModel {
 	type: 'followups';
-	readonly followups: Map<string, IAideFollowup[]>;
+	readonly followups: Map<string, IAideFollowupViewModel[]>;
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
 	expanded: boolean;
+	toDispose?: DisposableStore;
 }
 
 

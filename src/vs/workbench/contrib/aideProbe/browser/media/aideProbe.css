@@ -320,3 +320,72 @@
 	border-block: 1px solid var(--vscode-editorOverviewRuler-incomingContentForeground);
 	/* --vscode-editorOverviewRuler-rangeHighlightForeground */
 }
+
+.aide-probe-view .probe-references {
+	margin-top: 12px;
+}
+
+
+.aide-probe-view .probe-references-label {
+	position: relative;
+}
+
+.aide-probe-view .probe-references-label .probe-references-loading-bar {
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 100%;
+	background-color: var(--vscode-editor-selectionBackground);
+	border-radius: 2px;
+}
+
+.aide-probe-view .probe-references-label .monaco-button {
+	display: flex;
+	justify-content: start;
+	align-items: start;
+	text-align: left;
+	position: relative;
+	border-radius: 2px;
+}
+
+.aide-probe-view .probe-references-label .monaco-button svg {
+	margin-left: auto;
+}
+
+.aide-probe-view .probe-references-list-item {
+	display: flex;
+}
+
+.aide-probe-view .probe-references-list-item svg {
+	margin-right: 5px;
+	margin-top: 3px;
+}
+
+.aide-probe-view .probe-references-occurencies {
+	display: flex;
+	align-items: center;
+	text-align: center;
+	justify-content: center;
+	border-radius: 12px;
+	padding: 2px 6px;
+	font-size: 11px;
+	background-color: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+}
+
+.aide-probe-view .probe-references-list {
+	margin-top: 6px;
+}
+
+
+.aide-probe-view .followup-response.first-response {
+	margin-top: 12px;
+}
+
+.aide-probe-view .followup-response {
+	margin-top: 18px;
+}
+
+.aide-probe-view .probe-references.probe-references-collapsed .probe-references-list {
+	display: none;
+}

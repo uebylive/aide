@@ -326,7 +326,6 @@ export const reportAgentEventsToChat = async (
 			} else if (event.event.FrameworkEvent.CodeIterationFinished) {
 				response.codeIterationFinished({ edits: iterationEdits });
 			} else if (event.event.FrameworkEvent.ReferenceFound) {
-				console.log('aide.referenceFound', event.event.FrameworkEvent.ReferenceFound);
 				response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
 			} else if (event.event.FrameworkEvent.RelevantReference) {
 				console.log('aide.relevantReference', event.event.FrameworkEvent.RelevantReference);

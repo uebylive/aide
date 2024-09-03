@@ -169,7 +169,7 @@ class CancelAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
+		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
 		if (aideProbeView) {
 			aideProbeView.clear();
 		}
@@ -251,7 +251,7 @@ class ClearIterationAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(AideProbeViewPane.id);
+		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
 		if (aideProbeView) {
 			aideProbeView.clear();
 		}

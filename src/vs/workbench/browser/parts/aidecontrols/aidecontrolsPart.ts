@@ -55,7 +55,7 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 	// }
 
 
-	readonly preferredHeight = 200;
+	readonly preferredHeight = 120;
 	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
 
 
