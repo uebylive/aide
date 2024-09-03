@@ -60,6 +60,10 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	private recreateOutline() {
+		if (!this._astNavigationMode.get()) {
+			return;
+		}
+
 		this._canASTNavigate.set(false);
 		this.clearActiveOutline();
 
