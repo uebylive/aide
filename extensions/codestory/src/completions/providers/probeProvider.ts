@@ -119,7 +119,11 @@ export class AideProbeProvider implements vscode.Disposable {
 	async userFollowup(userAction: vscode.AideProbeUserAction) {
 		if (userAction.type === 'contextChange') {
 			console.log('contextChange');
-			await this._sideCarClient.warmupCodeSculptingCache(userAction.newContext);
+			if (!this._editorUrl) {
+				console.log('skipping_no_editor_url');
+				return;
+			}
+			await this._sideCarClient.warmupCodeSculptingCache(userAction.newContext, this._editorUrl);
 		}
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
