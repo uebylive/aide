@@ -77,7 +77,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 
-		const foldingRangeProviders = this.languageFeaturesService.foldingRangeProvider.getForLanguageId({ 'scheme': 'file', 'language': model.getLanguageId());
+		const foldingRangeProviders = this.languageFeaturesService.foldingRangeProvider.getForLanguageId({ 'scheme': 'file', 'language': model.getLanguageId() });
 		if (foldingRangeProviders.length === 0) {
 			return;
 		}
