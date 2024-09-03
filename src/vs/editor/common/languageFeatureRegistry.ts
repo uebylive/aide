@@ -123,34 +123,6 @@ export class LanguageFeatureRegistry<T> {
 		return this._entries.filter(entry => entry.selector === selector).map(entry => entry.provider);
 	}
 
-	getForLanguageId(selector: LanguageSelector): T[] {
-		const finalEntries = [];
-		for (const entry of this._entries) {
-			const entrySelector = entry.selector;
-			if (typeof entrySelector === 'string') {
-				continue;
-			}
-			if (typeof selector === 'string') {
-				continue;
-			}
-			if (Array.isArray(entrySelector)) {
-				for (const selectorEntry of entrySelector) {
-					if ('language' in selectorEntry && 'language' in selector) {
-						finalEntries.push(entry.provider);
-						break;
-					}
-				}
-			} else {
-				if ('language' in entrySelector && 'language' in selector) {
-					if (selector.language === entrySelector.language) {
-						finalEntries.push(entry.provider);
-					}
-				}
-			}
-		}
-		return finalEntries;
-	}
-
 	has(model: ITextModel): boolean {
 		return this.all(model).length > 0;
 	}

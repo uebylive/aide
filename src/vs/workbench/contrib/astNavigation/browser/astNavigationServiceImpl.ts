@@ -2,27 +2,34 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+
 import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { FoldingRange } from 'vs/editor/common/languages';
+import { IRange, Range } from 'vs/editor/common/core/range';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { FoldingController } from 'vs/editor/contrib/folding/browser/folding';
+import { FoldRange } from 'vs/editor/contrib/folding/browser/foldingRanges';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { IEditorPane } from 'vs/workbench/common/editor';
 import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
 import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
 
-class FoldingNode {
+class ASTNode {
 	constructor(
-		public range: FoldingRange,
-		public children: FoldingNode[] = [],
-		public parent: FoldingNode | null = null
+		public range: IRange,
+		public children: ASTNode[] = [],
+		public parent: ASTNode | null = null
 	) { }
 
-	addChild(child: FoldingNode) {
+	addChild(child: ASTNode) {
 		child.parent = this;
 		this.children.push(child);
+		this.children.sort((a, b) => a.range.startLineNumber - b.range.startLineNumber);
 	}
 }
 
@@ -30,8 +37,9 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	declare _serviceBrand: undefined;
 
 	private readonly activeEditorDisposables = this._register(new DisposableStore());
-	private foldingRoot: FoldingNode | undefined;
-	private currentNode: FoldingNode | undefined;
+	private activeOutline: IOutline<OutlineElement> | undefined;
+	private tree: ASTNode | undefined;
+	private currentNode: ASTNode | undefined;
 	private previewDisposable: IDisposable | undefined;
 
 	private _astNavigationMode: IContextKey<boolean>;
@@ -40,23 +48,24 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IEditorService private readonly editorService: IEditorService,
-		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+		@IOutlineService private readonly outlineService: IOutlineService
 	) {
 		super();
 		this._astNavigationMode = CONTEXT_AST_NAVIGATION_MODE.bindTo(this.contextKeyService);
 		this._canASTNavigate = CONTEXT_CAN_AST_NAVIGATE.bindTo(this.contextKeyService);
 
-		this._register(this.languageFeaturesService.foldingRangeProvider.onDidChange(() => this.updateFoldingStructure()));
-		this._register(this.editorService.onDidActiveEditorChange(() => this.updateFoldingStructure()));
+		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateTree()));
+		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateTree()));
 	}
 
-	private async updateFoldingStructure(): Promise<void> {
+	private async recreateTree(): Promise<void> {
 		if (!this._astNavigationMode.get()) {
 			return;
 		}
 
 		this._canASTNavigate.set(false);
-		this.clearFoldingStructure();
+		this.clear();
 
 		const activeEditor = this.editorService.activeEditorPane;
 		if (!activeEditor) {
@@ -77,67 +86,157 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 
-		const foldingRangeProviders = this.languageFeaturesService.foldingRangeProvider.getForLanguageId({ 'scheme': 'file', 'language': model.getLanguageId() });
-		if (foldingRangeProviders.length === 0) {
-			return;
+		const ranges: IRange[] = [];
+
+		// Add symbol ranges
+		const hasSymbolProvider = this.languageFeaturesService.documentSymbolProvider.has(model);
+		if (hasSymbolProvider) {
+			const outlineRanges = await this.getOutline(activeEditor);
+			ranges.push(...outlineRanges.map(range => ({
+				startLineNumber: range.startLineNumber,
+				startColumn: 0,
+				endLineNumber: range.endLineNumber,
+				endColumn: 0
+			}) satisfies IRange));
 		}
 
-		const foldingRanges = await foldingRangeProviders[0].provideFoldingRanges(model, {}, CancellationToken.None) ?? [];
-		this.foldingRoot = this.buildFoldingTree(foldingRanges);
-		if (this.foldingRoot && this.foldingRoot.children.length > 0) {
+		// Add folding ranges
+		const foldingRanges = await this.getFoldingRanges(editor);
+		ranges.push(...foldingRanges.map(foldingRange => ({
+			startLineNumber: foldingRange.startLineNumber,
+			startColumn: 0,
+			endLineNumber: foldingRange.endLineNumber + 1,
+			endColumn: 0
+		}) satisfies IRange));
+
+		this.tree = this.constructTree(ranges);
+		if (this.tree && this.tree.children.length > 0) {
 			scheduleAtNextAnimationFrame(getActiveWindow(), () => {
 				const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
 				if (nodeAtCurrentPosition) {
 					this.previewNode(nodeAtCurrentPosition);
 					this._canASTNavigate.set(true);
-				} else if (this.foldingRoot!.children.length > 0) {
-					this.previewNode(this.foldingRoot!.children[0]);
+				} else if (this.tree!.children.length > 0) {
+					this.previewNode(this.tree!.children[0]);
 					this._canASTNavigate.set(true);
 				}
 			});
 		}
 	}
 
-	private clearFoldingStructure(): void {
-		this.foldingRoot = undefined;
+	private async getFoldingRanges(editor: ICodeEditor): Promise<FoldRange[]> {
+		const foldingModel = await FoldingController.get(editor)?.getFoldingModel() ?? undefined;
+		const foldingRegions = foldingModel?.regions;
+		if (!foldingRegions) {
+			return [];
+		}
+
+		const foldingRanges: FoldRange[] = [];
+		for (let i = 0; i < foldingRegions.length; i++) {
+			const range = foldingRegions.toFoldRange(i);
+			if (range) {
+				foldingRanges.push(range);
+			}
+		}
+
+		return foldingRanges;
+	}
+
+	private clear(): void {
+		this.tree = undefined;
 		this.currentNode = undefined;
+		this.activeOutline?.dispose();
+		this.activeOutline = undefined;
 		this.previewDisposable?.dispose();
 		this.activeEditorDisposables.clear();
 	}
 
-	private buildFoldingTree(ranges: FoldingRange[]): FoldingNode {
-		const root = new FoldingNode({ start: 0, end: Infinity, kind: undefined });
-		const stack: FoldingNode[] = [root];
+	private constructTree(ranges: IRange[]): ASTNode {
+		const root = new ASTNode({ startLineNumber: 0, startColumn: 0, endLineNumber: Infinity, endColumn: 0 });
+		const stack: ASTNode[] = [root];
+		const nodeMap = new Map<string, ASTNode>();
 
-		for (const range of ranges.sort((a, b) => a.start - b.start)) {
-			while (stack.length > 1 && range.start > stack[stack.length - 1].range.end) {
-				stack.pop();
+		ranges.sort(Range.compareRangesUsingStarts);
+		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
+		for (const range of ranges) {
+			const rangeKey = `${range.startLineNumber}-${range.startColumn}-${range.endLineNumber}-${range.endColumn}`;
+			let currentNode = nodeMap.get(rangeKey);
+
+			if (!currentNode) {
+				currentNode = new ASTNode(range);
+				nodeMap.set(rangeKey, currentNode);
 			}
 
-			const node = new FoldingNode(range);
-			stack[stack.length - 1].addChild(node);
-			stack.push(node);
+			let parentNode: ASTNode | null = null;
+
+			while (stack.length > 0) {
+				const topNode = stack[stack.length - 1];
+
+				if (Range.containsRange(topNode.range, range)) {
+					const existingChild = topNode.children.find(child => child.range.startLineNumber === range.startLineNumber && child.range.endLineNumber === range.endLineNumber);
+					if (existingChild) {
+						currentNode = existingChild;
+						break;
+					}
+					parentNode = topNode;
+					break;
+				} else if (range.endLineNumber < topNode.range.startLineNumber) {
+					break;
+				} else {
+					stack.pop();
+				}
+			}
+
+			if (parentNode) {
+				parentNode.addChild(currentNode);
+			} else {
+				root.addChild(currentNode);
+			}
+
+			stack.push(currentNode);
 		}
 
 		return root;
 	}
 
-	private previewNode(node: FoldingNode): void {
+	private async getOutline(pane: IEditorPane): Promise<IRange[]> {
+		const outline: IOutline<OutlineElement> | undefined = this.activeOutline = await this.outlineService.createOutline(
+			pane, OutlineTarget.Breadcrumbs, CancellationToken.None
+		);
+		if (!outline) {
+			return [];
+		}
+
+		let outlineRanges: IRange[] = [];
+		outlineRanges = this.getOutlineRanges(Array.from(outline.config.treeDataSource.getChildren(outline)), outlineRanges);
+
+		return outlineRanges;
+	}
+
+	private getOutlineRanges(elements: OutlineElement[], ranges: IRange[]): IRange[] {
+		for (const element of elements) {
+			ranges.push(element.symbol.range);
+			this.getOutlineRanges(Array.from(this.activeOutline?.config.treeDataSource.getChildren(element) ?? []), ranges);
+		}
+		return ranges;
+	}
+
+	private previewNode(node: ASTNode): void {
 		this.currentNode = node;
 		this.previewDisposable?.dispose();
 		const editor = this.editorService.activeTextEditorControl;
 		if (isCodeEditor(editor)) {
 			const nodeRange = {
-				selectionStartLineNumber: node.range.start,
+				selectionStartLineNumber: node.range.startLineNumber,
 				selectionStartColumn: 0,
-				positionLineNumber: node.range.end,
+				positionLineNumber: node.range.endLineNumber,
 				positionColumn: 0,
 			};
 			editor.setSelection(nodeRange);
 		}
 	}
 
-	private getNodeAtCurrentPosition(): FoldingNode | undefined {
+	private getNodeAtCurrentPosition(): ASTNode | undefined {
 		const editor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(editor)) {
 			return undefined;
@@ -148,11 +247,11 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return undefined;
 		}
 
-		return this.findDeepestNodeContainingLine(this.foldingRoot!, position.lineNumber);
+		return this.findDeepestNodeContainingLine(this.tree!, position.lineNumber);
 	}
 
-	private findDeepestNodeContainingLine(node: FoldingNode, lineNumber: number): FoldingNode | undefined {
-		if (node.range.start <= lineNumber && lineNumber <= node.range.end) {
+	private findDeepestNodeContainingLine(node: ASTNode, lineNumber: number): ASTNode | undefined {
+		if (node.range.startLineNumber <= lineNumber && lineNumber <= node.range.endLineNumber) {
 			for (const child of node.children) {
 				const deeperNode = this.findDeepestNodeContainingLine(child, lineNumber);
 				if (deeperNode) {
@@ -169,10 +268,10 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this._astNavigationMode.set(isAstNavigationMode);
 		if (isAstNavigationMode) {
 			getActiveWindow().document.body.classList.add('astNavigationMode');
-			this.updateFoldingStructure();
+			this.recreateTree();
 		} else {
 			getActiveWindow().document.body.classList.remove('astNavigationMode');
-			this.clearFoldingStructure();
+			this.clear();
 			const editor = this.editorService.activeTextEditorControl;
 			if (isCodeEditor(editor)) {
 				const selection = editor.getSelection();
@@ -212,7 +311,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		if (this.currentNode.children.length > 0) {
 			this.previewNode(this.currentNode.children[0]);
 		} else if (this.currentNode.parent) {
-			let current: FoldingNode | null = this.currentNode;
+			let current: ASTNode | null = this.currentNode;
 			while (current.parent) {
 				const siblings = current.parent.children;
 				const currentIndex = siblings.indexOf(current);
