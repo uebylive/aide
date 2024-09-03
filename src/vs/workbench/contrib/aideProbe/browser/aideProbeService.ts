@@ -127,22 +127,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._model = this.instantiationService.createInstance(AideProbeModel);
 		this._model.status = AideProbeStatus.IN_PROGRESS;
 		this._modelDisposables.add(this._model.onNewEvent(event => {
-
-			//if (this.anchorEditingSelection && event.kind === 'edit') {
-			//	if (event.edit.range.startLineNumber < this.anchorEditingSelection.selection.startLineNumber) {
-			//		this.anchorEditingSelection = {
-			//			...this.anchorEditingSelection,
-			//			selection: this.anchorEditingSelection.selection.setStartPosition(event.edit.range.startLineNumber, 0),
-			//		};
-			//	}
-			//	if (event.edit.range.endLineNumber > this.anchorEditingSelection.selection.endLineNumber) {
-			//		this.anchorEditingSelection = {
-			//			...this.anchorEditingSelection,
-			//			selection: this.anchorEditingSelection.selection.setEndPosition(event.edit.range.endLineNumber + 1, 9999999),
-			//		};
-			//	}
-			//}
-
 			this._onNewEvent.fire(event);
 		}));
 
