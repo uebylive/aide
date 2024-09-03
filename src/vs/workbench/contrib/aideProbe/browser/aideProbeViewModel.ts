@@ -181,7 +181,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
-				console.log('setting breakdowns');
 				let reference = this._references.get(item.reference.uri.toString());
 				if (!reference) {
 					reference = await this.textModelResolverService.createModelReference(item.reference.uri);

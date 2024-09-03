@@ -385,8 +385,6 @@ export class AideProbeViewPane extends ViewPane {
 			items.push(this.viewModel.followups);
 		}
 
-		console.log('updating list');
-
 		let matchingIndex = -1;
 
 		if (items.length === 0) {

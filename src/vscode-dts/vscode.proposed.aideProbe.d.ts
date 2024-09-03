@@ -120,6 +120,10 @@ declare module 'vscode' {
 		references: Record<string, number>;
 	}
 
+	export interface AideRelevantReferences {
+		references: Record<string, number>;
+	}
+
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
@@ -127,6 +131,8 @@ declare module 'vscode' {
 		codeIterationFinished(value: AideProbeIterationFinished): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		referenceFound(value: AideReferenceFound): void;
+		relevantReferences(value: AideRelevantReferences): void;
+
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;
