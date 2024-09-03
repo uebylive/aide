@@ -12,6 +12,7 @@ import { ScrollType } from 'vs/editor/common/editorCommon';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { FoldingController } from 'vs/editor/contrib/folding/browser/folding';
+import { FoldingModel } from 'vs/editor/contrib/folding/browser/foldingModel';
 import { FoldRange } from 'vs/editor/contrib/folding/browser/foldingRanges';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IEditorPane } from 'vs/workbench/common/editor';
@@ -37,8 +38,11 @@ class ASTNode {
 export class ASTNavigationService extends Disposable implements IASTNavigationService {
 	declare _serviceBrand: undefined;
 
-	private readonly activeEditorDisposables = this._register(new DisposableStore());
 	private activeOutline: IOutline<OutlineElement> | undefined;
+	private outlineRanges: IRange[] = [];
+	private foldingRanges: FoldRange[] = [];
+
+	private readonly activeEditorDisposables = this._register(new DisposableStore());
 	private tree: ASTNode | undefined;
 	private currentNode: ASTNode | undefined;
 	private previewDisposable: IDisposable | undefined;
@@ -92,8 +96,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		// Add symbol ranges
 		const hasSymbolProvider = this.languageFeaturesService.documentSymbolProvider.has(model);
 		if (hasSymbolProvider) {
-			const outlineRanges = await this.getOutline(activeEditor);
-			ranges.push(...outlineRanges.map(range => ({
+			await this.createOutline(activeEditor);
+			ranges.push(...this.outlineRanges.map(range => ({
 				startLineNumber: range.startLineNumber,
 				startColumn: 0,
 				endLineNumber: range.endLineNumber,
@@ -102,8 +106,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		}
 
 		// Add folding ranges
-		const foldingRanges = await this.getFoldingRanges(editor);
-		ranges.push(...foldingRanges.map(foldingRange => ({
+		await this.getFoldingRanges(editor);
+		ranges.push(...this.foldingRanges.map(foldingRange => ({
 			startLineNumber: foldingRange.startLineNumber,
 			startColumn: 0,
 			endLineNumber: foldingRange.endLineNumber + 1,
@@ -123,33 +127,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 				}
 			});
 		}
-	}
-
-	private async getFoldingRanges(editor: ICodeEditor): Promise<FoldRange[]> {
-		const foldingModel = await FoldingController.get(editor)?.getFoldingModel() ?? undefined;
-		const foldingRegions = foldingModel?.regions;
-		if (!foldingRegions) {
-			return [];
-		}
-
-		const foldingRanges: FoldRange[] = [];
-		for (let i = 0; i < foldingRegions.length; i++) {
-			const range = foldingRegions.toFoldRange(i);
-			if (range) {
-				foldingRanges.push(range);
-			}
-		}
-
-		return foldingRanges;
-	}
-
-	private clear(): void {
-		this.tree = undefined;
-		this.currentNode = undefined;
-		this.activeOutline?.dispose();
-		this.activeOutline = undefined;
-		this.previewDisposable?.dispose();
-		this.activeEditorDisposables.clear();
 	}
 
 	private constructTree(ranges: IRange[]): ASTNode {
@@ -206,18 +183,68 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		return root;
 	}
 
-	private async getOutline(pane: IEditorPane): Promise<IRange[]> {
-		const outline: IOutline<OutlineElement> | undefined = this.activeOutline = await this.outlineService.createOutline(
-			pane, OutlineTarget.Breadcrumbs, CancellationToken.None
-		);
-		if (!outline) {
-			return [];
+	private async getFoldingRanges(editor: ICodeEditor): Promise<void> {
+		const foldingModel = await FoldingController.get(editor)?.getFoldingModel() ?? undefined;
+		if (!foldingModel) {
+			return;
 		}
 
-		let outlineRanges: IRange[] = [];
-		outlineRanges = this.getOutlineRanges(Array.from(outline.config.treeDataSource.getChildren(outline)), outlineRanges);
+		this.activeEditorDisposables.add(foldingModel);
+		this.activeEditorDisposables.add(foldingModel.onDidChange(async (e) => {
+			await this.recreateTree();
+		}));
 
-		return outlineRanges;
+		this.recreateFoldingRanges(foldingModel);
+	}
+
+	private recreateFoldingRanges(foldingModel: FoldingModel) {
+		const foldingRegions = foldingModel.regions;
+		if (!foldingRegions) {
+			return;
+		}
+
+		const foldingRanges: FoldRange[] = [];
+		for (let i = 0; i < foldingRegions.length; i++) {
+			const range = foldingRegions.toFoldRange(i);
+			if (range) {
+				foldingRanges.push(range);
+			}
+		}
+
+		this.foldingRanges = foldingRanges;
+	}
+
+	private async createOutline(activeEditor: IEditorPane): Promise<void> {
+		const outline: IOutline<OutlineElement> | undefined = this.activeOutline = await this.outlineService.createOutline(
+			activeEditor, OutlineTarget.Breadcrumbs, CancellationToken.None
+		);
+		if (!outline) {
+			return;
+		}
+		this.activeEditorDisposables.add(outline);
+		this.activeEditorDisposables.add(outline.onDidChange(async (e) => {
+			if (!this._astNavigationMode.get()) {
+				return;
+			}
+
+			this.recreateOutline(outline);
+			if (e.affectOnlyActiveElement) {
+				scheduleAtNextAnimationFrame(getActiveWindow(), () => {
+					const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
+					if (nodeAtCurrentPosition) {
+						this.previewNode(nodeAtCurrentPosition);
+					}
+				});
+			}
+		}));
+
+		this.recreateOutline(outline);
+	}
+
+	private recreateOutline(outline: IOutline<OutlineElement>) {
+		this.outlineRanges = this.getOutlineRanges(
+			Array.from(this.activeOutline?.config.treeDataSource.getChildren(outline) ?? []), []
+		);
 	}
 
 	private getOutlineRanges(elements: OutlineElement[], ranges: IRange[]): IRange[] {
@@ -226,6 +253,17 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			this.getOutlineRanges(Array.from(this.activeOutline?.config.treeDataSource.getChildren(element) ?? []), ranges);
 		}
 		return ranges;
+	}
+
+	private clear(): void {
+		this.tree = undefined;
+		this.currentNode = undefined;
+		this.activeOutline?.dispose();
+		this.activeOutline = undefined;
+		this.outlineRanges = [];
+		this.foldingRanges = [];
+		this.previewDisposable?.dispose();
+		this.activeEditorDisposables.clear();
 	}
 
 	private previewNode(node: ASTNode): void {
@@ -248,13 +286,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this.previewDisposable = toDisposable(() => decorationsCollection.clear());
 
 		if (isCodeEditor(editor)) {
-			const nodeRange = {
-				selectionStartLineNumber: node.range.startLineNumber,
-				selectionStartColumn: 0,
-				positionLineNumber: node.range.endLineNumber,
-				positionColumn: 0,
-			};
-			editor.setSelection(nodeRange);
+			editor.setSelection(node.range);
 		}
 	}
 
