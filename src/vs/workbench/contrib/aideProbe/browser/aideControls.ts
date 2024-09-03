@@ -8,6 +8,7 @@ import { IDimension } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { ButtonBar } from 'vs/base/browser/ui/button/button';
 import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
+import { equals } from 'vs/base/common/arrays';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
@@ -44,7 +45,7 @@ import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
@@ -192,7 +193,7 @@ export class AideControls extends Themable implements IAideControls {
 	private probeHasSelection: IContextKey<boolean>;
 
 	private model: AideProbeModel | undefined;
-
+	private lastUsedSelection: AnchorEditingSelection | undefined;
 
 	private topSash: Sash;
 
@@ -572,7 +573,16 @@ export class AideControls extends Themable implements IAideControls {
 		const editorValue = this._input.getValue();
 		const activeEditor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(activeEditor)) { return; }
-		if (!currentSession) {
+
+		let iterationRequest = !!currentSession;
+		const currentSelection = this.aideProbeService.anchorEditingSelection;
+		if (!equals(this.lastUsedSelection?.symbols.map(s => s.name), currentSelection?.symbols.map(s => s.name))) {
+			iterationRequest = false;
+			clearProbeView(this.viewsService);
+		}
+
+		this.lastUsedSelection = this.aideProbeService.anchorEditingSelection;
+		if (!iterationRequest) {
 			let variables: IVariableEntry[] = [];
 			if (this.contextPicker) {
 				variables = Array.from(this.contextPicker.context.entries);
