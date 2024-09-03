@@ -330,6 +330,8 @@ export const reportAgentEventsToChat = async (
 				response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
 			} else if (event.event.FrameworkEvent.RelevantReference) {
 				console.log('aide.relevantReference', event.event.FrameworkEvent.RelevantReference);
+			} else if (event.event.FrameworkEvent.GroupedReferences) {
+				console.log('aide.groupedReferences', event.event.FrameworkEvent.GroupedReferences);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
