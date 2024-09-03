@@ -581,7 +581,7 @@ export enum StateEnum {
 	InProgress,
 }
 
-class StreamProcessor {
+export class StreamProcessor {
 	document: DocumentManager;
 	currentState: StateEnum;
 	previousLine: LineIndentManager | null;
@@ -593,7 +593,7 @@ class StreamProcessor {
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
 		range: SidecarRequestRange,
-		limiter: Limiter<any>,
+		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 	) {
 		// Initialize document with the given parameters
@@ -699,7 +699,7 @@ class DocumentManager {
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 	uri: vscode.Uri;
-	limiter: Limiter<any>;
+	limiter: Limiter<any> | null;
 	iterationEdits: vscode.WorkspaceEdit;
 
 	constructor(
@@ -709,7 +709,7 @@ class DocumentManager {
 		range: SidecarRequestRange,
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
-		limiter: Limiter<any>,
+		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 	) {
 		this.limiter = limiter;
@@ -763,20 +763,26 @@ class DocumentManager {
 		if (newLine.adjustedContent === '') {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
-			await vscode.workspace.applyEdit(edits);
-			// this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
-			// await this.limiter.queue(async () => {
-			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			// });
+			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			if (this.limiter === null) {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			} else {
+				await this.limiter.queue(async () => {
+					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				});
+			}
 			return index + 1;
 		} else {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-			await vscode.workspace.applyEdit(edits);
-			// this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-			// await this.limiter.queue(async () => {
-			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			// });
+			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			if (this.limiter === null) {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			} else {
+				await this.limiter.queue(async () => {
+					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				});
+			}
 			return index + 1;
 		}
 	}
@@ -801,11 +807,14 @@ class DocumentManager {
 			const edits = new vscode.WorkspaceEdit();
 			// console.log('sidecar.What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			await vscode.workspace.applyEdit(edits);
-			// this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			// await this.limiter.queue(async () => {
-			// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
-			// });
+			this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			if (this.limiter === null) {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			} else {
+				await this.limiter.queue(async () => {
+					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				});
+			}
 			return startIndex + 1;
 		}
 	}
@@ -822,11 +831,14 @@ class DocumentManager {
 		});
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
-		await vscode.workspace.applyEdit(edits);
-		// this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
-		// await this.limiter.queue(async () => {
-		// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
-		// });
+		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
+		if (this.limiter === null) {
+			await this.progress.codeEdit({ edits, iterationId: 'mock' });
+		} else {
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+		}
 		return this.lines.length;
 	}
 
@@ -842,11 +854,14 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		await vscode.workspace.applyEdit(edits);
-		// this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		// await this.limiter.queue(async () => {
-		// 	await this.progress.codeEdit({ edits, iterationId: 'mock' });
-		// });
+		this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		if (this.limiter === null) {
+			await this.progress.codeEdit({ edits, iterationId: 'mock' });
+		} else {
+			await this.limiter.queue(async () => {
+				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			});
+		}
 		return index + 2;
 	}
 }

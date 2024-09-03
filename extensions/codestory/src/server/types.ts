@@ -132,12 +132,11 @@ interface EditedCodeStreamingRequestEvent {
 	Delta: string;
 }
 
-interface EditedCodeStreamingRequest {
+export interface EditedCodeStreamingRequest {
 	edit_request_id: string;
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
-	updated_code: string | null | undefined;
 }
 
 interface SymbolEventEditRequest {
