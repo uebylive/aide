@@ -89,7 +89,16 @@ type FrameworkEvent = {
 	CodeIterationFinished: string;
 	ReferenceFound: FoundReference;
 	RelevantReference: RelevantReference;
+	GroupedReferences: GroupedReferences;
 };
+
+// key represents a REASON
+type GroupedReferences = { [key: string]: Location[] };
+
+interface Location {
+	fs_file_path: string;
+	symbol_name: string;
+}
 
 interface UIEvent {
 	SymbolEvent: SymbolEventRequest;
@@ -123,12 +132,11 @@ interface EditedCodeStreamingRequestEvent {
 	Delta: string;
 }
 
-interface EditedCodeStreamingRequest {
+export interface EditedCodeStreamingRequest {
 	edit_request_id: string;
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
-	updated_code: string | null | undefined;
 }
 
 interface SymbolEventEditRequest {

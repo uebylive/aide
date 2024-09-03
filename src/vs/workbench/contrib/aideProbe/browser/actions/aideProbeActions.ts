@@ -18,7 +18,7 @@ import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aidePr
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
 

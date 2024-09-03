@@ -12,3 +12,10 @@ export const VIEW_ID = 'workbench.view.aideProbe';
 export async function showProbeView(viewsService: IViewsService): Promise<AideProbeViewPane | null> {
 	return (await viewsService.openView<AideProbeViewPane>(VIEW_ID));
 }
+
+export function clearProbeView(viewsService: IViewsService): void {
+	const view = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
+	if (view) {
+		view.clear();
+	}
+}
