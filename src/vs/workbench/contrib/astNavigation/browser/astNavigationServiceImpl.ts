@@ -5,9 +5,10 @@
 
 import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
 import { IRange, Range } from 'vs/editor/common/core/range';
+import { ScrollType } from 'vs/editor/common/editorCommon';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { FoldingController } from 'vs/editor/contrib/folding/browser/folding';
@@ -231,6 +232,21 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this.currentNode = node;
 		this.previewDisposable?.dispose();
 		const editor = this.editorService.activeTextEditorControl;
+		if (!editor) {
+			return;
+		}
+
+		editor.revealRangeInCenterIfOutsideViewport(this.currentNode.range, ScrollType.Smooth);
+		const decorationsCollection = editor.createDecorationsCollection([{
+			range: this.currentNode.range,
+			options: {
+				description: 'document-symbols-outline-range-highlight',
+				className: 'rangeHighlight',
+				isWholeLine: true
+			}
+		}]);
+		this.previewDisposable = toDisposable(() => decorationsCollection.clear());
+
 		if (isCodeEditor(editor)) {
 			const nodeRange = {
 				selectionStartLineNumber: node.range.startLineNumber,
@@ -240,33 +256,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			};
 			editor.setSelection(nodeRange);
 		}
-	}
-
-	private getNodeAtCurrentPosition(): ASTNode | undefined {
-		const editor = this.editorService.activeTextEditorControl;
-		if (!isCodeEditor(editor)) {
-			return undefined;
-		}
-
-		const position = editor.getPosition();
-		if (!position) {
-			return undefined;
-		}
-
-		return this.findDeepestNodeContainingLine(this.tree!, position.lineNumber);
-	}
-
-	private findDeepestNodeContainingLine(node: ASTNode, lineNumber: number): ASTNode | undefined {
-		if (node.range.startLineNumber <= lineNumber && lineNumber <= node.range.endLineNumber) {
-			for (const child of node.children) {
-				const deeperNode = this.findDeepestNodeContainingLine(child, lineNumber);
-				if (deeperNode) {
-					return deeperNode;
-				}
-			}
-			return node;
-		}
-		return undefined;
 	}
 
 	toggleASTNavigationMode(): void {
@@ -351,5 +340,38 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			const parentNode = this.currentNode.parent;
 			this.previewNode(parentNode);
 		}
+	}
+
+	private getNodeAtCurrentPosition(): ASTNode | undefined {
+		if (!this.tree) {
+			return undefined;
+		}
+
+		const editor = this.editorService.activeTextEditorControl;
+		if (!isCodeEditor(editor)) {
+			return undefined;
+		}
+
+		const position = editor.getPosition();
+		if (!position) {
+			return undefined;
+		}
+
+		return this.findDeepestNodeContainingLine(this.tree, position.lineNumber);
+	}
+
+	private findDeepestNodeContainingLine(node: ASTNode, lineNumber: number): ASTNode | undefined {
+		if (!Range.containsPosition(node.range, { lineNumber, column: 0 })) {
+			return undefined;
+		}
+
+		for (const child of node.children) {
+			const deepestChild = this.findDeepestNodeContainingLine(child, lineNumber);
+			if (deepestChild) {
+				return deepestChild;
+			}
+		}
+
+		return node;
 	}
 }
