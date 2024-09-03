@@ -26,7 +26,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -69,6 +69,9 @@ export interface IAideProbeResponseModel {
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
+	readonly referencesFound: Record<string, number> | undefined;
+	readonly relevantReferences: Record<string, number> | undefined;
+	readonly followups: Map<string, IReferenceByName[]> | undefined;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;
@@ -149,6 +152,22 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		return this._initialSymbols;
 	}
 
+	private _referencesFound: Record<string, number> | undefined;
+	public get referencesFound(): Record<string, number> | undefined {
+		return this._referencesFound;
+	}
+
+
+	private _relevantReferences: Record<string, number> | undefined;
+	public get relevantReferences(): Record<string, number> | undefined {
+		return this._relevantReferences;
+	}
+
+	private _followups: Map<string, IReferenceByName[]> | undefined;
+	public get followups(): Map<string, IReferenceByName[]> | undefined {
+		return this._followups;
+	}
+
 	private progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits: Map<string, IAideProbeEdits> = new Map();
 	public get codeEdits(): ReadonlyMap<string, IAideProbeEdits | undefined> {
@@ -217,6 +236,18 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		});
 
 		this._onNewEvent.fire(initialSymbols);
+	}
+
+	applyReferenceFound(references: Record<string, number>) {
+		this._referencesFound = references;
+	}
+
+	applyRelevantReferences(references: Record<string, number>) {
+		this._relevantReferences = references;
+	}
+
+	applyFollowups(followups: Map<string, IReferenceByName[]>) {
+		this._followups = followups;
 	}
 
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
@@ -407,6 +438,9 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 			case 'iterationFinished':
 				await this._response.addToUndoStack();
 				this.status = AideProbeStatus.ITERATION_FINISHED;
+				break;
+			case 'referenceFound':
+				this._response.applyReferenceFound(progress.references);
 				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);

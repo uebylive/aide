@@ -73,7 +73,16 @@
 }
 
 .edits-list-item .plan-symbol {
+	width: 0px;
+	flex-grow: 2;
 	padding-right: 6px;
+}
+
+:is(.plan-symbol-path, .plan-symbol-header) {
+	width: 100%;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 .edits-list-item .plan-symbol-path {

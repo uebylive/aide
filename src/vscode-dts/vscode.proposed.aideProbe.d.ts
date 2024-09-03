@@ -116,12 +116,17 @@ declare module 'vscode' {
 		readonly thinking: string;
 	}
 
+	export interface AideReferenceFound {
+		references: Record<string, number>;
+	}
+
 	export interface ProbeResponseStream {
 		markdown(value: string | MarkdownString): void;
 		repoMapGeneration(value: boolean): void;
 		longContextSearch(value: boolean): void;
 		codeIterationFinished(value: AideProbeIterationFinished): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
+		referenceFound(value: AideReferenceFound): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;

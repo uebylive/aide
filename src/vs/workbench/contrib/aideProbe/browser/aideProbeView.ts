@@ -7,7 +7,7 @@ import * as dom from 'vs/base/browser/dom';
 import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { KeybindingLabel, unthemedKeybindingLabelOptions } from 'vs/base/browser/ui/keybindingLabel/keybindingLabel';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
+import { IListMouseEvent, IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
 import { KeyCode } from 'vs/base/common/keyCodes';
@@ -27,7 +27,7 @@ import { IContextMenuService } from 'vs/platform/contextview/browser/contextView
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
+import { IOpenEvent, WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
@@ -40,7 +40,7 @@ import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
@@ -233,12 +233,13 @@ export class AideProbeViewPane extends ViewPane {
 				const index = event.indexes[0];
 				list.setSelection([index]);
 				const element = list.element(index);
+				if (element.type === 'breakdown' || element.type === 'initialSymbol') {
+					this._onDidChangeFocus.fire({ index, element });
 
-				this._onDidChangeFocus.fire({ index, element });
-
-				if (event.browserEvent && element && element.uri) {
-					this.listFocusIndex = index;
-					this.openListItemReference(element, !!event.browserEvent);
+					if (event.browserEvent && element && element.uri) {
+						this.listFocusIndex = index;
+						this.openListItemReference(element, !!event.browserEvent);
+					}
 				}
 			}
 		}));
@@ -251,26 +252,34 @@ export class AideProbeViewPane extends ViewPane {
 			}
 		}));
 
-		this._register(list.onDidOpen(async (event) => {
-			const { element } = event;
-			if (element && element.uri) {
-				const index = this.getListIndex(element);
+		this._register(list.onMouseDown((event) => {
+			this.onOpen(event);
+		}));
 
-				if (event.browserEvent) {
-					this.listFocusIndex = index;
-				}
-
-				element.expanded = !element.expanded;
-				if (this.list) {
-					this.list.splice(index, 1, [element]);
-					this.list.rerender();
-				}
-				this._onDidChangeFocus.fire({ index, element: element });
-				this.openListItemReference(element, !!event.browserEvent);
-			}
+		this._register(list.onDidOpen((event) => {
+			this.onOpen(event);
 		}));
 
 		return list;
+	}
+
+	private onOpen(event: IOpenEvent<IAideProbeListItem | undefined> | IListMouseEvent<IAideProbeListItem>) {
+		const { element } = event;
+		if (element && (element.type === 'breakdown' || element.type === 'initialSymbol')) {
+			const index = this.getListIndex(element);
+			if (event.browserEvent) {
+				this.listFocusIndex = index;
+			}
+
+			element.expanded = !element.expanded;
+			if (this.list) {
+				this.list.splice(index, 1, [element]);
+				this.list.rerender();
+			}
+			this._onDidChangeFocus.fire({ index, element: element });
+			console.log('will openListItemReference');
+			this.openListItemReference(element, !!event.browserEvent);
+		}
 	}
 
 	private getListIndex(element: IAideProbeListItem): number {
@@ -315,7 +324,10 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		//if (this.viewModel.referencesFound) {
+		//	items.unshift(this.viewModel.referencesFound);
+		//}
 
 		let matchingIndex = -1;
 
