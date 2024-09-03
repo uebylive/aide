@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, EditedCodeStreamingRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -37,7 +37,11 @@ export function handleRequest(
 	provideEdit: (request: SidecarApplyEditsRequest) => Promise<{
 		fs_file_path: String;
 		success: boolean;
-	}>
+	}>,
+	provideEditState: (request: EditedCodeStreamingRequest) => Promise<{
+		fs_file_path: String;
+		success: boolean;
+	}>,
 ) {
 	return async (req: http.IncomingMessage, res: http.ServerResponse) => {
 		try {
@@ -104,6 +108,13 @@ export function handleRequest(
 				const response = await provideEdit(request);
 				console.log('applyEdits', response);
 				console.log(response);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/apply_edits_streamed') {
+				const body = await readRequestBody(req);
+				const request: EditedCodeStreamingRequest = JSON.parse(body);
+				const response = await provideEditState(request);
+				console.log('applyEditsStateful', response);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/go_to_references') {

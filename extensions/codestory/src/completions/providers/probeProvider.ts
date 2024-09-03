@@ -8,11 +8,11 @@ import * as net from 'net';
 import * as os from 'os';
 import * as vscode from 'vscode';
 
-import { reportAgentEventsToChat } from '../../chatState/convertStreamToMessage';
+import { AnswerSplitOnNewLineAccumulatorStreaming, reportAgentEventsToChat, StreamProcessor } from '../../chatState/convertStreamToMessage';
 import postHogClient from '../../posthog/client';
 import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
-import { SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
+import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
 import { getUniqueId } from '../../utilities/uniqueId';
 
@@ -21,6 +21,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	private _editorUrl: string | undefined;
 	private _rootPath: string;
 	private _limiter = new Limiter(1);
+	private editsMap = new Map();
 
 	private _requestHandler: http.Server | null = null;
 	private _openResponseStream: vscode.ProbeResponseStream | undefined;
@@ -68,7 +69,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
-			handleRequest(this.provideEdit.bind(this))
+			handleRequest(this.provideEdit.bind(this), this.provideEditStreamed.bind(this))
 		);
 		this.getNextOpenPort().then((port) => {
 			if (port === null) {
@@ -132,6 +133,74 @@ export class AideProbeProvider implements vscode.Disposable {
 				platform: os.platform(),
 			},
 		});
+	}
+
+	async provideEditStreamed(request: EditedCodeStreamingRequest): Promise<{
+		fs_file_path: String;
+		success: boolean;
+	}> {
+		if (!this._openResponseStream) {
+			return {
+				fs_file_path: '',
+				success: false,
+			};
+		}
+		const editStreamEvent = request;
+		const fileDocument = editStreamEvent.fs_file_path;
+		const document = await vscode.workspace.openTextDocument(fileDocument);
+		if (document === undefined || document === null) {
+			return {
+				fs_file_path: '',
+				success: false,
+			};
+		}
+		const documentLines = document.getText().split(/\r\n|\r|\n/g);
+		if ('Start' === editStreamEvent.event) {
+			console.log('editStreaming.start', editStreamEvent.fs_file_path);
+			console.log(editStreamEvent.range);
+			this.editsMap.set(editStreamEvent.edit_request_id, {
+				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
+				streamProcessor: new StreamProcessor(
+					this._openResponseStream,
+					documentLines,
+					undefined,
+					vscode.Uri.file(editStreamEvent.fs_file_path),
+					editStreamEvent.range,
+					null,
+					this._iterationEdits,
+				)
+			});
+		} else if ('End' === editStreamEvent.event) {
+			// drain the lines which might be still present
+			const editsManager = this.editsMap.get(editStreamEvent.edit_request_id);
+			while (true) {
+				const currentLine = editsManager.answerSplitter.getLine();
+				if (currentLine === null) {
+					break;
+				}
+				await editsManager.streamProcessor.processLine(currentLine);
+			}
+			editsManager.streamProcessor.cleanup();
+			// delete this from our map
+			this.editsMap.delete(editStreamEvent.edit_request_id);
+			// we have the updated code (we know this will be always present, the types are a bit meh)
+		} else if (editStreamEvent.event.Delta) {
+			const editsManager = this.editsMap.get(editStreamEvent.edit_request_id);
+			if (editsManager !== undefined) {
+				editsManager.answerSplitter.addDelta(editStreamEvent.event.Delta);
+				while (true) {
+					const currentLine = editsManager.answerSplitter.getLine();
+					if (currentLine === null) {
+						break;
+					}
+					await editsManager.streamProcessor.processLine(currentLine);
+				}
+			}
+		}
+		return {
+			fs_file_path: '',
+			success: true,
+		};
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest): Promise<{
