@@ -168,7 +168,7 @@ class CancelAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		clearProbeView(viewsService);
+		clearProbeView(viewsService, true);
 
 		logProbeContext(accessor);
 	}
@@ -247,7 +247,7 @@ class ClearIterationAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		clearProbeView(viewsService);
+		clearProbeView(viewsService, true);
 
 		logProbeContext(accessor);
 	}
@@ -322,7 +322,7 @@ class ClearList extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		clearProbeView(accessor.get(IViewsService));
+		clearProbeView(accessor.get(IViewsService), true);
 	}
 }
 
