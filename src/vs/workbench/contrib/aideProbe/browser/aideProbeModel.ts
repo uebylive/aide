@@ -81,6 +81,7 @@ export interface IAideProbeResponseModel {
 export interface IAideProbeModel {
 	onDidChange: Event<void>;
 	onNewEvent: Event<IAideProbeResponseEvent>;
+	onClearResponse: Event<void>;
 	sessionId: string;
 	request: IAideProbeRequestModel | undefined;
 	response: IAideProbeResponseModel | undefined;
@@ -461,7 +462,7 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				await this._response.applyCodeEdit(progress);
 				break;
 		}
-		//console.log('AideProbeModel: acceptResponseProgress', progress);
+		console.log('AideProbeModel: acceptResponseProgress', progress.kind);
 		this._onDidChange.fire();
 	}
 

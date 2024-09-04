@@ -117,6 +117,20 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	) {
 		super();
 
+		this._register(this._model.onClearResponse(() => {
+			// TODO(@g-danna) Maybe dump the whole viewmodel on clear instead of setting these refs to undefined?
+			this._references.clear();
+			this._lastFileOpened = undefined;
+			this._isRepoMapReady = undefined;
+			this._isLongContextSearchReady = undefined;
+			this._breakdowns = [];
+			this._initialSymbols = [];
+			this._referencesFound = undefined;
+			this._relevantReferences = undefined;
+			this._followups = undefined;
+			this._onDidChange.fire();
+		}));
+
 		this._register(_model.onDidChange(async () => {
 			if (!this._model.response) {
 				return;
