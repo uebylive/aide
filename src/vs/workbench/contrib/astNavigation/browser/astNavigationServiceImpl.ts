@@ -112,13 +112,13 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		}
 
 		// Add folding ranges
-		await this.getFoldingRanges(editor);
-		ranges.push(...this.foldingRanges.map(foldingRange => ({
-			startLineNumber: foldingRange.startLineNumber,
-			startColumn: 0,
-			endLineNumber: foldingRange.endLineNumber + 1,
-			endColumn: 0
-		}) satisfies IRange));
+		// await this.getFoldingRanges(editor);
+		// ranges.push(...this.foldingRanges.map(foldingRange => ({
+		// 	startLineNumber: foldingRange.startLineNumber,
+		// 	startColumn: 0,
+		// 	endLineNumber: foldingRange.endLineNumber + 1,
+		// 	endColumn: 0
+		// }) satisfies IRange));
 
 		this.tree = this.constructTree(ranges);
 		this.handleCursorPosition(editor.getPosition());
