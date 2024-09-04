@@ -13,9 +13,9 @@ export async function showProbeView(viewsService: IViewsService): Promise<AidePr
 	return (await viewsService.openView<AideProbeViewPane>(VIEW_ID));
 }
 
-export function clearProbeView(viewsService: IViewsService): void {
+export function clearProbeView(viewsService: IViewsService, showWelcome?: boolean): void {
 	const view = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
 	if (view) {
-		view.clear();
+		view.clear(showWelcome);
 	}
 }

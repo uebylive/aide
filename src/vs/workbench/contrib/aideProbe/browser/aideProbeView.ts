@@ -113,6 +113,7 @@ export class AideProbeViewPane extends ViewPane {
 	private welcomeElement!: HTMLElement;
 
 	listFocusIndex: number | undefined;
+	private listHeader: HTMLElement | undefined;
 	private list: WorkbenchList<IAideProbeListItem> | undefined;
 
 	private readonly _onDidChangeFocus = this._register(new Emitter<IListChangeEvent>());
@@ -249,13 +250,14 @@ export class AideProbeViewPane extends ViewPane {
 
 	private createList() {
 		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService])));
-
-		const header = $('.list-header');
-		this._register(scopedInstantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
-		const headerText = $('.header-text');
-		headerText.textContent = 'Plan';
-		header.appendChild(headerText);
-		this.responseWrapper.append(header);
+		if (!this.listHeader) {
+			const header = this.listHeader = $('.list-header');
+			this._register(scopedInstantiationService.createInstance(Heroicon, header, 'micro/list-bullet'));
+			const headerText = $('.header-text');
+			headerText.textContent = 'Plan';
+			header.appendChild(headerText);
+			this.responseWrapper.append(header);
+		}
 
 		const listDelegate = scopedInstantiationService.createInstance(ProbeListDelegate);
 		const renderer = this._register(scopedInstantiationService.createInstance(ProbeListRenderer, this.onDidChangeVisibility, this.markdownRenderer));
@@ -487,13 +489,15 @@ export class AideProbeViewPane extends ViewPane {
 		}
 	}
 
-	clear(): void {
+	clear(showWelcome = true): void {
 		this.list?.splice(0, this.list.length);
 		this.list?.rerender();
 		this.list?.layout(0, this.dimensions?.width);
 		this.list?.dispose();
 		this.list = undefined;
-		this.showWelcome();
+		if (showWelcome) {
+			this.showWelcome();
+		}
 	}
 
 	private renderFinalAnswer(): void {

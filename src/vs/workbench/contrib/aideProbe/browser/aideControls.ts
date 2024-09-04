@@ -578,7 +578,7 @@ export class AideControls extends Themable implements IAideControls {
 		const currentSelection = this.aideProbeService.anchorEditingSelection;
 		if (!equals(this.lastUsedSelection?.symbols.map(s => s.name), currentSelection?.symbols.map(s => s.name))) {
 			iterationRequest = false;
-			clearProbeView(this.viewsService);
+			clearProbeView(this.viewsService, false);
 		}
 
 		this.lastUsedSelection = this.aideProbeService.anchorEditingSelection;
