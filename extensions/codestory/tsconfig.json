@@ -14,6 +14,7 @@
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantPrivate.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.lmTools.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatVariableResolver.d.ts",
 		"../../src/vscode-dts/vscode.proposed.csevents.d.ts",
 		"../../src/vscode-dts/vscode.proposed.defaultChatParticipant.d.ts",
