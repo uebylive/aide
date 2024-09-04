@@ -15,7 +15,6 @@ import { IView } from 'vs/workbench/common/views';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
@@ -169,10 +168,7 @@ class CancelAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
-		if (aideProbeView) {
-			aideProbeView.clear();
-		}
+		clearProbeView(viewsService);
 
 		logProbeContext(accessor);
 	}
@@ -251,10 +247,7 @@ class ClearIterationAction extends Action2 {
 		aideProbeService.clearSession();
 
 		const viewsService = accessor.get(IViewsService);
-		const aideProbeView = viewsService.getViewWithId<AideProbeViewPane>(VIEW_ID);
-		if (aideProbeView) {
-			aideProbeView.clear();
-		}
+		clearProbeView(viewsService);
 
 		logProbeContext(accessor);
 	}
@@ -329,8 +322,7 @@ class ClearList extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const probeView = accessor.get(IViewsService).getViewWithId<AideProbeViewPane>(VIEW_ID);
-		probeView?.showWelcome();
+		clearProbeView(accessor.get(IViewsService));
 	}
 }
 

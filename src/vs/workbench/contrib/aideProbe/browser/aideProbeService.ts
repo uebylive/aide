@@ -48,7 +48,8 @@ export interface IAideProbeService {
 	readonly onNewEvent: Event<IAideProbeResponseEvent>;
 	readonly onReview: Event<IAideProbeReviewUserEvent>;
 	readonly onDidSetAnchoredSelection: Event<AnchorEditingSelection | undefined>;
-	readonly onDidStartProbing: Event<void>;
+	readonly onNewSession: Event<void>;
+
 }
 
 export interface IInitiateProbeResponseState {
@@ -62,8 +63,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	private mode: IContextKey<IAideProbeMode>;
 	private contextType: IContextKey<string>;
 
-	protected readonly _onDidStartProbing = this._store.add(new Emitter<void>());
-	readonly onDidStartProbing: Event<void> = this._onDidStartProbing.event;
+	protected readonly _onNewSession = this._store.add(new Emitter<void>());
+	readonly onNewSession: Event<void> = this._onNewSession.event;
 
 	protected readonly _onNewEvent = this._store.add(new Emitter<IAideProbeResponseEvent>());
 	readonly onNewEvent: Event<IAideProbeResponseEvent> = this._onNewEvent.event;
@@ -129,6 +130,8 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		this._modelDisposables.add(this._model.onNewEvent(event => {
 			this._onNewEvent.fire(event);
 		}));
+
+		this._onNewSession.fire();
 
 		return this._model;
 	}
@@ -239,7 +242,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		};
 
 		const rawResponsePromise = initiateProbeInternal();
-		this._onDidStartProbing.fire();
 		this._activeRequest = source;
 		rawResponsePromise.finally(() => {
 			this._activeRequest?.dispose();

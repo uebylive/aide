@@ -118,7 +118,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(async () => {
-
+			console.log('model changes', this._model.response);
 			if (!this._model.response) {
 				return;
 			}

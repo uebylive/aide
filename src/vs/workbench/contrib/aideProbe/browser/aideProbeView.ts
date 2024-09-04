@@ -99,6 +99,8 @@ const followupsVMMock: IAideFollowupsViewModel = {
 
 export class AideProbeViewPane extends ViewPane {
 
+	private currentView: 'welcome' | 'list' = 'welcome';
+
 	private container!: HTMLElement;
 	private resultWrapper!: HTMLElement;
 	private responseWrapper!: HTMLElement;
@@ -143,6 +145,11 @@ export class AideProbeViewPane extends ViewPane {
 		this.markdownRenderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
 
 		this.init();
+		this._register(aideProbeService.onNewSession(() => {
+			this.model = undefined;
+			this.viewModelDisposables.clear();
+			this.init();
+		}));
 		this._register(aideProbeService.onNewEvent(() => {
 			if (!this.model) {
 				this.init();
@@ -231,11 +238,13 @@ export class AideProbeViewPane extends ViewPane {
 	private showList() {
 		dom.hide(this.welcomeElement);
 		dom.show(this.responseWrapper);
+		this.currentView = 'list';
 	}
 
 	showWelcome() {
 		dom.show(this.welcomeElement);
 		dom.hide(this.responseWrapper);
+		this.currentView = 'welcome';
 	}
 
 	private createList() {
@@ -363,6 +372,9 @@ export class AideProbeViewPane extends ViewPane {
 	private updateList() {
 		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdowns.length)) {
 			this.list = this.createList();
+		}
+
+		if (this.currentView !== 'list') {
 			this.showList();
 		}
 
