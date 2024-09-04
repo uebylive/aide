@@ -114,16 +114,28 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 		this.element.style.left = `${position.left}px`;
 	}
 
+	protected _onDidSizeChange = this._register(new Emitter<IDimension>());
+	readonly onDidSizeChange = this._onDidSizeChange.event;
+
 	layout(width?: number, height?: number): void {
+
 		if (width) {
 			this.preferredWidth = width;
 		}
+		const newWidth = Math.max(this.minimumWidth, Math.min(this._availableWidth, this.preferredWidth || this._width));
 		if (height) {
 			this.preferredHeight = height;
 		}
+		const newHeight = Math.max(this.minimumHeight, Math.min(this._availableHeight, this.preferredHeight || this._height));
 
-		this._width = Math.max(this.minimumWidth, Math.min(this._availableWidth, this.preferredWidth || this._width));
-		this._height = Math.max(this.minimumHeight, Math.min(this._availableHeight, this.preferredHeight || this._height));
+		if (newWidth === this._width || newHeight === this._height) {
+			this._onDidSizeChange.fire({ width: newWidth, height: newHeight });
+		}
+		this._width = newWidth;
+		this._height = newHeight;
+
+
+
 
 		this.element.style.width = `${this._width}px`;
 		this.element.style.height = `${this._height}px`;
