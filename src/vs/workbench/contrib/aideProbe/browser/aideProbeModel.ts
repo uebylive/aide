@@ -26,7 +26,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -56,11 +56,6 @@ export interface IVariableEntry {
 	isFile?: boolean;
 }
 
-export interface IAideFollowup {
-	reference: IReferenceByName;
-	complete: boolean;
-}
-
 export interface IAideProbeEdits {
 	readonly targetUri: string;
 	readonly textModelN: ITextModel;
@@ -76,8 +71,8 @@ export interface IAideProbeResponseModel {
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
 	readonly referencesFound: Record<string, number> | undefined;
-	readonly relevantReferences: Record<string, number> | undefined;
-	readonly followups: Map<string, IAideFollowup[]> | undefined;
+	readonly relevantReferences: Map<string, IAideRelevantReferenceInformation> | undefined;
+	readonly followups: Map<string, IAideFollowupInformation[]> | undefined;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
 	readonly repoMapGenerationFinished: boolean | undefined;
 	readonly longContextSearchFinished: boolean | undefined;
@@ -164,13 +159,13 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 
-	private _relevantReferences: Record<string, number> | undefined;
-	public get relevantReferences(): Record<string, number> | undefined {
+	private _relevantReferences: Map<string, IAideRelevantReferenceInformation> | undefined;
+	public get relevantReferences(): Map<string, IAideRelevantReferenceInformation> | undefined {
 		return this._relevantReferences;
 	}
 
-	private _followups: Map<string, IAideFollowup[]> | undefined;
-	public get followups(): Map<string, IAideFollowup[]> | undefined {
+	private _followups: Map<string, IAideFollowupInformation[]> | undefined;
+	public get followups(): Map<string, IAideFollowupInformation[]> | undefined {
 		return this._followups;
 	}
 
@@ -248,12 +243,16 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 		this._referencesFound = references;
 	}
 
-	applyRelevantReferences(references: Record<string, number>) {
-		this._relevantReferences = references;
+	applyRelevantReferences(relevantReference: IAideRelevantReference) {
+		if (!this._relevantReferences) {
+			this._relevantReferences = new Map();
+		}
+		const mapKey = `${relevantReference.reference.uri.toString()}:${relevantReference.reference.symbolName}`;
+		this._relevantReferences.set(mapKey, relevantReference.reference);
 	}
 
-	applyFollowups(followups: Map<string, IAideFollowup[]>) {
-		this._followups = followups;
+	applyFollowups(followups: Record<string, IAideFollowupInformation[]>) {
+		this._followups = new Map(Object.entries(followups));
 	}
 
 	async applyCodeEdit(codeEdit: IAideProbeTextEdit) {
@@ -451,6 +450,12 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				break;
 			case 'referenceFound':
 				this._response.applyReferenceFound(progress.references);
+				break;
+			case 'relevantReference':
+				this._response.applyRelevantReferences(progress);
+				break;
+			case 'followups':
+				this._response.applyFollowups(progress.followups);
 				break;
 			case 'textEdit':
 				await this._response.applyCodeEdit(progress);

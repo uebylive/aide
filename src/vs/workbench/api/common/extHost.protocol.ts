@@ -56,7 +56,7 @@ import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, I
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeIterationFinished, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, IAideProbeSessionAction, IAideProbeUserAction, IAideReferenceFound } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeIterationFinished, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, IAideProbeSessionAction, IAideProbeUserAction, IAideReferenceFound, IAideRelevantReference, IAideFollowups } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { CallHierarchyItem } from 'vs/workbench/contrib/callHierarchy/common/callHierarchy';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
@@ -1479,7 +1479,7 @@ export type IAideChatProgressDto =
 
 export type IAideProbeTextEditDto = Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: IWorkspaceEditDto };
 export type IAideProbeIterationFinishedDto = Omit<Dto<IAideProbeIterationFinished>, 'edits'> & { edits: IWorkspaceEditDto };
-export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeOpenFile | IAideProbeRepoMapGeneration | IAideProbeLongContextSearch | IAideProbeInitialSymbols | IAideReferenceFound> | IAideProbeTextEditDto | IAideProbeIterationFinishedDto;
+export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeOpenFile | IAideProbeRepoMapGeneration | IAideProbeLongContextSearch | IAideProbeInitialSymbols | IAideReferenceFound | IAideRelevantReference | IAideFollowups> | IAideProbeTextEditDto | IAideProbeIterationFinishedDto;
 
 export interface MainThreadAideProbeProviderShape extends IDisposable {
 	$registerProbingProvider(handle: number, data: IAideProbeData): void;
