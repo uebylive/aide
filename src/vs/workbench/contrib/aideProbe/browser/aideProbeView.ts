@@ -293,9 +293,9 @@ export class AideProbeViewPane extends ViewPane {
 			}
 		}));
 
-		this._register(list.onMouseDown((event) => {
-			this.onOpen(event);
-		}));
+		//this._register(list.onMouseDown((event) => {
+		//	this.onOpen(event);
+		//}));
 
 		this._register(list.onDidOpen((event) => {
 			this.onOpen(event);
