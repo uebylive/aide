@@ -6,6 +6,7 @@
 .aide-context-picker {
 	position: relative;
 	display: inline-flex;
+	padding-top: 8px;
 	height: 24px;
 }
 
@@ -25,6 +26,11 @@
 	align-items: center;
 	justify-content: center;
 	width: 24px;
+}
+
+.aide-controls-context-button svg {
+	height: 16px;
+	width: 16px;
 }
 
 .aide-controls-context-type-button {

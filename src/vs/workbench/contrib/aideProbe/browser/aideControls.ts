@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
-import { IDimension } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { ButtonBar } from 'vs/base/browser/ui/button/button';
 import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
@@ -179,9 +178,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private contextPicker: ContextPicker;
-
-
-	//private toolbar: MenuWorkbenchToolBar;
+	private toolbar: MenuWorkbenchToolBar | undefined;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
@@ -254,12 +251,12 @@ export class AideControls extends Themable implements IAideControls {
 		this.topSash = instantiationService.createInstance(Sash, this.element, { getHorizontalSashTop: () => 0, getHorizontalSashWidth: () => this.element.offsetWidth }, { orientation: Orientation.HORIZONTAL });
 
 		this._register(this.topSash.onDidStart((dragStart) => {
-			const initialHeight = this.part.height;
+			const initialHeight = this.element.offsetHeight;
 			const initialY = dragStart.currentY;
 			const onDragEvent = this._register(this.topSash.onDidChange((dragChange) => {
 				const delta = dragChange.currentY - initialY;
 				const newHeight = initialHeight - delta;
-				this.part.layout(undefined, newHeight);
+				this.layout(newHeight);
 			}));
 
 			const onDragEndEvent = this._register(this.topSash.onDidEnd(() => {
@@ -267,12 +264,7 @@ export class AideControls extends Themable implements IAideControls {
 				onDragEndEvent.dispose();
 			}));
 		}));
-
-		this.layout(this.part.width, this.part.height);
-
-		this.part.onDidSizeChange((size: IDimension) => {
-			this.layout(size.width, size.height);
-		});
+		this.layout();
 
 		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
 		this.contextPicker.append(inputElement);
@@ -300,6 +292,7 @@ export class AideControls extends Themable implements IAideControls {
 			if (e.affectsSome(new Set([CONTEXT_PROBE_MODE.key]))) {
 				anchorMode.element.style.opacity = this.probeMode.get() === AideProbeMode.ANCHORED ? '1' : '0.4';
 				agentMode.element.style.opacity = this.probeMode.get() === AideProbeMode.AGENTIC ? '1' : '0.4';
+				this.updateAnchoredContext();
 			} else if (e.affectsSome(new Set([CONTEXT_PROBE_INPUT_HAS_FOCUS.key]))) {
 				this.updateInputPlaceholder();
 			}
@@ -381,10 +374,16 @@ export class AideControls extends Themable implements IAideControls {
 		if (this.anchoredContextContainer) {
 			dom.clearNode(this.anchoredContextContainer);
 		}
+		this.layout();
 	}
 
 	private async updateAnchoredContext() {
 		if (!this.anchoredContextContainer || !this.resourceLabels) {
+			this.clearAnchors();
+			return;
+		}
+
+		if (this.probeMode.get() !== AideProbeMode.ANCHORED) {
 			this.clearAnchors();
 			return;
 		}
@@ -411,7 +410,6 @@ export class AideControls extends Themable implements IAideControls {
 		if (!selection) {
 			if (!this.currentOutline.value) {
 				this.clearAnchors();
-				this.layout();
 				return;
 			}
 
@@ -438,7 +436,6 @@ export class AideControls extends Themable implements IAideControls {
 				this.layout();
 			} else {
 				this.clearAnchors();
-				this.layout();
 			}
 		} else {
 			this.clearAnchors();
@@ -658,7 +655,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private createToolbar(parent: HTMLElement) {
-		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+		const toolbar = this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
 			menuOptions: {
 				shouldForwardArgs: true,
 
@@ -680,10 +677,19 @@ export class AideControls extends Themable implements IAideControls {
 		}));
 	}
 
-	layout(width: number = this.part.width, height: number = this.part.height) {
-		const newWidth = Math.min(width, MAX_WIDTH);
+	layout(height?: number) {
+		const newWidth = Math.min(this.part.width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
+
+		// The input should be the only component that expands in height
+		const nonInputElementsHeight = (this.anchoredContextContainer?.offsetHeight ?? 0) + (this.toolbar?.getElement().offsetHeight ?? 0) + 8 /* padding */;
+		const inputHeight = this.inputHeight + Math.max(0, height ? height - nonInputElementsHeight : 0);
+		this._input.layout({ width: newWidth - 48 /* context buttons */ - 16 /* padding */, height: inputHeight });
+
+		const elementHeight = inputHeight + nonInputElementsHeight;
+		this.element.style.height = `${elementHeight}px`;
+
+		this.part.layout(undefined, elementHeight);
 		this.topSash.layout();
 	}
 }
