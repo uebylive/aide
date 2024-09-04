@@ -418,8 +418,10 @@ export const reportAgentEventsToChat = async (
 							if (currentLine === null) {
 								break;
 							}
+							console.log('end::process_line');
 							await editsManager.streamProcessor.processLine(currentLine);
 						}
+						console.log('end::cleanup');
 						editsManager.streamProcessor.cleanup();
 						// delete this from our map
 						editsMap.delete(editStreamEvent.edit_request_id);
@@ -433,6 +435,7 @@ export const reportAgentEventsToChat = async (
 								if (currentLine === null) {
 									break;
 								}
+								console.log('delta::process_line');
 								await editsManager.streamProcessor.processLine(currentLine);
 							}
 						}
@@ -614,7 +617,7 @@ export class StreamProcessor {
 
 	async cleanup() {
 		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
-		console.log(this.documentLineIndex, this.documentLineLimit);
+		console.log('cleanup', this.documentLineIndex, this.documentLineLimit);
 		if (this.documentLineIndex <= this.documentLineLimit) {
 			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
 		}
@@ -624,6 +627,7 @@ export class StreamProcessor {
 		console.table({
 			'event_name': 'process_line',
 			'line_content': answerStreamLine.line,
+			'documentLineIndex': this.documentLineIndex,
 		});
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
@@ -637,11 +641,13 @@ export class StreamProcessor {
 			// anchor will always be null over here
 			const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 			if (anchor !== null) {
+				console.log('documentLineIndex::if_condition', this.documentLineIndex);
 				this.sentEdits = true;
 				// if no anchor line, then we have to replace the current line
 				// console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 				this.documentLineIndex = await this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 			} else if (this.documentLineIndex > this.documentLineLimit) {
+				console.log('documentLineIndex::else_if_condition', this.documentLineIndex);
 				if (this.sentEdits) {
 					this.documentLineIndex = await this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					// this.documentLineIndex = await this.document.appendLine(adjustedLine);
@@ -654,6 +660,7 @@ export class StreamProcessor {
 				}
 				this.sentEdits = true;
 			} else {
+				console.log('documentLineIndex::elsecase', this.documentLineIndex);
 				this.documentLineIndex = await this.document.replaceLine(this.documentLineIndex, adjustedLine);
 				// we have sent the edits for this range, we should track that
 			}
@@ -667,14 +674,14 @@ export class StreamProcessor {
 	}
 
 	// Find the initial anchor line in the document
-	findInitialAnchor(lineContent: string): number {
-		const trimmedContent = lineContent.trim();
-		for (let index = this.document.firstSentLineIndex; index < this.document.getLineCount(); index++) {
-			const line = this.document.getLine(index);
-			if (line.isSent && line.trimmedContent === trimmedContent) {
-				return index;
-			}
-		}
+	findInitialAnchor(_lineContent: string): number {
+		// const trimmedContent = lineContent.trim();
+		// for (let index = this.document.firstSentLineIndex; index < this.document.getLineCount(); index++) {
+		// 	const line = this.document.getLine(index);
+		// 	if (line.isSent && line.trimmedContent === trimmedContent) {
+		// 		return index;
+		// 	}
+		// }
 		return this.document.firstRangeLine;
 	}
 
@@ -731,6 +738,7 @@ class DocumentManager {
 			this.lines[lineIndex].markSent();
 		}
 
+		console.log('document_manager::range', JSON.stringify(range));
 
 		this.firstSentLineIndex = firstLineIndex;
 		this.firstRangeLine = firstLineIndex;
