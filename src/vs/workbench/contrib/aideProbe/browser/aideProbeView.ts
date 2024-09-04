@@ -45,6 +45,7 @@ import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aidePr
 import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 
 const $ = dom.$;
 
@@ -377,18 +378,20 @@ export class AideProbeViewPane extends ViewPane {
 			items.unshift(this.viewModel.referencesFound);
 		}
 
+		const hasFollowups = this.viewModel.followups?.followups?.size ?? 0 > 0;
+
 		// Make sure relevantReferences is always the last item
-		if (this.viewModel.relevantReferences && !this.viewModel.followups) {
+		if (this.viewModel.relevantReferences && !hasFollowups) {
 			items.push(this.viewModel.relevantReferences);
 		}
-		if (this.viewModel.followups) {
+		if (hasFollowups && this.viewModel.followups) {
 			items.push(this.viewModel.followups);
 		}
 
 		let matchingIndex = -1;
 
 		if (items.length === 0) {
-			this.list.splice(0, 0, items);
+			this.list.splice(0, this.list.length, items);
 		} else {
 			items.forEach((item, index) => {
 				item.index = index;
@@ -754,8 +757,9 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 			index++;
 		}
 
-		const followupsButton = this.instantiationService.createInstance(Button, symbolElement, { title: 'Fix all' });
+		const followupsButton = this.instantiationService.createInstance(Button, symbolElement, { title: 'Fix all', ...defaultButtonStyles });
 		element.toDispose.add(followupsButton);
+		followupsButton.element.classList.add('fix-all-button');
 		followupsButton.element.textContent = 'Fix all';
 		element.toDispose.add(followupsButton.onDidClick(() => {
 			this.commandService.executeCommand('workbench.action.aideProbe.followups');
