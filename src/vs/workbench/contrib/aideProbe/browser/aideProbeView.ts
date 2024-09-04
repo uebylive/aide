@@ -17,7 +17,6 @@ import { OS } from 'vs/base/common/platform';
 import { relativePath } from 'vs/base/common/resources';
 import { ScrollbarVisibility } from 'vs/base/common/scrollable';
 import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { IDimension } from 'vs/editor/common/core/dimension';
@@ -43,7 +42,7 @@ import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideP
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, IAideFollowupViewModel, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
 import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 
@@ -62,40 +61,27 @@ const welcomeActions = [
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
 
-
-const relevantReferencesVMMock: IAideRelevantReferencesViewModel = {
-	type: 'relevantReferences',
-	references: {
-		'path/to/file': { uri: URI.parse('path/to/file'), occurencies: 2 },
-		'path/to/another/file': { uri: URI.parse('path/to/another/file'), occurencies: 9 },
-		'path/to/one/last/file': { uri: URI.parse('path/to/one/last/file'), occurencies: 5 },
-	},
-	index: undefined,
-	currentRenderedHeight: undefined,
-	expanded: false
-};
-
-const fakeFollowups: Map<string, IAideFollowupViewModel[]> = new Map();
-
-fakeFollowups.set('reason 1', [
-	{ reference: { name: 'symbol', uri: URI.parse('path/to/file') }, state: 'idle' },
-	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/another/file') }, state: 'loading' },
-	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'complete' },
-]);
-
-fakeFollowups.set('reason 2', [
-	{ reference: { name: 'symbol', uri: URI.parse('path/to/yet/another/file') }, state: 'idle' },
-	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'loading' },
-	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/one/final/file') }, state: 'complete' },
-]);
-
-const followupsVMMock: IAideFollowupsViewModel = {
-	type: 'followups',
-	followups: fakeFollowups,
-	index: undefined,
-	currentRenderedHeight: undefined,
-	expanded: false
-};
+// const fakeFollowups: Map<string, IAideFollowupViewModel[]> = new Map();
+//
+// fakeFollowups.set('reason 1', [
+// 	{ reference: { name: 'symbol', uri: URI.parse('path/to/file') }, state: 'idle' },
+// 	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/another/file') }, state: 'loading' },
+// 	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'complete' },
+// ]);
+//
+// fakeFollowups.set('reason 2', [
+// 	{ reference: { name: 'symbol', uri: URI.parse('path/to/yet/another/file') }, state: 'idle' },
+// 	{ reference: { name: 'anotherSymbol', uri: URI.parse('path/to/yet/another/file') }, state: 'loading' },
+// 	{ reference: { name: 'yetOneMoreSymbol', uri: URI.parse('path/to/one/final/file') }, state: 'complete' },
+// ]);
+//
+// const followupsVMMock: IAideFollowupsViewModel = {
+// 	type: 'followups',
+// 	followups: fakeFollowups,
+// 	index: undefined,
+// 	currentRenderedHeight: undefined,
+// 	expanded: false
+// };
 
 export class AideProbeViewPane extends ViewPane {
 
@@ -384,7 +370,7 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns, followupsVMMock];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
 
 		// Make sure referencesFound is always the first item
 		if (this.viewModel.referencesFound) {
@@ -744,7 +730,7 @@ class ProbeListRenderer extends Disposable implements IListRenderer<IAideProbeLi
 			reasonElement.textContent = reason;
 			symbolElement.appendChild(reasonElement);
 
-			const references = followup.map(ref => ({ kind: 'followup-reference', reference: ref.reference.uri, state: ref.state })) as IAideFollowupContentReference[];
+			const references = followup.map(ref => ({ kind: 'followup-reference', reference: ref.reference.uri })) as IAideFollowupContentReference[];
 
 			const label = followup.length > 1
 				? localize('usedFollowupsReferencesPlural', "Affects {0} references", followup.length)

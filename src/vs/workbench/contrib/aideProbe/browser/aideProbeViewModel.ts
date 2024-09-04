@@ -14,7 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/se
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { AideProbeMode, IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IAideRelevantReferenceInformation, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
 export interface IAideProbeViewModel {
@@ -118,7 +118,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		super();
 
 		this._register(_model.onDidChange(async () => {
-			console.log('model changes', this._model.response);
 			if (!this._model.response) {
 				return;
 			}
@@ -154,11 +153,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			if (this._model.response.relevantReferences) {
-				const references: IAideRelevantReferencesViewModel['references'] = {};
-				for (const [uri, occurencies] of Object.entries(this._model.response.relevantReferences)) {
-					references[uri] = { uri: URI.parse(uri), occurencies };
-				}
-				this._relevantReferences = { references, type: 'relevantReferences', index: undefined, expanded: false, currentRenderedHeight: 0 };
+				this._relevantReferences = { references: this._model.response.relevantReferences, type: 'relevantReferences', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
 			if (this._model.response.followups) {
@@ -168,12 +163,8 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				}
 				const followups: Map<string, IAideFollowupViewModel[]> = new Map();
 				for (const [key, value] of this._model.response.followups.entries()) {
-					followups.set(key, value.map(({ reference, complete }) => {
-						let state: IFollowupState = 'idle';
-						if (this._model.request?.mode === AideProbeMode.FOLLOW_UP) {
-							state = complete ? 'complete' : 'loading';
-						}
-						return { reference, state };
+					followups.set(key, value.map(({ reference }) => {
+						return { reference };
 					}));
 				}
 
@@ -241,15 +232,8 @@ export interface IAideProbeBreakdownViewModel {
 	expanded: boolean;
 }
 
-export interface IAideReferencesFoundViewModel extends IAideReferencesViewModel {
+export interface IAideReferencesFoundViewModel {
 	type: 'referencesFound';
-}
-
-export interface IAideRelevantReferencesViewModel extends IAideReferencesViewModel {
-	type: 'relevantReferences';
-}
-
-interface IAideReferencesViewModel {
 	readonly references: Record<string, { uri: URI; occurencies: number }>;
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
@@ -257,10 +241,18 @@ interface IAideReferencesViewModel {
 	toDispose?: DisposableStore;
 }
 
+export interface IAideRelevantReferencesViewModel {
+	type: 'relevantReferences';
+	readonly references: Map<string, IAideRelevantReferenceInformation>;
+	index: number | undefined;
+	currentRenderedHeight: number | undefined;
+	expanded: boolean;
+	toDispose?: DisposableStore;
+}
 
 export interface IAideFollowupViewModel {
 	reference: IReferenceByName;
-	state: IFollowupState;
+	//state: IFollowupState;
 }
 
 

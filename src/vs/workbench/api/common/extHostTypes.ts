@@ -4764,6 +4764,26 @@ export class AideReferenceFoundPart {
 	}
 }
 
+export class AideRelevantReferencePart {
+	uri: vscode.Uri;
+	symbolName: string;
+	reason: string;
+	constructor(reference: { uri: vscode.Uri; symbolName: string; reason: string }) {
+		this.uri = reference.uri;
+		this.symbolName = reference.symbolName;
+		this.reason = reference.reason;
+	}
+}
+
+
+export class AideFollowupsPart {
+	followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] };
+	constructor(followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] }) {
+		this.followups = followups;
+	}
+}
+
+
 export class AideProbeRepoMapGenerationPart {
 	finished: boolean;
 	constructor(finished: boolean) {

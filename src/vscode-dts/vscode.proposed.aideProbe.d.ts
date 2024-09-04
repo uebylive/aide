@@ -117,11 +117,20 @@ declare module 'vscode' {
 	}
 
 	export interface AideReferenceFound {
-		references: Record<string, number>;
+		readonly references: Record<string, number>;
 	}
 
-	export interface AideRelevantReferences {
-		references: Record<string, number>;
+	export interface AideRelevantReference {
+		readonly symbolName: string;
+		readonly uri: Uri;
+		readonly reason: string;
+	}
+
+	export interface AideFollowups {
+		readonly [key: string]: {
+			readonly symbolName: string;
+			readonly uri: Uri;
+		}[];
 	}
 
 	export interface ProbeResponseStream {
@@ -131,8 +140,8 @@ declare module 'vscode' {
 		codeIterationFinished(value: AideProbeIterationFinished): void;
 		initialSearchSymbols(value: AideInitialSearchSymbolInformation[]): void;
 		referenceFound(value: AideReferenceFound): void;
-		relevantReferences(value: AideRelevantReferences): void;
-
+		relevantReference(value: AideRelevantReference): void;
+		followups(value: AideFollowups): void;
 		breakdown(value: AideChatResponseBreakdown): void;
 		openFile(value: AideProbeResponseOpenFile): void;
 		location(value: AideProbeGoToDefinition): void;

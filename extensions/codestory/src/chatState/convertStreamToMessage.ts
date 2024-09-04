@@ -328,7 +328,24 @@ export const reportAgentEventsToChat = async (
 			} else if (event.event.FrameworkEvent.ReferenceFound) {
 				response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
 			} else if (event.event.FrameworkEvent.RelevantReference) {
-				response.relevantReferences({ references: event.event.FrameworkEvent.RelevantReference });
+				const ref = event.event.FrameworkEvent.RelevantReference;
+				response.relevantReference({
+					uri: vscode.Uri.file(ref.fs_file_path),
+					symbolName: ref.symbol_name,
+					reason: ref.reason,
+				});
+			} else if (event.event.FrameworkEvent.GroupedReferences) {
+				const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
+				const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
+				for (const [reason, references] of Object.entries(groupedRefs)) {
+					followups[reason] = references.map((ref) => {
+						return {
+							symbolName: ref.symbol_name,
+							uri: vscode.Uri.file(ref.fs_file_path),
+						};
+					});
+				}
+				response.followups(followups);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;

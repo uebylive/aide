@@ -96,6 +96,17 @@ export interface IAideReferenceFound {
 	references: Record<string, number>;
 }
 
+export interface IAideRelevantReferenceInformation {
+	uri: URI;
+	symbolName: string;
+	reason: string;
+}
+
+export interface IAideRelevantReference {
+	kind: 'relevantReference';
+	reference: IAideRelevantReferenceInformation;
+}
+
 export interface IAideProbeRepoMapGeneration {
 	kind: 'repoMapGeneration';
 	finished: boolean;
@@ -111,6 +122,15 @@ export interface IAideProbeIterationFinished {
 	edits: WorkspaceEdit;
 }
 
+export interface IAideFollowupInformation {
+	reference: IReferenceByName;
+}
+
+export interface IAideFollowups {
+	kind: 'followups';
+	followups: Record<string, IAideFollowupInformation[]>;
+}
+
 export type IAideProbeProgress =
 	| IAideChatMarkdownContent
 	| IAideProbeBreakdownContent
@@ -121,7 +141,9 @@ export type IAideProbeProgress =
 	| IAideProbeLongContextSearch
 	| IAideReferenceFound
 	| IAideProbeInitialSymbols
-	| IAideProbeIterationFinished;
+	| IAideProbeIterationFinished
+	| IAideRelevantReference
+	| IAideFollowups;
 
 export interface IAideProbeResponseErrorDetails {
 	message: string;
