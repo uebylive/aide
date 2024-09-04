@@ -7,6 +7,7 @@ import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/d
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Position } from 'vs/editor/common/core/position';
 import { IRange, Range } from 'vs/editor/common/core/range';
 import { ScrollType } from 'vs/editor/common/editorCommon';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
@@ -60,7 +61,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this._astNavigationMode = CONTEXT_AST_NAVIGATION_MODE.bindTo(this.contextKeyService);
 		this._canASTNavigate = CONTEXT_CAN_AST_NAVIGATE.bindTo(this.contextKeyService);
 
-		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateTree()));
 		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateTree()));
 	}
 
@@ -85,11 +85,17 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		if (!editor) {
 			return;
 		}
+		this.activeEditorDisposables.add(editor.onDidChangeCursorPosition(e => {
+			this.handleCursorPosition(e.position);
+		}));
 
 		const model = editor.getModel();
 		if (!model) {
 			return;
 		}
+		this.activeEditorDisposables.add(model.onDidChangeContent(() => {
+			this.recreateTree();
+		}));
 
 		const ranges: IRange[] = [];
 
@@ -115,18 +121,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		}) satisfies IRange));
 
 		this.tree = this.constructTree(ranges);
-		if (this.tree && this.tree.children.length > 0) {
-			scheduleAtNextAnimationFrame(getActiveWindow(), () => {
-				const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-				if (nodeAtCurrentPosition) {
-					this.previewNode(nodeAtCurrentPosition);
-					this._canASTNavigate.set(true);
-				} else if (this.tree!.children.length > 0) {
-					this.previewNode(this.tree!.children[0]);
-					this._canASTNavigate.set(true);
-				}
-			});
-		}
+		this.handleCursorPosition(editor.getPosition());
 	}
 
 	private constructTree(ranges: IRange[]): ASTNode {
@@ -190,10 +185,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		}
 
 		this.activeEditorDisposables.add(foldingModel);
-		this.activeEditorDisposables.add(foldingModel.onDidChange(async (e) => {
-			await this.recreateTree();
-		}));
-
 		this.recreateFoldingRanges(foldingModel);
 	}
 
@@ -222,22 +213,6 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 		this.activeEditorDisposables.add(outline);
-		this.activeEditorDisposables.add(outline.onDidChange(async (e) => {
-			if (!this._astNavigationMode.get()) {
-				return;
-			}
-
-			this.recreateOutline(outline);
-			if (e.affectOnlyActiveElement) {
-				scheduleAtNextAnimationFrame(getActiveWindow(), () => {
-					const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-					if (nodeAtCurrentPosition) {
-						this.previewNode(nodeAtCurrentPosition);
-					}
-				});
-			}
-		}));
-
 		this.recreateOutline(outline);
 	}
 
@@ -374,36 +349,29 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		}
 	}
 
-	private getNodeAtCurrentPosition(): ASTNode | undefined {
-		if (!this.tree) {
-			return undefined;
-		}
-
-		const editor = this.editorService.activeTextEditorControl;
-		if (!isCodeEditor(editor)) {
-			return undefined;
-		}
-
-		const position = editor.getPosition();
-		if (!position) {
-			return undefined;
-		}
-
-		return this.findDeepestNodeContainingLine(this.tree, position.lineNumber);
+	private handleCursorPosition(position: Position | null) {
+		scheduleAtNextAnimationFrame(getActiveWindow(), () => {
+			if (position && this.tree && this.tree.children.length > 0) {
+				const nodeAtCurrentPosition = this.findDeepestNodeContainingLine(this.tree, position.lineNumber);
+				if (nodeAtCurrentPosition) {
+					this.previewNode(nodeAtCurrentPosition);
+					this._canASTNavigate.set(true);
+				}
+			}
+		});
 	}
 
 	private findDeepestNodeContainingLine(node: ASTNode, lineNumber: number): ASTNode | undefined {
-		if (!Range.containsPosition(node.range, { lineNumber, column: 0 })) {
-			return undefined;
-		}
-
-		for (const child of node.children) {
-			const deepestChild = this.findDeepestNodeContainingLine(child, lineNumber);
-			if (deepestChild) {
-				return deepestChild;
+		if (node.range.startLineNumber <= lineNumber && lineNumber <= node.range.endLineNumber) {
+			for (const child of node.children) {
+				const deepestChild = this.findDeepestNodeContainingLine(child, lineNumber);
+				if (deepestChild) {
+					return deepestChild;
+				}
 			}
+			return node;
 		}
 
-		return node;
+		return undefined;
 	}
 }
