@@ -5,9 +5,16 @@
 
 import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
 import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
+import { Position } from 'vs/editor/common/core/position';
+import { IRange, Range } from 'vs/editor/common/core/range';
+import { ScrollType } from 'vs/editor/common/editorCommon';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
+import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { FoldingController } from 'vs/editor/contrib/folding/browser/folding';
+import { FoldingModel } from 'vs/editor/contrib/folding/browser/foldingModel';
+import { FoldRange } from 'vs/editor/contrib/folding/browser/foldingRanges';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IEditorPane } from 'vs/workbench/common/editor';
 import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
@@ -15,28 +22,30 @@ import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
 
-class TreeNode<T> {
-	element: T;
-	children: TreeNode<T>[] = [];
-	parent: TreeNode<T> | null = null;
+class ASTNode {
+	constructor(
+		public range: IRange,
+		public children: ASTNode[] = [],
+		public parent: ASTNode | null = null
+	) { }
 
-	constructor(element: T) {
-		this.element = element;
-	}
-
-	addChild(child: TreeNode<T>) {
+	addChild(child: ASTNode) {
 		child.parent = this;
 		this.children.push(child);
+		this.children.sort((a, b) => a.range.startLineNumber - b.range.startLineNumber);
 	}
 }
 
 export class ASTNavigationService extends Disposable implements IASTNavigationService {
 	declare _serviceBrand: undefined;
 
+	private activeOutline: IOutline<OutlineElement> | undefined;
+	private outlineRanges: IRange[] = [];
+	private foldingRanges: FoldRange[] = [];
+
 	private readonly activeEditorDisposables = this._register(new DisposableStore());
-	private activeOutline: IOutline<any> | undefined;
-	private outlineRoot: TreeNode<any> | undefined;
-	private currentNode: TreeNode<any> | undefined;
+	private tree: ASTNode | undefined;
+	private currentNode: ASTNode | undefined;
 	private previewDisposable: IDisposable | undefined;
 
 	private _astNavigationMode: IContextKey<boolean>;
@@ -52,20 +61,16 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this._astNavigationMode = CONTEXT_AST_NAVIGATION_MODE.bindTo(this.contextKeyService);
 		this._canASTNavigate = CONTEXT_CAN_AST_NAVIGATE.bindTo(this.contextKeyService);
 
-		this._register(this.languageFeaturesService.documentSymbolProvider.onDidChange(() => this.recreateOutline()));
-		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateOutline()));
-		// TODO(codestory): re-render the outline nodes when the text on the active editor is changing or we have an
-		// edit finished event
-		this.recreateOutline();
+		this._register(this.editorService.onDidActiveEditorChange(() => this.recreateTree()));
 	}
 
-	private recreateOutline() {
+	private async recreateTree(): Promise<void> {
 		if (!this._astNavigationMode.get()) {
 			return;
 		}
 
 		this._canASTNavigate.set(false);
-		this.clearActiveOutline();
+		this.clear();
 
 		const activeEditor = this.editorService.activeEditorPane;
 		if (!activeEditor) {
@@ -80,45 +85,195 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		if (!editor) {
 			return;
 		}
-		const buffer = editor.getModel();
-		if (!buffer) {
+		this.activeEditorDisposables.add(editor.onDidChangeCursorPosition(e => {
+			this.handleCursorPosition(e.position);
+		}));
+
+		const model = editor.getModel();
+		if (!model) {
 			return;
 		}
-		const hasSymbolProvider = this.languageFeaturesService.documentSymbolProvider.has(buffer);
+		this.activeEditorDisposables.add(model.onDidChangeContent(() => {
+			this.recreateTree();
+		}));
+
+		const ranges: IRange[] = [];
+
+		// Add symbol ranges
+		const hasSymbolProvider = this.languageFeaturesService.documentSymbolProvider.has(model);
 		if (hasSymbolProvider) {
-			this.renderActiveEditorOutline(activeEditor);
+			await this.createOutline(activeEditor);
+			ranges.push(...this.outlineRanges.map(range => ({
+				startLineNumber: range.startLineNumber,
+				startColumn: 0,
+				endLineNumber: range.endLineNumber,
+				endColumn: 0
+			}) satisfies IRange));
 		}
+
+		// Add folding ranges
+		// await this.getFoldingRanges(editor);
+		// ranges.push(...this.foldingRanges.map(foldingRange => ({
+		// 	startLineNumber: foldingRange.startLineNumber,
+		// 	startColumn: 0,
+		// 	endLineNumber: foldingRange.endLineNumber + 1,
+		// 	endColumn: 0
+		// }) satisfies IRange));
+
+		this.tree = this.constructTree(ranges);
+		this.handleCursorPosition(editor.getPosition());
 	}
 
-	private clearActiveOutline(): void {
-		this.outlineRoot = undefined;
+	private constructTree(ranges: IRange[]): ASTNode {
+		ranges.sort(Range.compareRangesUsingStarts);
+		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
+		const root = new ASTNode({
+			startLineNumber: ranges[0].startLineNumber,
+			startColumn: 0,
+			endLineNumber: ranges[ranges.length - 1].endLineNumber,
+			endColumn: 0
+		});
+
+		const stack: ASTNode[] = [root];
+		const nodeMap = new Map<string, ASTNode>();
+
+		for (const range of ranges) {
+			const rangeKey = `${range.startLineNumber}-${range.startColumn}-${range.endLineNumber}-${range.endColumn}`;
+			let currentNode = nodeMap.get(rangeKey);
+
+			if (!currentNode) {
+				currentNode = new ASTNode(range);
+				nodeMap.set(rangeKey, currentNode);
+			}
+
+			let parentNode: ASTNode | null = null;
+
+			while (stack.length > 0) {
+				const topNode = stack[stack.length - 1];
+
+				if (Range.containsRange(topNode.range, range)) {
+					const existingChild = topNode.children.find(child => child.range.startLineNumber === range.startLineNumber && child.range.endLineNumber === range.endLineNumber);
+					if (existingChild) {
+						currentNode = existingChild;
+						break;
+					}
+					parentNode = topNode;
+					break;
+				} else if (range.endLineNumber < topNode.range.startLineNumber) {
+					break;
+				} else {
+					stack.pop();
+				}
+			}
+
+			if (parentNode) {
+				parentNode.addChild(currentNode);
+			} else {
+				root.addChild(currentNode);
+			}
+
+			stack.push(currentNode);
+		}
+
+		return root;
+	}
+
+	private async getFoldingRanges(editor: ICodeEditor): Promise<void> {
+		const foldingModel = await FoldingController.get(editor)?.getFoldingModel() ?? undefined;
+		if (!foldingModel) {
+			return;
+		}
+
+		this.activeEditorDisposables.add(foldingModel);
+		this.recreateFoldingRanges(foldingModel);
+	}
+
+	private recreateFoldingRanges(foldingModel: FoldingModel) {
+		const foldingRegions = foldingModel.regions;
+		if (!foldingRegions) {
+			return;
+		}
+
+		const foldingRanges: FoldRange[] = [];
+		for (let i = 0; i < foldingRegions.length; i++) {
+			const range = foldingRegions.toFoldRange(i);
+			if (range) {
+				foldingRanges.push(range);
+			}
+		}
+
+		this.foldingRanges = foldingRanges;
+	}
+
+	private async createOutline(activeEditor: IEditorPane): Promise<void> {
+		const outline: IOutline<OutlineElement> | undefined = this.activeOutline = await this.outlineService.createOutline(
+			activeEditor, OutlineTarget.Breadcrumbs, CancellationToken.None
+		);
+		if (!outline) {
+			return;
+		}
+		this.activeEditorDisposables.add(outline);
+		this.recreateOutline(outline);
+	}
+
+	private recreateOutline(outline: IOutline<OutlineElement>) {
+		this.outlineRanges = this.getOutlineRanges(
+			Array.from(this.activeOutline?.config.treeDataSource.getChildren(outline) ?? []), []
+		);
+	}
+
+	private getOutlineRanges(elements: OutlineElement[], ranges: IRange[]): IRange[] {
+		for (const element of elements) {
+			ranges.push(element.symbol.range);
+			this.getOutlineRanges(Array.from(this.activeOutline?.config.treeDataSource.getChildren(element) ?? []), ranges);
+		}
+		return ranges;
+	}
+
+	private clear(): void {
+		this.tree = undefined;
 		this.currentNode = undefined;
 		this.activeOutline?.dispose();
 		this.activeOutline = undefined;
+		this.outlineRanges = [];
+		this.foldingRanges = [];
 		this.previewDisposable?.dispose();
 		this.activeEditorDisposables.clear();
 	}
 
-	private previewNode(node: TreeNode<any>): void {
+	private previewNode(node: ASTNode): void {
 		this.currentNode = node;
 		this.previewDisposable?.dispose();
-		this.previewDisposable = this.activeOutline?.preview(node.element);
 		const editor = this.editorService.activeTextEditorControl;
+		if (!editor) {
+			return;
+		}
+
+		editor.revealRangeInCenterIfOutsideViewport(this.currentNode.range, ScrollType.Smooth);
+		const decorationsCollection = editor.createDecorationsCollection([{
+			range: this.currentNode.range,
+			options: {
+				description: 'document-symbols-outline-range-highlight',
+				className: 'rangeHighlight',
+				isWholeLine: true
+			}
+		}]);
+		this.previewDisposable = toDisposable(() => decorationsCollection.clear());
+
 		if (isCodeEditor(editor)) {
-			editor.setSelection(node.element.symbol.range);
+			editor.setSelection(node.range);
 		}
 	}
 
 	toggleASTNavigationMode(): void {
-		const currentMode = this._astNavigationMode.get();
-		const isAstNavigationMode = !currentMode;
+		const isAstNavigationMode = !this._astNavigationMode.get();
 		this._astNavigationMode.set(isAstNavigationMode);
 		if (isAstNavigationMode) {
 			getActiveWindow().document.body.classList.add('astNavigationMode');
-			this.recreateOutline();
+			this.recreateTree();
 		} else {
 			getActiveWindow().document.body.classList.remove('astNavigationMode');
-			this.clearActiveOutline();
+			this.clear();
 			const editor = this.editorService.activeTextEditorControl;
 			if (isCodeEditor(editor)) {
 				const selection = editor.getSelection();
@@ -188,94 +343,35 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	moveOut(): void {
-		if (this.currentNode && this.currentNode.parent?.element) {
+		if (this.currentNode && this.currentNode.parent) {
 			const parentNode = this.currentNode.parent;
 			this.previewNode(parentNode);
 		}
 	}
 
-	private async renderActiveEditorOutline(pane: IEditorPane): Promise<void> {
-		const outline = this.activeOutline = await this.outlineService.createOutline(pane, OutlineTarget.Breadcrumbs, CancellationToken.None);
-		if (!outline) {
-			return;
-		}
-		this.activeEditorDisposables.add(outline);
-		this.activeEditorDisposables.add(outline.onDidChange(e => {
-			if (!this._astNavigationMode.get()) {
-				return;
+	private handleCursorPosition(position: Position | null) {
+		scheduleAtNextAnimationFrame(getActiveWindow(), () => {
+			if (position && this.tree && this.tree.children.length > 0) {
+				const nodeAtCurrentPosition = this.findDeepestNodeContainingLine(this.tree, position.lineNumber);
+				if (nodeAtCurrentPosition) {
+					this.previewNode(nodeAtCurrentPosition);
+					this._canASTNavigate.set(true);
+				}
 			}
-
-			this.rebuildOutlineTree(outline);
-			if (e.affectOnlyActiveElement) {
-				scheduleAtNextAnimationFrame(getActiveWindow(), () => {
-					const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-					if (nodeAtCurrentPosition) {
-						this.previewNode(nodeAtCurrentPosition);
-					}
-				});
-			}
-		}));
-
-		this.rebuildOutlineTree(outline);
-		if (this.outlineRoot) {
-			const nodeAtCurrentPosition = this.getNodeAtCurrentPosition();
-			if (nodeAtCurrentPosition) {
-				this.previewNode(nodeAtCurrentPosition);
-				this._canASTNavigate.set(true);
-			} else if (this.outlineRoot.children.length > 0) {
-				this.previewNode(this.outlineRoot.children[0]);
-				this._canASTNavigate.set(true);
-			}
-		}
-	}
-
-	private getNodeAtCurrentPosition(): TreeNode<any> | undefined {
-		const breadcrumbElements = this.activeOutline?.config.breadcrumbsDataSource.getBreadcrumbElements();
-		if (breadcrumbElements && breadcrumbElements.length > 0) {
-			const lastBreadcrumbElement = breadcrumbElements[breadcrumbElements.length - 1];
-			const lastBreadcrumbNode = this.findNodeByElement(this.outlineRoot!, lastBreadcrumbElement);
-			return lastBreadcrumbNode;
-		}
-
-		return undefined;
-	}
-
-	private rebuildOutlineTree(outline: IOutline<any>): void {
-		this.outlineRoot = this.buildTreeFromElements(Array.from(outline.config.treeDataSource.getChildren(outline)), new TreeNode<any>(null));
-	}
-
-	private buildTreeFromElements(elements: any[], root: TreeNode<any>): TreeNode<any> {
-		const sortedElements = elements.sort((a, b) => {
-			const rangeA = a.symbol.range;
-			const rangeB = b.symbol.range;
-			if (rangeA.startLineNumber !== rangeB.startLineNumber) {
-				return rangeA.startLineNumber - rangeB.startLineNumber;
-			}
-			return rangeA.startColumn - rangeB.startColumn;
 		});
-
-		for (const element of sortedElements) {
-			const node = new TreeNode(element);
-			node.parent = root;
-			root.addChild(node);
-			const children = this.activeOutline?.config.treeDataSource.getChildren(element);
-			if (children) {
-				node.children = this.buildTreeFromElements(Array.from(children), node).children;
-			}
-		}
-		return root;
 	}
 
-	private findNodeByElement(root: TreeNode<any>, element: any): TreeNode<any> | undefined {
-		if (root.element?.id === element.id) {
-			return root;
-		}
-		for (const child of root.children) {
-			const found = this.findNodeByElement(child, element);
-			if (found) {
-				return found;
+	private findDeepestNodeContainingLine(node: ASTNode, lineNumber: number): ASTNode | undefined {
+		if (node.range.startLineNumber <= lineNumber && lineNumber <= node.range.endLineNumber) {
+			for (const child of node.children) {
+				const deepestChild = this.findDeepestNodeContainingLine(child, lineNumber);
+				if (deepestChild) {
+					return deepestChild;
+				}
 			}
+			return node;
 		}
+
 		return undefined;
 	}
 }
