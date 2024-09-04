@@ -7,7 +7,6 @@ import { MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { isMacintosh } from 'vs/base/common/platform';
-import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
 import * as nls from 'vs/nls';
 import { AccessibleViewRegistry } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
 import { ICommandService } from 'vs/platform/commands/common/commands';
@@ -23,7 +22,6 @@ import { ChatAccessibilityHelp } from 'vs/workbench/contrib/aideChat/browser/act
 import { registerChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
-//import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
 import { registerChatCopyActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCopyActions';
 import { registerChatDeveloperActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions';
 import { SubmitAction, registerChatExecuteActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
@@ -42,7 +40,6 @@ import { QuickChatService } from 'vs/workbench/contrib/aideChat/browser/aideChat
 import { ChatResponseAccessibleView } from 'vs/workbench/contrib/aideChat/browser/aideChatResponseAccessibleView';
 import { ChatVariablesService } from 'vs/workbench/contrib/aideChat/browser/aideChatVariables';
 import { ChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
 import { ChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/codeBlockContextProviderService';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
 import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
@@ -63,7 +60,6 @@ import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/aideCh
 import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import '../common/aideChatColors';
-import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -256,9 +252,6 @@ registerWorkbenchContribution2(ChatResolverContribution.ID, ChatResolverContribu
 workbenchContributionsRegistry.registerWorkbenchContribution(ChatSlashStaticSlashCommandsContribution, LifecyclePhase.Eventually);
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(AideChatEditorInput.TypeID, ChatEditorInputSerializer);
 registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointHandler, WorkbenchPhase.BlockStartup);
-
-registerEditorContribution(KeybindingPillContribution.ID, KeybindingPillContribution, EditorContributionInstantiation.Eventually);
-registerEditorContribution(KeybindingPillWidget.ID, KeybindingPillWidget, EditorContributionInstantiation.Lazy);
 registerWorkbenchContribution2(LanguageModelToolsExtensionPointHandler.ID, LanguageModelToolsExtensionPointHandler, WorkbenchPhase.Eventually);
 
 registerChatActions();
