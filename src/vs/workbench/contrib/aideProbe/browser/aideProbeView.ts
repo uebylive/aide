@@ -335,7 +335,11 @@ export class AideProbeViewPane extends ViewPane {
 				}
 			});
 		} else if (isBreakdownVM(element)) {
-			return element.breakdownIndex;
+			this.viewModel?.breakdowns.forEach((item, index) => {
+				if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
+					matchIndex = index;
+				}
+			});
 		}
 		return matchIndex;
 	}
@@ -354,7 +358,7 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private updateList() {
-		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdownsBySymbol.size)) {
+		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdowns.length)) {
 			this.list = this.createList();
 		}
 
@@ -366,7 +370,7 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...Array.from(this.viewModel.breakdownsBySymbol.values())];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
 
 		// Make sure referencesFound is always the first item
 		if (this.viewModel.referencesFound) {

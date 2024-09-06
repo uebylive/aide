@@ -14,7 +14,7 @@ import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { IAideProbeModel, IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IAideRelevantReferenceInformation, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 
@@ -25,7 +25,7 @@ export interface IAideProbeViewModel {
 	readonly sessionId: string;
 	readonly status: IAideProbeStatus;
 	readonly initialSymbols: ReadonlyArray<IAideProbeInitialSymbolsViewModel>;
-	readonly breakdownsBySymbol: ReadonlyMap<string, IAideProbeBreakdownViewModel>;
+	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
 }
 
 export type IFollowupState = 'idle' | 'loading' | 'complete';
@@ -77,9 +77,11 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._isLongContextSearchReady;
 	}
 
-	private _breakdownsBySymbol: Map<string, IAideProbeBreakdownViewModel> = new Map();
-	get breakdownsBySymbol(): ReadonlyMap<string, IAideProbeBreakdownViewModel> {
-		return this._breakdownsBySymbol;
+	private _breakdownsBySymbol: Map<string, Promise<IAideProbeBreakdownViewModel>> = new Map();
+
+	_breakdowns: IAideProbeBreakdownViewModel[] = [];
+	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
+		return this._breakdowns;
 	}
 
 	private _initialSymbols: IAideProbeInitialSymbolsViewModel[] = [];
@@ -103,7 +105,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return Array.from(this.breakdownsBySymbol.values()).filter(b => {
+		return this.breakdowns.filter(b => {
 			if (!this._filter) {
 				return true;
 			}
@@ -191,42 +193,50 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			for (const [key, item] of this._model.response.breakdownsBySymbol.entries()) {
 				if (!this._breakdownsBySymbol.has(key)) {
 					let reference = this._references.get(item.reference.uri.toString());
-					if (!reference) {
-						reference = await this.textModelResolverService.createModelReference(item.reference.uri);
-					}
 
-					const index = this._model.response.breakdowns.findIndex(
-						b => equals(b.reference.name, item.reference.name) && equals(b.reference.uri, item.reference.uri)
-					);
+					const createVM = async (response: IAideProbeResponseModel) => {
 
-					const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference, index));
-					const symbol = await viewItem.symbol;
+						if (!reference) {
+							reference = await this.textModelResolverService.createModelReference(item.reference.uri);
+						}
 
-					if (symbol) {
-						const edits = codeEdits?.get(item.reference.uri.toString());
-						const hunks = edits?.hunkData.getInfo();
-						for (const hunk of hunks ?? []) {
-							let wholeRange: Range | undefined;
-							const ranges = hunk.getRangesN();
-							for (const range of ranges) {
-								if (!wholeRange) {
-									wholeRange = range;
-								} else {
-									wholeRange = wholeRange.plusRange(range);
+						const index = response.breakdowns.findIndex(
+							b => equals(b.reference.name, item.reference.name) && equals(b.reference.uri, item.reference.uri)
+						);
+
+						const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference, index));
+						const symbol = await viewItem.symbol;
+
+						if (symbol) {
+							const edits = codeEdits?.get(item.reference.uri.toString());
+							const hunks = edits?.hunkData.getInfo();
+							for (const hunk of hunks ?? []) {
+								let wholeRange: Range | undefined;
+								const ranges = hunk.getRangesN();
+								for (const range of ranges) {
+									if (!wholeRange) {
+										wholeRange = range;
+									} else {
+										wholeRange = wholeRange.plusRange(range);
+									}
+								}
+
+								if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+									viewItem.appendEdits([hunk]);
 								}
 							}
-
-							if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
-								viewItem.appendEdits([hunk]);
-							}
 						}
-					}
+
+						return viewItem;
+					};
+
+					const vm = createVM(this._model.response);
+
+					this._breakdownsBySymbol.set(key, vm);
+
+					this._breakdowns.push(await vm);
 
 					this._onDidChange.fire();
-
-
-
-					this._breakdownsBySymbol.set(key, viewItem);
 				}
 			}
 
@@ -286,7 +296,6 @@ export interface IAideProbeBreakdownViewModel {
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
-	readonly breakdownIndex: number;
 	// List view specific
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;

@@ -228,7 +228,7 @@ export class AideProbeDecorationService extends Disposable {
 	private updateDecorations(editor: ICodeEditor, fileEdits: IAideProbeEdits) {
 		editor.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
-
+			console.log('decorations.keysNow', keysNow);
 			for (const hunkData of fileEdits.hunkData.getInfo()) {
 				keysNow.delete(hunkData);
 
@@ -260,11 +260,14 @@ export class AideProbeDecorationService extends Disposable {
 						position: hunkRanges[0].getStartPosition().delta(-1),
 						remove
 					};
+					console.log('decorations.addHunkData.noData', data);
 					this._hunkDisplayData.set(hunkData, data);
 				} else if (hunkData.getState() !== HunkState.Pending) {
+					console.log('decorations.removeHunkData.hunkPending', data);
 					data.remove();
 				} else {
 					const modifiedRangeNow = hunkRanges[0];
+					console.log('decorations.removeHunkData.updatingRange', data);
 					data.position = modifiedRangeNow.getStartPosition().delta(-1);
 				}
 			}
@@ -273,6 +276,7 @@ export class AideProbeDecorationService extends Disposable {
 				const data = this._hunkDisplayData.get(key);
 				if (data) {
 					this._hunkDisplayData.delete(key);
+					console.log('decorations.removeHunkData', data);
 					data.remove();
 				}
 			}
