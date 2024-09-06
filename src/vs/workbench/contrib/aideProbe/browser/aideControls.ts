@@ -44,7 +44,7 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { IAideLSPService, unsupportedLanguages } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
+import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
