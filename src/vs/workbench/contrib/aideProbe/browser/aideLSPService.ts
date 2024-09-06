@@ -26,7 +26,7 @@ interface ILanguageStatus {
 
 export const IAideLSPService = createDecorator<IAideLSPService>('IAideLSPService');
 
-export const unsupportedLanguages = new Set(['plaintext', 'json', 'markdown', 'ignore']);
+export const unsupportedLanguages = new Set(['ignore']);
 
 export class AideLSPService extends Disposable implements IAideLSPService {
 	_serviceBrand: undefined;
