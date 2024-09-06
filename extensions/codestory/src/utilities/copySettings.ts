@@ -14,22 +14,25 @@ import * as os from 'os';
 import * as process from 'process';
 import * as path from 'path';
 import { runCommandAsync } from './commandRunner';
+import { get } from 'https';
 
-function copyFiles(srcDirectory: string, destDirectory: string) {
-	fs.readdirSync(srcDirectory).forEach(file => {
-		const srcFile = path.join(srcDirectory, file);
-		const destFile = path.join(destDirectory, file);
 
-		const stat = fs.statSync(srcFile);
-		if (stat.isDirectory()) {
-			fs.mkdirSync(destFile, { recursive: true });
-			copyFiles(srcFile, destFile);
-		} else {
-			fs.copyFileSync(srcFile, destFile);
-		}
-	});
-}
+// Example array of folder name prefixes to exclude
+const extensionsToGetFromOpenVSX = [
+	'ms-python.python',
+	'ms-python.debugpy',
+	'ms-python.vscode-pylance',
+];
 
+
+type Architectures = typeof process.arch;
+type ExtensionPlatorm = 'universal' | `${NodeJS.Platform}-${Architectures}`;
+
+type VsixMetadata = {
+	downloads: {
+		[platform in ExtensionPlatorm]?: string
+	};
+};
 
 export const copySettings = async (workingDirectory: string, logger: Logger) => {
 	window.showInformationMessage('Copying settings from vscode to aide');
@@ -79,7 +82,6 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 		return;
 	}
 
-
 	const homeDir = os.homedir();
 	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.vscode-oss`]);
 	if (exitCodeMkdir !== 0) {
@@ -87,11 +89,76 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 		logger.error('Error creating ~/.aide directory');
 		return;
 	}
-	const { exitCode } = await runCommandAsync(workingDirectory, 'cp', ['-R', `${homeDir}/.vscode/extensions`, `${homeDir}/.vscode-oss/`]);
-	if (exitCode !== 0) {
-		window.showErrorMessage('Error copying extensions from vscode to aide');
-		logger.error('Error copying extensions from vscode to aide');
-		return;
+
+	// EXTENSIONS
+
+	const srcDir = path.join(homeDir, '.vscode/extensions');
+	const destDir = path.join(homeDir, '.vscode-oss/');
+
+	// Get all subdirectories in the source folder
+	const allDirs = fs.readdirSync(srcDir).filter(file => {
+		const fullPath = path.join(srcDir, file);
+		return fs.statSync(fullPath).isDirectory();
+	});
+
+
+	for (const dir of allDirs) {
+
+		const namespaceAndExt = getNamesapceAndExtension(dir);
+		if (!namespaceAndExt) {
+			console.error(`Failed to copy directory: ${dir}`);
+			window.showErrorMessage(`Error copying directory "${dir}", it does not match the expected format`);
+			continue;
+		}
+		const [namespace, extension] = namespaceAndExt;
+
+		if (extensionsToGetFromOpenVSX.some(prefix => dir.startsWith(prefix))) {
+
+			window.showInformationMessage(`Cannot copy ${namespace}.${extension} from VSCode to Aide. Installing from OpenVSX instead.`);
+			let openVSXExtensionPath: string | undefined;
+			try {
+				const vsixResponse = await fetch(`https://open-vsx.org/api/${namespace}/${extension}`);
+				if (!vsixResponse.ok) {
+					throw new Error(`Failed to fetch OpenVSX metadata for ${namespace}.${extension}`);
+				}
+				const vsixMetadata = await vsixResponse.json() as VsixMetadata;
+				if (!vsixMetadata) {
+					throw new Error(`No OpenVSX metadata found for ${namespace}.${extension}`);
+				}
+				const tempFile = `${namespace}.${extension}.vsix`;
+				const platform = `${os.platform()}-${os.arch()}` as ExtensionPlatorm;
+				if (vsixMetadata.downloads.universal) {
+					console.log(`Found universal download URL for ${namespace}.${extension}`);
+					openVSXExtensionPath = await downloadFileToFolder(vsixMetadata.downloads.universal, destDir, tempFile);
+				} else if (vsixMetadata.downloads[platform]) {
+					console.log(`Found platform-specific download URL for ${namespace}.${extension} on ${platform}`);
+					const platformSpecificDownloadUrl = vsixMetadata.downloads[platform];
+					openVSXExtensionPath = await downloadFileToFolder(platformSpecificDownloadUrl, destDir, tempFile);
+				}
+				if (!openVSXExtensionPath) {
+					throw new Error(`Failed to find a suitabile download URL for the ${namespace}.${extension} extension for ${os.platform()} and ${os.arch()}`);
+				}
+				await installExtensionFromVSXFile(workingDirectory, openVSXExtensionPath);
+				console.log(`Successfully installed ${namespace}.${extension} from OpenVSX`);
+			} catch (error) {
+				console.error(`Failed to install from VSX: ${namespace}.${extension}. Error: ${error.message}`);
+			} finally {
+				if (openVSXExtensionPath) {
+					fs.unlinkSync(openVSXExtensionPath);
+					console.log(`Deleted installation file: ${openVSXExtensionPath}`);
+				}
+			}
+		} else {
+			const srcPath = path.join(srcDir, dir);
+			const destPath = path.join(destDir, dir);
+			const { exitCode } = await runCommandAsync(workingDirectory, 'cp', ['-R', srcPath, destPath]);
+			if (exitCode !== 0) {
+				window.showErrorMessage(`Error copying directory: ${dir}`);
+				console.error(`Failed to copy directory: ${dir}`);
+			} else {
+				console.log(`Successfully copied: ${dir}`);
+			}
+		}
 	}
 
 	// Now we can copy over keybindings.json and settings.json
@@ -161,3 +228,113 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 		return;
 	}
 };
+
+function getNamesapceAndExtension(extensionFolderName: string) {
+	// Define a regular expression to match the "[spacename].[extension]-[version]" pattern
+	const regex = /([a-zA-Z0-9\-]+)\.([a-zA-Z0-9\-]+)-(\d+\.\d+\.\d+)/;
+
+	// Apply the regex to the folder name
+	const match = extensionFolderName.match(regex);
+
+	// If a match is found, return it in the desired format
+	if (match) {
+		const spaceName = match[1];
+		const extension = match[2];
+		const version = match[3];
+		return [spaceName, extension, version];
+	}
+
+	// If no match is found, return null
+	return null;
+}
+
+function copyFiles(srcDirectory: string, destDirectory: string) {
+	fs.readdirSync(srcDirectory).forEach(file => {
+		const srcFile = path.join(srcDirectory, file);
+		const destFile = path.join(destDirectory, file);
+
+		const stat = fs.statSync(srcFile);
+		if (stat.isDirectory()) {
+			fs.mkdirSync(destFile, { recursive: true });
+			copyFiles(srcFile, destFile);
+		} else {
+			fs.copyFileSync(srcFile, destFile);
+		}
+	});
+}
+
+
+function downloadFileToFolder(fileUrl: string, downloadFolder: string, fileName: string, redirectCount = 0): Promise<string> {
+	return new Promise((resolve, reject) => {
+
+		if (redirectCount > 5) {
+			reject(new Error('Too many redirects'));
+			return;
+		}
+
+		const filePath = path.join(downloadFolder, fileName);
+
+		// Create the folder if it doesn't exist
+		if (!fs.existsSync(downloadFolder)) {
+			fs.mkdirSync(downloadFolder, { recursive: true });
+		}
+
+		const file = fs.createWriteStream(filePath);
+
+
+		get(fileUrl, (response) => {
+
+			if (response.statusCode === 302) {
+				const location = response.headers.location;
+				if (!location) {
+					reject(new Error('Redirect location not provided'));
+					return;
+				}
+				downloadFileToFolder(location, downloadFolder, fileName, redirectCount + 1).then(resolve, reject);
+				return;
+			}
+
+			if (response.statusCode !== 200) {
+				reject(new Error(`Failed to download file: ${response.statusCode}`));
+				return;
+			}
+
+			response.pipe(file);
+
+			file.on('finish', () => {
+				file.close(() => {
+					console.log(`Downloaded file: ${filePath}`);
+					resolve(filePath);
+				});
+			});
+		}).on('error', (err) => {
+			fs.unlinkSync(filePath); // Delete the file if an error occurs
+			reject(err);
+		});
+	});
+}
+
+async function installExtensionFromVSXFile(workingDirectory: string, vsixPath: string) {
+	const platform = os.platform();
+	try {
+		let exitCode: number;
+
+		switch (platform) {
+			case 'win32':
+				({ exitCode } = await runCommandAsync(workingDirectory, 'code.cmd', ['--install-extension', vsixPath]));
+				break;
+			case 'darwin':
+			case 'linux':
+				({ exitCode } = await runCommandAsync(workingDirectory, 'code', ['--install-extension', vsixPath]));
+				break;
+			default:
+				throw new Error(`Can't install on ${platform} from VSX file: ${vsixPath}`);
+		}
+
+		if (exitCode !== 0) {
+			throw new Error(`Failed to install extension from VSX file: ${vsixPath}`);
+		}
+	} catch (err) {
+		console.error(err);
+	}
+}
