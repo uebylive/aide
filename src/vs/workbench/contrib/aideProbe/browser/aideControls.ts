@@ -618,18 +618,18 @@ export class AideControls extends Themable implements IAideControls {
 				if (!model) {
 					placeholder = 'Open a file to start using Aide';
 				} else {
-					const languageId = model.getLanguageId();
+					// const languageId = model.getLanguageId();
 					// TODO(@g-danna) - make or find a capitalize util
-					const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
+					// const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
 
-					if (unsupportedLanguages.has(languageId)) {
-						placeholder = `Aide doesn't support ${capitalizedLanguageId}`;
-					} else {
-						const isLSPActive = this.aideLSPService.getStatus(languageId);
-						if (!isLSPActive) {
-							placeholder = `Loading language server for ${capitalizedLanguageId}...`;
-						}
-					}
+					// if (unsupportedLanguages.has(languageId)) {
+					// 	placeholder = `Aide doesn't support ${capitalizedLanguageId}`;
+					// } else {
+					// 	const isLSPActive = this.aideLSPService.getStatus(languageId);
+					// 	if (!isLSPActive) {
+					// 		placeholder = `Loading language server for ${capitalizedLanguageId}...`;
+					// 	}
+					// }
 				}
 			}
 
