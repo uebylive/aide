@@ -21,6 +21,11 @@
 	background-color: transparent;
 }
 
+.aide-controls-context-container {
+	display: flex;
+	justify-content: space-between;
+}
+
 .aide-controls-anchored-symbol {
 	display: flex;
 	align-items: center;

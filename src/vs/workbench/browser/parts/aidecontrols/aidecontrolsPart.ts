@@ -48,21 +48,13 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
-
-	// private _content!: HTMLElement;
-	// get content(): HTMLElement {
-	// 	return this._content;
-	// }
-
-
-	readonly preferredHeight = 120;
+	readonly preferredHeight = 92;
 	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
-
 
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = 800;
 
-	readonly minimumHeight: number = 120;
+	readonly minimumHeight: number = 92;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -77,15 +69,6 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 			layoutService
 		);
 	}
-
-	//protected override createContentArea(parent: HTMLElement): HTMLElement {
-	//	this.element = parent;
-	//
-	//	this.getColor(editorBackground);
-	//	this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
-	//	this._content = append(this.element, $('.content'));
-	//	return this._content;
-	//}
 
 	override layout(width?: number, height?: number): void {
 		super.layout(width, height);

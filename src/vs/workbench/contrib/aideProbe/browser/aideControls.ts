@@ -40,6 +40,7 @@ import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
+import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
@@ -179,9 +180,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private contextPicker: ContextPicker;
-
-
-	//private toolbar: MenuWorkbenchToolBar;
+	private toolbar: MenuWorkbenchToolBar | undefined;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
@@ -222,6 +221,7 @@ export class AideControls extends Themable implements IAideControls {
 		@IOutlineService private readonly outlineService: IOutlineService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
+		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 	) {
 		super(themeService);
 
@@ -240,8 +240,12 @@ export class AideControls extends Themable implements IAideControls {
 		this.part.element.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
+		const contextContainer = $('.aide-controls-context-container');
+		element.appendChild(contextContainer);
 		this.anchoredContextContainer = $('.aide-controls-anchored-symbol');
-		element.appendChild(this.anchoredContextContainer);
+		contextContainer.appendChild(this.anchoredContextContainer);
+		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
+		this.contextPicker.append(contextContainer);
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
@@ -249,7 +253,6 @@ export class AideControls extends Themable implements IAideControls {
 		element.appendChild(toolbarElement);
 
 		this._input = this.createInput(inputElement);
-
 
 		this.topSash = instantiationService.createInstance(Sash, this.element, { getHorizontalSashTop: () => 0, getHorizontalSashWidth: () => this.element.offsetWidth }, { orientation: Orientation.HORIZONTAL });
 
@@ -269,13 +272,9 @@ export class AideControls extends Themable implements IAideControls {
 		}));
 
 		this.layout(this.part.width, this.part.height);
-
 		this.part.onDidSizeChange((size: IDimension) => {
 			this.layout(size.width, size.height);
 		});
-
-		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
-		this.contextPicker.append(inputElement);
 
 		const toggleBarElement = $('.aide-controls-toggle-bar');
 		toolbarElement.appendChild(toggleBarElement);
@@ -307,6 +306,7 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.createToolbar(toolbarElement);
 
+		this.updateAnchoredContext();
 		this.checkActivation();
 		this.updateOutline();
 		this.updateInputPlaceholder();
@@ -383,22 +383,37 @@ export class AideControls extends Themable implements IAideControls {
 		}
 	}
 
+	private renderEmptyAnchor() {
+		this.clearAnchors();
+		if (!this.anchoredContextContainer) {
+			return;
+		}
+
+		const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
+		const basePath = workspaceFolders.length > 0 ? (workspaceFolders[0].uri.fsPath ?? '') : '';
+		const fileLabel = this.resourceLabels?.create(this.anchoredContextContainer, { supportHighlights: true });
+		fileLabel?.setFile(URI.file(basePath), {
+			fileKind: FileKind.FILE,
+			icon: SymbolKinds.toIcon(SymbolKind.File),
+		});
+	}
+
 	private async updateAnchoredContext() {
 		if (!this.anchoredContextContainer || !this.resourceLabels) {
-			this.clearAnchors();
+			this.renderEmptyAnchor();
 			return;
 		}
 
 		const editor = this.editorService.activeTextEditorControl;
 		if (!isCodeEditor(editor)) {
-			this.clearAnchors();
+			this.renderEmptyAnchor();
 			return;
 		}
 
 		const model = editor.getModel();
 		const resource = editor.getModel()?.uri;
 		if (!model || !resource) {
-			this.clearAnchors();
+			this.renderEmptyAnchor();
 			return;
 		}
 
@@ -469,6 +484,16 @@ export class AideControls extends Themable implements IAideControls {
 			this.aideProbeService.anchorEditingSelection = anchorEditingSelection;
 			this.layout();
 		}
+
+		if (!this.anchoredContextContainer.hasChildNodes()) {
+			this.clearAnchors();
+			const fileLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
+			fileLabel.setFile(resource, {
+				fileKind: FileKind.FILE,
+				icon: SymbolKinds.toIcon(SymbolKind.File),
+			});
+			this.layout();
+		}
 	}
 
 	private checkEditorSelection() {
@@ -533,7 +558,8 @@ export class AideControls extends Themable implements IAideControls {
 		this.codeEditorService.registerDecorationType(inputPlaceholder.description, inputPlaceholder.decorationType, {});
 
 		this._register(editor.onDidChangeModelContent(() => {
-			const currentHeight = Math.max(editor.getContentHeight(), INPUT_MIN_HEIGHT);
+			const currentHeight = this.inputHeight;
+			const newHeight = Math.max(editor.getContentHeight(), INPUT_MIN_HEIGHT);
 
 			const model = editor.getModel();
 			const inputHasText = !!model && model.getValue().trim().length > 0;
@@ -544,8 +570,9 @@ export class AideControls extends Themable implements IAideControls {
 				this.sendContextChange();
 			}
 
-			if (currentHeight !== this.inputHeight) {
-				this.inputHeight = currentHeight;
+			if (newHeight !== currentHeight) {
+				this.inputHeight = newHeight;
+				this.layout(undefined, this.part.height + (newHeight - currentHeight));
 			}
 		}));
 
@@ -616,7 +643,7 @@ export class AideControls extends Themable implements IAideControls {
 			if (!editor || (editor && isCodeEditor(editor))) {
 				const model = editor?.getModel();
 				if (!model) {
-					placeholder = 'Open a file to start using Aide';
+					placeholder = 'Open a file to start editing with AI';
 				} else {
 					const languageId = model.getLanguageId();
 					// TODO(@g-danna) - make or find a capitalize util
@@ -658,7 +685,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private createToolbar(parent: HTMLElement) {
-		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+		const toolbar = this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
 			menuOptions: {
 				shouldForwardArgs: true,
 
@@ -683,7 +710,10 @@ export class AideControls extends Themable implements IAideControls {
 	layout(width: number = this.part.width, height: number = this.part.height) {
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
-		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
+		this._input.layout({
+			width: newWidth - 20 /* padding */,
+			height: height - 8 - (this.toolbar?.getElement().offsetHeight ?? 0) - (this.anchoredContextContainer?.offsetHeight ?? 0)
+		});
 		this.topSash.layout();
 	}
 }

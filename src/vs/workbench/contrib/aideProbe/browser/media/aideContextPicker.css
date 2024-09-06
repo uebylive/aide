@@ -24,14 +24,19 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
+	width: 20px;
+}
+
+.aide-controls-context-button svg {
+	height: 16px;
+	width: 16px;
 }
 
 .aide-controls-context-type-button {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
+	width: 20px;
 }
 
 .aide-option-item {
