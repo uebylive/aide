@@ -68,6 +68,7 @@ export interface IAideProbeResponseModel {
 	result?: IMarkdownString;
 	readonly lastFileOpened?: URI;
 	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownContent>;
+	readonly breakdownsBySymbol: Map<string, IAideProbeBreakdownContent>;
 	readonly goToDefinitions: ReadonlyArray<IAideProbeGoToDefinition>;
 	readonly initialSymbols: ReadonlyMap<string, IAideProbeInitialSymbolInformation[]>;
 	readonly referencesFound: Record<string, number> | undefined;
@@ -138,6 +139,11 @@ export class AideProbeResponseModel extends Disposable implements IAideProbeResp
 	}
 
 	private readonly _breakdownsBySymbol: Map<string, IAideProbeBreakdownContent> = new Map();
+
+	public get breakdownsBySymbol() {
+		return this._breakdownsBySymbol;
+	}
+
 	private readonly _breakdowns: IAideProbeBreakdownContent[] = [];
 
 	public get breakdowns(): ReadonlyArray<IAideProbeBreakdownContent> {

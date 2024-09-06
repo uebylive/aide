@@ -319,7 +319,6 @@ export class AideProbeViewPane extends ViewPane {
 			element.expanded = !element.expanded;
 			if (this.list) {
 				this.list.splice(index, 1, [element]);
-				this.list.rerender();
 			}
 			this._onDidChangeFocus.fire({ index, element: element });
 			console.log('will openListItemReference');
@@ -336,11 +335,7 @@ export class AideProbeViewPane extends ViewPane {
 				}
 			});
 		} else if (isBreakdownVM(element)) {
-			this.viewModel?.breakdowns.forEach((item, index) => {
-				if (item.uri.fsPath === element.uri.fsPath && item.name === element.name) {
-					matchIndex = index;
-				}
-			});
+			return element.breakdownIndex;
 		}
 		return matchIndex;
 	}
@@ -359,7 +354,7 @@ export class AideProbeViewPane extends ViewPane {
 	}
 
 	private updateList() {
-		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdowns.length)) {
+		if (!this.list && (this.viewModel?.initialSymbols.length || this.viewModel?.breakdownsBySymbol.size)) {
 			this.list = this.createList();
 		}
 
@@ -371,7 +366,7 @@ export class AideProbeViewPane extends ViewPane {
 			return;
 		}
 
-		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...this.viewModel.breakdowns];
+		const items: (IAideProbeInitialSymbolsViewModel | IAideProbeBreakdownViewModel | IAideReferencesFoundViewModel | IAideRelevantReferencesViewModel | IAideFollowupsViewModel)[] = [...this.viewModel.initialSymbols, ...Array.from(this.viewModel.breakdownsBySymbol.values())];
 
 		// Make sure referencesFound is always the first item
 		if (this.viewModel.referencesFound) {
@@ -435,13 +430,13 @@ export class AideProbeViewPane extends ViewPane {
 			});
 		}
 
+		console.log('updaitng list', matchingIndex, this.listFocusIndex);
+
 		if (this.listFocusIndex !== undefined) {
 			this.list.setFocus([this.listFocusIndex]);
 		} else if (matchingIndex !== -1) {
 			this.list.setFocus([matchingIndex]);
 		}
-
-		this.list.rerender();
 	}
 
 	protected override renderBody(container: HTMLElement): void {

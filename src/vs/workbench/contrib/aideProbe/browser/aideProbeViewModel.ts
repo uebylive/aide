@@ -7,6 +7,7 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { Disposable, DisposableStore, IReference } from 'vs/base/common/lifecycle';
+import { equals } from 'vs/base/common/objects';
 import { URI } from 'vs/base/common/uri';
 import { Range } from 'vs/editor/common/core/range';
 import { DocumentSymbol } from 'vs/editor/common/languages';
@@ -24,7 +25,7 @@ export interface IAideProbeViewModel {
 	readonly sessionId: string;
 	readonly status: IAideProbeStatus;
 	readonly initialSymbols: ReadonlyArray<IAideProbeInitialSymbolsViewModel>;
-	readonly breakdowns: ReadonlyArray<IAideProbeBreakdownViewModel>;
+	readonly breakdownsBySymbol: ReadonlyMap<string, IAideProbeBreakdownViewModel>;
 }
 
 export type IFollowupState = 'idle' | 'loading' | 'complete';
@@ -76,9 +77,9 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._isLongContextSearchReady;
 	}
 
-	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
-	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return this._breakdowns;
+	private _breakdownsBySymbol: Map<string, IAideProbeBreakdownViewModel> = new Map();
+	get breakdownsBySymbol(): ReadonlyMap<string, IAideProbeBreakdownViewModel> {
+		return this._breakdownsBySymbol;
 	}
 
 	private _initialSymbols: IAideProbeInitialSymbolsViewModel[] = [];
@@ -102,7 +103,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 	}
 
 	get filteredBreakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
-		return this.breakdowns.filter(b => {
+		return Array.from(this.breakdownsBySymbol.values()).filter(b => {
 			if (!this._filter) {
 				return true;
 			}
@@ -123,7 +124,7 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			this._lastFileOpened = undefined;
 			this._isRepoMapReady = undefined;
 			this._isLongContextSearchReady = undefined;
-			this._breakdowns = [];
+			this._breakdownsBySymbol.clear();
 			this._initialSymbols = [];
 			this._referencesFound = undefined;
 			this._relevantReferences = undefined;
@@ -185,40 +186,84 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 				this._followups = { followups, type: 'followups', index: undefined, expanded: false, currentRenderedHeight: 0 };
 			}
 
-			this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
-				let reference = this._references.get(item.reference.uri.toString());
-				if (!reference) {
-					reference = await this.textModelResolverService.createModelReference(item.reference.uri);
-				}
 
-				const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
-				viewItem.symbol.then(symbol => {
-					if (!symbol) {
-						return;
+
+			for (const [key, item] of this._model.response.breakdownsBySymbol.entries()) {
+				if (!this._breakdownsBySymbol.has(key)) {
+					let reference = this._references.get(item.reference.uri.toString());
+					if (!reference) {
+						reference = await this.textModelResolverService.createModelReference(item.reference.uri);
 					}
 
-					const edits = codeEdits?.get(item.reference.uri.toString());
-					const hunks = edits?.hunkData.getInfo();
-					for (const hunk of hunks ?? []) {
-						let wholeRange: Range | undefined;
-						const ranges = hunk.getRangesN();
-						for (const range of ranges) {
-							if (!wholeRange) {
-								wholeRange = range;
-							} else {
-								wholeRange = wholeRange.plusRange(range);
+					const index = this._model.response.breakdowns.findIndex(
+						b => equals(b.reference.name, item.reference.name) && equals(b.reference.uri, item.reference.uri)
+					);
+
+					const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference, index));
+					const symbol = await viewItem.symbol;
+
+					if (symbol) {
+						const edits = codeEdits?.get(item.reference.uri.toString());
+						const hunks = edits?.hunkData.getInfo();
+						for (const hunk of hunks ?? []) {
+							let wholeRange: Range | undefined;
+							const ranges = hunk.getRangesN();
+							for (const range of ranges) {
+								if (!wholeRange) {
+									wholeRange = range;
+								} else {
+									wholeRange = wholeRange.plusRange(range);
+								}
+							}
+
+							if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+								viewItem.appendEdits([hunk]);
 							}
 						}
-
-						if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
-							viewItem.appendEdits([hunk]);
-						}
 					}
-					this._onDidChange.fire();
-				});
 
-				return viewItem;
-			}) ?? []);
+					this._onDidChange.fire();
+
+
+
+					this._breakdownsBySymbol.set(key, viewItem);
+				}
+			}
+
+			// this._breakdowns = await Promise.all(_model.response?.breakdowns.map(async (item) => {
+			// 	let reference = this._references.get(item.reference.uri.toString());
+			// 	if (!reference) {
+			// 		reference = await this.textModelResolverService.createModelReference(item.reference.uri);
+			// 	}
+
+			// 	const viewItem = this._register(this.instantiationService.createInstance(AideProbeBreakdownViewModel, item, reference));
+			// 	viewItem.symbol.then(symbol => {
+			// 		if (!symbol) {
+			// 			return;
+			// 		}
+
+			// 		const edits = codeEdits?.get(item.reference.uri.toString());
+			// 		const hunks = edits?.hunkData.getInfo();
+			// 		for (const hunk of hunks ?? []) {
+			// 			let wholeRange: Range | undefined;
+			// 			const ranges = hunk.getRangesN();
+			// 			for (const range of ranges) {
+			// 				if (!wholeRange) {
+			// 					wholeRange = range;
+			// 				} else {
+			// 					wholeRange = wholeRange.plusRange(range);
+			// 				}
+			// 			}
+
+			// 			if (wholeRange && Range.areIntersecting(symbol.range, wholeRange)) {
+			// 				viewItem.appendEdits([hunk]);
+			// 			}
+			// 		}
+			// 		this._onDidChange.fire();
+			// 	});
+
+			// 	return viewItem;
+			// }) ?? []);
 
 			this._onDidChange.fire();
 		}));
@@ -241,6 +286,8 @@ export interface IAideProbeBreakdownViewModel {
 	readonly response?: IMarkdownString;
 	readonly symbol: Promise<DocumentSymbol | undefined>;
 	readonly edits: HunkInformation[];
+	readonly breakdownIndex: number;
+	// List view specific
 	index: number | undefined;
 	currentRenderedHeight: number | undefined;
 	expanded: boolean;
@@ -336,6 +383,11 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	expanded = false;
 	index: number | undefined;
 
+	_breakdownIndex: number;
+	get breakdownIndex() {
+		return this._breakdownIndex;
+	}
+
 	private _symbolResolver: (() => Promise<DocumentSymbol | undefined>) | undefined;
 	private _symbol: DocumentSymbol | undefined;
 	get symbol() {
@@ -364,9 +416,12 @@ export class AideProbeBreakdownViewModel extends Disposable implements IAideProb
 	constructor(
 		private readonly _breakdown: IAideProbeBreakdownContent,
 		private readonly reference: IReference<IResolvedTextEditorModel>,
+		breakdownIndex: number,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 	) {
 		super();
+
+		this._breakdownIndex = breakdownIndex;
 
 		if (_breakdown.reference.uri && _breakdown.reference.name) {
 			this._symbolResolver = async () => {

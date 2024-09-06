@@ -9,7 +9,7 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { assertIsDefined } from 'vs/base/common/types';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
-import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
+//import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
 import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideBarService } from 'vs/workbench/services/aideBar/browser/aideBarService';
@@ -26,7 +26,7 @@ export class AideBar extends Disposable {
 	private editorSize = this.editorPart.getSize(0);
 
 	private element: HTMLElement;
-	private editsPanel: AideEditsPanel;
+	//private editsPanel: AideEditsPanel;
 	private openPanel: AidePanel | undefined;
 
 
@@ -61,15 +61,15 @@ export class AideBar extends Disposable {
 			justifyContent: 'center',
 		});
 
-		this.editsPanel = this.openPanel = this.instantiationService.createInstance(AideEditsPanel, button, buttonContainer);
-
-		button.onDidClick(() => {
-			if (this.editsPanel.isVisible) {
-				this.editsPanel.hide();
-			} else {
-				this.editsPanel.show();
-			}
-		});
+		//this.editsPanel = this.openPanel = this.instantiationService.createInstance(AideEditsPanel, button, buttonContainer);
+		//
+		//button.onDidClick(() => {
+		//	if (this.editsPanel.isVisible) {
+		//		this.editsPanel.hide();
+		//	} else {
+		//		this.editsPanel.show();
+		//	}
+		//});
 
 		// TODO(@g-danna) Replace this with proper service and event
 		this._register(this.editorPart.onDidLayout((editorSize) => {

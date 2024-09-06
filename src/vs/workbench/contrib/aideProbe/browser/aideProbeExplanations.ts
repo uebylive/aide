@@ -90,7 +90,8 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 					breakdownPosition = new Position(wholeRange.startLineNumber - 1, wholeRange.startColumn);
 					codeEditor = await this.openCodeEditor(uri, wholeRange);
 				}
-				codeEditor = await this.openCodeEditor(uri);
+				const symbol = await element.symbol;
+				codeEditor = await this.openCodeEditor(uri, symbol?.range);
 			} else {
 				const symbol = await element.symbol;
 				codeEditor = await this.openCodeEditor(uri, symbol?.range);
