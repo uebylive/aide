@@ -324,7 +324,6 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.statusBarService = accessor.get(IStatusbarService);
 		accessor.get(IBannerService);
 		accessor.get(IAideControlsPartService);
-		//accessor.get(IAideBarPartService);
 
 		// Listeners
 		this.registerLayoutListeners();

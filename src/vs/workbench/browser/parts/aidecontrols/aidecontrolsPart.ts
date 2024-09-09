@@ -16,7 +16,6 @@ import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/bro
 const $ = dom.$;
 
 export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
-
 	declare _serviceBrand: undefined;
 
 	readonly mainPart = this._register(this.instantiationService.createInstance(AideControlsPart));
@@ -46,7 +45,6 @@ export type AideControlsPosition = {
 	left: number;
 };
 
-
 export class AideControlsPart extends Part implements IDisposable {
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
@@ -55,11 +53,11 @@ export class AideControlsPart extends Part implements IDisposable {
 		return this._content;
 	}
 
-	readonly preferredHeight = 120;
+	readonly preferredHeight = 36;
 	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 120;
+	readonly minimumHeight: number = 36;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -88,10 +86,6 @@ export class AideControlsPart extends Part implements IDisposable {
 	override layout(width: number, height: number, top: number, left: number): void {
 		super.layout(width, height, top, left);
 		super.layoutContents(width, height);
-	}
-
-	get snap() {
-		return false;
 	}
 
 	toJSON(): object {

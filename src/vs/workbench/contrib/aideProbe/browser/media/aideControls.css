@@ -4,11 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 .aide-controls {
+	display: flex;
 	margin: auto;
 	position: relative;
-	padding: 8px;
+	padding: 0px 14px 0px 30px;
 	box-sizing: border-box;
 	border-top: 1px solid var(--vscode-panel-border);
+	border-bottom: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background) !important;
 }
 
@@ -20,33 +22,15 @@
 	background-color: transparent;
 }
 
-.aide-controls-anchored-symbol {
+.aide-controls .aide-controls-settings {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	margin-right: 26px;
 }
 
-.aide-controls-anchored-symbol .monaco-icon-label {
-	font-size: 11px;
-	display: flex;
-	padding: 0 6px 0px 2px;
-	border-radius: 2px;
-	text-align: center;
-	justify-content: center;
-	align-items: center;
-	color: var(--vscode-button-secondaryForeground);
-	background-color: var(--vscode-button-secondaryBackground);
-	border: 1px solid var(--vscode-button-border, transparent);
-}
-
-.aide-controls-anchored-symbol .monaco-icon-label::before {
-	height: 18px;
-}
-
-.aide-controls-anchored-symbol .monaco-button.codicon.codicon-close:hover {
-	cursor: pointer;
-	color: var(--vscode-button-secondaryForeground);
-	background-color: var(--vscode-button-secondaryBackground);
+.aide-controls .aide-controls-settings::before {
+	font-size: 14px;
+	font-weight: bold;
 }
 
 .aide-controls-input-container {
@@ -61,21 +45,6 @@
 
 .aide-controls-toolbar .actions-container {
 	gap: 8px;
-}
-
-.aide-controls-toggle-bar {
-	display: flex;
-	align-items: center;
-}
-
-.aide-controls-toggle-bar .monaco-button {
-	padding: 0px 4px;
-	white-space: nowrap;
-	font-size: 11px;
-}
-
-.aide-controls-toggle-bar .monaco-text-button {
-	border-radius: 0px;
 }
 
 .aide-controls-submit-button {

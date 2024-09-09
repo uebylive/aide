@@ -6,12 +6,13 @@
 import * as dom from 'vs/base/browser/dom';
 import { IDimension } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { ButtonBar } from 'vs/base/browser/ui/button/button';
 import { equals } from 'vs/base/common/arrays';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
+import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideControls';
 import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
@@ -36,7 +37,6 @@ import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
@@ -164,6 +164,7 @@ export class AideControls extends Themable implements IAideControls {
 	static readonly INPUT_SCHEME = 'aideControlsInput';
 	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
 
+	private actionsToolbar: MenuWorkbenchToolBar | undefined;
 
 	private parsedChatRequest: IParsedChatRequest | undefined;
 	get parsedInput() {
@@ -229,8 +230,10 @@ export class AideControls extends Themable implements IAideControls {
 		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
-		this.anchoredContextContainer = $('.aide-controls-anchored-symbol');
-		element.appendChild(this.anchoredContextContainer);
+		const aideControlSettings = $('.aide-controls-settings');
+		aideControlSettings.classList.add(...ThemeIcon.asClassNameArray(Codicon.settings));
+		aideControlSettings.title = localize('aideControls.settings', "Settings");
+		element.appendChild(aideControlSettings);
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
@@ -246,34 +249,6 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.part.onDidSizeChange((size: IDimension) => {
 			this.layout(size.width, size.height);
-		});
-
-		const toggleBarElement = $('.aide-controls-toggle-bar');
-		toolbarElement.appendChild(toggleBarElement);
-		const toggleBar = this.instantiationService.createInstance(ButtonBar, toggleBarElement);
-		const anchorMode = this._register(toggleBar.addButton({
-			...defaultButtonStyles,
-		}));
-		anchorMode.label = 'Anchored editing';
-		anchorMode.onDidClick(() => {
-			this.probeMode.set(AideProbeMode.ANCHORED);
-		});
-		const agentMode = this._register(toggleBar.addButton({
-			...defaultButtonStyles,
-			secondary: true
-		}));
-		agentMode.label = 'Agentic editing';
-		agentMode.element.style.opacity = '0.4';
-		agentMode.onDidClick(() => {
-			this.probeMode.set(AideProbeMode.AGENTIC);
-		});
-		this.contextKeyService.onDidChangeContext(e => {
-			if (e.affectsSome(new Set([CONTEXT_PROBE_MODE.key]))) {
-				anchorMode.element.style.opacity = this.probeMode.get() === AideProbeMode.ANCHORED ? '1' : '0.4';
-				agentMode.element.style.opacity = this.probeMode.get() === AideProbeMode.AGENTIC ? '1' : '0.4';
-			} else if (e.affectsSome(new Set([CONTEXT_PROBE_INPUT_HAS_FOCUS.key]))) {
-				this.updateInputPlaceholder();
-			}
 		});
 
 		this.createToolbar(toolbarElement);
@@ -461,12 +436,10 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private createInput(parent: HTMLElement) {
-		const editorOuterElement = $('.aide-controls-input');
-		parent.appendChild(editorOuterElement);
-		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(editorOuterElement));
+		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(parent));
 
 		const editorElement = $('.aide-controls-input-editor');
-		editorOuterElement.appendChild(editorElement);
+		parent.appendChild(editorElement);
 		const scopedInstantiationService = this.instantiationService.createChild(new ServiceCollection([IContextKeyService, inputScopedContextKeyService]));
 		const defaultOptions = getSimpleEditorOptions(this.configurationService);
 		const options: IEditorConstructionOptions = {
@@ -613,7 +586,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private createToolbar(parent: HTMLElement) {
-		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+		const toolbar = this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
 			menuOptions: {
 				shouldForwardArgs: true,
 
@@ -633,6 +606,8 @@ export class AideControls extends Themable implements IAideControls {
 			const numberOfItems = toolbar.getItemsLength();
 			toolbar.getElement().style.width = `${width + Math.max(0, numberOfItems - 1) * 8}px`;
 		}));
+
+		this.layout();
 	}
 
 	layout(width?: number, height?: number) {
@@ -649,6 +624,8 @@ export class AideControls extends Themable implements IAideControls {
 		}
 
 		this.element.style.width = `${width}px`;
-		this._input.layout({ width: width - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
+		this.element.style.height = `${height}px`;
+		const toolbarWidth = this.actionsToolbar?.getElement().clientWidth ?? 0;
+		this._input.layout({ width: width - 72 /* gutter */ - 14 /* scrollbar */ - toolbarWidth, height: height });
 	}
 }
