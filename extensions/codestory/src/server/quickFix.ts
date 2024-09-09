@@ -108,7 +108,7 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 						label: commandPossibleArgument.label,
 						arguments: commandPossibleArgument.arguments,
 						command: 'rust-analyzer.resolveCodeAction',
-						id: actionIndex++, // increment
+						id: actionIndex++, // postfix increment (increments by 1, returns original value)
 					});
 				} else {
 					console.warn("Unexpected argument type:", commandPossibleArgument);
