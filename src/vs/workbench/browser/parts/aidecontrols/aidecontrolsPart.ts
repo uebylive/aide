@@ -3,14 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IWorkbenchLayoutService, OverlayedParts } from 'vs/workbench/services/layout/browser/layoutService';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts } from 'vs/workbench/browser/part';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import * as dom from 'vs/base/browser/dom';
 import { IDisposable } from 'vs/base/common/lifecycle';
+import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { IStorageService } from 'vs/platform/storage/common/storage';
+import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
+import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
-import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
+import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
+
+const $ = dom.$;
 
 export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
 
@@ -44,24 +47,18 @@ export type AideControlsPosition = {
 };
 
 
-export class AideControlsPart extends OverlayedPart implements IDisposable {
-
+export class AideControlsPart extends Part implements IDisposable {
 	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
 
-
-	// private _content!: HTMLElement;
-	// get content(): HTMLElement {
-	// 	return this._content;
-	// }
-
+	private _content!: HTMLElement;
+	get content(): HTMLElement {
+		return this._content;
+	}
 
 	readonly preferredHeight = 120;
 	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
-
-
 	readonly minimumWidth: number = 200;
-	readonly maximumWidth: number = 800;
-
+	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 	readonly minimumHeight: number = 120;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
@@ -71,24 +68,26 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 		@IThemeService themeService: IThemeService,
 	) {
 		super(
-			OverlayedParts.AIDECONTROLS_PART,
+			Parts.AIDECONTROLS_PART,
+			{ hasTitle: false },
 			themeService,
 			storageService,
 			layoutService
 		);
 	}
 
-	//protected override createContentArea(parent: HTMLElement): HTMLElement {
-	//	this.element = parent;
-	//
-	//	this.getColor(editorBackground);
-	//	this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
-	//	this._content = append(this.element, $('.content'));
-	//	return this._content;
-	//}
+	protected override createContentArea(parent: HTMLElement): HTMLElement {
+		this.element = parent;
 
-	override layout(width?: number, height?: number): void {
-		super.layout(width, height);
+		this.getColor(editorBackground);
+		this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
+		this._content = dom.append(this.element, $('.content'));
+		return this._content;
+	}
+
+	override layout(width: number, height: number, top: number, left: number): void {
+		super.layout(width, height, top, left);
+		super.layoutContents(width, height);
 	}
 
 	get snap() {
@@ -97,7 +96,7 @@ export class AideControlsPart extends OverlayedPart implements IDisposable {
 
 	toJSON(): object {
 		return {
-			type: OverlayedParts.AIDECONTROLS_PART,
+			type: Parts.AIDECONTROLS_PART,
 		};
 	}
 }

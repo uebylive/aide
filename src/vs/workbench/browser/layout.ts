@@ -49,7 +49,7 @@ import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
 import { IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { CodeWindow, mainWindow } from 'vs/base/browser/window';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
-import { IOverlayedView, OverlayedPart } from 'vs/workbench/browser/overlayedPart';
+import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
 
 //#region Layout Implementation
 
@@ -261,8 +261,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	private aideControlsPartView!: IOverlayedView;
-	//private aideBarPartView!: ISerializableView;
+	// private aideControlsPartViewDeprecated!: IOverlayedView;
+	private aideControlsPartView!: ISerializableView;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
@@ -1505,8 +1505,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const editorPart = this.getPart(Parts.EDITOR_PART);
 		const activityBar = this.getPart(Parts.ACTIVITYBAR_PART);
 		const panelPart = this.getPart(Parts.PANEL_PART);
-		const aideControls = this.getOverlayedPart(OverlayedParts.AIDECONTROLS_PART);
-		//const aideBarPart = this.getPart(Parts.AIDEBAR_PART);
+		// const aideControlsDeprecated = this.getOverlayedPart(OverlayedParts.AIDECONTROLS_PART_DEPRECATED);
+		const aideControls = this.getPart(Parts.AIDECONTROLS_PART);
 		const auxiliaryBarPart = this.getPart(Parts.AUXILIARYBAR_PART);
 		const sideBar = this.getPart(Parts.SIDEBAR_PART);
 		const statusBar = this.getPart(Parts.STATUSBAR_PART);
@@ -1532,8 +1532,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			[Parts.PANEL_PART]: this.panelPartView,
 			[Parts.SIDEBAR_PART]: this.sideBarPartView,
 			[Parts.STATUSBAR_PART]: this.statusBarPartView,
-			[OverlayedParts.AIDECONTROLS_PART]: this.aideControlsPartView,
-			//[Parts.AIDEBAR_PART]: this.aideBarPartView,
+			// [OverlayedParts.AIDECONTROLS_PART_DEPRECATED]: this.aideControlsPartView,
+			[Parts.AIDECONTROLS_PART]: this.aideControlsPartView,
 			[Parts.AUXILIARYBAR_PART]: this.auxiliaryBarPartView
 		};
 
@@ -1604,7 +1604,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
 			this.initialized = true;
 
-			// Add aide controls
+			/* // Deprecated: Add aide controls
 			try {
 				const editorParentElement = this.editorPartView.element.parentElement;
 				if (editorParentElement) {
@@ -1617,7 +1617,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			} catch (error) {
 				console.error(`Could not initialize Aide controls: ${error}`);
-			}
+			} */
 
 			// Emit as event
 			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);
@@ -2245,6 +2245,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled, this.isZenModeActive()));
 	}
 
+	/*
 	private arrangeAideControls() {
 		// TODO(@g-danna) Make an abstraction about overlayed part positioning?
 		const margin = 14; // Allow for scrollbars
@@ -2253,6 +2254,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.aideControlsPartView.setPosition({ bottom: margin, left: margin });
 		this.aideControlsPartView.layout();
 	}
+	*/
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {
@@ -2288,7 +2290,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		};
 	}
 
-	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
+	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; aideControls: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
 		const activityBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN) ? 0 : nodes.activityBar.size;
 		const sideBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN) ? 0 : nodes.sideBar.size;
 		const auxiliaryBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN) ? 0 : nodes.auxiliaryBar.size;
@@ -2326,8 +2328,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 					editor: nodes.editor,
 					sideBar: sideBarNextToEditor ? nodes.sideBar : undefined,
 					auxiliaryBar: auxiliaryBarNextToEditor ? nodes.auxiliaryBar : undefined
-				}, availableHeight - panelSize, editorSectionWidth), //nodes.aideControls,
-				nodes.panel],
+				}, availableHeight - panelSize, editorSectionWidth), nodes.aideControls, nodes.panel],
 				size: editorSectionWidth
 			});
 
@@ -2398,12 +2399,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			visible: !this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN)
 		};
 
-		//const aideControlsNode: ISerializedLeafNode = {
-		//	type: 'leaf',
-		//	data: { type: OverlayedParts.AIDECONTROLS_PART },
-		//	size: 36,
-		//	visible: true
-		//};
+		const aideControlsNode: ISerializedLeafNode = {
+			type: 'leaf',
+			data: { type: Parts.AIDECONTROLS_PART },
+			size: 36,
+			visible: true
+		};
 
 		const auxiliaryBarNode: ISerializedLeafNode = {
 			type: 'leaf',
@@ -2429,7 +2430,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const middleSection: ISerializedNode[] = this.arrangeMiddleSectionNodes({
 			activityBar: activityBarNode,
 			auxiliaryBar: auxiliaryBarNode,
-			//aideControls: aideControlsNode,
+			aideControls: aideControlsNode,
 			editor: editorNode,
 			panel: panelNode,
 			sideBar: sideBarNode

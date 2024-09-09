@@ -7,7 +7,6 @@ import * as dom from 'vs/base/browser/dom';
 import { IDimension } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
 import { ButtonBar } from 'vs/base/browser/ui/button/button';
-import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
 import { equals } from 'vs/base/common/arrays';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
@@ -195,8 +194,6 @@ export class AideControls extends Themable implements IAideControls {
 	private model: AideProbeModel | undefined;
 	private lastUsedSelection: AnchorEditingSelection | undefined;
 
-	private topSash: Sash;
-
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 	private resourceLabels: ResourceLabels | undefined;
@@ -237,7 +234,7 @@ export class AideControls extends Themable implements IAideControls {
 		this.probeMode.set(AideProbeMode.ANCHORED);
 
 		const element = this.element = $('.aide-controls');
-		this.part.element.appendChild(element);
+		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
 		this.anchoredContextContainer = $('.aide-controls-anchored-symbol');
@@ -250,25 +247,10 @@ export class AideControls extends Themable implements IAideControls {
 
 		this._input = this.createInput(inputElement);
 
-
-		this.topSash = instantiationService.createInstance(Sash, this.element, { getHorizontalSashTop: () => 0, getHorizontalSashWidth: () => this.element.offsetWidth }, { orientation: Orientation.HORIZONTAL });
-
-		this._register(this.topSash.onDidStart((dragStart) => {
-			const initialHeight = this.part.height;
-			const initialY = dragStart.currentY;
-			const onDragEvent = this._register(this.topSash.onDidChange((dragChange) => {
-				const delta = dragChange.currentY - initialY;
-				const newHeight = initialHeight - delta;
-				this.part.layout(undefined, newHeight);
-			}));
-
-			const onDragEndEvent = this._register(this.topSash.onDidEnd(() => {
-				onDragEvent.dispose();
-				onDragEndEvent.dispose();
-			}));
-		}));
-
-		this.layout(this.part.width, this.part.height);
+		const partSize = this.part.dimension;
+		if (partSize) {
+			this.layout(partSize.width, partSize.height);
+		}
 
 		this.part.onDidSizeChange((size: IDimension) => {
 			this.layout(size.width, size.height);
@@ -680,10 +662,21 @@ export class AideControls extends Themable implements IAideControls {
 		}));
 	}
 
-	layout(width: number = this.part.width, height: number = this.part.height) {
+	layout(width?: number, height?: number) {
+		if (width === undefined || height === undefined) {
+			const partSize = this.part.dimension;
+			if (partSize) {
+				width = partSize.width;
+				height = partSize.height;
+			}
+		}
+
+		if (width === undefined || height === undefined) {
+			return;
+		}
+
 		const newWidth = Math.min(width, MAX_WIDTH);
 		this.element.style.width = `${newWidth}px`;
 		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
-		this.topSash.layout();
 	}
 }
