@@ -19,7 +19,7 @@ import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
 import { getEditorModelItems } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
 import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
-import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
+import { IStatusbarEntry, IStatusbarEntryAccessor, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
 	static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
@@ -28,7 +28,6 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	private modelSelectionStatusEntry: IStatusbarEntryAccessor | undefined;
 
 	constructor(
-		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
@@ -108,7 +107,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		if (this.modelSelectionStatusEntry) {
 			this.modelSelectionStatusEntry.update(properties);
 		} else {
-			this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
+			// TODO(@ghostwriternr): Hide this from the status bar until we start using the model selection
+			// this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
 		}
 	}
 
