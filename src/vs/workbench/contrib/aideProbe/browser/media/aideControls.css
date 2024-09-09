@@ -25,7 +25,7 @@
 .aide-controls .aide-controls-settings {
 	display: flex;
 	align-items: center;
-	margin-right: 26px;
+	margin-right: 28px;
 }
 
 .aide-controls .aide-controls-settings::before {

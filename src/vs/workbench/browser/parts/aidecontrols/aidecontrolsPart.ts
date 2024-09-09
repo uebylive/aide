@@ -53,11 +53,11 @@ export class AideControlsPart extends Part implements IDisposable {
 		return this._content;
 	}
 
-	readonly preferredHeight = 36;
+	readonly preferredHeight = 38;
 	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 36;
+	readonly minimumHeight: number = 38;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
