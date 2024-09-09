@@ -27,6 +27,7 @@ import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
+import { handleDiagnosticChange } from './diagnostics/diagnostics_handler';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -237,4 +238,11 @@ export async function activate(context: ExtensionContext) {
 			);
 		}
 	});
+
+	const diagnosticsListener = languages.onDidChangeDiagnostics((event) => {
+		handleDiagnosticChange(event, sidecarClient);
+	});
+
+	// shouldn't all listeners have this?
+	context.subscriptions.push(diagnosticsListener);
 }

@@ -20,6 +20,7 @@ import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { AnchorSessionStart, CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { Diagnostic } from 'vscode';
 
 export enum CompletionStopReason {
 	/**
@@ -628,6 +629,41 @@ export class SideCarClient {
 		});
 		if (!response.ok) {
 			throw new Error(`Error while opening file: ${response.statusText}`);
+		}
+	}
+
+	async sendDiagnostics(
+		filePath: string,
+		diagnostics: readonly Diagnostic[]
+	): Promise<void> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/diagnostics/report';  // New invented endpoint
+
+		const body = {
+			file_path: filePath,
+			diagnostics: diagnostics.map(diag => ({
+				severity: diag.severity,
+				message: diag.message,
+				range: {
+					start: { line: diag.range.start.line, character: diag.range.start.character },
+					end: { line: diag.range.end.line, character: diag.range.end.character }
+				},
+				code: diag.code,
+				source: diag.source
+			}))
+		};
+
+		const url = baseUrl.toString();
+		const response = await fetch(url, {
+			method: 'POST',
+			body: JSON.stringify(body),
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+
+		if (!response.ok) {
+			// throw new Error(`Error while sending diagnostics: ${response.statusText}`);
 		}
 	}
 
