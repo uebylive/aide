@@ -8,8 +8,7 @@
 	position: relative;
 	padding: 8px;
 	box-sizing: border-box;
-	border-radius: 4px;
-	border: 1px solid var(--vscode-panel-border);
+	border-top: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background) !important;
 }
 

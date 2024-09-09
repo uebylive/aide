@@ -40,9 +40,7 @@ import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
 import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
@@ -58,7 +56,6 @@ import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const $ = dom.$;
-const MAX_WIDTH = 800;
 const INPUT_MIN_HEIGHT = 36;
 
 const inputPlaceholder = {
@@ -177,11 +174,6 @@ export class AideControls extends Themable implements IAideControls {
 		return this.parsedChatRequest;
 	}
 
-	private contextPicker: ContextPicker;
-
-
-	//private toolbar: MenuWorkbenchToolBar;
-
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
 	private areControlsActive: IContextKey<boolean>;
@@ -256,9 +248,6 @@ export class AideControls extends Themable implements IAideControls {
 			this.layout(size.width, size.height);
 		});
 
-		this.contextPicker = getWorkbenchContribution<ContextPicker>(ContextPicker.ID);
-		this.contextPicker.append(inputElement);
-
 		const toggleBarElement = $('.aide-controls-toggle-bar');
 		toolbarElement.appendChild(toggleBarElement);
 		const toggleBar = this.instantiationService.createInstance(ButtonBar, toggleBarElement);
@@ -311,7 +300,7 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private sendContextChange() {
-		const filesInContext = Array.from(this.contextPicker.context.entries).filter(entry => entry.isFile) as unknown as { resource: URI }[];
+		const filesInContext = [] as { resource: URI }[];
 		const newContext = filesInContext.map(entry => entry.resource.fsPath);
 		const anchoredSelectionFile = this.aideProbeService.anchorEditingSelection?.uri.fsPath;
 		if (anchoredSelectionFile) {
@@ -565,10 +554,7 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.lastUsedSelection = this.aideProbeService.anchorEditingSelection;
 		if (!iterationRequest) {
-			let variables: IVariableEntry[] = [];
-			if (this.contextPicker) {
-				variables = Array.from(this.contextPicker.context.entries);
-			}
+			const variables: IVariableEntry[] = [];
 			this.model = this.aideProbeService.startSession();
 			this.aideProbeService.initiateProbe(this.model, editorValue, variables, activeEditor.getModel());
 		} else {
@@ -599,19 +585,6 @@ export class AideControls extends Themable implements IAideControls {
 				const model = editor?.getModel();
 				if (!model) {
 					placeholder = 'Open a file to start using Aide';
-				} else {
-					// const languageId = model.getLanguageId();
-					// TODO(@g-danna) - make or find a capitalize util
-					// const capitalizedLanguageId = languageId.charAt(0).toUpperCase() + languageId.slice(1);
-
-					// if (unsupportedLanguages.has(languageId)) {
-					// 	placeholder = `Aide doesn't support ${capitalizedLanguageId}`;
-					// } else {
-					// 	const isLSPActive = this.aideLSPService.getStatus(languageId);
-					// 	if (!isLSPActive) {
-					// 		placeholder = `Loading language server for ${capitalizedLanguageId}...`;
-					// 	}
-					// }
 				}
 			}
 
@@ -675,8 +648,7 @@ export class AideControls extends Themable implements IAideControls {
 			return;
 		}
 
-		const newWidth = Math.min(width, MAX_WIDTH);
-		this.element.style.width = `${newWidth}px`;
-		this._input.layout({ width: newWidth - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
+		this.element.style.width = `${width}px`;
+		this._input.layout({ width: width - 60 - 16, height: height - 6 - 36 - (this.anchoredContextContainer?.offsetHeight ?? 0) });
 	}
 }
