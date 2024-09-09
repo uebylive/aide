@@ -181,6 +181,9 @@ export class AideProbeProvider implements vscode.Disposable {
 				await editsManager.streamProcessor.processLine(currentLine);
 			}
 			editsManager.streamProcessor.cleanup();
+
+			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
+
 			// delete this from our map
 			this.editsMap.delete(editStreamEvent.edit_request_id);
 			// we have the updated code (we know this will be always present, the types are a bit meh)
