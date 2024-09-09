@@ -27,7 +27,6 @@ import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
-import { handleDiagnosticChange } from './diagnostics/diagnostics_handler';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -239,8 +238,17 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	const diagnosticsListener = languages.onDidChangeDiagnostics((event) => {
-		handleDiagnosticChange(event, sidecarClient);
+	const diagnosticsListener = languages.onDidChangeDiagnostics(async (event) => {
+		for (const uri of event.uris) {
+			const diagnostics = languages.getDiagnostics(uri);
+
+			// Send diagnostics to sidecar
+			try {
+				await sidecarClient.sendDiagnostics(uri.toString(), diagnostics)
+			} catch (error) {
+				// console.error(`Failed to send diagnostics for ${uri.toString()}:`, error);
+			}
+		}
 	});
 
 	// shouldn't all listeners have this?
