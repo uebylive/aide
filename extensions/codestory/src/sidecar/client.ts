@@ -941,6 +941,7 @@ export class SideCarClient {
 		const body = {
 			file_paths,
 			editor_url: editorUrl,
+			grab_import_nodes: false,
 		};
 		await fetch(url, {
 			method: 'POST',
@@ -1001,6 +1002,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
+			enable_import_nodes: false,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {

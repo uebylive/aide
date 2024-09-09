@@ -49,6 +49,7 @@ export type CodeEditAgentBody = {
 	root_directory: string | undefined;
 	codebase_search: boolean;
 	anchor_editing: boolean;
+	enable_import_nodes: boolean;
 };
 
 export type AnchorSessionStart = {
