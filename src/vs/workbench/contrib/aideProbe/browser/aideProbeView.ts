@@ -85,7 +85,6 @@ const welcomeActions = [
 // };
 
 export class AideProbeViewPane extends ViewPane {
-
 	private currentView: 'welcome' | 'list' = 'welcome';
 
 	private container!: HTMLElement;
