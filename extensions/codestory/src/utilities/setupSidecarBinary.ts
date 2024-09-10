@@ -328,7 +328,8 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 	// Run the executable
 	// console.log('Starting sidecar binary');
 	let attempts = 0;
-	const maxAttempts = 5;
+	// increasing max attempts to 100
+	const maxAttempts = 100;
 	const delay = 1000; // Delay between each attempt in milliseconds
 
 	const spawnChild = async () => {
