@@ -16,7 +16,6 @@ import postHogClient from './posthog/client';
 import { AideQuickFix } from './quickActions/fix';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { loadOrSaveToStorage } from './storage/types';
-import { activateExtensions, getExtensionsInDirectory } from './utilities/activateLSP';
 import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
@@ -72,8 +71,6 @@ export async function activate(context: ExtensionContext) {
 			'Aide can help you better if you give it custom instructions by going to your settings and setting it in aide.systemInstruction (search for this string in User Settings) and reload vscode for this to take effect by doing Cmd+Shift+P: Developer: Reload Window'
 		);
 	}
-	// Activate the LSP extensions which are needed for things to work
-	await activateExtensions(context, getExtensionsInDirectory(rootPath));
 
 	// Now we get all the required information and log it
 	const repoName = await getGitRepoName(
