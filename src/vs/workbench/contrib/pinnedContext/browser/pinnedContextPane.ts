@@ -36,6 +36,8 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
 import { IPinnedContextService, MANAGE_PINNED_CONTEXT, PinnedContextItem } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
+import { ThemeIcon } from 'vs/base/common/themables';
+import { Codicon } from 'vs/base/common/codicons';
 
 const ItemHeight = 22;
 
@@ -192,13 +194,27 @@ class PinnedContextElementTemplate implements IDisposable {
 	static readonly id = 'PinnedContextElementTemplate';
 
 	readonly label: IResourceLabel;
+	private readonly removeButton: HTMLElement;
 
 	constructor(
 		container: HTMLElement,
-		private readonly labels: ResourceLabels
+		private readonly labels: ResourceLabels,
+		private readonly onRemove: (item: TreeElement) => void
 	) {
 		container.classList.add('pinned-context-tree-node-item');
 		this.label = this.labels.create(container, { supportHighlights: true });
+
+		this.removeButton = document.createElement('div');
+		this.removeButton.classList.add(...ThemeIcon.asClassNameArray(Codicon.close));
+		this.removeButton.title = localize('removePinnedContext', "Remove from Pinned Context");
+		container.appendChild(this.removeButton);
+	}
+
+	setElement(element: TreeElement): void {
+		this.removeButton.onclick = (e) => {
+			e.stopPropagation();
+			this.onRemove(element);
+		};
 	}
 
 	dispose(): void {
@@ -233,11 +249,15 @@ class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore
 
 	constructor(
 		private readonly labels: ResourceLabels,
-		private decorations: IFilesConfiguration['explorer']['decorations']
+		private decorations: IFilesConfiguration['explorer']['decorations'],
+		@IOpenerService private readonly openerService: IOpenerService,
+		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService
 	) { }
 
 	renderTemplate(container: HTMLElement): PinnedContextElementTemplate {
-		return new PinnedContextElementTemplate(container, this.labels);
+		return new PinnedContextElementTemplate(container, this.labels, (item) => {
+			this.pinnedContextService.removeContext(item.uri);
+		});
 	}
 
 	renderElement(
@@ -253,6 +273,10 @@ class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore
 			hidePath: false,
 			fileDecorations: this.decorations
 		});
+		template.label.element.onclick = () => {
+			this.openerService.open(item.uri, { editorOptions: { pinned: false } });
+		};
+		template.setElement(item);
 	}
 
 	disposeTemplate(template: PinnedContextElementTemplate): void {
