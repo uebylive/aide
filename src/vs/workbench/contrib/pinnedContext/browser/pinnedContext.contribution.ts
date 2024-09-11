@@ -14,8 +14,8 @@ import { IViewDescriptor, IViewsRegistry, Extensions as ViewExtensions } from 'v
 import { VIEW_CONTAINER } from 'vs/workbench/contrib/files/browser/explorerViewlet';
 import { registerPinnedContextActions } from 'vs/workbench/contrib/pinnedContext/browser/actions/pinnedContextActions';
 import { PinnedContextPane } from 'vs/workbench/contrib/pinnedContext/browser/pinnedContextPane';
+import { PinnedContextService } from 'vs/workbench/contrib/pinnedContext/browser/pinnedContextService';
 import { IPinnedContextService, pinnedContextPaneId } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
-import { PinnedContextService } from 'vs/workbench/contrib/pinnedContext/common/pinnedContextService';
 
 const pinnedContextIcon = registerIcon('pinned-context-view-icon', Codicon.pinned, localize('pinnedContextViewIcon', 'View icon of the pinned context view.'));
 
