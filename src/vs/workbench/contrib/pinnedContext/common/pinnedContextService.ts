@@ -13,6 +13,7 @@ export class PinnedContextService implements IPinnedContextService {
 	readonly _serviceBrand: undefined;
 
 	private pinnedContexts: URI[] = [];
+	private pinnedContextSet: Set<string> = new Set();
 	private readonly _onDidChangePinnedContexts = new Emitter<void>();
 	readonly onDidChangePinnedContexts: Event<void> = this._onDidChangePinnedContexts.event;
 
@@ -29,16 +30,20 @@ export class PinnedContextService implements IPinnedContextService {
 	}
 
 	addContext(uri: URI): void {
-		if (!this.pinnedContexts.some(pinnedUri => pinnedUri.toString() === uri.toString())) {
+		const uriString = uri.toString();
+		if (!this.pinnedContextSet.has(uriString)) {
 			this.pinnedContexts.push(uri);
+			this.pinnedContextSet.add(uriString);
 			this._onDidChangePinnedContexts.fire();
 			this.updateContextKeys();
 		}
 	}
 
 	removeContext(uri: URI): void {
+		const uriString = uri.toString();
 		const initialLength = this.pinnedContexts.length;
-		this.pinnedContexts = this.pinnedContexts.filter(pinnedUri => pinnedUri.toString() !== uri.toString());
+		this.pinnedContexts = this.pinnedContexts.filter(pinnedUri => pinnedUri.toString() !== uriString);
+		this.pinnedContextSet.delete(uriString);
 		if (this.pinnedContexts.length !== initialLength) {
 			this._onDidChangePinnedContexts.fire();
 			this.updateContextKeys();
@@ -48,12 +53,24 @@ export class PinnedContextService implements IPinnedContextService {
 	clearContexts(): void {
 		if (this.pinnedContexts.length > 0) {
 			this.pinnedContexts = [];
+			this.pinnedContextSet.clear();
 			this._onDidChangePinnedContexts.fire();
 			this.updateContextKeys();
 		}
 	}
 
+	setContexts(uris: URI[]): void {
+		this.pinnedContexts = uris;
+		this.pinnedContextSet = new Set(uris.map(uri => uri.toString()));
+		this._onDidChangePinnedContexts.fire();
+		this.updateContextKeys();
+	}
+
 	getPinnedContexts(): URI[] {
 		return [...this.pinnedContexts];
+	}
+
+	hasContext(uri: URI): boolean {
+		return this.pinnedContextSet.has(uri.toString());
 	}
 }

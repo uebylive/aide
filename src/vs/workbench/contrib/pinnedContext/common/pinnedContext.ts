@@ -8,6 +8,7 @@ import { URI } from 'vs/base/common/uri';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
 export const pinnedContextPaneId = 'pinnedContext';
+export const MANAGE_PINNED_CONTEXT = 'pinnedContext.manage';
 
 export interface PinnedContextItem {
 	readonly uri: URI;
@@ -23,5 +24,8 @@ export interface IPinnedContextService {
 	addContext(uri: URI): void;
 	removeContext(uri: URI): void;
 	clearContexts(): void;
+
+	setContexts(uris: URI[]): void;
 	getPinnedContexts(): URI[];
+	hasContext(uri: URI): boolean;
 }

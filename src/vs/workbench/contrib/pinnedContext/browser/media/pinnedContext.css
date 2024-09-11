@@ -7,10 +7,26 @@
 	position: relative;
 }
 
+.monaco-workbench .pinned-context-view .pinned-context-update-button {
+	border-radius: 0;
+}
+
 .monaco-workbench .pinned-context-view .message.pinned-context-subtle {
 	opacity: 0.5;
 	padding: 10px 22px 0 22px;
-	position: absolute;
 	pointer-events: none;
 	z-index: 1;
+}
+
+.monaco-workbench .pinned-context-view .message.pinned-context-subtle.hide {
+	padding: 0px;
+}
+
+.monaco-workbench .pinned-context-view .pinned-context-tree {
+	margin-top: 4px;
+}
+
+.monaco-workbench .pinned-context-view .pinned-context-tree .monaco-tl-twistie {
+	width: 8px !important;
+	padding: 0 !important;
 }

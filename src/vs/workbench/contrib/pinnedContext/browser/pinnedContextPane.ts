@@ -4,8 +4,10 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from 'vs/base/browser/dom';
+import { Button } from 'vs/base/browser/ui/button/button';
 import { IIdentityProvider, IKeyboardNavigationLabelProvider, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { ITreeNode, ITreeRenderer } from 'vs/base/browser/ui/tree/tree';
+import { Emitter } from 'vs/base/common/event';
 import { FuzzyScore } from 'vs/base/common/filters';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/path';
@@ -14,19 +16,26 @@ import 'vs/css!./media/pinnedContext';
 import { localize, localize2 } from 'vs/nls';
 import { ILocalizedString } from 'vs/platform/action/common/action';
 import { MenuId } from 'vs/platform/actions/common/actions';
+import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
+import { FileKind } from 'vs/platform/files/common/files';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
+import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
+import { buttonBackground } from 'vs/platform/theme/common/colors/inputColors';
+import { asCssVariable } from 'vs/platform/theme/common/colorUtils';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
+import { IResourceLabel, ResourceLabels } from 'vs/workbench/browser/labels';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
-import { IPinnedContextService, PinnedContextItem } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
+import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
+import { IPinnedContextService, MANAGE_PINNED_CONTEXT, PinnedContextItem } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
 
 const ItemHeight = 22;
 
@@ -40,6 +49,9 @@ export class PinnedContextPane extends ViewPane {
 	private $tree!: HTMLDivElement;
 	private tree!: WorkbenchObjectTree<TreeElement, FuzzyScore>;
 	private treeRenderer: PinnedContextTreeRenderer | undefined;
+	private resourceLabels: ResourceLabels;
+
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
 		options: IViewPaneOptions,
@@ -53,10 +65,12 @@ export class PinnedContextPane extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@ITelemetryService telemetryService: ITelemetryService,
 		@IHoverService hoverService: IHoverService,
+		@ICommandService private readonly commandService: ICommandService,
 		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService
 	) {
 		super({ ...options, titleMenuId: MenuId.PinnedContextTitle }, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
+		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event }));
 		this._register(this.pinnedContextService.onDidChangePinnedContexts(() => this.refresh()));
 	}
 
@@ -121,7 +135,6 @@ export class PinnedContextPane extends ViewPane {
 
 	protected override renderHeaderTitle(container: HTMLElement): void {
 		super.renderHeaderTitle(container, this.title);
-		container.classList.add('pinned-context-view');
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -130,11 +143,31 @@ export class PinnedContextPane extends ViewPane {
 		this.$container = container;
 		container.classList.add('pinned-context-view');
 
+		const buttonTitle = localize('managePinnedContexts', "Manage");
+		const button = this._register(new Button(this.$container, {
+			...defaultButtonStyles,
+			buttonBackground: asCssVariable(buttonBackground),
+			supportIcons: true,
+			title: buttonTitle
+		}));
+		button.label = buttonTitle;
+		button.element.classList.add('pinned-context-update-button');
+		button.element.onclick = () => {
+			this.commandService.executeCommand(MANAGE_PINNED_CONTEXT);
+		};
+
 		this.$message = dom.append(this.$container, dom.$('.message'));
 		this.$message.classList.add('pinned-context-subtle');
 
-		this.$tree = dom.append(this.$container, dom.$('.pinned-context-tree'));
-		this.treeRenderer = this.instantiationService.createInstance(PinnedContextTreeRenderer);
+		this.$tree = dom.append(this.$container, dom.$('.pinned-context-tree.show-file-icons'));
+		this.$tree.classList.add('file-icon-themable-tree');
+		this.$tree.classList.add('show-file-icons');
+
+		this.treeRenderer = this.instantiationService.createInstance(
+			PinnedContextTreeRenderer,
+			this.resourceLabels,
+			this.configurationService.getValue('explorer.decorations')
+		);
 
 		this.tree = <WorkbenchObjectTree<TreeElement, FuzzyScore>>this.instantiationService.createInstance(WorkbenchObjectTree, 'PinnedContextPane',
 			this.$tree, new PinnedContextVirtualDelegate(), [this.treeRenderer], {
@@ -158,16 +191,18 @@ export class PinnedContextPane extends ViewPane {
 class PinnedContextElementTemplate implements IDisposable {
 	static readonly id = 'PinnedContextElementTemplate';
 
-	readonly filename: HTMLElement;
+	readonly label: IResourceLabel;
 
-	constructor(container: HTMLElement) {
+	constructor(
+		container: HTMLElement,
+		private readonly labels: ResourceLabels
+	) {
 		container.classList.add('pinned-context-tree-node-item');
-
-		this.filename = dom.append(container, dom.$('.filename'));
+		this.label = this.labels.create(container, { supportHighlights: true });
 	}
 
 	dispose(): void {
-		// noop
+		this.label.dispose();
 	}
 }
 
@@ -197,12 +232,12 @@ class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore
 	readonly templateId: string = PinnedContextElementTemplate.id;
 
 	constructor(
-		@IOpenerService private readonly openerService: IOpenerService
-	) {
-	}
+		private readonly labels: ResourceLabels,
+		private decorations: IFilesConfiguration['explorer']['decorations']
+	) { }
 
 	renderTemplate(container: HTMLElement): PinnedContextElementTemplate {
-		return new PinnedContextElementTemplate(container);
+		return new PinnedContextElementTemplate(container, this.labels);
 	}
 
 	renderElement(
@@ -213,10 +248,11 @@ class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore
 	): void {
 		const { element: item } = node;
 
-		template.filename.textContent = basename(item.uri.fsPath);
-		template.filename.onclick = () => {
-			this.openerService.open(item.uri);
-		};
+		template.label.setFile(item.uri, {
+			fileKind: FileKind.FILE,
+			hidePath: false,
+			fileDecorations: this.decorations
+		});
 	}
 
 	disposeTemplate(template: PinnedContextElementTemplate): void {
