@@ -13,7 +13,7 @@
 
 .monaco-workbench .pinned-context-view .message.pinned-context-subtle {
 	opacity: 0.5;
-	padding: 10px 22px 0 22px;
+	padding: 10px 16px 0 16px;
 	pointer-events: none;
 	z-index: 1;
 }

@@ -7,10 +7,12 @@ import * as dom from 'vs/base/browser/dom';
 import { Button } from 'vs/base/browser/ui/button/button';
 import { IIdentityProvider, IKeyboardNavigationLabelProvider, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { ITreeNode, ITreeRenderer } from 'vs/base/browser/ui/tree/tree';
+import { Codicon } from 'vs/base/common/codicons';
 import { Emitter } from 'vs/base/common/event';
 import { FuzzyScore } from 'vs/base/common/filters';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/path';
+import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/pinnedContext';
 import { localize, localize2 } from 'vs/nls';
@@ -35,9 +37,8 @@ import { IResourceLabel, ResourceLabels } from 'vs/workbench/browser/labels';
 import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/viewPane';
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { IFilesConfiguration } from 'vs/workbench/contrib/files/common/files';
+import { ManagePinnedContext } from 'vs/workbench/contrib/pinnedContext/browser/actions/pinnedContextActions';
 import { IPinnedContextService, MANAGE_PINNED_CONTEXT, PinnedContextItem } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { Codicon } from 'vs/base/common/codicons';
 
 const ItemHeight = 22;
 
@@ -81,7 +82,10 @@ export class PinnedContextPane extends ViewPane {
 		this.updateTree(pinnedContexts);
 
 		if (pinnedContexts.length === 0) {
-			this.message = localize('noPinnedContexts', "No pinned contexts");
+			this.message = localize(
+				'noPinnedContexts',
+				"Pin files for the AI to cache and refer to for all it's work. The best files to pin are those you're actively working on or are good reference for the task at hand."
+			);
 		} else {
 			this.message = undefined;
 		}
@@ -145,7 +149,8 @@ export class PinnedContextPane extends ViewPane {
 		this.$container = container;
 		container.classList.add('pinned-context-view');
 
-		const buttonTitle = localize('managePinnedContexts', "Manage");
+		const manageKbShortcut = this.keybindingService.lookupKeybinding(ManagePinnedContext.ID);
+		const buttonTitle = manageKbShortcut ? localize('managePinnedContextsKb', "Manage ({0})", manageKbShortcut.getLabel()) : localize('managePinnedContextsNoKb', "Manage Pinned Contexts");
 		const button = this._register(new Button(this.$container, {
 			...defaultButtonStyles,
 			buttonBackground: asCssVariable(buttonBackground),
@@ -262,9 +267,9 @@ class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore
 
 	renderElement(
 		node: ITreeNode<TreeElement, FuzzyScore>,
-		index: number,
+		_index: number,
 		template: PinnedContextElementTemplate,
-		height: number | undefined
+		_height: number | undefined
 	): void {
 		const { element: item } = node;
 

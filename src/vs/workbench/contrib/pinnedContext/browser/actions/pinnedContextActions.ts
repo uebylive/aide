@@ -15,6 +15,8 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { localize, localize2 } from 'vs/nls';
 import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
 import { CommandsRegistry, ICommandService } from 'vs/platform/commands/common/commands';
+import { KeyMod, KeyCode } from 'vs/base/common/keyCodes';
+import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IResourceEditorInput } from 'vs/platform/editor/common/editor';
 import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { ILabelService } from 'vs/platform/label/common/label';
@@ -183,7 +185,7 @@ class ClearPinnedContext extends Action2 {
 	}
 }
 
-class ManagePinnedContext extends Action2 {
+export class ManagePinnedContext extends Action2 {
 	static readonly ID = 'workbench.action.managePinnedContext';
 
 	constructor() {
@@ -192,6 +194,10 @@ class ManagePinnedContext extends Action2 {
 			title: localize2('pinnedContext.manage', "Manage Pinned Context"),
 			category: PINNED_CONTEXT_CATEGORY,
 			f1: true,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyC,
+				weight: KeybindingWeight.WorkbenchContrib + 1,
+			}
 		});
 	}
 
