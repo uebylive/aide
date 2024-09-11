@@ -9,6 +9,8 @@ import { ITreeNode, ITreeRenderer } from 'vs/base/browser/ui/tree/tree';
 import { FuzzyScore } from 'vs/base/common/filters';
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { basename } from 'vs/base/common/path';
+import { URI } from 'vs/base/common/uri';
+import 'vs/css!./media/pinnedContext';
 import { localize, localize2 } from 'vs/nls';
 import { ILocalizedString } from 'vs/platform/action/common/action';
 import { MenuId } from 'vs/platform/actions/common/actions';
@@ -59,13 +61,18 @@ export class PinnedContextPane extends ViewPane {
 	}
 
 	private refresh(): void {
-		this.updateTree();
-		this.updateMessage();
+		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
+		this.updateTree(pinnedContexts);
+
+		if (pinnedContexts.length === 0) {
+			this.message = localize('noPinnedContexts', "No pinned contexts");
+		} else {
+			this.message = undefined;
+		}
 	}
 
-	private updateTree(): void {
+	private updateTree(pinnedContexts: URI[]): void {
 		if (this.tree) {
-			const pinnedContexts = this.pinnedContextService.getPinnedContexts();
 			this.tree.setChildren(null, pinnedContexts.map(uri => ({ element: { uri } })));
 		}
 	}

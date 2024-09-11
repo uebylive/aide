@@ -12,6 +12,7 @@ import { Registry } from 'vs/platform/registry/common/platform';
 import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
 import { IViewDescriptor, IViewsRegistry, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { VIEW_CONTAINER } from 'vs/workbench/contrib/files/browser/explorerViewlet';
+import { registerPinnedContextActions } from 'vs/workbench/contrib/pinnedContext/browser/actions/pinnedContextActions';
 import { PinnedContextPane } from 'vs/workbench/contrib/pinnedContext/browser/pinnedContextPane';
 import { IPinnedContextService, pinnedContextPaneId } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
 import { PinnedContextService } from 'vs/workbench/contrib/pinnedContext/common/pinnedContextService';
@@ -28,9 +29,14 @@ export class PinnedContextPaneDescriptor implements IViewDescriptor {
 	readonly collapsed = false;
 	readonly canToggleVisibility = false;
 	readonly hideByDefault = false;
-	readonly canMoveView = true;
+	readonly canMoveView = false;
 }
 
+// Register the pinned context view
 Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([new PinnedContextPaneDescriptor()], VIEW_CONTAINER);
 
+// Register actions
+registerPinnedContextActions();
+
+// Register services
 registerSingleton(IPinnedContextService, PinnedContextService, InstantiationType.Delayed);
