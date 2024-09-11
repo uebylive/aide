@@ -95,26 +95,30 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 	// Over here try to get all the code actions which we need to execute
 	codeActions.forEach((codeAction) => {
 		if (codeAction.command?.command === 'rust-analyzer.applyActionGroup') {
-			// This means there are multiple commands in there, so we have to add it
-			// to the flattened list
+			// command.arguments can be an array of arrays - this was silently wrecking quick_fix_list parsing in sidecar
 			const commandPossibleArguments = codeAction.command.arguments ?? [];
-			for (let index = 0; index < commandPossibleArguments.length; index++) {
-				const commandPossibleArgument = commandPossibleArguments[index];
-				actionsFlattened.push({
-					label: commandPossibleArgument.label,
-					arguments: commandPossibleArgument.arguments,
-					command: 'rust-analyzer.resolveCodeAction',
-					id: actionIndex,
-				});
-				actionIndex = actionIndex + 1;
-			}
+
+			// hierarchy doesn't carry meaning - flattening fixes above issue
+			const flattenedArguments = commandPossibleArguments.flat();
+
+			flattenedArguments.forEach((commandPossibleArgument) => {
+				// extra safe check
+				if (typeof commandPossibleArgument === 'object' && commandPossibleArgument !== null) {
+					actionsFlattened.push({
+						label: commandPossibleArgument.label,
+						arguments: commandPossibleArgument.arguments,
+						command: 'rust-analyzer.resolveCodeAction',
+						id: actionIndex++, // postfix increment (increments by 1, returns original value)
+					});
+				} else {
+					console.warn("Unexpected argument type:", commandPossibleArgument);
+				}
+			});
 		} else {
 			const actionCommand = codeAction.command;
-			// console.log('whats the command over here');
-			// console.log(actionCommand);
 			if (actionCommand !== undefined) {
 				if (actionCommand.command === 'inlineChat.start') {
-					// If its any of the inlineChat.start, then we skip it
+					// If its any of the inlineChat.start, then we skip it (this is 'Fix with Aide')
 					return;
 				} else {
 					actionsFlattened.push({
@@ -132,12 +136,13 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 	// console.log(actionsFlattened);
 	// console.log('actions list');
 	QUICK_FIX_LIST.insertForRequestId(requestId, actionsFlattened);
-	return {
-		options: actionsFlattened.map((action) => {
-			return {
-				label: action.label,
-				index: action.id,
-			};
-		}),
-	};
+
+	const options = actionsFlattened.map((action) => {
+		return {
+			label: action.label,
+			index: action.id,
+		};
+	});
+
+	return { options };
 }
