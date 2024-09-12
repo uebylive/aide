@@ -84,7 +84,7 @@ export class PinnedContextPane extends ViewPane {
 		if (pinnedContexts.length === 0) {
 			this.message = localize(
 				'noPinnedContexts',
-				"Pin files for the AI to cache and refer to for all it's work. The best files to pin are those you're actively working on or are good reference for the task at hand."
+				"Pin files for the AI to cache and refer to for all it's work. The best files to pin are those you're actively working on or referring to for the task at hand."
 			);
 		} else {
 			this.message = undefined;

@@ -268,19 +268,6 @@ export class AideControls extends Themable implements IAideControls {
 		this.aideControlEditScope.classList.add(...ThemeIcon.asClassNameArray(scopeIcon));
 	}
 
-	private sendContextChange() {
-		const filesInContext = [] as { resource: URI }[];
-		const newContext = filesInContext.map(entry => entry.resource.fsPath);
-		const anchoredSelectionFile = this.aideProbeService.anchorEditingSelection?.uri.fsPath;
-		if (anchoredSelectionFile) {
-			newContext.push(anchoredSelectionFile);
-		}
-
-		if (this.probeStatus.get() !== AideProbeStatus.IN_PROGRESS) {
-			this.aideProbeService.onContextChange(newContext);
-		}
-	}
-
 	private updateOutline() {
 		this.outlineDisposables.clear();
 		this.outlineCancellationTokenSource?.dispose();
@@ -461,9 +448,6 @@ export class AideControls extends Themable implements IAideControls {
 			editorElement.classList.toggle('has-text', inputHasText);
 			this.inputHasText.set(inputHasText);
 			this.updateInputPlaceholder();
-			if (inputHasText && model.getValue().trim().length === 1) {
-				this.sendContextChange();
-			}
 
 			if (currentHeight !== this.inputHeight) {
 				this.inputHeight = currentHeight;
