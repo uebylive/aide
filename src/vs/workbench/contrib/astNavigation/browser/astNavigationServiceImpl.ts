@@ -279,7 +279,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			range: this.currentNode.range,
 			options: {
 				description: 'document-symbols-outline-range-highlight',
-				className: 'rangeHighlight',
+				className: 'selected-text',
 				isWholeLine: true
 			}
 		}]);
