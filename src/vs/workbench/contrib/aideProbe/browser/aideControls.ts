@@ -46,12 +46,10 @@ import { SetAideProbeScopePinnedContext, SetAideProbeScopeSelection, SetAideProb
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
 import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aideProbeRequestParser';
+import { AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -113,19 +111,9 @@ export class AideControls extends Themable implements IAideControls {
 
 	private actionsToolbar: MenuWorkbenchToolBar | undefined;
 
-	private parsedChatRequest: IParsedChatRequest | undefined;
-	get parsedInput() {
-		if (this.parsedChatRequest === undefined) {
-			this.parsedChatRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(this.inputEditor.getValue());
-		}
-
-		return this.parsedChatRequest;
-	}
-
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
 	private areControlsActive: IContextKey<boolean>;
-	private probeMode: IContextKey<IAideProbeMode>;
 	private probeStatus: IContextKey<IAideProbeStatus>;
 
 	private readonly activeEditorDisposables = this._register(new DisposableStore());
@@ -171,8 +159,6 @@ export class AideControls extends Themable implements IAideControls {
 		this.inputHasText = CONTEXT_PROBE_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.inputHasFocus = CONTEXT_PROBE_INPUT_HAS_FOCUS.bindTo(contextKeyService);
 		this.probeHasSelection = CONTEXT_PROBE_HAS_SELECTION.bindTo(contextKeyService);
-		this.probeMode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
-		this.probeMode.set(AideProbeMode.ANCHORED);
 
 		const element = this.element = $('.aide-controls');
 		this.part.content.appendChild(element);
@@ -497,7 +483,7 @@ export class AideControls extends Themable implements IAideControls {
 			this.aideProbeService.addIteration(editorValue);
 		}
 
-		if (this.probeMode.get() === AideProbeMode.ANCHORED && this.aideProbeService.anchorEditingSelection) {
+		if (this.aideProbeService.anchorEditingSelection) {
 			this.aideProbeService.fireNewEvent(
 				{ kind: 'anchorStart', selection: this.aideProbeService.anchorEditingSelection }
 			);

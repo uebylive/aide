@@ -7,15 +7,14 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IModelService } from 'vs/editor/common/services/model';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { ITextModel } from 'vs/editor/common/model';
-
+import { IModelService } from 'vs/editor/common/services/model';
+import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { CONTEXT_PROBE_CONTEXT_TYPE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
+import { AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 export interface IAideProbeResolver {
 	initiate: (request: IAideProbeRequestModel, progress: (part: IAideProbeProgress) => Promise<void>, token: CancellationToken) => Promise<IAideProbeResult>;
@@ -24,8 +23,6 @@ export interface IAideProbeResolver {
 }
 
 export const IAideProbeService = createDecorator<IAideProbeService>('IAideProbeService');
-
-
 export interface IAideProbeService {
 	_serviceBrand: undefined;
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
@@ -60,7 +57,6 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
-	private mode: IContextKey<IAideProbeMode>;
 	private contextType: IContextKey<string>;
 
 	protected readonly _onNewSession = this._store.add(new Emitter<void>());
@@ -100,7 +96,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	) {
 		super();
 
-		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 	}
 
@@ -161,7 +156,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				probeModel.cancelRequest();
 			});
 
-			const mode = this.mode.get() || AideProbeMode.AGENTIC;
 			const codebaseSearch = this.contextType.get() === 'codebase' || false;
 
 			try {
@@ -189,7 +183,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					}
 				}
 
-				if (mode === AideProbeMode.ANCHORED && this._anchorEditingSelection) {
+				if (this._anchorEditingSelection) {
 					const { uri, selection } = this._anchorEditingSelection;
 					variables.push({
 						id: 'selection',
@@ -209,7 +203,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					});
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, codebaseSearch, mode);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, AideProbeScope.Selection);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {
@@ -222,18 +216,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				} else if (result) {
 					probeModel.completeResponse();
 				}
-
-				// Mock data start
-				//if (textModel) {
-				//	const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
-				//	if (token.isCancellationRequested) {
-				//		return;
-				//	} else if (result) {
-				//		probeModel.completeResponse();
-				//	}
-				//}
-				// Mock data end
-
 			} catch (error) {
 				console.log(error);
 			} finally {

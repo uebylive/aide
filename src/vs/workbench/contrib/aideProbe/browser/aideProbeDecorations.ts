@@ -17,12 +17,11 @@ import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRange
 import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
 import { ICSEventsService } from 'vs/editor/common/services/csEvents';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { calculateChanges } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
 import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeAnchorStart, IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { HunkState, HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { overviewRulerInlineChatDiffInserted, minimapInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
+import { HunkInformation, HunkState } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const editDecorationOptions = ModelDecorationOptions.register({
@@ -77,6 +76,25 @@ type HunkDisplayData = {
 	position: Position;
 	remove(): void;
 };
+
+function calculateChanges(edits: HunkInformation[]) {
+	const changes = edits.reduce((acc, edit) => {
+		const newRanges = edit.getRangesN() || [];
+		const oldRanges = edit.getRanges0() || [];
+		if (edit.isInsertion()) {
+			const wholeNewRange = newRanges[0];
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+		} else if (newRanges.length > 0 && oldRanges.length > 0) {
+			const wholeNewRange = newRanges[0];
+			const wholeOldRange = oldRanges[0];
+
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+			acc.removed += wholeOldRange.endLineNumber - wholeOldRange.startLineNumber + 1;
+		}
+		return acc;
+	}, { added: 0, removed: 0 });
+	return changes;
+}
 
 export class AideProbeDecorationService extends Disposable {
 	static readonly ID = 'workbench.contrib.aideProbeDecorationService';

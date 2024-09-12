@@ -16,7 +16,7 @@ import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aid
 import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeScope, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeScope, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
@@ -111,7 +111,7 @@ class IterateAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED), CTX.CONTEXT_PROBE_INPUT_HAS_TEXT),
+			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_INPUT_HAS_TEXT),
 			keybinding: {
 				primary: KeyCode.Enter,
 				weight: KeybindingWeight.WorkbenchContrib,
@@ -121,7 +121,7 @@ class IterateAction extends Action2 {
 				{
 					id: MenuId.AideControlsToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+					when: isProbeIterationFinished,
 				},
 			]
 		});
@@ -183,7 +183,7 @@ class ClearIterationAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+			precondition: isProbeIterationFinished,
 			keybinding: {
 				primary: KeyMod.WinCtrl | KeyCode.KeyL,
 				weight: KeybindingWeight.WorkbenchContrib,
@@ -193,7 +193,7 @@ class ClearIterationAction extends Action2 {
 				{
 					id: MenuId.AideControlsToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+					when: isProbeIterationFinished,
 				},
 			]
 		});
@@ -229,33 +229,6 @@ class FocusAideControls extends Action2 {
 	async run(accessor: ServicesAccessor) {
 		const aideControlsService = accessor.get(IAideControlsService);
 		aideControlsService.focusInput();
-		logProbeContext(accessor);
-	}
-}
-
-class ToggleAideProbeMode extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.toggleMode';
-
-	constructor() {
-		super({
-			id: ToggleAideProbeMode.ID,
-			title: localize2('aideProbe.toggleMode.label', "Toggle Aide Probe Mode"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
-			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyK,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
-			},
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const contextKeyService = accessor.get(IContextKeyService);
-		const currentMode = CTX.CONTEXT_PROBE_MODE.getValue(contextKeyService);
-		const newMode = currentMode === AideProbeMode.AGENTIC ? AideProbeMode.ANCHORED : AideProbeMode.AGENTIC;
-		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(newMode);
 		logProbeContext(accessor);
 	}
 }
@@ -351,7 +324,6 @@ class ClearList extends Action2 {
 export function registerProbeActions() {
 	registerAction2(FocusAideControls);
 	registerAction2(BlurAction);
-	registerAction2(ToggleAideProbeMode);
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);

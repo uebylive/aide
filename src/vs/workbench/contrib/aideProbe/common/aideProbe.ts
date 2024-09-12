@@ -157,8 +157,7 @@ export interface IAideProbeRequestModel {
 	readonly sessionId: string;
 	readonly message: string;
 	readonly variableData: IChatRequestVariableData;
-	readonly codebaseSearch: boolean;
-	readonly mode: IAideProbeMode;
+	readonly scope: AideProbeScope;
 }
 
 export interface IAideProbeStartEditEvent {
@@ -212,15 +211,6 @@ export interface AnchorEditingSelection {
 	selection: Selection;
 	symbols: DocumentSymbol[];
 }
-
-export const enum AideProbeMode {
-	EXPLORE = 'EXPLORE',
-	AGENTIC = 'AGENTIC',
-	ANCHORED = 'ANCHORED',
-	FOLLOW_UP = 'FOLLOW_UP'
-}
-
-export type IAideProbeMode = keyof typeof AideProbeMode;
 
 export const enum AideProbeStatus {
 	INACTIVE = 'INACTIVE',

@@ -21,9 +21,6 @@ import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/brows
 import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsInputCompletions';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsInputEditorContrib';
 
 const probeViewIcon = registerIcon('probe-view-icon', Codicon.lightbulbSparkle, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
 

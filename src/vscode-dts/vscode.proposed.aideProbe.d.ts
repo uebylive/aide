@@ -6,7 +6,7 @@
 
 declare module 'vscode' {
 
-	export type AideProbeMode = 'EXPLORE' | 'AGENTIC' | 'ANCHORED' | 'FOLLOW_UP';
+	export type AideProbeScope = 'Selection' | 'PinnedContext' | 'WholeCodebase';
 
 	export interface FollowAlongAction {
 		type: 'followAlong';
@@ -59,8 +59,7 @@ declare module 'vscode' {
 		requestId: string;
 		query: string;
 		readonly references: readonly ChatPromptReference[];
-		mode: AideProbeMode;
-		codebaseSearch: boolean;
+		scope: AideProbeScope;
 	}
 
 	export interface AideProbeGoToDefinition {

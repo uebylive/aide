@@ -9,20 +9,14 @@ import { Disposable } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Position } from 'vs/editor/common/core/position';
 import { IRange } from 'vs/editor/common/core/range';
 import { ScrollType } from 'vs/editor/common/editorCommon';
 import { IModelService } from 'vs/editor/common/services/model';
 import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
+import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 
@@ -40,23 +34,23 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility: Event<boolean> = this._onDidChangeVisibility.event;
 
-	private readonly markdownRenderer: MarkdownRenderer;
-	private readonly resourceLabels: ResourceLabels;
+	// private readonly markdownRenderer: MarkdownRenderer;
+	// private readonly resourceLabels: ResourceLabels;
 
 	private explanationWidget: AideProbeExplanationWidget | undefined;
 
 	constructor(
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		// @IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
-		@IAideProbeService private readonly aideProbeService: IAideProbeService,
+		// @IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@ITextModelService private readonly textModelService: ITextModelService,
 		@IModelService private readonly modelService: IModelService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService
 	) {
 		super();
 
-		this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
-		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+		// this.markdownRenderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
+		// this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
 	}
 
 	private async openCodeEditor(uri: URI, selection?: IRange): Promise<ICodeEditor | null> {
@@ -73,14 +67,11 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 	}
 
 	async changeActiveBreakdown(element: IAideProbeBreakdownViewModel): Promise<void> {
-		const { uri } = element;
 		this.explanationWidget?.hide();
 		this.explanationWidget?.dispose();
 
+		/*
 		let codeEditor: ICodeEditor | null;
-		const activeSession = this.aideProbeService.getSession();
-		const editMode = activeSession?.request?.mode !== AideProbeMode.EXPLORE;
-
 		let breakdownPosition: Position = new Position(1, 1);
 		if (editMode) {
 			if (element.edits.length > 0) {
@@ -105,10 +96,6 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 			}
 
 			if (codeEditor && symbol && breakdownPosition) {
-				if (activeSession?.request?.mode !== AideProbeMode.EXPLORE) {
-					return;
-				}
-
 				this.explanationWidget = this._register(this.instantiationService.createInstance(
 					AideProbeExplanationWidget, codeEditor, this.resourceLabels, this.markdownRenderer
 				));
@@ -117,6 +104,7 @@ export class AideProbeExplanationService extends Disposable implements IAideProb
 				this.explanationWidget.showProbingSymbols(symbol);
 			}
 		}
+		*/
 	}
 
 

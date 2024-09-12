@@ -80,10 +80,6 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 		if (previousStatus !== currentStatus) {
 			this._onDidChangeStatus.fire({ languageId, isActive: currentStatus });
 		}
-
-		//if (!isReferenceProviderActive) {
-		//	this.notifiyLSPIsNotActive(languageId);
-		//}
 	}
 
 	getStatus(languageId: string): boolean {
@@ -109,42 +105,4 @@ export class AideLSPService extends Disposable implements IAideLSPService {
 		const languageId = model.getLanguageId();
 		return this.getStatus(languageId);
 	}
-
-	/*
-	private notifiyLSPIsNotActive(languageId: string) {
-
-		const dontShowAgain = this.storageService.getBoolean(AideLSPService.STORAGE_KEY, StorageScope.PROFILE, false);
-
-		if (dontShowAgain) {
-			return;
-		}
-
-		this.notificationService.notify({
-			severity: Severity.Info,
-			// TODO(@g-danna) - Localize this
-			message: `In order for Aide to work, you have to install the recommended extensions for ${languageId}`,
-			actions: {
-				primary: [
-					{
-						label: 'Don\'t show again',
-						run: () => {
-							this.storageService.store(
-								AideLSPService.STORAGE_KEY,
-								true,
-								StorageScope.PROFILE,
-								StorageTarget.USER
-							);
-						},
-						id: 'aide.notifications.dontShowAgain',
-						tooltip: '',
-						class: undefined,
-						enabled: true
-					}],
-			}
-		});
-	}
-
-	private resetNotificationState() {
-		this.storageService.remove(AideLSPService.STORAGE_KEY, StorageScope.PROFILE);
-	}*/
 }
