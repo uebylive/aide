@@ -148,17 +148,20 @@ export class AideProbeProvider implements vscode.Disposable {
 		}
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
-		const document = await vscode.workspace.openTextDocument(fileDocument);
-		if (document === undefined || document === null) {
-			return {
-				fs_file_path: '',
-				success: false,
-			};
-		}
-		const documentLines = document.getText().split(/\r\n|\r|\n/g);
 		if ('Start' === editStreamEvent.event) {
+			const timeNow = Date.now();
+			const document = await vscode.workspace.openTextDocument(fileDocument);
+			if (document === undefined || document === null) {
+				return {
+					fs_file_path: '',
+					success: false,
+				};
+			}
+			console.log('editsStreamed::content', timeNow, document.getText());
+			const documentLines = document.getText().split(/\r\n|\r|\n/g);
 			console.log('editStreaming.start', editStreamEvent.fs_file_path);
 			console.log(editStreamEvent.range);
+			console.log(documentLines);
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				streamProcessor: new StreamProcessor(
@@ -169,7 +172,8 @@ export class AideProbeProvider implements vscode.Disposable {
 					editStreamEvent.range,
 					null,
 					this._iterationEdits,
-				)
+					editStreamEvent.apply_directly,
+				),
 			});
 		} else if ('End' === editStreamEvent.event) {
 			// drain the lines which might be still present
@@ -184,7 +188,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			editsManager.streamProcessor.cleanup();
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
-
+			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
 			// delete this from our map
 			this.editsMap.delete(editStreamEvent.edit_request_id);
 			// we have the updated code (we know this will be always present, the types are a bit meh)

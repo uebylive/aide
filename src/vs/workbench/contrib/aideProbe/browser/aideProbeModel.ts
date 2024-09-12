@@ -462,7 +462,6 @@ export class AideProbeModel extends Disposable implements IAideProbeModel {
 				await this._response.applyCodeEdit(progress);
 				break;
 		}
-		console.log('AideProbeModel: acceptResponseProgress', progress.kind);
 		this._onDidChange.fire();
 	}
 
