@@ -383,6 +383,10 @@ export const reportAgentEventsToChat = async (
 					continue;
 				}
 				const editEvent = symbolEventSubStep.Edit;
+
+				// UX handle for code correction tool usage - consider using
+				if (editEvent.CodeCorrectionTool) { }
+
 				if (editEvent.ThinkingForEdit) {
 					response.breakdown({
 						reference: {
@@ -406,13 +410,13 @@ export const reportAgentEventsToChat = async (
 					// - delta
 					// - end
 					const editStreamEvent = editEvent.EditCodeStreaming;
-					const fileDocument = editStreamEvent.fs_file_path;
-					const document = await vscode.workspace.openTextDocument(fileDocument);
-					if (document === undefined || document === null) {
-						continue;
-					}
-					const documentLines = document.getText().split(/\r\n|\r|\n/g);
 					if ('Start' === editStreamEvent.event) {
+						const fileDocument = editStreamEvent.fs_file_path;
+						const document = await vscode.workspace.openTextDocument(fileDocument);
+						if (document === undefined || document === null) {
+							continue;
+						}
+						const documentLines = document.getText().split(/\r\n|\r|\n/g);
 						console.log('editStreaming.start', editStreamEvent.fs_file_path);
 						console.log(editStreamEvent.range);
 						editsMap.set(editStreamEvent.edit_request_id, {
@@ -425,6 +429,7 @@ export const reportAgentEventsToChat = async (
 								editStreamEvent.range,
 								limiter,
 								iterationEdits,
+								false,
 							)
 						});
 					} else if ('End' === editStreamEvent.event) {
@@ -612,6 +617,7 @@ export class StreamProcessor {
 		range: SidecarRequestRange,
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
+		applyDirectly: boolean,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -622,6 +628,7 @@ export class StreamProcessor {
 			uri,
 			limiter,
 			iterationEdits,
+			applyDirectly,
 		);
 		this.documentLineLimit = Math.min(range.endPosition.line, this.document.getLineCount() - 1);
 
@@ -634,18 +641,18 @@ export class StreamProcessor {
 
 	async cleanup() {
 		// for cleanup we are going to replace the lines from the documentLineIndex to the documentLineLimit with ""
-		console.log('cleanup', this.documentLineIndex, this.documentLineLimit);
+		// console.log('cleanup', this.documentLineIndex, this.documentLineLimit);
 		if (this.documentLineIndex <= this.documentLineLimit) {
 			this.document.replaceLines(this.documentLineIndex, this.documentLineLimit, new AdjustedLineContent('', 0, '', 0));
 		}
 	}
 
 	async processLine(answerStreamLine: AnswerStreamLine) {
-		console.table({
-			'event_name': 'process_line',
-			'line_content': answerStreamLine.line,
-			'documentLineIndex': this.documentLineIndex,
-		});
+		// console.table({
+		// 	'event_name': 'process_line',
+		// 	'line_content': answerStreamLine.line,
+		// 	'documentLineIndex': this.documentLineIndex,
+		// });
 		if (answerStreamLine.context !== AnswerStreamContext.InCodeBlock) {
 			return;
 		}
@@ -658,13 +665,13 @@ export class StreamProcessor {
 			// anchor will always be null over here
 			const anchor = this.findAnchor(adjustedLine, this.documentLineIndex);
 			if (anchor !== null) {
-				console.log('documentLineIndex::if_condition', this.documentLineIndex);
+				// console.log('documentLineIndex::if_condition', this.documentLineIndex);
 				this.sentEdits = true;
 				// if no anchor line, then we have to replace the current line
 				// console.log('replaceLines', this.documentLineIndex, anchor, adjustedLine);
 				this.documentLineIndex = await this.document.replaceLines(this.documentLineIndex, anchor, adjustedLine);
 			} else if (this.documentLineIndex > this.documentLineLimit) {
-				console.log('documentLineIndex::else_if_condition', this.documentLineIndex);
+				// console.log('documentLineIndex::else_if_condition', this.documentLineIndex);
 				if (this.sentEdits) {
 					this.documentLineIndex = await this.document.insertLineAfter(this.documentLineIndex - 1, adjustedLine);
 					// this.documentLineIndex = await this.document.appendLine(adjustedLine);
@@ -677,7 +684,7 @@ export class StreamProcessor {
 				}
 				this.sentEdits = true;
 			} else {
-				console.log('documentLineIndex::elsecase', this.documentLineIndex);
+				// console.log('documentLineIndex::elsecase', this.documentLineIndex);
 				this.documentLineIndex = await this.document.replaceLine(this.documentLineIndex, adjustedLine);
 				// we have sent the edits for this range, we should track that
 			}
@@ -687,7 +694,7 @@ export class StreamProcessor {
 			const adjustedInitialLine = this.previousLine.reindent(line, this.document.indentStyle);
 			this.documentLineIndex = await this.document.replaceLine(initialAnchor, adjustedInitialLine);
 		}
-		console.log('documentLineIndex', this.documentLineIndex);
+		// console.log('documentLineIndex', this.documentLineIndex);
 	}
 
 	// Find the initial anchor line in the document
@@ -722,6 +729,7 @@ class DocumentManager {
 	uri: vscode.Uri;
 	limiter: Limiter<any> | null;
 	iterationEdits: vscode.WorkspaceEdit;
+	applyDirectly: boolean;
 
 	constructor(
 		progress: vscode.ProbeResponseStream,
@@ -732,12 +740,14 @@ class DocumentManager {
 		uri: vscode.Uri,
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
+		applyDirectly: boolean,
 	) {
 		this.limiter = limiter;
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
 		this.indentStyle = IndentationHelper.getDocumentIndentStyle(lines, indentStyle);
 		this.iterationEdits = iterationEdits;
+		this.applyDirectly = applyDirectly;
 
 		// Split the editor's text into lines and initialize each line
 		const editorLines = lines;
@@ -752,10 +762,15 @@ class DocumentManager {
 		const firstLineIndex = range.startPosition.line;
 		for (let j = 0; j < rangeLength; j++) {
 			const lineIndex = firstLineIndex + j;
-			this.lines[lineIndex].markSent();
+			try {
+				this.lines[lineIndex].markSent();
+			} catch (exception) {
+				console.log('document_manager::line_index', lineIndex);
+				console.error(exception);
+			}
 		}
 
-		console.log('document_manager::range', JSON.stringify(range));
+		// console.log('document_manager::range', JSON.stringify(range));
 
 		this.firstSentLineIndex = firstLineIndex;
 		this.firstRangeLine = firstLineIndex;
@@ -776,17 +791,20 @@ class DocumentManager {
 	async replaceLine(index: number, newLine: AdjustedLineContent) {
 		this.lines[index] = new LineContent(newLine.adjustedContent, this.indentStyle);
 		//console.log('sidecar.replaceLine', index);
-		console.table({
-			'edit': 'replace_line',
-			'index': index,
-			'content': newLine.adjustedContent,
-		});
+		// console.table({
+		// 	'edit': 'replace_line',
+		// 	'index': index,
+		// 	'content': newLine.adjustedContent,
+		// });
 		const edits = new vscode.WorkspaceEdit();
 		if (newLine.adjustedContent === '') {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
 			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
-			if (this.limiter === null) {
+			if (this.applyDirectly) {
+				await vscode.workspace.applyEdit(edits);
+			}
+			else if (this.limiter === null) {
 				await this.progress.codeEdit({ edits, iterationId: 'mock' });
 			} else {
 				await this.limiter.queue(async () => {
@@ -798,7 +816,10 @@ class DocumentManager {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
 			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
 			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
-			if (this.limiter === null) {
+			if (this.applyDirectly) {
+				await vscode.workspace.applyEdit(edits);
+			}
+			else if (this.limiter === null) {
 				await this.progress.codeEdit({ edits, iterationId: 'mock' });
 			} else {
 				await this.limiter.queue(async () => {
@@ -812,12 +833,12 @@ class DocumentManager {
 	// Replace multiple lines starting from a specific index
 	async replaceLines(startIndex: number, endIndex: number, newLine: AdjustedLineContent) {
 		//console.log('sidecar.replaceLine', startIndex, endIndex);
-		console.table({
-			'edit': 'replace_lines',
-			'start_index': startIndex,
-			'end_index': endIndex,
-			'content': newLine.adjustedContent,
-		});
+		// console.table({
+		// 	'edit': 'replace_lines',
+		// 	'start_index': startIndex,
+		// 	'end_index': endIndex,
+		// 	'content': newLine.adjustedContent,
+		// });
 		if (startIndex === endIndex) {
 			return await this.replaceLine(startIndex, newLine);
 		} else {
@@ -830,7 +851,10 @@ class DocumentManager {
 			// console.log('sidecar.What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
 			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
 			this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
-			if (this.limiter === null) {
+			if (this.applyDirectly) {
+				await vscode.workspace.applyEdit(edits);
+			}
+			else if (this.limiter === null) {
 				await this.progress.codeEdit({ edits, iterationId: 'mock' });
 			} else {
 				await this.limiter.queue(async () => {
@@ -846,15 +870,18 @@ class DocumentManager {
 		//console.log('sidecar.appendLine', this.lines.length - 1);
 		this.lines.push(new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
-		console.table({
-			'edit': 'append_line',
-			'start_index': this.lines.length - 2,
-			'content': newLine.adjustedContent,
-		});
+		// console.table({
+		// 	'edit': 'append_line',
+		// 	'start_index': this.lines.length - 2,
+		// 	'content': newLine.adjustedContent,
+		// });
 		// console.log('what line are we appendLine', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
 		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
-		if (this.limiter === null) {
+		if (this.applyDirectly) {
+			await vscode.workspace.applyEdit(edits);
+		}
+		else if (this.limiter === null) {
 			await this.progress.codeEdit({ edits, iterationId: 'mock' });
 		} else {
 			await this.limiter.queue(async () => {
@@ -867,17 +894,20 @@ class DocumentManager {
 	// Insert a new line after a specific index
 	async insertLineAfter(index: number, newLine: AdjustedLineContent) {
 		//console.log('insertLineAfter', index);
-		console.table({
-			'edit': 'insert_line_after',
-			'index': index,
-			'content': newLine.adjustedContent,
-		});
+		// console.table({
+		// 	'edit': 'insert_line_after',
+		// 	'index': index,
+		// 	'content': newLine.adjustedContent,
+		// });
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
 		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
 		this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
-		if (this.limiter === null) {
+		if (this.applyDirectly) {
+			await vscode.workspace.applyEdit(edits);
+		}
+		else if (this.limiter === null) {
 			await this.progress.codeEdit({ edits, iterationId: 'mock' });
 		} else {
 			await this.limiter.queue(async () => {

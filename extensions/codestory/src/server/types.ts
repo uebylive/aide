@@ -138,13 +138,14 @@ export interface EditedCodeStreamingRequest {
 	range: SidecarRequestRange;
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
+	apply_directly: boolean;
 }
 
 interface SymbolEventEditRequest {
 	RangeSelectionForEdit: RangeSelectionForEditRequest;
 	InsertCode: InsertCodeForEditRequest;
 	EditCode: EditedCodeForEditRequest;
-	CodeCorrectionTool: CodeCorrectionToolSelection;
+	CodeCorrectionTool: CodeCorrectionToolSelection; // this indicates that code correction tool will be used.
 	EditCodeStreaming: EditedCodeStreamingRequest;
 	ThinkingForEdit: ThinkingForEditRequest;
 }
@@ -714,7 +715,7 @@ export type SidecarSymbolSearchResponse = {
 export type SidecarQuickFixRequest = {
 	fs_file_path: string;
 	editor_url: string;
-	range: SidecarRequestRange;
+	range: SidecarRequestRange; // the exact range of the quick fix invocation
 	request_id: string;
 };
 
@@ -845,6 +846,6 @@ export type SidecarApplyEditsResponse = {
 };
 
 export type SidecarDiagnosticsResponse = {
-	diagnostic: string;
+	message: string;
 	range: SidecarResponseRange;
 };

@@ -637,16 +637,16 @@ export class SideCarClient {
 		diagnostics: readonly Diagnostic[]
 	): Promise<void> {
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/diagnostics/report';  // New invented endpoint
+		baseUrl.pathname = '/api/agentic/diagnostics';  // New invented endpoint
 
 		const body = {
-			file_path: filePath,
+			fs_file_path: filePath,
 			diagnostics: diagnostics.map(diag => ({
 				severity: diag.severity,
 				message: diag.message,
 				range: {
-					start: { line: diag.range.start.line, character: diag.range.start.character },
-					end: { line: diag.range.end.line, character: diag.range.end.character }
+					start_position: { line: diag.range.start.line, character: diag.range.start.character, byte_offset: 0 },
+					end_position: { line: diag.range.end.line, character: diag.range.end.character, byte_offset: 0 }
 				},
 				code: diag.code,
 				source: diag.source
