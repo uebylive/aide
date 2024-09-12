@@ -23,7 +23,7 @@ import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService
 import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
 import { Selection } from 'vs/editor/common/core/selection';
 import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { DocumentSymbol } from 'vs/editor/common/languages';
 import { IModelService } from 'vs/editor/common/services/model';
 import { IOutlineModelService, OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
 import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
@@ -34,7 +34,6 @@ import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
-import { FileKind } from 'vs/platform/files/common/files';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
@@ -138,7 +137,7 @@ export class AideControls extends Themable implements IAideControls {
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 	readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
 	private resourceLabels: ResourceLabels | undefined;
-	private anchoredContextContainer: HTMLElement | undefined;
+	private anchoredContext: string = '';
 	private readonly resourceLabelDisposables = this._register(new DisposableStore());
 	private readonly currentOutline = new MutableDisposable<IOutline<any>>();
 	private readonly outlineDisposables = this._register(new DisposableStore());
@@ -320,13 +319,11 @@ export class AideControls extends Themable implements IAideControls {
 	private clearAnchors() {
 		this.resourceLabelDisposables.clear();
 		this.resourceLabels?.clear();
-		if (this.anchoredContextContainer) {
-			dom.clearNode(this.anchoredContextContainer);
-		}
+		this.anchoredContext = '';
 	}
 
 	private async updateAnchoredContext() {
-		if (!this.anchoredContextContainer || !this.resourceLabels) {
+		if (!this.resourceLabels) {
 			this.clearAnchors();
 			return;
 		}
@@ -344,12 +341,7 @@ export class AideControls extends Themable implements IAideControls {
 			return;
 		}
 
-		const activeSelection = editor.getSelection();
-		let selection: Selection | null = activeSelection;
-		if (activeSelection && activeSelection.isEmpty()) {
-			selection = null;
-		}
-
+		const selection = editor.getSelection();
 		if (!selection) {
 			if (!this.currentOutline.value) {
 				this.clearAnchors();
@@ -363,11 +355,7 @@ export class AideControls extends Themable implements IAideControls {
 
 				const outline = breadcrumbsElements[0] as OutlineElement;
 				const symbol = outline.symbol;
-				const symbolLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
-				symbolLabel.setResource({ resource, name: symbol.name, description: basenameOrAuthority(resource) }, {
-					fileKind: FileKind.FILE,
-					icon: SymbolKinds.toIcon(symbol.kind),
-				});
+				this.anchoredContext = symbol.name;
 
 				this.aideProbeService.anchorEditingSelection = {
 					uri: resource, selection: new Selection(
@@ -384,14 +372,7 @@ export class AideControls extends Themable implements IAideControls {
 			}
 		} else {
 			this.clearAnchors();
-
-			const symbolLabel = this.resourceLabels.create(this.anchoredContextContainer, { supportHighlights: true });
-
-			const label = `${basenameOrAuthority(resource)}:${selection.startLineNumber}-${selection.endLineNumber}`;
-			symbolLabel.setResource({ resource, name: label, description: basenameOrAuthority(resource) }, {
-				fileKind: FileKind.FILE,
-				icon: SymbolKinds.toIcon(SymbolKind.File),
-			});
+			this.anchoredContext = `${basenameOrAuthority(resource)} from line ${selection.startLineNumber} to ${selection.endLineNumber}`;
 			const anchorEditingSelection: AnchorEditingSelection = {
 				uri: resource, selection: selection, symbols: []
 			};
@@ -409,6 +390,7 @@ export class AideControls extends Themable implements IAideControls {
 			}
 
 			this.aideProbeService.anchorEditingSelection = anchorEditingSelection;
+			this.updateInputPlaceholder();
 			this.layout();
 		}
 	}
@@ -544,13 +526,13 @@ export class AideControls extends Themable implements IAideControls {
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
-			let placeholder = 'Start an edit across';
+			let placeholder = 'Start an edit across ';
 			if (this.aideControlsService.scope === AideProbeScope.Selection) {
-				placeholder += ' the selected range';
+				placeholder += (this.anchoredContext.length > 0 ? this.anchoredContext : 'the selected range');
 			} else if (this.aideControlsService.scope === AideProbeScope.PinnedContext) {
-				placeholder += ' the pinned context';
+				placeholder += 'the pinned context';
 			} else {
-				placeholder += ' the whole codebase';
+				placeholder += 'the whole codebase';
 			}
 
 			if (!this.inputHasFocus.get()) {

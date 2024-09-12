@@ -284,6 +284,10 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			}
 		}]);
 		this.previewDisposable = toDisposable(() => decorationsCollection.clear());
+
+		if (isCodeEditor(editor)) {
+			editor.setSelection(this.currentNode.range);
+		}
 	}
 
 	toggleASTNavigationMode(): void {
