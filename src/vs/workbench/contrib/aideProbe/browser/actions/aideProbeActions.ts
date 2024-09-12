@@ -270,8 +270,8 @@ export class SetAideProbeScopeSelection extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.Digit1,
-				weight: KeybindingWeight.WorkbenchContrib + 1,
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit1,
+				weight: KeybindingWeight.WorkbenchContrib
 			},
 		});
 	}
@@ -292,8 +292,8 @@ export class SetAideProbeScopePinnedContext extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.Digit2,
-				weight: KeybindingWeight.WorkbenchContrib + 1,
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit2,
+				weight: KeybindingWeight.WorkbenchContrib
 			},
 		});
 	}
@@ -314,8 +314,8 @@ export class SetAideProbeScopeWholeCodebase extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.Digit3,
-				weight: KeybindingWeight.WorkbenchContrib + 1,
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit3,
+				weight: KeybindingWeight.WorkbenchContrib
 			},
 		});
 	}
