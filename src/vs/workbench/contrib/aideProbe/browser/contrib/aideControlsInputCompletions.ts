@@ -6,19 +6,18 @@
 import { CancellationToken } from 'vs/base/common/cancellation';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { Position } from 'vs/editor/common/core/position';
-import { IWordAtPosition, getWordAtText } from 'vs/editor/common/core/wordHelper';
 import { Range } from 'vs/editor/common/core/range';
+import { IWordAtPosition, getWordAtText } from 'vs/editor/common/core/wordHelper';
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
 import { ITextModel } from 'vs/editor/common/model';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { localize } from 'vs/nls';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
 import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
-import { AideControls, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-// import { ChatRequestVariablePart } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-// import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 
 const probeVariableLeader = '#';
 

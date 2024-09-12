@@ -12,12 +12,12 @@ import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys'
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-import { AideProbeScope, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
+import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeMode, AideProbeScope, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
 
@@ -260,7 +260,7 @@ class ToggleAideProbeMode extends Action2 {
 	}
 }
 
-class SetAideProbeScopeSelection extends Action2 {
+export class SetAideProbeScopeSelection extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.setScopeSelection';
 
 	constructor() {
@@ -269,11 +269,9 @@ class SetAideProbeScopeSelection extends Action2 {
 			title: localize2('aideProbe.setScopeSelection.label', "Use selection range as the scope for AI edits"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.Digit1,
 				weight: KeybindingWeight.WorkbenchContrib + 1,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			},
 		});
 	}
@@ -284,7 +282,7 @@ class SetAideProbeScopeSelection extends Action2 {
 	}
 }
 
-class SetAideProbeScopePinnedContext extends Action2 {
+export class SetAideProbeScopePinnedContext extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.setScopePinnedContext';
 
 	constructor() {
@@ -293,11 +291,9 @@ class SetAideProbeScopePinnedContext extends Action2 {
 			title: localize2('aideProbe.setScopePinnedContext.label', "Use Pinned Context as the scope for AI edits"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.Digit2,
 				weight: KeybindingWeight.WorkbenchContrib + 1,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			},
 		});
 	}
@@ -308,7 +304,7 @@ class SetAideProbeScopePinnedContext extends Action2 {
 	}
 }
 
-class SetAideProbeScopeWholeCodebase extends Action2 {
+export class SetAideProbeScopeWholeCodebase extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.setScopeWholeCodebase';
 
 	constructor() {
@@ -317,11 +313,9 @@ class SetAideProbeScopeWholeCodebase extends Action2 {
 			title: localize2('aideProbe.setScopeWholeCodebase.label', "Use the whole codebase as the scope for AI edits"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			keybinding: {
 				primary: KeyMod.CtrlCmd | KeyCode.Digit3,
 				weight: KeybindingWeight.WorkbenchContrib + 1,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			},
 		});
 	}

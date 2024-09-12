@@ -18,6 +18,8 @@ import { ILabelService } from 'vs/platform/label/common/label';
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
+import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
 import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, IWidgetWithInputEditor, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
 import { chatVariableLeader } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
 import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
@@ -25,7 +27,6 @@ import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/co
 import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
 import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
 import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
-import { AideControls, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
 
 
 // class ChatTokenDeleter extends Disposable {

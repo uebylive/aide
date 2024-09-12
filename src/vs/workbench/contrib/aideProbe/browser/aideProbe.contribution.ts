@@ -14,6 +14,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/com
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
 import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { AideControlsService, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
 import { AideLSPService, IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeDecorations';
@@ -55,8 +56,9 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDes
 registerProbeActions();
 
 // Register services
-registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
-registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);
+registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Delayed);
 registerSingleton(IAideLSPService, AideLSPService, InstantiationType.Eager);
-registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);
+registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);
+registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
 registerWorkbenchContribution2(AideControls.ID, AideControls, WorkbenchPhase.Eventually);
+registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);

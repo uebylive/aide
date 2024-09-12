@@ -230,3 +230,9 @@ export const enum AideProbeStatus {
 }
 
 export type IAideProbeStatus = keyof typeof AideProbeStatus;
+
+export enum AideProbeScope {
+	Selection = 'Selection',
+	PinnedContext = 'PinnedContext',
+	WholeCodebase = 'WholeCodebase',
+}

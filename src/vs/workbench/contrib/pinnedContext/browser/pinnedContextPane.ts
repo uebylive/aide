@@ -150,7 +150,7 @@ export class PinnedContextPane extends ViewPane {
 		container.classList.add('pinned-context-view');
 
 		const manageKbShortcut = this.keybindingService.lookupKeybinding(ManagePinnedContext.ID);
-		const buttonTitle = manageKbShortcut ? localize('managePinnedContextsKb', "Manage ({0})", manageKbShortcut.getLabel()) : localize('managePinnedContextsNoKb', "Manage Pinned Contexts");
+		const buttonTitle = manageKbShortcut ? localize('managePinnedContextsKb', "$(pinned) Manage ({0})", manageKbShortcut.getLabel()) : localize('managePinnedContextsNoKb', "$(pinned) Manage Pinned Contexts");
 		const button = this._register(new Button(this.$container, {
 			...defaultButtonStyles,
 			buttonBackground: asCssVariable(buttonBackground),
