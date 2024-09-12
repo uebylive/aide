@@ -383,6 +383,10 @@ export const reportAgentEventsToChat = async (
 					continue;
 				}
 				const editEvent = symbolEventSubStep.Edit;
+
+				// UX handle for code correction tool usage - consider using
+				if (editEvent.CodeCorrectionTool) { }
+
 				if (editEvent.ThinkingForEdit) {
 					response.breakdown({
 						reference: {
