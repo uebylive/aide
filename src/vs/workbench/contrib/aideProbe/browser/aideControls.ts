@@ -212,7 +212,7 @@ export class AideControls extends Themable implements IAideControls {
 		);
 		scopeSelect.onDidSelect(e => {
 			const newScope = e.index === 0 ? AideProbeScope.Selection : e.index === 1 ? AideProbeScope.PinnedContext : AideProbeScope.WholeCodebase;
-			this.updateScope(newScope);
+			aideControlsService.scope = newScope;
 		});
 		scopeSelect.render(this.aideControlEditScope);
 
@@ -262,7 +262,6 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private updateScope(scope: AideProbeScope) {
-		this.aideControlsService.scope = scope;
 		this.updateInputPlaceholder();
 		const scopeIcon = scope === AideProbeScope.Selection ? Codicon.listSelection : scope === AideProbeScope.PinnedContext ? Codicon.pinned : Codicon.repo;
 		this.aideControlEditScope.classList.remove(...Array.from(this.aideControlEditScope.classList).filter(c => c.startsWith('codicon-')));
