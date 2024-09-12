@@ -13,7 +13,7 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 		return interestedRange.contains(diagnostic.range);
 	}).map((diagnostic) => {
 		return {
-			diagnostic: diagnostic.message,
+			message: diagnostic.message,
 			range: {
 				startPosition: {
 					line: diagnostic.range.start.line,
