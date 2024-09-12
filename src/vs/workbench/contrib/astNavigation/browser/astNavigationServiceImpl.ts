@@ -127,17 +127,42 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	private constructTree(ranges: IRange[]): ASTNode {
 		ranges.sort(Range.compareRangesUsingStarts);
 		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
+		const mergedRanges: IRange[] = [];
+		let currentRange: IRange | undefined = undefined;
+
+		for (const range of ranges) {
+			if (!currentRange) {
+				currentRange = range;
+			} else if (currentRange.startLineNumber === range.startLineNumber) {
+				if (range.endLineNumber > currentRange.endLineNumber) {
+					currentRange = {
+						startLineNumber: currentRange.startLineNumber,
+						startColumn: currentRange.startColumn,
+						endLineNumber: range.endLineNumber,
+						endColumn: range.endColumn
+					};
+				}
+			} else {
+				mergedRanges.push(currentRange);
+				currentRange = range;
+			}
+		}
+
+		if (currentRange) {
+			mergedRanges.push(currentRange);
+		}
+
 		const root = new ASTNode({
-			startLineNumber: ranges[0].startLineNumber,
+			startLineNumber: mergedRanges[0].startLineNumber,
 			startColumn: 0,
-			endLineNumber: ranges[ranges.length - 1].endLineNumber,
+			endLineNumber: mergedRanges[mergedRanges.length - 1].endLineNumber,
 			endColumn: 0
 		});
 
 		const stack: ASTNode[] = [root];
 		const nodeMap = new Map<string, ASTNode>();
 
-		for (const range of ranges) {
+		for (const range of mergedRanges) {
 			const rangeKey = `${range.startLineNumber}-${range.startColumn}-${range.endLineNumber}-${range.endColumn}`;
 			let currentNode = nodeMap.get(rangeKey);
 
@@ -265,10 +290,8 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		const isAstNavigationMode = !this._astNavigationMode.get();
 		this._astNavigationMode.set(isAstNavigationMode);
 		if (isAstNavigationMode) {
-			getActiveWindow().document.body.classList.add('astNavigationMode');
 			this.recreateTree();
 		} else {
-			getActiveWindow().document.body.classList.remove('astNavigationMode');
 			this.clear();
 			const editor = this.editorService.activeTextEditorControl;
 			if (isCodeEditor(editor)) {
