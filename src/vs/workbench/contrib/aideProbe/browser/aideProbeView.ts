@@ -58,7 +58,6 @@ const welcomeActions = [
 	},
 	{ title: 'Toggle editing mode', actionId: 'workbench.action.aideProbe.toggleMode', descrption: 'Switch between anchored and agentic editing modes.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
-	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
 

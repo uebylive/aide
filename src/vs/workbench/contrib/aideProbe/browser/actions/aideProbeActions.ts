@@ -174,48 +174,6 @@ class CancelAction extends Action2 {
 	}
 }
 
-
-class RequestFollowUpAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.followups';
-
-	constructor() {
-		super({
-			id: RequestFollowUpAction.ID,
-			title: localize2('aideProbe.followups.label', "Make follow-ups"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.or(CTX.CONTEXT_PROBE_HAS_SELECTION, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.KeyY,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS,
-			},
-			menu: [
-				{
-					when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-					id: MenuId.AideControlsToolbar,
-					group: 'navigation',
-				},
-			]
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const aideProbeService = accessor.get(IAideProbeService);
-		const currentSession = aideProbeService.getSession();
-		if (!currentSession) {
-			const contextKeyService = accessor.get(IContextKeyService);
-			CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.FOLLOW_UP);
-			const aideControls = accessor.get(IAideControlsService);
-			aideControls.acceptInput();
-		} else {
-			aideProbeService.makeFollowupRequest();
-		}
-		logProbeContext(accessor);
-	}
-}
-
 class ClearIterationAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.stop';
 
@@ -334,6 +292,5 @@ export function registerProbeActions() {
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);
 	registerAction2(ClearIterationAction);
-	registerAction2(RequestFollowUpAction);
 	registerAction2(ClearList);
 }
