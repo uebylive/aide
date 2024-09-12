@@ -68,7 +68,7 @@ const inputPlaceholder = {
 
 export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 
-enum AideProbeScope {
+export enum AideProbeScope {
 	Selection = 'Selection',
 	PinnedContext = 'PinnedContext',
 	WholeCodebase = 'WholeCodebase',
@@ -76,6 +76,7 @@ enum AideProbeScope {
 
 export interface IAideControlsService {
 	_serviceBrand: undefined;
+	onDidChangeScope: Event<AideProbeScope>;
 
 	scope: AideProbeScope;
 	readonly scopeSelection: number;
@@ -96,7 +97,7 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 	}
 
 	private _scope: AideProbeScope = AideProbeScope.Selection;
-	private _onDidChangeScope = this._register(new Emitter<boolean>());
+	private _onDidChangeScope = this._register(new Emitter<AideProbeScope>());
 	readonly onDidChangeScope = this._onDidChangeScope.event;
 
 	get scope() {
@@ -105,7 +106,7 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 
 	set scope(scope: AideProbeScope) {
 		this._scope = scope;
-		this._onDidChangeScope.fire(true);
+		this._onDidChangeScope.fire(scope);
 	}
 
 	constructor(
@@ -335,6 +336,10 @@ export class AideControls extends Themable implements IAideControls {
 			this.updateInputPlaceholder();
 			this.checkActivation();
 			this.checkEditorSelection();
+		}));
+
+		this._register(this.aideControlsService.onDidChangeScope((scope) => {
+			this.updateScope(scope);
 		}));
 
 		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
