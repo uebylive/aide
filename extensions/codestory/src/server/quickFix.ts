@@ -111,7 +111,7 @@ export async function quickFixList(request: SidecarQuickFixRequest): Promise<Sid
 						id: actionIndex++, // postfix increment (increments by 1, returns original value)
 					});
 				} else {
-					console.warn("Unexpected argument type:", commandPossibleArgument);
+					console.warn('Unexpected argument type:', commandPossibleArgument);
 				}
 			});
 		} else {
