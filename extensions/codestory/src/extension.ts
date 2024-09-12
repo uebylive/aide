@@ -241,7 +241,7 @@ export async function activate(context: ExtensionContext) {
 
 			// Send diagnostics to sidecar
 			try {
-				await sidecarClient.sendDiagnostics(uri.toString(), diagnostics)
+				await sidecarClient.sendDiagnostics(uri.toString(), diagnostics);
 			} catch (error) {
 				// console.error(`Failed to send diagnostics for ${uri.toString()}:`, error);
 			}

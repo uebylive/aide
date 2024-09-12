@@ -140,6 +140,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		success: boolean;
 	}> {
 		if (!this._openResponseStream) {
+			console.log('editing_streamed::no_open_response_stream');
 			return {
 				fs_file_path: '',
 				success: false,
