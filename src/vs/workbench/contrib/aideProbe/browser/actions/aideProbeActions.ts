@@ -63,7 +63,6 @@ class BlurAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		console.log('blur');
 		const aideControls = accessor.get(IAideControlsService);
 		aideControls.blurInput();
 	}

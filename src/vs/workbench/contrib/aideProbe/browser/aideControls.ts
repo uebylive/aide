@@ -6,11 +6,12 @@
 import * as dom from 'vs/base/browser/dom';
 import { IDimension } from 'vs/base/browser/dom';
 import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
+import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
 import { equals } from 'vs/base/common/arrays';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
-import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
+import { Disposable, DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
 import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
@@ -32,11 +33,13 @@ import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/br
 import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
 import { FileKind } from 'vs/platform/files/common/files';
 import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
+import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
 import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
 import { ResourceLabels } from 'vs/workbench/browser/labels';
@@ -65,26 +68,50 @@ const inputPlaceholder = {
 
 export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 
+enum AideProbeScope {
+	Selection = 'Selection',
+	PinnedContext = 'PinnedContext',
+	WholeCodebase = 'WholeCodebase',
+}
+
 export interface IAideControlsService {
 	_serviceBrand: undefined;
+
+	scope: AideProbeScope;
+	readonly scopeSelection: number;
 	controls: AideControls | undefined;
 	registerControls(controls: AideControls): void;
+
 	acceptInput(): void;
 	focusInput(): void;
 	blurInput(): void;
 }
 
-export class AideControlsService implements IAideControlsService {
+export class AideControlsService extends Disposable implements IAideControlsService {
 	_serviceBrand: undefined;
-	private _controls: AideControls | undefined;
 
+	private _controls: AideControls | undefined;
 	get controls() {
 		return this._controls;
+	}
+
+	private _scope: AideProbeScope = AideProbeScope.Selection;
+	private _onDidChangeScope = this._register(new Emitter<boolean>());
+	readonly onDidChangeScope = this._onDidChangeScope.event;
+
+	get scope() {
+		return this._scope;
+	}
+
+	set scope(scope: AideProbeScope) {
+		this._scope = scope;
+		this._onDidChangeScope.fire(true);
 	}
 
 	constructor(
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
+		super();
 	}
 
 	registerControls(controls: AideControls): void {
@@ -92,6 +119,16 @@ export class AideControlsService implements IAideControlsService {
 			this._controls = controls;
 		} else {
 			console.warn('AideControls already registered');
+		}
+	}
+
+	get scopeSelection(): Readonly<number> {
+		if (this._scope === AideProbeScope.Selection) {
+			return 0;
+		} else if (this._scope === AideProbeScope.PinnedContext) {
+			return 1;
+		} else {
+			return 2;
 		}
 	}
 
@@ -149,6 +186,7 @@ export class AideControls extends Themable implements IAideControls {
 	// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
 	private part = this.aideControlsPartService.mainPart;
 	private element: HTMLElement;
+	private aideControlEditScope: HTMLElement;
 
 	public static readonly INPUT_CONTRIBS: { new(...args: [IAideControls, ...any]): IAideControlsContrib }[] = [];
 	private contribs: ReadonlyArray<IAideControlsContrib> = [];
@@ -198,7 +236,7 @@ export class AideControls extends Themable implements IAideControls {
 
 	constructor(
 		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
-		@IAideControlsService aideControlsService: IAideControlsService,
+		@IAideControlsService private readonly aideControlsService: IAideControlsService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IAideLSPService private readonly aideLSPService: IAideLSPService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -212,6 +250,7 @@ export class AideControls extends Themable implements IAideControls {
 		@IOutlineService private readonly outlineService: IOutlineService,
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
+		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(themeService);
 
@@ -230,10 +269,37 @@ export class AideControls extends Themable implements IAideControls {
 		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
-		const aideControlSettings = $('.aide-controls-settings');
-		aideControlSettings.classList.add(...ThemeIcon.asClassNameArray(Codicon.settings));
-		aideControlSettings.title = localize('aideControls.settings', "Settings");
-		element.appendChild(aideControlSettings);
+		const aideControlSettings = dom.append(element, $('.aide-controls-settings'));
+		this.aideControlEditScope = dom.append(aideControlSettings, $('.aide-controls-edit-focus'));
+		const rangeSelection = new SelectBox(
+			<ISelectOptionItem[]>[
+				{
+					text: localize('selectedRange', "Selected Range"),
+					description: localize('selectedRangeDescription', "The range of text selected in the editor"),
+				},
+				{
+					text: localize('pinnedContext', "Pinned Context"),
+					description: localize('pinnedContextDescription', "The files you have pinned as context for AI"),
+				},
+				{
+					text: localize('wholeCodebase', "Whole Codebase"),
+					description: localize('wholeCodebaseDescription', "The entire codebase of the current workspace"),
+				},
+			],
+			aideControlsService.scopeSelection,
+			this.contextViewService,
+			defaultSelectBoxStyles,
+			{
+				ariaLabel: localize('editFocus', 'Edit Focus'),
+				useCustomDrawn: true,
+				customDrawnDropdownWidth: 320
+			}
+		);
+		rangeSelection.onDidSelect(e => {
+			const newScope = e.index === 0 ? AideProbeScope.Selection : e.index === 1 ? AideProbeScope.PinnedContext : AideProbeScope.WholeCodebase;
+			this.updateScope(newScope);
+		});
+		rangeSelection.render(this.aideControlEditScope);
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
@@ -255,6 +321,7 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.checkActivation();
 		this.updateOutline();
+		this.updateScope(aideControlsService.scope);
 		this.updateInputPlaceholder();
 		this.checkEditorSelection();
 
@@ -272,6 +339,14 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.probeStatus = CONTEXT_PROBE_REQUEST_STATUS.bindTo(contextKeyService);
 		this.probeStatus.set(AideProbeStatus.INACTIVE);
+	}
+
+	private updateScope(scope: AideProbeScope) {
+		this.aideControlsService.scope = scope;
+		this.updateInputPlaceholder();
+		const scopeIcon = scope === AideProbeScope.Selection ? Codicon.listSelection : scope === AideProbeScope.PinnedContext ? Codicon.pinned : Codicon.repo;
+		this.aideControlEditScope.classList.remove(...Array.from(this.aideControlEditScope.classList).filter(c => c.startsWith('codicon-')));
+		this.aideControlEditScope.classList.add(...ThemeIcon.asClassNameArray(scopeIcon));
 	}
 
 	private sendContextChange() {
@@ -446,7 +521,7 @@ export class AideControls extends Themable implements IAideControls {
 			...defaultOptions,
 			overflowWidgetsDomNode: editorElement,
 			readOnly: false,
-			ariaLabel: localize('chatInput', "Start a task or exploration"),
+			ariaLabel: localize('chatInput', "Edit code"),
 			fontFamily: DEFAULT_FONT_FAMILY,
 			fontSize: 13,
 			lineHeight: 20,
@@ -495,10 +570,12 @@ export class AideControls extends Themable implements IAideControls {
 
 		this._register(editor.onDidFocusEditorText(() => {
 			this.inputHasFocus.set(true);
+			this.updateInputPlaceholder();
 		}));
 
 		this._register(editor.onDidBlurEditorText(() => {
 			this.inputHasFocus.set(false);
+			this.updateInputPlaceholder();
 		}));
 
 		return editor;
@@ -546,7 +623,15 @@ export class AideControls extends Themable implements IAideControls {
 
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
-			let placeholder = 'Start a task';
+			let placeholder = 'Start an edit across';
+			if (this.aideControlsService.scope === AideProbeScope.Selection) {
+				placeholder += ' the selected range';
+			} else if (this.aideControlsService.scope === AideProbeScope.PinnedContext) {
+				placeholder += ' the pinned context';
+			} else {
+				placeholder += ' the whole codebase';
+			}
+
 			if (!this.inputHasFocus.get()) {
 				const keybinding = this.keybindingService.lookupKeybinding('workbench.action.aideProbe.focus');
 				if (keybinding) {
