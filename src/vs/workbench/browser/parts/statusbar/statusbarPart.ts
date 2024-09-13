@@ -13,7 +13,7 @@ import { StatusbarAlignment, IStatusbarService, IStatusbarEntry, IStatusbarEntry
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IAction, Separator, toAction } from 'vs/base/common/actions';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { STATUS_BAR_BACKGROUND, STATUS_BAR_FOREGROUND, STATUS_BAR_NO_FOLDER_BACKGROUND, STATUS_BAR_ITEM_HOVER_BACKGROUND, STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_FOREGROUND, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER } from 'vs/workbench/common/theme';
+import { STATUS_BAR_ITEM_HOVER_BACKGROUND, STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER, TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND } from 'vs/workbench/common/theme';
 import { IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/common/workspace';
 import { contrastBorder, activeContrastBorder } from 'vs/platform/theme/common/colorRegistry';
 import { EventHelper, createStyleSheet, addDisposableListener, EventType, clearNode, getWindow } from 'vs/base/browser/dom';
@@ -111,7 +111,7 @@ interface IPendingStatusbarEntry {
 
 class StatusbarPart extends Part implements IStatusbarEntryContainer {
 
-	static readonly HEIGHT = 22;
+	static readonly HEIGHT = 31;
 
 	//#region IView
 
@@ -569,9 +569,9 @@ class StatusbarPart extends Part implements IStatusbarEntryContainer {
 		const styleOverride: IStatusbarStyleOverride | undefined = [...this.styleOverrides].sort((a, b) => a.priority - b.priority)[0];
 
 		// Background / foreground colors
-		const backgroundColor = this.getColor(styleOverride?.background ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? STATUS_BAR_BACKGROUND : STATUS_BAR_NO_FOLDER_BACKGROUND)) || '';
+		const backgroundColor = this.getColor(styleOverride?.background ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? TITLE_BAR_ACTIVE_BACKGROUND : TITLE_BAR_ACTIVE_BACKGROUND)) || '';
 		container.style.backgroundColor = backgroundColor;
-		const foregroundColor = this.getColor(styleOverride?.foreground ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? STATUS_BAR_FOREGROUND : STATUS_BAR_NO_FOLDER_FOREGROUND)) || '';
+		const foregroundColor = this.getColor(styleOverride?.foreground ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? TITLE_BAR_ACTIVE_FOREGROUND : TITLE_BAR_ACTIVE_FOREGROUND)) || '';
 		container.style.color = foregroundColor;
 		const itemBorderColor = this.getColor(STATUS_BAR_ITEM_FOCUS_BORDER);
 

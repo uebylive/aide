@@ -10,7 +10,7 @@ import { ViewPart } from 'vs/editor/browser/view/viewPart';
 import { Position } from 'vs/editor/common/core/position';
 import { IEditorConfiguration } from 'vs/editor/common/config/editorConfiguration';
 import { TokenizationRegistry } from 'vs/editor/common/languages';
-import { editorCursorForeground, editorOverviewRulerBorder, editorOverviewRulerBackground, editorMultiCursorSecondaryForeground, editorMultiCursorPrimaryForeground } from 'vs/editor/common/core/editorColorRegistry';
+import { editorCursorForeground, editorOverviewRulerBackground, editorMultiCursorSecondaryForeground, editorMultiCursorPrimaryForeground, editorRuler } from 'vs/editor/common/core/editorColorRegistry';
 import { RenderingContext, RestrictedRenderingContext } from 'vs/editor/browser/view/renderingContext';
 import { ViewContext } from 'vs/editor/common/viewModel/viewContext';
 import { EditorTheme } from 'vs/editor/common/editorTheme';
@@ -53,7 +53,7 @@ class Settings {
 		this.overviewRulerLanes = options.get(EditorOption.overviewRulerLanes);
 
 		this.renderBorder = options.get(EditorOption.overviewRulerBorder);
-		const borderColor = theme.getColor(editorOverviewRulerBorder);
+		const borderColor = theme.getColor(editorRuler);
 		this.borderColor = borderColor ? borderColor.toString() : null;
 
 		this.hideCursor = options.get(EditorOption.hideCursorInOverviewRuler);

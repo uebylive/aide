@@ -10,7 +10,6 @@
 	padding: 0px 14px 0px 28px;
 	box-sizing: border-box;
 	border-top: 1px solid var(--vscode-panel-border);
-	border-bottom: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background) !important;
 }
 
