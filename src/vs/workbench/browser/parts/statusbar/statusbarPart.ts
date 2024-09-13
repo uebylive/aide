@@ -13,9 +13,9 @@ import { StatusbarAlignment, IStatusbarService, IStatusbarEntry, IStatusbarEntry
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IAction, Separator, toAction } from 'vs/base/common/actions';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { STATUS_BAR_ITEM_HOVER_BACKGROUND, STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER, TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND } from 'vs/workbench/common/theme';
+import { STATUS_BAR_BORDER, STATUS_BAR_FOCUS_BORDER, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_NO_FOLDER_BORDER, TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND } from 'vs/workbench/common/theme';
 import { IWorkspaceContextService, WorkbenchState } from 'vs/platform/workspace/common/workspace';
-import { contrastBorder, activeContrastBorder } from 'vs/platform/theme/common/colorRegistry';
+import { activeContrastBorder, contrastBorder, toolbarHoverBackground } from 'vs/platform/theme/common/colorRegistry';
 import { EventHelper, createStyleSheet, addDisposableListener, EventType, clearNode, getWindow } from 'vs/base/browser/dom';
 import { IStorageService } from 'vs/platform/storage/common/storage';
 import { Parts, IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
@@ -481,8 +481,8 @@ class StatusbarPart extends Part implements IStatusbarEntryContainer {
 
 		// Install mouse listeners to update hover feedback for
 		// all compact entries that belong to each other
-		const statusBarItemHoverBackground = this.getColor(STATUS_BAR_ITEM_HOVER_BACKGROUND);
-		const statusBarItemCompactHoverBackground = this.getColor(STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND);
+		const statusBarItemHoverBackground = this.getColor(toolbarHoverBackground);
+		const statusBarItemCompactHoverBackground = this.getColor(toolbarHoverBackground);
 		this.compactEntriesDisposable.value = new DisposableStore();
 		if (statusBarItemHoverBackground && statusBarItemCompactHoverBackground && !isHighContrast(this.theme.type)) {
 			for (const [, compactEntryGroup] of compactEntryGroups) {
