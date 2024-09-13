@@ -636,6 +636,7 @@ export class SideCarClient {
 		filePath: string,
 		diagnostics: readonly Diagnostic[]
 	): Promise<void> {
+		const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/diagnostics';  // New invented endpoint
 
@@ -649,7 +650,8 @@ export class SideCarClient {
 					end_position: { line: diag.range.end.line, character: diag.range.end.character, byte_offset: 0 }
 				},
 				code: diag.code,
-				source: diag.source
+				source: diag.source,
+				range_content: textDocument.getText(diag.range),
 			}))
 		};
 
