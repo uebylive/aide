@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-import { commands, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
+import { commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { CSChatAgentProvider } from './completions/providers/chatprovider';
@@ -237,7 +237,10 @@ export async function activate(context: ExtensionContext) {
 
 	const diagnosticsListener = languages.onDidChangeDiagnostics(async (event) => {
 		for (const uri of event.uris) {
-			const diagnostics = languages.getDiagnostics(uri);
+			// filter out diagnostics which are ONLY errors and warnings
+			const diagnostics = languages.getDiagnostics(uri).filter((diagnostic) => {
+				return (diagnostic.severity === DiagnosticSeverity.Error || diagnostic.severity === DiagnosticSeverity.Warning);
+			});
 
 			// Send diagnostics to sidecar
 			try {

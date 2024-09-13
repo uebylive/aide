@@ -11,6 +11,8 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
 	const sidecarDiagnostics = diagnostics.filter((diagnostic) => {
 		return interestedRange.contains(diagnostic.range);
+	}).filter((diagnostic) => {
+		return (diagnostic.severity === vscode.DiagnosticSeverity.Error || diagnostic.severity === vscode.DiagnosticSeverity.Warning);
 	}).map((diagnostic) => {
 		return {
 			message: diagnostic.message,
