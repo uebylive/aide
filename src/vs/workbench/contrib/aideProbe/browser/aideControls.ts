@@ -169,22 +169,19 @@ export class AideControls extends Themable implements IAideControls {
 		const scopeSelect = new SelectBox(
 			<ISelectOptionItem[]>[
 				{
-					text: this.keybindingService.lookupKeybinding(SetAideProbeScopeSelection.ID)
-						? localize('selectedRangeWithKb', "Selected Range ({0})", this.keybindingService.lookupKeybinding(SetAideProbeScopeSelection.ID)!.getLabel())
-						: localize('selectedRange', "Selected Range"),
+					text: localize('selectedRange', "Selected Range"),
 					description: localize('selectedRangeDescription', "The range of text selected in the editor"),
+					decoratorRight: this.keybindingService.lookupKeybinding(SetAideProbeScopeSelection.ID)?.getLabel()
 				},
 				{
-					text: this.keybindingService.lookupKeybinding(SetAideProbeScopePinnedContext.ID)
-						? localize('pinnedContextWithKb', "Pinned Context ({0})", this.keybindingService.lookupKeybinding(SetAideProbeScopePinnedContext.ID)!.getLabel())
-						: localize('pinnedContext', "Pinned Context"),
+					text: localize('pinnedContext', "Pinned Context"),
 					description: localize('pinnedContextDescription', "The files you have pinned as context for AI"),
+					decoratorRight: this.keybindingService.lookupKeybinding(SetAideProbeScopePinnedContext.ID)?.getLabel()
 				},
 				{
-					text: this.keybindingService.lookupKeybinding(SetAideProbeScopeWholeCodebase.ID)
-						? localize('wholeCodebaseWithKb', "Whole Codebase ({0})", this.keybindingService.lookupKeybinding(SetAideProbeScopeWholeCodebase.ID)!.getLabel())
-						: localize('wholeCodebase', "Whole Codebase"),
+					text: localize('wholeCodebase', "Whole Codebase"),
 					description: localize('wholeCodebaseDescription', "The entire codebase of the current workspace"),
+					decoratorRight: this.keybindingService.lookupKeybinding(SetAideProbeScopeWholeCodebase.ID)?.getLabel()
 				},
 			],
 			aideControlsService.scopeSelection,
