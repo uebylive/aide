@@ -810,6 +810,19 @@ export type SidecarInlayHintResponse = {
 	parts: SidecarInlayHintsResponsePart[];
 };
 
+export type SidecarRecentEditsRetrieverDiff = {
+	fs_file_path: String;
+	diff: String;
+};
+
+export type SidecarRecentEditsRetrieverResponse = {
+	diffOutputs: SidecarRecentEditsRetrieverDiff[];
+};
+
+export type SidecarRecentEditsRetrieverRequest = {
+	fs_file_paths: string[] | null;
+};
+
 export type SidecarApplyEditsRequest = {
 	fs_file_path: string;
 	edited_content: string;
