@@ -64,11 +64,12 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			const autocompleteSnippet = {
 				fs_file_path: diff.uri.fsPath,
 				diff: content,
+				updated_timestamp_ms: diff.latestChangeTimestamp,
 			};
 			autocompleteContextSnippets.push(autocompleteSnippet);
 		}
 		return {
-			diffOutputs: autocompleteContextSnippets
+			changed_files: autocompleteContextSnippets
 		};
 	}
 

@@ -813,10 +813,11 @@ export type SidecarInlayHintResponse = {
 export type SidecarRecentEditsRetrieverDiff = {
 	fs_file_path: String;
 	diff: String;
+	updated_timestamp_ms: number;
 };
 
 export type SidecarRecentEditsRetrieverResponse = {
-	diffOutputs: SidecarRecentEditsRetrieverDiff[];
+	changed_files: SidecarRecentEditsRetrieverDiff[];
 };
 
 export type SidecarRecentEditsRetrieverRequest = {
