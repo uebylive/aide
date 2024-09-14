@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -42,6 +42,7 @@ export function handleRequest(
 		fs_file_path: String;
 		success: boolean;
 	}>,
+	recentEditsRetriever: (request: SidecarRecentEditsRetrieverRequest) => Promise<SidecarRecentEditsRetrieverResponse>,
 ) {
 	return async (req: http.IncomingMessage, res: http.ServerResponse) => {
 		try {
@@ -142,6 +143,13 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarGetOutlineNodesRequest = JSON.parse(body);
 				const response = await getOutlineNodes(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/recent_edits') {
+				console.log('recent_edits');
+				const body = await readRequestBody(req);
+				const request: SidecarRecentEditsRetrieverRequest = JSON.parse(body);
+				const response = await recentEditsRetriever(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else if (req.method === 'POST' && req.url === '/get_outline_nodes_content') {
