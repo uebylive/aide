@@ -274,7 +274,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			storageId: viewContainerId,
 			hideIfEmpty: true,
 			order: 100,
-		}, ViewContainerLocation.Sidebar);
+		}, ViewContainerLocation.AuxiliaryBar);
 
 		return viewContainer;
 	}
