@@ -179,10 +179,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/inlineCSChat",
-			"project": "vscode-workbench"
-		},
-		{
 			"name": "vs/workbench/contrib/astNavigation",
 			"project": "vscode-workbench"
 		},
@@ -192,6 +188,10 @@
 		},
 		{
 			"name": "vs/workbench/contrib/inlineAideChat",
+			"project": "vscode-workbench"
+		},
+		{
+			"name": "vs/workbench/contrib/aideAgent",
 			"project": "vscode-workbench"
 		},
 		{

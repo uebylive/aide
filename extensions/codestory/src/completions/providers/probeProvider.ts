@@ -92,6 +92,13 @@ export class AideProbeProvider implements vscode.Disposable {
 				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
+
+		vscode.aideAgent.registerAideAgentProvider(
+			'aideAgentProvider',
+			{
+				provideTriggerResponse: this.provideTriggerResponse.bind(this),
+			}
+		);
 	}
 
 	async sessionFollowup(sessionAction: vscode.AideProbeSessionAction) {
@@ -284,6 +291,11 @@ export class AideProbeProvider implements vscode.Disposable {
 		return {
 			iterationEdits: this._iterationEdits,
 		};
+	}
+
+	provideTriggerResponse(request: vscode.AgentTrigger, _response: vscode.AgentResponseStream, _token: vscode.CancellationToken): vscode.ProviderResult<vscode.AgentTriggerComplete | void> {
+		console.log('trigger_response', request);
+		return;
 	}
 
 	dispose() {

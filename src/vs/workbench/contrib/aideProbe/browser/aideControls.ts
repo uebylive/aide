@@ -44,7 +44,6 @@ import { ResourceLabels } from 'vs/workbench/browser/labels';
 import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { SetAideProbeScopePinnedContext, SetAideProbeScopeSelection, SetAideProbeScopeWholeCodebase } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
 import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
-import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
 import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
@@ -135,7 +134,6 @@ export class AideControls extends Themable implements IAideControls {
 		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
 		@IAideControlsService private readonly aideControlsService: IAideControlsService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
-		@IAideLSPService private readonly aideLSPService: IAideLSPService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
@@ -222,11 +220,6 @@ export class AideControls extends Themable implements IAideControls {
 		this.updateScope(aideControlsService.scope);
 		this.updateInputPlaceholder();
 		this.checkEditorSelection();
-
-		this._register(this.aideLSPService.onDidChangeStatus(() => {
-			this.updateInputPlaceholder();
-			this.checkActivation();
-		}));
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.updateOutline();
@@ -377,9 +370,8 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private checkActivation() {
-		const isLSPActive = this.aideLSPService.isActiveForCurrentEditor();
 		const activeEditor = this.editorService.activeTextEditorControl;
-		this.areControlsActive.set(isCodeEditor(activeEditor) && isLSPActive);
+		this.areControlsActive.set(isCodeEditor(activeEditor));
 	}
 
 	private createInput(parent: HTMLElement) {
