@@ -346,6 +346,8 @@ export const reportAgentEventsToChat = async (
 					});
 				}
 				response.followups(followups);
+			} else if (event.event.FrameworkEvent.SearchIteration) {
+				// console.log(event.event.FrameworkEvent.SearchIteration);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;

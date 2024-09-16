@@ -91,7 +91,60 @@ type FrameworkEvent = {
 	ReferenceFound: FoundReference;
 	RelevantReference: RelevantReference;
 	GroupedReferences: GroupedReferences;
+	SearchIteration: IterativeSearchEvent;
 };
+
+enum SearchToolType {
+	File = 'File',
+	Keyword = 'Keyword'
+}
+
+interface SearchQuery {
+	thinking: string;
+	tool: SearchToolType;
+	query: string;
+}
+
+type SearchResultSnippet =
+	| { type: 'FileContent', content: Uint8Array }
+	| { type: 'Tag', tag: string };
+
+interface SearchResult {
+	path: string;
+	thinking: string;
+	snippet: SearchResultSnippet;
+}
+
+interface IdentifiedFile {
+	path: string;
+	thinking: string;
+}
+
+interface IdentifyResponse {
+	items: IdentifiedFile[];
+	scratchPad: string;
+}
+
+interface DecideResponse {
+	suggestions: string;
+	complete: boolean;
+}
+
+type IterativeSearchEvent =
+	| { type: 'SearchStarted' }
+	| { type: 'SeedApplied', duration: Duration }
+	| { type: 'SearchQueriesGenerated', queries: SearchQuery[], duration: Duration }
+	| { type: 'SearchExecuted', results: SearchResult[], duration: Duration }
+	| { type: 'IdentificationCompleted', response: IdentifyResponse, duration: Duration }
+	| { type: 'FileOutlineGenerated', duration: Duration }
+	| { type: 'DecisionMade', response: DecideResponse, duration: Duration }
+	| { type: 'LoopCompleted', iteration: number, duration: Duration }
+	| { type: 'SearchCompleted', duration: Duration };
+
+interface Duration {
+	secs: number;
+	nanos: number;
+}
 
 // key represents a REASON
 type GroupedReferences = { [key: string]: Location[] };
