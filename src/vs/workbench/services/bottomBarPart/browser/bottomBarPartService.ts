@@ -5,14 +5,14 @@
 
 import { IDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { AideControlsPart } from 'vs/workbench/browser/parts/aidecontrols/aidecontrolsPart';
+import { BottomBarPart } from 'vs/workbench/browser/parts/bottombar/bottomBarPart';
 
-export const IAideControlsPartService = createDecorator<IAideControlsPartService>('aideControlsService');
+export const IBottomBarPartService = createDecorator<IBottomBarPartService>('bottomBarPartService');
 
-export interface IAideControlsPartService {
+export interface IBottomBarPartService {
 
 	readonly _serviceBrand: undefined;
-	readonly mainPart: AideControlsPart;
+	readonly mainPart: BottomBarPart;
 	getPart(container: HTMLElement): IDisposable;
-	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): AideControlsPart;
+	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): BottomBarPart;
 }

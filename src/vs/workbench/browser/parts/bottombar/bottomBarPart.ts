@@ -10,43 +10,43 @@ import { IStorageService } from 'vs/platform/storage/common/storage';
 import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
-import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
+import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
 import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
 
 const $ = dom.$;
 
-export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
+export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implements IBottomBarPartService {
 	declare _serviceBrand: undefined;
 
-	readonly mainPart = this._register(this.instantiationService.createInstance(AideControlsPart));
+	readonly mainPart = this._register(this.instantiationService.createInstance(BottomBarPart));
 
 	constructor(
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IStorageService storageService: IStorageService,
 		@IThemeService themeService: IThemeService,
 	) {
-		super('workbench.aideControlsPartService', themeService, storageService);
+		super('workbench.bottomBarPartService', themeService, storageService);
 
 		this._register(this.registerPart(this.mainPart));
 	}
 
-	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): AideControlsPart {
-		const aideControlsPartContainer = document.createElement('div');
-		const aideControlsPart = this.instantiationService.createInstance(AideControlsPart);
-		this._register(aideControlsPart);
-		aideControlsPartContainer.classList.add('part', 'aidecontrols');
-		container.insertBefore(aideControlsPartContainer, editorContainer.nextSibling);
-		return aideControlsPart;
+	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
+		const bottomBarPartContainer = document.createElement('div');
+		const bottomBarPart = this.instantiationService.createInstance(BottomBarPart);
+		this._register(bottomBarPart);
+		bottomBarPartContainer.classList.add('part', 'bottombar-part');
+		container.insertBefore(bottomBarPartContainer, editorContainer.nextSibling);
+		return bottomBarPart;
 	}
 }
 
-export type AideControlsPosition = {
+export type BottomBarPosition = {
 	bottom: number;
 	left: number;
 };
 
-export class AideControlsPart extends Part implements IDisposable {
-	static readonly activePanelSettingsKey = 'workbench.aidecontrols.activepanelid';
+export class BottomBarPart extends Part implements IDisposable {
+	static readonly activePanelSettingsKey = 'workbench.bottombar.activepanelid';
 
 	private _content!: HTMLElement;
 	get content(): HTMLElement {
@@ -54,7 +54,7 @@ export class AideControlsPart extends Part implements IDisposable {
 	}
 
 	readonly preferredHeight = 38;
-	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
+	readonly preferredWidth = Number.POSITIVE_INFINITY;
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
 	readonly minimumHeight: number = 38;
@@ -66,7 +66,7 @@ export class AideControlsPart extends Part implements IDisposable {
 		@IThemeService themeService: IThemeService,
 	) {
 		super(
-			Parts.AIDECONTROLS_PART,
+			Parts.BOTTOMBAR_PART,
 			{ hasTitle: false },
 			themeService,
 			storageService,
@@ -90,7 +90,7 @@ export class AideControlsPart extends Part implements IDisposable {
 
 	toJSON(): object {
 		return {
-			type: Parts.AIDECONTROLS_PART,
+			type: Parts.BOTTOMBAR_PART,
 		};
 	}
 }

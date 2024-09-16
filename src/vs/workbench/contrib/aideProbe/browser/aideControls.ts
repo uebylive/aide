@@ -50,7 +50,7 @@ import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/b
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
+import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
@@ -90,7 +90,7 @@ export class AideControls extends Themable implements IAideControls {
 	public static readonly ID = 'workbench.contrib.aideControls';
 
 	// TODO(@g-danna): Make sure we get the right part in the auxilliary editor, not just the main one
-	private part = this.aideControlsPartService.mainPart;
+	private part = this.bottomBarPartService.mainPart;
 	private element: HTMLElement;
 	private aideControlEditScope: HTMLElement;
 
@@ -131,7 +131,7 @@ export class AideControls extends Themable implements IAideControls {
 	private outlineCancellationTokenSource: CancellationTokenSource | undefined;
 
 	constructor(
-		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
+		@IBottomBarPartService private readonly bottomBarPartService: IBottomBarPartService,
 		@IAideControlsService private readonly aideControlsService: IAideControlsService,
 		@IAideProbeService private readonly aideProbeService: IAideProbeService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,

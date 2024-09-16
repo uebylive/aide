@@ -21,7 +21,7 @@ export const IWorkbenchLayoutService = refineServiceDecorator<ILayoutService, IW
 
 
 export const enum OverlayedParts {
-	AIDECONTROLS_PART_DEPRECATED = 'workbench.parts.aidecontrols',
+	BOTTOMBAR_PART_DEPRECATED = 'workbench.parts.bottombar',
 }
 
 export const enum Parts {
@@ -30,7 +30,7 @@ export const enum Parts {
 	ACTIVITYBAR_PART = 'workbench.parts.activitybar',
 	SIDEBAR_PART = 'workbench.parts.sidebar',
 	PANEL_PART = 'workbench.parts.panel',
-	AIDECONTROLS_PART = 'workbench.parts.aidecontrols',
+	BOTTOMBAR_PART = 'workbench.parts.bottombar',
 	AUXILIARYBAR_PART = 'workbench.parts.auxiliarybar',
 	EDITOR_PART = 'workbench.parts.editor',
 	STATUSBAR_PART = 'workbench.parts.statusbar'
