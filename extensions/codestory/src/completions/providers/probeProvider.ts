@@ -71,7 +71,7 @@ export class AideProbeProvider implements vscode.Disposable {
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
-			handleRequest(this.provideEdit.bind(this), this.provideEditStreamed.bind(this), recentEditsRetriever.retrieveSidecar.bind(this))
+			handleRequest(this.provideEdit.bind(this), this.provideEditStreamed.bind(this), recentEditsRetriever.retrieveSidecar.bind(recentEditsRetriever))
 		);
 		this.getNextOpenPort().then((port) => {
 			if (port === null) {
