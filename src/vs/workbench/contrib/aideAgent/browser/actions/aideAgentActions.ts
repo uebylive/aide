@@ -12,7 +12,8 @@ import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegis
 import { IView } from 'vs/workbench/common/views';
 import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from 'vs/workbench/contrib/aideAgent/browser/aideAgentContextKeys';
 import { IAideControlsService } from 'vs/workbench/contrib/aideAgent/browser/aideControlsService';
-import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
+import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 
 const AIDE_AGENT_CATEGORY = localize2('aideAgentcategory', 'Aide');
 
@@ -181,8 +182,8 @@ export class SetAideAgentScopeSelection extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const aideControlsService = accessor.get(IAideControlsService);
-		aideControlsService.scope = AideAgentScope.Selection;
+		const aideAgentService = accessor.get(IAideAgentService);
+		aideAgentService.scope = AideAgentScope.Selection;
 	}
 }
 
@@ -203,8 +204,8 @@ export class SetAideAgentScopePinnedContext extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const aideControlsService = accessor.get(IAideControlsService);
-		aideControlsService.scope = AideAgentScope.PinnedContext;
+		const aideAgentService = accessor.get(IAideAgentService);
+		aideAgentService.scope = AideAgentScope.PinnedContext;
 	}
 }
 
@@ -225,8 +226,8 @@ export class SetAideAgentScopeWholeCodebase extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const aideControlsService = accessor.get(IAideControlsService);
-		aideControlsService.scope = AideAgentScope.WholeCodebase;
+		const aideAgentService = accessor.get(IAideAgentService);
+		aideAgentService.scope = AideAgentScope.WholeCodebase;
 	}
 }
 

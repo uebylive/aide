@@ -53,7 +53,7 @@ import * as tasks from 'vs/workbench/api/common/shared/tasks';
 import { SaveReason } from 'vs/workbench/common/editor';
 import { IRevealOptions, ITreeItem, IViewBadge } from 'vs/workbench/common/views';
 import { IAgentTriggerComplete } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { IAgentTriggerModel } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 import { IAgentResponseProgress, IAgentTask, IAgentTaskDto } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
@@ -1488,7 +1488,7 @@ export interface MainThreadAideAgentProviderShape extends IDisposable {
 }
 
 export interface ExtHostAideAgentProviderShape {
-	$trigger(handle: number, request: IAgentTriggerModel, token: CancellationToken): Promise<IAgentTriggerComplete | undefined>;
+	$trigger(handle: number, request: IAgentTriggerPayload, token: CancellationToken): Promise<IAgentTriggerComplete | undefined>;
 }
 
 ///////////////////////// END AIDE /////////////////////////

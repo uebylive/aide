@@ -3,12 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { AideControls } from 'vs/workbench/contrib/aideAgent/browser/aideControls';
-import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
 
 export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 
@@ -16,11 +14,6 @@ export interface IAideControlsService {
 	_serviceBrand: undefined;
 	// Controls
 	registerControls(controls: AideControls): void;
-
-	// Scope
-	onDidChangeScope: Event<AideAgentScope>;
-	scope: AideAgentScope;
-	readonly scopeSelection: number;
 
 	// Input
 	acceptInput(): void;
@@ -33,19 +26,6 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 
 	private _controls: AideControls | undefined;
 
-	private _scope: AideAgentScope = AideAgentScope.Selection;
-	private _onDidChangeScope = this._register(new Emitter<AideAgentScope>());
-	readonly onDidChangeScope = this._onDidChangeScope.event;
-
-	get scope() {
-		return this._scope;
-	}
-
-	set scope(scope: AideAgentScope) {
-		this._scope = scope;
-		this._onDidChangeScope.fire(scope);
-	}
-
 	constructor(
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 	) {
@@ -57,16 +37,6 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 			this._controls = controls;
 		} else {
 			console.warn('AideControls already registered');
-		}
-	}
-
-	get scopeSelection(): Readonly<number> {
-		if (this._scope === AideAgentScope.Selection) {
-			return 0;
-		} else if (this._scope === AideAgentScope.PinnedContext) {
-			return 1;
-		} else {
-			return 2;
 		}
 	}
 

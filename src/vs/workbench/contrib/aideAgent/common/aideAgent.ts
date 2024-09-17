@@ -4,20 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { CancellationToken } from 'vs/base/common/cancellation';
-import { IAgentTriggerModel } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 import { IAgentResponseProgress } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
-
-
-export enum AideAgentScope {
-	Selection = 'Selection',
-	PinnedContext = 'PinnedContext',
-	WholeCodebase = 'WholeCodebase',
-}
 
 export interface IAgentTriggerComplete {
 	errorDetails?: string;
 }
 
 export interface IAideAgentImplementation {
-	trigger: (request: IAgentTriggerModel, progress: (part: IAgentResponseProgress) => Promise<void>, token: CancellationToken) => Promise<IAgentTriggerComplete | void>;
+	trigger: (request: IAgentTriggerPayload, progress: (part: IAgentResponseProgress) => Promise<void>, token: CancellationToken) => Promise<IAgentTriggerComplete | void>;
 }

@@ -11,7 +11,7 @@ import { ExtHostAideAgentProviderShape, IAideAgentProgressDto, IMainContext, Mai
 import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
 import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
 import { IAgentTriggerComplete } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { IAgentTriggerModel } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 import * as vscode from 'vscode';
 
 class AideAgentResponseStream {
@@ -19,7 +19,7 @@ class AideAgentResponseStream {
 	private _apiObject: vscode.AgentResponseStream | undefined;
 
 	constructor(
-		private readonly _request: IAgentTriggerModel,
+		private readonly _request: IAgentTriggerPayload,
 		private readonly _proxy: MainThreadAideAgentProviderShape,
 	) { }
 
@@ -92,7 +92,7 @@ export class ExtHostAideAgentProvider extends Disposable implements ExtHostAideA
 		this._proxy = mainContext.getProxy(MainContext.MainThreadAideAgentProvider);
 	}
 
-	async $trigger(handle: number, request: IAgentTriggerModel, token: CancellationToken): Promise<IAgentTriggerComplete | undefined> {
+	async $trigger(handle: number, request: IAgentTriggerPayload, token: CancellationToken): Promise<IAgentTriggerComplete | undefined> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;

@@ -7,8 +7,9 @@ declare module 'vscode' {
 	export type AideAgentScope = 'Selection' | 'PinnedContext' | 'WholeCodebase';
 
 	export interface AgentTrigger {
-		id: string;
-		message: string;
+		readonly id: string;
+		readonly message: string;
+		readonly scope: AideAgentScope;
 	}
 
 	export interface AgentResponseStream {
@@ -16,7 +17,7 @@ declare module 'vscode' {
 	}
 
 	export interface AgentTriggerComplete {
-		errorDetails?: string;
+		readonly errorDetails?: string;
 	}
 
 	export interface AideAgentProvider {

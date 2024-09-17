@@ -8,7 +8,7 @@ import { Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IAideAgentImplementation } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { AideAgentModel } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { AideAgentModel, AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 
 export interface IAgentMarkdownContent {
 	content: IMarkdownString;
@@ -53,6 +53,10 @@ export interface IAideAgentService {
 	_serviceBrand: undefined;
 	registerAgentProvider(resolver: IAideAgentImplementation): void;
 
+	onDidChangeScope: Event<AideAgentScope>;
+	scope: AideAgentScope;
+	readonly scopeSelection: number;
+
 	startSession(): AideAgentModel | undefined;
-	trigger(sessionId: string, message: string): void;
+	trigger(message: string): void;
 }

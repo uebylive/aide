@@ -37,13 +37,13 @@ import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
 import { SetAideAgentScopePinnedContext, SetAideAgentScopeSelection, SetAideAgentScopeWholeCodebase } from 'vs/workbench/contrib/aideAgent/browser/actions/aideAgentActions';
 import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from 'vs/workbench/contrib/aideAgent/browser/aideAgentContextKeys';
 import { IAideControlsService } from 'vs/workbench/contrib/aideAgent/browser/aideControlsService';
-import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
+import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
 import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 
 const $ = dom.$;
-const INPUT_MIN_HEIGHT = 36;
 
 const inputPlaceholder = {
 	description: 'aide-controls-input',
@@ -54,11 +54,9 @@ export class AideControls extends Themable {
 	public static readonly ID = 'workbench.contrib.aideControls';
 
 	private part = this.bottomBarPartService.mainPart;
-	private element: HTMLElement;
 	private aideControlEditScope: HTMLElement;
 
 	private _input: CodeEditorWidget;
-	private inputHeight = INPUT_MIN_HEIGHT;
 	static readonly INPUT_SCHEME = 'aideControlsInput';
 	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
 
@@ -71,7 +69,8 @@ export class AideControls extends Themable {
 	private anchoredContext: string = '';
 
 	constructor(
-		@IAideControlsService private readonly aideControlsService: IAideControlsService,
+		@IAideControlsService aideControlsService: IAideControlsService,
+		@IAideAgentService private readonly aideAgentService: IAideAgentService,
 		@IBottomBarPartService private readonly bottomBarPartService: IBottomBarPartService,
 		@ICodeEditorService private readonly codeEditorService: ICodeEditorService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
@@ -86,7 +85,7 @@ export class AideControls extends Themable {
 		super(themeService);
 		aideControlsService.registerControls(this);
 
-		const element = this.element = $('.aide-controls');
+		const element = $('.aide-controls');
 		this.part.content.appendChild(element);
 		element.style.backgroundColor = this.theme.getColor(SIDE_BAR_BACKGROUND)?.toString() || '';
 
@@ -113,7 +112,7 @@ export class AideControls extends Themable {
 					decoratorRight: this.keybindingService.lookupKeybinding(SetAideAgentScopeWholeCodebase.ID)?.getLabel()
 				},
 			],
-			aideControlsService.scopeSelection,
+			aideAgentService.scopeSelection,
 			this.contextViewService,
 			defaultSelectBoxStyles,
 			{
@@ -124,7 +123,7 @@ export class AideControls extends Themable {
 		);
 		scopeSelect.onDidSelect(e => {
 			const newScope = e.index === 0 ? AideAgentScope.Selection : e.index === 1 ? AideAgentScope.PinnedContext : AideAgentScope.WholeCodebase;
-			aideControlsService.scope = newScope;
+			aideAgentService.scope = newScope;
 		});
 		scopeSelect.render(this.aideControlEditScope);
 
@@ -137,14 +136,16 @@ export class AideControls extends Themable {
 		this.updateInputPlaceholder();
 		this.layout();
 
+		this.aideAgentService.startSession();
+
 		this.createToolbar(toolbarElement);
-		this.updateScope(aideControlsService.scope);
+		this.updateScope(aideAgentService.scope);
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.trackActiveEditor();
 		}));
 
-		this._register(this.aideControlsService.onDidChangeScope((scope) => {
+		this._register(this.aideAgentService.onDidChangeScope((scope) => {
 			this.updateScope(scope);
 			scopeSelect.select(scope === AideAgentScope.Selection ? 0 : scope === AideAgentScope.PinnedContext ? 1 : 2);
 		}));
@@ -219,7 +220,11 @@ export class AideControls extends Themable {
 
 	acceptInput() {
 		const editorValue = this._input.getValue();
-		console.log(editorValue);
+		if (editorValue.length === 0) {
+			return;
+		}
+
+		this.aideAgentService.trigger(editorValue);
 	}
 
 	focusInput() {
@@ -249,9 +254,9 @@ export class AideControls extends Themable {
 	private updateInputPlaceholder() {
 		if (!this.inputHasText.get()) {
 			let placeholder = 'Start an edit across ';
-			if (this.aideControlsService.scope === AideAgentScope.Selection) {
+			if (this.aideAgentService.scope === AideAgentScope.Selection) {
 				placeholder += (this.anchoredContext.length > 0 ? this.anchoredContext : 'the selected range');
-			} else if (this.aideControlsService.scope === AideAgentScope.PinnedContext) {
+			} else if (this.aideAgentService.scope === AideAgentScope.PinnedContext) {
 				placeholder += 'the pinned context';
 			} else {
 				placeholder += 'the whole codebase';
