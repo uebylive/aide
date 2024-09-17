@@ -57,6 +57,7 @@ import { ACTIVE_GROUP, SIDE_GROUP } from 'vs/workbench/services/editor/common/ed
 import { Dto } from 'vs/workbench/services/extensions/common/proxyIdentifier';
 import type * as vscode from 'vscode';
 import * as types from './extHostTypes';
+import { IAgentTextEdit } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 
 
 export namespace Command {
@@ -3107,6 +3108,15 @@ export namespace AideChatAgentUserActionEvent {
 		} else {
 			return { action: event.action, result: ehResult };
 		}
+	}
+}
+
+export namespace AideAgentTextEdit {
+	export function from(part: vscode.AideAgentTextEdit): Omit<Dto<IAgentTextEdit>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
+		return {
+			kind: 'textEdit',
+			edits: WorkspaceEdit.from(part.edits)
+		};
 	}
 }
 ///////////////////////////// END AIDE /////////////////////////////

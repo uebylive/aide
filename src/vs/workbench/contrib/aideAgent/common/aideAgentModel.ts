@@ -139,6 +139,9 @@ export class AideAgentModel extends Disposable implements IAideAgentModel {
 		if (progress.kind === 'markdownContent') {
 			const content = new AgentContentModel(progress.content);
 			this._exchanges.addExchange(trigger.exchangeId, content);
+		} else if (progress.kind === 'textEdit') {
+			const action = new AgentActionModel();
+			this._exchanges.addExchange(trigger.exchangeId, action);
 		}
 	}
 }

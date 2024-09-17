@@ -6,34 +6,34 @@
 import { DeferredPromise } from 'vs/base/common/async';
 import { Event } from 'vs/base/common/event';
 import { IMarkdownString } from 'vs/base/common/htmlContent';
+import { WorkspaceEdit } from 'vs/editor/common/languages';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IAideAgentImplementation } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
 import { AideAgentModel, AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 
 export interface IAgentMarkdownContent {
-	content: IMarkdownString;
 	kind: 'markdownContent';
+	content: IMarkdownString;
 }
 
-export type IAgentResponseProgress =
-	| IAgentMarkdownContent
-	| IAgentTask
-	| IAgentTaskResult
-	| IAgentWarningMessage;
+export interface IAgentTextEdit {
+	kind: 'textEdit';
+	edits: WorkspaceEdit;
+}
 
 export interface IAgentTaskDto {
-	content: IMarkdownString;
 	kind: 'progressTask';
+	content: IMarkdownString;
 }
 
 export interface IAgentTaskResult {
-	content: IMarkdownString | void;
 	kind: 'progressTaskResult';
+	content: IMarkdownString | void;
 }
 
 export interface IAgentWarningMessage {
-	content: IMarkdownString;
 	kind: 'warning';
+	content: IMarkdownString;
 }
 
 export interface IAgentTask extends IAgentTaskDto {
@@ -46,6 +46,13 @@ export interface IAgentTask extends IAgentTaskDto {
 	task: () => Promise<string | void>;
 	isSettled: () => boolean;
 }
+
+export type IAgentResponseProgress =
+	| IAgentMarkdownContent
+	| IAgentTextEdit
+	| IAgentTask
+	| IAgentTaskResult
+	| IAgentWarningMessage;
 
 export const IAideAgentService = createDecorator<IAideAgentService>('aideAgentService');
 

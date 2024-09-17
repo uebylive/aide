@@ -54,7 +54,7 @@ import { SaveReason } from 'vs/workbench/common/editor';
 import { IRevealOptions, ITreeItem, IViewBadge } from 'vs/workbench/common/views';
 import { IAgentTriggerComplete } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
 import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
-import { IAgentResponseProgress, IAgentTask, IAgentTaskDto } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
+import { IAgentResponseProgress, IAgentTask, IAgentTaskDto, IAgentTextEdit } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
@@ -1479,7 +1479,9 @@ export type IAideChatProgressDto =
 	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
 	| IAideChatTaskDto;
 
-export type IAideAgentProgressDto = Dto<Exclude<IAgentResponseProgress, IAgentTask>> | IAgentTaskDto;
+export type IAideAgentTextEditDto = Omit<Dto<IAgentTextEdit>, 'edits'> & { edits: IWorkspaceEditDto };
+type IAideAgentWithTaskDto = Dto<Exclude<IAgentResponseProgress, IAgentTask>> | IAgentTaskDto;
+export type IAideAgentProgressDto = Dto<Exclude<IAideAgentTextEditDto, IAgentTextEdit>> | IAideAgentWithTaskDto;
 
 export interface MainThreadAideAgentProviderShape extends IDisposable {
 	$registerAideAgentProvider(handle: number): void;

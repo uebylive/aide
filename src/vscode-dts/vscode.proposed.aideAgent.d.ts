@@ -12,8 +12,15 @@ declare module 'vscode' {
 		readonly scope: AideAgentScope;
 	}
 
+	export interface AideAgentTextEdit {
+		// TODO(@ghostwriternr): Get rid of the iterationId
+		readonly iterationId: string;
+		readonly edits: WorkspaceEdit;
+	}
+
 	export interface AgentResponseStream {
 		markdown(value: string | MarkdownString): void;
+		codeEdit(value: AideAgentTextEdit): void;
 	}
 
 	export interface AgentTriggerComplete {

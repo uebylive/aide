@@ -252,7 +252,7 @@ const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
 	editMode: boolean,
 	stream: AsyncIterableIterator<SideCarAgentEvent>,
-	response: vscode.ProbeResponseStream,
+	response: vscode.AgentResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
@@ -596,7 +596,7 @@ export class StreamProcessor {
 	documentLineIndex: number;
 	sentEdits: boolean;
 	documentLineLimit: number;
-	constructor(progress: vscode.ProbeResponseStream,
+	constructor(progress: vscode.AgentResponseStream,
 		lines: string[],
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
@@ -708,7 +708,7 @@ export class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.ProbeResponseStream;
+	progress: vscode.AgentResponseStream;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
@@ -718,7 +718,7 @@ class DocumentManager {
 	applyDirectly: boolean;
 
 	constructor(
-		progress: vscode.ProbeResponseStream,
+		progress: vscode.AgentResponseStream,
 		lines: string[],
 		// Fix the way we provide context over here?
 		range: SidecarRequestRange,

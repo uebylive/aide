@@ -72,6 +72,12 @@ class AideAgentResponseStream {
 					_report(dto);
 					return this;
 				},
+				async codeEdit(value) {
+					throwIfDone(this.codeEdit);
+					const dto = typeConvert.AideAgentTextEdit.from(value);
+					_report(dto);
+					return this;
+				},
 			};
 		}
 

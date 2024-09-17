@@ -67,7 +67,7 @@ export async function applyEditsDirectly(
  */
 export async function applyEdits(
 	request: SidecarApplyEditsRequest,
-	response: vscode.ProbeResponseStream,
+	response: vscode.AgentResponseStream,
 	iterationEdits: vscode.WorkspaceEdit,
 ): Promise<SidecarApplyEditsResponse> {
 	// const limiter = new Limiter(1);
