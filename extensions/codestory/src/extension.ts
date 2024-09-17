@@ -26,6 +26,7 @@ import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
+import { RecentEditsRetriever } from './server/editedFiles';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -182,7 +183,12 @@ export async function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(chatAgentProvider);
 
-	const probeProvider = new AideProbeProvider(sidecarClient, rootPath);
+	// add the recent edits retriver to the subscriptions
+	// so we can grab the recent edits very quickly
+	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
+	context.subscriptions.push(recentEditsRetriever);
+
+	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands
