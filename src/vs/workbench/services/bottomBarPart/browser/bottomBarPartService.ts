@@ -14,5 +14,5 @@ export interface IBottomBarPartService {
 	readonly _serviceBrand: undefined;
 	readonly mainPart: BottomBarPart;
 	getPart(container: HTMLElement): IDisposable;
-	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): BottomBarPart;
+	// createAuxiliaryBottomBarPart(container: HTMLElement, editorsContainer: HTMLElement): BottomBarPart;
 }

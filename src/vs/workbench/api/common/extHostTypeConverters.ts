@@ -41,7 +41,6 @@ import { IViewBadge } from 'vs/workbench/common/views';
 import { AideChatAgentLocation, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { IAideChatAgentDetection, IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IAideChatTaskDto, IAideChatTaskResult, IAideChatTextEdit, IAideChatUserActionEvent, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideProbeBreakdownContent, IAideProbeIterationFinished, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeTextEdit, IAideProbeSessionAction, IAideProbeUserAction, IAideReferenceFound, IAideRelevantReference, IAideFollowups } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatRequestVariableEntry } from 'vs/workbench/contrib/chat/common/chatModel';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatProgressMessage, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from 'vs/workbench/contrib/chat/common/chatService';
@@ -2737,28 +2736,6 @@ export namespace AideChatResponseMarkdownPart {
 	}
 }
 
-export namespace AideProbeGoToDefinitionPart {
-	export function from(part: vscode.AideProbeGoToDefinition): Dto<IAideProbeGoToDefinition> {
-		return {
-			kind: 'goToDefinition',
-			name: part.name,
-			uri: part.uri,
-			range: Range.from(part.range),
-			thinking: part.thinking,
-		};
-	}
-}
-
-
-export namespace AideProbeInitialSymbolsPart {
-	export function from(part: vscode.AideInitialSearchSymbolInformation[]): Dto<IAideProbeInitialSymbols> {
-		return {
-			kind: 'initialSymbols',
-			symbols: part
-		};
-	}
-}
-
 export namespace AideChatResponseMarkdownWithVulnerabilitiesPart {
 	export function from(part: vscode.ChatResponseMarkdownWithVulnerabilitiesPart): Dto<IAideChatAgentMarkdownContentWithVulnerability> {
 		return {
@@ -2970,106 +2947,6 @@ export namespace AideChatResponseReferencePart {
 	}
 }
 
-export namespace AideChatResponseBreakdownPart {
-	export function from(part: vscode.AideChatResponseBreakdown): Dto<IAideProbeBreakdownContent> {
-		return {
-			kind: 'breakdown',
-			reference: { name: part.reference.name, uri: part.reference.uri },
-			query: part.query && MarkdownString.from(part.query),
-			reason: part.reason && MarkdownString.from(part.reason),
-			response: part.response && MarkdownString.from(part.response)
-		};
-	}
-}
-
-export namespace AideProbeResponseTextEditPart {
-	export function from(part: vscode.AideProbeResponseTextEdit): Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
-		return {
-			kind: 'textEdit',
-			edits: WorkspaceEdit.from(part.edits)
-		};
-	}
-}
-
-export namespace AideProbeIterationFinishedPart {
-	export function from(part: vscode.AideProbeIterationFinished): Omit<Dto<IAideProbeIterationFinished>, 'edits'> & { edits: extHostProtocol.IWorkspaceEditDto } {
-		return {
-			kind: 'iterationFinished',
-			edits: WorkspaceEdit.from(part.edits)
-		};
-	}
-}
-
-export namespace AideProbeOpenFilePart {
-	export function from(part: vscode.AideProbeResponseOpenFile): Dto<IAideProbeOpenFile> {
-		return {
-			kind: 'openFile',
-			uri: part.uri
-		};
-	}
-}
-
-export namespace AideReferenceFoundPart {
-	export function from(part: vscode.AideReferenceFound): Dto<IAideReferenceFound> {
-
-		const references: Record<string, number> = {};
-		for (const [fs_path, occurrencies] of Object.entries(part)) {
-			references[fs_path] = occurrencies;
-		}
-
-		return {
-			kind: 'referenceFound',
-			references
-		};
-	}
-}
-
-
-export namespace AideRelevantReferencePart {
-	export function from(part: vscode.AideRelevantReference): Dto<IAideRelevantReference> {
-
-		return {
-			kind: 'relevantReference',
-			reference: part
-		};
-	}
-}
-
-
-export namespace AideFollowupsPart {
-	export function from(part: vscode.AideFollowups): Dto<IAideFollowups> {
-
-		const followups: IAideFollowups['followups'] = {};
-
-		for (const [key, value] of Object.entries(part)) {
-			followups[key] = value.map(v => ({ reference: { name: v.symbolName, uri: v.uri } }));
-		}
-		return {
-			kind: 'followups',
-			followups
-		};
-	}
-}
-
-
-export namespace AideProbeRepoMapGenerationPart {
-	export function from(part: vscode.AideProbeResponseRepoMapGeneration): Dto<IAideProbeRepoMapGeneration> {
-		return {
-			kind: 'repoMapGeneration',
-			finished: part.finished
-		};
-	}
-}
-
-export namespace AideProbeLongContextSearchPart {
-	export function from(part: vscode.AideProbeResponseLongContextSearch): Dto<IAideProbeLongContextSearch> {
-		return {
-			kind: 'longContextSearch',
-			finished: part.finished
-		};
-	}
-}
-
 export namespace AideChatResponsePart {
 
 	export function from(part: vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseMarkdownWithVulnerabilitiesPart | vscode.ChatResponseDetectedParticipantPart | vscode.ChatResponseWarningPart | vscode.ChatResponseConfirmationPart | vscode.ChatResponseWarningPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IChatProgressDto {
@@ -3204,33 +3081,6 @@ export namespace AideChatAgentResult {
 			errorDetails: result.errorDetails,
 			metadata: result.metadata,
 		};
-	}
-}
-
-export namespace AideProbeRequestModel {
-	export function to(request: IAideProbeRequestModel): vscode.ProbeRequest {
-		return {
-			requestId: request.sessionId,
-			query: request.message,
-			references: request.variableData.variables.map(ChatAgentValueReference.to),
-			scope: request.scope,
-		};
-	}
-}
-
-export namespace AideProbeSessionAction {
-	export function to(userAction: IAideProbeSessionAction): vscode.AideProbeSessionAction {
-		return {
-			sessionId: userAction.sessionId,
-			action: userAction.action,
-		};
-	}
-}
-
-
-export namespace AideProbeUserAction {
-	export function to(userAction: IAideProbeUserAction): vscode.AideProbeUserAction {
-		return userAction;
 	}
 }
 

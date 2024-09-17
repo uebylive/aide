@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export type AideAgentScope = 'Selection' | 'PinnedContext' | 'WholeCodebase';
+
 	export interface AgentTrigger {
 		id: string;
 		message: string;

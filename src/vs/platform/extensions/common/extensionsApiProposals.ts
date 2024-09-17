@@ -30,9 +30,6 @@ const _allApiProposals = {
 	aideGetInlayHintsProvider: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts',
 	},
-	aideProbe: {
-		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.aideProbe.d.ts',
-	},
 	attributableCoverage: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.attributableCoverage.d.ts',
 	},

@@ -7,20 +7,22 @@ import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { AideProbeScope } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideControls } from 'vs/workbench/contrib/aideAgent/browser/aideControls';
+import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
 
 export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 
 export interface IAideControlsService {
 	_serviceBrand: undefined;
-	onDidChangeScope: Event<AideProbeScope>;
-
-	scope: AideProbeScope;
-	readonly scopeSelection: number;
-	controls: AideControls | undefined;
+	// Controls
 	registerControls(controls: AideControls): void;
 
+	// Scope
+	onDidChangeScope: Event<AideAgentScope>;
+	scope: AideAgentScope;
+	readonly scopeSelection: number;
+
+	// Input
 	acceptInput(): void;
 	focusInput(): void;
 	blurInput(): void;
@@ -30,19 +32,16 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 	_serviceBrand: undefined;
 
 	private _controls: AideControls | undefined;
-	get controls() {
-		return this._controls;
-	}
 
-	private _scope: AideProbeScope = AideProbeScope.Selection;
-	private _onDidChangeScope = this._register(new Emitter<AideProbeScope>());
+	private _scope: AideAgentScope = AideAgentScope.Selection;
+	private _onDidChangeScope = this._register(new Emitter<AideAgentScope>());
 	readonly onDidChangeScope = this._onDidChangeScope.event;
 
 	get scope() {
 		return this._scope;
 	}
 
-	set scope(scope: AideProbeScope) {
+	set scope(scope: AideAgentScope) {
 		this._scope = scope;
 		this._onDidChangeScope.fire(scope);
 	}
@@ -62,9 +61,9 @@ export class AideControlsService extends Disposable implements IAideControlsServ
 	}
 
 	get scopeSelection(): Readonly<number> {
-		if (this._scope === AideProbeScope.Selection) {
+		if (this._scope === AideAgentScope.Selection) {
 			return 0;
-		} else if (this._scope === AideProbeScope.PinnedContext) {
+		} else if (this._scope === AideAgentScope.PinnedContext) {
 			return 1;
 		} else {
 			return 2;

@@ -19,7 +19,6 @@ import { IEditorGroupView, IEditorPartsView } from 'vs/workbench/browser/parts/e
 import { EditorPart, IEditorPartUIState } from 'vs/workbench/browser/parts/editor/editorPart';
 import { IAuxiliaryTitlebarPart } from 'vs/workbench/browser/parts/titlebar/titlebarPart';
 import { WindowTitle } from 'vs/workbench/browser/parts/titlebar/windowTitle';
-import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
 import { IAuxiliaryWindowOpenOptions, IAuxiliaryWindowService } from 'vs/workbench/services/auxiliaryWindow/browser/auxiliaryWindowService';
 import { GroupDirection, GroupsOrder, IAuxiliaryEditorPart } from 'vs/workbench/services/editor/common/editorGroupsService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
@@ -52,7 +51,6 @@ export class AuxiliaryEditorPart {
 		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@ITitleService private readonly titleService: ITitleService,
 		@IEditorService private readonly editorService: IEditorService,
-		@IBottomBarPartService private readonly bottomBarPartService: IBottomBarPartService,
 		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService
 	) {
 	}
@@ -118,7 +116,7 @@ export class AuxiliaryEditorPart {
 		editorPart.create(editorPartContainer);
 
 		// Bottombar Part
-		disposables.add(this.bottomBarPartService.createAuxiliaryControlsPart(auxiliaryWindow.container, editorPartContainer));
+		// disposables.add(this.bottomBarPartService.createAuxiliaryBottomBarPart(auxiliaryWindow.container, editorPartContainer));
 
 		// Titlebar
 		let titlebarPart: IAuxiliaryTitlebarPart | undefined = undefined;

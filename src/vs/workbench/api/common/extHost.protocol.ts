@@ -57,9 +57,8 @@ import { IAgentTriggerModel } from 'vs/workbench/contrib/aideAgent/common/aideAg
 import { IAgentResponseProgress, IAgentTask, IAgentTaskDto } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 import { AideChatAgentLocation, IAideChatAgentMetadata, IAideChatAgentRequest, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
 import { IAideChatProgressResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { AideChatAgentVoteDirection, IAideChatFollowup, IAideChatProgress, IAideChatResponseErrorDetails, IAideChatTask, IAideChatTaskDto, IAideChatUserActionEvent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
 import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IAideFollowups, IAideProbeBreakdownContent, IAideProbeData, IAideProbeGoToDefinition, IAideProbeInitialSymbols, IAideProbeIterationFinished, IAideProbeLongContextSearch, IAideProbeOpenFile, IAideProbeRepoMapGeneration, IAideProbeRequestModel, IAideProbeResult, IAideProbeSessionAction, IAideProbeTextEdit, IAideProbeUserAction, IAideReferenceFound, IAideRelevantReference } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { CallHierarchyItem } from 'vs/workbench/contrib/callHierarchy/common/callHierarchy';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from 'vs/workbench/contrib/chat/common/chatAgents';
 import { IChatProgressResponseContent } from 'vs/workbench/contrib/chat/common/chatModel';
@@ -1479,22 +1478,6 @@ export interface IAideChatResponseProgressFileTreeData {
 export type IAideChatProgressDto =
 	| Dto<Exclude<IAideChatProgress, IAideChatTask>>
 	| IAideChatTaskDto;
-
-export type IAideProbeTextEditDto = Omit<Dto<IAideProbeTextEdit>, 'edits'> & { edits: IWorkspaceEditDto };
-export type IAideProbeIterationFinishedDto = Omit<Dto<IAideProbeIterationFinished>, 'edits'> & { edits: IWorkspaceEditDto };
-export type IAideProbeProgressDto = Dto<IAideChatMarkdownContent | IAideProbeBreakdownContent | IAideProbeGoToDefinition | IAideProbeOpenFile | IAideProbeRepoMapGeneration | IAideProbeLongContextSearch | IAideProbeInitialSymbols | IAideReferenceFound | IAideRelevantReference | IAideFollowups> | IAideProbeTextEditDto | IAideProbeIterationFinishedDto;
-
-export interface MainThreadAideProbeProviderShape extends IDisposable {
-	$registerProbingProvider(handle: number, data: IAideProbeData): void;
-	$handleProbingProgressChunk(request: IAideProbeRequestModel, progress: IAideProbeProgressDto): Promise<void>;
-	$unregisterProbingProvider(handle: number): void;
-}
-
-export interface ExtHostAideProbeProviderShape {
-	$initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined>;
-	$onSessionAction(handle: number, action: IAideProbeSessionAction): Promise<void>;
-	$onUserAction(handle: number, action: IAideProbeUserAction): Promise<void>;
-}
 
 export type IAideAgentProgressDto = Dto<Exclude<IAgentResponseProgress, IAgentTask>> | IAgentTaskDto;
 
@@ -3015,7 +2998,6 @@ export const MainContext = {
 	MainThreadEmbeddings: createProxyIdentifier<MainThreadEmbeddingsShape>('MainThreadEmbeddings'),
 	MainThreadAideChatAgents2: createProxyIdentifier<MainThreadAideChatAgentsShape2>('MainThreadAideChatAgents2'),
 	MainThreadAideChatVariables: createProxyIdentifier<MainThreadAideChatVariablesShape>('MainThreadAideChatVariables'),
-	MainThreadProbeProvider: createProxyIdentifier<MainThreadAideProbeProviderShape>('MainThreadProbeProvider'),
 	MainThreadAideAgentProvider: createProxyIdentifier<MainThreadAideAgentProviderShape>('MainThreadAideAgentProvider'),
 	MainThreadChatAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadChatAgents2'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
@@ -3146,7 +3128,6 @@ export const ExtHostContext = {
 	ExtHostChatProvider: createProxyIdentifier<ExtHostLanguageModelsShape>('ExtHostChatProvider'),
 	ExtHostAideChatAgents2: createProxyIdentifier<ExtHostAideChatAgentsShape2>('ExtHostAideChatAgents'),
 	ExtHostAideChatVariables: createProxyIdentifier<ExtHostAideChatVariablesShape>('ExtHostAideChatVariables'),
-	ExtHostAideProbeProvider: createProxyIdentifier<ExtHostAideProbeProviderShape>('ExtHostAideProbeProvider'),
 	ExtHostAideAgentProvider: createProxyIdentifier<ExtHostAideAgentProviderShape>('ExtHostAideAgentProvider'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostEmbeddings: createProxyIdentifier<ExtHostEmbeddingsShape>('ExtHostEmbeddings'),

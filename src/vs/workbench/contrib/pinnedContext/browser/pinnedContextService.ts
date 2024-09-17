@@ -6,7 +6,6 @@
 import { Emitter, Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { IPinnedContextService } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
 import { CONTEXT_HAS_PINNED_CONTEXT } from 'vs/workbench/contrib/pinnedContext/common/pinnedContextContextKeys';
 
@@ -21,8 +20,7 @@ export class PinnedContextService implements IPinnedContextService {
 	private hasPinnedContext: IContextKey<boolean>;
 
 	constructor(
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IAideProbeService private readonly aideProbeService: IAideProbeService
+		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		this.hasPinnedContext = CONTEXT_HAS_PINNED_CONTEXT.bindTo(this.contextKeyService);
 	}
@@ -33,7 +31,7 @@ export class PinnedContextService implements IPinnedContextService {
 
 	private onChangePinnedContexts(): void {
 		const currentContext = this.pinnedContexts.map(uri => uri.fsPath);
-		this.aideProbeService.onContextChange(currentContext);
+		console.log('PinnedContextService#onChangePinnedContexts', currentContext);
 		this._onDidChangePinnedContexts.fire();
 		this.updateContextKeys();
 	}

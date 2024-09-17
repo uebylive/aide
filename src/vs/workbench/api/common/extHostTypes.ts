@@ -4750,13 +4750,6 @@ export class AideChatResponseBreakdownPart {
 	}
 }
 
-export class AideProbeOpenFilePart {
-	uri: vscode.Uri;
-	constructor(uri: vscode.Uri) {
-		this.uri = uri;
-	}
-}
-
 export class AideReferenceFoundPart {
 	references: Record<string, number>;
 	constructor(references: Record<string, number>) {
@@ -4780,41 +4773,6 @@ export class AideFollowupsPart {
 	followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] };
 	constructor(followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] }) {
 		this.followups = followups;
-	}
-}
-
-
-export class AideProbeRepoMapGenerationPart {
-	finished: boolean;
-	constructor(finished: boolean) {
-		this.finished = finished;
-	}
-}
-
-export class AideProbeLongContextSearchPart {
-	finished: boolean;
-	constructor(finished: boolean) {
-		this.finished = finished;
-	}
-}
-
-export class AideProbeGoToDefinitionPart {
-	uri: vscode.Uri;
-	range: vscode.Range;
-	name: string;
-	thinking: string;
-	constructor(uri: vscode.Uri, range: vscode.Range, name: string, thinking: string) {
-		this.uri = uri;
-		this.range = range;
-		this.name = name;
-		this.thinking = thinking;
-	}
-}
-
-export class AideProbeInitialSymbolsPart {
-	symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[];
-	constructor(symbols: { uri: vscode.Uri; symbolName: string; thinking: string; isNew: boolean }[]) {
-		this.symbols = symbols;
 	}
 }
 

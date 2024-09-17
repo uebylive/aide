@@ -89,31 +89,6 @@ declare module 'vscode' {
 		readonly response?: MarkdownString;
 	}
 
-	export interface AideProbeResponseOpenFile {
-		/**
-		 * The file where the agent went to the definition.
-		 */
-		readonly uri: Uri;
-	}
-
-	export interface AideProbeResponseRepoMapGeneration {
-		/**
-		 * Whether the repo map generation is finished
-		 */
-		readonly finished: boolean;
-	}
-
-	export interface AideProbeResponseLongContextSearch {
-		/**
-		 * Whether the repo map generation is finished
-		 */
-		readonly finished: boolean;
-	}
-
-	export interface AideProbeCodeIterationFinishedPart {
-		readonly finished: boolean;
-	}
-
 	export interface AideChatResponseTextEdit {
 		/**
 		 * The file where the agent went to the definition.

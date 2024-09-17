@@ -7,6 +7,13 @@ import { CancellationToken } from 'vs/base/common/cancellation';
 import { IAgentTriggerModel } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 import { IAgentResponseProgress } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
 
+
+export enum AideAgentScope {
+	Selection = 'Selection',
+	PinnedContext = 'PinnedContext',
+	WholeCodebase = 'WholeCodebase',
+}
+
 export interface IAgentTriggerComplete {
 	errorDetails?: string;
 }

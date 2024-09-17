@@ -13,7 +13,6 @@
 		"../../src/vscode-dts/vscode.proposed.aideChatVariableResolver.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",
-		"../../src/vscode-dts/vscode.proposed.aideProbe.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantPrivate.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",

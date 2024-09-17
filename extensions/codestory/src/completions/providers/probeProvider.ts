@@ -24,7 +24,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	private editsMap = new Map();
 
 	private _requestHandler: http.Server | null = null;
-	private _openResponseStream: vscode.ProbeResponseStream | undefined;
+	private _openResponseStream: vscode.AgentResponseStream | undefined;
 	private _iterationEdits = new vscode.WorkspaceEdit();
 
 	private async isPortOpen(port: number): Promise<boolean> {
@@ -84,6 +84,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			// console.log(this._editorUrl);
 		});
 
+		/*
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
 			{
@@ -92,7 +93,7 @@ export class AideProbeProvider implements vscode.Disposable {
 				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
-
+		*/
 		vscode.aideAgent.registerAideAgentProvider(
 			'aideAgentProvider',
 			{
@@ -303,7 +304,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 }
 
-function isAnchorBasedEditing(scope: vscode.AideProbeScope): boolean {
+function isAnchorBasedEditing(scope: vscode.AideAgentScope): boolean {
 	if (scope === 'Selection') {
 		return true;
 	} else {

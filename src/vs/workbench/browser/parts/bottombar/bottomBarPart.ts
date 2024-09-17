@@ -30,7 +30,8 @@ export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implem
 		this._register(this.registerPart(this.mainPart));
 	}
 
-	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
+	/*
+	createAuxiliaryBottomBarPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
 		const bottomBarPartContainer = document.createElement('div');
 		const bottomBarPart = this.instantiationService.createInstance(BottomBarPart);
 		this._register(bottomBarPart);
@@ -38,6 +39,7 @@ export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implem
 		container.insertBefore(bottomBarPartContainer, editorContainer.nextSibling);
 		return bottomBarPart;
 	}
+	*/
 }
 
 export type BottomBarPosition = {
