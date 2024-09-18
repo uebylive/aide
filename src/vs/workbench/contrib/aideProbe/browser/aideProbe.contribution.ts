@@ -13,19 +13,13 @@ import { ViewPaneContainer } from '../../../../workbench/browser/parts/views/vie
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../../workbench/common/contributions.js';
 import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from '../../../../workbench/common/views.js';
 import { registerProbeActions } from '../../../../workbench/contrib/aideProbe/browser/actions/aideProbeActions.js';
-import { registerContextActions } from '../../../../workbench/contrib/aideProbe/browser/aideContextActions.js';
-import { ContextPicker } from '../../../../workbench/contrib/aideProbe/browser/aideContextPicker.js';
 import { AideControls } from '../../../../workbench/contrib/aideProbe/browser/aideControls.js';
-import { AideLSPService, IAideLSPService } from '../../../../workbench/contrib/aideProbe/browser/aideLSPService.js';
 import { VIEW_ID, VIEWLET_ID } from '../../../../workbench/contrib/aideProbe/browser/aideProbe.js';
 import { AideProbeDecorationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeDecorations.js';
 import { AideProbeExplanationService, IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
 import { AideProbeService, IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
 import { AideProbeViewPane } from '../../../../workbench/contrib/aideProbe/browser/aideProbeView.js';
-//import 'vs/workbench/contrib/aideProbe/browser/contrib/aideToggle';
-import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables.js';
-import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsInputCompletions.js';
-import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsInputEditorContrib.js';
+import { AideControlsService, IAideControlsService } from './aideControlsService.js';
 
 
 const probeViewIcon = registerIcon('probe-view-icon', Codicon.lightbulbSparkle, nls.localize('probeViewIcon', 'View icon of the AI search view.'));
@@ -50,7 +44,6 @@ const viewDescriptor: IViewDescriptor = {
 		id: viewContainer.id,
 		order: 2
 	},
-	//when: CONTEXT_PROBE_REQUEST_STATUS.notEqualsTo('INACTIVE'),
 };
 
 // Register search default location to sidebar
@@ -58,14 +51,10 @@ Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([viewDes
 
 // Register actions
 registerProbeActions();
-registerContextActions();
 
 // Register services
-registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
+registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Delayed);
 registerSingleton(IAideProbeExplanationService, AideProbeExplanationService, InstantiationType.Delayed);
-//registerSingleton(IAideCommandPaletteService, AideCommandPaletteService, InstantiationType.Delayed);
-registerSingleton(IAideLSPService, AideLSPService, InstantiationType.Eager);
-registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);
-registerWorkbenchContribution2(ContextPicker.ID, ContextPicker, WorkbenchPhase.Eventually);
+registerSingleton(IAideProbeService, AideProbeService, InstantiationType.Delayed);
 registerWorkbenchContribution2(AideControls.ID, AideControls, WorkbenchPhase.Eventually);
-//registerWorkbenchContribution2(AideBar.ID, AideBar, WorkbenchPhase.Eventually);
+registerWorkbenchContribution2(AideProbeDecorationService.ID, AideProbeDecorationService, WorkbenchPhase.Eventually);

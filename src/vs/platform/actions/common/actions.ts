@@ -236,6 +236,7 @@ export class MenuId {
 	static readonly AideCommandPaletteContext = new MenuId('AideCommandPaletteContext');
 	static readonly AideCommandPaletteToolbar = new MenuId('AideCommandPaletteToolbar');
 	static readonly AideControlsToolbar = new MenuId('AideControlsToolbar');
+	static readonly PinnedContextTitle = new MenuId('PinnedContextTitle');
 
 
 	/**

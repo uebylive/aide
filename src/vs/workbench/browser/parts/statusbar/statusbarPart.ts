@@ -13,9 +13,9 @@ import { StatusbarAlignment, IStatusbarService, IStatusbarEntry, IStatusbarEntry
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IAction, Separator, toAction } from '../../../../base/common/actions.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { STATUS_BAR_BACKGROUND, STATUS_BAR_FOREGROUND, STATUS_BAR_NO_FOLDER_BACKGROUND, STATUS_BAR_ITEM_HOVER_BACKGROUND, STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_FOREGROUND, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER } from '../../../common/theme.js';
+import { STATUS_BAR_BORDER, STATUS_BAR_NO_FOLDER_BORDER, STATUS_BAR_ITEM_FOCUS_BORDER, STATUS_BAR_FOCUS_BORDER, TITLE_BAR_ACTIVE_BACKGROUND, TITLE_BAR_ACTIVE_FOREGROUND } from '../../../common/theme.js';
 import { IWorkspaceContextService, WorkbenchState } from '../../../../platform/workspace/common/workspace.js';
-import { contrastBorder, activeContrastBorder } from '../../../../platform/theme/common/colorRegistry.js';
+import { contrastBorder, activeContrastBorder, toolbarHoverBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { EventHelper, createStyleSheet, addDisposableListener, EventType, clearNode, getWindow } from '../../../../base/browser/dom.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { Parts, IWorkbenchLayoutService } from '../../../services/layout/browser/layoutService.js';
@@ -111,7 +111,7 @@ interface IPendingStatusbarEntry {
 
 class StatusbarPart extends Part implements IStatusbarEntryContainer {
 
-	static readonly HEIGHT = 22;
+	static readonly HEIGHT = 31;
 
 	//#region IView
 
@@ -481,8 +481,8 @@ class StatusbarPart extends Part implements IStatusbarEntryContainer {
 
 		// Install mouse listeners to update hover feedback for
 		// all compact entries that belong to each other
-		const statusBarItemHoverBackground = this.getColor(STATUS_BAR_ITEM_HOVER_BACKGROUND);
-		const statusBarItemCompactHoverBackground = this.getColor(STATUS_BAR_ITEM_COMPACT_HOVER_BACKGROUND);
+		const statusBarItemHoverBackground = this.getColor(toolbarHoverBackground);
+		const statusBarItemCompactHoverBackground = this.getColor(toolbarHoverBackground);
 		this.compactEntriesDisposable.value = new DisposableStore();
 		if (statusBarItemHoverBackground && statusBarItemCompactHoverBackground && !isHighContrast(this.theme.type)) {
 			for (const [, compactEntryGroup] of compactEntryGroups) {
@@ -569,9 +569,9 @@ class StatusbarPart extends Part implements IStatusbarEntryContainer {
 		const styleOverride: IStatusbarStyleOverride | undefined = [...this.styleOverrides].sort((a, b) => a.priority - b.priority)[0];
 
 		// Background / foreground colors
-		const backgroundColor = this.getColor(styleOverride?.background ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? STATUS_BAR_BACKGROUND : STATUS_BAR_NO_FOLDER_BACKGROUND)) || '';
+		const backgroundColor = this.getColor(styleOverride?.background ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? TITLE_BAR_ACTIVE_BACKGROUND : TITLE_BAR_ACTIVE_BACKGROUND)) || '';
 		container.style.backgroundColor = backgroundColor;
-		const foregroundColor = this.getColor(styleOverride?.foreground ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? STATUS_BAR_FOREGROUND : STATUS_BAR_NO_FOLDER_FOREGROUND)) || '';
+		const foregroundColor = this.getColor(styleOverride?.foreground ?? (this.contextService.getWorkbenchState() !== WorkbenchState.EMPTY ? TITLE_BAR_ACTIVE_FOREGROUND : TITLE_BAR_ACTIVE_FOREGROUND)) || '';
 		container.style.color = foregroundColor;
 		const itemBorderColor = this.getColor(STATUS_BAR_ITEM_FOCUS_BORDER);
 

@@ -36,6 +36,7 @@ export interface ISelectBoxDelegate extends IDisposable {
 
 export interface ISelectBoxOptions {
 	useCustomDrawn?: boolean;
+	customDrawnDropdownWidth?: number;
 	ariaLabel?: string;
 	ariaDescription?: string;
 	minBottomMargin?: number;

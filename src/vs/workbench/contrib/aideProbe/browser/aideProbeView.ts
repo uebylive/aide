@@ -10,42 +10,41 @@ import { KeybindingLabel, unthemedKeybindingLabelOptions } from '../../../../bas
 import { IListMouseEvent, IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
 import { DomScrollableElement } from '../../../../base/browser/ui/scrollbar/scrollableElement.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { localize } from '../../../../nls.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore, dispose } from '../../../../base/common/lifecycle.js';
 import { OS } from '../../../../base/common/platform.js';
 import { relativePath } from '../../../../base/common/resources.js';
 import { ScrollbarVisibility } from '../../../../base/common/scrollable.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
-import './media/aideProbe.css';
-import './media/aideProbeExplanationWidget.css';
 import { IDimension } from '../../../../editor/common/core/dimension.js';
 import { SymbolKind, SymbolKinds } from '../../../../editor/common/languages.js';
+import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { IOpenEvent, WorkbenchList } from '../../../../platform/list/browser/listService.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { Heroicon } from '../../../../workbench/browser/heroicon.js';
 import { IViewPaneOptions, ViewPane } from '../../../../workbench/browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../../../workbench/common/views.js';
 import { AideReferencesContentPart, IAideFollowupContentReference, IAideReferenceFoundContentReference } from '../../../../workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart.js';
-import { CONTEXT_PROBE_MODE } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
 import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
 import { IAideProbeModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
 import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, isRelevantReferencesVM } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
-import { AideProbeMode, AideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
-import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
-import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { AideProbeViewModel, IAideFollowupsViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, IAideProbeListItem, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, isBreakdownVM, isFollowupsVM, isInitialSymbolsVM, isReferenceFoundVM, isRelevantReferencesVM } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
+import { AideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 import { ChatMarkdownRenderer } from '../../chat/browser/chatMarkdownRenderer.js';
+import './media/aideProbe.css';
+import './media/aideProbeExplanationWidget.css';
 
 const $ = dom.$;
 
@@ -58,7 +57,6 @@ const welcomeActions = [
 	},
 	{ title: 'Toggle editing mode', actionId: 'workbench.action.aideProbe.toggleMode', descrption: 'Switch between anchored and agentic editing modes.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
-	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
 
@@ -85,7 +83,6 @@ const welcomeActions = [
 // };
 
 export class AideProbeViewPane extends ViewPane {
-
 	private currentView: 'welcome' | 'list' = 'welcome';
 
 	private container!: HTMLElement;
@@ -425,7 +422,7 @@ export class AideProbeViewPane extends ViewPane {
 							item.expanded = true;
 						}
 						const hasOneBreakdownEntry = hasReferencesFound ? items.length === 2 : items.length === 1;
-						if (hasOneBreakdownEntry && CONTEXT_PROBE_MODE.getValue(this.contextKeyService) === AideProbeMode.ANCHORED) {
+						if (hasOneBreakdownEntry) {
 							item.expanded = true;
 						}
 						this.list.splice(matchIndex, 1, [item]);

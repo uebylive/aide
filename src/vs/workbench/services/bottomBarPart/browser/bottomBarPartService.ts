@@ -5,13 +5,14 @@
 
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { AideBarPart } from '../../../browser/parts/aidebar/aidebarPart.js';
+import { BottomBarPart } from '../../../browser/parts/bottombar/bottomBarPart.js';
 
-export const IAideBarService = createDecorator<IAideBarService>('aideBarService');
+export const IBottomBarPartService = createDecorator<IBottomBarPartService>('bottomBarPartService');
 
-export interface IAideBarService {
+export interface IBottomBarPartService {
+
 	readonly _serviceBrand: undefined;
-	readonly mainPart: AideBarPart;
+	readonly mainPart: BottomBarPart;
 	getPart(container: HTMLElement): IDisposable;
-	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): AideBarPart;
+	createAuxiliaryControlsPart(container: HTMLElement, editorsContainer: HTMLElement): BottomBarPart;
 }

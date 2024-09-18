@@ -17,7 +17,6 @@ import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRange
 import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { ICSEventsService } from '../../../../editor/common/services/csEvents.js';
 import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
-import { calculateChanges } from '../../../../workbench/contrib/aideProbe/browser/aideCommandPalettePanel.js';
 import { IAideProbeEdits } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
 import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
 import { IAideProbeAnchorStart, IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
@@ -77,6 +76,25 @@ type HunkDisplayData = {
 	position: Position;
 	remove(): void;
 };
+
+function calculateChanges(edits: HunkInformation[]) {
+	const changes = edits.reduce((acc, edit) => {
+		const newRanges = edit.getRangesN() || [];
+		const oldRanges = edit.getRanges0() || [];
+		if (edit.isInsertion()) {
+			const wholeNewRange = newRanges[0];
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+		} else if (newRanges.length > 0 && oldRanges.length > 0) {
+			const wholeNewRange = newRanges[0];
+			const wholeOldRange = oldRanges[0];
+
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+			acc.removed += wholeOldRange.endLineNumber - wholeOldRange.startLineNumber + 1;
+		}
+		return acc;
+	}, { added: 0, removed: 0 });
+	return changes;
+}
 
 export class AideProbeDecorationService extends Disposable {
 	static readonly ID = 'workbench.contrib.aideProbeDecorationService';

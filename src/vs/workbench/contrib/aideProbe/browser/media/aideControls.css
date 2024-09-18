@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 .aide-controls {
+	display: flex;
 	margin: auto;
 	position: relative;
-	padding: 8px;
+	padding: 0px 14px 0px 28px;
 	box-sizing: border-box;
-	border-radius: 4px;
-	border: 1px solid var(--vscode-panel-border);
+	border-top: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBar-background) !important;
 }
 
@@ -21,33 +21,48 @@
 	background-color: transparent;
 }
 
-.aide-controls-anchored-symbol {
+.aide-controls .aide-controls-settings {
 	display: flex;
 	align-items: center;
-	gap: 4px;
+	width: 22px;
+	margin-right: 22px;
 }
 
-.aide-controls-anchored-symbol .monaco-icon-label {
-	font-size: 11px;
+.aide-controls .aide-controls-settings .aide-controls-edit-focus {
 	display: flex;
-	padding: 0 6px 0px 2px;
-	border-radius: 2px;
-	text-align: center;
-	justify-content: center;
 	align-items: center;
-	color: var(--vscode-button-secondaryForeground);
-	background-color: var(--vscode-button-secondaryBackground);
-	border: 1px solid var(--vscode-button-border, transparent);
+	position: relative;
 }
 
-.aide-controls-anchored-symbol .monaco-icon-label::before {
-	height: 18px;
+.aide-controls .aide-controls-settings .aide-controls-edit-focus::before {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%) translateX(20%); /* I have no scientific explanation for this */
+	width: 16px;
 }
 
-.aide-controls-anchored-symbol .monaco-button.codicon.codicon-close:hover {
-	cursor: pointer;
-	color: var(--vscode-button-secondaryForeground);
-	background-color: var(--vscode-button-secondaryBackground);
+.aide-controls .aide-controls-settings .aide-controls-edit-focus::after {
+	content: ''; /* Hide the default chevron */
+}
+
+.aide-controls .aide-controls-settings .aide-controls-edit-focus select.monaco-select-box {
+	height: 22px;
+	width: 22px;
+	appearance: none;
+	color: transparent !important;
+	background-color: transparent !important;
+	border: none;
+	text-overflow: clip;
+	z-index: 1;
+}
+
+.aide-controls .aide-controls-settings .aide-controls-edit-focus .monaco-select-box {
+	padding: 3px;
+	border-radius: 5px;
+}
+
+.aide-controls .aide-controls-settings .aide-controls-edit-focus .monaco-select-box:hover {
+	background-color: var(--vscode-toolbar-hoverBackground) !important;
 }
 
 .aide-controls-input-container {
@@ -57,26 +72,7 @@
 
 .aide-controls-toolbar {
 	display: flex;
-	justify-content: space-between;
-}
-
-.aide-controls-toolbar .actions-container {
-	gap: 8px;
-}
-
-.aide-controls-toggle-bar {
-	display: flex;
 	align-items: center;
-}
-
-.aide-controls-toggle-bar .monaco-button {
-	padding: 0px 4px;
-	white-space: nowrap;
-	font-size: 11px;
-}
-
-.aide-controls-toggle-bar .monaco-text-button {
-	border-radius: 0px;
 }
 
 .aide-controls-submit-button {

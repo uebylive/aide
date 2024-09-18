@@ -32,7 +32,7 @@ interface DiffAcrossDocuments {
 	uri: vscode.Uri;
 	languageId: string;
 	latestChangeTimestamp: number;
-	currentContent: string;
+	current_content: string;
 }
 
 export class RecentEditsRetriever implements vscode.Disposable {
@@ -66,7 +66,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 				fs_file_path: diff.uri.fsPath,
 				diff: content,
 				updated_timestamp_ms: diff.latestChangeTimestamp,
-				currentContent: diff.currentContent,
+				current_content: diff.current_content,
 			};
 			autocompleteContextSnippets.push(autocompleteSnippet);
 		}
@@ -108,7 +108,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 						latestChangeTimestamp: Math.max(
 							...trackedDocument.changes.map(c => c.timestamp)
 						),
-						currentContent: diff.currentContent,
+						current_content: diff.currentContent,
 					};
 				}
 				return null;

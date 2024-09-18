@@ -3,15 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 
-.list-header {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding-inline: 6px;
-}
-
-.edits-list-item {
-	display: flex;
-	white-space: normal;
-}
+export const CONTEXT_HAS_PINNED_CONTEXT = new RawContextKey<boolean>('hasPinnedContext', false, { type: 'boolean', description: 'True when there are pinned contexts.' });

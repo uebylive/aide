@@ -263,7 +263,6 @@ export const reportAgentEventsToChat = async (
 	limiter: Limiter<any>,
 ): Promise<void> => {
 	const editsMap = new Map();
-	// console.log('reportAgentEventsToChat starting');
 	const asyncIterable = {
 		[Symbol.asyncIterator]: () => stream
 	};
@@ -273,16 +272,6 @@ export const reportAgentEventsToChat = async (
 		await sidecarClient.stopAgentProbe(threadId);
 		return;
 	}
-
-	// Temp code: Create a new file to record logs
-	// let logStream: fs.WriteStream | undefined;
-	// const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
-	// const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-	// if (extensionRoot && workspaceRoot) {
-	// 	const logPath = path.join(extensionRoot, 'src', 'completions', 'providers', 'dummydata.json');
-	// 	logStream = fs.createWriteStream(logPath, { flags: 'w' });
-	// }
-	// logStream?.write('[');
 
 	for await (const event of asyncIterable) {
 		// now we ping the sidecar that the probing needs to stop
@@ -294,8 +283,6 @@ export const reportAgentEventsToChat = async (
 		if ('keep_alive' in event) {
 			continue;
 		}
-
-		// logStream?.write(JSON.stringify(event) + ',\n');
 
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
@@ -348,6 +335,10 @@ export const reportAgentEventsToChat = async (
 				response.followups(followups);
 			} else if (event.event.FrameworkEvent.SearchIteration) {
 				// console.log(event.event.FrameworkEvent.SearchIteration);
+			} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
+				console.log(event.event.FrameworkEvent.AgenticTopLevelThinking);
+			} else if (event.event.FrameworkEvent.AgenticSymbolLevelThinking) {
+				console.log(event.event.FrameworkEvent.AgenticSymbolLevelThinking);
 			}
 		} else if (event.event.SymbolEvent) {
 			const symbolEvent = event.event.SymbolEvent.event;
@@ -512,9 +503,6 @@ export const reportAgentEventsToChat = async (
 			break;
 		}
 	}
-
-	//logStream?.write(']');
-	//logStream?.end();
 };
 
 

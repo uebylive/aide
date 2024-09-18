@@ -7,59 +7,53 @@ import { $, append } from '../../../../base/browser/dom.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { IAideBarService } from '../../../services/aideBar/browser/aideBarService.js';
-import { IWorkbenchLayoutService } from '../../../services/layout/browser/layoutService.js';
+import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
 import { MultiWindowParts, Part } from '../../part.js';
-import './media/aidebar.css';
 
-export class AideBarService extends MultiWindowParts<AideBarPart> implements IAideBarService {
-
+export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implements IBottomBarPartService {
 	declare _serviceBrand: undefined;
 
-	readonly mainPart = this._register(this.instantiationService.createInstance(AideBarPart));
+	readonly mainPart = this._register(this.instantiationService.createInstance(BottomBarPart));
 
 	constructor(
 		@IInstantiationService protected readonly instantiationService: IInstantiationService,
 		@IStorageService storageService: IStorageService,
 		@IThemeService themeService: IThemeService,
 	) {
-		super('workbench.aideBarService', themeService, storageService);
+		super('workbench.bottomBarPartService', themeService, storageService);
 
 		this._register(this.registerPart(this.mainPart));
 	}
 
-	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): AideBarPart {
-		const aideBarPartContainer = document.createElement('div');
-		const aideBarPart = this.instantiationService.createInstance(AideBarPart);
-		this._register(aideBarPart);
-		aideBarPartContainer.classList.add('part', 'aidebar');
-		container.insertBefore(aideBarPartContainer, editorContainer.nextSibling);
-		return aideBarPart;
+	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
+		const bottomBarPartContainer = document.createElement('div');
+		const bottomBarPart = this.instantiationService.createInstance(BottomBarPart);
+		this._register(bottomBarPart);
+		bottomBarPartContainer.classList.add('part', 'bottombar-part');
+		container.insertBefore(bottomBarPartContainer, editorContainer.nextSibling);
+		return bottomBarPart;
 	}
 }
 
-export type AideBarPosition = {
+export type BottomBarPosition = {
 	bottom: number;
 	left: number;
 };
 
+export class BottomBarPart extends Part implements IDisposable {
+	static readonly activePanelSettingsKey = 'workbench.bottombar.activepanelid';
 
-export class AideBarPart extends Part implements IDisposable {
-
-	static readonly activePanelSettingsKey = 'workbench.aidebar.activepanelid';
-
-
-	private _content: HTMLElement | undefined;
-	get content(): HTMLElement | undefined {
+	private _content!: HTMLElement;
+	get content(): HTMLElement {
 		return this._content;
 	}
 
-
-	readonly minimumWidth: number = 32;
-	readonly maximumWidth: number = 32;
-
-	readonly minimumHeight: number = 32;
+	readonly minimumWidth: number = 200;
+	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
+	readonly minimumHeight: number = 36;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -68,7 +62,7 @@ export class AideBarPart extends Part implements IDisposable {
 		@IThemeService themeService: IThemeService,
 	) {
 		super(
-			'partId', //Parts.AIDEBAR_PART,
+			Parts.BOTTOMBAR_PART,
 			{ hasTitle: false },
 			themeService,
 			storageService,
@@ -78,6 +72,9 @@ export class AideBarPart extends Part implements IDisposable {
 
 	protected override createContentArea(parent: HTMLElement): HTMLElement {
 		this.element = parent;
+
+		this.getColor(editorBackground);
+		this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
 		this._content = append(this.element, $('.content'));
 		return this._content;
 	}
@@ -87,13 +84,9 @@ export class AideBarPart extends Part implements IDisposable {
 		super.layoutContents(width, height);
 	}
 
-	get snap() {
-		return false;
-	}
-
 	toJSON(): object {
 		return {
-			type: 'partId', //Parts.AIDEBAR_PART
+			type: Parts.BOTTOMBAR_PART,
 		};
 	}
 }

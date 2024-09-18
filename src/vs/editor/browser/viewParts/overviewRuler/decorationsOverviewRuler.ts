@@ -10,7 +10,7 @@ import { ViewPart } from '../../view/viewPart.js';
 import { Position } from '../../../common/core/position.js';
 import { IEditorConfiguration } from '../../../common/config/editorConfiguration.js';
 import { TokenizationRegistry } from '../../../common/languages.js';
-import { editorCursorForeground, editorOverviewRulerBorder, editorOverviewRulerBackground, editorMultiCursorSecondaryForeground, editorMultiCursorPrimaryForeground } from '../../../common/core/editorColorRegistry.js';
+import { editorCursorForeground, editorOverviewRulerBackground, editorMultiCursorSecondaryForeground, editorMultiCursorPrimaryForeground, editorRuler } from '../../../common/core/editorColorRegistry.js';
 import { RenderingContext, RestrictedRenderingContext } from '../../view/renderingContext.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 import { EditorTheme } from '../../../common/editorTheme.js';
@@ -53,7 +53,7 @@ class Settings {
 		this.overviewRulerLanes = options.get(EditorOption.overviewRulerLanes);
 
 		this.renderBorder = options.get(EditorOption.overviewRulerBorder);
-		const borderColor = theme.getColor(editorOverviewRulerBorder);
+		const borderColor = theme.getColor(editorRuler);
 		this.borderColor = borderColor ? borderColor.toString() : null;
 
 		this.hideCursor = options.get(EditorOption.hideCursorInOverviewRuler);

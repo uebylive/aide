@@ -3,6 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+.monaco-workbench .part.sidebar {
+	border-left: 1px solid var(--vscode-panel-border);
+	border-right: 1px solid var(--vscode-panel-border);
+}
+
 .monaco-workbench.nosidebar > .part.sidebar {
 	display: none !important;
 	visibility: hidden !important;

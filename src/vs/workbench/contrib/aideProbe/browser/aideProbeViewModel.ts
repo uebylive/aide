@@ -65,17 +65,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 		return this._lastFileOpened;
 	}
 
-	private _isRepoMapReady: boolean | undefined;
-	get isRepoMapReady(): boolean | undefined {
-		return this._isRepoMapReady;
-	}
-
-
-	private _isLongContextSearchReady: boolean | undefined;
-	get isLongContextSearchReady(): boolean | undefined {
-		return this._isLongContextSearchReady;
-	}
-
 	private _breakdowns: IAideProbeBreakdownViewModel[] = [];
 	get breakdowns(): ReadonlyArray<IAideProbeBreakdownViewModel> {
 		return this._breakdowns;
@@ -121,8 +110,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			// TODO(@g-danna) Maybe dump the whole viewmodel on clear instead of setting these refs to undefined?
 			this._references.clear();
 			this._lastFileOpened = undefined;
-			this._isRepoMapReady = undefined;
-			this._isLongContextSearchReady = undefined;
 			this._breakdowns = [];
 			this._initialSymbols = [];
 			this._referencesFound = undefined;
@@ -137,19 +124,6 @@ export class AideProbeViewModel extends Disposable implements IAideProbeViewMode
 			}
 
 			this._lastFileOpened = _model.response?.lastFileOpened;
-
-			if (_model.request?.codebaseSearch) {
-				this._isRepoMapReady = false;
-				this._isLongContextSearchReady = false;
-
-				if (_model.response?.repoMapGenerationFinished) {
-					this._isRepoMapReady = true;
-				}
-				if (_model.response?.longContextSearchFinished) {
-					this._isLongContextSearchReady = true;
-				}
-			}
-
 			const codeEdits = _model.response?.codeEdits;
 
 			if (this._model.response.initialSymbols) {

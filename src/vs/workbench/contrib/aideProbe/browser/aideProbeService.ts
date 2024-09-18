@@ -8,13 +8,12 @@ import { CancellationToken, CancellationTokenSource } from '../../../../base/com
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
-import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
-import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
-import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
-import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
-import { ITextModel } from '../../../../editor/common/model.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { CONTEXT_PROBE_CONTEXT_TYPE } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
 
 
 export interface IAideProbeResolver {
@@ -24,8 +23,6 @@ export interface IAideProbeResolver {
 }
 
 export const IAideProbeService = createDecorator<IAideProbeService>('IAideProbeService');
-
-
 export interface IAideProbeService {
 	_serviceBrand: undefined;
 	registerProbeProvider(data: IAideProbeData, resolver: IAideProbeResolver): void;
@@ -33,7 +30,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[], textModel: ITextModel | null): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[], scope: AideProbeScope): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
 	makeFollowupRequest(): Promise<void>;
 	onContextChange(newContext: string[]): Promise<void>;
@@ -60,7 +57,6 @@ export interface IInitiateProbeResponseState {
 export class AideProbeService extends Disposable implements IAideProbeService {
 	_serviceBrand: undefined;
 
-	private mode: IContextKey<IAideProbeMode>;
 	private contextType: IContextKey<string>;
 
 	protected readonly _onNewSession = this._store.add(new Emitter<void>());
@@ -100,7 +96,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 	) {
 		super();
 
-		this.mode = CONTEXT_PROBE_MODE.bindTo(contextKeyService);
 		this.contextType = CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService);
 	}
 
@@ -136,7 +131,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = [], textModel: ITextModel | null): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = [], scope: AideProbeScope): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -161,7 +156,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				probeModel.cancelRequest();
 			});
 
-			const mode = this.mode.get() || AideProbeMode.AGENTIC;
 			const codebaseSearch = this.contextType.get() === 'codebase' || false;
 
 			try {
@@ -189,7 +183,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					}
 				}
 
-				if (mode === AideProbeMode.ANCHORED && this._anchorEditingSelection) {
+				if (this._anchorEditingSelection) {
 					const { uri, selection } = this._anchorEditingSelection;
 					variables.push({
 						id: 'selection',
@@ -209,7 +203,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					});
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, codebaseSearch, mode);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, scope);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {
@@ -222,18 +216,6 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 				} else if (result) {
 					probeModel.completeResponse();
 				}
-
-				// Mock data start
-				//if (textModel) {
-				//	const result = await mockInitiateProbe(probeModel.request, progressCallback, token, textModel);
-				//	if (token.isCancellationRequested) {
-				//		return;
-				//	} else if (result) {
-				//		probeModel.completeResponse();
-				//	}
-				//}
-				// Mock data end
-
 			} catch (error) {
 				console.log(error);
 			} finally {

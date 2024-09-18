@@ -200,7 +200,9 @@ import './contrib/inlineChat/browser/inlineChat.contribution.js';
 
 // Aide
 import './contrib/aideProbe/browser/aideProbe.contribution.js';
-import './contrib/aideAddContext/browser/aideAddContext.contribution.js';
+
+// Pinned context
+import './contrib/pinnedContext/browser/pinnedContext.contribution.js';
 
 // AST Navigation
 import './contrib/astNavigation/browser/astNavigation.contribution.js';

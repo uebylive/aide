@@ -7,6 +7,7 @@
 .monaco-workbench .part.titlebar {
 	display: flex;
 	flex-direction: row;
+	border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .monaco-workbench.mac .part.titlebar {

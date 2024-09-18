@@ -11,19 +11,11 @@
 	position: absolute;
 }
 
-body:not(.astNavigationMode) .editor-container .monaco-editor .focused .selected-text {
+.monaco-editor .focused .selected-text {
 	background-color: var(--vscode-editor-selectionBackground);
 }
 
-body:not(.astNavigationMode) .editor-container .monaco-editor .selected-text {
-	background-color: var(--vscode-editor-inactiveSelectionBackground);
-}
-
-.monaco-editor:not(.editor-container .monaco-editor) .focused .selected-text {
-	background-color: var(--vscode-editor-selectionBackground);
-}
-
-.monaco-editor:not(.editor-container .monaco-editor) .selected-text {
+.monaco-editor .selected-text {
 	background-color: var(--vscode-editor-inactiveSelectionBackground);
 }
 

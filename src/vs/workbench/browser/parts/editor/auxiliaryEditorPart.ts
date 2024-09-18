@@ -15,8 +15,8 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { hasCustomTitlebar } from '../../../../platform/window/common/window.js';
-import { IAideControlsPartService } from '../../../services/aideControlsPart/browser/aideControlsPartService.js';
 import { IAuxiliaryWindowOpenOptions, IAuxiliaryWindowService } from '../../../services/auxiliaryWindow/browser/auxiliaryWindowService.js';
+import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
 import { GroupDirection, GroupsOrder, IAuxiliaryEditorPart } from '../../../services/editor/common/editorGroupsService.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IHostService } from '../../../services/host/browser/host.js';
@@ -52,7 +52,7 @@ export class AuxiliaryEditorPart {
 		@IStatusbarService private readonly statusbarService: IStatusbarService,
 		@ITitleService private readonly titleService: ITitleService,
 		@IEditorService private readonly editorService: IEditorService,
-		@IAideControlsPartService private readonly aideControlsPartService: IAideControlsPartService,
+		@IBottomBarPartService private readonly bottomBarPartService: IBottomBarPartService,
 		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService
 	) {
 	}
@@ -117,8 +117,8 @@ export class AuxiliaryEditorPart {
 		disposables.add(this.editorPartsView.registerPart(editorPart));
 		editorPart.create(editorPartContainer);
 
-		// AideControls Part
-		disposables.add(this.aideControlsPartService.createAuxiliaryControlsPart(auxiliaryWindow.container, editorPartContainer));
+		// Bottombar Part
+		disposables.add(this.bottomBarPartService.createAuxiliaryControlsPart(auxiliaryWindow.container, editorPartContainer));
 
 		// Titlebar
 		let titlebarPart: IAuxiliaryTitlebarPart | undefined = undefined;

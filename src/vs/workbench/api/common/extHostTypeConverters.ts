@@ -3009,8 +3009,7 @@ export namespace AideProbeRequestModel {
 			requestId: request.sessionId,
 			query: request.message,
 			references: [],
-			mode: request.mode,
-			codebaseSearch: request.codebaseSearch,
+			scope: request.scope,
 		};
 	}
 }

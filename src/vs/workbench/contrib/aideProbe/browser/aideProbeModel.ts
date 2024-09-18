@@ -14,7 +14,7 @@ import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { IBulkEditService, ResourceTextEdit } from '../../../../editor/browser/services/bulkEditService.js';
 import { IOffsetRange } from '../../../../editor/common/core/offsetRange.js';
-import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
+import { IWorkspaceFileEdit, IWorkspaceTextEdit, Location, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
 import { createTextBufferFactoryFromSnapshot } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
@@ -25,8 +25,7 @@ import { IContextKey, IContextKeyService } from '../../../../platform/contextkey
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IUndoRedoService } from '../../../../platform/undoRedo/common/undoRedo.js';
 import { CONTEXT_PROBE_REQUEST_STATUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
-import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
-
+import { AideProbeScope, AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 import { HunkData } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
 import { ITextFileService } from '../../../../workbench/services/textfile/common/textfiles.js';
 import { IChatRequestVariableData, IChatTextEditGroupState } from '../../chat/common/chatModel.js';
@@ -74,8 +73,6 @@ export interface IAideProbeResponseModel {
 	readonly relevantReferences: Map<string, IAideRelevantReferenceInformation> | undefined;
 	readonly followups: Map<string, IAideFollowupInformation[]> | undefined;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
-	readonly repoMapGenerationFinished: boolean | undefined;
-	readonly longContextSearchFinished: boolean | undefined;
 }
 
 export interface IAideProbeModel {
@@ -93,8 +90,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 		readonly sessionId: string,
 		readonly message: string,
 		readonly variableData: IChatRequestVariableData,
-		readonly codebaseSearch: boolean,
-		readonly mode: IAideProbeMode
+		readonly scope: AideProbeScope
 	) {
 		super();
 	}

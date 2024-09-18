@@ -84,9 +84,9 @@ export class PartsSplash {
 				activityBarBorder: theme.getColor(themes.ACTIVITY_BAR_BORDER)?.toString(),
 				sideBarBackground: theme.getColor(themes.SIDE_BAR_BACKGROUND)?.toString(),
 				sideBarBorder: theme.getColor(themes.SIDE_BAR_BORDER)?.toString(),
-				statusBarBackground: theme.getColor(themes.STATUS_BAR_BACKGROUND)?.toString(),
+				statusBarBackground: theme.getColor(themes.TITLE_BAR_ACTIVE_BACKGROUND)?.toString(),
 				statusBarBorder: theme.getColor(themes.STATUS_BAR_BORDER)?.toString(),
-				statusBarNoFolderBackground: theme.getColor(themes.STATUS_BAR_NO_FOLDER_BACKGROUND)?.toString(),
+				statusBarNoFolderBackground: theme.getColor(themes.TITLE_BAR_ACTIVE_BACKGROUND)?.toString(),
 				windowBorder: theme.getColor(themes.WINDOW_ACTIVE_BORDER)?.toString() ?? theme.getColor(themes.WINDOW_INACTIVE_BORDER)?.toString()
 			},
 			layoutInfo: !this._shouldSaveLayoutInfo() ? undefined : {
