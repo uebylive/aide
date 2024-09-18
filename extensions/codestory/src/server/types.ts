@@ -50,6 +50,7 @@ export type CodeEditAgentBody = {
 	codebase_search: boolean;
 	anchor_editing: boolean;
 	enable_import_nodes: boolean;
+	deep_reasoning: boolean;
 };
 
 export type AnchorSessionStart = {

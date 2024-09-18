@@ -964,6 +964,7 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
 			enable_import_nodes: false,
+			deep_reasoning: false,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
