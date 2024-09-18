@@ -5,7 +5,7 @@
 
 import { createTwoFilesPatch } from 'diff';
 import * as vscode from 'vscode';
-import { SidecarRecentEditsRetrieverResponse } from './types';
+import { SidecarRecentEditsFilePreviousContent, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse } from './types';
 /**
  * We can grab the last edited files orderd by the timestamp over here
  */
@@ -53,8 +53,8 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		this.disposables.push(workspace.onDidDeleteFiles(this.onDidDeleteFiles.bind(this)));
 	}
 
-	public async retrieveSidecar(): Promise<SidecarRecentEditsRetrieverResponse> {
-		const rawDiffs = await this.getDiffAcrossDocuments();
+	public async retrieveSidecar(request: SidecarRecentEditsRetrieverRequest): Promise<SidecarRecentEditsRetrieverResponse> {
+		const rawDiffs = await this.getDiffAcrossDocuments(request.diff_file_content);
 		const diffs = this.filterCandidateDiffs(rawDiffs);
 		// Heuristics ordering by timestamp, taking the most recent diffs first.
 		diffs.sort((a, b) => b.latestChangeTimestamp - a.latestChangeTimestamp);
@@ -76,7 +76,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 	}
 
 	public async retrieve(): Promise<AutocompleteContextSnippet[]> {
-		const rawDiffs = await this.getDiffAcrossDocuments();
+		const rawDiffs = await this.getDiffAcrossDocuments([]);
 		const diffs = this.filterCandidateDiffs(rawDiffs);
 		// Heuristics ordering by timestamp, taking the most recent diffs first.
 		diffs.sort((a, b) => b.latestChangeTimestamp - a.latestChangeTimestamp);
@@ -94,11 +94,12 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return autocompleteContextSnippets;
 	}
 
-	public async getDiffAcrossDocuments(): Promise<DiffAcrossDocuments[]> {
+	public async getDiffAcrossDocuments(diffFileContent: SidecarRecentEditsFilePreviousContent[]): Promise<DiffAcrossDocuments[]> {
 		const diffs: DiffAcrossDocuments[] = [];
 		const diffPromises = Array.from(this.trackedDocuments.entries()).map(
 			async ([uri, trackedDocument]) => {
-				const diff = await this.getDiff(vscode.Uri.parse(uri));
+				const currentContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri);
+				const diff = await this.getDiff(vscode.Uri.parse(uri), currentContentIfAny);
 				if (diff) {
 					return {
 						diff: diff.diff,
@@ -132,7 +133,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return true;
 	}
 
-	public async getDiff(uri: vscode.Uri): Promise<{
+	public async getDiff(uri: vscode.Uri, previousFileContentIfAny: SidecarRecentEditsFilePreviousContent | undefined): Promise<{
 		diff: string | null;
 		currentContent: string | null;
 	} | null> {
@@ -141,7 +142,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			return null;
 		}
 
-		const oldContent = trackedDocument.content;
+		const oldContent = previousFileContentIfAny ? previousFileContentIfAny.file_content_latest : trackedDocument.content;
 		const newContent = applyChanges(
 			oldContent,
 			trackedDocument.changes.map(c => c.change)
