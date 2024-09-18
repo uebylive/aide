@@ -92,6 +92,15 @@ type FrameworkEvent = {
 	RelevantReference: RelevantReference;
 	GroupedReferences: GroupedReferences;
 	SearchIteration: IterativeSearchEvent;
+	AgenticTopLevelThinking: string;
+	AgenticSymbolLevelThinking: StepListItem;
+};
+
+type StepListItem = {
+	name: string;
+	steps: string[];
+	new: boolean;
+	filePath: string;
 };
 
 enum SearchToolType {
