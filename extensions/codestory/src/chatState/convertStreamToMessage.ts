@@ -79,7 +79,11 @@ export const reportFromStreamToSearchProgress = async (
 			// the reporef location to the message and that would solve a lot of
 			// problems.
 			if (!enteredAnswerGenerationLoop) {
-				response.markdown('\n');
+				if (conversationMessage.answer.delta !== null) {
+					response.markdown(conversationMessage.answer.delta);
+				} else {
+					response.markdown('\n');
+				}
 				// progress.report(new CSChatProgressContent('\n## Answer\n\n' + conversationMessage.answer.delta));
 				enteredAnswerGenerationLoop = true;
 			} else {
