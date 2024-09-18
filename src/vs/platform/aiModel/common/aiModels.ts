@@ -156,8 +156,16 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 	slowModel: 'ClaudeSonnet',
 	fastModel: 'DeepSeekCoder33BInstruct',
 	models: {
+		'o1-mini': {
+			name: 'o1-mini reasoning',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
 		'o1-preview': {
-			name: 'o1 reasoning model by OpenAI',
+			name: 'o1-preview reasoning',
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
@@ -356,7 +364,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 
 export const supportedModels: Record<ProviderType, string[]> = {
 	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama7BInstruct', 'ClaudeHaiku', 'ClaudeSonnet', 'DeepSeekCoder33BInstruct', 'Gpt4Turbo'],
-	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5', 'Gpt4O', 'o1-preview'],
+	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5', 'Gpt4O', 'o1-preview', 'o1-mini'],
 	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
 	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
 	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct', 'DeepSeekCoderV2'],
