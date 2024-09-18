@@ -3,17 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
-import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
-import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
-
-const $ = dom.$;
+import { $, append } from '../../../../base/browser/dom.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
+import { MultiWindowParts, Part } from '../../part.js';
 
 export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implements IBottomBarPartService {
 	declare _serviceBrand: undefined;
@@ -55,11 +53,9 @@ export class BottomBarPart extends Part implements IDisposable {
 		return this._content;
 	}
 
-	readonly preferredHeight = 38;
-	readonly preferredWidth = Number.POSITIVE_INFINITY;
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 38;
+	readonly minimumHeight: number = 36;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -81,7 +77,7 @@ export class BottomBarPart extends Part implements IDisposable {
 
 		this.getColor(editorBackground);
 		this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
-		this._content = dom.append(this.element, $('.content'));
+		this._content = append(this.element, $('.content'));
 		return this._content;
 	}
 

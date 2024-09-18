@@ -5,7 +5,6 @@
 
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { Diagnostic } from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
@@ -634,7 +633,7 @@ export class SideCarClient {
 
 	async sendDiagnostics(
 		filePath: string,
-		diagnostics: readonly Diagnostic[]
+		diagnostics: readonly vscode.Diagnostic[]
 	): Promise<void> {
 		const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
 		const baseUrl = new URL(this._url);

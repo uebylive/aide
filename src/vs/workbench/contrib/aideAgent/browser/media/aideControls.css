@@ -72,11 +72,7 @@
 
 .aide-controls-toolbar {
 	display: flex;
-	justify-content: space-between;
-}
-
-.aide-controls-toolbar .actions-container {
-	gap: 8px;
+	align-items: center;
 }
 
 .aide-controls-submit-button {

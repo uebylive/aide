@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { AppResourcePath, FileAccess } from 'vs/base/common/network';
-import { IFileService } from 'vs/platform/files/common/files';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { sanitize } from 'vs/base/browser/dompurify/dompurify';
+import { sanitize } from '../../base/browser/dompurify/dompurify.js';
+import { Disposable } from '../../base/common/lifecycle.js';
+import { AppResourcePath, FileAccess } from '../../base/common/network.js';
+import { IFileService } from '../../platform/files/common/files.js';
+import { createDecorator } from '../../platform/instantiation/common/instantiation.js';
 
 
 export interface ISVGSpriteService {

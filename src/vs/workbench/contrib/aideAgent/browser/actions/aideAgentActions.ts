@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { IView } from 'vs/workbench/common/views';
-import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from 'vs/workbench/contrib/aideAgent/browser/aideAgentContextKeys';
-import { IAideControlsService } from 'vs/workbench/contrib/aideAgent/browser/aideControlsService';
-import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
-import { IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { IView } from '../../../../common/views.js';
+import { AideAgentScope } from '../../common/aideAgentModel.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
+import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from '../aideAgentContextKeys.js';
+import { IAideControlsService } from '../aideControlsService.js';
 
 const AIDE_AGENT_CATEGORY = localize2('aideAgentcategory', 'Aide');
 

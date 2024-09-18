@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { SymbolNavigationEvent } from 'vs/editor/common/model/csEvents';
-import { ICSEventHandler, ICSEventsService } from 'vs/editor/common/services/csEvents';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import { IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import { InstantiationType, registerSingleton } from '../../../platform/instantiation/common/extensions.js';
+import { SymbolNavigationEvent } from '../model/csEvents.js';
+import { ICSEventHandler, ICSEventsService } from './csEvents.js';
 
 export class CSEventsService implements ICSEventsService {
 	declare readonly _serviceBrand: undefined;

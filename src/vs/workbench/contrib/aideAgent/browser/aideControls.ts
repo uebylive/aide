@@ -3,45 +3,45 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
-import { Codicon } from 'vs/base/common/codicons';
-import { DisposableStore } from 'vs/base/common/lifecycle';
-import { basenameOrAuthority } from 'vs/base/common/resources';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import 'vs/css!./media/aideControls';
-import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { IModelService } from 'vs/editor/common/services/model';
-import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
-import { localize } from 'vs/nls';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
-import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
-import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
-import { SetAideAgentScopePinnedContext, SetAideAgentScopeSelection, SetAideAgentScopeWholeCodebase } from 'vs/workbench/contrib/aideAgent/browser/actions/aideAgentActions';
-import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from 'vs/workbench/contrib/aideAgent/browser/aideAgentContextKeys';
-import { IAideControlsService } from 'vs/workbench/contrib/aideAgent/browser/aideControlsService';
-import { AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
-import { IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
-import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import * as dom from '../../../../base/browser/dom.js';
+import { DEFAULT_FONT_FAMILY } from '../../../../base/browser/fonts.js';
+import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { basenameOrAuthority } from '../../../../base/common/resources.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IEditorConstructionOptions } from '../../../../editor/browser/config/editorConfiguration.js';
+import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { EditorExtensionsRegistry } from '../../../../editor/browser/editorExtensions.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { CodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
+import { IDecorationOptions } from '../../../../editor/common/editorCommon.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { ContentHoverController } from '../../../../editor/contrib/hover/browser/contentHoverController.js';
+import { localize } from '../../../../nls.js';
+import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
+import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { inputPlaceholderForeground } from '../../../../platform/theme/common/colors/inputColors.js';
+import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
+import { SIDE_BAR_BACKGROUND } from '../../../../workbench/common/theme.js';
+import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from '../../../../workbench/contrib/codeEditor/browser/simpleEditorOptions.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
+import { AideAgentScope } from '../common/aideAgentModel.js';
+import { IAideAgentService } from '../common/aideAgentService.js';
+import { SetAideAgentScopePinnedContext, SetAideAgentScopeSelection, SetAideAgentScopeWholeCodebase } from './actions/aideAgentActions.js';
+import { CONTEXT_AIDE_CONTROLS_HAS_FOCUS, CONTEXT_AIDE_CONTROLS_HAS_TEXT } from './aideAgentContextKeys.js';
+import { IAideControlsService } from './aideControlsService.js';
+import './media/aideControls.css';
 
 const $ = dom.$;
 
@@ -60,7 +60,7 @@ export class AideControls extends Themable {
 	static readonly INPUT_SCHEME = 'aideControlsInput';
 	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
 
-	private actionsToolbar: MenuWorkbenchToolBar | undefined;
+	private toolbarElement: HTMLElement | undefined;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
@@ -129,17 +129,23 @@ export class AideControls extends Themable {
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
-		const toolbarElement = $('.aide-controls-toolbar');
-		element.appendChild(toolbarElement);
-
 		this._input = this.createInput(inputElement);
 		this.updateInputPlaceholder();
 		this.layout();
 
 		this.aideAgentService.startSession();
 
-		this.createToolbar(toolbarElement);
+		this.toolbarElement = $('.aide-controls-toolbar');
+		element.appendChild(this.toolbarElement);
+		this.createToolbar(this.toolbarElement);
+
+		this.layout();
+		this.part.onDidSizeChange((size: dom.IDimension) => {
+			this.layout(size.width, size.height);
+		});
+
 		this.updateScope(aideAgentService.scope);
+		this.updateInputPlaceholder();
 
 		this._register(this.editorService.onDidActiveEditorChange(() => {
 			this.trackActiveEditor();
@@ -187,7 +193,7 @@ export class AideControls extends Themable {
 			scrollbar: { ...(defaultOptions.scrollbar ?? {}), vertical: 'hidden' }
 		};
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
-		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
+		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([ContentHoverController.ID]));
 		const editor = this._input = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, options, editorOptions));
 		let editorModel = this.modelService.getModel(AideControls.INPUT_URI);
 		if (!editorModel) {
@@ -301,10 +307,9 @@ export class AideControls extends Themable {
 	}
 
 	private createToolbar(parent: HTMLElement) {
-		const toolbar = this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
 			menuOptions: {
 				shouldForwardArgs: true,
-
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action) => {
@@ -320,20 +325,25 @@ export class AideControls extends Themable {
 			const width = toolbar.getItemsWidth();
 			const numberOfItems = toolbar.getItemsLength();
 			toolbar.getElement().style.width = `${width + Math.max(0, numberOfItems - 1) * 8}px`;
+			this.layout();
 		}));
 
 		this.layout();
 	}
 
-	private layout() {
-		const partSize = this.part.dimension;
-		const width = partSize?.width;
-		const height = partSize?.height;
+	layout(width?: number, height?: number) {
+		if (width === undefined) {
+			width = this.part.dimension?.width ?? 0;
+		}
+		if (height === undefined) {
+			height = this.part.dimension?.height ?? 0;
+		}
+
 		if (!width || !height) {
 			return;
 		}
 
-		const toolbarWidth = this.actionsToolbar?.getElement().clientWidth ?? 0;
+		const toolbarWidth = this.toolbarElement?.clientWidth ?? 0;
 		this._input.layout({ width: width - 72 /* gutter */ - 14 /* scrollbar */ - toolbarWidth, height: height });
 	}
 }

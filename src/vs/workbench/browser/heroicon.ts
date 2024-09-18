@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { SVGSprite } from 'vs/workbench/browser/svgSprite';
+import { SVGSprite } from './svgSprite.js';
 
 function assignSize(id: string) {
 	const size = id.split('/').at(0);

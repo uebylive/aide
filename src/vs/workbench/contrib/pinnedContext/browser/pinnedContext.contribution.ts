@@ -3,19 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { localize } from 'vs/nls';
-import { ILocalizedString } from 'vs/platform/action/common/action';
-import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
-import { IViewDescriptor, IViewsRegistry, Extensions as ViewExtensions } from 'vs/workbench/common/views';
-import { VIEW_CONTAINER } from 'vs/workbench/contrib/files/browser/explorerViewlet';
-import { registerPinnedContextActions } from 'vs/workbench/contrib/pinnedContext/browser/actions/pinnedContextActions';
-import { PinnedContextPane } from 'vs/workbench/contrib/pinnedContext/browser/pinnedContextPane';
-import { PinnedContextService } from 'vs/workbench/contrib/pinnedContext/browser/pinnedContextService';
-import { IPinnedContextService, pinnedContextPaneId } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { ILocalizedString, localize } from '../../../../nls.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
+import { IViewDescriptor, IViewsRegistry, Extensions as ViewExtensions } from '../../../common/views.js';
+import { VIEW_CONTAINER } from '../../files/browser/explorerViewlet.js';
+import { IPinnedContextService, pinnedContextPaneId } from '../common/pinnedContext.js';
+import { registerPinnedContextActions } from './actions/pinnedContextActions.js';
+import { PinnedContextPane } from './pinnedContextPane.js';
+import { PinnedContextService } from './pinnedContextService.js';
 
 const pinnedContextIcon = registerIcon('pinned-context-view-icon', Codicon.pinned, localize('pinnedContextViewIcon', 'View icon of the pinned context view.'));
 

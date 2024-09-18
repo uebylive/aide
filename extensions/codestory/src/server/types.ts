@@ -92,6 +92,15 @@ type FrameworkEvent = {
 	RelevantReference: RelevantReference;
 	GroupedReferences: GroupedReferences;
 	SearchIteration: IterativeSearchEvent;
+	AgenticTopLevelThinking: string;
+	AgenticSymbolLevelThinking: StepListItem;
+};
+
+type StepListItem = {
+	name: string;
+	steps: string[];
+	new: boolean;
+	filePath: string;
 };
 
 enum SearchToolType {
@@ -106,8 +115,8 @@ interface SearchQuery {
 }
 
 type SearchResultSnippet =
-	| { type: 'FileContent', content: Uint8Array }
-	| { type: 'Tag', tag: string };
+	| { type: 'FileContent'; content: Uint8Array }
+	| { type: 'Tag'; tag: string };
 
 interface SearchResult {
 	path: string;
@@ -132,14 +141,14 @@ interface DecideResponse {
 
 type IterativeSearchEvent =
 	| { type: 'SearchStarted' }
-	| { type: 'SeedApplied', duration: Duration }
-	| { type: 'SearchQueriesGenerated', queries: SearchQuery[], duration: Duration }
-	| { type: 'SearchExecuted', results: SearchResult[], duration: Duration }
-	| { type: 'IdentificationCompleted', response: IdentifyResponse, duration: Duration }
-	| { type: 'FileOutlineGenerated', duration: Duration }
-	| { type: 'DecisionMade', response: DecideResponse, duration: Duration }
-	| { type: 'LoopCompleted', iteration: number, duration: Duration }
-	| { type: 'SearchCompleted', duration: Duration };
+	| { type: 'SeedApplied'; duration: Duration }
+	| { type: 'SearchQueriesGenerated'; queries: SearchQuery[]; duration: Duration }
+	| { type: 'SearchExecuted'; results: SearchResult[]; duration: Duration }
+	| { type: 'IdentificationCompleted'; response: IdentifyResponse; duration: Duration }
+	| { type: 'FileOutlineGenerated'; duration: Duration }
+	| { type: 'DecisionMade'; response: DecideResponse; duration: Duration }
+	| { type: 'LoopCompleted'; iteration: number; duration: Duration }
+	| { type: 'SearchCompleted'; duration: Duration };
 
 interface Duration {
 	secs: number;
@@ -864,17 +873,24 @@ export type SidecarInlayHintResponse = {
 };
 
 export type SidecarRecentEditsRetrieverDiff = {
-	fs_file_path: String;
-	diff: String;
+	fs_file_path: string;
+	diff: string;
 	updated_timestamp_ms: number;
+	current_content: string;
 };
 
 export type SidecarRecentEditsRetrieverResponse = {
 	changed_files: SidecarRecentEditsRetrieverDiff[];
 };
 
+export type SidecarRecentEditsFilePreviousContent = {
+	fs_file_path: string;
+	file_content_latest: string;
+};
+
 export type SidecarRecentEditsRetrieverRequest = {
 	fs_file_paths: string[] | null;
+	diff_file_content: SidecarRecentEditsFilePreviousContent[];
 };
 
 export type SidecarApplyEditsRequest = {

@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import { registerAgentActions } from 'vs/workbench/contrib/aideAgent/browser/actions/aideAgentActions';
-import { AideControls } from 'vs/workbench/contrib/aideAgent/browser/aideControls';
-import { AideControlsService, IAideControlsService } from 'vs/workbench/contrib/aideAgent/browser/aideControlsService';
-import { IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
-import { AideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentServiceImpl';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../common/contributions.js';
+import { IAideAgentService } from '../common/aideAgentService.js';
+import { AideAgentService } from '../common/aideAgentServiceImpl.js';
+import { registerAgentActions } from './actions/aideAgentActions.js';
+import { AideControls } from './aideControls.js';
+import { AideControlsService, IAideControlsService } from './aideControlsService.js';
 
 // Register services
 registerSingleton(IAideAgentService, AideAgentService, InstantiationType.Delayed);

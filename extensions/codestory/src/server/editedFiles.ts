@@ -5,7 +5,7 @@
 
 import { createTwoFilesPatch } from 'diff';
 import * as vscode from 'vscode';
-import { SidecarRecentEditsRetrieverResponse } from './types';
+import { SidecarRecentEditsFilePreviousContent, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse } from './types';
 /**
  * We can grab the last edited files orderd by the timestamp over here
  */
@@ -32,6 +32,7 @@ interface DiffAcrossDocuments {
 	uri: vscode.Uri;
 	languageId: string;
 	latestChangeTimestamp: number;
+	current_content: string;
 }
 
 export class RecentEditsRetriever implements vscode.Disposable {
@@ -52,8 +53,8 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		this.disposables.push(workspace.onDidDeleteFiles(this.onDidDeleteFiles.bind(this)));
 	}
 
-	public async retrieveSidecar(): Promise<SidecarRecentEditsRetrieverResponse> {
-		const rawDiffs = await this.getDiffAcrossDocuments();
+	public async retrieveSidecar(request: SidecarRecentEditsRetrieverRequest): Promise<SidecarRecentEditsRetrieverResponse> {
+		const rawDiffs = await this.getDiffAcrossDocuments(request.diff_file_content);
 		const diffs = this.filterCandidateDiffs(rawDiffs);
 		// Heuristics ordering by timestamp, taking the most recent diffs first.
 		diffs.sort((a, b) => b.latestChangeTimestamp - a.latestChangeTimestamp);
@@ -65,6 +66,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 				fs_file_path: diff.uri.fsPath,
 				diff: content,
 				updated_timestamp_ms: diff.latestChangeTimestamp,
+				current_content: diff.current_content,
 			};
 			autocompleteContextSnippets.push(autocompleteSnippet);
 		}
@@ -74,7 +76,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 	}
 
 	public async retrieve(): Promise<AutocompleteContextSnippet[]> {
-		const rawDiffs = await this.getDiffAcrossDocuments();
+		const rawDiffs = await this.getDiffAcrossDocuments([]);
 		const diffs = this.filterCandidateDiffs(rawDiffs);
 		// Heuristics ordering by timestamp, taking the most recent diffs first.
 		diffs.sort((a, b) => b.latestChangeTimestamp - a.latestChangeTimestamp);
@@ -92,19 +94,21 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return autocompleteContextSnippets;
 	}
 
-	public async getDiffAcrossDocuments(): Promise<DiffAcrossDocuments[]> {
+	public async getDiffAcrossDocuments(diffFileContent: SidecarRecentEditsFilePreviousContent[]): Promise<DiffAcrossDocuments[]> {
 		const diffs: DiffAcrossDocuments[] = [];
 		const diffPromises = Array.from(this.trackedDocuments.entries()).map(
 			async ([uri, trackedDocument]) => {
-				const diff = await this.getDiff(vscode.Uri.parse(uri));
+				const currentContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri);
+				const diff = await this.getDiff(vscode.Uri.parse(uri), currentContentIfAny);
 				if (diff) {
 					return {
-						diff,
+						diff: diff.diff,
 						uri: trackedDocument.uri,
 						languageId: trackedDocument.languageId,
 						latestChangeTimestamp: Math.max(
 							...trackedDocument.changes.map(c => c.timestamp)
 						),
+						current_content: diff.currentContent,
 					};
 				}
 				return null;
@@ -129,19 +133,26 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return true;
 	}
 
-	public async getDiff(uri: vscode.Uri): Promise<string | null> {
+	public async getDiff(uri: vscode.Uri, previousFileContentIfAny: SidecarRecentEditsFilePreviousContent | undefined): Promise<{
+		diff: string | null;
+		currentContent: string | null;
+	} | null> {
 		const trackedDocument = this.trackedDocuments.get(uri.toString());
 		if (!trackedDocument) {
 			return null;
 		}
 
-		const oldContent = trackedDocument.content;
+		const oldContent = previousFileContentIfAny ? previousFileContentIfAny.file_content_latest : trackedDocument.content;
 		const newContent = applyChanges(
 			oldContent,
 			trackedDocument.changes.map(c => c.change)
 		);
 
-		return createGitDiff(uri.fsPath, oldContent, newContent);
+		const diff = createGitDiff(uri.fsPath, oldContent, newContent);
+		return {
+			diff,
+			currentContent: newContent,
+		};
 	}
 
 	private onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {

@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/part';
-import { Component } from 'vs/workbench/common/component';
-import { IThemeService, IColorTheme } from 'vs/platform/theme/common/themeService';
-import { IDimension } from 'vs/base/browser/dom';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { Emitter } from 'vs/base/common/event';
-import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
+import { IDimension } from '../../base/browser/dom.js';
+import { Emitter } from '../../base/common/event.js';
+import { IStorageService } from '../../platform/storage/common/storage.js';
+import { IColorTheme, IThemeService } from '../../platform/theme/common/themeService.js';
+import { Component } from '../common/component.js';
+import { IWorkbenchLayoutService } from '../services/layout/browser/layoutService.js';
+import './media/part.css';
 
 export interface IPartOptions {
 	readonly hasTitle?: boolean;

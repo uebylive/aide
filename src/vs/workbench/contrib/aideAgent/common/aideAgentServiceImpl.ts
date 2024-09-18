@@ -3,14 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter } from 'vs/base/common/event';
-import { Disposable, DisposableMap, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { localize } from 'vs/nls';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAgentTriggerComplete, IAideAgentImplementation } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { AideAgentModel, AideAgentScope, IAgentExchangeData, IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
-import { IAgentResponseProgress, IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
+import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
+import { Emitter } from '../../../../base/common/event.js';
+import { Disposable, DisposableMap, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { localize } from '../../../../nls.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IAgentTriggerComplete, IAideAgentImplementation } from './aideAgent.js';
+import { AideAgentModel, AideAgentScope, IAgentExchangeData, IAgentTriggerPayload } from './aideAgentModel.js';
+import { IAgentResponseProgress, IAideAgentService } from './aideAgentService.js';
+
 
 export class AideAgentService extends Disposable implements IAideAgentService {
 	declare _serviceBrand: undefined;

@@ -3,34 +3,34 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as DOM from 'vs/base/browser/dom';
-import { ActionBar } from 'vs/base/browser/ui/actionbar/actionbar';
-import { HighlightedLabel } from 'vs/base/browser/ui/highlightedlabel/highlightedLabel';
-import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
-import { ITableRenderer, ITableVirtualDelegate } from 'vs/base/browser/ui/table/table';
-import { IAction } from 'vs/base/common/actions';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { ThemeIcon } from 'vs/base/common/themables';
-import 'vs/css!./media/modelSelectionEditor';
-import { localize } from 'vs/nls';
-import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
-import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
-import { IEditorOptions } from 'vs/platform/editor/common/editor';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchTable } from 'vs/platform/list/browser/listService';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
-import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon, invalidModelConfigIcon } from 'vs/workbench/contrib/preferences/browser/modelSelectionWidgets';
-import { settingsEditIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
-import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
-import { IEditorGroup } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { ModelSelectionEditorInput } from 'vs/workbench/services/preferences/browser/modelSelectionEditorInput';
-import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
+import * as DOM from '../../../../base/browser/dom.js';
+import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
+import { HighlightedLabel } from '../../../../base/browser/ui/highlightedlabel/highlightedLabel.js';
+import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
+import { ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
+import { IAction } from '../../../../base/common/actions.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { localize } from '../../../../nls.js';
+import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
+import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
+import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
+import { IEditorOpenContext } from '../../../common/editor.js';
+import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
+import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
+import { ModelSelectionEditorInput } from '../../../services/preferences/browser/modelSelectionEditorInput.js';
+import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
+import { IModelItem, IModelItemEntry, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from '../../../services/preferences/common/preferences.js';
+import './media/modelSelectionEditor.css';
+import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultModelIcon, invalidModelConfigIcon } from './modelSelectionWidgets.js';
+import { settingsEditIcon } from './preferencesIcons.js';
 
 const $ = DOM.$;
 

@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DeferredPromise } from 'vs/base/common/async';
-import { Event } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { WorkspaceEdit } from 'vs/editor/common/languages';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IAideAgentImplementation } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { AideAgentModel, AideAgentScope } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
+import { DeferredPromise } from '../../../../base/common/async.js';
+import { Event } from '../../../../base/common/event.js';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { WorkspaceEdit } from '../../../../editor/common/languages.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { IAideAgentImplementation } from './aideAgent.js';
+import { AideAgentModel, AideAgentScope } from './aideAgentModel.js';
 
 export interface IAgentMarkdownContent {
 	kind: 'markdownContent';

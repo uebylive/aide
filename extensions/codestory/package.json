@@ -13,8 +13,6 @@
   ],
   "enabledApiProposals": [
     "aideAgent",
-    "aideChatParticipant",
-    "aideChatVariableResolver",
     "aideGetCodeLensProvider",
     "aideGetInlayHintsProvider",
     "chatParticipantAdditions",

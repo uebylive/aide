@@ -3,16 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { raceCancellation } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import { ExtHostAideAgentProviderShape, IAideAgentProgressDto, IMainContext, MainContext, MainThreadAideAgentProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
-import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAgentTriggerComplete } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
 import * as vscode from 'vscode';
+import { raceCancellation } from '../../../base/common/async.js';
+import { Disposable, IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
+import { IAgentTriggerComplete } from '../../contrib/aideAgent/common/aideAgent.js';
+import { IAgentTriggerPayload } from '../../contrib/aideAgent/common/aideAgentModel.js';
+import { ExtHostAideAgentProviderShape, IAideAgentProgressDto, IMainContext, MainContext, MainThreadAideAgentProviderShape } from './extHost.protocol.js';
+import * as typeConvert from './extHostTypeConverters.js';
+import * as extHostTypes from './extHostTypes.js';
 
 class AideAgentResponseStream {
 	private _isClosed: boolean = false;
@@ -67,15 +66,14 @@ class AideAgentResponseStream {
 			this._apiObject = {
 				markdown(value) {
 					throwIfDone(this.markdown);
-					const part = new extHostTypes.AideChatResponseMarkdownPart(value);
+					const part = new extHostTypes.ChatResponseMarkdownPart(value);
 					const dto = typeConvert.ChatResponseMarkdownPart.from(part);
 					_report(dto);
 					return this;
 				},
 				async codeEdit(value) {
 					throwIfDone(this.codeEdit);
-					const dto = typeConvert.AideAgentTextEdit.from(value);
-					_report(dto);
+					// TODO(@ghostwriternr): Implement codeEdit
 					return this;
 				},
 			};
@@ -98,7 +96,7 @@ export class ExtHostAideAgentProvider extends Disposable implements ExtHostAideA
 		this._proxy = mainContext.getProxy(MainContext.MainThreadAideAgentProvider);
 	}
 
-	async $trigger(handle: number, request: IAgentTriggerPayload, token: CancellationToken): Promise<IAgentTriggerComplete | undefined> {
+	async $trigger(handle: number, request: IAgentTriggerPayload, token: vscode.CancellationToken): Promise<IAgentTriggerComplete | undefined> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;

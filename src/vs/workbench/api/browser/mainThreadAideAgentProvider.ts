@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { ExtHostAideAgentProviderShape, ExtHostContext, IAideAgentProgressDto, MainContext, MainThreadAideAgentProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IAideAgentImplementation } from 'vs/workbench/contrib/aideAgent/common/aideAgent';
-import { IAgentResponseProgress, IAideAgentService } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
-import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { revive } from '../../../base/common/marshalling.js';
+import { ICSAccountService } from '../../../platform/codestoryAccount/common/csAccount.js';
+import { IAideAgentImplementation } from '../../contrib/aideAgent/common/aideAgent.js';
+import { IAgentResponseProgress, IAideAgentService } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostAideAgentProviderShape, ExtHostContext, IAideAgentProgressDto, MainContext, MainThreadAideAgentProviderShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadAideAgentProvider)
 export class MainThreadAideAgentProvider extends Disposable implements MainThreadAideAgentProviderShape {

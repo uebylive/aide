@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { AideControls } from 'vs/workbench/contrib/aideAgent/browser/aideControls';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { AideControls } from './aideControls.js';
 
 export const IAideControlsService = createDecorator<IAideControlsService>('IAideControlsService');
 

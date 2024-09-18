@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, OpenAICompatibleProviderConfig, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from 'vs/platform/aiModel/common/aiModels';
-import { EditorModel } from 'vs/workbench/common/editor/editorModel';
-import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
+import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, OpenAICompatibleProviderConfig, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { EditorModel } from '../../../common/editor/editorModel.js';
+import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from '../common/preferences.js';
 
 export class ModelSelectionEditorModel extends EditorModel {
 

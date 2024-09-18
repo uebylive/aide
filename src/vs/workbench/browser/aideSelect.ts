@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { Disposable, DisposableStore, dispose, IDisposable } from 'vs/base/common/lifecycle';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
+import * as dom from '../../base/browser/dom.js';
+import { IListRenderer, IListVirtualDelegate } from '../../base/browser/ui/list/list.js';
+import { Emitter, Event } from '../../base/common/event.js';
+import { Disposable, DisposableStore, dispose, IDisposable } from '../../base/common/lifecycle.js';
+import { IInstantiationService } from '../../platform/instantiation/common/instantiation.js';
+import { WorkbenchList } from '../../platform/list/browser/listService.js';
 
 const $ = dom.$;
 

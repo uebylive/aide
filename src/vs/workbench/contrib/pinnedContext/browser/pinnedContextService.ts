@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter, Event } from 'vs/base/common/event';
-import { URI } from 'vs/base/common/uri';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IPinnedContextService } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
-import { CONTEXT_HAS_PINNED_CONTEXT } from 'vs/workbench/contrib/pinnedContext/common/pinnedContextContextKeys';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IPinnedContextService } from '../common/pinnedContext.js';
+import { CONTEXT_HAS_PINNED_CONTEXT } from '../common/pinnedContextContextKeys.js';
 
 export class PinnedContextService implements IPinnedContextService {
 	readonly _serviceBrand: undefined;

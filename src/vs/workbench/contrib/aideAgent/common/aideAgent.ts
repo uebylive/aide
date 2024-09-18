@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { IAgentTriggerPayload } from 'vs/workbench/contrib/aideAgent/common/aideAgentModel';
-import { IAgentResponseProgress } from 'vs/workbench/contrib/aideAgent/common/aideAgentService';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IAgentTriggerPayload } from './aideAgentModel.js';
+import { IAgentResponseProgress } from './aideAgentService.js';
 
 export interface IAgentTriggerComplete {
 	errorDetails?: string;

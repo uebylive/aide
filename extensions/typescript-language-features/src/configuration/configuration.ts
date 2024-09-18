@@ -117,7 +117,7 @@ export interface TypeScriptServiceConfiguration {
 	readonly enableProjectDiagnostics: boolean;
 	readonly maxTsServerMemory: number;
 	readonly enablePromptUseWorkspaceTsdk: boolean;
-	readonly useVsCodeWatcher: boolean; // TODO@bpasero remove this setting eventually
+	readonly useVsCodeWatcher: boolean;
 	readonly watchOptions: Proto.WatchOptions | undefined;
 	readonly includePackageJsonAutoImports: 'auto' | 'on' | 'off' | undefined;
 	readonly enableTsServerTracing: boolean;
@@ -223,7 +223,12 @@ export abstract class BaseServiceConfigurationProvider implements ServiceConfigu
 	}
 
 	private readUseVsCodeWatcher(configuration: vscode.WorkspaceConfiguration): boolean {
-		return configuration.get<boolean>('typescript.tsserver.experimental.useVsCodeWatcher', false);
+		const watcherExcludes = configuration.get<Record<string, boolean>>('files.watcherExclude') ?? {};
+		if (watcherExcludes['**/node_modules/*/**'] /* VS Code default prior to 1.94.x */ === true) {
+			return false; // we cannot use the VS Code watcher if node_modules are excluded
+		}
+
+		return configuration.get<boolean>('typescript.tsserver.experimental.useVsCodeWatcher', true);
 	}
 
 	private readWatchOptions(configuration: vscode.WorkspaceConfiguration): Proto.WatchOptions | undefined {
@@ -263,11 +268,11 @@ export abstract class BaseServiceConfigurationProvider implements ServiceConfigu
 	}
 
 	private readWebProjectWideIntellisenseSuppressSemanticErrors(configuration: vscode.WorkspaceConfiguration): boolean {
-		return configuration.get<boolean>('typescript.tsserver.web.projectWideIntellisense.suppressSemanticErrors', true);
+		return this.readWebTypeAcquisition(configuration) && configuration.get<boolean>('typescript.tsserver.web.projectWideIntellisense.suppressSemanticErrors', false);
 	}
 
 	private readWebTypeAcquisition(configuration: vscode.WorkspaceConfiguration): boolean {
-		return configuration.get<boolean>('typescript.tsserver.web.typeAcquisition.enabled', false);
+		return configuration.get<boolean>('typescript.tsserver.web.typeAcquisition.enabled', true);
 	}
 
 	private readEnableRegionDiagnostics(configuration: vscode.WorkspaceConfiguration): boolean {

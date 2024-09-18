@@ -179,15 +179,11 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/inlineCSChat",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/contrib/astNavigation",
-			"project": "vscode-workbench"
-		},
-		{
-			"name": "vs/workbench/contrib/aideChat",
-			"project": "vscode-workbench"
-		},
-		{
-			"name": "vs/workbench/contrib/inlineAideChat",
 			"project": "vscode-workbench"
 		},
 		{
@@ -584,6 +580,14 @@
 		},
 		{
 			"name": "vs/workbench/contrib/authentication",
+			"project": "vscode-workbench"
+		},
+		{
+			"name": "vs/workbench/contrib/replNotebook",
+			"project": "vscode-workbench"
+		},
+		{
+			"name": "vs/workbench/contrib/list",
 			"project": "vscode-workbench"
 		}
 	]

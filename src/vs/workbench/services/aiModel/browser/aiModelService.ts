@@ -3,29 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as nls from 'vs/nls';
-
-// base
-import { RunOnceScheduler } from 'vs/base/common/async';
-import { Emitter, Event } from 'vs/base/common/event';
-import { parse } from 'vs/base/common/json';
-import { IJSONSchema } from 'vs/base/common/jsonSchema';
-import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import * as objects from 'vs/base/common/objects';
-import { dirname } from 'vs/base/common/resources';
-import { Mutable } from 'vs/base/common/types';
-
-// platform
-import { IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, defaultModelSelectionSettings, isModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
-import { FileOperation, IFileService } from 'vs/platform/files/common/files';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { Extensions, IJSONContributionRegistry } from 'vs/platform/jsonschemas/common/jsonContributionRegistry';
-import { ILogService } from 'vs/platform/log/common/log';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { IUriIdentityService } from 'vs/platform/uriIdentity/common/uriIdentity';
-
-// workbench
-import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
+import { RunOnceScheduler } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { parse } from '../../../../base/common/json.js';
+import { IJSONSchema } from '../../../../base/common/jsonSchema.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import * as objects from '../../../../base/common/objects.js';
+import { dirname } from '../../../../base/common/resources.js';
+import { Mutable } from '../../../../base/common/types.js';
+import * as nls from '../../../../nls.js';
+import { defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, isModelSelectionSettings, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
+import { IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
 
 export class AIModelsService extends Disposable implements IAIModelSelectionService {
 	_serviceBrand: undefined;
