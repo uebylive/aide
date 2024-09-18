@@ -864,8 +864,8 @@ export type SidecarInlayHintResponse = {
 };
 
 export type SidecarRecentEditsRetrieverDiff = {
-	fs_file_path: String;
-	diff: String;
+	fs_file_path: string;
+	diff: string;
 	updated_timestamp_ms: number;
 };
 
@@ -873,8 +873,14 @@ export type SidecarRecentEditsRetrieverResponse = {
 	changed_files: SidecarRecentEditsRetrieverDiff[];
 };
 
+export type SidecarRecentEditsFilePreviousContent = {
+	fs_file_path: string;
+	file_content_latest: string;
+};
+
 export type SidecarRecentEditsRetrieverRequest = {
 	fs_file_paths: string[] | null;
+	diff_file_content: SidecarRecentEditsFilePreviousContent[];
 };
 
 export type SidecarApplyEditsRequest = {
