@@ -12,7 +12,7 @@ import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cance
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
-import { basenameOrAuthority } from 'vs/base/common/resources';
+import { basename, basenameOrAuthority } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideControls';
@@ -50,6 +50,7 @@ import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/b
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
 import { AideProbeScope, AideProbeStatus, AnchorEditingSelection, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
+import { IPinnedContextService } from 'vs/workbench/contrib/pinnedContext/common/pinnedContext';
 import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
@@ -108,7 +109,7 @@ export class AideControls extends Themable implements IAideControls {
 	static readonly INPUT_SCHEME = 'aideControlsInput';
 	private static readonly INPUT_URI = URI.parse(`${this.INPUT_SCHEME}:input`);
 
-	private actionsToolbar: MenuWorkbenchToolBar | undefined;
+	private toolbarElement: HTMLElement | undefined;
 
 	private inputHasText: IContextKey<boolean>;
 	private inputHasFocus: IContextKey<boolean>;
@@ -146,6 +147,7 @@ export class AideControls extends Themable implements IAideControls {
 		@IOutlineModelService private readonly outlineModelService: IOutlineModelService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IContextViewService private readonly contextViewService: IContextViewService,
+		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
 	) {
 		super(themeService);
 
@@ -199,21 +201,16 @@ export class AideControls extends Themable implements IAideControls {
 
 		const inputElement = $('.aide-controls-input-container');
 		element.appendChild(inputElement);
-		const toolbarElement = $('.aide-controls-toolbar');
-		element.appendChild(toolbarElement);
-
 		this._input = this.createInput(inputElement);
 
-		const partSize = this.part.dimension;
-		if (partSize) {
-			this.layout(partSize.width, partSize.height);
-		}
+		this.toolbarElement = $('.aide-controls-toolbar');
+		element.appendChild(this.toolbarElement);
+		this.createToolbar(this.toolbarElement);
 
+		this.layout();
 		this.part.onDidSizeChange((size: IDimension) => {
 			this.layout(size.width, size.height);
 		});
-
-		this.createToolbar(toolbarElement);
 
 		this.checkActivation();
 		this.updateOutline();
@@ -465,14 +462,14 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.lastUsedSelection = this.aideProbeService.anchorEditingSelection;
 		if (!iterationRequest) {
-			const variables: IVariableEntry[] = [];
+			const variables: IVariableEntry[] = this.pinnedContextService.getPinnedContexts().map(context => ({ id: context.toString(), name: `file:${basename(context)}`, value: context }));
 			this.model = this.aideProbeService.startSession();
 			this.aideProbeService.initiateProbe(this.model, editorValue, variables, this.aideControlsService.scope);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
 
-		if (this.aideProbeService.anchorEditingSelection) {
+		if (this.aideControlsService.scope === AideProbeScope.Selection && this.aideProbeService.anchorEditingSelection) {
 			this.aideProbeService.fireNewEvent(
 				{ kind: 'anchorStart', selection: this.aideProbeService.anchorEditingSelection }
 			);
@@ -532,10 +529,9 @@ export class AideControls extends Themable implements IAideControls {
 	}
 
 	private createToolbar(parent: HTMLElement) {
-		const toolbar = this.actionsToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
+		const toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, parent, MenuId.AideControlsToolbar, {
 			menuOptions: {
 				shouldForwardArgs: true,
-
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action) => {
@@ -551,27 +547,27 @@ export class AideControls extends Themable implements IAideControls {
 			const width = toolbar.getItemsWidth();
 			const numberOfItems = toolbar.getItemsLength();
 			toolbar.getElement().style.width = `${width + Math.max(0, numberOfItems - 1) * 8}px`;
+			this.layout();
 		}));
 
 		this.layout();
 	}
 
 	layout(width?: number, height?: number) {
-		if (width === undefined || height === undefined) {
-			const partSize = this.part.dimension;
-			if (partSize) {
-				width = partSize.width;
-				height = partSize.height;
-			}
+		if (width === undefined) {
+			width = this.part.dimension?.width ?? 0;
+		}
+		if (height === undefined) {
+			height = this.part.dimension?.height ?? 0;
 		}
 
-		if (width === undefined || height === undefined) {
+		if (!width || !height) {
 			return;
 		}
 
 		this.element.style.width = `${width}px`;
 		this.element.style.height = `${height}px`;
-		const toolbarWidth = this.actionsToolbar?.getElement().clientWidth ?? 0;
+		const toolbarWidth = this.toolbarElement?.clientWidth ?? 0;
 		this._input.layout({ width: width - 72 /* gutter */ - 14 /* scrollbar */ - toolbarWidth, height: height });
 	}
 }
