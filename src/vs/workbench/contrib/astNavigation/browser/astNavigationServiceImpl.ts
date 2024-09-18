@@ -86,7 +86,9 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			return;
 		}
 		this.activeEditorDisposables.add(editor.onDidChangeCursorPosition(e => {
-			this.handleCursorPosition(e.position);
+			if (e.source !== 'previewNode') {
+				this.handleCursorPosition(e.position);
+			}
 		}));
 
 		const model = editor.getModel();
@@ -125,33 +127,44 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 	}
 
 	private constructTree(ranges: IRange[]): ASTNode {
-		ranges.sort(Range.compareRangesUsingStarts);
-		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
-		const mergedRanges: IRange[] = [];
-		let currentRange: IRange | undefined = undefined;
+		// Sort ranges as before
+		ranges.sort((a, b) => {
+			const aStartLineNumber = Number(a.startLineNumber);
+			const bStartLineNumber = Number(b.startLineNumber);
+			const aStartColumn = Number(a.startColumn);
+			const bStartColumn = Number(b.startColumn);
+			const aEndLineNumber = Number(a.endLineNumber);
+			const bEndLineNumber = Number(b.endLineNumber);
+			const aEndColumn = Number(a.endColumn);
+			const bEndColumn = Number(b.endColumn);
 
-		for (const range of ranges) {
-			if (!currentRange) {
-				currentRange = range;
-			} else if (currentRange.startLineNumber === range.startLineNumber) {
-				if (range.endLineNumber > currentRange.endLineNumber) {
-					currentRange = {
-						startLineNumber: currentRange.startLineNumber,
-						startColumn: currentRange.startColumn,
-						endLineNumber: range.endLineNumber,
-						endColumn: range.endColumn
-					};
-				}
-			} else {
-				mergedRanges.push(currentRange);
-				currentRange = range;
+			let diff = aStartLineNumber - bStartLineNumber;
+			if (diff !== 0) {
+				return diff;
 			}
-		}
 
-		if (currentRange) {
-			mergedRanges.push(currentRange);
-		}
+			diff = aStartColumn - bStartColumn;
+			if (diff !== 0) {
+				return diff;
+			}
 
+			// For the same start position, sort by decreasing end position
+			diff = bEndLineNumber - aEndLineNumber;
+			if (diff !== 0) {
+				return diff;
+			}
+
+			diff = bEndColumn - aEndColumn;
+			return diff;
+		});
+
+		// Remove exact duplicates
+		ranges = ranges.filter((range, index) => index === 0 || !Range.equalsRange(range, ranges[index - 1]));
+
+		// **Skip merging ranges to preserve all ranges**
+		const mergedRanges = ranges;
+
+		// Create root node covering all ranges
 		const root = new ASTNode({
 			startLineNumber: mergedRanges[0].startLineNumber,
 			startColumn: 0,
@@ -160,40 +173,21 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		});
 
 		const stack: ASTNode[] = [root];
-		const nodeMap = new Map<string, ASTNode>();
 
 		for (const range of mergedRanges) {
-			const rangeKey = `${range.startLineNumber}-${range.startColumn}-${range.endLineNumber}-${range.endColumn}`;
-			let currentNode = nodeMap.get(rangeKey);
-
-			if (!currentNode) {
-				currentNode = new ASTNode(range);
-				nodeMap.set(rangeKey, currentNode);
-			}
-
-			let parentNode: ASTNode | null = null;
+			const currentNode = new ASTNode(range);
 
 			while (stack.length > 0) {
-				const topNode = stack[stack.length - 1];
-
-				if (Range.containsRange(topNode.range, range)) {
-					const existingChild = topNode.children.find(child => child.range.startLineNumber === range.startLineNumber && child.range.endLineNumber === range.endLineNumber);
-					if (existingChild) {
-						currentNode = existingChild;
-						break;
-					}
-					parentNode = topNode;
-					break;
-				} else if (range.endLineNumber < topNode.range.startLineNumber) {
+				const parent = stack[stack.length - 1];
+				if (Range.containsRange(parent.range, range) && !Range.equalsRange(parent.range, range)) {
+					parent.addChild(currentNode);
 					break;
 				} else {
 					stack.pop();
 				}
 			}
 
-			if (parentNode) {
-				parentNode.addChild(currentNode);
-			} else {
+			if (stack.length === 0) {
 				root.addChild(currentNode);
 			}
 
@@ -286,7 +280,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 		this.previewDisposable = toDisposable(() => decorationsCollection.clear());
 
 		if (isCodeEditor(editor)) {
-			editor.setSelection(this.currentNode.range);
+			editor.setSelection(this.currentNode.range, 'previewNode');
 		}
 	}
 
