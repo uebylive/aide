@@ -7,7 +7,6 @@ import { DeferredPromise } from 'vs/base/common/async';
 import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
 import { Emitter, Event } from 'vs/base/common/event';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { ITextModel } from 'vs/editor/common/model';
 import { IModelService } from 'vs/editor/common/services/model';
 import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -30,7 +29,7 @@ export interface IAideProbeService {
 	getSession(): AideProbeModel | undefined;
 	startSession(): AideProbeModel;
 
-	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[], textModel: ITextModel | null): IInitiateProbeResponseState;
+	initiateProbe(model: IAideProbeModel, request: string, variables: IVariableEntry[], scope: AideProbeScope): IInitiateProbeResponseState;
 	addIteration(newPrompt: string): Promise<void>;
 	makeFollowupRequest(): Promise<void>;
 	onContextChange(newContext: string[]): Promise<void>;
@@ -131,7 +130,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 		return this._model;
 	}
 
-	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = [], textModel: ITextModel | null): IInitiateProbeResponseState {
+	initiateProbe(probeModel: AideProbeModel, request: string, variables: IVariableEntry[] = [], scope: AideProbeScope): IInitiateProbeResponseState {
 		const responseCreated = new DeferredPromise<IAideProbeResponseModel>();
 		let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
@@ -203,7 +202,7 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 					});
 				}
 
-				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, AideProbeScope.Selection);
+				probeModel.request = new AideProbeRequestModel(probeModel.sessionId, request, { variables }, scope);
 
 				const resolver = this.probeProvider;
 				if (!resolver) {

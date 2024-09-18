@@ -467,7 +467,7 @@ export class AideControls extends Themable implements IAideControls {
 		if (!iterationRequest) {
 			const variables: IVariableEntry[] = [];
 			this.model = this.aideProbeService.startSession();
-			this.aideProbeService.initiateProbe(this.model, editorValue, variables, activeEditor.getModel());
+			this.aideProbeService.initiateProbe(this.model, editorValue, variables, this.aideControlsService.scope);
 		} else {
 			this.aideProbeService.addIteration(editorValue);
 		}
