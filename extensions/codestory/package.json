@@ -12,22 +12,20 @@
     "*"
   ],
   "enabledApiProposals": [
-    "inlineCompletionsAdditions",
-    "interactive",
-    "chatProvider",
-    "aideGetInlayHintsProvider",
     "aideGetCodeLensProvider",
+    "aideGetInlayHintsProvider",
+    "aideProbe",
     "chatParticipantAdditions",
     "chatParticipantPrivate",
-    "aideChatParticipant",
-    "aideChatVariableResolver",
-    "aideProbe",
+    "chatProvider",
+    "chatVariableResolver",
+    "csAuthentication",
     "csevents",
     "defaultChatParticipant",
-    "chatVariableResolver",
+    "inlineCompletionsAdditions",
+    "interactive",
     "modelSelection",
-    "terminalSelection",
-    "csAuthentication"
+    "terminalSelection"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",

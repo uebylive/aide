@@ -112,6 +112,7 @@ import './services/authentication/browser/authenticationAccessService.js';
 import '../editor/browser/services/hoverService/hoverService.js';
 import './services/assignment/common/assignmentService.js';
 import './services/outline/browser/outlineService.js';
+import './services/aiModel/browser/aiModelService.js';
 import './services/languageDetection/browser/languageDetectionWorkerServiceImpl.js';
 import '../editor/common/services/languageFeaturesService.js';
 import '../editor/common/services/csEventsService.js';
