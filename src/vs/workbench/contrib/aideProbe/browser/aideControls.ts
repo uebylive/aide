@@ -12,7 +12,7 @@ import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cance
 import { Codicon } from 'vs/base/common/codicons';
 import { Emitter, Event } from 'vs/base/common/event';
 import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
-import { basename, basenameOrAuthority } from 'vs/base/common/resources';
+import { basenameOrAuthority } from 'vs/base/common/resources';
 import { ThemeIcon } from 'vs/base/common/themables';
 import { URI } from 'vs/base/common/uri';
 import 'vs/css!./media/aideControls';
