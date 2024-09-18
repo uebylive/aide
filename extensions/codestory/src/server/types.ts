@@ -867,6 +867,7 @@ export type SidecarRecentEditsRetrieverDiff = {
 	fs_file_path: string;
 	diff: string;
 	updated_timestamp_ms: number;
+	current_content: string;
 };
 
 export type SidecarRecentEditsRetrieverResponse = {
