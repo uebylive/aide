@@ -38,8 +38,13 @@ export async function quickFixInvocation(request: LSPQuickFixInvocationRequest):
 	const file_path = request.fs_file_path;
 	const possibleAction = QUICK_FIX_LIST.getForRequestId(requestId, actionId);
 	if (possibleAction !== undefined) {
-		// execute the command
-		await vscode.commands.executeCommand(possibleAction.command, possibleAction.arguments);
+		if (Array.isArray(possibleAction.arguments)) {
+			// If arguments is an array, spread the arguments
+			await vscode.commands.executeCommand(possibleAction.command, ...possibleAction.arguments);
+		} else {
+			// If arguments is an object, pass it directly
+			await vscode.commands.executeCommand(possibleAction.command, possibleAction.arguments);
+		}
 		// we also save the file after invoking it
 		await vscode.workspace.save(vscode.Uri.file(file_path));
 		return {
