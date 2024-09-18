@@ -15,6 +15,7 @@ import { handleRequest } from '../../server/requestHandler';
 import { EditedCodeStreamingRequest, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
 import { getUniqueId } from '../../utilities/uniqueId';
+import { RecentEditsRetriever } from '../../server/editedFiles';
 
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
@@ -63,13 +64,14 @@ export class AideProbeProvider implements vscode.Disposable {
 	constructor(
 		sideCarClient: SideCarClient,
 		rootPath: string,
+		recentEditsRetriever: RecentEditsRetriever,
 	) {
 		this._sideCarClient = sideCarClient;
 		this._rootPath = rootPath;
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
-			handleRequest(this.provideEdit.bind(this), this.provideEditStreamed.bind(this))
+			handleRequest(this.provideEdit.bind(this), this.provideEditStreamed.bind(this), recentEditsRetriever.retrieveSidecar.bind(recentEditsRetriever))
 		);
 		this.getNextOpenPort().then((port) => {
 			if (port === null) {

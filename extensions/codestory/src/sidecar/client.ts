@@ -892,47 +892,6 @@ export class SideCarClient {
 		});
 	}
 
-	async *anchorSessionStart(
-		request_id: string,
-		variables: readonly vscode.ChatPromptReference[],
-		editorUrl: string,
-	) {
-		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agentic/anchor_session_start';
-		const url = baseUrl.toString();
-
-		const activeWindowData = getCurrentActiveWindow();
-		let activeWindowDataForProbing = undefined;
-		if (activeWindowData !== undefined) {
-			activeWindowDataForProbing = {
-				file_path: activeWindowData.file_path,
-				file_content: activeWindowData.file_content,
-				language: activeWindowData.language,
-			};
-		}
-
-		const body: AnchorSessionStart = {
-			editor_url: editorUrl,
-			request_id,
-			user_context: await convertVSCodeVariableToSidecar(variables),
-			active_window_data: activeWindowDataForProbing,
-			root_directory: vscode.workspace.rootPath,
-		};
-
-		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
-		for await (const line of asyncIterableResponse) {
-			const lineParts = line.split('data:{');
-			for (const lineSinglePart of lineParts) {
-				const lineSinglePartTrimmed = lineSinglePart.trim();
-				if (lineSinglePartTrimmed === '') {
-					continue;
-				}
-				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
-				yield conversationMessage;
-			}
-		}
-	}
-
 	async warmupCodeSculptingCache(
 		file_paths: string[],
 		editorUrl: string,
