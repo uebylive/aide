@@ -23,7 +23,6 @@ import { TelemetryTrustedValue } from 'vs/platform/telemetry/common/telemetryUti
 import { EditSessionIdentityMatch } from 'vs/platform/workspace/common/editSessions';
 import { CandidatePortSource, ExtHostContext, ExtHostLogLevelServiceShape, MainContext } from 'vs/workbench/api/common/extHost.protocol';
 import { ExtHostRelatedInformation } from 'vs/workbench/api/common/extHostAiRelatedInformation';
-import { ExtHostAideAgentProvider } from 'vs/workbench/api/common/extHostAideAgentProvider';
 import { ExtHostAideChatAgents2 } from 'vs/workbench/api/common/extHostAideChatAgents2';
 import { ExtHostAideChatVariables } from 'vs/workbench/api/common/extHostAideChatVariables';
 import { ExtHostAideProbeProvider } from 'vs/workbench/api/common/extHostAideProbeProvider';
@@ -224,7 +223,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostLanguageModelTools = rpcProtocol.set(ExtHostContext.ExtHostLanguageModelTools, new ExtHostLanguageModelTools(rpcProtocol));
 	const extHostAideChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostAideChatAgents2, new ExtHostAideChatAgents2(rpcProtocol, extHostLogService, extHostCommands, initData.quality));
 	const extHostAideChatVariables = rpcProtocol.set(ExtHostContext.ExtHostAideChatVariables, new ExtHostAideChatVariables(rpcProtocol));
-	const extHostAideAgentProvider = rpcProtocol.set(ExtHostContext.ExtHostAideAgentProvider, new ExtHostAideAgentProvider(rpcProtocol));
 	const extHostAideProbeProvider = rpcProtocol.set(ExtHostContext.ExtHostAideProbeProvider, new ExtHostAideProbeProvider(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
@@ -1544,13 +1542,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			}
 		};
 
-		const aideAgent: typeof vscode.aideAgent = {
-			registerAideAgentProvider(id: string, provider: vscode.AideAgentProvider) {
-				checkProposedApiEnabled(extension, 'aideAgent');
-				return extHostAideAgentProvider.registerAgentprovider(extension, id, provider);
-			}
-		};
-
 		const aideProbe: typeof vscode.aideProbe = {
 			// IMPORTANT
 			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
@@ -1594,7 +1585,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			version: initData.version,
 			// namespaces
 			ai,
-			aideAgent,
 			aideChat,
 			aideProbe,
 			authentication,

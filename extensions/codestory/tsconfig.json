@@ -8,24 +8,23 @@
 	"include": [
 		"src/**/*",
 		"../../src/vscode-dts/vscode.d.ts",
-		"../../src/vscode-dts/vscode.proposed.aideAgent.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideChatParticipant.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideChatVariableResolver.d.ts",
-		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
-		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",
 		"../../src/vscode-dts/vscode.proposed.aideProbe.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatParticipantPrivate.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.lmTools.d.ts",
 		"../../src/vscode-dts/vscode.proposed.chatVariableResolver.d.ts",
-		"../../src/vscode-dts/vscode.proposed.csAuthentication.d.ts",
 		"../../src/vscode-dts/vscode.proposed.csevents.d.ts",
 		"../../src/vscode-dts/vscode.proposed.defaultChatParticipant.d.ts",
 		"../../src/vscode-dts/vscode.proposed.inlineCompletionsAdditions.d.ts",
 		"../../src/vscode-dts/vscode.proposed.interactive.d.ts",
 		"../../src/vscode-dts/vscode.proposed.languageModels.d.ts",
-		"../../src/vscode-dts/vscode.proposed.lmTools.d.ts",
 		"../../src/vscode-dts/vscode.proposed.modelSelection.d.ts",
-		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts"
+		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts",
+		"../../src/vscode-dts/vscode.proposed.aideGetInlayHintsProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.aideGetCodeLensProvider.d.ts",
+		"../../src/vscode-dts/vscode.proposed.csAuthentication.d.ts"
 	]
 }
