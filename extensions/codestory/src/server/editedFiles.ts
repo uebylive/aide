@@ -32,6 +32,7 @@ interface DiffAcrossDocuments {
 	uri: vscode.Uri;
 	languageId: string;
 	latestChangeTimestamp: number;
+	currentContent: string;
 }
 
 export class RecentEditsRetriever implements vscode.Disposable {
@@ -65,6 +66,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 				fs_file_path: diff.uri.fsPath,
 				diff: content,
 				updated_timestamp_ms: diff.latestChangeTimestamp,
+				currentContent: diff.currentContent,
 			};
 			autocompleteContextSnippets.push(autocompleteSnippet);
 		}
@@ -99,12 +101,13 @@ export class RecentEditsRetriever implements vscode.Disposable {
 				const diff = await this.getDiff(vscode.Uri.parse(uri));
 				if (diff) {
 					return {
-						diff,
+						diff: diff.diff,
 						uri: trackedDocument.uri,
 						languageId: trackedDocument.languageId,
 						latestChangeTimestamp: Math.max(
 							...trackedDocument.changes.map(c => c.timestamp)
 						),
+						currentContent: diff.currentContent,
 					};
 				}
 				return null;
@@ -129,7 +132,10 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return true;
 	}
 
-	public async getDiff(uri: vscode.Uri): Promise<string | null> {
+	public async getDiff(uri: vscode.Uri): Promise<{
+		diff: string | null;
+		currentContent: string | null;
+	} | null> {
 		const trackedDocument = this.trackedDocuments.get(uri.toString());
 		if (!trackedDocument) {
 			return null;
@@ -141,7 +147,11 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			trackedDocument.changes.map(c => c.change)
 		);
 
-		return createGitDiff(uri.fsPath, oldContent, newContent);
+		const diff = createGitDiff(uri.fsPath, oldContent, newContent);
+		return {
+			diff,
+			currentContent: newContent,
+		};
 	}
 
 	private onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
