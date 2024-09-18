@@ -3,30 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from 'vs/nls';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { AccessibleViewProviderId, AccessibleViewType } from 'vs/platform/accessibility/browser/accessibleView';
-import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
-import { AccessibleDiffViewerNext } from 'vs/editor/browser/widget/diffEditor/commands';
-import { INLINE_CHAT_ID } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE, CONTEXT_REQUEST } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IAccessibleViewImplentation } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
-
-export class ChatAccessibilityHelp implements IAccessibleViewImplentation {
-	readonly priority = 105;
-	readonly name = 'panelChat';
-	readonly type = AccessibleViewType.Help;
-	readonly when = ContextKeyExpr.or(CONTEXT_IN_CHAT_SESSION, CONTEXT_RESPONSE, CONTEXT_REQUEST);
-	getProvider(accessor: ServicesAccessor) {
-		const codeEditor = accessor.get(ICodeEditorService).getActiveCodeEditor() || accessor.get(ICodeEditorService).getFocusedCodeEditor();
-		return getChatAccessibilityHelpProvider(accessor, codeEditor ?? undefined, 'panelChat');
-	}
-	dispose() { }
-}
+import { localize } from '../../../../../nls.js';
+import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { AccessibleViewProviderId, AccessibleViewType } from '../../../../../platform/accessibility/browser/accessibleView.js';
+import { AccessibilityVerbositySettingId } from '../../../../../workbench/contrib/accessibility/browser/accessibilityConfiguration.js';
+import { AccessibleDiffViewerNext } from '../../../../../editor/browser/widget/diffEditor/commands.js';
+import { INLINE_CHAT_ID } from '../../../../../workbench/contrib/inlineAideChat/common/inlineChat.js';
 
 export function getAccessibilityHelpText(type: 'panelChat' | 'inlineChat'): string {
 	const content = [];

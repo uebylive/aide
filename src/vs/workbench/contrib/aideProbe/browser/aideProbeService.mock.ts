@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { ITextModel } from 'vs/editor/common/model';
-import { IAideProbeProgress, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, INewIterationAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { ITextModel } from '../../../../editor/common/model.js';
+import { IAideProbeProgress, IAideProbeRequestModel, IAideProbeResult, IAideProbeTextEdit, INewIterationAction } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 
 
 const possibleEdits = ['cat', 'dog', 'fish', 'bird', 'horse', 'cow', 'sheep', 'goat', 'pig', 'chicken', 'duck', 'turkey', 'rabbit', 'hamster', 'guinea pig', 'ferret', 'chinchilla', 'hedgehog'];

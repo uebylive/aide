@@ -2,34 +2,34 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { CancellationError } from 'vs/base/common/errors';
-import { Emitter, Event } from 'vs/base/common/event';
-import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { URI } from 'vs/base/common/uri';
-import { generateUuid } from 'vs/base/common/uuid';
-import { IActiveCodeEditor, ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { IRange, Range } from 'vs/editor/common/core/range';
-import { IValidEditOperation } from 'vs/editor/common/model';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
-import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
-import { IModelService } from 'vs/editor/common/services/model';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILogService } from 'vs/platform/log/common/log';
-import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { DEFAULT_EDITOR_ASSOCIATION } from 'vs/workbench/common/editor';
-import { AideChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { CTX_INLINE_CHAT_HAS_AGENT, EditMode } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { UntitledTextEditorInput } from 'vs/workbench/services/untitled/common/untitledTextEditorInput';
-import { EmptyResponse, ErrorResponse, HunkData, ReplyResponse, Session, SessionExchange, SessionWholeRange, StashedSession, TelemetryData, TelemetryDataClassification } from './inlineChatSession';
-import { IInlineChatSessionEndEvent, IInlineChatSessionEvent, IInlineAideChatSessionService, ISessionKeyComputer, Recording } from './inlineChatSessionService';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ISelection } from 'vs/editor/common/core/selection';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { CancellationError } from '../../../../base/common/errors.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { DisposableStore, IDisposable, MutableDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { URI } from '../../../../base/common/uri.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
+import { IActiveCodeEditor, ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { IRange, Range } from '../../../../editor/common/core/range.js';
+import { IValidEditOperation } from '../../../../editor/common/model.js';
+import { createTextBufferFactoryFromSnapshot } from '../../../../editor/common/model/textModel.js';
+import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { DEFAULT_EDITOR_ASSOCIATION } from '../../../../workbench/common/editor.js';
+import { AideChatAgentLocation, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IAideChatService } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { CTX_INLINE_CHAT_HAS_AGENT, EditMode } from '../../../../workbench/contrib/inlineAideChat/common/inlineChat.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { UntitledTextEditorInput } from '../../../../workbench/services/untitled/common/untitledTextEditorInput.js';
+import { EmptyResponse, ErrorResponse, HunkData, ReplyResponse, Session, SessionExchange, SessionWholeRange, StashedSession, TelemetryData, TelemetryDataClassification } from './inlineChatSession.js';
+import { IInlineChatSessionEndEvent, IInlineChatSessionEvent, IInlineAideChatSessionService, ISessionKeyComputer, Recording } from './inlineChatSessionService.js';
+import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { ISelection } from '../../../../editor/common/core/selection.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 
 
 type SessionData = {

@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { ChatTreeItem } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatRendererContent } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { IDisposable } from '../../../../../base/common/lifecycle.js';
+import { ChatTreeItem } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatRendererContent } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 export interface IChatContentPart extends IDisposable {
 	domNode: HTMLElement;

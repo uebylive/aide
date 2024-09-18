@@ -3,15 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { raceCancellation } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
-import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import type * as vscode from 'vscode';
+import { raceCancellation } from '../../../base/common/async.js';
+import { Disposable, IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
+import { IAideProbeData, IAideProbeRequestModel, IAideProbeResponseErrorDetails, IAideProbeResult, IAideProbeSessionAction, IAideProbeUserAction } from '../../contrib/aideProbe/common/aideProbe.js';
+import { ExtHostAideProbeProviderShape, IMainContext, MainContext, MainThreadAideProbeProviderShape } from './extHost.protocol.js';
+import * as typeConvert from './extHostTypeConverters.js';
+import * as extHostTypes from './extHostTypes.js';
 
 export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideProbeProviderShape {
 	private static _idPool = 0;
@@ -26,7 +25,7 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 		this._proxy = mainContext.getProxy(MainContext.MainThreadProbeProvider);
 	}
 
-	async $initiateProbe(handle: number, request: IAideProbeRequestModel, token: CancellationToken): Promise<IAideProbeResult | undefined> {
+	async $initiateProbe(handle: number, request: IAideProbeRequestModel, token: vscode.CancellationToken): Promise<IAideProbeResult | undefined> {
 		const provider = this._providers.get(handle);
 		if (!provider) {
 			return;

@@ -3,20 +3,20 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Codicon } from 'vs/base/common/codicons';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Range } from 'vs/editor/common/core/range';
-import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { SidePanelWidget } from 'vs/editor/contrib/sidePanel/browser/sidePanelWidget';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import * as dom from '../../../../base/browser/dom.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { IEditorDecorationsCollection } from '../../../../editor/common/editorCommon.js';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from '../../../../editor/common/languages.js';
+import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
+import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { SidePanelWidget } from '../../../../editor/contrib/sidePanel/browser/sidePanelWidget.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { IAideProbeBreakdownViewModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
 
 const $ = dom.$;
 

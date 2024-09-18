@@ -3,29 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { getDefaultHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { URI } from 'vs/base/common/uri';
-import { Location } from 'vs/editor/common/languages';
-import { IHoverService } from 'vs/platform/hover/browser/hover';
-import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { ILabelService } from 'vs/platform/label/common/label';
-import { ILogService } from 'vs/platform/log/common/log';
-import { asCssVariable } from 'vs/platform/theme/common/colorUtils';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatAgentHover, getChatAgentHoverOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatAgentHover';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { chatSlashCommandBackground, chatSlashCommandForeground } from 'vs/workbench/contrib/aideChat/common/aideChatColors';
-import { chatAgentLeader, ChatRequestAgentPart, ChatRequestDynamicVariablePart, ChatRequestTextPart, chatSubcommandLeader, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { contentRefUrl } from '../common/annotations';
-import { Lazy } from 'vs/base/common/lazy';
-import { ICommandService } from 'vs/platform/commands/common/commands';
+import * as dom from '../../../../base/browser/dom.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { getDefaultHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
+import { toErrorMessage } from '../../../../base/common/errorMessage.js';
+import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
+import { revive } from '../../../../base/common/marshalling.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Location } from '../../../../editor/common/languages.js';
+import { IHoverService } from '../../../../platform/hover/browser/hover.js';
+import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { ILabelService } from '../../../../platform/label/common/label.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { asCssVariable } from '../../../../platform/theme/common/colorUtils.js';
+import { IAideChatWidgetService } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatAgentHover, getChatAgentHoverOptions } from '../../../../workbench/contrib/aideChat/browser/aideChatAgentHover.js';
+import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { chatSlashCommandBackground, chatSlashCommandForeground } from '../../../../workbench/contrib/aideChat/common/aideChatColors.js';
+import { chatAgentLeader, ChatRequestAgentPart, ChatRequestDynamicVariablePart, ChatRequestTextPart, chatSubcommandLeader, IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatService } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { contentRefUrl } from '../common/annotations.js';
+import { Lazy } from '../../../../base/common/lazy.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
 /** For rendering slash commands, variables */
 const decorationRefUrl = `http://_vscodedecoration_`;

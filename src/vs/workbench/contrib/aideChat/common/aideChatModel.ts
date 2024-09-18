@@ -3,26 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from 'vs/nls';
-import { asArray, firstOrDefault } from 'vs/base/common/arrays';
-import { DeferredPromise } from 'vs/base/common/async';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IMarkdownString, MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { equals } from 'vs/base/common/objects';
-import { basename, isEqual } from 'vs/base/common/resources';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI, UriComponents, UriDto, isUriComponents } from 'vs/base/common/uri';
-import { generateUuid } from 'vs/base/common/uuid';
-import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { TextEdit } from 'vs/editor/common/languages';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILogService } from 'vs/platform/log/common/log';
-import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { localize } from '../../../../nls.js';
+import { asArray } from '../../../../base/common/arrays.js';
+import { DeferredPromise } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { IMarkdownString, MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { revive } from '../../../../base/common/marshalling.js';
+import { equals } from '../../../../base/common/objects.js';
+import { basename, isEqual } from '../../../../base/common/resources.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI, UriComponents, UriDto, isUriComponents } from '../../../../base/common/uri.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
+import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { TextEdit } from '../../../../editor/common/languages.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService, reviveSerializedAgent } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatRequestTextPart, IParsedChatRequest, getPromptText, reviveParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatAgentMarkdownContentWithVulnerability, IAideChatCommandButton, IAideChatConfirmation, IAideChatContentInlineReference, IAideChatContentReference, IAideChatFollowup, IAideChatMarkdownContent, IAideChatProgressMessage, IChatResponseProgressFileTreeData, IAideChatTask, IAideChatTextEdit, IChatTreeData, IChatUsedContext, IAideChatWarningMessage, AideChatAgentVoteDirection, isIUsedContext, IAideChatProgress } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IAideChatRequestVariableValue } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 
 export interface IAideChatRequestVariableEntry {
 	id: string;
@@ -565,7 +565,7 @@ export enum ChatModelInitState {
 
 export class ChatModel extends Disposable implements IChatModel {
 	static getDefaultTitle(requests: (ISerializableChatRequestData | IChatRequestModel)[]): string {
-		const firstRequestMessage = firstOrDefault(requests)?.message ?? '';
+		const firstRequestMessage = requests.at(0)?.message ?? '';
 		const message = typeof firstRequestMessage === 'string' ?
 			firstRequestMessage :
 			firstRequestMessage.text;

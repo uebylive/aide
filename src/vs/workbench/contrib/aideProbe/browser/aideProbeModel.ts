@@ -3,33 +3,33 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Queue } from 'vs/base/common/async';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { equals } from 'vs/base/common/objects';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { generateUuid } from 'vs/base/common/uuid';
-import { IBulkEditService, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { IOffsetRange } from 'vs/editor/common/core/offsetRange';
-import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
-import { IModelDeltaDecoration, ITextModel } from 'vs/editor/common/model';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
-import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
-import { IModelService } from 'vs/editor/common/services/model';
-import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
-import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { Queue } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { equals } from '../../../../base/common/objects.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
+import { IBulkEditService, ResourceTextEdit } from '../../../../editor/browser/services/bulkEditService.js';
+import { IOffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { Location, IWorkspaceFileEdit, IWorkspaceTextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
+import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
+import { createTextBufferFactoryFromSnapshot } from '../../../../editor/common/model/textModel.js';
+import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { DefaultModelSHA1Computer } from '../../../../editor/common/services/modelService.js';
+import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IUndoRedoService } from '../../../../platform/undoRedo/common/undoRedo.js';
+import { IChatRequestVariableData, IChatTextEditGroupState } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { CONTEXT_PROBE_REQUEST_STATUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 
-import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
+import { HunkData } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
+import { ITextFileService } from '../../../../workbench/services/textfile/common/textfiles.js';
 
 export interface IContentVariableReference {
 	variableName: string;

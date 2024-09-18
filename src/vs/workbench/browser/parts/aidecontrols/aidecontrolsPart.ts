@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IWorkbenchLayoutService, OverlayedParts } from 'vs/workbench/services/layout/browser/layoutService';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts } from 'vs/workbench/browser/part';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
-import { OverlayedPart } from 'vs/workbench/browser/overlayedPart';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IAideControlsPartService } from '../../../services/aideControlsPart/browser/aideControlsPartService.js';
+import { IWorkbenchLayoutService, OverlayedParts } from '../../../services/layout/browser/layoutService.js';
+import { OverlayedPart } from '../../overlayedPart.js';
+import { MultiWindowParts } from '../../part.js';
 
 export class AideControlsPartService extends MultiWindowParts<AideControlsPart> implements IAideControlsPartService {
 

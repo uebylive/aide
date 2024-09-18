@@ -3,23 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { Codicon } from 'vs/base/common/codicons';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
-import { relativePath } from 'vs/base/common/resources';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { assertIsDefined } from 'vs/base/common/types';
-import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { FileKind } from 'vs/platform/files/common/files';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IAideProbeBreakdownViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import * as dom from '../../../../base/browser/dom.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, dispose } from '../../../../base/common/lifecycle.js';
+import { relativePath } from '../../../../base/common/resources.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { assertIsDefined } from '../../../../base/common/types.js';
+import { SymbolKind, SymbolKinds } from '../../../../editor/common/languages.js';
+import { FileKind } from '../../../../platform/files/common/files.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
+import { IAideProbeBreakdownViewModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
+import { HunkInformation } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
 
 const $ = dom.$;
 

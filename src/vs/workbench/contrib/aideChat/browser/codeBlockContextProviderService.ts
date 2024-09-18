@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { ICodeBlockActionContextProvider, IAideChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
+import { IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { ICodeBlockActionContextProvider, IAideChatCodeBlockContextProviderService } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
 
 export class ChatCodeBlockContextProviderService implements IAideChatCodeBlockContextProviderService {
 	declare _serviceBrand: undefined;

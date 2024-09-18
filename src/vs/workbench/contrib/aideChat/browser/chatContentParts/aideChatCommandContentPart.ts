@@ -3,16 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { localize } from 'vs/nls';
-import { ICommandService } from 'vs/platform/commands/common/commands';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { IChatContentPart, IChatContentPartRenderContext } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatCommandButton } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import * as dom from '../../../../../base/browser/dom.js';
+import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { localize } from '../../../../../nls.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
+import { IChatContentPart, IChatContentPartRenderContext } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { IChatProgressRenderableResponseContent } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IAideChatCommandButton } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 const $ = dom.$;
 

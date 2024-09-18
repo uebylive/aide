@@ -3,19 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, DisposableStore, IReference } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { Range } from 'vs/editor/common/core/range';
-import { DocumentSymbol } from 'vs/editor/common/languages';
-import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IAideRelevantReferenceInformation, IReferenceByName } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable, DisposableStore, IReference } from '../../../../base/common/lifecycle.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { DocumentSymbol } from '../../../../editor/common/languages.js';
+import { IResolvedTextEditorModel, ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IAideProbeModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus, IAideRelevantReferenceInformation, IReferenceByName } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { HunkInformation } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
 
 export interface IAideProbeViewModel {
 	readonly onDidChange: Event<void>;

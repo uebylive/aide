@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import type * as vscode from 'vscode';
-import { ExtHostModelSelectionShape, IMainContext, MainContext, MainThreadModelSelectionShape } from 'vs/workbench/api/common/extHost.protocol';
-import { Emitter } from 'vs/base/common/event';
+import { Emitter } from '../../../base/common/event.js';
+import { ExtHostModelSelectionShape, IMainContext, MainContext, MainThreadModelSelectionShape } from './extHost.protocol.js';
 
 export class ExtHostModelSelection implements ExtHostModelSelectionShape {
 	private readonly _onModelSelectionChange = new Emitter<vscode.ModelSelection>();

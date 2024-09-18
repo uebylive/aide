@@ -3,20 +3,20 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { Position } from 'vs/editor/common/core/position';
-import { IWordAtPosition, getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { Range } from 'vs/editor/common/core/range';
-import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
-import { ITextModel } from 'vs/editor/common/model';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { localize } from 'vs/nls';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
-import { AideControls, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+import { CancellationToken } from '../../../../../base/common/cancellation.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { Position } from '../../../../../editor/common/core/position.js';
+import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/core/wordHelper.js';
+import { Range } from '../../../../../editor/common/core/range.js';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from '../../../../../editor/common/languages.js';
+import { ITextModel } from '../../../../../editor/common/model.js';
+import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { localize } from '../../../../../nls.js';
+import { Registry } from '../../../../../platform/registry/common/platform.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../../../workbench/common/contributions.js';
+import { MultiLevelCodeTriggerAction } from '../../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables.js';
+import { AideControls, IAideControlsService } from '../../../../../workbench/contrib/aideProbe/browser/aideControls.js';
+import { LifecyclePhase } from '../../../../../workbench/services/lifecycle/common/lifecycle.js';
 // import { ChatRequestVariablePart } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
 // import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
 

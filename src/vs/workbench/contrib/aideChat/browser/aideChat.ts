@@ -3,24 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Event } from 'vs/base/common/event';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { Selection } from 'vs/editor/common/core/selection';
-import { localize } from 'vs/nls';
-import { MenuId } from 'vs/platform/actions/common/actions';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { ICodeBlockActionContext } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IAideChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { Event } from '../../../../base/common/event.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { URI } from '../../../../base/common/uri.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
+import { localize } from '../../../../nls.js';
+import { MenuId } from '../../../../platform/actions/common/actions.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { ChatViewPane } from '../../../../workbench/contrib/aideChat/browser/aideChatViewPane.js';
+import { IChatWidgetContrib } from '../../../../workbench/contrib/aideChat/browser/aideChatWidget.js';
+import { ICodeBlockActionContext } from '../../../../workbench/contrib/aideChat/browser/codeBlockPart.js';
+import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IAideChatRequestVariableEntry, IChatResponseModel } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { CHAT_PROVIDER_ID } from '../../../../workbench/contrib/aideChat/common/aideChatParticipantContribTypes.js';
+import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
 
 export const IAideChatWidgetService = createDecorator<IAideChatWidgetService>('aideChatWidgetService');
 

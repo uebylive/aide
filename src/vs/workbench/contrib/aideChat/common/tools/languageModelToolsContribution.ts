@@ -4,14 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-import { IJSONSchema } from 'vs/base/common/jsonSchema';
-import { DisposableMap } from 'vs/base/common/lifecycle';
-import { localize } from 'vs/nls';
-import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { ILogService } from 'vs/platform/log/common/log';
-import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { ILanguageModelToolsService } from 'vs/workbench/contrib/aideChat/common/languageModelToolsService';
-import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
+import { IJSONSchema } from '../../../../../base/common/jsonSchema.js';
+import { DisposableMap } from '../../../../../base/common/lifecycle.js';
+import { localize } from '../../../../../nls.js';
+import { ExtensionIdentifier } from '../../../../../platform/extensions/common/extensions.js';
+import { ILogService } from '../../../../../platform/log/common/log.js';
+import { IWorkbenchContribution } from '../../../../../workbench/common/contributions.js';
+import { ILanguageModelToolsService } from '../../../../../workbench/contrib/aideChat/common/languageModelToolsService.js';
+import * as extensionsRegistry from '../../../../../workbench/services/extensions/common/extensionsRegistry.js';
 
 interface IRawToolContribution {
 	name: string;

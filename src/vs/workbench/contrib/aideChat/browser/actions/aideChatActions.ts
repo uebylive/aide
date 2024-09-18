@@ -3,29 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { DisposableStore } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { EditorAction2, ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize, localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { IsLinuxContext, IsWindowsContext } from 'vs/platform/contextkey/common/contextkeys';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { IQuickInputButton, IQuickInputService, IQuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { CHAT_VIEW_ID, IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatDetail, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
-import { ACTIVE_GROUP, IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { DisposableStore } from '../../../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../../../base/common/themables.js';
+import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
+import { EditorAction2, ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize, localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IsLinuxContext, IsWindowsContext } from '../../../../../platform/contextkey/common/contextkeys.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { IQuickInputButton, IQuickInputService, IQuickPickItem } from '../../../../../platform/quickinput/common/quickInput.js';
+import { CHAT_VIEW_ID, IAideChatWidgetService, showChatView } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditor.js';
+import { AideChatEditorInput } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { ChatViewPane } from '../../../../../workbench/contrib/aideChat/browser/aideChatViewPane.js';
+import { AideChatAgentLocation } from '../../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IChatDetail, IAideChatService } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { IAideChatWidgetHistoryService } from '../../../../../workbench/contrib/aideChat/common/aideChatWidgetHistoryService.js';
+import { ACTIVE_GROUP, IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
+import { IViewsService } from '../../../../../workbench/services/views/common/viewsService.js';
 
 export interface IChatViewTitleActionContext {
 	chatView: ChatViewPane;

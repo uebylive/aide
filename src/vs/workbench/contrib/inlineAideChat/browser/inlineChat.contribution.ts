@@ -3,28 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
-import { IMenuItem, isIMenuItem, MenuId, MenuRegistry, registerAction2 } from 'vs/platform/actions/common/actions';
-import { InlineChatController } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatController';
-import * as InlineChatActions from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatActions';
-import { CTX_INLINE_CHAT_CONFIG_TXT_BTNS, CTX_INLINE_CHAT_REQUEST_IN_PROGRESS, INLINE_CHAT_ID, InlineChatConfigKeys, MENU_INLINE_CHAT_CONTENT_STATUS, MENU_INLINE_CHAT_EXECUTE, MENU_INLINE_CHAT_WIDGET_STATUS } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { InlineChatNotebookContribution } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatNotebook';
-import { IWorkbenchContributionsRegistry, registerWorkbenchContribution2, Extensions as WorkbenchExtensions, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import { InlineChatSavingServiceImpl } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSavingServiceImpl';
-import { InlineChatAccessibleView } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatAccessibleView';
-import { IInlineAideChatSavingService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSavingService';
-import { IInlineAideChatSessionService } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSessionService';
-import { InlineChatEnabler, InlineChatSessionServiceImpl } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSessionServiceImpl';
-import { AccessibleViewRegistry } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
-import { CancelAction, SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
-import { localize } from 'vs/nls';
-import { CONTEXT_CHAT_INPUT_HAS_TEXT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
+import { EditorContributionInstantiation, registerEditorContribution } from '../../../../editor/browser/editorExtensions.js';
+import { IMenuItem, isIMenuItem, MenuId, MenuRegistry, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { InlineChatController } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatController.js';
+import * as InlineChatActions from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatActions.js';
+import { CTX_INLINE_CHAT_CONFIG_TXT_BTNS, CTX_INLINE_CHAT_REQUEST_IN_PROGRESS, INLINE_CHAT_ID, InlineChatConfigKeys, MENU_INLINE_CHAT_CONTENT_STATUS, MENU_INLINE_CHAT_EXECUTE, MENU_INLINE_CHAT_WIDGET_STATUS } from '../../../../workbench/contrib/inlineAideChat/common/inlineChat.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { LifecyclePhase } from '../../../../workbench/services/lifecycle/common/lifecycle.js';
+import { InlineChatNotebookContribution } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatNotebook.js';
+import { IWorkbenchContributionsRegistry, registerWorkbenchContribution2, Extensions as WorkbenchExtensions, WorkbenchPhase } from '../../../../workbench/common/contributions.js';
+import { InlineChatSavingServiceImpl } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatSavingServiceImpl.js';
+import { IInlineAideChatSavingService } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatSavingService.js';
+import { IInlineAideChatSessionService } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatSessionService.js';
+import { InlineChatEnabler, InlineChatSessionServiceImpl } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatSessionServiceImpl.js';
+import { CancelAction, SubmitAction } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatExecuteActions.js';
+import { localize } from '../../../../nls.js';
+import { CONTEXT_CHAT_INPUT_HAS_TEXT } from '../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
+import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 
 
 // --- browser
@@ -94,9 +92,6 @@ const workbenchContributionsRegistry = Registry.as<IWorkbenchContributionsRegist
 workbenchContributionsRegistry.registerWorkbenchContribution(InlineChatNotebookContribution, LifecyclePhase.Restored);
 
 registerWorkbenchContribution2(InlineChatEnabler.Id, InlineChatEnabler, WorkbenchPhase.AfterRestored);
-
-AccessibleViewRegistry.register(new InlineChatAccessibleView());
-
 
 // MARK - Menu Copier
 // menu copier that we use for text-button mode.

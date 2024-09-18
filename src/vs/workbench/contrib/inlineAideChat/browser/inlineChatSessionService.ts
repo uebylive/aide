@@ -2,17 +2,17 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { URI } from 'vs/base/common/uri';
-import { Event } from 'vs/base/common/event';
-import { EditMode } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
-import { IRange } from 'vs/editor/common/core/range';
-import { IActiveCodeEditor, ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Session, StashedSession } from './inlineChatSession';
-import { IValidEditOperation } from 'vs/editor/common/model';
-import { IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { URI } from '../../../../base/common/uri.js';
+import { Event } from '../../../../base/common/event.js';
+import { EditMode } from '../../../../workbench/contrib/inlineAideChat/common/inlineChat.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { IActiveCodeEditor, ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Session, StashedSession } from './inlineChatSession.js';
+import { IValidEditOperation } from '../../../../editor/common/model.js';
+import { IChatResponseModel } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
 
 
 export type Recording = {

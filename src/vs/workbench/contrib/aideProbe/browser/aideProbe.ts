@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { AideProbeViewPane } from '../../../../workbench/contrib/aideProbe/browser/aideProbeView.js';
+import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
 
 export const VIEWLET_ID = 'workbench.view.aideProbe';
 export const VIEW_ID = 'workbench.view.aideProbe';

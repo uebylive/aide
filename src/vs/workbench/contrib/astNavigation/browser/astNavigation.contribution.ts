@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { registerASTNavigationActions } from 'vs/workbench/contrib/astNavigation/browser/actions/astNavigationActions';
-import { ASTNavigationService } from 'vs/workbench/contrib/astNavigation/browser/astNavigationServiceImpl';
-import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { registerASTNavigationActions } from '../../../../workbench/contrib/astNavigation/browser/actions/astNavigationActions.js';
+import { ASTNavigationService } from '../../../../workbench/contrib/astNavigation/browser/astNavigationServiceImpl.js';
+import { IASTNavigationService } from '../../../../workbench/contrib/astNavigation/common/astNavigationService.js';
 
 registerASTNavigationActions();
 

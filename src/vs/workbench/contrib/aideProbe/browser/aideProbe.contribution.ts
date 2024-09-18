@@ -3,29 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import * as nls from 'vs/nls';
-import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
-import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
-import { registerWorkbenchContribution2, WorkbenchPhase } from 'vs/workbench/common/contributions';
-import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
-import { registerProbeActions } from 'vs/workbench/contrib/aideProbe/browser/actions/aideProbeActions';
-import { registerContextActions } from 'vs/workbench/contrib/aideProbe/browser/aideContextActions';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { AideControls } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { AideLSPService, IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { VIEW_ID, VIEWLET_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { AideProbeDecorationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeDecorations';
-import { AideProbeExplanationService, IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { AideProbeService, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeViewPane } from 'vs/workbench/contrib/aideProbe/browser/aideProbeView';
+import { Codicon } from '../../../../base/common/codicons.js';
+import * as nls from '../../../../nls.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
+import { ViewPaneContainer } from '../../../../workbench/browser/parts/views/viewPaneContainer.js';
+import { registerWorkbenchContribution2, WorkbenchPhase } from '../../../../workbench/common/contributions.js';
+import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainerLocation, Extensions as ViewExtensions } from '../../../../workbench/common/views.js';
+import { registerProbeActions } from '../../../../workbench/contrib/aideProbe/browser/actions/aideProbeActions.js';
+import { registerContextActions } from '../../../../workbench/contrib/aideProbe/browser/aideContextActions.js';
+import { ContextPicker } from '../../../../workbench/contrib/aideProbe/browser/aideContextPicker.js';
+import { AideControls } from '../../../../workbench/contrib/aideProbe/browser/aideControls.js';
+import { AideLSPService, IAideLSPService } from '../../../../workbench/contrib/aideProbe/browser/aideLSPService.js';
+import { VIEW_ID, VIEWLET_ID } from '../../../../workbench/contrib/aideProbe/browser/aideProbe.js';
+import { AideProbeDecorationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeDecorations.js';
+import { AideProbeExplanationService, IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
+import { AideProbeService, IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { AideProbeViewPane } from '../../../../workbench/contrib/aideProbe/browser/aideProbeView.js';
 //import 'vs/workbench/contrib/aideProbe/browser/contrib/aideToggle';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsInputCompletions';
-import 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsInputEditorContrib';
+import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables.js';
+import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsInputCompletions.js';
+import '../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsInputEditorContrib.js';
 
 
 const probeViewIcon = registerIcon('probe-view-icon', Codicon.lightbulbSparkle, nls.localize('probeViewIcon', 'View icon of the AI search view.'));

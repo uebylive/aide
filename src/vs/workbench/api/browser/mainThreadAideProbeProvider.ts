@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IAideProbeResolver, IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { revive } from '../../../base/common/marshalling.js';
+import { ICSAccountService } from '../../../platform/codestoryAccount/common/csAccount.js';
+import { IAideProbeResolver, IAideProbeService } from '../../contrib/aideProbe/browser/aideProbeService.js';
+import { IAideProbeData, IAideProbeProgress, IAideProbeRequestModel, IAideProbeSessionAction, IAideProbeUserAction } from '../../contrib/aideProbe/common/aideProbe.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostAideProbeProviderShape, ExtHostContext, IAideProbeProgressDto, MainContext, MainThreadAideProbeProviderShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadProbeProvider)
 export class MainThreadAideProbeProvider extends Disposable implements MainThreadAideProbeProviderShape {

@@ -3,26 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { coalesce } from 'vs/base/common/arrays';
-import { Emitter } from 'vs/base/common/event';
-import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { basename } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { IRange, Range } from 'vs/editor/common/core/range';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { SuggestController } from 'vs/editor/contrib/suggest/browser/suggestController';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { ILabelService } from 'vs/platform/label/common/label';
-import { ILogService } from 'vs/platform/log/common/log';
-import { chatVariableLeader } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-import { IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideControls, IAideControlsContrib } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { ISymbolQuickPickItem } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
+import { coalesce } from '../../../../../base/common/arrays.js';
+import { Emitter } from '../../../../../base/common/event.js';
+import { IMarkdownString, MarkdownString } from '../../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { basename } from '../../../../../base/common/resources.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
+import { IRange, Range } from '../../../../../editor/common/core/range.js';
+import { IDecorationOptions } from '../../../../../editor/common/editorCommon.js';
+import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
+import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
+import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { ILabelService } from '../../../../../platform/label/common/label.js';
+import { ILogService } from '../../../../../platform/log/common/log.js';
+import { chatVariableLeader } from '../../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
+import { IDynamicVariable } from '../../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { AideControls, IAideControlsContrib } from '../../../../../workbench/contrib/aideProbe/browser/aideControls.js';
+import { ISymbolQuickPickItem } from '../../../../../workbench/contrib/search/browser/symbolsQuickAccess.js';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
 

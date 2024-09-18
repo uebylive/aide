@@ -3,44 +3,44 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { ITreeContextMenuEvent, ITreeElement } from 'vs/base/browser/ui/tree/tree';
-import { disposableTimeout, timeout } from 'vs/base/common/async';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, IDisposable, MutableDisposable, combinedDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { matchesScheme, Schemas } from 'vs/base/common/network';
-import { extUri, isEqual } from 'vs/base/common/resources';
-import { isDefined } from 'vs/base/common/types';
-import { URI } from 'vs/base/common/uri';
-import 'vs/css!./media/chat';
-import 'vs/css!./media/chatAgentHover';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { MenuId } from 'vs/platform/actions/common/actions';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
-import { ITextResourceEditorInput } from 'vs/platform/editor/common/editor';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { WorkbenchObjectTree } from 'vs/platform/list/browser/listService';
-import { ILogService } from 'vs/platform/log/common/log';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { ChatTreeItem, IAideChatAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IAideChatWidgetService, IChatWidgetViewContext, IChatWidgetViewOptions } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatAccessibilityProvider } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityProvider';
-import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
-import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from 'vs/workbench/contrib/aideChat/browser/aideChatListRenderer';
-import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
-import { AideChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { ChatModelInitState, IChatModel, IAideChatRequestVariableEntry, IChatResponseModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { IAideChatFollowup, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { CodeBlockModelCollection } from 'vs/workbench/contrib/aideChat/common/codeBlockModelCollection';
-import { IChatListItemRendererOptions } from './aideChat';
+import * as dom from '../../../../base/browser/dom.js';
+import { ITreeContextMenuEvent, ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
+import { disposableTimeout, timeout } from '../../../../base/common/async.js';
+import { toErrorMessage } from '../../../../base/common/errorMessage.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable, MutableDisposable, combinedDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { extUri, isEqual } from '../../../../base/common/resources.js';
+import { isDefined } from '../../../../base/common/types.js';
+import { URI } from '../../../../base/common/uri.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { MenuId } from '../../../../platform/actions/common/actions.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
+import { ITextResourceEditorInput } from '../../../../platform/editor/common/editor.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { ChatTreeItem, IAideChatAccessibilityService, IAideChatWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatAccessibilityProvider } from '../../../../workbench/contrib/aideChat/browser/aideChatAccessibilityProvider.js';
+import { ChatInputPart } from '../../../../workbench/contrib/aideChat/browser/aideChatInputPart.js';
+import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from '../../../../workbench/contrib/aideChat/browser/aideChatListRenderer.js';
+import { ChatEditorOptions } from '../../../../workbench/contrib/aideChat/browser/aideChatOptions.js';
+import { AideChatAgentLocation, IAideChatAgentService, IChatAgentCommand, IChatAgentData } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { CONTEXT_CHAT_HAS_REQUESTS, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_QUICK_CHAT, CONTEXT_RESPONSE_FILTERED } from '../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { ChatModelInitState, IAideChatRequestVariableEntry, IChatModel, IChatResponseModel } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { ChatRequestParser } from '../../../../workbench/contrib/aideChat/common/aideChatRequestParser.js';
+import { IAideChatFollowup, IAideChatService } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IAideChatSlashCommandService } from '../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { CodeBlockModelCollection } from '../../../../workbench/contrib/aideChat/common/codeBlockModelCollection.js';
+import { IChatListItemRendererOptions } from './aideChat.js';
+import './media/chat.css';
+import './media/chatAgentHover.css';
 
 const $ = dom.$;
 
@@ -207,13 +207,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._codeBlockModelCollection = this._register(instantiationService.createInstance(CodeBlockModelCollection));
 
 		this._register(codeEditorService.registerCodeEditorOpenHandler(async (input: ITextResourceEditorInput, _source: ICodeEditor | null, _sideBySide?: boolean): Promise<ICodeEditor | null> => {
-			let resource = input.resource;
-
-			// if trying to open backing documents, actually open the real chat code block doc
-			if (matchesScheme(resource, Schemas.vscodeCopilotBackingChatCodeBlock)) {
-				resource = resource.with({ scheme: Schemas.vscodeChatCodeBlock });
-			}
-
+			const resource = input.resource;
 			if (resource.scheme !== Schemas.vscodeChatCodeBlock) {
 				return null;
 			}

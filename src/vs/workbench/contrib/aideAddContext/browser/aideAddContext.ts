@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import { IWorkbenchContribution } from '../../../../workbench/common/contributions.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
 
 export class AddContext extends Disposable implements IWorkbenchContribution {
 

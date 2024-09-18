@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { IProgress } from 'vs/platform/progress/common/progress';
-import { IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
-import { IAideChatFollowup, IAideChatProgress, IChatResponseProgressFileTreeData } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { IProgress } from '../../../../platform/progress/common/progress.js';
+import { IAideChatMessage } from '../../../../workbench/contrib/aideChat/common/languageModels.js';
+import { IAideChatFollowup, IAideChatProgress, IChatResponseProgressFileTreeData } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IExtensionService } from '../../../../workbench/services/extensions/common/extensions.js';
 
 //#region slash service, commands etc
 

@@ -3,26 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Position } from 'vs/editor/common/core/position';
-import { IRange } from 'vs/editor/common/core/range';
-import { ScrollType } from 'vs/editor/common/editorCommon';
-import { IModelService } from 'vs/editor/common/services/model';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
-import { AideProbeExplanationWidget } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanationWidget';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { URI } from '../../../../base/common/uri.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { Position } from '../../../../editor/common/core/position.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { ScrollType } from '../../../../editor/common/editorCommon.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { ChatMarkdownRenderer } from '../../../../workbench/contrib/aideChat/browser/aideChatMarkdownRenderer.js';
+import { AideProbeExplanationWidget } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanationWidget.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
+import { AideProbeMode } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 

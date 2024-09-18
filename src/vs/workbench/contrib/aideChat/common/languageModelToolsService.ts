@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter, Event } from 'vs/base/common/event';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { Iterable } from 'vs/base/common/iterator';
-import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { Iterable } from '../../../../base/common/iterator.js';
+import { IExtensionService } from '../../../../workbench/services/extensions/common/extensions.js';
 
 export interface IToolData {
 	name: string;

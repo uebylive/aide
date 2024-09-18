@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter } from 'vs/base/common/event';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { IChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatWidget, IChatWidgetContrib } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
+import { Emitter } from '../../../../../base/common/event.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { IChatWidget } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatWidget, IChatWidgetContrib } from '../../../../../workbench/contrib/aideChat/browser/aideChatWidget.js';
+import { IAideChatRequestVariableEntry } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
 
 export class ChatContextAttachments extends Disposable implements IChatWidgetContrib {
 

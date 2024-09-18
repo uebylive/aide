@@ -3,33 +3,33 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, dispose, IReference } from 'vs/base/common/lifecycle';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { IMarkdownString, MarkdownString } from 'vs/base/common/htmlContent';
-import { URI } from 'vs/base/common/uri';
-import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { Range } from 'vs/editor/common/core/range';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { relativePath } from 'vs/base/common/resources';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Button } from 'vs/base/browser/ui/button/button';
-import 'vs/css!./media/aideEditsPanel';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
+import * as dom from '../../../../base/browser/dom.js';
+import { AidePanel } from '../../../../workbench/contrib/aideProbe/browser/aidePanel.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IAideProbeModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, dispose, IReference } from '../../../../base/common/lifecycle.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IMarkdownString, MarkdownString } from '../../../../base/common/htmlContent.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IResolvedTextEditorModel, ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { IAideProbeBreakdownContent, IAideProbeInitialSymbolInformation, IAideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { HunkInformation } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from '../../../../editor/common/languages.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
+import { relativePath } from '../../../../base/common/resources.js';
+import { Heroicon } from '../../../../workbench/browser/heroicon.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import './media/aideEditsPanel.css';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 
 const $ = dom.$;
 

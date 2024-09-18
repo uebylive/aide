@@ -3,28 +3,28 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Emitter } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
-import { equalsIgnoreCase } from 'vs/base/common/strings';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { Range } from 'vs/editor/common/core/range';
-import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
-import { MenuId } from 'vs/platform/actions/common/actions';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatCodeBlockInfo, IChatListItemRendererOptions } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IDisposableReference, ResourcePool } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections';
-import { IChatContentPart, IChatContentPartRenderContext } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { IChatRendererDelegate } from 'vs/workbench/contrib/aideChat/browser/aideChatListRenderer';
-import { ChatMarkdownDecorationsRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
-import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
-import { CodeBlockPart, ICodeBlockData, localFileLanguageId, parseLocalFileData } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { IMarkdownVulnerability } from 'vs/workbench/contrib/aideChat/common/annotations';
-import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { CodeBlockModelCollection } from 'vs/workbench/contrib/aideChat/common/codeBlockModelCollection';
+import * as dom from '../../../../../base/browser/dom.js';
+import { Emitter } from '../../../../../base/common/event.js';
+import { IMarkdownString } from '../../../../../base/common/htmlContent.js';
+import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
+import { equalsIgnoreCase } from '../../../../../base/common/strings.js';
+import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { Range } from '../../../../../editor/common/core/range.js';
+import { IResolvedTextEditorModel, ITextModelService } from '../../../../../editor/common/services/resolverService.js';
+import { MenuId } from '../../../../../platform/actions/common/actions.js';
+import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IChatCodeBlockInfo, IChatListItemRendererOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IDisposableReference, ResourcePool } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections.js';
+import { IChatContentPart, IChatContentPartRenderContext } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { IChatRendererDelegate } from '../../../../../workbench/contrib/aideChat/browser/aideChatListRenderer.js';
+import { ChatMarkdownDecorationsRenderer } from '../../../../../workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer.js';
+import { ChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatOptions.js';
+import { CodeBlockPart, ICodeBlockData, localFileLanguageId, parseLocalFileData } from '../../../../../workbench/contrib/aideChat/browser/codeBlockPart.js';
+import { IMarkdownVulnerability } from '../../../../../workbench/contrib/aideChat/common/annotations.js';
+import { IChatProgressRenderableResponseContent } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { isRequestVM, isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { CodeBlockModelCollection } from '../../../../../workbench/contrib/aideChat/common/codeBlockModelCollection.js';
 
 const $ = dom.$;
 

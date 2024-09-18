@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { illegalState } from 'vs/base/common/errors';
-import { DisposableStore } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { isEqual } from 'vs/base/common/resources';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { InlineChatController } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatController';
-import { IInlineAideChatSessionService } from './inlineChatSessionService';
-import { INotebookEditorService } from 'vs/workbench/contrib/notebook/browser/services/notebookEditorService';
-import { CellUri } from 'vs/workbench/contrib/notebook/common/notebookCommon';
+import { illegalState } from '../../../../base/common/errors.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { isEqual } from '../../../../base/common/resources.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { InlineChatController } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatController.js';
+import { IInlineAideChatSessionService } from './inlineChatSessionService.js';
+import { INotebookEditorService } from '../../../../workbench/contrib/notebook/browser/services/notebookEditorService.js';
+import { CellUri } from '../../../../workbench/contrib/notebook/common/notebookCommon.js';
 
 export class InlineChatNotebookContribution {
 

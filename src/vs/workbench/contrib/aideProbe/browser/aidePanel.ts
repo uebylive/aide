@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $ } from 'vs/base/browser/dom';
-import 'vs/css!./media/aidePanel';
-import { Orientation, OrthogonalEdge, Sash } from 'vs/base/browser/ui/sash/sash';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { IDimension } from 'vs/editor/common/core/dimension';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
+import { $ } from '../../../../base/browser/dom.js';
+import './media/aidePanel.css';
+import { Orientation, OrthogonalEdge, Sash } from '../../../../base/browser/ui/sash/sash.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { IDimension } from '../../../../editor/common/core/dimension.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { Heroicon } from '../../../../workbench/browser/heroicon.js';
 
 export enum PanelStates {
 	Idle = 'idle',

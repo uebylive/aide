@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService';
-import { CHAT_CATEGORY, stringifyItem } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { CONTEXT_RESPONSE_FILTERED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { IClipboardService } from '../../../../../platform/clipboard/common/clipboardService.js';
+import { CHAT_CATEGORY, stringifyItem } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { CONTEXT_RESPONSE_FILTERED } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 export function registerChatCopyActions() {
 	registerAction2(class CopyAllAction extends Action2 {

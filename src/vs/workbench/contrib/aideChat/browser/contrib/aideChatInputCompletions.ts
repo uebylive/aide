@@ -3,29 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { IWordAtPosition, getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
-import { ITextModel } from 'vs/editor/common/model';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { localize } from 'vs/nls';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { SubmitAction } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
-import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
-import { MultiLevelCodeTriggerAction } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { AideChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
+import { CancellationToken } from '../../../../../base/common/cancellation.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { Position } from '../../../../../editor/common/core/position.js';
+import { Range } from '../../../../../editor/common/core/range.js';
+import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/core/wordHelper.js';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from '../../../../../editor/common/languages.js';
+import { ITextModel } from '../../../../../editor/common/model.js';
+import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { localize } from '../../../../../nls.js';
+import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { Registry } from '../../../../../platform/registry/common/platform.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../../../workbench/common/contributions.js';
+import { SubmitAction } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatExecuteActions.js';
+import { IChatWidget, IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatInputPart } from '../../../../../workbench/contrib/aideChat/browser/aideChatInputPart.js';
+import { MultiLevelCodeTriggerAction } from '../../../../../workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables.js';
+import { AideChatAgentLocation, getFullyQualifiedId, IChatAgentData, IAideChatAgentNameService, IAideChatAgentService } from '../../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from '../../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatSlashCommandService } from '../../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { IAideChatVariablesService } from '../../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { LifecyclePhase } from '../../../../../workbench/services/lifecycle/common/lifecycle.js';
 
 class SlashCommandCompletions extends Disposable {
 	constructor(

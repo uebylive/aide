@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { MarkdownRenderOptions, MarkedOptions } from 'vs/base/browser/markdownRenderer';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { IMarkdownRendererOptions, IMarkdownRenderResult, MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { ILanguageService } from 'vs/editor/common/languages/language';
-import { IOpenerService } from 'vs/platform/opener/common/opener';
-import { ITrustedDomainService } from 'vs/workbench/contrib/url/browser/trustedDomainService';
+import { MarkdownRenderOptions, MarkedOptions } from '../../../../base/browser/markdownRenderer.js';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { IMarkdownRendererOptions, IMarkdownRenderResult, MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { ILanguageService } from '../../../../editor/common/languages/language.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { ITrustedDomainService } from '../../../../workbench/contrib/url/browser/trustedDomainService.js';
 
 const allowedHtmlTags = [
 	'b',

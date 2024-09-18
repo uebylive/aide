@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideCommandPaletteWidget, IAideCommandPaletteWidget } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPaletteWidget';
-import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
+import * as dom from '../../../../base/browser/dom.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { AideCommandPaletteWidget, IAideCommandPaletteWidget } from '../../../../workbench/contrib/aideProbe/browser/aideCommandPaletteWidget.js';
+import { IWorkbenchLayoutService } from '../../../../workbench/services/layout/browser/layoutService.js';
 
 export interface IAideCommandPaletteData {
 	id: string;

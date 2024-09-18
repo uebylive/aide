@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditor.js';
+import { AideChatEditorInput } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { IEditorGroupsService } from '../../../../../workbench/services/editor/common/editorGroupsService.js';
+import { IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
 
 export async function clearChatEditor(accessor: ServicesAccessor): Promise<void> {
 	const editorService = accessor.get(IEditorService);

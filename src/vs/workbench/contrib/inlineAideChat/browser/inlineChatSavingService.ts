@@ -2,8 +2,8 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { Session } from 'vs/workbench/contrib/inlineAideChat/browser/inlineChatSession';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { Session } from '../../../../workbench/contrib/inlineAideChat/browser/inlineChatSession.js';
 
 
 export const IInlineAideChatSavingService = createDecorator<IInlineAideChatSavingService>('IInlineAideChatSavingService');

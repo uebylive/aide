@@ -3,21 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { IView } from 'vs/workbench/common/views';
-import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { IView } from '../../../../../workbench/common/views.js';
+import { IAideControlsService } from '../../../../../workbench/contrib/aideProbe/browser/aideControls.js';
+import * as CTX from '../../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { IAideProbeService } from '../../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { AideProbeMode, AideProbeStatus } from '../../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { IViewsService } from '../../../../../workbench/services/views/common/viewsService.js';
+import { clearProbeView, VIEW_ID } from '../../../../../workbench/contrib/aideProbe/browser/aideProbe.js';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
 

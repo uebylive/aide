@@ -3,14 +3,14 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
-import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from 'vs/editor/browser/editorBrowser';
-import { IPosition } from 'vs/editor/common/core/position';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
+import * as dom from '../../../../base/browser/dom.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import { ContentWidgetPositionPreference, ICodeEditor, IContentWidget, IContentWidgetPosition } from '../../../../editor/browser/editorBrowser.js';
+import { IPosition } from '../../../../editor/common/core/position.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 
 export const addContextCommandId = 'workbench.action.aideChat.addContext';
 

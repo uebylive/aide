@@ -3,29 +3,27 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { isNonEmptyArray } from 'vs/base/common/arrays';
-import * as strings from 'vs/base/common/strings';
-import { Codicon } from 'vs/base/common/codicons';
-import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { localize, localize2 } from 'vs/nls';
-import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
-import { ILogService } from 'vs/platform/log/common/log';
-import { IProductService } from 'vs/platform/product/common/productService';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { ViewPaneContainer } from 'vs/workbench/browser/parts/views/viewPaneContainer';
-import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from 'vs/workbench/common/views';
-import { CHAT_VIEW_ID } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IRawChatParticipantContribution } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
-import { isProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
-import * as extensionsRegistry from 'vs/workbench/services/extensions/common/extensionsRegistry';
-import { INotificationService, Severity } from 'vs/platform/notification/common/notification';
-import { Action } from 'vs/base/common/actions';
-import { ICommandService } from 'vs/platform/commands/common/commands';
+import { isNonEmptyArray } from '../../../../base/common/arrays.js';
+import * as strings from '../../../../base/common/strings.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { Disposable, DisposableMap, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { localize, localize2 } from '../../../../nls.js';
+import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { ViewPaneContainer } from '../../../../workbench/browser/parts/views/viewPaneContainer.js';
+import { IWorkbenchContribution } from '../../../../workbench/common/contributions.js';
+import { IViewContainersRegistry, IViewDescriptor, IViewsRegistry, ViewContainer, ViewContainerLocation, Extensions as ViewExtensions } from '../../../../workbench/common/views.js';
+import { CHAT_VIEW_ID } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from '../../../../workbench/contrib/aideChat/browser/aideChatViewPane.js';
+import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IRawChatParticipantContribution } from '../../../../workbench/contrib/aideChat/common/aideChatParticipantContribTypes.js';
+import { isProposedApiEnabled } from '../../../../workbench/services/extensions/common/extensions.js';
+import * as extensionsRegistry from '../../../../workbench/services/extensions/common/extensionsRegistry.js';
+import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
+import { Action } from '../../../../base/common/actions.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
 const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatParticipantContribution[]>({
 	extensionPoint: 'aideChatParticipants',
@@ -113,56 +111,17 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 	static readonly ID = 'workbench.contrib.aideChatExtensionPointHandler';
 
-	private readonly disposables = new DisposableStore();
-	private _welcomeViewDescriptor?: IViewDescriptor;
 	private _viewContainer: ViewContainer;
 	private _participantRegistrationDisposables = new DisposableMap<string>();
 
 	constructor(
 		@IAideChatAgentService private readonly _chatAgentService: IAideChatAgentService,
-		@IProductService private readonly productService: IProductService,
-		@IContextKeyService private readonly contextService: IContextKeyService,
 		@ILogService private readonly logService: ILogService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@ICommandService private readonly commandService: ICommandService,
 	) {
 		this._viewContainer = this.registerViewContainer();
-		this.registerListeners();
 		this.handleAndRegisterChatExtensions();
-	}
-
-	private registerListeners() {
-		this.contextService.onDidChangeContext(e => {
-
-			if (!this.productService.chatWelcomeView) {
-				return;
-			}
-
-			const showWelcomeViewConfigKey = 'workbench.chat.experimental.showWelcomeView';
-			const keys = new Set([showWelcomeViewConfigKey]);
-			if (e.affectsSome(keys)) {
-				const contextKeyExpr = ContextKeyExpr.equals(showWelcomeViewConfigKey, true);
-				const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
-				if (this.contextService.contextMatchesRules(contextKeyExpr)) {
-					this._welcomeViewDescriptor = {
-						id: CHAT_VIEW_ID,
-						name: { original: this.productService.chatWelcomeView.welcomeViewTitle, value: this.productService.chatWelcomeView.welcomeViewTitle },
-						containerIcon: this._viewContainer.icon,
-						ctorDescriptor: new SyncDescriptor(ChatViewPane),
-						canToggleVisibility: false,
-						canMoveView: false,
-						order: 100
-					};
-					viewsRegistry.registerViews([this._welcomeViewDescriptor], this._viewContainer);
-
-					viewsRegistry.registerViewWelcomeContent(CHAT_VIEW_ID, {
-						content: this.productService.chatWelcomeView.welcomeViewContent,
-					});
-				} else if (this._welcomeViewDescriptor) {
-					viewsRegistry.deregisterViews([this._welcomeViewDescriptor], this._viewContainer);
-				}
-			}
-		}, null, this.disposables);
 	}
 
 	private handleAndRegisterChatExtensions(): void {

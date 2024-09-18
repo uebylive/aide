@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { ExtHostCSAuthenticationShape, MainContext, MainThreadCSAuthenticationShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IExtHostRpcService } from 'vs/workbench/api/common/extHostRpcService';
 import type * as vscode from 'vscode';
+import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
+import { ExtHostCSAuthenticationShape, MainContext, MainThreadCSAuthenticationShape } from './extHost.protocol.js';
+import { IExtHostRpcService } from './extHostRpcService.js';
 
 export interface IExtHostCSAuthentication extends ExtHostCSAuthentication { }
 export const IExtHostCSAuthentication = createDecorator<IExtHostCSAuthentication>('IExtHostCSAuthentication');

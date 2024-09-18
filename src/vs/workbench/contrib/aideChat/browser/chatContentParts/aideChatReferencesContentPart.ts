@@ -3,32 +3,32 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { Codicon } from 'vs/base/common/codicons';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { matchesSomeScheme, Schemas } from 'vs/base/common/network';
-import { basename } from 'vs/base/common/path';
-import { basenameOrAuthority } from 'vs/base/common/resources';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { localize } from 'vs/nls';
-import { FileKind } from 'vs/platform/files/common/files';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { IOpenerService } from 'vs/platform/opener/common/opener';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { IResourceLabel, ResourceLabels } from 'vs/workbench/browser/labels';
-import { ColorScheme } from 'vs/workbench/browser/web.api';
-import { ChatTreeItem } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IDisposableReference, ResourcePool } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections';
-import { IChatContentPart } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { IAideChatContentReference, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IChatRendererContent, IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { createFileIconThemableTreeContainerScope } from 'vs/workbench/contrib/files/browser/views/explorerView';
+import * as dom from '../../../../../base/browser/dom.js';
+import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { Emitter, Event } from '../../../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
+import { matchesSomeScheme, Schemas } from '../../../../../base/common/network.js';
+import { basename } from '../../../../../base/common/path.js';
+import { basenameOrAuthority } from '../../../../../base/common/resources.js';
+import { ThemeIcon } from '../../../../../base/common/themables.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { localize } from '../../../../../nls.js';
+import { FileKind } from '../../../../../platform/files/common/files.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { WorkbenchList } from '../../../../../platform/list/browser/listService.js';
+import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
+import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
+import { IResourceLabel, ResourceLabels } from '../../../../../workbench/browser/labels.js';
+import { ColorScheme } from '../../../../../workbench/browser/web.api.js';
+import { ChatTreeItem } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IDisposableReference, ResourcePool } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections.js';
+import { IChatContentPart } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { IAideChatContentReference, IAideChatWarningMessage } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IAideChatVariablesService } from '../../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { IChatRendererContent, IChatResponseViewModel } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { createFileIconThemableTreeContainerScope } from '../../../../../workbench/contrib/files/browser/views/explorerView.js';
 
 const $ = dom.$;
 

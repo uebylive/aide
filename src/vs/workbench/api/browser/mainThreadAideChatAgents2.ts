@@ -3,35 +3,35 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DeferredPromise } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable, DisposableMap, IDisposable } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { escapeRegExpCharacters } from 'vs/base/common/strings';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI, UriComponents } from 'vs/base/common/uri';
-import { Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from 'vs/editor/common/languages';
-import { ITextModel } from 'vs/editor/common/model';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { ICSAccountService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILogService } from 'vs/platform/log/common/log';
-import { ExtHostAideChatAgentsShape2, ExtHostContext, IChatProgressDto, IDynamicChatAgentProps, IExtensionChatAgentMetadata, MainContext, MainThreadAideChatAgentsShape2 } from 'vs/workbench/api/common/extHost.protocol';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatInputPart } from 'vs/workbench/contrib/aideChat/browser/aideChatInputPart';
-import { AddDynamicVariableAction, IAddDynamicVariableContext } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { AideChatAgentLocation, IAideChatAgentService, IChatAgentImplementation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatRequestAgentPart } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { IAideChatContentReference, IAideChatFollowup, IAideChatProgress, IAideChatService, IAideChatTask, IAideChatWarningMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
-import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { DeferredPromise } from '../../../base/common/async.js';
+import { CancellationToken } from '../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../base/common/event.js';
+import { IMarkdownString } from '../../../base/common/htmlContent.js';
+import { Disposable, DisposableMap, IDisposable } from '../../../base/common/lifecycle.js';
+import { revive } from '../../../base/common/marshalling.js';
+import { escapeRegExpCharacters } from '../../../base/common/strings.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
+import { URI, UriComponents } from '../../../base/common/uri.js';
+import { Position } from '../../../editor/common/core/position.js';
+import { Range } from '../../../editor/common/core/range.js';
+import { getWordAtText } from '../../../editor/common/core/wordHelper.js';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from '../../../editor/common/languages.js';
+import { ITextModel } from '../../../editor/common/model.js';
+import { ILanguageFeaturesService } from '../../../editor/common/services/languageFeatures.js';
+import { ICSAccountService } from '../../../platform/codestoryAccount/common/csAccount.js';
+import { ExtensionIdentifier } from '../../../platform/extensions/common/extensions.js';
+import { IInstantiationService } from '../../../platform/instantiation/common/instantiation.js';
+import { ILogService } from '../../../platform/log/common/log.js';
+import { IAideChatWidgetService } from '../../contrib/aideChat/browser/aideChat.js';
+import { AideChatAgentLocation, IAideChatAgentService, IChatAgentImplementation } from '../../contrib/aideChat/common/aideChatAgents.js';
+import { ChatRequestAgentPart } from '../../contrib/aideChat/common/aideChatParserTypes.js';
+import { ChatRequestParser } from '../../contrib/aideChat/common/aideChatRequestParser.js';
+import { IAideChatContentReference, IAideChatFollowup, IAideChatProgress, IAideChatService, IAideChatTask, IAideChatWarningMessage } from '../../contrib/aideChat/common/aideChatService.js';
+import { ChatInputPart } from '../../contrib/aideChat/browser/aideChatInputPart.js';
+import { AddDynamicVariableAction, IAddDynamicVariableContext } from '../../contrib/aideChat/browser/contrib/aideChatDynamicVariables.js';
+import { IExtensionService } from '../../services/extensions/common/extensions.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostAideChatAgentsShape2, ExtHostContext, IChatProgressDto, IDynamicChatAgentProps, IExtensionChatAgentMetadata, MainContext, MainThreadAideChatAgentsShape2 } from '../common/extHost.protocol.js';
 
 interface AgentData {
 	dispose: () => void;

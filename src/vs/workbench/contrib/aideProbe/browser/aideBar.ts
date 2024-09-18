@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { assertIsDefined } from 'vs/base/common/types';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
-import { AideEditsPanel } from 'vs/workbench/contrib/aideProbe/browser/aideEditsPanel';
-import { AidePanel } from 'vs/workbench/contrib/aideProbe/browser/aidePanel';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IAideBarService } from 'vs/workbench/services/aideBar/browser/aideBarService';
-import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
+import * as dom from '../../../../base/browser/dom.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { assertIsDefined } from '../../../../base/common/types.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { Heroicon } from '../../../../workbench/browser/heroicon.js';
+import { AideEditsPanel } from '../../../../workbench/contrib/aideProbe/browser/aideEditsPanel.js';
+import { AidePanel } from '../../../../workbench/contrib/aideProbe/browser/aidePanel.js';
+import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
+import { IAideBarService } from '../../../../workbench/services/aideBar/browser/aideBarService.js';
+import { IEditorGroupsService } from '../../../../workbench/services/editor/common/editorGroupsService.js';
 
 const $ = dom.$;
 

@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DisposableMap } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { ExtHostAideChatVariablesShape, ExtHostContext, IChatVariableResolverProgressDto, MainContext, MainThreadAideChatVariablesShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress, IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { DisposableMap } from '../../../base/common/lifecycle.js';
+import { revive } from '../../../base/common/marshalling.js';
+import { IAideChatRequestVariableValue, IAideChatVariableData, IAideChatVariableResolverProgress, IAideChatVariablesService } from '../../contrib/aideChat/common/aideChatVariables.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostAideChatVariablesShape, ExtHostContext, IChatVariableResolverProgressDto, MainContext, MainThreadAideChatVariablesShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadAideChatVariables)
 export class MainThreadAideChatVariables implements MainThreadAideChatVariablesShape {

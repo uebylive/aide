@@ -3,21 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { VSBuffer } from 'vs/base/common/buffer';
-import { joinPath } from 'vs/base/common/resources';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize, localize2 } from 'vs/nls';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { IFileDialogService } from 'vs/platform/dialogs/common/dialogs';
-import { IFileService } from 'vs/platform/files/common/files';
-import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { isExportableSessionData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { VSBuffer } from '../../../../../base/common/buffer.js';
+import { joinPath } from '../../../../../base/common/resources.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize, localize2 } from '../../../../../nls.js';
+import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { IFileDialogService } from '../../../../../platform/dialogs/common/dialogs.js';
+import { IFileService } from '../../../../../platform/files/common/files.js';
+import { CHAT_CATEGORY } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditor.js';
+import { AideChatEditorInput } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { CONTEXT_CHAT_ENABLED } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { isExportableSessionData } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IAideChatService } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
 
 const defaultFileName = 'aideChat.json';
 const filters = [{ name: localize('aideChat.file.label', "Chat Session"), extensions: ['json'] }];

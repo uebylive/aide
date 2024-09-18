@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import 'vs/css!./media/aidebar';
-import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { IAideBarService } from 'vs/workbench/services/aideBar/browser/aideBarService';
-import { $, append } from 'vs/base/browser/dom';
+import { $, append } from '../../../../base/browser/dom.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IAideBarService } from '../../../services/aideBar/browser/aideBarService.js';
+import { IWorkbenchLayoutService } from '../../../services/layout/browser/layoutService.js';
+import { MultiWindowParts, Part } from '../../part.js';
+import './media/aidebar.css';
 
 export class AideBarService extends MultiWindowParts<AideBarPart> implements IAideBarService {
 

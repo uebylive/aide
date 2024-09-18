@@ -3,25 +3,25 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { marked } from 'vs/base/common/marked/marked';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { IBulkEditService } from 'vs/editor/browser/services/bulkEditService';
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { ResourceNotebookCellEdit } from 'vs/workbench/contrib/bulkEdit/browser/bulkCellEdits';
-import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IAideChatService, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { isRequestVM, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { INotebookEditor } from 'vs/workbench/contrib/notebook/browser/notebookBrowser';
-import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from 'vs/workbench/contrib/notebook/common/notebookCommon';
-import { NOTEBOOK_IS_ACTIVE_EDITOR } from 'vs/workbench/contrib/notebook/common/notebookContextKeys';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { marked } from '../../../../../base/common/marked/marked.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { IBulkEditService } from '../../../../../editor/browser/services/bulkEditService.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { ResourceNotebookCellEdit } from '../../../../../workbench/contrib/bulkEdit/browser/bulkCellEdits.js';
+import { CHAT_CATEGORY } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IAideChatService, AideChatAgentVoteDirection } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { isRequestVM, isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { INotebookEditor } from '../../../../../workbench/contrib/notebook/browser/notebookBrowser.js';
+import { CellEditType, CellKind, NOTEBOOK_EDITOR_ID } from '../../../../../workbench/contrib/notebook/common/notebookCommon.js';
+import { NOTEBOOK_IS_ACTIVE_EDITOR } from '../../../../../workbench/contrib/notebook/common/notebookContextKeys.js';
+import { IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
 
 export function registerChatTitleActions() {
 	registerAction2(class MarkHelpfulAction extends Action2 {

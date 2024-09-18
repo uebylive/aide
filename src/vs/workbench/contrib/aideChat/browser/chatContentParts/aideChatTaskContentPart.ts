@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Event } from 'vs/base/common/event';
-import { Disposable, IDisposable } from 'vs/base/common/lifecycle';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatContentPart, IChatContentPartRenderContext } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { ChatProgressContentPart } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatProgressContentPart';
-import { ChatReferencesContentPart, ContentReferencesListPool } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatReferencesContentPart';
-import { IChatProgressRenderableResponseContent } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatTask } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import * as dom from '../../../../../base/browser/dom.js';
+import { Event } from '../../../../../base/common/event.js';
+import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
+import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IChatContentPart, IChatContentPartRenderContext } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { ChatProgressContentPart } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatProgressContentPart.js';
+import { ChatReferencesContentPart, ContentReferencesListPool } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatReferencesContentPart.js';
+import { IChatProgressRenderableResponseContent } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IAideChatTask } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IChatResponseViewModel } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 export class ChatTaskContentPart extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;

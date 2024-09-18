@@ -3,35 +3,35 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { coalesce } from 'vs/base/common/arrays';
-import { DeferredPromise } from 'vs/base/common/async';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { ErrorNoTelemetry } from 'vs/base/common/errors';
-import { Emitter, Event } from 'vs/base/common/event';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { Iterable } from 'vs/base/common/iterator';
-import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
-import { revive } from 'vs/base/common/marshalling';
-import { StopWatch } from 'vs/base/common/stopwatch';
-import { URI, UriComponents } from 'vs/base/common/uri';
-import { localize } from 'vs/nls';
-import { CommandsRegistry } from 'vs/platform/commands/common/commands';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILogService } from 'vs/platform/log/common/log';
-import { Progress } from 'vs/platform/progress/common/progress';
-import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
-import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { ChatRequestParser } from 'vs/workbench/contrib/aideChat/common/aideChatRequestParser';
-import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AideChatMessageRole, IAideChatMessage } from 'vs/workbench/contrib/aideChat/common/languageModels';
-import { IExtensionService } from 'vs/workbench/services/extensions/common/extensions';
+import { coalesce } from '../../../../base/common/arrays.js';
+import { DeferredPromise } from '../../../../base/common/async.js';
+import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
+import { toErrorMessage } from '../../../../base/common/errorMessage.js';
+import { ErrorNoTelemetry } from '../../../../base/common/errors.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { Iterable } from '../../../../base/common/iterator.js';
+import { Disposable, DisposableMap } from '../../../../base/common/lifecycle.js';
+import { revive } from '../../../../base/common/marshalling.js';
+import { StopWatch } from '../../../../base/common/stopwatch.js';
+import { URI, UriComponents } from '../../../../base/common/uri.js';
+import { localize } from '../../../../nls.js';
+import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { Progress } from '../../../../platform/progress/common/progress.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
+import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { AideChatAgentLocation, IChatAgent, IAideChatAgentRequest, IAideChatAgentResult, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IAideChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatsData, getHistoryEntriesFromModel, updateRanges } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { ChatRequestParser } from '../../../../workbench/contrib/aideChat/common/aideChatRequestParser.js';
+import { ChatCopyKind, IChatCompleteResponse, IChatDetail, IAideChatFollowup, IAideChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideChatService, IChatTransferredSessionData, IAideChatUserActionEvent, AideChatAgentVoteDirection } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IAideChatSlashCommandService } from '../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { AideChatMessageRole, IAideChatMessage } from '../../../../workbench/contrib/aideChat/common/languageModels.js';
+import { IExtensionService } from '../../../../workbench/services/extensions/common/extensions.js';
 
 const serializedChatKey = 'aideChat.sessions';
 

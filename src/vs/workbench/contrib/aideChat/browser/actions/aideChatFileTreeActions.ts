@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize2 } from 'vs/nls';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IChatResponseViewModel, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { CHAT_CATEGORY } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IChatResponseViewModel, isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 export function registerChatFileTreeActions() {
 	registerAction2(class NextFileTreeAction extends Action2 {

@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { URI } from 'vs/base/common/uri';
-import { Selection } from 'vs/editor/common/core/selection';
-import { Range } from 'vs/editor/common/core/range';
-import { DocumentSymbol, TextEdit, WorkspaceEdit } from 'vs/editor/common/languages';
-import { IValidEditOperation } from 'vs/editor/common/model';
-import { IModelContentChange } from 'vs/editor/common/textModelEvents';
-import { IChatRequestVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { DocumentSymbol, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
+import { IValidEditOperation } from '../../../../editor/common/model.js';
+import { IModelContentChange } from '../../../../editor/common/textModelEvents.js';
+import { IChatRequestVariableData } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IAideChatMarkdownContent } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
 
 export interface IAideProbeData {
 	id: string;

@@ -3,19 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { chatAgentLeader, extractAgentAndCommand } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { CHAT_CATEGORY } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IChatWidget, IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IAideChatAgentService } from '../../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { chatAgentLeader, extractAgentAndCommand } from '../../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatService } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
 
 export interface IVoiceChatExecuteActionContext {
 	readonly disableTimeout?: boolean;

@@ -3,23 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { basename } from 'vs/base/common/path';
-import { coalesce } from 'vs/base/common/arrays';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { onUnexpectedExternalError } from 'vs/base/common/errors';
-import { Iterable } from 'vs/base/common/iterator';
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { URI } from 'vs/base/common/uri';
-import { Location } from 'vs/editor/common/languages';
-import { IAideChatWidgetService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatDynamicVariableModel } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables';
-import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { ChatRequestDynamicVariablePart, ChatRequestVariablePart, IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatContentReference } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IAideChatRequestVariableValue, IAideChatVariableData, IChatVariableResolver, IAideChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatContextAttachments } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { basename } from '../../../../base/common/path.js';
+import { coalesce } from '../../../../base/common/arrays.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { onUnexpectedExternalError } from '../../../../base/common/errors.js';
+import { Iterable } from '../../../../base/common/iterator.js';
+import { IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Location } from '../../../../editor/common/languages.js';
+import { IAideChatWidgetService, showChatView } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatDynamicVariableModel } from '../../../../workbench/contrib/aideChat/browser/contrib/aideChatDynamicVariables.js';
+import { AideChatAgentLocation } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { ChatRequestDynamicVariablePart, ChatRequestVariablePart, IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatContentReference } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IAideChatRequestVariableValue, IAideChatVariableData, IChatVariableResolver, IAideChatVariableResolverProgress, IAideChatVariablesService, IDynamicVariable } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { ChatContextAttachments } from '../../../../workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments.js';
+import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
 
 interface IChatData {
 	data: IAideChatVariableData;

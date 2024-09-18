@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { IPosition, Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicVariablePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IAideChatVariablesService, IDynamicVariable } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { OffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { IPosition, Position } from '../../../../editor/common/core/position.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { AideChatAgentLocation, IChatAgentData, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicVariablePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatSlashCommandService } from '../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { IAideChatVariablesService, IDynamicVariable } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 
 const agentReg = /^@([\w_\-\.]+)(?=(\s|$|\b))/i; // An @-agent
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)

@@ -96,16 +96,25 @@ node-pty/lib/*.test.js
 node-pty/tools/**
 node-pty/deps/**
 node-pty/scripts/**
+node-pty/third_party/**
 !node-pty/build/Release/spawn-helper
 !node-pty/build/Release/*.exe
 !node-pty/build/Release/*.dll
 !node-pty/build/Release/*.node
+!node-pty/build/Release/conpty/conpty.dll
+!node-pty/build/Release/conpty/OpenConsole.exe
 
 @parcel/watcher/binding.gyp
 @parcel/watcher/build/**
 @parcel/watcher/prebuilds/**
 @parcel/watcher/src/**
 !@parcel/watcher/build/Release/*.node
+
+@bpasero/watcher/binding.gyp
+@bpasero/watcher/build/**
+@bpasero/watcher/prebuilds/**
+@bpasero/watcher/src/**
+!@bpasero/watcher/build/Release/*.node
 
 vsda/build/**
 vsda/ci/**
@@ -160,7 +169,7 @@ typescript/lib/tsserverlibrary.js
 
 jschardet/index.js
 jschardet/src/**
-jschardet/dist/jschardet.js
+# TODO@esm uncomment when we can use jschardet.min.js again jschardet/dist/jschardet.js
 
 es6-promise/lib/**
 

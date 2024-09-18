@@ -3,20 +3,20 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize2 } from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
-import { ActiveEditorContext } from 'vs/workbench/common/contextkeys';
-import { CHAT_CATEGORY, isChatViewTitleActionContext } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { CHAT_VIEW_ID, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { ChatViewPane } from 'vs/workbench/contrib/aideChat/browser/aideChatViewPane';
-import { CONTEXT_CHAT_ENABLED } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IEditorGroupsService } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { ACTIVE_GROUP, AUX_WINDOW_GROUP, IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import { localize2 } from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { ActiveEditorContext } from '../../../../../workbench/common/contextkeys.js';
+import { CHAT_CATEGORY, isChatViewTitleActionContext } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { CHAT_VIEW_ID, IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditor.js';
+import { AideChatEditorInput } from '../../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { ChatViewPane } from '../../../../../workbench/contrib/aideChat/browser/aideChatViewPane.js';
+import { CONTEXT_CHAT_ENABLED } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IEditorGroupsService } from '../../../../../workbench/services/editor/common/editorGroupsService.js';
+import { ACTIVE_GROUP, AUX_WINDOW_GROUP, IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
+import { IViewsService } from '../../../../../workbench/services/views/common/viewsService.js';
 
 enum MoveToNewLocation {
 	Editor = 'Editor',

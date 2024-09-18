@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { IEditorContribution } from 'vs/editor/common/editorCommon';
-import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
+import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
+import { IEditorContribution } from '../../../../../editor/common/editorCommon.js';
+import { KeybindingPillWidget } from '../../../../../workbench/contrib/aideChat/browser/aideKeybindingPill.js';
 
 export class KeybindingPillContribution implements IEditorContribution {
 	public static readonly ID = 'editor.contrib.keybindingPill';

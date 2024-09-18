@@ -3,26 +3,26 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { IContextKeyService, IScopedContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IEditorOptions } from 'vs/platform/editor/common/editor';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
-import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
-import { editorBackground, editorForeground, inputBackground } from 'vs/platform/theme/common/colorRegistry';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { EditorPane } from 'vs/workbench/browser/parts/editor/editorPane';
-import { IEditorOpenContext } from 'vs/workbench/common/editor';
-import { Memento } from 'vs/workbench/common/memento';
-import { AideChatEditorInput } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { IChatViewState, ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { IChatModel, IExportableChatData, ISerializableChatData } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { clearChatEditor } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClear';
-import { IEditorGroup } from 'vs/workbench/services/editor/common/editorGroupsService';
-import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CHAT_PROVIDER_ID } from 'vs/workbench/contrib/aideChat/common/aideChatParticipantContribTypes';
+import * as dom from '../../../../base/browser/dom.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IContextKeyService, IScopedContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
+import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { editorBackground, editorForeground, inputBackground } from '../../../../platform/theme/common/colorRegistry.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { EditorPane } from '../../../../workbench/browser/parts/editor/editorPane.js';
+import { IEditorOpenContext } from '../../../../workbench/common/editor.js';
+import { Memento } from '../../../../workbench/common/memento.js';
+import { AideChatEditorInput } from '../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { IChatViewState, ChatWidget } from '../../../../workbench/contrib/aideChat/browser/aideChatWidget.js';
+import { IChatModel, IExportableChatData, ISerializableChatData } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { clearChatEditor } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatClear.js';
+import { IEditorGroup } from '../../../../workbench/services/editor/common/editorGroupsService.js';
+import { AideChatAgentLocation } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { CHAT_PROVIDER_ID } from '../../../../workbench/contrib/aideChat/common/aideChatParticipantContribTypes.js';
 
 export interface IChatEditorOptions extends IEditorOptions {
 	target?: { sessionId: string } | { data: IExportableChatData | ISerializableChatData };

@@ -3,60 +3,59 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IDimension } from 'vs/base/browser/dom';
-import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { ButtonBar } from 'vs/base/browser/ui/button/button';
-import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
-import { equals } from 'vs/base/common/arrays';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
-import { basenameOrAuthority } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-import 'vs/css!./media/aideControls';
-import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
-import { Selection } from 'vs/editor/common/core/selection';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { DocumentSymbol, SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
-import { IModelService } from 'vs/editor/common/services/model';
-import { IOutlineModelService, OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
-import { localize } from 'vs/nls';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
-import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { FileKind } from 'vs/platform/files/common/files';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { SIDE_BAR_BACKGROUND } from 'vs/workbench/common/theme';
-import { ContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { clearProbeView, showProbeView } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
-import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-import { ChatRequestParser } from 'vs/workbench/contrib/aideProbe/common/aideProbeRequestParser';
-import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IAideControlsPartService } from 'vs/workbench/services/aideControlsPart/browser/aideControlsPartService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import * as dom from '../../../../base/browser/dom.js';
+import { DEFAULT_FONT_FAMILY } from '../../../../base/browser/fonts.js';
+import { ButtonBar } from '../../../../base/browser/ui/button/button.js';
+import { Orientation, Sash } from '../../../../base/browser/ui/sash/sash.js';
+import { equals } from '../../../../base/common/arrays.js';
+import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { DisposableStore, IDisposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
+import { basenameOrAuthority } from '../../../../base/common/resources.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IEditorConstructionOptions } from '../../../../editor/browser/config/editorConfiguration.js';
+import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { EditorExtensionsRegistry } from '../../../../editor/browser/editorExtensions.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { CodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
+import { IDecorationOptions } from '../../../../editor/common/editorCommon.js';
+import { DocumentSymbol, SymbolKind, SymbolKinds } from '../../../../editor/common/languages.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { IOutlineModelService, OutlineElement } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { ContentHoverController } from '../../../../editor/contrib/hover/browser/contentHoverController.js';
+import { localize } from '../../../../nls.js';
+import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
+import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { FileKind } from '../../../../platform/files/common/files.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { inputPlaceholderForeground } from '../../../../platform/theme/common/colors/inputColors.js';
+import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { getWorkbenchContribution } from '../../../../workbench/common/contributions.js';
+import { SIDE_BAR_BACKGROUND } from '../../../../workbench/common/theme.js';
+import { ContextPicker } from '../../../../workbench/contrib/aideProbe/browser/aideContextPicker.js';
+import { IAideLSPService } from '../../../../workbench/contrib/aideProbe/browser/aideLSPService.js';
+import { clearProbeView, showProbeView } from '../../../../workbench/contrib/aideProbe/browser/aideProbe.js';
+import { CONTEXT_PROBE_ARE_CONTROLS_ACTIVE, CONTEXT_PROBE_HAS_SELECTION, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { AideProbeModel, IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeMode, IAideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { IParsedChatRequest } from '../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
+import { ChatRequestParser } from '../../../../workbench/contrib/aideProbe/common/aideProbeRequestParser.js';
+import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from '../../../../workbench/contrib/codeEditor/browser/simpleEditorOptions.js';
+import { IAideControlsPartService } from '../../../../workbench/services/aideControlsPart/browser/aideControlsPartService.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { IOutline, IOutlineService, OutlineTarget } from '../../../../workbench/services/outline/browser/outline.js';
+import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
+import './media/aideControls.css';
 
 const $ = dom.$;
 const MAX_WIDTH = 800;
@@ -270,7 +269,7 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.layout(this.part.width, this.part.height);
 
-		this.part.onDidSizeChange((size: IDimension) => {
+		this.part.onDidSizeChange((size: dom.IDimension) => {
 			this.layout(size.width, size.height);
 		});
 
@@ -520,7 +519,7 @@ export class AideControls extends Themable implements IAideControls {
 			scrollbar: { ...(defaultOptions.scrollbar ?? {}), vertical: 'hidden' }
 		};
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
-		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
+		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([ContentHoverController.ID]));
 		const editor = this._input = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorElement, options, editorOptions));
 		let editorModel = this.modelService.getModel(AideControls.INPUT_URI);
 		if (!editorModel) {

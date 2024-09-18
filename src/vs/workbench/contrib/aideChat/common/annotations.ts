@@ -2,12 +2,12 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { basename } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-import { IRange } from 'vs/editor/common/core/range';
-import { IChatProgressRenderableResponseContent, IAideChatProgressResponseContent, appendMarkdownString, canMergeMarkdownStrings } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IChatAgentVulnerabilityDetails, IAideChatMarkdownContent } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { basename } from '../../../../base/common/resources.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { IChatProgressRenderableResponseContent, IAideChatProgressResponseContent, appendMarkdownString, canMergeMarkdownStrings } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IChatAgentVulnerabilityDetails, IAideChatMarkdownContent } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
 
 export const contentRefUrl = 'http://_vscodecontentref_'; // must be lowercase for URI
 

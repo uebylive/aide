@@ -2,10 +2,11 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
-import { ICSEventHandler, ICSEventsService } from 'vs/editor/common/services/csEvents';
-import { ExtHostCSEventsShape, ExtHostContext, MainContext, MainThreadCSEventsShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
+
+import { Disposable, DisposableMap } from '../../../base/common/lifecycle.js';
+import { ICSEventHandler, ICSEventsService } from '../../../editor/common/services/csEvents.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostContext, ExtHostCSEventsShape, MainContext, MainThreadCSEventsShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadCSEvents)
 export class MainThreadCSEvents extends Disposable implements MainThreadCSEventsShape {

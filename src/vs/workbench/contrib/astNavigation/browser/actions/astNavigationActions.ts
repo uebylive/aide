@@ -3,16 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { EditorAction, registerEditorAction, ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { EditorContextKeys } from 'vs/editor/common/editorContextKeys';
-import * as nls from 'vs/nls';
-import { Action2, MenuId, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ContextKeyExpr, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
-import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { EditorAction, registerEditorAction, ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { EditorContextKeys } from '../../../../../editor/common/editorContextKeys.js';
+import * as nls from '../../../../../nls.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from '../../../../../workbench/contrib/astNavigation/common/astNavigationContextKeys.js';
+import { IASTNavigationService } from '../../../../../workbench/contrib/astNavigation/common/astNavigationService.js';
 
 const AST_NAVIGATION_CATEGORY = nls.localize2('astNavigation', "AST Navigation");
 

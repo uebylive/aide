@@ -3,24 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Queue } from 'vs/base/common/async';
-import * as json from 'vs/base/common/json';
-import { setProperty } from 'vs/base/common/jsonEdit';
-import { Edit } from 'vs/base/common/jsonFormatter';
-import { Disposable, IReference } from 'vs/base/common/lifecycle';
-import { EditOperation } from 'vs/editor/common/core/editOperation';
-import { Range } from 'vs/editor/common/core/range';
-import { Selection } from 'vs/editor/common/core/selection';
-import { ITextModel } from 'vs/editor/common/model';
-import { IResolvedTextEditorModel, ITextModelService } from 'vs/editor/common/services/resolverService';
-import { localize } from 'vs/nls';
-import { ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, isLanguageModelItem, isModelProviderItem, isModelSelectionSettings, providerTypeValues } from 'vs/platform/aiModel/common/aiModels';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IFileService } from 'vs/platform/files/common/files';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-import { IUserDataProfileService } from 'vs/workbench/services/userDataProfile/common/userDataProfile';
+import { Queue } from '../../../../base/common/async.js';
+import * as json from '../../../../base/common/json.js';
+import { setProperty } from '../../../../base/common/jsonEdit.js';
+import { Edit } from '../../../../base/common/jsonFormatter.js';
+import { Disposable, IReference } from '../../../../base/common/lifecycle.js';
+import { EditOperation } from '../../../../editor/common/core/editOperation.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
+import { ITextModel } from '../../../../editor/common/model.js';
+import { IResolvedTextEditorModel, ITextModelService } from '../../../../editor/common/services/resolverService.js';
+import { localize } from '../../../../nls.js';
+import { ILanguageModelItem, IModelProviders, IModelSelectionSettings, ProviderConfig, ProviderType, isLanguageModelItem, isModelProviderItem, isModelSelectionSettings, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { ITextFileService } from '../../textfile/common/textfiles.js';
+import { IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
 
 type ModelType = 'slowModel' | 'fastModel';
 

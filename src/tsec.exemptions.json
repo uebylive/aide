@@ -40,5 +40,8 @@
 	],
 	"ban-element-insertadjacenthtml": [
 		"**/*.ts"
+	],
+	"ban-script-content-assignments": [
+		"bootstrap-window.js"
 	]
 }

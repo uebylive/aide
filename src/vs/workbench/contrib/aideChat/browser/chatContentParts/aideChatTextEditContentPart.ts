@@ -3,32 +3,32 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { isEqual } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-import { generateUuid } from 'vs/base/common/uuid';
-import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { TextEdit } from 'vs/editor/common/languages';
-import { createTextBufferFactoryFromSnapshot } from 'vs/editor/common/model/textModel';
-import { IModelService } from 'vs/editor/common/services/model';
-import { DefaultModelSHA1Computer } from 'vs/editor/common/services/modelService';
-import { ITextModelService } from 'vs/editor/common/services/resolverService';
-import { localize } from 'vs/nls';
-import { MenuId } from 'vs/platform/actions/common/actions';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IChatListItemRendererOptions } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IDisposableReference, ResourcePool } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections';
-import { IChatContentPart, IChatContentPartRenderContext } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { IChatRendererDelegate } from 'vs/workbench/contrib/aideChat/browser/aideChatListRenderer';
-import { ChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatOptions';
-import { CodeCompareBlockPart, ICodeCompareBlockData, ICodeCompareBlockDiffData } from 'vs/workbench/contrib/aideChat/browser/codeBlockPart';
-import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import * as dom from '../../../../../base/browser/dom.js';
+import { CancellationTokenSource } from '../../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../../base/common/event.js';
+import { Disposable, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../../base/common/network.js';
+import { isEqual } from '../../../../../base/common/resources.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { generateUuid } from '../../../../../base/common/uuid.js';
+import { ISingleEditOperation } from '../../../../../editor/common/core/editOperation.js';
+import { TextEdit } from '../../../../../editor/common/languages.js';
+import { createTextBufferFactoryFromSnapshot } from '../../../../../editor/common/model/textModel.js';
+import { IModelService } from '../../../../../editor/common/services/model.js';
+import { DefaultModelSHA1Computer } from '../../../../../editor/common/services/modelService.js';
+import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
+import { localize } from '../../../../../nls.js';
+import { MenuId } from '../../../../../platform/actions/common/actions.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IChatListItemRendererOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IDisposableReference, ResourcePool } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatCollections.js';
+import { IChatContentPart, IChatContentPartRenderContext } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { IChatRendererDelegate } from '../../../../../workbench/contrib/aideChat/browser/aideChatListRenderer.js';
+import { ChatEditorOptions } from '../../../../../workbench/contrib/aideChat/browser/aideChatOptions.js';
+import { CodeCompareBlockPart, ICodeCompareBlockData, ICodeCompareBlockDiffData } from '../../../../../workbench/contrib/aideChat/browser/codeBlockPart.js';
+import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IAideChatService } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 const $ = dom.$;
 

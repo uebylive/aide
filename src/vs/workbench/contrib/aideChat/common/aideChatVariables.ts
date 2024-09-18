@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { IRange } from 'vs/editor/common/core/range';
-import { Location } from 'vs/editor/common/languages';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatContentReference, IAideChatProgressMessage } from 'vs/workbench/contrib/aideChat/common/aideChatService';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { Location } from '../../../../editor/common/languages.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { AideChatAgentLocation } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IChatModel, IChatRequestVariableData, IAideChatRequestVariableEntry } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatContentReference, IAideChatProgressMessage } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
 
 export interface IAideChatVariableData {
 	id: string;

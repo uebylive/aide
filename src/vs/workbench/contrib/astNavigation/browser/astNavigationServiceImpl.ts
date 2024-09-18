@@ -3,24 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { getActiveWindow, scheduleAtNextAnimationFrame } from 'vs/base/browser/dom';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { Position } from 'vs/editor/common/core/position';
-import { IRange, Range } from 'vs/editor/common/core/range';
-import { ScrollType } from 'vs/editor/common/editorCommon';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { OutlineElement } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
+import { getActiveWindow, scheduleAtNextAnimationFrame } from '../../../../base/browser/dom.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { ICodeEditor, isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { Position } from '../../../../editor/common/core/position.js';
+import { IRange, Range } from '../../../../editor/common/core/range.js';
+import { ScrollType } from '../../../../editor/common/editorCommon.js';
+import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
+import { OutlineElement } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
 // import { FoldingController } from 'vs/editor/contrib/folding/browser/folding';
 // import { FoldingModel } from 'vs/editor/contrib/folding/browser/foldingModel';
 // import { FoldRange } from 'vs/editor/contrib/folding/browser/foldingRanges';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IEditorPane } from 'vs/workbench/common/editor';
-import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from 'vs/workbench/contrib/astNavigation/common/astNavigationContextKeys';
-import { IASTNavigationService } from 'vs/workbench/contrib/astNavigation/common/astNavigationService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IOutline, IOutlineService, OutlineTarget } from 'vs/workbench/services/outline/browser/outline';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IEditorPane } from '../../../../workbench/common/editor.js';
+import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from '../../../../workbench/contrib/astNavigation/common/astNavigationContextKeys.js';
+import { IASTNavigationService } from '../../../../workbench/contrib/astNavigation/common/astNavigationService.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { IOutline, IOutlineService, OutlineTarget } from '../../../../workbench/services/outline/browser/outline.js';
 
 class ASTNode {
 	constructor(

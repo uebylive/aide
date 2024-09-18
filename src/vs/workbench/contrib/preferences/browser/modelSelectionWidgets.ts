@@ -3,30 +3,30 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { FastDomNode, createFastDomNode } from 'vs/base/browser/fastDomNode';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { InputBox } from 'vs/base/browser/ui/inputbox/inputBox';
-import { ISelectOptionItem, SelectBox } from 'vs/base/browser/ui/selectBox/selectBox';
-import { Widget } from 'vs/base/browser/ui/widget';
-import { Promises } from 'vs/base/common/async';
-import { Codicon } from 'vs/base/common/codicons';
-import { Emitter } from 'vs/base/common/event';
-import { KeyCode } from 'vs/base/common/keyCodes';
-import { ThemeIcon } from 'vs/base/common/themables';
-import 'vs/css!./media/modelSelectionWidgets';
-import * as nls from 'vs/nls';
-import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from 'vs/platform/aiModel/common/aiModels';
-import { IContextViewService } from 'vs/platform/contextview/browser/contextView';
-import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from 'vs/platform/theme/browser/defaultStyles';
-import { asCssVariable, editorWidgetForeground, widgetShadow } from 'vs/platform/theme/common/colorRegistry';
-import { registerIcon } from 'vs/platform/theme/common/iconRegistry';
-import { isDark } from 'vs/platform/theme/common/theme';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { COMMAND_CENTER_BORDER } from 'vs/workbench/common/theme';
-import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
-import { ModelSelectionEditorModel } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { IModelItemEntry, IProviderItem, IProviderItemEntry } from 'vs/workbench/services/preferences/common/preferences';
+import * as dom from '../../../../base/browser/dom.js';
+import { FastDomNode, createFastDomNode } from '../../../../base/browser/fastDomNode.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { InputBox } from '../../../../base/browser/ui/inputbox/inputBox.js';
+import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
+import { Widget } from '../../../../base/browser/ui/widget.js';
+import { Promises } from '../../../../base/common/async.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { Emitter } from '../../../../base/common/event.js';
+import { KeyCode } from '../../../../base/common/keyCodes.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import * as nls from '../../../../nls.js';
+import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from '../../../../platform/aiModel/common/aiModels.js';
+import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
+import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
+import { isDark } from '../../../../platform/theme/common/theme.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { COMMAND_CENTER_BORDER } from '../../../common/theme.js';
+import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
+import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry } from '../../../services/preferences/common/preferences.js';
+import './media/modelSelectionWidgets.css';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
 export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', Codicon.warning, nls.localize('invalidModelConfigIcon', 'Icon for the invalid model configuration.'));

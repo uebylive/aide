@@ -95,7 +95,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._projectContext = projectContext;
 
 		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
-		this.chatAgent.isDefault = true;
+		// this.chatAgent.isDefault = true;
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',

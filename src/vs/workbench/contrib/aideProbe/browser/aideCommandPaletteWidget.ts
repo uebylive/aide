@@ -3,52 +3,52 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { DEFAULT_FONT_FAMILY } from 'vs/base/browser/fonts';
-import { StandardMouseEvent } from 'vs/base/browser/mouseEvent';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { createInstantHoverDelegate } from 'vs/base/browser/ui/hover/hoverDelegateFactory';
-import { CodeWindow, mainWindow } from 'vs/base/browser/window';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, MutableDisposable } from 'vs/base/common/lifecycle';
-import { clamp } from 'vs/base/common/numbers';
-import { basename } from 'vs/base/common/path';
-import { URI } from 'vs/base/common/uri';
-import 'vs/css!./media/commandPalette';
-import { IEditorConstructionOptions } from 'vs/editor/browser/config/editorConfiguration';
-import { EditorExtensionsRegistry } from 'vs/editor/browser/editorExtensions';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditor/codeEditorWidget';
-import { IDecorationOptions } from 'vs/editor/common/editorCommon';
-import { ITextModel } from 'vs/editor/common/model';
-import { IModelService } from 'vs/editor/common/services/model';
-import { HoverController } from 'vs/editor/contrib/hover/browser/hoverController';
-import { localize } from 'vs/nls';
-import { ActionViewItemKb } from 'vs/platform/actionbarKeybinding/browser/actionViewItemKb';
-import { ActionViewItemWithKb } from 'vs/platform/actionbarWithKeybindings/browser/actionViewItemWithKb';
-import { HiddenItemStrategy, MenuWorkbenchToolBar } from 'vs/platform/actions/browser/toolbar';
-import { MenuId, MenuItemAction } from 'vs/platform/actions/common/actions';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
-import { IStorageService, StorageScope, StorageTarget } from 'vs/platform/storage/common/storage';
-import { inputPlaceholderForeground } from 'vs/platform/theme/common/colors/inputColors';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { AccessibilityVerbositySettingId } from 'vs/workbench/contrib/accessibility/browser/accessibilityConfiguration';
-import { AccessibilityCommandId } from 'vs/workbench/contrib/accessibility/common/accessibilityCommands';
-import { AideCommandPalettePanel } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
-import { IAideProbeResponseModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeViewModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { IAideProbeStatus, AideProbeStatus, IAideProbeMode, AideProbeMode } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from 'vs/workbench/contrib/codeEditor/browser/simpleEditorOptions';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IWorkbenchLayoutService } from 'vs/workbench/services/layout/browser/layoutService';
+import * as dom from '../../../../base/browser/dom.js';
+import { DEFAULT_FONT_FAMILY } from '../../../../base/browser/fonts.js';
+import { StandardMouseEvent } from '../../../../base/browser/mouseEvent.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { createInstantHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
+import { CodeWindow, mainWindow } from '../../../../base/browser/window.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
+import { clamp } from '../../../../base/common/numbers.js';
+import { basename } from '../../../../base/common/path.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IEditorConstructionOptions } from '../../../../editor/browser/config/editorConfiguration.js';
+import { EditorExtensionsRegistry } from '../../../../editor/browser/editorExtensions.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { CodeEditorWidget } from '../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
+import { IDecorationOptions } from '../../../../editor/common/editorCommon.js';
+import { ITextModel } from '../../../../editor/common/model.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { ContentHoverController } from '../../../../editor/contrib/hover/browser/contentHoverController.js';
+import { localize } from '../../../../nls.js';
+import { ActionViewItemKb } from '../../../../platform/actionbarKeybinding/browser/actionViewItemKb.js';
+import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
+import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
+import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
+import { inputPlaceholderForeground } from '../../../../platform/theme/common/colors/inputColors.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { AccessibilityVerbositySettingId } from '../../../../workbench/contrib/accessibility/browser/accessibilityConfiguration.js';
+import { AccessibilityCommandId } from '../../../../workbench/contrib/accessibility/common/accessibilityCommands.js';
+import { AideCommandPalettePanel } from '../../../../workbench/contrib/aideProbe/browser/aideCommandPalettePanel.js';
+import { CONTEXT_IN_PROBE_INPUT, CONTEXT_PALETTE_IS_VISIBLE, CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_INPUT_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_TEXT, CONTEXT_PROBE_MODE, CONTEXT_PROBE_REQUEST_STATUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
+import { IAideProbeResponseModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { AideProbeViewModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
+import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from '../../../../workbench/contrib/codeEditor/browser/simpleEditorOptions.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { IWorkbenchLayoutService } from '../../../../workbench/services/layout/browser/layoutService.js';
+import './media/commandPalette.css';
 
 const $ = dom.$;
 
@@ -233,7 +233,7 @@ export class AideCommandPaletteWidget extends Disposable implements IAideCommand
 		};
 
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
-		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([HoverController.ID]));
+		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([ContentHoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, editorWrapper, options, editorOptions));
 
 

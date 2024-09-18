@@ -3,17 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $ } from 'vs/base/browser/dom';
-import { alert } from 'vs/base/browser/ui/aria/aria';
-import { Codicon } from 'vs/base/common/codicons';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { MarkdownRenderer } from 'vs/editor/browser/widget/markdownRenderer/browser/markdownRenderer';
-import { ChatTreeItem } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatContentPart, IChatContentPartRenderContext } from 'vs/workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts';
-import { IAideChatProgressMessage, IAideChatTask } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IChatRendererContent, isResponseVM } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
+import { $ } from '../../../../../base/browser/dom.js';
+import { alert } from '../../../../../base/browser/ui/aria/aria.js';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { MarkdownString } from '../../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../../../base/common/themables.js';
+import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { ChatTreeItem } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatContentPart, IChatContentPartRenderContext } from '../../../../../workbench/contrib/aideChat/browser/chatContentParts/aideChatContentParts.js';
+import { IAideChatProgressMessage, IAideChatTask } from '../../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IChatRendererContent, isResponseVM } from '../../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
 
 export class ChatProgressContentPart extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;

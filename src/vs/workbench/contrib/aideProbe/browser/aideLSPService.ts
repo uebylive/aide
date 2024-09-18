@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { Emitter, Event } from 'vs/base/common/event';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
-import { Disposable } from 'vs/base/common/lifecycle';
+import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
 
 export interface IAideLSPService {
 	_serviceBrand: undefined;

@@ -3,36 +3,36 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Codicon } from 'vs/base/common/codicons';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { Schemas } from 'vs/base/common/network';
-import { IRange } from 'vs/editor/common/core/range';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { Command } from 'vs/editor/common/languages';
-import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from 'vs/editor/contrib/quickAccess/browser/gotoSymbolQuickAccess';
-import { localize, localize2 } from 'vs/nls';
-import { Action2, MenuId } from 'vs/platform/actions/common/actions';
-import { ICommandService } from 'vs/platform/commands/common/commands';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
-import { IQuickInputService, IQuickPickItem, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { CHAT_CATEGORY } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { IChatWidget, IAideChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatContextAttachments } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
-import { AideChatAgentLocation, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_QUICK_CHAT } from 'vs/workbench/contrib/aideChat/common/aideChatContextKeys';
-import { IAideChatRequestVariableEntry } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { ChatRequestAgentPart } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
-import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
-import { ContextKeyExpr } from 'vs/platform/contextkey/common/contextkey';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { EditorType } from 'vs/editor/common/editorCommon';
-import { compare } from 'vs/base/common/strings';
+import { CancellationToken } from '../../../../../base/common/cancellation.js';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { Schemas } from '../../../../../base/common/network.js';
+import { IRange } from '../../../../../editor/common/core/range.js';
+import { ThemeIcon } from '../../../../../base/common/themables.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { Command } from '../../../../../editor/common/languages.js';
+import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from '../../../../../editor/contrib/quickAccess/browser/gotoSymbolQuickAccess.js';
+import { localize, localize2 } from '../../../../../nls.js';
+import { Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { AnythingQuickAccessProviderRunOptions } from '../../../../../platform/quickinput/common/quickAccess.js';
+import { IQuickInputService, IQuickPickItem, QuickPickItem } from '../../../../../platform/quickinput/common/quickInput.js';
+import { CHAT_CATEGORY } from '../../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { IChatWidget, IAideChatWidgetService } from '../../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatContextAttachments } from '../../../../../workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments.js';
+import { AideChatAgentLocation, IAideChatAgentService } from '../../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_QUICK_CHAT } from '../../../../../workbench/contrib/aideChat/common/aideChatContextKeys.js';
+import { IAideChatRequestVariableEntry } from '../../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { ChatRequestAgentPart } from '../../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatVariablesService } from '../../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { AnythingQuickAccessProvider } from '../../../../../workbench/contrib/search/browser/anythingQuickAccess.js';
+import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from '../../../../../workbench/contrib/search/browser/symbolsQuickAccess.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IEditorService } from '../../../../../workbench/services/editor/common/editorService.js';
+import { EditorType } from '../../../../../editor/common/editorCommon.js';
+import { compare } from '../../../../../base/common/strings.js';
 
 export function registerChatContextActions() {
 	console.log(AttachContextAction.ID);

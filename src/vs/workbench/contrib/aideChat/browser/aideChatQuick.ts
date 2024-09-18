@@ -3,27 +3,27 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Orientation, Sash } from 'vs/base/browser/ui/sash/sash';
-import { disposableTimeout } from 'vs/base/common/async';
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, IDisposable, MutableDisposable } from 'vs/base/common/lifecycle';
-import { Selection } from 'vs/editor/common/core/selection';
-import { MenuId } from 'vs/platform/actions/common/actions';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
-import { IQuickInputService, IQuickWidget } from 'vs/platform/quickinput/common/quickInput';
-import { editorBackground, inputBackground, quickInputBackground, quickInputForeground } from 'vs/platform/theme/common/colorRegistry';
-import { IQuickChatOpenOptions, IQuickChatService, showChatView } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatWidget } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { AideChatAgentLocation } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModel } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatProgress, IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
+import * as dom from '../../../../base/browser/dom.js';
+import { Orientation, Sash } from '../../../../base/browser/ui/sash/sash.js';
+import { disposableTimeout } from '../../../../base/common/async.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
+import { MenuId } from '../../../../platform/actions/common/actions.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
+import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
+import { IQuickInputService, IQuickWidget } from '../../../../platform/quickinput/common/quickInput.js';
+import { editorBackground, inputBackground, quickInputBackground, quickInputForeground } from '../../../../platform/theme/common/colorRegistry.js';
+import { IQuickChatOpenOptions, IQuickChatService, showChatView } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatWidget } from '../../../../workbench/contrib/aideChat/browser/aideChatWidget.js';
+import { AideChatAgentLocation } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatModel } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatProgress, IAideChatService } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
 
 export class QuickChatService extends Disposable implements IQuickChatService {
 	readonly _serviceBrand: undefined;

@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { revive } from 'vs/base/common/marshalling';
-import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { IRange } from 'vs/editor/common/core/range';
-import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { revive } from '../../../../base/common/marshalling.js';
+import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { IAideChatRequestVariableValue } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
 

@@ -3,29 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { basenameOrAuthority, dirname } from 'vs/base/common/resources';
-import { URI } from 'vs/base/common/uri';
-import { Position } from 'vs/editor/common/core/position';
-import { IRange } from 'vs/editor/common/core/range';
-import { getWordAtText } from 'vs/editor/common/core/wordHelper';
-import { CompletionContext, CompletionItem, CompletionItemKind } from 'vs/editor/common/languages';
-import { ITextModel } from 'vs/editor/common/model';
-import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILabelService } from 'vs/platform/label/common/label';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
-import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from 'vs/workbench/common/contributions';
-import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, IWidgetWithInputEditor, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from 'vs/workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables';
-import { chatVariableLeader } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
-import { SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
-import { getOutOfWorkspaceEditorResources } from 'vs/workbench/contrib/search/common/search';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import { QueryBuilder } from 'vs/workbench/services/search/common/queryBuilder';
-import { ISearchComplete, ISearchService } from 'vs/workbench/services/search/common/search';
-import { AideControls, IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { CancellationToken } from '../../../../../base/common/cancellation.js';
+import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { basenameOrAuthority, dirname } from '../../../../../base/common/resources.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { Position } from '../../../../../editor/common/core/position.js';
+import { IRange } from '../../../../../editor/common/core/range.js';
+import { getWordAtText } from '../../../../../editor/common/core/wordHelper.js';
+import { CompletionContext, CompletionItem, CompletionItemKind } from '../../../../../editor/common/languages.js';
+import { ITextModel } from '../../../../../editor/common/model.js';
+import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { ILabelService } from '../../../../../platform/label/common/label.js';
+import { Registry } from '../../../../../platform/registry/common/platform.js';
+import { IWorkspaceContextService } from '../../../../../platform/workspace/common/workspace.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../../../workbench/common/contributions.js';
+import { CodeSymbolCompletionProviderName, FileReferenceCompletionProviderName, FolderReferenceCompletionProviderName, IWidgetWithInputEditor, SelectAndInsertCodeAction, SelectAndInsertFileAction, SelectAndInsertFolderAction } from '../../../../../workbench/contrib/aideProbe/browser/contrib/aideControlsDynamicVariables.js';
+import { chatVariableLeader } from '../../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
+import { SymbolsQuickAccessProvider } from '../../../../../workbench/contrib/search/browser/symbolsQuickAccess.js';
+import { getOutOfWorkspaceEditorResources } from '../../../../../workbench/contrib/search/common/search.js';
+import { LifecyclePhase } from '../../../../../workbench/services/lifecycle/common/lifecycle.js';
+import { QueryBuilder } from '../../../../../workbench/services/search/common/queryBuilder.js';
+import { ISearchComplete, ISearchService } from '../../../../../workbench/services/search/common/search.js';
+import { AideControls, IAideControlsService } from '../../../../../workbench/contrib/aideProbe/browser/aideControls.js';
 
 
 // class ChatTokenDeleter extends Disposable {

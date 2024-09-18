@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { IPosition, Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatVariableLeader } from 'vs/workbench/contrib/aideProbe/common/aideProbeParserTypes';
+import { OffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { IPosition, Position } from '../../../../editor/common/core/position.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { ChatRequestTextPart, ChatRequestVariablePart, IParsedChatRequest, IParsedChatRequestPart, chatVariableLeader } from '../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
 
 const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
 

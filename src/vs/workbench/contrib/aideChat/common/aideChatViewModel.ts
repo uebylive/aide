@@ -3,21 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter, Event } from 'vs/base/common/event';
-import { IMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { marked } from 'vs/base/common/marked/marked';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILogService } from 'vs/platform/log/common/log';
-import { annotateVulnerabilitiesInText } from 'vs/workbench/contrib/aideChat/common/annotations';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentResult } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { IParsedChatRequest } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { AideChatAgentVoteDirection, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IAideChatTask, IChatUsedContext } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { countWords } from 'vs/workbench/contrib/aideChat/common/aideChatWordCounter';
-import { CodeBlockModelCollection } from './codeBlockModelCollection';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { marked } from '../../../../base/common/marked/marked.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { annotateVulnerabilitiesInText } from '../../../../workbench/contrib/aideChat/common/annotations.js';
+import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideChatAgentNameService, IAideChatAgentResult } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { IParsedChatRequest } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { AideChatAgentVoteDirection, IAideChatContentReference, IAideChatFollowup, IAideChatProgressMessage, IAideChatResponseErrorDetails, IAideChatTask, IChatUsedContext } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { countWords } from '../../../../workbench/contrib/aideChat/common/aideChatWordCounter.js';
+import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
 	return !!item && typeof item === 'object' && 'message' in item;
@@ -293,38 +293,13 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		}
 
 		let codeBlockIndex = 0;
-		const renderer = new marked.Renderer();
-		renderer.code = (value, languageId) => {
-			languageId ??= '';
-			this.codeBlockModelCollection.update(this._model.sessionId, model, codeBlockIndex++, { text: value, languageId });
-			return '';
-		};
-
-		marked.parse(this.ensureFencedCodeBlocksTerminated(content), { renderer });
-	}
-
-	/**
-	 * Marked doesn't consistently render fenced code blocks that aren't terminated.
-	 *
-	 * Try to close them ourselves to workaround this.
-	 */
-	private ensureFencedCodeBlocksTerminated(content: string): string {
-		const lines = content.split('\n');
-		let inCodeBlock = false;
-
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i];
-			if (line.startsWith('```')) {
-				inCodeBlock = !inCodeBlock;
+		marked.walkTokens(marked.lexer(content), token => {
+			if (token.type === 'code') {
+				const lang = token.lang || '';
+				const text = token.text;
+				this.codeBlockModelCollection.update(this._model.sessionId, model, codeBlockIndex++, { text, languageId: lang });
 			}
-		}
-
-		// If we're still in a code block at the end of the content, add a closing fence
-		if (inCodeBlock) {
-			lines.push('```');
-		}
-
-		return lines.join('\n');
+		});
 	}
 }
 

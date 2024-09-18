@@ -3,67 +3,64 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { MarkdownString, isMarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { Schemas } from 'vs/base/common/network';
-import { isMacintosh } from 'vs/base/common/platform';
-import { EditorContributionInstantiation, registerEditorContribution } from 'vs/editor/browser/editorExtensions';
-import * as nls from 'vs/nls';
-import { AccessibleViewRegistry } from 'vs/platform/accessibility/browser/accessibleViewRegistry';
-import { ICommandService } from 'vs/platform/commands/common/commands';
-import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from 'vs/platform/configuration/common/configurationRegistry';
-import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { Registry } from 'vs/platform/registry/common/platform';
-import { EditorPaneDescriptor, IEditorPaneRegistry } from 'vs/workbench/browser/editor';
-import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, WorkbenchPhase, registerWorkbenchContribution2 } from 'vs/workbench/common/contributions';
-import { EditorExtensions, IEditorFactoryRegistry } from 'vs/workbench/common/editor';
-import { ChatAccessibilityHelp } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatAccessibilityHelp';
-import { registerChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatActions';
-import { ACTION_ID_NEW_CHAT, registerNewChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatClearActions';
-import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions';
+import { MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { isMacintosh } from '../../../../base/common/platform.js';
+import { EditorContributionInstantiation, registerEditorContribution } from '../../../../editor/browser/editorExtensions.js';
+import * as nls from '../../../../nls.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
+import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { Registry } from '../../../../platform/registry/common/platform.js';
+import { EditorPaneDescriptor, IEditorPaneRegistry } from '../../../../workbench/browser/editor.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions, WorkbenchPhase, registerWorkbenchContribution2 } from '../../../../workbench/common/contributions.js';
+import { EditorExtensions, IEditorFactoryRegistry } from '../../../../workbench/common/editor.js';
+import { registerChatActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatActions.js';
+import { ACTION_ID_NEW_CHAT, registerNewChatActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatClearActions.js';
+import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatCodeblockActions.js';
 //import { registerChatContextActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatContextActions';
-import { registerChatCopyActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatCopyActions';
-import { registerChatDeveloperActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions';
-import { SubmitAction, registerChatExecuteActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatExecuteActions';
-import { registerChatFileTreeActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatFileTreeActions';
-import { registerChatExportActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatImportExport';
-import { registerMoveActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatMoveActions';
-import { registerQuickChatActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatQuickInputActions';
-import { registerChatTitleActions } from 'vs/workbench/contrib/aideChat/browser/actions/aideChatTitleActions';
-import { IAideChatAccessibilityService, IAideChatCodeBlockContextProviderService, IAideChatWidgetService, IQuickChatService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { ChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChatAccessibilityService';
-import { ChatEditor, IChatEditorOptions } from 'vs/workbench/contrib/aideChat/browser/aideChatEditor';
-import { AideChatEditorInput, ChatEditorInputSerializer } from 'vs/workbench/contrib/aideChat/browser/aideChatEditorInput';
-import { agentSlashCommandToMarkdown, agentToMarkdown } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer';
-import { ChatExtensionPointHandler } from 'vs/workbench/contrib/aideChat/browser/aideChatParticipantContributions';
-import { QuickChatService } from 'vs/workbench/contrib/aideChat/browser/aideChatQuick';
-import { ChatResponseAccessibleView } from 'vs/workbench/contrib/aideChat/browser/aideChatResponseAccessibleView';
-import { ChatVariablesService } from 'vs/workbench/contrib/aideChat/browser/aideChatVariables';
-import { ChatWidgetService } from 'vs/workbench/contrib/aideChat/browser/aideChatWidget';
-import { KeybindingPillWidget } from 'vs/workbench/contrib/aideChat/browser/aideKeybindingPill';
-import { ChatCodeBlockContextProviderService } from 'vs/workbench/contrib/aideChat/browser/codeBlockContextProviderService';
-import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments';
-import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions';
-import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib';
-import 'vs/workbench/contrib/aideChat/browser/contrib/aideChatInputEditorHover';
-import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { chatVariableLeader } from 'vs/workbench/contrib/aideChat/common/aideChatParserTypes';
-import { IAideChatService } from 'vs/workbench/contrib/aideChat/common/aideChatService';
-import { ChatService } from 'vs/workbench/contrib/aideChat/common/aideChatServiceImpl';
-import { ChatSlashCommandService, IAideChatSlashCommandService } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { ChatWidgetHistoryService, IAideChatWidgetHistoryService } from 'vs/workbench/contrib/aideChat/common/aideChatWidgetHistoryService';
-import { ILanguageModelsService, LanguageModelsService } from 'vs/workbench/contrib/aideChat/common/languageModels';
-import { ILanguageModelStatsService, LanguageModelStatsService } from 'vs/workbench/contrib/aideChat/common/languageModelStats';
-import { ILanguageModelToolsService, LanguageModelToolsService } from 'vs/workbench/contrib/aideChat/common/languageModelToolsService';
-import { LanguageModelToolsExtensionPointHandler } from 'vs/workbench/contrib/aideChat/common/tools/languageModelToolsContribution';
-import { IVoiceChatService, VoiceChatService } from 'vs/workbench/contrib/aideChat/common/voiceChatService';
-import { IEditorResolverService, RegisteredEditorPriority } from 'vs/workbench/services/editor/common/editorResolverService';
-import { LifecyclePhase } from 'vs/workbench/services/lifecycle/common/lifecycle';
-import '../common/aideChatColors';
-import { KeybindingPillContribution } from 'vs/workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib';
+import { registerChatCopyActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatCopyActions.js';
+import { registerChatDeveloperActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatDeveloperActions.js';
+import { SubmitAction, registerChatExecuteActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatExecuteActions.js';
+import { registerChatFileTreeActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatFileTreeActions.js';
+import { registerChatExportActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatImportExport.js';
+import { registerMoveActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatMoveActions.js';
+import { registerQuickChatActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatQuickInputActions.js';
+import { registerChatTitleActions } from '../../../../workbench/contrib/aideChat/browser/actions/aideChatTitleActions.js';
+import { IAideChatAccessibilityService, IAideChatCodeBlockContextProviderService, IAideChatWidgetService, IQuickChatService } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { ChatAccessibilityService } from '../../../../workbench/contrib/aideChat/browser/aideChatAccessibilityService.js';
+import { ChatEditor, IChatEditorOptions } from '../../../../workbench/contrib/aideChat/browser/aideChatEditor.js';
+import { AideChatEditorInput, ChatEditorInputSerializer } from '../../../../workbench/contrib/aideChat/browser/aideChatEditorInput.js';
+import { agentSlashCommandToMarkdown, agentToMarkdown } from '../../../../workbench/contrib/aideChat/browser/aideChatMarkdownDecorationsRenderer.js';
+import { ChatExtensionPointHandler } from '../../../../workbench/contrib/aideChat/browser/aideChatParticipantContributions.js';
+import { QuickChatService } from '../../../../workbench/contrib/aideChat/browser/aideChatQuick.js';
+import { ChatVariablesService } from '../../../../workbench/contrib/aideChat/browser/aideChatVariables.js';
+import { ChatWidgetService } from '../../../../workbench/contrib/aideChat/browser/aideChatWidget.js';
+import { KeybindingPillWidget } from '../../../../workbench/contrib/aideChat/browser/aideKeybindingPill.js';
+import { ChatCodeBlockContextProviderService } from '../../../../workbench/contrib/aideChat/browser/codeBlockContextProviderService.js';
+import '../../../../workbench/contrib/aideChat/browser/contrib/aideChatContextAttachments.js';
+import '../../../../workbench/contrib/aideChat/browser/contrib/aideChatInputCompletions.js';
+import '../../../../workbench/contrib/aideChat/browser/contrib/aideChatInputEditorContrib.js';
+import '../../../../workbench/contrib/aideChat/browser/contrib/aideChatInputEditorHover.js';
+import { AideChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideChatAgentNameService, IAideChatAgentService } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { chatVariableLeader } from '../../../../workbench/contrib/aideChat/common/aideChatParserTypes.js';
+import { IAideChatService } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { ChatService } from '../../../../workbench/contrib/aideChat/common/aideChatServiceImpl.js';
+import { ChatSlashCommandService, IAideChatSlashCommandService } from '../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { ChatWidgetHistoryService, IAideChatWidgetHistoryService } from '../../../../workbench/contrib/aideChat/common/aideChatWidgetHistoryService.js';
+import { ILanguageModelsService, LanguageModelsService } from '../../../../workbench/contrib/aideChat/common/languageModels.js';
+import { ILanguageModelStatsService, LanguageModelStatsService } from '../../../../workbench/contrib/aideChat/common/languageModelStats.js';
+import { ILanguageModelToolsService, LanguageModelToolsService } from '../../../../workbench/contrib/aideChat/common/languageModelToolsService.js';
+import { LanguageModelToolsExtensionPointHandler } from '../../../../workbench/contrib/aideChat/common/tools/languageModelToolsContribution.js';
+import { IVoiceChatService, VoiceChatService } from '../../../../workbench/contrib/aideChat/common/voiceChatService.js';
+import { IEditorResolverService, RegisteredEditorPriority } from '../../../../workbench/services/editor/common/editorResolverService.js';
+import { LifecyclePhase } from '../../../../workbench/services/lifecycle/common/lifecycle.js';
+import '../common/aideChatColors.js';
+import { KeybindingPillContribution } from '../../../../workbench/contrib/aideChat/browser/contrib/aideChatKeybindingPillContrib.js';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -161,9 +158,6 @@ class ChatResolverContribution extends Disposable {
 		));
 	}
 }
-
-AccessibleViewRegistry.register(new ChatResponseAccessibleView());
-AccessibleViewRegistry.register(new ChatAccessibilityHelp());
 
 class ChatSlashStaticSlashCommandsContribution extends Disposable {
 

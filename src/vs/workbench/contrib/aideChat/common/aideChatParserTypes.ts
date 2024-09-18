@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { revive } from 'vs/base/common/marshalling';
-import { IOffsetRange, OffsetRange } from 'vs/editor/common/core/offsetRange';
-import { IRange } from 'vs/editor/common/core/range';
-import { IChatAgentCommand, IChatAgentData, reviveSerializedAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IChatSlashData } from 'vs/workbench/contrib/aideChat/common/aideChatSlashCommands';
-import { IAideChatRequestVariableValue } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { revive } from '../../../../base/common/marshalling.js';
+import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { IChatAgentCommand, IChatAgentData, reviveSerializedAgent } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IChatSlashData } from '../../../../workbench/contrib/aideChat/common/aideChatSlashCommands.js';
+import { IAideChatRequestVariableValue } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
 

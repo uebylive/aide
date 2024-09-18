@@ -3,21 +3,22 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { decodeBase64 } from 'vs/base/common/buffer';
-import { CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { URI } from 'vs/base/common/uri';
-import { generateUuid } from 'vs/base/common/uuid';
-import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { CommandsRegistry } from 'vs/platform/commands/common/commands';
-import { IEnvironmentService } from 'vs/platform/environment/common/environment';
-import { InstantiationType, registerSingleton } from 'vs/platform/instantiation/common/extensions';
-import { INotificationService, NotificationPriority, Severity } from 'vs/platform/notification/common/notification';
-import { IOpenerService } from 'vs/platform/opener/common/opener';
-import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
-import { ISecretStorageService } from 'vs/platform/secrets/common/secrets';
-import { IThemeService, Themable } from 'vs/platform/theme/common/themeService';
-import { IURLService } from 'vs/platform/url/common/url';
+import { decodeBase64 } from '../../../../base/common/buffer.js';
+import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import Severity from '../../../../base/common/severity.js';
+import { URI } from '../../../../base/common/uri.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
+import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
+import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { INotificationService, NotificationPriority } from '../../../../platform/notification/common/notification.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { IProgressService, ProgressLocation } from '../../../../platform/progress/common/progress.js';
+import { ISecretStorageService } from '../../../../platform/secrets/common/secrets.js';
+import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
+import { IURLService } from '../../../../platform/url/common/url.js';
 
 const SESSION_SECRET_KEY = 'codestory.auth.session';
 

@@ -3,17 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { onUnexpectedExternalError } from 'vs/base/common/errors';
-import { IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import { ExtHostAideChatVariablesShape, IChatVariableResolverProgressDto, IMainContext, MainContext, MainThreadAideChatVariablesShape } from 'vs/workbench/api/common/extHost.protocol';
-import * as typeConvert from 'vs/workbench/api/common/extHostTypeConverters';
-import * as extHostTypes from 'vs/workbench/api/common/extHostTypes';
-import { IAideChatRequestVariableValue, IAideChatVariableData } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
-import { checkProposedApiEnabled } from 'vs/workbench/services/extensions/common/extensions';
 import type * as vscode from 'vscode';
+import { onUnexpectedExternalError } from '../../../base/common/errors.js';
+import { IDisposable, toDisposable } from '../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
+import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
+import { IAideChatRequestVariableValue, IAideChatVariableData } from '../../contrib/aideChat/common/aideChatVariables.js';
+import { checkProposedApiEnabled } from '../../services/extensions/common/extensions.js';
+import { ExtHostAideChatVariablesShape, IChatVariableResolverProgressDto, IMainContext, MainContext, MainThreadAideChatVariablesShape } from './extHost.protocol.js';
+import * as typeConvert from './extHostTypeConverters.js';
+import * as extHostTypes from './extHostTypes.js';
 
 export class ExtHostAideChatVariables implements ExtHostAideChatVariablesShape {
 
@@ -26,7 +25,7 @@ export class ExtHostAideChatVariables implements ExtHostAideChatVariablesShape {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadAideChatVariables);
 	}
 
-	async $resolveVariable(handle: number, requestId: string, messageText: string, token: CancellationToken): Promise<IAideChatRequestVariableValue | undefined> {
+	async $resolveVariable(handle: number, requestId: string, messageText: string, token: vscode.CancellationToken): Promise<IAideChatRequestVariableValue | undefined> {
 		const item = this._resolver.get(handle);
 		if (!item) {
 			return undefined;

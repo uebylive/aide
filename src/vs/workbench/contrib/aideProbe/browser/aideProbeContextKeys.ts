@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from 'vs/nls';
-import { RawContextKey } from 'vs/platform/contextkey/common/contextkey';
-import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { localize } from '../../../../nls.js';
+import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
+import { AideProbeMode, AideProbeStatus, IAideProbeMode, IAideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 
 export const CONTEXT_PROBE_MODE = new RawContextKey<IAideProbeMode>('aideProbeMode', AideProbeMode.AGENTIC, { type: 'string', description: localize('aideProbeMode', "Either explore, agentic editing or anchored editing") });
 export const CONTEXT_PROBE_CONTEXT_TYPE = new RawContextKey<'specific' | 'codebase'>('aideProbeContext', 'specific', { type: 'string', description: localize('aideProbeContext', "Type of context used for probing.") });

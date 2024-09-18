@@ -3,27 +3,27 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from 'vs/base/common/cancellation';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { themeColorFromId } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { ICodeEditor, isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
-import { Position } from 'vs/editor/common/core/position';
-import { Range } from 'vs/editor/common/core/range';
-import { IEditorDecorationsCollection } from 'vs/editor/common/editorCommon';
-import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from 'vs/editor/common/model';
-import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
-import { ICSEventsService } from 'vs/editor/common/services/csEvents';
-import { IOutlineModelService } from 'vs/editor/contrib/documentSymbols/browser/outlineModel';
-import { calculateChanges } from 'vs/workbench/contrib/aideProbe/browser/aideCommandPalettePanel';
-import { IAideProbeEdits } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeAnchorStart, IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { HunkState, HunkInformation } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
-import { overviewRulerInlineChatDiffInserted, minimapInlineChatDiffInserted } from 'vs/workbench/contrib/inlineChat/common/inlineChat';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { themeColorFromId } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { ICodeEditor, isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { Position } from '../../../../editor/common/core/position.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { IEditorDecorationsCollection } from '../../../../editor/common/editorCommon.js';
+import { IModelDeltaDecoration, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
+import { ICSEventsService } from '../../../../editor/common/services/csEvents.js';
+import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
+import { calculateChanges } from '../../../../workbench/contrib/aideProbe/browser/aideCommandPalettePanel.js';
+import { IAideProbeEdits } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { IAideProbeAnchorStart, IAideProbeBreakdownContent, IAideProbeCompleteEditEvent, IAideProbeGoToDefinition, IAideProbeReviewUserEvent, IAideProbeUndoEditEvent } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { HunkState, HunkInformation } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
+import { overviewRulerInlineChatDiffInserted, minimapInlineChatDiffInserted } from '../../../../workbench/contrib/inlineChat/common/inlineChat.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
 
 const editDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-edit-modified',

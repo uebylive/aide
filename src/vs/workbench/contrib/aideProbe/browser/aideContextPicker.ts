@@ -3,34 +3,34 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
-import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
-import { isCodeEditor } from 'vs/editor/browser/editorBrowser';
-import { Emitter, Event } from 'vs/base/common/event';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { WorkbenchList } from 'vs/platform/list/browser/listService';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { URI } from 'vs/base/common/uri';
-import { Range } from 'vs/editor/common/core/range';
-import { basename, dirname } from 'vs/base/common/resources';
-import { ICommandService } from 'vs/platform/commands/common/commands';
-import { ResourceLabels } from 'vs/workbench/browser/labels';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { localize } from 'vs/nls';
-import { FileKind } from 'vs/platform/files/common/files';
-import { Codicon } from 'vs/base/common/codicons';
-import { StandardKeyboardEvent } from 'vs/base/browser/keyboardEvent';
-import { KeyCode } from 'vs/base/common/keyCodes';
-import { AideSelect } from 'vs/workbench/browser/aideSelect';
-import { Heroicon } from 'vs/workbench/browser/heroicon';
-import 'vs/css!./media/aideContextPicker';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IAideLSPService } from 'vs/workbench/contrib/aideProbe/browser/aideLSPService';
-import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
+import * as dom from '../../../../base/browser/dom.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
+import { Disposable, DisposableStore, dispose } from '../../../../base/common/lifecycle.js';
+import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { basename, dirname } from '../../../../base/common/resources.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { ResourceLabels } from '../../../../workbench/browser/labels.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
+import { localize } from '../../../../nls.js';
+import { FileKind } from '../../../../platform/files/common/files.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
+import { KeyCode } from '../../../../base/common/keyCodes.js';
+import { AideSelect } from '../../../../workbench/browser/aideSelect.js';
+import { Heroicon } from '../../../../workbench/browser/heroicon.js';
+import './media/aideContextPicker.css';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { IAideLSPService } from '../../../../workbench/contrib/aideProbe/browser/aideLSPService.js';
+import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
+import { IWorkbenchContribution } from '../../../../workbench/common/contributions.js';
 
 const $ = dom.$;
 

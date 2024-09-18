@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { status } from 'vs/base/browser/ui/aria/aria';
-import { Disposable, DisposableMap } from 'vs/base/common/lifecycle';
-import { AccessibilitySignal, IAccessibilitySignalService } from 'vs/platform/accessibilitySignal/browser/accessibilitySignalService';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AccessibilityProgressSignalScheduler } from 'vs/platform/accessibilitySignal/browser/progressAccessibilitySignalScheduler';
-import { IAideChatAccessibilityService } from 'vs/workbench/contrib/aideChat/browser/aideChat';
-import { IChatResponseViewModel } from 'vs/workbench/contrib/aideChat/common/aideChatViewModel';
-import { renderStringAsPlaintext } from 'vs/base/browser/markdownRenderer';
-import { MarkdownString } from 'vs/base/common/htmlContent';
+import { status } from '../../../../base/browser/ui/aria/aria.js';
+import { Disposable, DisposableMap } from '../../../../base/common/lifecycle.js';
+import { AccessibilitySignal, IAccessibilitySignalService } from '../../../../platform/accessibilitySignal/browser/accessibilitySignalService.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { AccessibilityProgressSignalScheduler } from '../../../../platform/accessibilitySignal/browser/progressAccessibilitySignalScheduler.js';
+import { IAideChatAccessibilityService } from '../../../../workbench/contrib/aideChat/browser/aideChat.js';
+import { IChatResponseViewModel } from '../../../../workbench/contrib/aideChat/common/aideChatViewModel.js';
+import { renderStringAsPlaintext } from '../../../../base/browser/markdownRenderer.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
 
 const CHAT_RESPONSE_PENDING_ALLOWANCE_MS = 4000;
 export class ChatAccessibilityService extends Disposable implements IAideChatAccessibilityService {

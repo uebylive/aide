@@ -3,31 +3,31 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { Schemas } from 'vs/base/common/network';
-import { IRange } from 'vs/editor/common/core/range';
-import { ThemeIcon } from 'vs/base/common/themables';
-import { URI } from 'vs/base/common/uri';
-import { ServicesAccessor } from 'vs/editor/browser/editorExtensions';
-import { Command } from 'vs/editor/common/languages';
-import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from 'vs/editor/contrib/quickAccess/browser/gotoSymbolQuickAccess';
-import { localize, localize2 } from 'vs/nls';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { ICommandService } from 'vs/platform/commands/common/commands';
-import { AnythingQuickAccessProviderRunOptions } from 'vs/platform/quickinput/common/quickAccess';
-import { IQuickInputService, IQuickPickItem, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { AnythingQuickAccessProvider } from 'vs/workbench/contrib/search/browser/anythingQuickAccess';
-import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from 'vs/workbench/contrib/search/browser/symbolsQuickAccess';
-import { compare } from 'vs/base/common/strings';
-import { IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_FOCUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { getWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { ContextPicker, IContextPicker } from 'vs/workbench/contrib/aideProbe/browser/aideContextPicker';
-import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
-import { IAideChatVariablesService } from 'vs/workbench/contrib/aideChat/common/aideChatVariables';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { IRange } from '../../../../editor/common/core/range.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { ServicesAccessor } from '../../../../editor/browser/editorExtensions.js';
+import { Command } from '../../../../editor/common/languages.js';
+import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from '../../../../editor/contrib/quickAccess/browser/gotoSymbolQuickAccess.js';
+import { localize, localize2 } from '../../../../nls.js';
+import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
+import { AnythingQuickAccessProviderRunOptions } from '../../../../platform/quickinput/common/quickAccess.js';
+import { IQuickInputService, IQuickPickItem, QuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
+import { AnythingQuickAccessProvider } from '../../../../workbench/contrib/search/browser/anythingQuickAccess.js';
+import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from '../../../../workbench/contrib/search/browser/symbolsQuickAccess.js';
+import { compare } from '../../../../base/common/strings.js';
+import { IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
+import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_CONTEXT_LIST_HAS_FOCUS, CONTEXT_PROBE_INPUT_HAS_FOCUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { getWorkbenchContribution } from '../../../../workbench/common/contributions.js';
+import { ContextPicker, IContextPicker } from '../../../../workbench/contrib/aideProbe/browser/aideContextPicker.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IAideControlsService } from '../../../../workbench/contrib/aideProbe/browser/aideControls.js';
+import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 
 
 const AIDE_CONTEXT_CATEGORY = localize2('chat.category', 'Chat');

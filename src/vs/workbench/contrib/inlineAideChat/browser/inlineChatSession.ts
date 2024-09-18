@@ -3,37 +3,37 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { URI } from 'vs/base/common/uri';
-import { Emitter, Event } from 'vs/base/common/event';
-import { TextEdit } from 'vs/editor/common/languages';
-import { IIdentifiedSingleEditOperation, IModelDecorationOptions, IModelDeltaDecoration, ITextModel, IValidEditOperation, TrackedRangeStickiness } from 'vs/editor/common/model';
-import { EditMode, CTX_INLINE_CHAT_HAS_STASHED_SESSION } from 'vs/workbench/contrib/inlineAideChat/common/inlineChat';
-import { IRange, Range } from 'vs/editor/common/core/range';
-import { ModelDecorationOptions } from 'vs/editor/common/model/textModel';
-import { toErrorMessage } from 'vs/base/common/errorMessage';
-import { isCancellationError } from 'vs/base/common/errors';
-import { EditOperation, ISingleEditOperation } from 'vs/editor/common/core/editOperation';
-import { DetailedLineRangeMapping, LineRangeMapping, RangeMapping } from 'vs/editor/common/diff/rangeMapping';
-import { IUntitledTextEditorModel } from 'vs/workbench/services/untitled/common/untitledTextEditorModel';
-import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-import { ILanguageService } from 'vs/editor/common/languages/language';
-import { ResourceMap } from 'vs/base/common/map';
-import { Schemas } from 'vs/base/common/network';
-import { isEqual } from 'vs/base/common/resources';
-import { IInlineAideChatSessionService, Recording } from './inlineChatSessionService';
-import { LineRange } from 'vs/editor/common/core/lineRange';
-import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
-import { coalesceInPlace } from 'vs/base/common/arrays';
-import { Iterable } from 'vs/base/common/iterator';
-import { IModelContentChangedEvent } from 'vs/editor/common/textModelEvents';
-import { DisposableStore, IDisposable } from 'vs/base/common/lifecycle';
-import { ICodeEditor } from 'vs/editor/browser/editorBrowser';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { ILogService } from 'vs/platform/log/common/log';
-import { ChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
-import { ExtensionIdentifier } from 'vs/platform/extensions/common/extensions';
-import { IChatAgent } from 'vs/workbench/contrib/aideChat/common/aideChatAgents';
-import { IDocumentDiff } from 'vs/editor/common/diff/documentDiffProvider';
+import { URI } from '../../../../base/common/uri.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { TextEdit } from '../../../../editor/common/languages.js';
+import { IIdentifiedSingleEditOperation, IModelDecorationOptions, IModelDeltaDecoration, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { EditMode, CTX_INLINE_CHAT_HAS_STASHED_SESSION } from '../../../../workbench/contrib/inlineAideChat/common/inlineChat.js';
+import { IRange, Range } from '../../../../editor/common/core/range.js';
+import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
+import { toErrorMessage } from '../../../../base/common/errorMessage.js';
+import { isCancellationError } from '../../../../base/common/errors.js';
+import { EditOperation, ISingleEditOperation } from '../../../../editor/common/core/editOperation.js';
+import { DetailedLineRangeMapping, LineRangeMapping, RangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
+import { IUntitledTextEditorModel } from '../../../../workbench/services/untitled/common/untitledTextEditorModel.js';
+import { ITextFileService } from '../../../../workbench/services/textfile/common/textfiles.js';
+import { ILanguageService } from '../../../../editor/common/languages/language.js';
+import { ResourceMap } from '../../../../base/common/map.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { isEqual } from '../../../../base/common/resources.js';
+import { IInlineAideChatSessionService, Recording } from './inlineChatSessionService.js';
+import { LineRange } from '../../../../editor/common/core/lineRange.js';
+import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
+import { coalesceInPlace } from '../../../../base/common/arrays.js';
+import { Iterable } from '../../../../base/common/iterator.js';
+import { IModelContentChangedEvent } from '../../../../editor/common/textModelEvents.js';
+import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { ILogService } from '../../../../platform/log/common/log.js';
+import { ChatModel, IChatRequestModel, IChatResponseModel, IChatTextEditGroupState } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
+import { ExtensionIdentifier } from '../../../../platform/extensions/common/extensions.js';
+import { IChatAgent } from '../../../../workbench/contrib/aideChat/common/aideChatAgents.js';
+import { IDocumentDiff } from '../../../../editor/common/diff/documentDiffProvider.js';
 
 
 export type TelemetryData = {

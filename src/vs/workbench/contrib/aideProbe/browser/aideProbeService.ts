@@ -3,18 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DeferredPromise } from 'vs/base/common/async';
-import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cancellation';
-import { Emitter, Event } from 'vs/base/common/event';
-import { Disposable, DisposableStore, IDisposable, toDisposable } from 'vs/base/common/lifecycle';
-import { IModelService } from 'vs/editor/common/services/model';
-import { createDecorator, IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
-import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
-import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { ITextModel } from 'vs/editor/common/model';
+import { DeferredPromise } from '../../../../base/common/async.js';
+import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { AideProbeModel, AideProbeRequestModel, IAideProbeModel, IAideProbeResponseModel, IVariableEntry } from '../../../../workbench/contrib/aideProbe/browser/aideProbeModel.js';
+import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeData, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeResult, IAideProbeReviewUserEvent, IAideProbeSessionAction, IAideProbeUserAction } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
+import { CONTEXT_PROBE_CONTEXT_TYPE, CONTEXT_PROBE_MODE } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { ITextModel } from '../../../../editor/common/model.js';
 
 
 export interface IAideProbeResolver {
