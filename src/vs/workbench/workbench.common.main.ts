@@ -198,8 +198,6 @@ import './contrib/chat/browser/chat.contribution.js';
 import './contrib/inlineChat/browser/inlineChat.contribution.js';
 
 // Aide
-import './contrib/aideChat/browser/aideChat.contribution.js';
-import './contrib/inlineAideChat/browser/inlineChat.contribution.js';
 import './contrib/aideProbe/browser/aideProbe.contribution.js';
 import './contrib/aideAddContext/browser/aideAddContext.contribution.js';
 

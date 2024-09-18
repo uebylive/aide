@@ -18,11 +18,11 @@ import { ITextModelService } from '../../../../editor/common/services/resolverSe
 import { IOutlineModelService } from '../../../../editor/contrib/documentSymbols/browser/outlineModel.js';
 import { createDecorator, IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ResourceLabels } from '../../../../workbench/browser/labels.js';
-import { ChatMarkdownRenderer } from '../../../../workbench/contrib/aideChat/browser/aideChatMarkdownRenderer.js';
 import { AideProbeExplanationWidget } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanationWidget.js';
 import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
 import { IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
 import { AideProbeMode } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
+import { ChatMarkdownRenderer } from '../../chat/browser/chatMarkdownRenderer.js';
 
 export const IAideProbeExplanationService = createDecorator<IAideProbeExplanationService>('IAideProbeExplanationService');
 

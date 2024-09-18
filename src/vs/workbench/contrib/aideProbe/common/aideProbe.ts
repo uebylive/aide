@@ -5,13 +5,13 @@
 
 import { IMarkdownString } from '../../../../base/common/htmlContent.js';
 import { URI } from '../../../../base/common/uri.js';
-import { Selection } from '../../../../editor/common/core/selection.js';
 import { Range } from '../../../../editor/common/core/range.js';
+import { Selection } from '../../../../editor/common/core/selection.js';
 import { DocumentSymbol, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { IValidEditOperation } from '../../../../editor/common/model.js';
 import { IModelContentChange } from '../../../../editor/common/textModelEvents.js';
-import { IChatRequestVariableData } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
-import { IAideChatMarkdownContent } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
+import { IChatRequestVariableData } from '../../chat/common/chatModel.js';
+import { IChatMarkdownContent } from '../../chat/common/chatService.js';
 
 export interface IAideProbeData {
 	id: string;
@@ -132,7 +132,7 @@ export interface IAideFollowups {
 }
 
 export type IAideProbeProgress =
-	| IAideChatMarkdownContent
+	| IChatMarkdownContent
 	| IAideProbeBreakdownContent
 	| IAideProbeGoToDefinition
 	| IAideProbeTextEdit

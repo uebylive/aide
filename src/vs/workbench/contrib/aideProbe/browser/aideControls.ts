@@ -49,12 +49,12 @@ import { AideProbeModel, IVariableEntry } from '../../../../workbench/contrib/ai
 import { IAideProbeService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeService.js';
 import { AideProbeMode, AideProbeStatus, AnchorEditingSelection, IAideProbeMode, IAideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 import { IParsedChatRequest } from '../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
-import { ChatRequestParser } from '../../../../workbench/contrib/aideProbe/common/aideProbeRequestParser.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions } from '../../../../workbench/contrib/codeEditor/browser/simpleEditorOptions.js';
 import { IAideControlsPartService } from '../../../../workbench/services/aideControlsPart/browser/aideControlsPartService.js';
 import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
 import { IOutline, IOutlineService, OutlineTarget } from '../../../../workbench/services/outline/browser/outline.js';
 import { IViewsService } from '../../../../workbench/services/views/common/viewsService.js';
+import { ChatRequestParser } from '../../chat/common/chatRequestParser.js';
 import './media/aideControls.css';
 
 const $ = dom.$;
@@ -171,7 +171,7 @@ export class AideControls extends Themable implements IAideControls {
 	private parsedChatRequest: IParsedChatRequest | undefined;
 	get parsedInput() {
 		if (this.parsedChatRequest === undefined) {
-			this.parsedChatRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest(this.inputEditor.getValue());
+			this.parsedChatRequest = this.instantiationService.createInstance(ChatRequestParser).parseChatRequest('', this.inputEditor.getValue());
 		}
 
 		return this.parsedChatRequest;

@@ -9,34 +9,29 @@ import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
-import { matchesSomeScheme, Schemas } from '../../../../base/common/network.js';
 import { basename } from '../../../../base/common/path.js';
-import { basenameOrAuthority } from '../../../../base/common/resources.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { isDefined } from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
-import { FileKind } from '../../../../platform/files/common/files.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { Heroicon } from '../../../../workbench/browser/heroicon.js';
 import { IResourceLabel, ResourceLabels } from '../../../../workbench/browser/labels.js';
-import { ColorScheme } from '../../../../workbench/browser/web.api.js';
-import { IAideChatContentReference, IAideChatWarningMessage } from '../../../../workbench/contrib/aideChat/common/aideChatService.js';
-import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 import { IFollowupState } from '../../../../workbench/contrib/aideProbe/browser/aideProbeViewModel.js';
 import { createFileIconThemableTreeContainerScope } from '../../../../workbench/contrib/files/browser/views/explorerView.js';
+import { IChatContentReference, IChatWarningMessage } from '../../chat/common/chatService.js';
 
 const $ = dom.$;
 
-export interface IAideFollowupContentReference extends Omit<IAideChatContentReference, 'kind'> {
+export interface IAideFollowupContentReference extends Omit<IChatContentReference, 'kind'> {
 	kind: 'followup-reference';
 	state: IFollowupState;
 }
 
-export interface IAideReferenceFoundContentReference extends Omit<IAideChatContentReference, 'kind'> {
+export interface IAideReferenceFoundContentReference extends Omit<IChatContentReference, 'kind'> {
 	kind: 'found-reference';
 	occurencies: number;
 }
@@ -51,7 +46,7 @@ export class AideReferencesContentPart extends Disposable {
 	private collapseButtonElement: HTMLElement;
 
 	constructor(
-		data: ReadonlyArray<IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage>,
+		data: ReadonlyArray<IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage>,
 		label: string,
 		expanded: boolean,
 		private readonly onDidChangeVisibility: Event<boolean>,
@@ -102,7 +97,7 @@ export class AideReferencesContentPart extends Disposable {
 		const renderer = this.instantiationService.createInstance(ContentReferencesListRenderer, resourceLabels);
 
 		const list = this.instantiationService.createInstance(
-			WorkbenchList<IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage>,
+			WorkbenchList<IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage>,
 			'ChatListRenderer',
 			container,
 			new ContentReferencesListDelegate(),
@@ -110,35 +105,31 @@ export class AideReferencesContentPart extends Disposable {
 			{
 				alwaysConsumeMouseWheel: false,
 				accessibilityProvider: {
-					getAriaLabel: (element: IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage) => {
+					getAriaLabel: (element: IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage) => {
 						if (element.kind === 'warning') {
 							return element.content.value;
 						}
 						const reference = element.reference;
-						if ('variableName' in reference) {
-							return reference.variableName;
-						} else if (URI.isUri(reference)) {
+						if (URI.isUri(reference)) {
 							return basename(reference.path);
-						} else {
-							return basename(reference.uri.path);
 						}
+
+						return null;
 					},
 
 					getWidgetAriaLabel: () => localize('usedReferences', "Used References")
 				},
 				dnd: {
-					getDragURI: (element: IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage) => {
+					getDragURI: (element: IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage) => {
 						if (element.kind === 'warning') {
 							return null;
 						}
 						const { reference } = element;
-						if ('variableName' in reference) {
-							return null;
-						} else if (URI.isUri(reference)) {
+						if (URI.isUri(reference)) {
 							return reference.toString();
-						} else {
-							return reference.uri.toString();
 						}
+
+						return null;
 					},
 					dispose: () => { },
 					onDragOver: () => false,
@@ -157,7 +148,7 @@ export class AideReferencesContentPart extends Disposable {
 			if (e.browserEvent) {
 				e.browserEvent.preventDefault();
 			}
-			if (e.element && 'reference' in e.element) {
+			/* if (e.element && 'reference' in e.element) {
 				const uriOrLocation = 'variableName' in e.element.reference ? e.element.reference.value : e.element.reference;
 				const uri = URI.isUri(uriOrLocation) ? uriOrLocation :
 					uriOrLocation?.uri;
@@ -174,7 +165,7 @@ export class AideReferencesContentPart extends Disposable {
 							}
 						});
 				}
-			}
+			} */
 		}));
 		this._register(list.onContextMenu((e) => {
 			e.browserEvent.preventDefault();
@@ -215,7 +206,7 @@ export class AideReferencesContentPart extends Disposable {
 }
 
 
-class ContentReferencesListDelegate implements IListVirtualDelegate<IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage> {
+class ContentReferencesListDelegate implements IListVirtualDelegate<IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage> {
 	getHeight(element: IAideFollowupContentReference): number {
 		return 22;
 	}
@@ -231,14 +222,12 @@ interface IChatContentReferenceListTemplate {
 	templateDisposables: DisposableStore;
 }
 
-class ContentReferencesListRenderer implements IListRenderer<IAideFollowupContentReference | IAideChatWarningMessage, IChatContentReferenceListTemplate> {
+class ContentReferencesListRenderer implements IListRenderer<IAideFollowupContentReference | IChatWarningMessage, IChatContentReferenceListTemplate> {
 	static TEMPLATE_ID = 'contentReferencesListRenderer';
 	readonly templateId: string = ContentReferencesListRenderer.TEMPLATE_ID;
 
 	constructor(
 		private labels: ResourceLabels,
-		@IThemeService private readonly themeService: IThemeService,
-		@IAideChatVariablesService private readonly chatVariablesService: IAideChatVariablesService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) { }
 
@@ -249,6 +238,7 @@ class ContentReferencesListRenderer implements IListRenderer<IAideFollowupConten
 	}
 
 
+	/*
 	private getReferenceIcon(data: IAideFollowupContentReference | IAideReferenceFoundContentReference): URI | ThemeIcon | undefined {
 		if (ThemeIcon.isThemeIcon(data.iconPath)) {
 			return data.iconPath;
@@ -258,8 +248,9 @@ class ContentReferencesListRenderer implements IListRenderer<IAideFollowupConten
 				: data.iconPath?.light;
 		}
 	}
+	*/
 
-	renderElement(data: IAideFollowupContentReference | IAideReferenceFoundContentReference | IAideChatWarningMessage, index: number, templateData: IChatContentReferenceListTemplate, height: number | undefined): void {
+	renderElement(data: IAideFollowupContentReference | IAideReferenceFoundContentReference | IChatWarningMessage, index: number, templateData: IChatContentReferenceListTemplate, height: number | undefined): void {
 
 		templateData.container.classList.add('probe-references-list-item');
 
@@ -268,6 +259,7 @@ class ContentReferencesListRenderer implements IListRenderer<IAideFollowupConten
 			return;
 		}
 
+		/*
 		const reference = data.reference;
 		const icon = this.getReferenceIcon(data);
 		templateData.label.element.style.display = 'flex';
@@ -299,6 +291,7 @@ class ContentReferencesListRenderer implements IListRenderer<IAideFollowupConten
 				});
 			}
 		}
+		*/
 
 		if (data.kind === 'found-reference') {
 			const occurenciesBadge = $('.probe-references-occurencies');

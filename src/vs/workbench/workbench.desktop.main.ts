@@ -174,10 +174,6 @@ import './contrib/remoteTunnel/electron-sandbox/remoteTunnel.contribution.js';
 import './contrib/chat/electron-sandbox/chat.contribution.js';
 import './contrib/inlineChat/electron-sandbox/inlineChat.contribution.js';
 
-// Aide
-// import 'vs/workbench/contrib/aideChat/electron-sandbox/aideChat.contribution';
-// import 'vs/workbench/contrib/inlineAideChat/electron-sandbox/inlineChat.contribution';
-
 // Encryption
 import './contrib/encryption/electron-sandbox/encryption.contribution.js';
 

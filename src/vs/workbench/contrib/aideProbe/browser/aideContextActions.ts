@@ -27,7 +27,8 @@ import { getWorkbenchContribution } from '../../../../workbench/common/contribut
 import { ContextPicker, IContextPicker } from '../../../../workbench/contrib/aideProbe/browser/aideContextPicker.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IAideControlsService } from '../../../../workbench/contrib/aideProbe/browser/aideControls.js';
-import { IAideChatVariablesService } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { IChatVariablesService } from '../../chat/common/chatVariables.js';
+import { ChatAgentLocation } from '../../chat/common/chatAgents.js';
 
 
 const AIDE_CONTEXT_CATEGORY = localize2('chat.category', 'Chat');
@@ -185,14 +186,14 @@ export class AttachContextAction extends Action2 {
 
 	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
 		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IAideChatVariablesService);
+		const chatVariablesService = accessor.get(IChatVariablesService);
 		const commandService = accessor.get(ICommandService);
 		const contextKeyService = accessor.get(IContextKeyService);
 
 		CONTEXT_PROBE_CONTEXT_TYPE.bindTo(contextKeyService).set('specific');
 
 		const quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[] = [];
-		for (const variable of chatVariablesService.getVariables()) {
+		for (const variable of chatVariablesService.getVariables(ChatAgentLocation.Panel)) {
 			if (variable.fullName && !variable.isSlow) {
 				quickPickItems.push({
 					label: `${variable.icon ? `$(${variable.icon.id}) ` : ''}${variable.fullName}`,

@@ -20,9 +20,9 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { ILabelService } from '../../../../../platform/label/common/label.js';
 import { ILogService } from '../../../../../platform/log/common/log.js';
 import { chatVariableLeader } from '../../../../../workbench/contrib/aideProbe/common/aideProbeParserTypes.js';
-import { IDynamicVariable } from '../../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
 import { AideControls, IAideControlsContrib } from '../../../../../workbench/contrib/aideProbe/browser/aideControls.js';
 import { ISymbolQuickPickItem } from '../../../../../workbench/contrib/search/browser/symbolsQuickAccess.js';
+import { IDynamicVariable } from '../../../chat/common/chatVariables.js';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
 

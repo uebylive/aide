@@ -218,14 +218,6 @@ export class MenuId {
 	static readonly MergeInputResultToolbar = new MenuId('MergeToolbarResultToolbar');
 	static readonly InlineSuggestionToolbar = new MenuId('InlineSuggestionToolbar');
 	static readonly InlineEditToolbar = new MenuId('InlineEditToolbar');
-	static readonly AideChatContext = new MenuId('AideChatContext');
-	static readonly AideChatCodeBlock = new MenuId('AideChatCodeblock');
-	static readonly AideChatCompareBlock = new MenuId('AideChatCompareBlock');
-	static readonly AideChatMessageTitle = new MenuId('AideChatMessageTitle');
-	static readonly AideChatExecute = new MenuId('AideChatExecute');
-	static readonly AideChatExecutePrimary = new MenuId('AideChatExecutePrimary');
-	static readonly AideChatExecuteSecondary = new MenuId('AideChatExecuteSecondary');
-	static readonly AideChatInputSide = new MenuId('AideChatInputSide');
 	static readonly ChatContext = new MenuId('ChatContext');
 	static readonly ChatCodeBlock = new MenuId('ChatCodeblock');
 	static readonly ChatCompareBlock = new MenuId('ChatCompareBlock');

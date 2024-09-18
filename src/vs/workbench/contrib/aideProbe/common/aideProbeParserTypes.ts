@@ -6,7 +6,7 @@
 import { revive } from '../../../../base/common/marshalling.js';
 import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
 import { IRange } from '../../../../editor/common/core/range.js';
-import { IAideChatRequestVariableValue } from '../../../../workbench/contrib/aideChat/common/aideChatVariables.js';
+import { IChatRequestVariableValue } from '../../chat/common/chatVariables.js';
 
 // These are in a separate file to avoid circular dependencies with the dependencies of the parser
 
@@ -69,7 +69,7 @@ export class ChatRequestVariablePart implements IParsedChatRequestPart {
 export class ChatRequestDynamicVariablePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';
 	readonly kind = ChatRequestDynamicVariablePart.Kind;
-	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly text: string, readonly id: string, readonly modelDescription: string | undefined, readonly data: IAideChatRequestVariableValue) { }
+	constructor(readonly range: OffsetRange, readonly editorRange: IRange, readonly text: string, readonly id: string, readonly modelDescription: string | undefined, readonly data: IChatRequestVariableValue) { }
 
 	get referenceText(): string {
 		return this.text.replace(chatVariableLeader, '');

@@ -24,12 +24,12 @@ import { ITextModelService } from '../../../../editor/common/services/resolverSe
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IUndoRedoService } from '../../../../platform/undoRedo/common/undoRedo.js';
-import { IChatRequestVariableData, IChatTextEditGroupState } from '../../../../workbench/contrib/aideChat/common/aideChatModel.js';
 import { CONTEXT_PROBE_REQUEST_STATUS } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
 import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 
 import { HunkData } from '../../../../workbench/contrib/inlineChat/browser/inlineChatSession.js';
 import { ITextFileService } from '../../../../workbench/services/textfile/common/textfiles.js';
+import { IChatRequestVariableData, IChatTextEditGroupState } from '../../chat/common/chatModel.js';
 
 export interface IContentVariableReference {
 	variableName: string;

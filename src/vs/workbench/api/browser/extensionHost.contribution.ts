@@ -18,8 +18,6 @@ import { StatusBarItemsExtensionPoint } from './statusBarExtensionPoint.js';
 import './mainThreadLocalization.js';
 import './mainThreadBulkEdits.js';
 import './mainThreadModelSelection.js';
-import './mainThreadAideChatAgents2.js';
-import './mainThreadAideChatVariables.js';
 import './mainThreadAideProbeProvider.js';
 import './mainThreadLanguageModels.js';
 import './mainThreadChatAgents2.js';

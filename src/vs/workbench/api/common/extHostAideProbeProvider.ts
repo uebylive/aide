@@ -56,9 +56,9 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				breakdown(value) {
-					const part = new extHostTypes.AideChatResponseBreakdownPart(value.reference.uri, value.reference.name, value.query, value.reason, value.response);
-					const dto = typeConvert.AideChatResponseBreakdownPart.from(part);
-					that._proxy.$handleProbingProgressChunk(request, dto);
+					// const part = new extHostTypes.ChatResponseMarkdownPart(value);
+					// const dto = typeConvert.AideChatResponseBreakdownPart.from(part);
+					// that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				openFile(value) {
 					const part = new extHostTypes.AideProbeOpenFilePart(value.uri);
@@ -81,8 +81,8 @@ export class ExtHostAideProbeProvider extends Disposable implements ExtHostAideP
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				markdown(value) {
-					const part = new extHostTypes.AideChatResponseMarkdownPart(value);
-					const dto = typeConvert.AideChatResponseMarkdownPart.from(part);
+					const part = new extHostTypes.ChatResponseMarkdownPart(value);
+					const dto = typeConvert.ChatResponseMarkdownPart.from(part);
 					that._proxy.$handleProbingProgressChunk(request, dto);
 				},
 				location(value) {

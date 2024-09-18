@@ -43,6 +43,58 @@ declare module 'vscode' {
 		type: 'followUpRequest';
 	}
 
+	interface CodeReferenceByName {
+		readonly name: string;
+		readonly uri: Uri;
+	}
+
+	export interface AideChatResponseBreakdown {
+		/**
+		 * Code reference relevant to this breakdown.
+		 */
+		readonly reference: CodeReferenceByName;
+
+		/**
+		 * The query made to AI for this breakdown.
+		 */
+		readonly query?: MarkdownString;
+
+		/**
+		 * The reason this query was made.
+		 */
+		readonly reason?: MarkdownString;
+
+		/**
+		 * The response from AI for this breakdown.
+		 */
+		readonly response?: MarkdownString;
+	}
+
+	export interface AideProbeResponseOpenFile {
+		/**
+		 * The file where the agent went to the definition.
+		 */
+		readonly uri: Uri;
+	}
+
+	export interface AideProbeResponseRepoMapGeneration {
+		/**
+		 * Whether the repo map generation is finished
+		 */
+		readonly finished: boolean;
+	}
+
+	export interface AideProbeResponseLongContextSearch {
+		/**
+		 * Whether the repo map generation is finished
+		 */
+		readonly finished: boolean;
+	}
+
+	export interface AideProbeCodeIterationFinishedPart {
+		readonly finished: boolean;
+	}
+
 	export interface AideProbeSessionAction {
 		sessionId: string;
 		action: FollowAlongAction | NavigateBreakdownAction | NewIterationAction | ContextChangedAction | FollowUpRequestAction | AnchorSessionStart;

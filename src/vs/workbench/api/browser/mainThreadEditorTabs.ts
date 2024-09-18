@@ -28,7 +28,6 @@ import { columnToEditorGroup, EditorGroupColumn, editorGroupToColumn } from '../
 import { GroupDirection, IEditorGroup, IEditorGroupsService, preferredSideBySideGroupDirection } from '../../services/editor/common/editorGroupsService.js';
 import { IEditorsChangeEvent, IEditorService, SIDE_GROUP } from '../../services/editor/common/editorService.js';
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
-import { AideChatEditorInput } from '../../contrib/aideChat/browser/aideChatEditorInput.js';
 
 interface TabInfo {
 	tab: IEditorTabDto;
@@ -202,12 +201,6 @@ export class MainThreadEditorTabs implements MainThreadEditorTabsShape {
 		if (editor instanceof ChatEditorInput) {
 			return {
 				kind: TabInputKind.ChatEditorInput,
-			};
-		}
-
-		if (editor instanceof AideChatEditorInput) {
-			return {
-				kind: TabInputKind.AideChatEditorInput,
 			};
 		}
 

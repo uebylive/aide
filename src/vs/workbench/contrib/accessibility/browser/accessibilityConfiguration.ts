@@ -51,7 +51,6 @@ export const enum AccessibilityVerbositySettingId {
 	Chat = 'accessibility.verbosity.panelChat',
 	InlineChat = 'accessibility.verbosity.inlineChat',
 	TerminalChat = 'accessibility.verbosity.terminalChat',
-	AideChat = 'accessibility.verbosity.aideChat',
 	InlineCompletions = 'accessibility.verbosity.inlineCompletions',
 	KeybindingsEditor = 'accessibility.verbosity.keybindingsEditor',
 	Notebook = 'accessibility.verbosity.notebook',

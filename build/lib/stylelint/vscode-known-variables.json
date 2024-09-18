@@ -17,12 +17,6 @@
 		"--vscode-activityBarTop-dropBorder",
 		"--vscode-activityBarTop-foreground",
 		"--vscode-activityBarTop-inactiveForeground",
-		"--vscode-aideChat-avatarBackground",
-		"--vscode-aideChat-avatarForeground",
-		"--vscode-aideChat-requestBackground",
-		"--vscode-aideChat-requestBorder",
-		"--vscode-aideChat-slashCommandBackground",
-		"--vscode-aideChat-slashCommandForeground",
 		"--vscode-badge-background",
 		"--vscode-badge-foreground",
 		"--vscode-banner-background",
@@ -808,7 +802,6 @@
 		"--vscode-window-inactiveBorder"
 	],
 	"others": [
-		"--size",
 		"--background-dark",
 		"--background-light",
 		"--dropdown-padding-bottom",

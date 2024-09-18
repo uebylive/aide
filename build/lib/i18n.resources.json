@@ -187,14 +187,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/aideChat",
-			"project": "vscode-workbench"
-		},
-		{
-			"name": "vs/workbench/contrib/inlineAideChat",
-			"project": "vscode-workbench"
-		},
-		{
 			"name": "vs/workbench/contrib/aideProbe",
 			"project": "vscode-workbench"
 		},

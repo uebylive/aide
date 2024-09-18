@@ -109,8 +109,6 @@ import { ProxyIdentifier } from '../../services/extensions/common/proxyIdentifie
 import { ExcludeSettingOptions, TextSearchCompleteMessageType, TextSearchContextNew, TextSearchMatchNew } from '../../services/search/common/searchExtTypes.js';
 import type * as vscode from 'vscode';
 import { ExtHostCodeMapper } from './extHostCodeMapper.js';
-import { ExtHostAideChatAgents2 } from './extHostAideChatAgents2.js';
-import { ExtHostAideChatVariables } from './extHostAideChatVariables.js';
 import { ExtHostAideProbeProvider } from './extHostAideProbeProvider.js';
 import { IExtHostCSAuthentication } from './extHostCSAuthentication.js';
 import { ExtHostCSEvents } from './extHostCSEvents.js';
@@ -223,8 +221,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostChatAgents2, new ExtHostChatAgents2(rpcProtocol, extHostLogService, extHostCommands, extHostDocuments));
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostLanguageModelTools = rpcProtocol.set(ExtHostContext.ExtHostLanguageModelTools, new ExtHostLanguageModelTools(rpcProtocol));
-	const extHostAideChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostAideChatAgents2, new ExtHostAideChatAgents2(rpcProtocol, extHostLogService, extHostCommands, initData.quality));
-	const extHostAideChatVariables = rpcProtocol.set(ExtHostContext.ExtHostAideChatVariables, new ExtHostAideChatVariables(rpcProtocol));
 	const extHostAideProbeProvider = rpcProtocol.set(ExtHostContext.ExtHostAideProbeProvider, new ExtHostAideProbeProvider(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
@@ -1539,26 +1535,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 		};
 
-		// namespace: aideChat
-		const aideChat: typeof vscode.aideChat = {
-			// IMPORTANT
-			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
-			_version: 1,
-
-			registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: vscode.ChatVariableResolver, fullName?: string, icon?: vscode.ThemeIcon) {
-				checkProposedApiEnabled(extension, 'aideChatVariableResolver');
-				return extHostAideChatVariables.registerVariableResolver(extension, id, name, userDescription, modelDescription, isSlow, resolver, fullName, icon?.id);
-			},
-			createChatParticipant(id: string, handler: vscode.AideChatExtendedRequestHandler) {
-				checkProposedApiEnabled(extension, 'aideChatParticipant');
-				return extHostAideChatAgents2.createChatAgent(extension, id, handler);
-			},
-			createDynamicChatParticipant(id: string, dynamicProps: vscode.DynamicChatParticipantProps, handler: vscode.AideChatExtendedRequestHandler): vscode.AideChatParticipant {
-				checkProposedApiEnabled(extension, 'aideChatParticipant');
-				return extHostAideChatAgents2.createDynamicChatAgent(extension, id, dynamicProps, handler);
-			}
-		};
-
 		const aideProbe: typeof vscode.aideProbe = {
 			// IMPORTANT
 			// this needs to be updated whenever the API proposal changes and breaks backwards compatibility
@@ -1602,7 +1578,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			version: initData.version,
 			// namespaces
 			ai,
-			aideChat,
 			aideProbe,
 			authentication,
 			commands,
@@ -1628,9 +1603,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			// types
 			Breakpoint: extHostTypes.Breakpoint,
 			TerminalOutputAnchor: extHostTypes.TerminalOutputAnchor,
-			AideChatResultFeedbackKind: extHostTypes.AideChatResultFeedbackKind,
-			AideChatVariableLevel: extHostTypes.AideChatVariableLevel,
-			AideChatCompletionItem: extHostTypes.AideChatCompletionItem,
 			ChatResultFeedbackKind: extHostTypes.ChatResultFeedbackKind,
 			ChatVariableLevel: extHostTypes.ChatVariableLevel,
 			ChatCompletionItem: extHostTypes.ChatCompletionItem,
@@ -1833,7 +1805,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			LogLevel: LogLevel,
 			EditSessionIdentityMatch: EditSessionIdentityMatch,
 			InteractiveSessionVoteDirection: extHostTypes.InteractiveSessionVoteDirection,
-			AideChatCopyKind: extHostTypes.AideChatCopyKind,
 			ChatCopyKind: extHostTypes.ChatCopyKind,
 			InteractiveEditorResponseFeedbackKind: extHostTypes.InteractiveEditorResponseFeedbackKind,
 			DebugStackFrame: extHostTypes.DebugStackFrame,
@@ -1844,7 +1815,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			TextToSpeechStatus: extHostTypes.TextToSpeechStatus,
 			PartialAcceptTriggerKind: extHostTypes.PartialAcceptTriggerKind,
 			KeywordRecognitionStatus: extHostTypes.KeywordRecognitionStatus,
-			AideChatLocation: extHostTypes.AideChatLocation,
 			ChatResponseMarkdownPart: extHostTypes.ChatResponseMarkdownPart,
 			ChatResponseFileTreePart: extHostTypes.ChatResponseFileTreePart,
 			ChatResponseAnchorPart: extHostTypes.ChatResponseAnchorPart,

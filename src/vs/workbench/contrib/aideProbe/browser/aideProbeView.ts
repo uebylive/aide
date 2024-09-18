@@ -36,7 +36,6 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { Heroicon } from '../../../../workbench/browser/heroicon.js';
 import { IViewPaneOptions, ViewPane } from '../../../../workbench/browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../../../workbench/common/views.js';
-import { ChatMarkdownRenderer } from '../../../../workbench/contrib/aideChat/browser/aideChatMarkdownRenderer.js';
 import { AideReferencesContentPart, IAideFollowupContentReference, IAideReferenceFoundContentReference } from '../../../../workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart.js';
 import { CONTEXT_PROBE_MODE } from '../../../../workbench/contrib/aideProbe/browser/aideProbeContextKeys.js';
 import { IAideProbeExplanationService } from '../../../../workbench/contrib/aideProbe/browser/aideProbeExplanations.js';
@@ -46,6 +45,7 @@ import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, I
 import { AideProbeMode, AideProbeStatus } from '../../../../workbench/contrib/aideProbe/common/aideProbe.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { ChatMarkdownRenderer } from '../../chat/browser/chatMarkdownRenderer.js';
 
 const $ = dom.$;
 
