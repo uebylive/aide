@@ -39,7 +39,7 @@ export namespace Extensions {
 export const enum ViewContainerLocation {
 	Sidebar,
 	Panel,
-	AideControls,
+	BottomBar,
 	AuxiliaryBar
 }
 
@@ -50,7 +50,7 @@ export function ViewContainerLocationToString(viewContainerLocation: ViewContain
 		case ViewContainerLocation.Sidebar: return 'sidebar';
 		case ViewContainerLocation.Panel: return 'panel';
 		case ViewContainerLocation.AuxiliaryBar: return 'auxiliarybar';
-		case ViewContainerLocation.AideControls: return 'aidecontrols';
+		case ViewContainerLocation.BottomBar: return 'bottombar';
 	}
 }
 

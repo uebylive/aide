@@ -203,7 +203,10 @@ import 'vs/workbench/contrib/inlineChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/aideChat/browser/aideChat.contribution';
 import 'vs/workbench/contrib/inlineAideChat/browser/inlineChat.contribution';
 import 'vs/workbench/contrib/aideProbe/browser/aideProbe.contribution';
-import 'vs/workbench/contrib/aideAddContext/browser/aideAddContext.contribution';
+import 'vs/workbench/contrib/aideAgent/browser/aideAgent.contribution';
+
+// Pinned context
+import 'vs/workbench/contrib/pinnedContext/browser/pinnedContext.contribution';
 
 // AST Navigation
 import 'vs/workbench/contrib/astNavigation/browser/astNavigation.contribution';

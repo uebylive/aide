@@ -10,7 +10,6 @@ import { KeybindingLabel, unthemedKeybindingLabelOptions } from 'vs/base/browser
 import { IListMouseEvent, IListRenderer, IListVirtualDelegate } from 'vs/base/browser/ui/list/list';
 import { DomScrollableElement } from 'vs/base/browser/ui/scrollbar/scrollableElement';
 import { Emitter, Event } from 'vs/base/common/event';
-import { localize } from 'vs/nls';
 import { KeyCode } from 'vs/base/common/keyCodes';
 import { Disposable, DisposableStore, dispose } from 'vs/base/common/lifecycle';
 import { OS } from 'vs/base/common/platform';
@@ -21,16 +20,19 @@ import 'vs/css!./media/aideProbe';
 import 'vs/css!./media/aideProbeExplanationWidget';
 import { IDimension } from 'vs/editor/common/core/dimension';
 import { SymbolKind, SymbolKinds } from 'vs/editor/common/languages';
+import { localize } from 'vs/nls';
 import { ICommandService } from 'vs/platform/commands/common/commands';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IHoverService } from 'vs/platform/hover/browser/hover';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
 import { IKeybindingService } from 'vs/platform/keybinding/common/keybinding';
 import { IOpenEvent, WorkbenchList } from 'vs/platform/list/browser/listService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { ITelemetryService } from 'vs/platform/telemetry/common/telemetry';
+import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
 import { IThemeService } from 'vs/platform/theme/common/themeService';
 import { IWorkspaceContextService } from 'vs/platform/workspace/common/workspace';
 import { Heroicon } from 'vs/workbench/browser/heroicon';
@@ -38,14 +40,11 @@ import { IViewPaneOptions, ViewPane } from 'vs/workbench/browser/parts/views/vie
 import { IViewDescriptorService } from 'vs/workbench/common/views';
 import { ChatMarkdownRenderer } from 'vs/workbench/contrib/aideChat/browser/aideChatMarkdownRenderer';
 import { AideReferencesContentPart, IAideFollowupContentReference, IAideReferenceFoundContentReference } from 'vs/workbench/contrib/aideProbe/browser/aideFollowupReferencesContentPart';
-import { CONTEXT_PROBE_MODE } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeExplanationService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeExplanations';
 import { IAideProbeModel } from 'vs/workbench/contrib/aideProbe/browser/aideProbeModel';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { IAideProbeListItem, AideProbeViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, isBreakdownVM, isInitialSymbolsVM, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, IAideFollowupsViewModel, isReferenceFoundVM, isFollowupsVM, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
-import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
-import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
+import { AideProbeViewModel, IAideFollowupsViewModel, IAideProbeBreakdownViewModel, IAideProbeInitialSymbolsViewModel, IAideProbeListItem, IAideReferencesFoundViewModel, IAideRelevantReferencesViewModel, isBreakdownVM, isFollowupsVM, isInitialSymbolsVM, isReferenceFoundVM, isRelevantReferencesVM } from 'vs/workbench/contrib/aideProbe/browser/aideProbeViewModel';
+import { AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 const $ = dom.$;
 
@@ -58,7 +57,6 @@ const welcomeActions = [
 	},
 	{ title: 'Toggle editing mode', actionId: 'workbench.action.aideProbe.toggleMode', descrption: 'Switch between anchored and agentic editing modes.' },
 	{ title: 'Add context', actionId: 'workbench.action.aideControls.attachContext', descrption: 'Provide files as context to both agentic or anchored editing' },
-	{ title: 'Make follow-ups', flag: 'alpha', actionId: 'workbench.action.aideProbe.followups', descrption: 'Automagically fix implementation and references based on new changes in a code range.' },
 	{ title: 'Toggle AST Navigation', actionId: 'astNavigation.toggleMode', descrption: 'Quickly navigate through semantic blocks of code.' }
 ];
 
@@ -85,7 +83,6 @@ const welcomeActions = [
 // };
 
 export class AideProbeViewPane extends ViewPane {
-
 	private currentView: 'welcome' | 'list' = 'welcome';
 
 	private container!: HTMLElement;
@@ -425,7 +422,7 @@ export class AideProbeViewPane extends ViewPane {
 							item.expanded = true;
 						}
 						const hasOneBreakdownEntry = hasReferencesFound ? items.length === 2 : items.length === 1;
-						if (hasOneBreakdownEntry && CONTEXT_PROBE_MODE.getValue(this.contextKeyService) === AideProbeMode.ANCHORED) {
+						if (hasOneBreakdownEntry) {
 							item.expanded = true;
 						}
 						this.list.splice(matchIndex, 1, [item]);

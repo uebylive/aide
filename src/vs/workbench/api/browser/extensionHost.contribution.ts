@@ -21,6 +21,7 @@ import './mainThreadModelSelection';
 import './mainThreadAideChatAgents2';
 import './mainThreadAideChatVariables';
 import './mainThreadAideProbeProvider';
+import './mainThreadAideAgentProvider';
 import './mainThreadLanguageModels';
 import './mainThreadChatAgents2';
 import './mainThreadChatVariables';

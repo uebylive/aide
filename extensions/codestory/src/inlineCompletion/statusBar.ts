@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode';
 
+/*
 const statusBarItemText = (enabled: boolean | undefined) =>
 	enabled ? '$(check) Aide' : '$(circle-slash) Aide';
 
@@ -12,10 +13,13 @@ const statusBarItemTooltip = (enabled: boolean | undefined) =>
 	enabled ? 'Tab autocomplete is enabled' : 'Click to enable tab autocomplete';
 
 let lastStatusBar: vscode.StatusBarItem | undefined = undefined;
+*/
+
 export function setupStatusBar(
-	enabled: boolean | undefined,
-	loading?: boolean
+	_enabled: boolean | undefined,
+	_loading?: boolean
 ) {
+	/*
 	const statusBarItem = vscode.window.createStatusBarItem(
 		vscode.StatusBarAlignment.Right,
 	);
@@ -40,6 +44,7 @@ export function setupStatusBar(
 			setupStatusBar(enabled);
 		}
 	});
+	*/
 }
 
 export function startupStatusBar() {

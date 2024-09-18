@@ -3213,8 +3213,7 @@ export namespace AideProbeRequestModel {
 			requestId: request.sessionId,
 			query: request.message,
 			references: request.variableData.variables.map(ChatAgentValueReference.to),
-			mode: request.mode,
-			codebaseSearch: request.codebaseSearch,
+			scope: request.scope,
 		};
 	}
 }

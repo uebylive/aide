@@ -12,7 +12,7 @@ import { AnswerSplitOnNewLineAccumulatorStreaming, reportAgentEventsToChat, Stre
 import postHogClient from '../../posthog/client';
 import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
-import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest } from '../../server/types';
+import { EditedCodeStreamingRequest, SidecarApplyEditsRequest } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
 import { getUniqueId } from '../../utilities/uniqueId';
 import { RecentEditsRetriever } from '../../server/editedFiles';
@@ -92,6 +92,13 @@ export class AideProbeProvider implements vscode.Disposable {
 				provideProbeResponse: this.provideProbeResponse.bind(this),
 				onDidSessionAction: this.sessionFollowup.bind(this),
 				onDidUserAction: this.userFollowup.bind(this),
+			}
+		);
+
+		vscode.aideAgent.registerAideAgentProvider(
+			'aideAgentProvider',
+			{
+				provideTriggerResponse: this.provideTriggerResponse.bind(this),
 			}
 		);
 	}
@@ -258,48 +265,18 @@ export class AideProbeProvider implements vscode.Disposable {
 		});
 
 		//if there is a selection present in the references: this is what it looks like:
-		const isAnchorEditing = isAnchorBasedEditing(request.mode);
+		const isAnchorEditing = isAnchorBasedEditing(request.scope);
 
-		let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
+		// let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 
-		if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
-			probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.codebaseSearch, isAnchorEditing);
-		} else {
-			probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
-		}
+		// if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
+		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.scope === 'WholeCodebase', isAnchorEditing);
+		// } else {
+		// 	probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
+		// }
 
-		// Use dummy data: Start
-		//const extensionRoot = vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionPath;
-		//const workspaceRoot = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-		//if (!extensionRoot || !workspaceRoot) {
-		//	return {};
-		//}
-		//
-		//const that = this;
-		//const jsonArr = readJsonFile(`${extensionRoot}/src/completions/providers/dummydata.json`);
-		//const probeResponse = (async function* (arr) {
-		//	for (const original of arr) {
-		//		const itemString = JSON.stringify(original).replace(/\/Users\/nareshr\/github\/codestory\/sidecar/g, workspaceRoot);
-		//		const item = JSON.parse(itemString) as SideCarAgentEvent;
-		//		if ('request_id' in item && item.event.SymbolEventSubStep && item.event.SymbolEventSubStep.event.Edit) {
-		//			const editSubStep = item.event.SymbolEventSubStep.event.Edit;
-		//			if (editSubStep.EditCode) {
-		//				const editEvent = editSubStep.EditCode;
-		//				that.provideEdit({
-		//					apply_directly: false,
-		//					fs_file_path: editEvent.fs_file_path,
-		//					selected_range: editEvent.range,
-		//					edited_content: editEvent.new_code
-		//				});
-		//			}
-		//		}
-		//		yield item;
-		//	}
-		//})(jsonArr);
-		// Use dummy data: End
-
-		const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
-		await reportAgentEventsToChat(isEditMode, probeResponse, response, request.requestId, token, this._sideCarClient, this._iterationEdits, this._limiter);
+		// const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
+		await reportAgentEventsToChat(true, probeResponse, response, request.requestId, token, this._sideCarClient, this._iterationEdits, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -318,13 +295,18 @@ export class AideProbeProvider implements vscode.Disposable {
 		};
 	}
 
+	provideTriggerResponse(request: vscode.AgentTrigger, _response: vscode.AgentResponseStream, _token: vscode.CancellationToken): vscode.ProviderResult<vscode.AgentTriggerComplete | void> {
+		console.log('trigger_response', request);
+		return;
+	}
+
 	dispose() {
 		this._requestHandler?.close();
 	}
 }
 
-function isAnchorBasedEditing(mode: vscode.AideProbeMode): boolean {
-	if (mode === 'ANCHORED') {
+function isAnchorBasedEditing(scope: vscode.AideProbeScope): boolean {
+	if (scope === 'Selection') {
 		return true;
 	} else {
 		return false;

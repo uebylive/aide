@@ -309,8 +309,8 @@ class TabFocusMode extends Disposable {
 	}
 }
 
-const nlsSingleSelectionRange = localize('singleSelectionRange', "Ln {0}, Col {1} ({2} selected)");
-const nlsSingleSelection = localize('singleSelection', "Ln {0}, Col {1}");
+const nlsSingleSelectionRange = localize('singleSelectionRange', "{0}:{1} ({2} selected)");
+const nlsSingleSelection = localize('singleSelection', "{0}:{1}");
 const nlsMultiSelectionRange = localize('multiSelectionRange', "{0} selections ({1} characters selected)");
 const nlsMultiSelection = localize('multiSelection', "{0} selections");
 const nlsEOLLF = localize('endOfLineLineFeed', "LF");

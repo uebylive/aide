@@ -26,7 +26,7 @@ import { IInstantiationService } from 'vs/platform/instantiation/common/instanti
 import { IUndoRedoService } from 'vs/platform/undoRedo/common/undoRedo';
 import { IChatRequestVariableData, IChatTextEditGroupState } from 'vs/workbench/contrib/aideChat/common/aideChatModel';
 import { CONTEXT_PROBE_REQUEST_STATUS } from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
-import { AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeMode, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeScope, AideProbeStatus, IAideFollowupInformation, IAideProbeBreakdownContent, IAideProbeGoToDefinition, IAideProbeInitialSymbolInformation, IAideProbeInitialSymbols, IAideProbeProgress, IAideProbeRequestModel, IAideProbeResponseEvent, IAideProbeStatus, IAideProbeTextEdit, IAideRelevantReference, IAideRelevantReferenceInformation } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 
 import { HunkData } from 'vs/workbench/contrib/inlineChat/browser/inlineChatSession';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
@@ -74,8 +74,6 @@ export interface IAideProbeResponseModel {
 	readonly relevantReferences: Map<string, IAideRelevantReferenceInformation> | undefined;
 	readonly followups: Map<string, IAideFollowupInformation[]> | undefined;
 	readonly codeEdits: ReadonlyMap<string, IAideProbeEdits | undefined>;
-	readonly repoMapGenerationFinished: boolean | undefined;
-	readonly longContextSearchFinished: boolean | undefined;
 }
 
 export interface IAideProbeModel {
@@ -93,8 +91,7 @@ export class AideProbeRequestModel extends Disposable implements IAideProbeReque
 		readonly sessionId: string,
 		readonly message: string,
 		readonly variableData: IChatRequestVariableData,
-		readonly codebaseSearch: boolean,
-		readonly mode: IAideProbeMode
+		readonly scope: AideProbeScope
 	) {
 		super();
 	}

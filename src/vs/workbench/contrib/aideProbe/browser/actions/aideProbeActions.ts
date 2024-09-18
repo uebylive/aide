@@ -12,12 +12,12 @@ import { IsDevelopmentContext } from 'vs/platform/contextkey/common/contextkeys'
 import { ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { IView } from 'vs/workbench/common/views';
-import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControls';
+import { IAideControlsService } from 'vs/workbench/contrib/aideProbe/browser/aideControlsService';
+import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 import * as CTX from 'vs/workbench/contrib/aideProbe/browser/aideProbeContextKeys';
 import { IAideProbeService } from 'vs/workbench/contrib/aideProbe/browser/aideProbeService';
-import { AideProbeMode, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
+import { AideProbeScope, AideProbeStatus } from 'vs/workbench/contrib/aideProbe/common/aideProbe';
 import { IViewsService } from 'vs/workbench/services/views/common/viewsService';
-import { clearProbeView, VIEW_ID } from 'vs/workbench/contrib/aideProbe/browser/aideProbe';
 
 const PROBE_CATEGORY = localize2('aideProbe.category', 'Aide');
 
@@ -63,7 +63,6 @@ class BlurAction extends Action2 {
 	}
 
 	async run(accessor: ServicesAccessor) {
-		console.log('blur');
 		const aideControls = accessor.get(IAideControlsService);
 		aideControls.blurInput();
 	}
@@ -112,7 +111,7 @@ class IterateAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED), CTX.CONTEXT_PROBE_INPUT_HAS_TEXT),
+			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_INPUT_HAS_TEXT),
 			keybinding: {
 				primary: KeyCode.Enter,
 				weight: KeybindingWeight.WorkbenchContrib,
@@ -122,7 +121,7 @@ class IterateAction extends Action2 {
 				{
 					id: MenuId.AideControlsToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+					when: isProbeIterationFinished,
 				},
 			]
 		});
@@ -174,48 +173,6 @@ class CancelAction extends Action2 {
 	}
 }
 
-
-class RequestFollowUpAction extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.followups';
-
-	constructor() {
-		super({
-			id: RequestFollowUpAction.ID,
-			title: localize2('aideProbe.followups.label', "Make follow-ups"),
-			f1: false,
-			category: PROBE_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.or(CTX.CONTEXT_PROBE_HAS_SELECTION, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyCode.KeyY,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS,
-			},
-			menu: [
-				{
-					when: ContextKeyExpr.or(isProbeIdle, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
-					id: MenuId.AideControlsToolbar,
-					group: 'navigation',
-				},
-			]
-		});
-	}
-
-	async run(accessor: ServicesAccessor) {
-		const aideProbeService = accessor.get(IAideProbeService);
-		const currentSession = aideProbeService.getSession();
-		if (!currentSession) {
-			const contextKeyService = accessor.get(IContextKeyService);
-			CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(AideProbeMode.FOLLOW_UP);
-			const aideControls = accessor.get(IAideControlsService);
-			aideControls.acceptInput();
-		} else {
-			aideProbeService.makeFollowupRequest();
-		}
-		logProbeContext(accessor);
-	}
-}
-
 class ClearIterationAction extends Action2 {
 	static readonly ID = 'workbench.action.aideProbe.stop';
 
@@ -226,7 +183,7 @@ class ClearIterationAction extends Action2 {
 			f1: false,
 			category: PROBE_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+			precondition: isProbeIterationFinished,
 			keybinding: {
 				primary: KeyMod.WinCtrl | KeyCode.KeyL,
 				weight: KeybindingWeight.WorkbenchContrib,
@@ -236,7 +193,7 @@ class ClearIterationAction extends Action2 {
 				{
 					id: MenuId.AideControlsToolbar,
 					group: 'navigation',
-					when: ContextKeyExpr.and(isProbeIterationFinished, CTX.CONTEXT_PROBE_MODE.isEqualTo(AideProbeMode.ANCHORED)),
+					when: isProbeIterationFinished,
 				},
 			]
 		});
@@ -276,33 +233,71 @@ class FocusAideControls extends Action2 {
 	}
 }
 
-class ToggleAideProbeMode extends Action2 {
-	static readonly ID = 'workbench.action.aideProbe.toggleMode';
+export class SetAideProbeScopeSelection extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.setScopeSelection';
 
 	constructor() {
 		super({
-			id: ToggleAideProbeMode.ID,
-			title: localize2('aideProbe.toggleMode.label', "Toggle Aide Probe Mode"),
+			id: SetAideProbeScopeSelection.ID,
+			title: localize2('aideProbe.setScopeSelection.label', "Use selection range as the scope for AI edits"),
 			f1: false,
 			category: PROBE_CATEGORY,
-			precondition: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
 			keybinding: {
-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyK,
-				weight: KeybindingWeight.WorkbenchContrib,
-				when: ContextKeyExpr.and(CTX.CONTEXT_PROBE_INPUT_HAS_FOCUS, isProbeIdle),
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit1,
+				weight: KeybindingWeight.WorkbenchContrib
 			},
 		});
 	}
 
 	async run(accessor: ServicesAccessor) {
-		const contextKeyService = accessor.get(IContextKeyService);
-		const currentMode = CTX.CONTEXT_PROBE_MODE.getValue(contextKeyService);
-		const newMode = currentMode === AideProbeMode.AGENTIC ? AideProbeMode.ANCHORED : AideProbeMode.AGENTIC;
-		CTX.CONTEXT_PROBE_MODE.bindTo(contextKeyService).set(newMode);
-		logProbeContext(accessor);
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.scope = AideProbeScope.Selection;
 	}
 }
 
+export class SetAideProbeScopePinnedContext extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.setScopePinnedContext';
+
+	constructor() {
+		super({
+			id: SetAideProbeScopePinnedContext.ID,
+			title: localize2('aideProbe.setScopePinnedContext.label', "Use Pinned Context as the scope for AI edits"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit2,
+				weight: KeybindingWeight.WorkbenchContrib
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.scope = AideProbeScope.PinnedContext;
+	}
+}
+
+export class SetAideProbeScopeWholeCodebase extends Action2 {
+	static readonly ID = 'workbench.action.aideProbe.setScopeWholeCodebase';
+
+	constructor() {
+		super({
+			id: SetAideProbeScopeWholeCodebase.ID,
+			title: localize2('aideProbe.setScopeWholeCodebase.label', "Use the whole codebase as the scope for AI edits"),
+			f1: false,
+			category: PROBE_CATEGORY,
+			keybinding: {
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Digit3,
+				weight: KeybindingWeight.WorkbenchContrib
+			},
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const aideControlsService = accessor.get(IAideControlsService);
+		aideControlsService.scope = AideProbeScope.WholeCodebase;
+	}
+}
 
 class ClearList extends Action2 {
 	constructor() {
@@ -329,11 +324,12 @@ class ClearList extends Action2 {
 export function registerProbeActions() {
 	registerAction2(FocusAideControls);
 	registerAction2(BlurAction);
-	registerAction2(ToggleAideProbeMode);
 	registerAction2(SubmitAction);
 	registerAction2(CancelAction);
 	registerAction2(IterateAction);
 	registerAction2(ClearIterationAction);
-	registerAction2(RequestFollowUpAction);
 	registerAction2(ClearList);
+	registerAction2(SetAideProbeScopeSelection);
+	registerAction2(SetAideProbeScopePinnedContext);
+	registerAction2(SetAideProbeScopeWholeCodebase);
 }

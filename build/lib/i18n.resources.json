@@ -179,10 +179,6 @@
 			"project": "vscode-workbench"
 		},
 		{
-			"name": "vs/workbench/contrib/inlineCSChat",
-			"project": "vscode-workbench"
-		},
-		{
 			"name": "vs/workbench/contrib/astNavigation",
 			"project": "vscode-workbench"
 		},
@@ -195,11 +191,19 @@
 			"project": "vscode-workbench"
 		},
 		{
+			"name": "vs/workbench/contrib/aideAgent",
+			"project": "vscode-workbench"
+		},
+		{
 			"name": "vs/workbench/contrib/aideProbe",
 			"project": "vscode-workbench"
 		},
 		{
 			"name": "vs/workbench/services/aiModel",
+			"project": "vscode-workbench"
+		},
+		{
+			"name": "vs/workbench/contrib/pinnedContext",
 			"project": "vscode-workbench"
 		},
 		{
