@@ -173,10 +173,17 @@ export class AideProbeService extends Disposable implements IAideProbeService {
 						}
 
 						const range = model.getFullModelRange();
-						const valueObj = { uri: resource, range: range };
+						const valueObj = {
+							uri: resource, range: {
+								startLineNumber: range.startLineNumber,
+								startColumn: range.startColumn,
+								endLineNumber: range.endLineNumber,
+								endColumn: range.endColumn,
+							}
+						};
 						variables.push({
-							id: 'vscode.file',
-							name: `file:${resource.path.split('/').pop()}`,
+							id: 'selection',
+							name: 'file',
 							value: JSON.stringify(valueObj),
 						});
 					}

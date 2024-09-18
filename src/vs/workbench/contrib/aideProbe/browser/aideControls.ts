@@ -470,7 +470,17 @@ export class AideControls extends Themable implements IAideControls {
 
 		this.lastUsedSelection = this.aideProbeService.anchorEditingSelection;
 		if (!iterationRequest) {
-			const variables: IVariableEntry[] = this.pinnedContextService.getPinnedContexts().map(context => ({ id: context.toString(), name: `file:${basename(context)}`, value: context }));
+			const variables: IVariableEntry[] = this.pinnedContextService.getPinnedContexts().map(context => ({
+				id: 'selection', name: 'file', value: JSON.stringify({
+					uri: context,
+					range: {
+						startLineNumber: 0,
+						startColumn: 0,
+						endLineNumber: 0,
+						endColumn: 0,
+					}
+				})
+			}));
 			this.model = this.aideProbeService.startSession();
 			this.aideProbeService.initiateProbe(this.model, editorValue, variables, this.aideControlsService.scope);
 		} else {
