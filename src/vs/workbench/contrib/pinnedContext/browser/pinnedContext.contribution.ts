@@ -23,8 +23,7 @@ export class PinnedContextPaneDescriptor implements IViewDescriptor {
 	readonly name: ILocalizedString = PinnedContextPane.TITLE;
 	readonly containerIcon = pinnedContextIcon;
 	readonly ctorDescriptor = new SyncDescriptor(PinnedContextPane);
-	readonly order = 1;
-	readonly weight = 100;
+	readonly order = 2;
 	readonly collapsed = false;
 	readonly canToggleVisibility = false;
 	readonly hideByDefault = false;
