@@ -228,6 +228,15 @@ export class MenuId {
 	static readonly ChatInputSide = new MenuId('ChatInputSide');
 	static readonly ChatInlineResourceAnchorContext = new MenuId('ChatInlineResourceAnchorContext');
 	static readonly ChatInlineSymbolAnchorContext = new MenuId('ChatInlineSymbolAnchorContext');
+	static readonly AideAgentContext = new MenuId('AideAgentContext');
+	static readonly AideAgentCodeBlock = new MenuId('AideAgentCodeblock');
+	static readonly AideAgentCompareBlock = new MenuId('AideAgentCompareBlock');
+	static readonly AideAgentMessageTitle = new MenuId('AideAgentMessageTitle');
+	static readonly AideAgentExecute = new MenuId('AideAgentExecute');
+	static readonly AideAgentExecuteSecondary = new MenuId('AideAgentExecuteSecondary');
+	static readonly AideAgentInput = new MenuId('AideAgentInput');
+	static readonly AideAgentInlineResourceAnchorContext = new MenuId('AideAgentInlineResourceAnchorContext');
+	static readonly AideAgentInlineSymbolAnchorContext = new MenuId('AideAgentInlineSymbolAnchorContext');
 	static readonly AccessibleView = new MenuId('AccessibleView');
 	static readonly MultiDiffEditorFileToolbar = new MenuId('MultiDiffEditorFileToolbar');
 	static readonly DiffEditorHunkToolbar = new MenuId('DiffEditorHunkToolbar');

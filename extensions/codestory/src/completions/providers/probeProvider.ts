@@ -96,12 +96,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			}
 		);
 		*/
-		vscode.aideAgent.registerAideAgentProvider(
-			'aideAgentProvider',
-			{
-				provideTriggerResponse: this.provideProbeResponse.bind(this),
-			}
-		);
 	}
 
 	/*

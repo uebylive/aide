@@ -52,9 +52,6 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IAgentTriggerComplete } from '../../contrib/aideAgent/common/aideAgent.js';
-import { IAgentTriggerPayload } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IAgentResponseProgress, IAgentTask, IAgentTaskDto, IAgentTextEdit } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1424,19 +1421,6 @@ export type IChatProgressDto =
 ///////////////////////// END CHAT /////////////////////////
 
 ///////////////////////// START AIDE /////////////////////////
-export type IAideAgentTextEditDto = Omit<Dto<IAgentTextEdit>, 'edits'> & { edits: IWorkspaceEditDto };
-type IAideAgentWithTaskDto = Dto<Exclude<IAgentResponseProgress, IAgentTask>> | IAgentTaskDto;
-export type IAideAgentProgressDto = Dto<Exclude<IAideAgentTextEditDto, IAgentTextEdit>> | IAideAgentWithTaskDto;
-
-export interface MainThreadAideAgentProviderShape extends IDisposable {
-	$registerAideAgentProvider(handle: number): void;
-	$unregisterAideAgentProvider(handle: number): void;
-	$handleProgress(requestId: string, progress: IAideAgentProgressDto, handle?: number): Promise<number | void>;
-}
-
-export interface ExtHostAideAgentProviderShape {
-	$trigger(handle: number, request: IAgentTriggerPayload, token: CancellationToken): Promise<IAgentTriggerComplete | undefined>;
-}
 ///////////////////////// END AIDE /////////////////////////
 
 export interface ExtHostUrlsShape {
@@ -2964,11 +2948,13 @@ export const MainContext = {
 	MainThreadBulkEdits: createProxyIdentifier<MainThreadBulkEditsShape>('MainThreadBulkEdits'),
 	MainThreadLanguageModels: createProxyIdentifier<MainThreadLanguageModelsShape>('MainThreadLanguageModels'),
 	MainThreadEmbeddings: createProxyIdentifier<MainThreadEmbeddingsShape>('MainThreadEmbeddings'),
-	MainThreadAideAgentProvider: createProxyIdentifier<MainThreadAideAgentProviderShape>('MainThreadAideAgentProvider'),
 	MainThreadChatAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadChatAgents2'),
 	MainThreadCodeMapper: createProxyIdentifier<MainThreadCodeMapperShape>('MainThreadCodeMapper'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
 	MainThreadLanguageModelTools: createProxyIdentifier<MainThreadLanguageModelToolsShape>('MainThreadChatSkills'),
+	MainThreadAideAgentAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadAideAgentAgents2'),
+	MainThreadAideAgentCodeMapper: createProxyIdentifier<MainThreadCodeMapperShape>('MainThreadAideAgentCodeMapper'),
+	MainThreadAideAgentVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadAideAgentVariables'),
 	MainThreadClipboard: createProxyIdentifier<MainThreadClipboardShape>('MainThreadClipboard'),
 	MainThreadCommands: createProxyIdentifier<MainThreadCommandsShape>('MainThreadCommands'),
 	MainThreadComments: createProxyIdentifier<MainThreadCommentsShape>('MainThreadComments'),
@@ -3094,7 +3080,9 @@ export const ExtHostContext = {
 	ExtHostChatVariables: createProxyIdentifier<ExtHostChatVariablesShape>('ExtHostChatVariables'),
 	ExtHostLanguageModelTools: createProxyIdentifier<ExtHostLanguageModelToolsShape>('ExtHostChatSkills'),
 	ExtHostChatProvider: createProxyIdentifier<ExtHostLanguageModelsShape>('ExtHostChatProvider'),
-	ExtHostAideAgentProvider: createProxyIdentifier<ExtHostAideAgentProviderShape>('ExtHostAideAgentProvider'),
+	ExtHostAideAgentAgents2: createProxyIdentifier<ExtHostChatAgentsShape2>('ExtHostAideAgentAgents'),
+	ExtHostAideAgentCodeMapper: createProxyIdentifier<ExtHostCodeMapperShape>('ExtHostAideAgentCodeMapper'),
+	ExtHostAideAgentVariables: createProxyIdentifier<ExtHostChatVariablesShape>('ExtHostAideAgentVariables'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),
 	ExtHostEmbeddings: createProxyIdentifier<ExtHostEmbeddingsShape>('ExtHostEmbeddings'),
 	ExtHostAiRelatedInformation: createProxyIdentifier<ExtHostAiRelatedInformationShape>('ExtHostAiRelatedInformation'),

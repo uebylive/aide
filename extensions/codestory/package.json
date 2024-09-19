@@ -60,16 +60,7 @@
         "icon": "assets/discord.svg"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "changeTracker",
-          "title": "Change Tracker",
-          "icon": "assets/versions.svg"
-        }
-      ]
-    },
-    "aideChatParticipants": [
+    "aideAgents": [
       {
         "id": "aide",
         "name": "Chat",
@@ -80,15 +71,6 @@
         ]
       }
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "codestory.feedback",
-          "when": "view == cs-chat",
-          "group": "navigation"
-        }
-      ]
-    },
     "configuration": {
       "type": "object",
       "title": "Aide Extension settings",

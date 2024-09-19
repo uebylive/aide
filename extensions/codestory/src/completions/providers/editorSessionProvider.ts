@@ -179,8 +179,8 @@ export async function provideInteractiveEditorResponse(
 	repoRef: RepoRef,
 	sidecarClient: SideCarClient,
 	workingDirectory: string,
-	request: vscode.AideChatRequest,
-	progress: vscode.AideChatResponseStream,
+	request: vscode.ChatRequest,
+	progress: vscode.ChatResponseStream,
 	token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
 	const variables = request.references;

@@ -84,6 +84,15 @@ export namespace Schemas {
 	/** Scheme used for the chat input editor. */
 	export const vscodeChatSesssion = 'vscode-chat-editor';
 
+	/** Scheme used for code blocks in an aide agent session. */
+	export const vscodeAideAgentCodeBlock = 'vscode-aide-agent-code-block';
+
+	/** Scheme used for LHS of code compare (aka diff) blocks in aide agent session. */
+	export const vscodeAideAgentCodeCompareBlock = 'vscode-aide-agent-code-compare-block';
+
+	/** Scheme used for the aide agent input editor. */
+	export const vscodeAideAgentSesssion = 'vscode-aide-agent-editor';
+
 	/**
 	 * Scheme used internally for webviews that aren't linked to a resource (i.e. not custom editors)
 	 */

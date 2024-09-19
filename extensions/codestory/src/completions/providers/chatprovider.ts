@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as vscode from 'vscode';
+import * as uuid from 'uuid';
 
 import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
@@ -67,7 +68,7 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 }
 
 export class CSChatAgentProvider implements vscode.Disposable {
-	private chatAgent: vscode.AideChatParticipant;
+	private chatAgent: vscode.ChatParticipant;
 
 	private _workingDirectory: string;
 	private _repoName: string;
@@ -94,8 +95,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
 
-		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
-		// this.chatAgent.isDefault = true;
+		this.chatAgent = vscode.aideAgent.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
@@ -121,10 +121,10 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
-	defaultAgentRequestHandler: vscode.AideChatExtendedRequestHandler = async (request, _context, response, token) => {
+	defaultAgentRequestHandler: vscode.ChatExtendedRequestHandler = async (request, _context, response, token) => {
 		let requestType: UserMessageType = 'general';
 		const slashCommand = request.command;
-		if (request.location === vscode.AideChatLocation.Editor) {
+		if (request.location === vscode.ChatLocation.Editor) {
 			await provideInteractiveEditorResponse(
 				this._currentRepoRef,
 				this._sideCarClient,
@@ -145,6 +145,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			}
 		}
 
+		const threadId = uuid.v4();
+
 		logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
 		if (requestType === 'explain') {
 			// Implement the explain feature here
@@ -154,7 +156,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				response.markdown('Selecting code on the editor can help us explain it better');
 				return new CSChatResponseForProgress();
 			} else {
-				const explainResponse = this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
+				const explainResponse = this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, threadId);
 				await reportFromStreamToSearchProgress(explainResponse, response, token, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
@@ -166,7 +168,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const searchString = request.prompt.toString().slice('/search'.length).trim();
-			const searchResponse = this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
+			const searchResponse = this._sideCarClient.searchQuery(searchString, this._currentRepoRef, threadId);
 			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
@@ -179,7 +181,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const projectLabels = this._projectContext.labels;
-			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels);
+			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, threadId, request.references, projectLabels);
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}

@@ -17,7 +17,7 @@ import { AdjustedLineContent, LineContent, LineIndentManager } from '../completi
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	response: vscode.AideChatResponseStream,
+	response: vscode.ChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -193,7 +193,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -225,7 +225,7 @@ export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStre
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.AideChatResponseStream,
+	progress: vscode.ChatResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {

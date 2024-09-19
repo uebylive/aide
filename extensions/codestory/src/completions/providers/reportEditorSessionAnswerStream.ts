@@ -19,7 +19,7 @@ export interface EditMessage {
 
 export const reportFromStreamToEditorSessionProgress = async (
 	stream: AsyncIterator<InLineAgentMessage>,
-	progress: vscode.AideChatResponseStream,
+	progress: vscode.ChatResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	_currentRepoRef: RepoRef,
 	_workingDirectory: string,
@@ -304,7 +304,7 @@ class StreamProcessor {
 	sentEdits: boolean;
 	documentLineLimit: number;
 	constructor(
-		progress: vscode.AideChatResponseStream,
+		progress: vscode.ChatResponseStream,
 		document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,
@@ -436,13 +436,13 @@ class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.AideChatResponseStream;
+	progress: vscode.ChatResponseStream;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
 
 	constructor(
-		progress: vscode.AideChatResponseStream,
+		progress: vscode.ChatResponseStream,
 		private document: vscode.TextDocument,
 		lines: string[],
 		contextSelection: InLineAgentContextSelection,

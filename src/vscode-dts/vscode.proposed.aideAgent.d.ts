@@ -4,34 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
-	export type AideAgentScope = 'Selection' | 'PinnedContext' | 'WholeCodebase';
-
-	export interface AgentTrigger {
-		readonly id: string;
-		readonly message: string;
-		readonly scope: AideAgentScope;
-	}
-
-	export interface AideAgentTextEdit {
-		// TODO(@ghostwriternr): Get rid of the iterationId
-		readonly iterationId: string;
-		readonly edits: WorkspaceEdit;
-	}
-
-	export interface AgentResponseStream {
-		markdown(value: string | MarkdownString): void;
-		codeEdit(value: AideAgentTextEdit): void;
-	}
-
-	export interface AgentTriggerComplete {
-		readonly errorDetails?: string;
-	}
-
-	export interface AideAgentProvider {
-		provideTriggerResponse(request: AgentTrigger, response: AgentResponseStream, token: CancellationToken): ProviderResult<AgentTriggerComplete | void>;
-	}
-
 	export namespace aideAgent {
-		export function registerAideAgentProvider(id: string, provider: AideAgentProvider): Disposable;
+		export function createChatParticipant(id: string, handler: ChatExtendedRequestHandler): ChatParticipant;
+		export function createDynamicChatParticipant(id: string, dynamicProps: DynamicChatParticipantProps, handler: ChatExtendedRequestHandler): ChatParticipant;
+		export function registerChatParticipantDetectionProvider(participantDetectionProvider: ChatParticipantDetectionProvider): Disposable;
+		export function registerChatResponseProvider(id: string, provider: ChatResponseProvider, metadata: ChatResponseProviderMetadata): Disposable;
+		export function registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: ChatVariableResolver, fullName?: string, icon?: ThemeIcon): Disposable;
+		export function registerMappedEditsProvider(documentSelector: DocumentSelector, provider: MappedEditsProvider): Disposable;
+		export function registerMappedEditsProvider2(provider: MappedEditsProvider2): Disposable;
 	}
 }

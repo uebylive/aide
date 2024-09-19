@@ -112,7 +112,9 @@ import { ExtHostCodeMapper } from './extHostCodeMapper.js';
 import { IExtHostCSAuthentication } from './extHostCSAuthentication.js';
 import { ExtHostCSEvents } from './extHostCSEvents.js';
 import { ExtHostModelSelection } from './extHostModelSelection.js';
-import { ExtHostAideAgentProvider } from './extHostAideAgentProvider.js';
+import { ExtHostAideAgentAgents2 } from './extHostAideAgentAgents2.js';
+import { ExtHostAideAgentVariables } from './extHostAideAgentVariables.js';
+import { ExtHostAideAgentCodeMapper } from './extHostAideAgentCodeMapper.js';
 
 export interface IExtensionRegistries {
 	mine: ExtensionDescriptionRegistry;
@@ -221,7 +223,9 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostChatAgents2 = rpcProtocol.set(ExtHostContext.ExtHostChatAgents2, new ExtHostChatAgents2(rpcProtocol, extHostLogService, extHostCommands, extHostDocuments));
 	const extHostChatVariables = rpcProtocol.set(ExtHostContext.ExtHostChatVariables, new ExtHostChatVariables(rpcProtocol));
 	const extHostLanguageModelTools = rpcProtocol.set(ExtHostContext.ExtHostLanguageModelTools, new ExtHostLanguageModelTools(rpcProtocol));
-	const extHostAideAgentProvider = rpcProtocol.set(ExtHostContext.ExtHostAideAgentProvider, new ExtHostAideAgentProvider(rpcProtocol));
+	const extHostAideAgentAgents2 = rpcProtocol.set(ExtHostContext.ExtHostAideAgentAgents2, new ExtHostAideAgentAgents2(rpcProtocol, extHostLogService, extHostCommands, extHostDocuments));
+	const extHostAideAgentCodeMapper = rpcProtocol.set(ExtHostContext.ExtHostAideAgentCodeMapper, new ExtHostAideAgentCodeMapper(rpcProtocol));
+	const extHostAideAgentVariables = rpcProtocol.set(ExtHostContext.ExtHostAideAgentVariables, new ExtHostAideAgentVariables(rpcProtocol));
 	const extHostAiRelatedInformation = rpcProtocol.set(ExtHostContext.ExtHostAiRelatedInformation, new ExtHostRelatedInformation(rpcProtocol));
 	const extHostAiEmbeddingVector = rpcProtocol.set(ExtHostContext.ExtHostAiEmbeddingVector, new ExtHostAiEmbeddingVector(rpcProtocol));
 	const extHostStatusBar = rpcProtocol.set(ExtHostContext.ExtHostStatusBar, new ExtHostStatusBar(rpcProtocol, extHostCommands.converter));
@@ -1488,6 +1492,37 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 		};
 
+		// namespace: aideAgent
+		const aideAgent: typeof vscode.aideAgent = {
+			registerChatResponseProvider(id: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata) {
+				checkProposedApiEnabled(extension, 'chatProvider');
+				return extHostLanguageModels.registerLanguageModel(extension, id, provider, metadata);
+			},
+			registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: vscode.ChatVariableResolver, fullName?: string, icon?: vscode.ThemeIcon) {
+				checkProposedApiEnabled(extension, 'chatVariableResolver');
+				return extHostAideAgentVariables.registerVariableResolver(extension, id, name, userDescription, modelDescription, isSlow, resolver, fullName, icon?.id);
+			},
+			registerMappedEditsProvider(selector: vscode.DocumentSelector, provider: vscode.MappedEditsProvider) {
+				checkProposedApiEnabled(extension, 'mappedEditsProvider');
+				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
+			},
+			registerMappedEditsProvider2(provider: vscode.MappedEditsProvider2) {
+				checkProposedApiEnabled(extension, 'mappedEditsProvider');
+				return extHostAideAgentCodeMapper.registerMappedEditsProvider(extension, provider);
+			},
+			createChatParticipant(id: string, handler: vscode.ChatExtendedRequestHandler) {
+				return extHostAideAgentAgents2.createChatAgent(extension, id, handler);
+			},
+			createDynamicChatParticipant(id: string, dynamicProps: vscode.DynamicChatParticipantProps, handler: vscode.ChatExtendedRequestHandler): vscode.ChatParticipant {
+				checkProposedApiEnabled(extension, 'chatParticipantPrivate');
+				return extHostAideAgentAgents2.createDynamicChatAgent(extension, id, dynamicProps, handler);
+			},
+			registerChatParticipantDetectionProvider(provider: vscode.ChatParticipantDetectionProvider) {
+				checkProposedApiEnabled(extension, 'chatParticipantAdditions');
+				return extHostAideAgentAgents2.registerChatParticipantDetectionProvider(provider);
+			},
+		};
+
 		// namespace: lm
 		const lm: typeof vscode.lm = {
 			selectChatModels: (selector) => {
@@ -1533,14 +1568,6 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'lmTools');
 				return extHostLanguageModelTools.tools;
 			},
-		};
-
-		// namespace: aideAgent
-		const aideAgent: typeof vscode.aideAgent = {
-			registerAideAgentProvider(id: string, provider: vscode.AideAgentProvider) {
-				checkProposedApiEnabled(extension, 'aideAgent');
-				return extHostAideAgentProvider.registerAgentprovider(extension, id, provider);
-			}
 		};
 
 		// namespace: speech
