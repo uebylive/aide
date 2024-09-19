@@ -103,6 +103,7 @@ export interface IPaneCompositePart extends IView {
 export abstract class AbstractPaneCompositePart extends CompositePart<PaneComposite> implements IPaneCompositePart {
 
 	private static readonly MIN_COMPOSITE_BAR_WIDTH = 50;
+	protected allowDroppingViews: boolean = true;
 
 	get snap(): boolean {
 		// Always allow snapping closed
@@ -263,10 +264,15 @@ export abstract class AbstractPaneCompositePart extends CompositePart<PaneCompos
 
 		const messageElement = document.createElement('div');
 		messageElement.classList.add('empty-pane-message');
-		messageElement.innerText = localize('pane.emptyMessage', "Drag a view here to display.");
 
+		const placeholder = this.allowDroppingViews ? localize('pane.emptyMessage', "Drag a view here to display.") : localize('pane.emptyMessageNoDrop', "No views are currently open.");
+		messageElement.innerText = placeholder;
 		this.emptyPaneMessageElement.appendChild(messageElement);
 		parent.appendChild(this.emptyPaneMessageElement);
+
+		if (!this.allowDroppingViews) {
+			return;
+		}
 
 		this._register(CompositeDragAndDropObserver.INSTANCE.registerTarget(this.element, {
 			onDragOver: (e) => {

@@ -199,6 +199,7 @@ import './contrib/chat/browser/chat.contribution.js';
 import './contrib/inlineChat/browser/inlineChat.contribution.js';
 
 // Aide
+import './contrib/aideAgent/browser/aideAgentParticipantContributions.js'; // This is done so the container will be registered before views are restored
 import './contrib/aideAgent/browser/aideAgent.contribution.js';
 
 // Pinned context

@@ -28,7 +28,6 @@ import { registerChatDeveloperActions } from './actions/aideAgentDeveloperAction
 import { SubmitAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
 import { registerChatExportActions } from './actions/aideAgentImportExport.js';
-import { registerMoveActions } from './actions/aideAgentMoveActions.js';
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
@@ -272,7 +271,6 @@ registerChatFileTreeActions();
 registerChatTitleActions();
 registerChatExecuteActions();
 registerChatExportActions();
-registerMoveActions();
 registerNewChatActions();
 registerChatContextActions();
 registerChatDeveloperActions();

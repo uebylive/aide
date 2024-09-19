@@ -162,6 +162,17 @@ const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.regi
 	},
 });
 
+const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
+const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
+	id: viewContainerId,
+	title: localize2('chat.viewContainer.label', "Aide"),
+	icon: Codicon.commentDiscussion,
+	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [viewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
+	storageId: viewContainerId,
+	hideIfEmpty: false,
+	order: 0,
+}, ViewContainerLocation.AuxiliaryBar, { isDefault: true });
+
 export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 	static readonly ID = 'workbench.contrib.aideAgentExtensionPointHandler';
@@ -173,7 +184,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		@IAideAgentAgentService private readonly _chatAgentService: IAideAgentAgentService,
 		@ILogService private readonly logService: ILogService
 	) {
-		this._viewContainer = this.registerViewContainer();
+		this._viewContainer = viewContainer;
 		this.registerDefaultParticipantView();
 		this.handleAndRegisterChatExtensions();
 	}
@@ -278,24 +289,6 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		});
 	}
 
-	private registerViewContainer(): ViewContainer {
-		// Register View Container
-		const title = localize2('chat.viewContainer.label', "Aide");
-		const icon = Codicon.commentDiscussion;
-		const viewContainerId = CHAT_SIDEBAR_PANEL_ID;
-		const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
-			id: viewContainerId,
-			title,
-			icon,
-			ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [viewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
-			storageId: viewContainerId,
-			hideIfEmpty: true,
-			order: 100,
-		}, ViewContainerLocation.AuxiliaryBar);
-
-		return viewContainer;
-	}
-
 	private registerDefaultParticipantView(): IDisposable {
 		// Register View. Name must be hardcoded because we want to show it even when the extension fails to load due to an API version incompatibility.
 		const name = 'Aide';
@@ -306,7 +299,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			singleViewPaneContainerTitle: this._viewContainer.title.value,
 			name: { value: name, original: name },
 			canToggleVisibility: false,
-			canMoveView: true,
+			canMoveView: false,
 			ctorDescriptor: new SyncDescriptor(ChatViewPane),
 			when: ContextKeyExpr.or(CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED, CONTEXT_CHAT_EXTENSION_INVALID)
 		}];

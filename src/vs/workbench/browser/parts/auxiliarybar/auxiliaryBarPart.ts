@@ -36,8 +36,10 @@ import { HiddenItemStrategy, WorkbenchToolBar } from '../../../../platform/actio
 import { ActionViewItem, IActionViewItemOptions } from '../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { CompositeMenuActions } from '../../actions.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
+import { ICompositeTitleLabel } from '../compositePart.js';
 
 export class AuxiliaryBarPart extends AbstractPaneCompositePart {
+	override allowDroppingViews = false;
 
 	static readonly activePanelSettingsKey = 'workbench.auxiliarybar.activepanelid';
 	static readonly pinnedPanelsKey = 'workbench.auxiliarybar.pinnedPanels';
@@ -203,8 +205,15 @@ export class AuxiliaryBarPart extends AbstractPaneCompositePart {
 		]);
 	}
 
+	protected override createTitleLabel(parent: HTMLElement): ICompositeTitleLabel {
+		const titleLabel = super.createTitleLabel(parent);
+		this.titleLabelElement!.draggable = false;
+		return titleLabel;
+	}
+
 	protected shouldShowCompositeBar(): boolean {
-		return this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION) !== ActivityBarPosition.HIDDEN;
+		// return this.configurationService.getValue<ActivityBarPosition>(LayoutSettings.ACTIVITY_BAR_LOCATION) !== ActivityBarPosition.HIDDEN;
+		return false;
 	}
 
 	// TODO@benibenj chache this
