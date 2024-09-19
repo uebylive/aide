@@ -39,7 +39,6 @@ import { IChatFollowup, IChatLocationData, IAideAgentService } from '../common/a
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatDragAndDrop } from './aideAgentDragAndDrop.js';
 
 const $ = dom.$;
 
@@ -349,8 +348,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return undefined;
 			}
 		}).filter(isDefined);
-
-		this._register(this.instantiationService.createInstance(ChatDragAndDrop, this.container, this.inputPart, this.styles));
 	}
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {

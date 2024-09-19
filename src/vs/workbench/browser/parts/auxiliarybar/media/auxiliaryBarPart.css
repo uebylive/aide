@@ -28,6 +28,7 @@
 }
 
 .monaco-workbench .part.auxiliarybar > .title {
+	border-bottom: 1px solid var(--vscode-panel-border);
 	background-color: var(--vscode-sideBarTitle-background);
 }
 

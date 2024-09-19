@@ -106,7 +106,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			'assets',
 			'aide-user.png'
 		));
-		this.chatAgent.supportIssueReporting = true;
+		this.chatAgent.supportIssueReporting = false;
 		this.chatAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
 				return [
@@ -117,7 +117,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 
 		// register the extra variables here
 		registerOpenFiles();
-		registerTerminalSelection();
+		// registerTerminalSelection();
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 

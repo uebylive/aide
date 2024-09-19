@@ -63,7 +63,7 @@
     "aideAgents": [
       {
         "id": "aide",
-        "name": "Chat",
+        "name": "Aide",
         "description": "What can I help you with today?",
         "isDefault": true,
         "locations": [

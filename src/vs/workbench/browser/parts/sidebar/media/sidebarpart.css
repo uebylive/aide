@@ -29,6 +29,10 @@
 	text-transform: uppercase;
 }
 
+.monaco-workbench .part.sidebar .header {
+	border-bottom: 1px solid var(--vscode-panel-border);
+}
+
 .monaco-workbench .viewlet .collapsible.header .title {
 	overflow: hidden;
 	text-overflow: ellipsis;

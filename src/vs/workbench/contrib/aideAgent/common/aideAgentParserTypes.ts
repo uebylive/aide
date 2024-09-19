@@ -44,8 +44,8 @@ export class ChatRequestTextPart implements IParsedChatRequestPart {
 }
 
 // warning, these also show up in a regex in the parser
-export const chatVariableLeader = '#';
-export const chatAgentLeader = '@';
+export const chatVariableLeader = '@';
+export const chatAgentLeader = '#';
 export const chatSubcommandLeader = '/';
 
 /**
