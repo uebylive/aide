@@ -169,6 +169,11 @@
           "type": "boolean",
           "default": true,
           "description": "Should we allow clip board content to be sent over"
+        },
+        "aide.deepReasoning": {
+          "type": "boolean",
+          "default": false,
+          "description": "Should use deep reasoning before making edits"
         }
       }
     }
