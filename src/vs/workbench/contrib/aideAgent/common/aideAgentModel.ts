@@ -1201,8 +1201,7 @@ export interface IChatWelcomeMessageModel {
 	readonly content: IChatWelcomeMessageContent[];
 	readonly sampleQuestions: IChatFollowup[];
 	readonly username: string;
-	readonly avatarIcon?: ThemeIcon;
-
+	readonly avatarIcon?: URI;
 }
 
 export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
@@ -1225,8 +1224,8 @@ export class ChatWelcomeMessageModel implements IChatWelcomeMessageModel {
 		return this.chatAgentService.getContributedDefaultAgent(ChatAgentLocation.Panel)?.fullName ?? '';
 	}
 
-	public get avatarIcon(): ThemeIcon | undefined {
-		return this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.metadata.themeIcon;
+	public get avatarIcon(): URI | undefined {
+		return this.chatAgentService.getDefaultAgent(ChatAgentLocation.Panel)?.metadata.icon;
 	}
 }
 

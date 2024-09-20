@@ -64,8 +64,14 @@
       {
         "id": "aide",
         "name": "Aide",
+        "fullName": "Aide",
         "description": "What can I help you with today?",
+        "supportsModelPicker": true,
         "isDefault": true,
+        "metadata": {
+          "icon": "assets/aide-agent.png",
+          "requester": "assets/aide-user.png"
+        },
         "locations": [
           "panel"
         ]
