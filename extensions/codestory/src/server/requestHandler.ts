@@ -53,7 +53,7 @@ export function handleRequest(
 				// console.log('log after post for diagnostics');
 				const diagnosticsBody: LSPDiagnostics = JSON.parse(body);
 				const selectionRange = new Range(new Position(diagnosticsBody.range.startPosition.line, diagnosticsBody.range.startPosition.character), new Position(diagnosticsBody.range.endPosition.line, diagnosticsBody.range.endPosition.character));
-				const diagnosticsFromEditor = getDiagnosticsFromEditor(diagnosticsBody.fs_file_path, selectionRange);
+				const diagnosticsFromEditor = await getDiagnosticsFromEditor(diagnosticsBody.fs_file_path, selectionRange);
 				// Process the diagnostics request asynchronously
 				const response = {
 					'diagnostics': diagnosticsFromEditor,

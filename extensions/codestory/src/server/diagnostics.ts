@@ -6,57 +6,59 @@
 import * as vscode from 'vscode';
 import { SidecarDiagnosticsResponse } from './types';
 
-export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): SidecarDiagnosticsResponse[] {
+export async function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): Promise<SidecarDiagnosticsResponse[]> {
 	const fileUri = vscode.Uri.file(filePath);
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
 
-	console.log({ diagnostics })
+	const sidecarDiagnostics = await Promise.all(
+		diagnostics
+			.filter((diagnostic) => interestedRange.contains(diagnostic.range))
+			.filter((diagnostic) =>
+				diagnostic.severity === vscode.DiagnosticSeverity.Error ||
+				diagnostic.severity === vscode.DiagnosticSeverity.Warning
+			)
+			.map(async (diagnostic) => {
+				const full_message = await getFullDiagnosticMessage(diagnostic);
+				return {
+					message: diagnostic.message,
+					range: {
+						startPosition: {
+							line: diagnostic.range.start.line,
+							character: diagnostic.range.start.character,
+							byteOffset: 0,
+						},
+						endPosition: {
+							line: diagnostic.range.end.line,
+							character: diagnostic.range.end.character,
+							byteOffset: 0,
+						},
+					},
+					full_message,
+				};
+			})
+	);
+	return sidecarDiagnostics;
+}
 
-	diagnostics.forEach(diagnostic => {
-		getFullDiagnosticMessage(diagnostic);
-	});
 
-	function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic) {
-		const code = diagnostic.code;
-		if (typeof code === 'object' && code !== null) {
-			const targetUri = code.target;
-			if (targetUri) {
-				console.log(`opening ${targetUri}`);
-				vscode.workspace.openTextDocument(targetUri).then(document => {
-					const content = document.getText();
-					console.log('Full Diagnostic Message:', content);
-					// Process the content as needed
-				});
-			} else {
-				console.log('No target URI found in diagnostic code.');
+async function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic): Promise<string | null> {
+	const code = diagnostic.code;
+	if (typeof code === 'object' && code !== null) {
+		const targetUri = code.target;
+		if (targetUri) {
+			try {
+				const document = await vscode.workspace.openTextDocument(targetUri);
+				return document.getText();
+			} catch (error) {
+				console.error(`Error opening document: ${error}`);
+				return null;
 			}
 		} else {
-			console.log('Diagnostic code is not an object with a target URI.');
+			console.log('No target URI found in diagnostic code.');
+			return null;
 		}
+	} else {
+		console.log('Diagnostic code is not an object with a target URI.');
+		return null;
 	}
-
-	const sidecarDiagnostics = diagnostics.filter((diagnostic) => {
-		return interestedRange.contains(diagnostic.range);
-	}).filter((diagnostic) => {
-		return (diagnostic.severity === vscode.DiagnosticSeverity.Error || diagnostic.severity === vscode.DiagnosticSeverity.Warning);
-	}).map((diagnostic) => {
-		const full_message = getFullDiagnosticMessage(diagnostic);
-		return {
-			message: diagnostic.message,
-			range: {
-				startPosition: {
-					line: diagnostic.range.start.line,
-					character: diagnostic.range.start.character,
-					byteOffset: 0,
-				},
-				endPosition: {
-					line: diagnostic.range.end.line,
-					character: diagnostic.range.end.character,
-					byteOffset: 0,
-				},
-			},
-			full_message,
-		};
-	});
-	return sidecarDiagnostics;
 }
