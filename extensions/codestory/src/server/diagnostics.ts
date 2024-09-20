@@ -21,6 +21,7 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 		if (typeof code === 'object' && code !== null) {
 			const targetUri = code.target;
 			if (targetUri) {
+				console.log(`opening ${targetUri}`);
 				vscode.workspace.openTextDocument(targetUri).then(document => {
 					const content = document.getText();
 					console.log('Full Diagnostic Message:', content);
@@ -39,6 +40,7 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 	}).filter((diagnostic) => {
 		return (diagnostic.severity === vscode.DiagnosticSeverity.Error || diagnostic.severity === vscode.DiagnosticSeverity.Warning);
 	}).map((diagnostic) => {
+		const full_message = getFullDiagnosticMessage(diagnostic);
 		return {
 			message: diagnostic.message,
 			range: {
@@ -53,6 +55,7 @@ export function getDiagnosticsFromEditor(filePath: string, interestedRange: vsco
 					byteOffset: 0,
 				},
 			},
+			full_message,
 		};
 	});
 	return sidecarDiagnostics;
