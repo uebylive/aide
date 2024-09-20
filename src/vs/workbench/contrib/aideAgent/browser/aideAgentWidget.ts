@@ -79,6 +79,8 @@ export interface IChatWidgetLocationOptions {
 	resolveData?(): IChatLocationData | undefined;
 }
 
+export type IChatWidgetCompletionContext = 'default' | 'files' | 'code';
+
 export class ChatWidget extends Disposable implements IChatWidget {
 	public static readonly CONTRIBS: { new(...args: [IChatWidget, ...any]): IChatWidgetContrib }[] = [];
 
@@ -291,6 +293,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	get lastSelectedAgent(): IChatAgentData | undefined {
 		return this._lastSelectedAgent;
+	}
+
+	private _completionContext: IChatWidgetCompletionContext = 'default';
+	set completionContext(context: IChatWidgetCompletionContext) {
+		this._completionContext = context;
+	}
+
+	get completionContext(): IChatWidgetCompletionContext {
+		return this._completionContext;
 	}
 
 	get supportsFileReferences(): boolean {

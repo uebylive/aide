@@ -6,25 +6,22 @@
 import { coalesce } from '../../../../../base/common/arrays.js';
 import { IMarkdownString, MarkdownString } from '../../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
-import { basename } from '../../../../../base/common/resources.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { IRange, Range } from '../../../../../editor/common/core/range.js';
 import { IDecorationOptions } from '../../../../../editor/common/editorCommon.js';
 import { Command } from '../../../../../editor/common/languages.js';
-import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
-import { localize } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { ILabelService } from '../../../../../platform/label/common/label.js';
-import { ILogService } from '../../../../../platform/log/common/log.js';
-import { AnythingQuickAccessProviderRunOptions, IQuickAccessOptions } from '../../../../../platform/quickinput/common/quickAccess.js';
-import { IQuickInputService } from '../../../../../platform/quickinput/common/quickInput.js';
+import { IChatRequestVariableValue, IDynamicVariable } from '../../common/aideAgentVariables.js';
 import { IChatWidget } from '../aideAgent.js';
 import { ChatWidget, IChatWidgetContrib } from '../aideAgentWidget.js';
-import { IChatRequestVariableValue, IAideAgentVariablesService, IDynamicVariable } from '../../common/aideAgentVariables.js';
 
 export const dynamicVariableDecorationType = 'chat-dynamic-variable';
+
+export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceCompletionProvider';
+export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
 export class ChatDynamicVariableModel extends Disposable implements IChatWidgetContrib {
 	public static readonly ID = 'chatDynamicVariableModel';
@@ -116,104 +113,6 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 }
 
 ChatWidget.CONTRIBS.push(ChatDynamicVariableModel);
-
-interface SelectAndInsertFileActionContext {
-	widget: IChatWidget;
-	range: IRange;
-}
-
-function isSelectAndInsertFileActionContext(context: any): context is SelectAndInsertFileActionContext {
-	return 'widget' in context && 'range' in context;
-}
-
-export class SelectAndInsertFileAction extends Action2 {
-	static readonly Name = 'files';
-	static readonly Item = {
-		label: localize('allFiles', 'All Files'),
-		description: localize('allFilesDescription', 'Search for relevant files in the workspace and provide context from them'),
-	};
-	static readonly ID = 'workbench.action.aideAgent.selectAndInsertFile';
-
-	constructor() {
-		super({
-			id: SelectAndInsertFileAction.ID,
-			title: '' // not displayed
-		});
-	}
-
-	async run(accessor: ServicesAccessor, ...args: any[]) {
-		const textModelService = accessor.get(ITextModelService);
-		const logService = accessor.get(ILogService);
-		const quickInputService = accessor.get(IQuickInputService);
-		const chatVariablesService = accessor.get(IAideAgentVariablesService);
-
-		const context = args[0];
-		if (!isSelectAndInsertFileActionContext(context)) {
-			return;
-		}
-
-		const doCleanup = () => {
-			// Failed, remove the dangling `file`
-			context.widget.inputEditor.executeEdits('chatInsertFile', [{ range: context.range, text: `` }]);
-		};
-
-		let options: IQuickAccessOptions | undefined;
-		// If we have a `files` variable, add an option to select all files in the picker.
-		// This of course assumes that the `files` variable has the behavior that it searches
-		// through files in the workspace.
-		if (chatVariablesService.hasVariable(SelectAndInsertFileAction.Name)) {
-			const providerOptions: AnythingQuickAccessProviderRunOptions = {
-				additionPicks: [SelectAndInsertFileAction.Item, { type: 'separator' }]
-			};
-			options = { providerOptions };
-		}
-		// TODO: have dedicated UX for this instead of using the quick access picker
-		const picks = await quickInputService.quickAccess.pick('', options);
-		if (!picks?.length) {
-			logService.trace('SelectAndInsertFileAction: no file selected');
-			doCleanup();
-			return;
-		}
-
-		const editor = context.widget.inputEditor;
-		const range = context.range;
-
-		// Handle the special case of selecting all files
-		if (picks[0] === SelectAndInsertFileAction.Item) {
-			const text = `#${SelectAndInsertFileAction.Name}`;
-			const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
-			if (!success) {
-				logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
-				doCleanup();
-			}
-			return;
-		}
-
-		// Handle the case of selecting a specific file
-		const resource = (picks[0] as unknown as { resource: unknown }).resource as URI;
-		if (!textModelService.canHandleResource(resource)) {
-			logService.trace('SelectAndInsertFileAction: non-text resource selected');
-			doCleanup();
-			return;
-		}
-
-		const fileName = basename(resource);
-		const text = `#file:${fileName}`;
-		const success = editor.executeEdits('chatInsertFile', [{ range, text: text + ' ' }]);
-		if (!success) {
-			logService.trace(`SelectAndInsertFileAction: failed to insert "${text}"`);
-			doCleanup();
-			return;
-		}
-
-		context.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID)?.addReference({
-			id: 'vscode.file',
-			range: { startLineNumber: range.startLineNumber, startColumn: range.startColumn, endLineNumber: range.endLineNumber, endColumn: range.startColumn + text.length },
-			data: resource
-		});
-	}
-}
-registerAction2(SelectAndInsertFileAction);
 
 export interface IAddDynamicVariableContext {
 	id: string;

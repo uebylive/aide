@@ -12,7 +12,7 @@ import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
-import { IChatViewState, IChatWidgetContrib } from './aideAgentWidget.js';
+import { IChatViewState, IChatWidgetCompletionContext, IChatWidgetContrib } from './aideAgentWidget.js';
 import { ICodeBlockActionContext } from './codeBlockPart.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
@@ -120,6 +120,7 @@ export interface IChatWidget {
 	readonly parsedInput: IParsedChatRequest;
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
+	completionContext: IChatWidgetCompletionContext;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
 	reveal(item: ChatTreeItem): void;

@@ -116,7 +116,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		};
 
 		// register the extra variables here
-		registerOpenFiles();
+		// registerOpenFiles();
 		// registerTerminalSelection();
 		this.chatAgent.editsProvider = this.editsProvider;
 	}

@@ -3,42 +3,31 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { CancellationToken } from '../../../../../base/common/cancellation.js';
-import { Codicon } from '../../../../../base/common/codicons.js';
-import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
-import { Schemas } from '../../../../../base/common/network.js';
-import { compare } from '../../../../../base/common/strings.js';
+import { FileAccess, Schemas } from '../../../../../base/common/network.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
-import { IRange } from '../../../../../editor/common/core/range.js';
 import { EditorType } from '../../../../../editor/common/editorCommon.js';
 import { Command } from '../../../../../editor/common/languages.js';
-import { AbstractGotoSymbolQuickAccessProvider, IGotoSymbolQuickPickItem } from '../../../../../editor/contrib/quickAccess/browser/gotoSymbolQuickAccess.js';
-import { localize, localize2 } from '../../../../../nls.js';
+import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { IGotoSymbolQuickPickItem } from '../../../../../editor/contrib/quickAccess/browser/gotoSymbolQuickAccess.js';
+import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
+import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ICommandService } from '../../../../../platform/commands/common/commands.js';
-import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
-import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { AnythingQuickAccessProviderRunOptions } from '../../../../../platform/quickinput/common/quickAccess.js';
-import { IQuickInputService, IQuickPickItem, QuickPickItem } from '../../../../../platform/quickinput/common/quickInput.js';
-import { CHAT_CATEGORY } from './aideAgentActions.js';
-import { IChatWidget, IAideAgentWidgetService } from '../aideAgent.js';
-import { ChatContextAttachments } from '../contrib/aideAgentContextAttachments.js';
-import { ChatAgentLocation, IAideAgentAgentService } from '../../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_LOCATION, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
-import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
-import { ChatRequestAgentPart } from '../../common/aideAgentParserTypes.js';
-import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
-import { IAideAgentLMToolsService } from '../../common/languageModelToolsService.js';
-import { AnythingQuickAccessProvider } from '../../../search/browser/anythingQuickAccess.js';
-import { ISymbolQuickPickItem, SymbolsQuickAccessProvider } from '../../../search/browser/symbolsQuickAccess.js';
+import { IQuickPickItem } from '../../../../../platform/quickinput/common/quickInput.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
+import { IViewsService } from '../../../../services/views/common/viewsService.js';
+import { ISymbolQuickPickItem } from '../../../search/browser/symbolsQuickAccess.js';
+import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
+import { chatVariableLeader } from '../../common/aideAgentParserTypes.js';
+import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
+import { showChatView } from '../aideAgent.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerChatContextActions() {
-	registerAction2(AttachContextAction);
 	registerAction2(AttachFileAction);
 	registerAction2(AttachSelectionAction);
+	registerAction2(TriggerContextProvider);
 }
 
 export type IChatContextQuickPickItem = IFileQuickPickItem | IDynamicVariableQuickPickItem | IStaticVariableQuickPickItem | IGotoSymbolQuickPickItem | ISymbolQuickPickItem | IQuickAccessQuickPickItem | IToolQuickPickItem;
@@ -142,262 +131,59 @@ class AttachSelectionAction extends Action2 {
 	}
 }
 
-class AttachContextAction extends Action2 {
-
-	static readonly ID = 'workbench.action.aideAgent.attachContext';
-
-	// used to enable/disable the keybinding and defined menu containment
-	private static _cdt = ContextKeyExpr.or(
-		ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Panel)),
-		ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Editor), ContextKeyExpr.equals('config.chat.experimental.variables.editor', true)),
-		ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Notebook), ContextKeyExpr.equals('config.chat.experimental.variables.notebook', true)),
-		ContextKeyExpr.and(CONTEXT_CHAT_LOCATION.isEqualTo(ChatAgentLocation.Terminal), ContextKeyExpr.equals('config.chat.experimental.variables.terminal', true)),
-	);
+class TriggerContextProvider extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.triggerContextProvider';
 
 	constructor() {
 		super({
-			id: AttachContextAction.ID,
-			title: localize2('workbench.action.aideAgent.attachContext.label', "Attach Context"),
-			icon: Codicon.attach,
+			id: TriggerContextProvider.ID,
+			title: localize2('workbench.action.aideAgent.triggerContextProvider.label', "Add context"),
+			f1: false,
 			category: CHAT_CATEGORY,
-			precondition: AttachContextAction._cdt,
-			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
-				primary: KeyMod.CtrlCmd | KeyCode.Slash,
-				weight: KeybindingWeight.EditorContrib
+			icon: {
+				light: FileAccess.asFileUri('vs/workbench/contrib/aideAgent/browser/aideAgentContentParts/media/at-light.svg'),
+				dark: FileAccess.asFileUri('vs/workbench/contrib/aideAgent/browser/aideAgentContentParts/media/at-dark.svg'),
 			},
 			menu: [
 				{
-					when: AttachContextAction._cdt,
 					id: MenuId.AideAgentInput,
 					group: 'navigation',
-				},
+				}
 			]
 		});
 	}
 
-	private _getFileContextId(item: { resource: URI } | { uri: URI; range: IRange }) {
-		if ('resource' in item) {
-			return item.resource.toString();
-		}
-
-		return item.uri.toString() + (item.range.startLineNumber !== item.range.endLineNumber ?
-			`:${item.range.startLineNumber}-${item.range.endLineNumber}` :
-			`:${item.range.startLineNumber}`);
-	}
-
-	private async _attachContext(widget: IChatWidget, commandService: ICommandService, ...picks: IChatContextQuickPickItem[]) {
-		const toAttach: IChatRequestVariableEntry[] = [];
-		for (const pick of picks) {
-			if (pick && typeof pick === 'object' && 'command' in pick && pick.command) {
-				// Dynamic variable with a followup command
-				const selection = await commandService.executeCommand(pick.command.id, ...(pick.command.arguments ?? []));
-				if (!selection) {
-					// User made no selection, skip this variable
-					continue;
-				}
-				toAttach.push({
-					...pick,
-					isDynamic: pick.isDynamic,
-					value: pick.value,
-					name: `${typeof pick.value === 'string' && pick.value.startsWith('#') ? pick.value.slice(1) : ''}${selection}`,
-					// Apply the original icon with the new name
-					fullName: selection
-				});
-			} else if ('symbol' in pick && pick.symbol) {
-				// Symbol
-				toAttach.push({
-					...pick,
-					id: this._getFileContextId(pick.symbol.location),
-					value: pick.symbol.location,
-					fullName: pick.label,
-					name: pick.symbol.name,
-					isDynamic: true
-				});
-			} else if (pick && typeof pick === 'object' && 'resource' in pick && pick.resource) {
-				// #file variable
-				toAttach.push({
-					...pick,
-					id: this._getFileContextId({ resource: pick.resource }),
-					value: pick.resource,
-					name: pick.label,
-					isFile: true,
-					isDynamic: true
-				});
-			} else if ('symbolName' in pick && pick.uri && pick.range) {
-				// Symbol
-				toAttach.push({
-					...pick,
-					range: undefined,
-					id: this._getFileContextId({ uri: pick.uri, range: pick.range.decoration }),
-					value: { uri: pick.uri, range: pick.range.decoration },
-					fullName: pick.label,
-					name: pick.symbolName!,
-					isDynamic: true
-				});
-			} else if ('kind' in pick && pick.kind === 'tool') {
-				toAttach.push({
-					id: pick.id,
-					name: pick.label,
-					fullName: pick.label,
-					value: undefined,
-					icon: pick.icon,
-					isTool: true
-				});
-			} else {
-				// All other dynamic variables and static variables
-				toAttach.push({
-					...pick,
-					range: undefined,
-					id: pick.id ?? '',
-					value: 'value' in pick ? pick.value : undefined,
-					fullName: pick.label,
-					name: 'name' in pick && typeof pick.name === 'string' ? pick.name : pick.label,
-					icon: 'icon' in pick && ThemeIcon.isThemeIcon(pick.icon) ? pick.icon : undefined
-				});
-			}
-		}
-
-		widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.setContext(false, ...toAttach);
-	}
-
 	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
-		const quickInputService = accessor.get(IQuickInputService);
-		const chatAgentService = accessor.get(IAideAgentAgentService);
-		const chatVariablesService = accessor.get(IAideAgentVariablesService);
-		const commandService = accessor.get(ICommandService);
-		const widgetService = accessor.get(IAideAgentWidgetService);
-		const languageModelToolsService = accessor.get(IAideAgentLMToolsService);
-		const context: { widget?: IChatWidget } | undefined = args[0];
-		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		if (!widget) {
+		const viewsService = accessor.get(IViewsService);
+		const languageFeaturesService = accessor.get(ILanguageFeaturesService);
+
+		const chatWidget = await showChatView(viewsService);
+		if (!chatWidget) {
 			return;
 		}
 
-		const usedAgent = widget.parsedInput.parts.find(p => p instanceof ChatRequestAgentPart);
-		const slowSupported = usedAgent ? usedAgent.agent.metadata.supportsSlowVariables : true;
-		const quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[] = [];
-		for (const variable of chatVariablesService.getVariables(widget.location)) {
-			if (variable.fullName && (!variable.isSlow || slowSupported)) {
-				quickPickItems.push({
-					label: variable.fullName,
-					name: variable.name,
-					id: variable.id,
-					iconClass: variable.icon ? ThemeIcon.asClassName(variable.icon) : undefined,
-					icon: variable.icon
-				});
-			}
+		const inputEditor = chatWidget.inputEditor;
+		const suggestController = SuggestController.get(inputEditor);
+		if (!suggestController) {
+			return;
 		}
 
-		if (widget.viewModel?.sessionId) {
-			const agentPart = widget.parsedInput.parts.find((part): part is ChatRequestAgentPart => part instanceof ChatRequestAgentPart);
-			if (agentPart) {
-				const completions = await chatAgentService.getAgentCompletionItems(agentPart.agent.id, '', CancellationToken.None);
-				for (const variable of completions) {
-					if (variable.fullName) {
-						quickPickItems.push({
-							label: variable.fullName,
-							id: variable.id,
-							command: variable.command,
-							icon: variable.icon,
-							iconClass: variable.icon ? ThemeIcon.asClassName(variable.icon) : undefined,
-							value: variable.value,
-							isDynamic: true,
-							name: variable.name
-						});
-					}
-				}
-			}
+		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
+
+		// get the current position from chatWidget and insert the context
+		const position = inputEditor.getPosition();
+		if (!position) {
+			return;
 		}
+		const range = {
+			startLineNumber: position.lineNumber,
+			startColumn: position.column,
+			endLineNumber: position.lineNumber,
+			endColumn: position.column
+		};
 
-		if (!usedAgent || usedAgent.agent.supportsToolReferences) {
-			for (const tool of languageModelToolsService.getTools()) {
-				if (tool.canBeInvokedManually) {
-					const item: IToolQuickPickItem = {
-						kind: 'tool',
-						label: tool.displayName ?? tool.name ?? '',
-						id: tool.id,
-						icon: ThemeIcon.isThemeIcon(tool.icon) ? tool.icon : undefined // TODO need to support icon path?
-					};
-					if (ThemeIcon.isThemeIcon(tool.icon)) {
-						item.iconClass = ThemeIcon.asClassName(tool.icon);
-					} else if (tool.icon) {
-						item.iconPath = tool.icon;
-					}
-
-					quickPickItems.push(item);
-				}
-			}
-		}
-
-		quickPickItems.push({
-			label: localize('chatContext.symbol', 'Symbol...'),
-			icon: ThemeIcon.fromId(Codicon.symbolField.id),
-			iconClass: ThemeIcon.asClassName(Codicon.symbolField),
-			prefix: SymbolsQuickAccessProvider.PREFIX
-		});
-
-		function extractTextFromIconLabel(label: string | undefined): string {
-			if (!label) {
-				return '';
-			}
-			const match = label.match(/\$\([^\)]+\)\s*(.+)/);
-			return match ? match[1] : label;
-		}
-
-		this._show(quickInputService, commandService, widget, quickPickItems.sort(function (a, b) {
-
-			const first = extractTextFromIconLabel(a.label).toUpperCase();
-			const second = extractTextFromIconLabel(b.label).toUpperCase();
-
-			return compare(first, second);
-		}));
-	}
-
-	private _show(quickInputService: IQuickInputService, commandService: ICommandService, widget: IChatWidget, quickPickItems: (IChatContextQuickPickItem | QuickPickItem)[], query: string = '') {
-
-		quickInputService.quickAccess.show(query, {
-			enabledProviderPrefixes: [
-				AnythingQuickAccessProvider.PREFIX,
-				SymbolsQuickAccessProvider.PREFIX,
-				AbstractGotoSymbolQuickAccessProvider.PREFIX
-			],
-			placeholder: localize('chatContext.attach.placeholder', 'Search attachments'),
-			providerOptions: <AnythingQuickAccessProviderRunOptions>{
-				handleAccept: (item: IChatContextQuickPickItem) => {
-					if ('prefix' in item) {
-						this._show(quickInputService, commandService, widget, quickPickItems, item.prefix);
-					} else {
-						this._attachContext(widget, commandService, item);
-					}
-				},
-				additionPicks: quickPickItems,
-				filter: (item: IChatContextQuickPickItem) => {
-					// Avoid attaching the same context twice
-					const attachedContext = widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.getContext() ?? new Set();
-
-					if ('symbol' in item && item.symbol) {
-						return !attachedContext.has(this._getFileContextId(item.symbol.location));
-					}
-
-					if (item && typeof item === 'object' && 'resource' in item && URI.isUri(item.resource)) {
-						return [Schemas.file, Schemas.vscodeRemote].includes(item.resource.scheme)
-							&& !attachedContext.has(this._getFileContextId({ resource: item.resource })); // Hack because Typescript doesn't narrow this type correctly
-					}
-
-					if (item && typeof item === 'object' && 'uri' in item && item.uri && item.range) {
-						return !attachedContext.has(this._getFileContextId({ uri: item.uri, range: item.range.decoration }));
-					}
-
-					if (!('command' in item) && item.id) {
-						return !attachedContext.has(item.id);
-					}
-
-					// Don't filter out dynamic variables which show secondary data (temporary)
-					return true;
-				}
-			}
-		});
-
+		inputEditor.executeEdits('insertContextTrigger', [{ range, text: chatVariableLeader }]);
+		chatWidget.focusInput();
+		suggestController.triggerSuggest(new Set(completionProviders));
 	}
 }

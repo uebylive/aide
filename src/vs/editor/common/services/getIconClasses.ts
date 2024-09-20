@@ -11,6 +11,7 @@ import { ILanguageService } from '../languages/language.js';
 import { IModelService } from './model.js';
 import { FileKind } from '../../../platform/files/common/files.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
+import { Codicon } from '../../../base/common/codicons.js';
 
 const fileIconDirectoryRegex = /(?:\/|^)(?:([^\/]+)\/)?([^\/]+)$/;
 
@@ -76,7 +77,10 @@ export function getIconClasses(modelService: IModelService, languageService: ILa
 
 			// Detected Mode
 			const detectedLanguageId = detectLanguageId(modelService, languageService, resource);
-			if (detectedLanguageId) {
+			if (detectedLanguageId === 'unknown') {
+				classes.length = 0;
+				classes.push(`codicon-${Codicon.file.id}`, 'predefined-file-icon');
+			} else if (detectedLanguageId) {
 				classes.push(`${cssEscape(detectedLanguageId)}-lang-file-icon`);
 			}
 		}

@@ -51,7 +51,7 @@ const languageModelToolsExtensionPoint = extensionsRegistry.ExtensionsRegistry.r
 					pattern: '^[\\w-]+$'
 				},
 				name: {
-					description: localize('toolName', "If {0} is enabled for this tool, the user may use '#' with this name to invoke the tool in a query. Otherwise, the name is not required. Name must not contain whitespace.", '`canBeInvokedManually`'),
+					description: localize('toolName', "If {0} is enabled for this tool, the user may use '@' with this name to invoke the tool in a query. Otherwise, the name is not required. Name must not contain whitespace.", '`canBeInvokedManually`'),
 					type: 'string',
 					pattern: '^[\\w-]+$'
 				},

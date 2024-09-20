@@ -198,6 +198,16 @@ export class ItemRenderer implements IListRenderer<CompletionItem, ISuggestionTe
 				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: element.textLabel }), FileKind.FOLDER),
 				getIconClasses(this._modelService, this._languageService, URI.from({ scheme: 'fake', path: completion.detail }), FileKind.FOLDER)
 			].flat();
+		} else if (completion.kind === CompletionItemKind.Folder) {
+			// fallback logic for 'folder' completion items
+			data.icon.className = 'icon hide';
+			data.iconContainer.className = 'icon hide';
+			labelOptions.extraClasses = [`codicon-${Codicon.folder.id}`, 'predefined-file-icon'];
+		} else if (completion.kind === CompletionItemKind.Reference) {
+			// special logic for 'reference' completion items
+			data.icon.className = 'icon hide';
+			data.iconContainer.className = 'icon hide';
+			labelOptions.extraClasses = [`codicon-${Codicon.code.id}`, 'predefined-file-icon'];
 		} else {
 			// normal icon
 			data.icon.className = 'icon hide';

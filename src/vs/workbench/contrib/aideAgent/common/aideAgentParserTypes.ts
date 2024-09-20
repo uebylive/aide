@@ -135,7 +135,7 @@ export class ChatRequestSlashCommandPart implements IParsedChatRequestPart {
 }
 
 /**
- * An invocation of a dynamic reference like '#file:'
+ * An invocation of a dynamic reference like '@file:'
  */
 export class ChatRequestDynamicVariablePart implements IParsedChatRequestPart {
 	static readonly Kind = 'dynamic';

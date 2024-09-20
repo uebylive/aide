@@ -12,8 +12,8 @@ import { IAideAgentSlashCommandService } from './aideAgentSlashCommands.js';
 import { IAideAgentVariablesService, IDynamicVariable } from './aideAgentVariables.js';
 import { IAideAgentLMToolsService } from './languageModelToolsService.js';
 
-const agentReg = /^@([\w_\-\.]+)(?=(\s|$|\b))/i; // An @-agent
-const variableReg = /^#([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A #-variable with an optional numeric : arg (@response:2)
+const agentReg = /^#([\w_\-\.]+)(?=(\s|$|\b))/i; // An #-agent
+const variableReg = /^@([\w_\-]+)(:\d+)?(?=(\s|$|\b))/i; // A @-variable with an optional numeric : arg (@response:2)
 const slashReg = /\/([\w_\-]+)(?=(\s|$|\b))/i; // A / command
 
 export interface IChatParserContext {

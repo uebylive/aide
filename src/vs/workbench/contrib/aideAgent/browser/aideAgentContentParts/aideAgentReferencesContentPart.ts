@@ -30,6 +30,7 @@ import { IResourceLabel, ResourceLabels } from '../../../../browser/labels.js';
 import { ColorScheme } from '../../../../browser/web.api.js';
 import { SETTINGS_AUTHORITY } from '../../../../services/preferences/common/preferences.js';
 import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
+import { chatVariableLeader } from '../../common/aideAgentParserTypes.js';
 import { ChatResponseReferencePartStatusKind, IChatContentReference, IChatWarningMessage } from '../../common/aideAgentService.js';
 import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
 import { IChatRendererContent, IChatResponseViewModel } from '../../common/aideAgentViewModel.js';
@@ -337,14 +338,14 @@ class CollapsibleListRenderer implements IListRenderer<IChatCollapsibleListItem,
 					{
 						resource: uri,
 						name: basenameOrAuthority(uri),
-						description: `#${reference.variableName}`,
+						description: `${chatVariableLeader}${reference.variableName}`,
 						range: 'range' in reference.value ? reference.value.range : undefined,
 					}, { icon, title: data.options?.status?.description ?? data.title });
 			} else {
 				const variable = this.chatVariablesService.getVariable(reference.variableName);
 				// This is a hack to get chat attachment ThemeIcons to render for resource labels
 				const asThemeIcon = variable?.icon ? `$(${variable.icon.id}) ` : '';
-				const asVariableName = `#${reference.variableName}`; // Fallback, shouldn't really happen
+				const asVariableName = `${chatVariableLeader}${reference.variableName}`; // Fallback, shouldn't really happen
 				const label = `${asThemeIcon}${variable?.fullName ?? asVariableName}`;
 				templateData.label.setLabel(label, asVariableName, { title: data.options?.status?.description ?? variable?.description });
 			}
