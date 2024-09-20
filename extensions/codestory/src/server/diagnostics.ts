@@ -9,6 +9,31 @@ import { SidecarDiagnosticsResponse } from './types';
 export function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): SidecarDiagnosticsResponse[] {
 	const fileUri = vscode.Uri.file(filePath);
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
+
+	console.log({ diagnostics })
+
+	diagnostics.forEach(diagnostic => {
+		getFullDiagnosticMessage(diagnostic);
+	});
+
+	function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic) {
+		const code = diagnostic.code;
+		if (typeof code === 'object' && code !== null) {
+			const targetUri = code.target;
+			if (targetUri) {
+				vscode.workspace.openTextDocument(targetUri).then(document => {
+					const content = document.getText();
+					console.log('Full Diagnostic Message:', content);
+					// Process the content as needed
+				});
+			} else {
+				console.log('No target URI found in diagnostic code.');
+			}
+		} else {
+			console.log('Diagnostic code is not an object with a target URI.');
+		}
+	}
+
 	const sidecarDiagnostics = diagnostics.filter((diagnostic) => {
 		return interestedRange.contains(diagnostic.range);
 	}).filter((diagnostic) => {
