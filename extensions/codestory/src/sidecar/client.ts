@@ -954,6 +954,8 @@ export class SideCarClient {
 				language: activeWindowData.language,
 			};
 		}
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const body: CodeEditAgentBody = {
 			user_query: query,
 			editor_url: editorUrl,
@@ -964,7 +966,7 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
 			enable_import_nodes: false,
-			deep_reasoning: false,
+			deep_reasoning: deepReasoning,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
