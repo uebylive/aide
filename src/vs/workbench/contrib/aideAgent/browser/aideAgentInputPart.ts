@@ -447,6 +447,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		};
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 		options.stickyScroll = { enabled: false };
+		options.acceptSuggestionOnEnter = 'on';
 
 		this._inputEditorElement = dom.append(editorContainer!, $(chatInputEditorContainerSelector));
 		const editorOptions = getSimpleCodeEditorWidgetOptions();

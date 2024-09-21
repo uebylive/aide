@@ -13,7 +13,7 @@ import { generateUuid } from '../../../../../base/common/uuid.js';
 import { Position } from '../../../../../editor/common/core/position.js';
 import { IRange, Range } from '../../../../../editor/common/core/range.js';
 import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/core/wordHelper.js';
-import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList } from '../../../../../editor/common/languages.js';
+import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionTriggerKind } from '../../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
@@ -41,6 +41,8 @@ import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { ChatInputPart } from '../aideAgentInputPart.js';
 import { IChatWidgetCompletionContext } from '../aideAgentWidget.js';
 import { ChatDynamicVariableModel } from './aideAgentDynamicVariables.js';
+
+const chatDynamicCompletions = 'chatDynamicCompletions';
 
 class SlashCommandCompletions extends Disposable {
 	constructor(
@@ -332,6 +334,7 @@ class BuiltinDynamicCompletions extends Disposable {
 	private cacheKey?: { key: string; time: number };
 
 	private readonly cacheScheduler: RunOnceScheduler;
+	private lastPattern?: string;
 	private fileEntries: IFileMatch<URI>[] = [];
 	private codeEntries: ISymbolQuickPickItem[] = [];
 
@@ -352,17 +355,12 @@ class BuiltinDynamicCompletions extends Disposable {
 		}, 0));
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: 'chatDynamicCompletions',
+			_debugDisplayName: chatDynamicCompletions,
 			triggerCharacters: [chatVariableLeader],
-			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, token: CancellationToken) => {
+			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
 					return null;
-				}
-
-				const currentCompletionContext = widget.completionContext;
-				if (currentCompletionContext !== 'default') {
-					widget.completionContext = 'default';
 				}
 
 				const range = computeCompletionRanges(model, position, BuiltinDynamicCompletions.VariableNameDef, true);
@@ -376,8 +374,18 @@ class BuiltinDynamicCompletions extends Disposable {
 					pattern = range.varWord.word.toLowerCase().slice(1); // remove leading @
 				}
 
-				const testing = isPatternInWord(pattern.toLowerCase(), 0, pattern.length, 'code', 0, 4);
-				console.log(testing);
+				// We currently trigger the same completion provider when the user selects one of the predefined
+				// options like "File" or "Code". In order to support this, we set the completion context on the widget,
+				// and reset it when the user is done with the current completion context and starts over again.
+				const currentCompletionContext = widget.completionContext;
+				if (
+					currentCompletionContext !== 'default'
+					&& pattern.length === 0
+					&& context.triggerKind === CompletionTriggerKind.TriggerCharacter
+				) {
+					widget.completionContext = 'default';
+				}
+
 				if (currentCompletionContext === 'default' && (
 					pattern.length === 0
 					|| isPatternInWord(pattern.toLowerCase(), 0, pattern.length, 'file', 0, 4)
@@ -394,6 +402,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					await this.addCodeEntries(pattern, widget, result, range, token);
 				}
 
+				this.lastPattern = pattern;
 				// mark results as incomplete because further typing might yield
 				// in more search results
 				result.incomplete = true;
@@ -415,7 +424,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		result.suggestions.push({
 			label: 'File',
 			filterText: `${chatVariableLeader}file`,
-			insertText: `${chatVariableLeader}file:`,
+			insertText: `${chatVariableLeader}`,
 			detail: localize('pickFileLabel', "Pick a file"),
 			range,
 			kind: CompletionItemKind.File,
@@ -428,7 +437,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		result.suggestions.push({
 			label: 'Code',
 			filterText: `${chatVariableLeader}code`,
-			insertText: `${chatVariableLeader}code:`,
+			insertText: `${chatVariableLeader}`,
 			detail: localize('pickCodeSymbolLabel', "Pick a code symbol"),
 			range,
 			kind: CompletionItemKind.Reference,
@@ -454,6 +463,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		this.cacheKey.time = Date.now();
 
 		const query = this.queryBuilder.file(this.workspaceContextService.getWorkspace().folders, {
+			filePattern: this.lastPattern,
 			sortByScore: true,
 			maxResults: 250,
 			cacheKey: this.cacheKey.key
@@ -464,7 +474,7 @@ class BuiltinDynamicCompletions extends Disposable {
 	}
 
 	private async cacheCodeEntries() {
-		const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks('', undefined, CancellationToken.None);
+		const editorSymbolPicks = await this.workspaceSymbolsQuickAccess.getSymbolPicks(this.lastPattern ?? '', undefined, CancellationToken.None);
 		this.codeEntries = editorSymbolPicks;
 	}
 
@@ -530,7 +540,13 @@ class BuiltinDynamicCompletions extends Disposable {
 	}
 
 	private async addCodeEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
-		for (const pick of this.codeEntries) {
+		let entries = this.codeEntries;
+		if (pattern.length > 0) {
+			const editorSymbolPicks = this.codeEntries = await this.workspaceSymbolsQuickAccess.getSymbolPicks(pattern, { skipSorting: true }, token);
+			entries = editorSymbolPicks;
+		}
+
+		for (const pick of entries) {
 			const label = pick.label;
 			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
 			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
@@ -539,7 +555,7 @@ class BuiltinDynamicCompletions extends Disposable {
 				filterText: `${chatVariableLeader}${pick.label}`,
 				insertText,
 				range: info,
-				kind: CompletionItemKind.Reference,
+				kind: CompletionItemKind.Text,
 				sortText: '{', // after `z`
 				command: {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
@@ -595,7 +611,6 @@ export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
 		widget.completionContext = context.pick;
 
 		const inputEditor = widget.inputEditor;
-		// inputEditor.executeEdits('triggerSecondaryChatWidgetCompletion', [{ range: context.range, text: `` }]);
 
 		const suggestController = SuggestController.get(inputEditor);
 		if (!suggestController) {
@@ -603,7 +618,7 @@ export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const completionProvider = completionProviders.find(provider => provider._debugDisplayName === 'chatDynamicCompletions');
+		const completionProvider = completionProviders.find(provider => provider._debugDisplayName === chatDynamicCompletions);
 		if (!completionProvider) {
 			return;
 		}
