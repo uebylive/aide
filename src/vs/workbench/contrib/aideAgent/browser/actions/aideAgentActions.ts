@@ -108,12 +108,12 @@ class ChatHistoryAction extends Action2 {
 	constructor() {
 		super({
 			id: `workbench.action.aideAgent.history`,
-			title: localize2('chat.history.label', "Show Chats..."),
+			title: localize2('chat.history.label', "Show Sessions..."),
 			menu: {
 				id: MenuId.ViewTitle,
 				when: ContextKeyExpr.equals('view', CHAT_VIEW_ID),
 				group: 'navigation',
-				order: -1
+				order: 2
 			},
 			category: CHAT_CATEGORY,
 			icon: Codicon.history,
@@ -189,7 +189,7 @@ class ChatHistoryAction extends Action2 {
 					chatService.removeHistoryEntry(context.item.chat.sessionId);
 					picker.items = getPicks();
 				} else if (context.button === renameButton) {
-					const title = await quickInputService.input({ title: localize('newChatTitle', "New chat title"), value: context.item.chat.title });
+					const title = await quickInputService.input({ title: localize('newChatTitle', "New session title"), value: context.item.chat.title });
 					if (title) {
 						chatService.setChatSessionTitle(context.item.chat.sessionId, title);
 					}

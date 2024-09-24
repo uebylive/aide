@@ -27,7 +27,7 @@ export function registerNewChatActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.aideAgentEditor.newChat',
-				title: localize2('chat.newChat.label', "New Chat"),
+				title: localize2('chat.newChat.label', "New Session"),
 				icon: Codicon.plus,
 				f1: false,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -49,7 +49,7 @@ export function registerNewChatActions() {
 		constructor() {
 			super({
 				id: ACTION_ID_NEW_CHAT,
-				title: localize2('chat.newChat.label', "New Chat"),
+				title: localize2('chat.newChat.label', "New Session"),
 				category: CHAT_CATEGORY,
 				icon: Codicon.plus,
 				precondition: CONTEXT_CHAT_ENABLED,
@@ -70,7 +70,7 @@ export function registerNewChatActions() {
 					id: MenuId.ViewTitle,
 					when: ContextKeyExpr.equals('view', CHAT_VIEW_ID),
 					group: 'navigation',
-					order: -1
+					order: 1
 				}]
 			});
 		}
