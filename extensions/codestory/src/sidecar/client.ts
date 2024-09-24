@@ -19,7 +19,7 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { Diagnostic } from 'vscode';
 
 export enum CompletionStopReason {
@@ -980,6 +980,24 @@ export class SideCarClient {
 				yield conversationMessage;
 			}
 		}
+	}
+
+	async sendContextRecording(
+		contextEvents: readonly SidecarContextEvent[],
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/context_recording';
+		const url = baseUrl.toString();
+		const body = {
+			context_events: contextEvents,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
 	}
 }
 
