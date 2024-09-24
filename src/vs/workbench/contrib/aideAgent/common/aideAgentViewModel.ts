@@ -154,7 +154,7 @@ export interface IChatResponseViewModel {
 	/** This ID updates every time the underlying data changes */
 	readonly dataId: string;
 	/** The ID of the associated IChatRequestViewModel */
-	readonly requestId: string;
+	// readonly requestId: string;
 	readonly username: string;
 	readonly avatarIcon?: URI | ThemeIcon;
 	readonly agent?: IChatAgentData;
@@ -231,13 +231,13 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	) {
 		super();
 
-		_model.getRequests().forEach((request, i) => {
-			const requestModel = this.instantiationService.createInstance(ChatRequestViewModel, request);
-			this._items.push(requestModel);
-			this.updateCodeBlockTextModels(requestModel);
-
-			if (request.response) {
-				this.onAddResponse(request.response);
+		_model.getExchanges().forEach((exchange, i) => {
+			if ('message' in exchange) {
+				const requestModel = this.instantiationService.createInstance(ChatRequestViewModel, exchange);
+				this._items.push(requestModel);
+				this.updateCodeBlockTextModels(requestModel);
+			} else if ('response' in exchange) {
+				this.onAddResponse(exchange);
 			}
 		});
 
@@ -248,9 +248,11 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 				this._items.push(requestModel);
 				this.updateCodeBlockTextModels(requestModel);
 
+				/* TODO(@ghostwriternr): Why do we need to do this?
 				if (e.request.response) {
 					this.onAddResponse(e.request.response);
 				}
+				*/
 			} else if (e.kind === 'addResponse') {
 				this.onAddResponse(e.response);
 			} else if (e.kind === 'removeRequest') {
@@ -356,7 +358,9 @@ export class ChatRequestViewModel implements IChatRequestViewModel {
 	}
 
 	get contentReferences() {
-		return this._model.response?.contentReferences;
+		// TODO(@ghostwriternr): This seems useful, but I don't want to fix this yet.
+		// return this._model.response?.contentReferences;
+		return [];
 	}
 
 	get confirmation() {
@@ -469,9 +473,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.voteDownReason;
 	}
 
+	/* TODO(@ghostwriternr): Once we have a clear picture of how requests and responses are going to be linked, we can remove this entirely.
 	get requestId() {
 		return this._model.requestId;
 	}
+	*/
 
 	get isStale() {
 		return this._model.isStale;

@@ -12,29 +12,24 @@ import { MarkdownString } from '../../../../base/common/htmlContent.js';
 import { Iterable } from '../../../../base/common/iterator.js';
 import { Disposable, DisposableMap, IDisposable } from '../../../../base/common/lifecycle.js';
 import { revive } from '../../../../base/common/marshalling.js';
-import { StopWatch } from '../../../../base/common/stopwatch.js';
 import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
-import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { Progress } from '../../../../platform/progress/common/progress.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
-import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
-import { ChatAgentLocation, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentHistoryEntry, IChatAgentRequest, IChatAgentResult, IAideAgentAgentService } from './aideAgentAgents.js';
+import { IWorkbenchAssignmentService } from '../../../services/assignment/common/assignmentService.js';
+import { IExtensionService } from '../../../services/extensions/common/extensions.js';
+import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
-import { ChatModel, ChatRequestModel, ChatRequestRemovalReason, ChatWelcomeMessageModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
+import { ChatModel, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './aideAgentParserTypes.js';
 import { ChatRequestParser } from './aideAgentRequestParser.js';
-import { IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IAideAgentService, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';
+import { IAideAgentService, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';
 import { ChatServiceTelemetry } from './aideAgentServiceTelemetry.js';
 import { IAideAgentSlashCommandService } from './aideAgentSlashCommands.js';
 import { IAideAgentVariablesService } from './aideAgentVariables.js';
-import { ChatMessageRole, IChatMessage } from './languageModels.js';
-import { IWorkbenchAssignmentService } from '../../../services/assignment/common/assignmentService.js';
-import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 
 const serializedChatKey = 'interactive.sessions';
 
@@ -47,37 +42,6 @@ interface IChatTransfer {
 }
 const SESSION_TRANSFER_EXPIRATION_IN_MILLISECONDS = 1000 * 60;
 
-type ChatProviderInvokedEvent = {
-	timeToFirstProgress: number | undefined;
-	totalTime: number | undefined;
-	result: 'success' | 'error' | 'errorWithOutput' | 'cancelled' | 'filtered';
-	requestType: 'string' | 'followup' | 'slashCommand';
-	chatSessionId: string;
-	agent: string;
-	agentExtensionId: string | undefined;
-	slashCommand: string | undefined;
-	location: ChatAgentLocation;
-	citations: number;
-	numCodeBlocks: number;
-	isParticipantDetected: boolean;
-};
-
-type ChatProviderInvokedClassification = {
-	timeToFirstProgress: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The time in milliseconds from invoking the provider to getting the first data.' };
-	totalTime: { classification: 'SystemMetaData'; purpose: 'PerformanceAndHealth'; comment: 'The total time it took to run the provider\'s `provideResponseWithProgress`.' };
-	result: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether invoking the ChatProvider resulted in an error.' };
-	requestType: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The type of request that the user made.' };
-	chatSessionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'A random ID for the session.' };
-	agent: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The type of agent used.' };
-	agentExtensionId: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The extension that contributed the agent.' };
-	slashCommand?: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The type of slashCommand used.' };
-	location: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The location at which chat request was made.' };
-	citations: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The number of public code citations that were returned with the response.' };
-	numCodeBlocks: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'The number of code blocks in the response.' };
-	isParticipantDetected: { classification: 'SystemMetaData'; purpose: 'FeatureInsight'; comment: 'Whether the participant was automatically detected.' };
-	owner: 'roblourens';
-	comment: 'Provides insight into the performance of Chat agents.';
-};
 
 const maxPersistedSessions = 25;
 
@@ -100,6 +64,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 	declare _serviceBrand: undefined;
 
 	private readonly _sessionModels = this._register(new DisposableMap<string, ChatModel>());
+	// TODO(@ghostwriternr): Does this continue to make sense? How do we interpret 'pending requests' when we're no longer using a request-response model?
 	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellableRequest>());
 	private _persistedSessions: ISerializableChatsData;
 
@@ -125,14 +90,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 		@ILogService private readonly logService: ILogService,
 		@IExtensionService private readonly extensionService: IExtensionService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@IAideAgentSlashCommandService private readonly chatSlashCommandService: IAideAgentSlashCommandService,
 		@IAideAgentVariablesService private readonly chatVariablesService: IAideAgentVariablesService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IWorkbenchAssignmentService workbenchAssignmentService: IWorkbenchAssignmentService,
 		@IContextKeyService contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 
@@ -171,7 +134,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 	private saveState(): void {
 		const liveChats = Array.from(this._sessionModels.values())
 			.filter(session => session.initialLocation === ChatAgentLocation.Panel)
-			.filter(session => session.getRequests().length > 0);
+			.filter(session => session.getExchanges().length > 0);
 
 		const isEmptyWindow = !this.workspaceContextService.getWorkspace().folders.length;
 		if (isEmptyWindow) {
@@ -391,6 +354,25 @@ export class ChatService extends Disposable implements IAideAgentService {
 		return model;
 	}
 
+	private progressCallback(model: ChatModel, response: ChatResponseModel | undefined, progress: IChatProgress, token: CancellationToken): void {
+		if (token.isCancellationRequested) {
+			return;
+		}
+
+		if (progress.kind === 'endResponse' && response) {
+			model.completeResponse(response);
+			return;
+		}
+
+		if (progress.kind === 'markdownContent') {
+			this.trace('sendRequest', `Provider returned progress for session ${model.sessionId}, ${progress.content.value.length} chars`);
+		} else {
+			this.trace('sendRequest', `Provider returned progress: ${JSON.stringify(progress)}`);
+		}
+
+		model.acceptResponseProgress(response, progress);
+	}
+
 	private async initializeSession(model: ChatModel, token: CancellationToken): Promise<void> {
 		try {
 			this.trace('initializeSession', `Initialize session ${model.sessionId}`);
@@ -408,6 +390,9 @@ export class ChatService extends Disposable implements IAideAgentService {
 			if (!defaultAgent) {
 				throw new ErrorNoTelemetry('No default agent registered');
 			}
+
+			this.chatAgentService.initSession(defaultAgent.id, model.sessionId);
+
 			const welcomeMessage = model.welcomeMessage ? undefined : await defaultAgent.provideWelcomeMessage?.(model.initialLocation, token) ?? undefined;
 			const welcomeModel = welcomeMessage && this.instantiationService.createInstance(
 				ChatWelcomeMessageModel,
@@ -451,6 +436,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		return this._startSession(data, data.initialLocation ?? ChatAgentLocation.Panel, CancellationToken.None);
 	}
 
+	/* TODO(@ghostwriternr): This method already seems unused. Remove it?
 	async resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void> {
 		const model = this._sessionModels.get(request.session.sessionId);
 		if (!model && model !== request.session) {
@@ -479,6 +465,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		};
 		await this._sendRequestAsync(model, model.sessionId, request.message, attempt, enableCommandDetection, defaultAgent, location, resendOptions).responseCompletePromise;
 	}
+	*/
 
 	async sendRequest(sessionId: string, request: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
@@ -545,63 +532,28 @@ export class ChatService extends Disposable implements IAideAgentService {
 		const agentPart = 'kind' in parsedRequest ? undefined : parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart);
 		const agentSlashCommandPart = 'kind' in parsedRequest ? undefined : parsedRequest.parts.find((r): r is ChatRequestAgentSubcommandPart => r instanceof ChatRequestAgentSubcommandPart);
 		const commandPart = 'kind' in parsedRequest ? undefined : parsedRequest.parts.find((r): r is ChatRequestSlashCommandPart => r instanceof ChatRequestSlashCommandPart);
-		const requests = [...model.getRequests()];
-
-		let gotProgress = false;
-		const requestType = commandPart ? 'slashCommand' : 'string';
 
 		const responseCreated = new DeferredPromise<IChatResponseModel>();
-		let responseCreatedComplete = false;
+		// let responseCreatedComplete = false;
 		function completeResponseCreated(): void {
+			/* TODO(@ghostwriternr): Debug this when something breaks (this comment sounds useless because I don't yet know what will break, I just know something will)
 			if (!responseCreatedComplete && request?.response) {
 				responseCreated.complete(request.response);
 				responseCreatedComplete = true;
 			}
+			*/
 		}
 
 		const source = new CancellationTokenSource();
 		const token = source.token;
 		const sendRequestInternal = async () => {
-			const progressCallback = (progress: IChatProgress) => {
-				if (token.isCancellationRequested) {
-					return;
-				}
-
-				gotProgress = true;
-
-				if (progress.kind === 'markdownContent') {
-					this.trace('sendRequest', `Provider returned progress for session ${model.sessionId}, ${progress.content.value.length} chars`);
-				} else {
-					this.trace('sendRequest', `Provider returned progress: ${JSON.stringify(progress)}`);
-				}
-
-				model.acceptResponseProgress(request, progress);
-				completeResponseCreated();
-			};
-
 			let detectedAgent: IChatAgentData | undefined;
 			let detectedCommand: IChatAgentCommand | undefined;
 
-			const stopWatch = new StopWatch(false);
 			const listener = token.onCancellationRequested(() => {
 				this.trace('sendRequest', `Request for session ${model.sessionId} was cancelled`);
-				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
-					timeToFirstProgress: undefined,
-					// Normally timings happen inside the EH around the actual provider. For cancellation we can measure how long the user waited before cancelling
-					totalTime: stopWatch.elapsed(),
-					result: 'cancelled',
-					requestType,
-					agent: agentPart?.agent.id ?? '',
-					agentExtensionId: agentPart?.agent.extensionId.value ?? '',
-					slashCommand: agentSlashCommandPart ? agentSlashCommandPart.command.name : commandPart?.slashCommand.command,
-					chatSessionId: model.sessionId,
-					location,
-					citations: request?.response?.codeCitations.length ?? 0,
-					numCodeBlocks: getCodeBlocks(request.response?.response.toString() ?? '').length,
-					isParticipantDetected: !!detectedAgent
-				});
-
-				model.cancelRequest(request);
+				// TODO(@ghostwriternr): How should a user cancel a request in the async response world? Revisit this.
+				// model.cancelRequest(request);
 			});
 
 			try {
@@ -615,7 +567,8 @@ export class ChatService extends Disposable implements IAideAgentService {
 						request = chatRequest ?? model.addRequest(parsedRequest, initVariableData, attempt, agent, command, options?.confirmation, options?.locationData, options?.attachedContext);
 
 						// Variables may have changed if the agent and slash command changed, so resolve them again even if we already had a chatRequest
-						const variableData = await this.chatVariablesService.resolveVariables(parsedRequest, request.attachedContext, model, progressCallback, token);
+						// TODO(@ghostwriternr): Do we still need this? The lifecycle of the request object is unclear, and the cancellation token too.
+						const variableData = await this.chatVariablesService.resolveVariables(parsedRequest, request.attachedContext, model, (part) => this.progressCallback(model, undefined, part, token), token);
 						model.updateRequest(request, variableData);
 						const promptTextResult = getPromptText(request.message);
 						const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
@@ -637,14 +590,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 						} satisfies IChatAgentRequest;
 					};
 
+					/* TODO(@ghostwriternr): Not really a TODO, just marking this code as stuff we don't want to do
 					if (this.configurationService.getValue('chat.experimental.detectParticipant.enabled') !== false && this.chatAgentService.hasChatParticipantDetectionProviders() && !agentPart && !commandPart && enableCommandDetection) {
-						// We have no agent or command to scope history with, pass the full history to the participant detection provider
-						const defaultAgentHistory = this.getHistoryEntriesFromModel(requests, model.sessionId, location, defaultAgent.id);
-
 						// Prepare the request object that we will send to the participant detection provider
 						const chatAgentRequest = await prepareChatAgentRequest(defaultAgent, agentSlashCommandPart?.command, enableCommandDetection, undefined, false);
 
-						const result = await this.chatAgentService.detectAgentOrCommand(chatAgentRequest, defaultAgentHistory, { location }, token);
+						const result = await this.chatAgentService.detectAgentOrCommand(chatAgentRequest, [], { location }, token);
 						if (result && this.chatAgentService.getAgent(result.agent.id)?.locations?.includes(location)) {
 							// Update the response in the ChatModel to reflect the detected agent and command
 							request.response?.setAgent(result.agent, result.command);
@@ -652,13 +603,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 							detectedCommand = result.command;
 						}
 					}
+					*/
 
 					const agent = (detectedAgent ?? agentPart?.agent ?? defaultAgent)!;
 					const command = detectedCommand ?? agentSlashCommandPart?.command;
 					await this.extensionService.activateByEvent(`onAideAgent:${agent.id}`);
 
-					// Recompute history in case the agent or command changed
-					const history = this.getHistoryEntriesFromModel(requests, model.sessionId, location, agent.id);
 					const requestProps = await prepareChatAgentRequest(agent, command, enableCommandDetection, request /* Reuse the request object if we already created it for participant detection */, !!detectedAgent);
 					requestProps.userSelectedModelId = options?.userSelectedModelId;
 					const pendingRequest = this._pendingRequests.get(sessionId);
@@ -666,17 +616,18 @@ export class ChatService extends Disposable implements IAideAgentService {
 						pendingRequest.requestId = requestProps.requestId;
 					}
 					completeResponseCreated();
-					const agentResult = await this.chatAgentService.invokeAgent(agent.id, requestProps, progressCallback, history, token);
+					const agentResult = await this.chatAgentService.invokeAgent(agent.id, requestProps, token);
 					rawResult = agentResult;
-					agentOrCommandFollowups = this.chatAgentService.getFollowups(agent.id, requestProps, agentResult, history, followupsCancelToken);
-					chatTitlePromise = model.getRequests().length === 1 && !model.customTitle ? this.chatAgentService.getChatTitle(defaultAgent.id, this.getHistoryEntriesFromModel(model.getRequests(), model.sessionId, location, agent.id), CancellationToken.None) : undefined;
+					agentOrCommandFollowups = this.chatAgentService.getFollowups(agent.id, requestProps, agentResult, [], followupsCancelToken);
+					chatTitlePromise = model.getExchanges().length === 1 && !model.customTitle ? this.chatAgentService.getChatTitle(defaultAgent.id, [], CancellationToken.None) : undefined;
 				} else if (commandPart && this.chatSlashCommandService.hasCommand(commandPart.slashCommand.command)) {
 					request = model.addRequest(parsedRequest, { variables: [] }, attempt);
 					completeResponseCreated();
 					// contributed slash commands
 					// TODO: spell this out in the UI
+					/* TODO(@ghostwriternr): Investigate if commenting this block out breaks slash commands (which we aren't currently using anyway)
 					const history: IChatMessage[] = [];
-					for (const request of model.getRequests()) {
+					for (const request of model.getExchanges()) {
 						if (!request.response) {
 							continue;
 						}
@@ -688,8 +639,8 @@ export class ChatService extends Disposable implements IAideAgentService {
 						progressCallback(p);
 					}), history, location, token);
 					agentOrCommandFollowups = Promise.resolve(commandResult?.followUp);
+					*/
 					rawResult = {};
-
 				} else {
 					throw new Error(`Cannot handle request`);
 				}
@@ -702,33 +653,15 @@ export class ChatService extends Disposable implements IAideAgentService {
 						rawResult = { errorDetails: { message: localize('emptyResponse', "Provider returned null response") } };
 					}
 
-					const result = rawResult.errorDetails?.responseIsFiltered ? 'filtered' :
-						rawResult.errorDetails && gotProgress ? 'errorWithOutput' :
-							rawResult.errorDetails ? 'error' :
-								'success';
 					const commandForTelemetry = agentSlashCommandPart ? agentSlashCommandPart.command.name : commandPart?.slashCommand.command;
-					this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
-						timeToFirstProgress: rawResult.timings?.firstProgress,
-						totalTime: rawResult.timings?.totalElapsed,
-						result,
-						requestType,
-						agent: agentPart?.agent.id ?? '',
-						agentExtensionId: agentPart?.agent.extensionId.value ?? '',
-						slashCommand: commandForTelemetry,
-						chatSessionId: model.sessionId,
-						isParticipantDetected: !!detectedAgent,
-						location,
-						citations: request.response?.codeCitations.length ?? 0,
-						numCodeBlocks: getCodeBlocks(request.response?.response.toString() ?? '').length
-					});
-					model.setResponse(request, rawResult);
+					// model.setResponse(request, rawResult);
 					completeResponseCreated();
 					this.trace('sendRequest', `Provider returned response for session ${model.sessionId}`);
 
-					model.completeResponse(request);
+					// model.completeResponse(request);
 					if (agentOrCommandFollowups) {
 						agentOrCommandFollowups.then(followups => {
-							model.setFollowups(request, followups);
+							// model.setFollowups(request, followups);
 							this._chatServiceTelemetry.retrievedFollowups(agentPart?.agent.id ?? '', commandForTelemetry, followups?.length ?? 0);
 						});
 					}
@@ -739,27 +672,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 					});
 				}
 			} catch (err) {
-				const result = 'error';
-				this.telemetryService.publicLog2<ChatProviderInvokedEvent, ChatProviderInvokedClassification>('interactiveSessionProviderInvoked', {
-					timeToFirstProgress: undefined,
-					totalTime: undefined,
-					result,
-					requestType,
-					agent: agentPart?.agent.id ?? '',
-					agentExtensionId: agentPart?.agent.extensionId.value ?? '',
-					slashCommand: agentSlashCommandPart ? agentSlashCommandPart.command.name : commandPart?.slashCommand.command,
-					chatSessionId: model.sessionId,
-					location,
-					citations: 0,
-					numCodeBlocks: 0,
-					isParticipantDetected: !!detectedAgent
-				});
 				this.logService.error(`Error while handling chat request: ${toErrorMessage(err, true)}`);
 				if (request) {
-					const rawResult: IChatAgentResult = { errorDetails: { message: err.message } };
-					model.setResponse(request, rawResult);
+					// const rawResult: IChatAgentResult = { errorDetails: { message: err.message } };
+					// model.setResponse(request, rawResult);
 					completeResponseCreated();
-					model.completeResponse(request);
+					// model.completeResponse(request);
 				}
 			} finally {
 				listener.dispose();
@@ -776,36 +694,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		};
 	}
 
-	private getHistoryEntriesFromModel(requests: IChatRequestModel[], sessionId: string, location: ChatAgentLocation, forAgentId: string): IChatAgentHistoryEntry[] {
-		const history: IChatAgentHistoryEntry[] = [];
-		for (const request of requests) {
-			if (!request.response) {
-				continue;
-			}
-
-			const defaultAgentId = this.chatAgentService.getDefaultAgent(location)?.id;
-			if (forAgentId !== request.response.agent?.id && forAgentId !== defaultAgentId) {
-				// An agent only gets to see requests that were sent to this agent.
-				// The default agent (the undefined case) gets to see all of them.
-				continue;
-			}
-
-			const promptTextResult = getPromptText(request.message);
-			const historyRequest: IChatAgentRequest = {
-				sessionId: sessionId,
-				requestId: request.id,
-				agentId: request.response.agent?.id ?? '',
-				message: promptTextResult.message,
-				command: request.response.slashCommand?.name,
-				variables: updateRanges(request.variableData, promptTextResult.diff), // TODO bit of a hack
-				location: ChatAgentLocation.Panel
-			};
-			history.push({ request: historyRequest, response: request.response.response.value, result: request.response.result ?? {} });
-		}
-
-		return history;
-	}
-
+	/* TODO(@ghostwriternr): Remove this if we no longer need to remove requests.
 	async removeRequest(sessionId: string, requestId: string): Promise<void> {
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {
@@ -822,33 +711,28 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 		model.removeRequest(requestId);
 	}
+	*/
 
-	async adoptRequest(sessionId: string, request: IChatRequestModel) {
-		if (!(request instanceof ChatRequestModel)) {
-			throw new TypeError('Can only adopt requests of type ChatRequestModel');
-		}
-		const target = this._sessionModels.get(sessionId);
-		if (!target) {
+	async initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void }> {
+		const model = this._sessionModels.get(sessionId);
+		if (!model) {
 			throw new Error(`Unknown session: ${sessionId}`);
 		}
 
-		await target.waitForInitialization();
+		await model.waitForInitialization();
 
-		const oldOwner = request.session;
-		target.adoptRequest(request);
-
-		if (request.response && !request.response.isComplete) {
-			const cts = this._pendingRequests.deleteAndLeak(oldOwner.sessionId);
-			if (cts) {
-				cts.requestId = request.id;
-				this._pendingRequests.set(target.sessionId, cts);
-			}
-		}
+		const response = model.addResponse();
+		const progressCallback = (p: IChatProgress) => {
+			// TODO(@ghostwriternr): Figure out the right cancellation token to use here
+			this.progressCallback(model, response, p, CancellationToken.None);
+		};
+		return { responseId: response.id, callback: progressCallback };
 	}
 
-	async addCompleteRequest(sessionId: string, message: IParsedChatRequest | string, variableData: IChatRequestVariableData | undefined, attempt: number | undefined, response: IChatCompleteResponse): Promise<void> {
+	async addCompleteRequest(_sessionId: string, message: IParsedChatRequest | string, _variableData: IChatRequestVariableData | undefined, _attempt: number | undefined, _response: IChatCompleteResponse): Promise<void> {
 		this.trace('addCompleteRequest', `message: ${message}`);
 
+		/* TODO(@ghostwriternr): Come back to debug this when restoring a session inevitably fails
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {
 			throw new Error(`Unknown session: ${sessionId}`);
@@ -872,6 +756,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 			model.setFollowups(request, response.followups);
 		}
 		model.completeResponse(request);
+		*/
 	}
 
 	cancelCurrentRequestForSession(sessionId: string): void {
@@ -922,27 +807,4 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.storageService.store(globalChatKey, JSON.stringify(existingRaw), StorageScope.PROFILE, StorageTarget.MACHINE);
 		this.trace('transferChatSession', `Transferred session ${model.sessionId} to workspace ${toWorkspace.toString()}`);
 	}
-}
-
-function getCodeBlocks(text: string): string[] {
-	const lines = text.split('\n');
-	const codeBlockLanguages: string[] = [];
-
-	let codeBlockState: undefined | { readonly delimiter: string; readonly languageId: string };
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-
-		if (codeBlockState) {
-			if (new RegExp(`^\\s*${codeBlockState.delimiter}\\s*$`).test(line)) {
-				codeBlockLanguages.push(codeBlockState.languageId);
-				codeBlockState = undefined;
-			}
-		} else {
-			const match = line.match(/^(\s*)(`{3,}|~{3,})(\w*)/);
-			if (match) {
-				codeBlockState = { delimiter: match[2], languageId: match[3] };
-			}
-		}
-	}
-	return codeBlockLanguages;
 }

@@ -20,10 +20,22 @@ import { TextEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult, IAideAgentAgentService, reviveSerializedAgent } from './aideAgentAgents.js';
+import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
+
+export function isRequestModel(item: unknown): item is IChatRequestModel {
+	return !!item && typeof item === 'object' && 'message' in item;
+}
+
+export function isResponseModel(item: unknown): item is IChatResponseModel {
+	return !!item && typeof (item as IChatResponseModel).setVote !== 'undefined';
+}
+
+export function isWelcomeModel(item: unknown): item is IChatWelcomeMessageModel {
+	return !!item && typeof item === 'object' && 'content' in item;
+}
 
 export interface IChatRequestVariableEntry {
 	id: string;
@@ -56,8 +68,9 @@ export interface IChatRequestModel {
 	readonly confirmation?: string;
 	readonly locationData?: IChatLocationData;
 	readonly attachedContext?: IChatRequestVariableEntry[];
-	readonly response?: IChatResponseModel;
 }
+
+export type IChatExchangeModel = IChatRequestModel | IChatResponseModel;
 
 export interface IChatTextEditGroupState {
 	sha1: string;
@@ -95,7 +108,7 @@ export interface IResponse {
 export interface IChatResponseModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
-	readonly requestId: string;
+	// readonly requestId: string;
 	readonly username: string;
 	readonly avatarIcon?: ThemeIcon | URI;
 	readonly session: IChatModel;
@@ -122,8 +135,6 @@ export interface IChatResponseModel {
 
 export class ChatRequestModel implements IChatRequestModel {
 	private static nextId = 0;
-
-	public response: ChatResponseModel | undefined;
 
 	public readonly id: string;
 
@@ -173,10 +184,6 @@ export class ChatRequestModel implements IChatRequestModel {
 		private _attachedContext?: IChatRequestVariableEntry[]
 	) {
 		this.id = 'request_' + ChatRequestModel.nextId++;
-	}
-
-	adoptTo(session: ChatModel) {
-		this._session = session;
 	}
 }
 
@@ -427,7 +434,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		private _session: ChatModel,
 		private _agent: IChatAgentData | undefined,
 		private _slashCommand: IChatAgentCommand | undefined,
-		public readonly requestId: string,
+		// public readonly requestId: string,
 		private _isComplete: boolean = false,
 		private _isCanceled = false,
 		private _vote?: ChatAgentVoteDirection,
@@ -524,11 +531,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._onDidChange.fire();
 		return true;
 	}
-
-	adoptTo(session: ChatModel) {
-		this._session = session;
-		this._onDidChange.fire();
-	}
 }
 
 export interface IChatModel {
@@ -541,7 +543,7 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
-	getRequests(): IChatRequestModel[];
+	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
 }
@@ -715,11 +717,6 @@ export const enum ChatRequestRemovalReason {
 	 * Removed because the request will be resent
 	 */
 	Resend,
-
-	/**
-	 * Remove because the request is moving to another model
-	 */
-	Adoption
 }
 
 export interface IChatRemoveRequestEvent {
@@ -752,11 +749,9 @@ export enum ChatModelInitState {
 }
 
 export class ChatModel extends Disposable implements IChatModel {
-	static getDefaultTitle(requests: (ISerializableChatRequestData | IChatRequestModel)[]): string {
-		const firstRequestMessage = requests.at(0)?.message ?? '';
-		const message = typeof firstRequestMessage === 'string' ?
-			firstRequestMessage :
-			firstRequestMessage.text;
+	static getDefaultTitle(requests: (ISerializableChatRequestData | IChatExchangeModel)[]): string {
+		const firstRequestMessage = requests.find(r => isRequestModel(r));
+		const message = firstRequestMessage?.message.text ?? 'Session';
 		return message.split('\n')[0].substring(0, 50);
 	}
 
@@ -766,7 +761,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _onDidChange = this._register(new Emitter<IChatChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private _requests: ChatRequestModel[];
+	private _exchanges: IChatExchangeModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
 
@@ -783,16 +778,16 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	get requestInProgress(): boolean {
-		const lastRequest = this.lastRequest;
-		return !!lastRequest?.response && !lastRequest.response.isComplete;
+		const lastExchange = this._exchanges[this._exchanges.length - 1];
+		return !!lastExchange && 'response' in lastExchange && !lastExchange.isComplete;
 	}
 
 	get hasRequests(): boolean {
-		return this._requests.length > 0;
+		return this._exchanges.length > 0;
 	}
 
-	get lastRequest(): ChatRequestModel | undefined {
-		return this._requests.at(-1);
+	get lastExchange(): IChatExchangeModel | undefined {
+		return this._exchanges.at(-1);
 	}
 
 	private _creationDate: number;
@@ -846,7 +841,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	get title(): string {
-		return this._customTitle || ChatModel.getDefaultTitle(this._requests);
+		return this._customTitle || ChatModel.getDefaultTitle(this._exchanges);
 	}
 
 	get initialLocation() {
@@ -864,7 +859,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		this._isImported = (!!initialData && !isSerializableSessionData(initialData)) || (initialData?.isImported ?? false);
 		this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
-		this._requests = initialData ? this._deserialize(initialData) : [];
+		this._exchanges = initialData ? this._deserialize(initialData) : [];
 		this._creationDate = (isSerializableSessionData(initialData) && initialData.creationDate) || Date.now();
 		this._lastMessageDate = (isSerializableSessionData(initialData) && initialData.lastMessageDate) || this._creationDate;
 		this._customTitle = isSerializableSessionData(initialData) ? initialData.customTitle : undefined;
@@ -903,13 +898,14 @@ export class ChatModel extends Disposable implements IChatModel {
 					const result = 'responseErrorDetails' in raw ?
 						// eslint-disable-next-line local/code-no-dangerous-type-assertions
 						{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
-					request.response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, request.id, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups);
+					// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
+					const response = new ChatResponseModel(raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
-						request.response.applyReference(revive(raw.usedContext));
+						response.applyReference(revive(raw.usedContext));
 					}
 
-					raw.contentReferences?.forEach(r => request.response!.applyReference(revive(r)));
-					raw.codeCitations?.forEach(c => request.response!.applyCodeCitation(revive(c)));
+					raw.contentReferences?.forEach(r => response.applyReference(revive(r)));
+					raw.codeCitations?.forEach(c => response.applyCodeCitation(revive(c)));
 				}
 				return request;
 			});
@@ -994,18 +990,26 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._isInitializedDeferred.p;
 	}
 
-	getRequests(): ChatRequestModel[] {
-		return this._requests;
+	getExchanges(): IChatExchangeModel[] {
+		return this._exchanges;
 	}
 
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
-		request.response = new ChatResponseModel([], this, chatAgent, slashCommand, request.id);
+		const response = new ChatResponseModel([], this, chatAgent, slashCommand);
 
-		this._requests.push(request);
+		this._exchanges.push(request, response);
 		this._lastMessageDate = Date.now();
 		this._onDidChange.fire({ kind: 'addRequest', request });
 		return request;
+	}
+
+	addResponse(): ChatResponseModel {
+		const response = new ChatResponseModel([], this, undefined, undefined);
+		this._exchanges.push(response);
+		// TODO(@ghostwriternr): Just looking at the above, do we need to update the last message date here? What is it used for?
+		this._onDidChange.fire({ kind: 'addResponse', response });
+		return response;
 	}
 
 	setCustomTitle(title: string): void {
@@ -1017,32 +1021,19 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidChange.fire({ kind: 'changedRequest', request });
 	}
 
-	adoptRequest(request: ChatRequestModel): void {
-		// this doesn't use `removeRequest` because it must not dispose the request object
-		const oldOwner = request.session;
-		const index = oldOwner._requests.findIndex(candidate => candidate.id === request.id);
-
-		if (index === -1) {
-			return;
-		}
-
-		oldOwner._requests.splice(index, 1);
-
-		request.adoptTo(this);
-		request.response?.adoptTo(this);
-		this._requests.push(request);
-
-		oldOwner._onDidChange.fire({ kind: 'removeRequest', requestId: request.id, responseId: request.response?.id, reason: ChatRequestRemovalReason.Adoption });
-		this._onDidChange.fire({ kind: 'addRequest', request });
-	}
-
-	acceptResponseProgress(request: ChatRequestModel, progress: IChatProgress, quiet?: boolean): void {
+	acceptResponseProgress(response: ChatResponseModel | undefined, progress: IChatProgress, quiet?: boolean): void {
+		/*
 		if (!request.response) {
 			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
 		}
 
 		if (request.response.isComplete) {
 			throw new Error('acceptResponseProgress: Adding progress to a completed response');
+		}
+		*/
+		// TODO(@ghostwriternr): This will break, because this node is not added to the exchanges.
+		if (!response) {
+			response = new ChatResponseModel([], this, undefined, undefined);
 		}
 
 		if (progress.kind === 'markdownContent' ||
@@ -1057,17 +1048,17 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'progressTask' ||
 			progress.kind === 'confirmation'
 		) {
-			request.response.updateContent(progress, quiet);
+			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
-			request.response.applyReference(progress);
+			response.applyReference(progress);
 		} else if (progress.kind === 'agentDetection') {
 			const agent = this.chatAgentService.getAgent(progress.agentId);
 			if (agent) {
-				request.response.setAgent(agent, progress.command);
+				response.setAgent(agent, progress.command);
 				this._onDidChange.fire({ kind: 'setAgent', agent, command: progress.command });
 			}
 		} else if (progress.kind === 'codeCitation') {
-			request.response.applyCodeCitation(progress);
+			response.applyCodeCitation(progress);
 		} else if (progress.kind === 'move') {
 			this._onDidChange.fire({ kind: 'move', target: progress.uri, range: progress.range });
 		} else {
@@ -1075,39 +1066,46 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 	}
 
+	/* TODO(@ghostwriternr): This method was used to remove/resend requests. We can add it back in if we need it.
 	removeRequest(id: string, reason: ChatRequestRemovalReason = ChatRequestRemovalReason.Removal): void {
-		const index = this._requests.findIndex(request => request.id === id);
-		const request = this._requests[index];
+		const index = this._exchanges.findIndex(request => request.id === id);
+		const request = this._exchanges[index];
 
 		if (index !== -1) {
 			this._onDidChange.fire({ kind: 'removeRequest', requestId: request.id, responseId: request.response?.id, reason });
-			this._requests.splice(index, 1);
+			this._exchanges.splice(index, 1);
 			request.response?.dispose();
 		}
 	}
+	*/
 
+	/* TODO(@ghostwriternr): How should a user cancel a request in the async response world? Revisit this.
 	cancelRequest(request: ChatRequestModel): void {
 		if (request.response) {
 			request.response.cancel();
 		}
 	}
+	*/
 
+	/* TODO(@ghostwriternr): This method was used to link a response with a request. We may need this, but I'm assuming the shape will be a bit different?
 	setResponse(request: ChatRequestModel, result: IChatAgentResult): void {
 		if (!request.response) {
-			request.response = new ChatResponseModel([], this, undefined, undefined, request.id);
+			request.response = new ChatResponseModel([], this, undefined, undefined);
 		}
 
 		request.response.setResult(result);
 	}
+	*/
 
-	completeResponse(request: ChatRequestModel): void {
-		if (!request.response) {
+	completeResponse(response: ChatResponseModel): void {
+		if (!response) {
 			throw new Error('Call setResponse before completeResponse');
 		}
 
-		request.response.complete();
+		response.complete();
 	}
 
+	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.
 	setFollowups(request: ChatRequestModel, followups: IChatFollowup[] | undefined): void {
 		if (!request.response) {
 			// Maybe something went wrong?
@@ -1116,11 +1114,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		request.response.setFollowups(followups);
 	}
-
-	setResponseModel(request: ChatRequestModel, response: ChatResponseModel): void {
-		request.response = response;
-		this._onDidChange.fire({ kind: 'addResponse', response });
-	}
+	*/
 
 	toExport(): IExportableChatData {
 		return {
@@ -1136,7 +1130,10 @@ export class ChatModel extends Disposable implements IChatModel {
 					return c.value;
 				}
 			}),
-			requests: this._requests.map((r): ISerializableChatRequestData => {
+			// TODO(@ghostwriternr): Don't want to deal with this for now.
+			requests: [],
+			/*
+			requests: this._exchanges.map((r): ISerializableChatRequestData => {
 				const message = {
 					...r.message,
 					parts: r.message.parts.map(p => p && 'toJSON' in p ? (p.toJSON as Function)() : p)
@@ -1171,6 +1168,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					codeCitations: r.response?.codeCitations
 				};
 			}),
+			*/
 		};
 	}
 
@@ -1187,7 +1185,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	override dispose() {
-		this._requests.forEach(r => r.response?.dispose());
+		this._exchanges.forEach(r => r instanceof ChatResponseModel ? r.dispose() : undefined);
 		this._onDidDispose.fire();
 
 		super.dispose();

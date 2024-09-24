@@ -11,9 +11,6 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION, CONTEXT_REQUEST } from '../../common/aideAgentContextKeys.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
-import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
-import { IAideAgentWidgetService } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export const MarkUnhelpfulActionId = 'workbench.action.aideAgent.markUnhelpful';
@@ -45,6 +42,7 @@ export function registerChatTitleActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
+			/* TODO(@ghostwriternr): Completely get rid of this if removing a request no longer makes sense.
 			let item = args[0];
 			if (!isRequestVM(item)) {
 				const chatWidgetService = accessor.get(IAideAgentWidgetService);
@@ -59,6 +57,7 @@ export function registerChatTitleActions() {
 				const chatService = accessor.get(IAideAgentService);
 				chatService.removeRequest(item.sessionId, requestId);
 			}
+			*/
 		}
 	});
 }

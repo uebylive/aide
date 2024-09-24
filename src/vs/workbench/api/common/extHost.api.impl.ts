@@ -1494,32 +1494,21 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 
 		// namespace: aideAgent
 		const aideAgent: typeof vscode.aideAgent = {
-			registerChatResponseProvider(id: string, provider: vscode.ChatResponseProvider, metadata: vscode.ChatResponseProviderMetadata) {
-				checkProposedApiEnabled(extension, 'chatProvider');
-				return extHostLanguageModels.registerLanguageModel(extension, id, provider, metadata);
-			},
-			registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: vscode.ChatVariableResolver, fullName?: string, icon?: vscode.ThemeIcon) {
-				checkProposedApiEnabled(extension, 'chatVariableResolver');
-				return extHostAideAgentVariables.registerVariableResolver(extension, id, name, userDescription, modelDescription, isSlow, resolver, fullName, icon?.id);
-			},
-			registerMappedEditsProvider(selector: vscode.DocumentSelector, provider: vscode.MappedEditsProvider) {
-				checkProposedApiEnabled(extension, 'mappedEditsProvider');
-				return extHostLanguageFeatures.registerMappedEditsProvider(extension, selector, provider);
-			},
-			registerMappedEditsProvider2(provider: vscode.MappedEditsProvider2) {
-				checkProposedApiEnabled(extension, 'mappedEditsProvider');
-				return extHostAideAgentCodeMapper.registerMappedEditsProvider(extension, provider);
-			},
-			createChatParticipant(id: string, handler: vscode.ChatExtendedRequestHandler) {
-				return extHostAideAgentAgents2.createChatAgent(extension, id, handler);
-			},
-			createDynamicChatParticipant(id: string, dynamicProps: vscode.DynamicChatParticipantProps, handler: vscode.ChatExtendedRequestHandler): vscode.ChatParticipant {
-				checkProposedApiEnabled(extension, 'chatParticipantPrivate');
-				return extHostAideAgentAgents2.createDynamicChatAgent(extension, id, dynamicProps, handler);
+			createChatParticipant(id: string, resolver: vscode.AideSessionParticipant) {
+				checkProposedApiEnabled(extension, 'aideAgent');
+				return extHostAideAgentAgents2.createChatAgent(extension, id, resolver);
 			},
 			registerChatParticipantDetectionProvider(provider: vscode.ChatParticipantDetectionProvider) {
-				checkProposedApiEnabled(extension, 'chatParticipantAdditions');
+				checkProposedApiEnabled(extension, 'aideAgent');
 				return extHostAideAgentAgents2.registerChatParticipantDetectionProvider(provider);
+			},
+			registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: vscode.ChatVariableResolver, fullName?: string, icon?: vscode.ThemeIcon) {
+				checkProposedApiEnabled(extension, 'aideAgent');
+				return extHostAideAgentVariables.registerVariableResolver(extension, id, name, userDescription, modelDescription, isSlow, resolver, fullName, icon?.id);
+			},
+			registerMappedEditsProvider2(provider: vscode.MappedEditsProvider2) {
+				checkProposedApiEnabled(extension, 'aideAgent');
+				return extHostAideAgentCodeMapper.registerMappedEditsProvider(extension, provider);
 			},
 		};
 

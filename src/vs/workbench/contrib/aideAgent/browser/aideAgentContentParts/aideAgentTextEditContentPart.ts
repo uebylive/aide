@@ -211,11 +211,11 @@ class CodeCompareModelService implements IAideAgentCodeCompareModelService {
 		// apply edits to the "modified" model
 		const chatModel = this.chatService.getSession(element.sessionId)!;
 		const editGroups: ISingleEditOperation[][] = [];
-		for (const request of chatModel.getRequests()) {
-			if (!request.response) {
+		for (const exchange of chatModel.getExchanges()) {
+			if (!('response' in exchange)) {
 				continue;
 			}
-			for (const item of request.response.response.value) {
+			for (const item of exchange.response.value) {
 				if (item.kind !== 'textEditGroup' || item.state?.applied || !isEqual(item.uri, chatTextEdit.uri)) {
 					continue;
 				}
@@ -224,7 +224,7 @@ class CodeCompareModelService implements IAideAgentCodeCompareModelService {
 					editGroups.push(edits);
 				}
 			}
-			if (request.response === element.model) {
+			if (exchange === element.model) {
 				break;
 			}
 		}

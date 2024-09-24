@@ -27,10 +27,10 @@ import { AddDynamicVariableAction, IAddDynamicVariableContext } from '../../cont
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { ChatRequestAgentPart } from '../../contrib/aideAgent/common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../../contrib/aideAgent/common/aideAgentRequestParser.js';
-import { IChatContentReference, IChatFollowup, IChatProgress, IAideAgentService, IChatTask, IChatWarningMessage } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentService, IChatContentReference, IChatFollowup, IChatProgress, IChatTask, IChatWarningMessage } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { IExtHostContext, extHostNamedCustomer } from '../../services/extensions/common/extHostCustomers.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
-import { ExtHostChatAgentsShape2, ExtHostContext, IChatParticipantMetadata, IChatProgressDto, IDynamicChatAgentProps, IExtensionChatAgentMetadata, MainContext, MainThreadChatAgentsShape2 } from '../common/extHost.protocol.js';
+import { ExtHostAideAgentAgentsShape, ExtHostContext, IAideAgentProgressDto, IChatParticipantMetadata, IDynamicChatAgentProps, IExtensionChatAgentMetadata, MainContext, MainThreadAideAgentAgentsShape2 } from '../common/extHost.protocol.js';
 
 interface AgentData {
 	dispose: () => void;
@@ -70,7 +70,7 @@ export class MainThreadChatTask implements IChatTask {
 }
 
 @extHostNamedCustomer(MainContext.MainThreadAideAgentAgents2)
-export class MainThreadChatAgents2 extends Disposable implements MainThreadChatAgentsShape2 {
+export class MainThreadChatAgents2 extends Disposable implements MainThreadAideAgentAgentsShape2 {
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _agentCompletionProviders = this._register(new DisposableMap<number, IDisposable>());
@@ -79,7 +79,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 	private readonly _chatParticipantDetectionProviders = this._register(new DisposableMap<number, IDisposable>());
 
 	private readonly _pendingProgress = new Map<string, (part: IChatProgress) => void>();
-	private readonly _proxy: ExtHostChatAgentsShape2;
+	private readonly _proxy: ExtHostAideAgentAgentsShape;
 
 	private _responsePartHandlePool = 0;
 	private readonly _activeTasks = new Map<string, IChatTask>();
@@ -145,13 +145,11 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 		}
 
 		const impl: IChatAgentImplementation = {
-			invoke: async (request, progress, history, token) => {
-				this._pendingProgress.set(request.requestId, progress);
-				try {
-					return await this._proxy.$invokeAgent(handle, request, { history }, token) ?? {};
-				} finally {
-					this._pendingProgress.delete(request.requestId);
-				}
+			initSession: (sessionId) => {
+				return this._proxy.$initSession(handle, sessionId);
+			},
+			invoke: async (request, token) => {
+				return await this._proxy.$invokeAgent(handle, request, { history: [] }, token) ?? {};
 			},
 			provideFollowups: async (request, result, history, token): Promise<IChatFollowup[]> => {
 				if (!this._agents.get(handle)?.hasFollowups) {
@@ -212,17 +210,23 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 		this._chatAgentService.updateAgent(data.id, revive(metadataUpdate));
 	}
 
-	async $handleProgressChunk(requestId: string, progress: IChatProgressDto, responsePartHandle?: number): Promise<number | void> {
+	async $initResponse(sessionId: string): Promise<string> {
+		const { responseId, callback } = await this._chatService.initiateResponse(sessionId);
+		this._pendingProgress.set(responseId, callback);
+		return responseId;
+	}
+
+	async $handleProgressChunk(responseId: string, progress: IAideAgentProgressDto, responsePartHandle?: number): Promise<number | void> {
 		const revivedProgress = revive(progress) as IChatProgress;
 		if (revivedProgress.kind === 'progressTask') {
 			const handle = ++this._responsePartHandlePool;
-			const responsePartId = `${requestId}_${handle}`;
+			const responsePartId = `${responseId}_${handle}`;
 			const task = new MainThreadChatTask(revivedProgress.content);
 			this._activeTasks.set(responsePartId, task);
-			this._pendingProgress.get(requestId)?.(task);
+			this._pendingProgress.get(responseId)?.(task);
 			return handle;
 		} else if (responsePartHandle !== undefined) {
-			const responsePartId = `${requestId}_${responsePartHandle}`;
+			const responsePartId = `${responseId}_${responsePartHandle}`;
 			const task = this._activeTasks.get(responsePartId);
 			switch (revivedProgress.kind) {
 				case 'progressTaskResult':
@@ -239,7 +243,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadChatA
 					return;
 			}
 		}
-		this._pendingProgress.get(requestId)?.(revivedProgress);
+		this._pendingProgress.get(responseId)?.(revivedProgress);
 	}
 
 	$registerAgentCompletionsProvider(handle: number, id: string, triggerCharacters: string[]): void {

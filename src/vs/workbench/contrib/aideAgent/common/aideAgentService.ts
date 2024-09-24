@@ -16,7 +16,7 @@ import { FileType } from '../../../../platform/files/common/files.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
-import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
+import { ChatModel, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { IChatParserContext } from './aideAgentRequestParser.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
@@ -191,6 +191,10 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
+export interface IChatEndResponse {
+	kind: 'endResponse';
+}
+
 export type IChatProgress =
 	| IChatMarkdownContent
 	| IChatAgentMarkdownContentWithVulnerability
@@ -208,7 +212,8 @@ export type IChatProgress =
 	| IChatTextEdit
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
-	| IChatConfirmation;
+	| IChatConfirmation
+	| IChatEndResponse;
 
 export interface IChatFollowup {
 	kind: 'reply';
@@ -411,11 +416,14 @@ export interface IAideAgentService {
 	 * Returns whether the request was accepted.
 	 */
 	sendRequest(sessionId: string, message: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined>;
-
-	resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void>;
-	adoptRequest(sessionId: string, request: IChatRequestModel): Promise<void>;
-	removeRequest(sessionid: string, requestId: string): Promise<void>;
+	// TODO(@ghostwriternr): This method already seems unused. Remove it?
+	// resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void>;
+	// TODO(@ghostwriternr): Remove this if we no longer need to remove requests.
+	// removeRequest(sessionid: string, requestId: string): Promise<void>;
 	cancelCurrentRequestForSession(sessionId: string): void;
+
+	initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void }>;
+
 	clearSession(sessionId: string): void;
 	addCompleteRequest(sessionId: string, message: IParsedChatRequest | string, variableData: IChatRequestVariableData | undefined, attempt: number | undefined, response: IChatCompleteResponse): void;
 	getHistory(): IChatDetail[];

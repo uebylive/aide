@@ -313,7 +313,9 @@ function notifyUserAction(chatService: IAideAgentService, context: ICodeBlockAct
 			agentId: context.element.agent?.id,
 			command: context.element.slashCommand?.name,
 			sessionId: context.element.sessionId,
-			requestId: context.element.requestId,
+			// requestId: context.element.requestId,
+			// TODO(@ghostwriternr): This is obviously wrong, but not critical to fix yet.
+			requestId: context.element.id,
 			result: context.element.result,
 			action
 		});

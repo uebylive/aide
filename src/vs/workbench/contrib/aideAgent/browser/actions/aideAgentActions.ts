@@ -248,7 +248,7 @@ export function registerChatActions() {
 				f1: true,
 			});
 		}
-		async run(accessor: ServicesAccessor, ...args: any[]) {
+		async run(accessor: ServicesAccessor, ..._args: any[]) {
 			const historyService = accessor.get(IAideAgentWidgetHistoryService);
 			historyService.clearHistory();
 		}

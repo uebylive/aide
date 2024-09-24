@@ -116,7 +116,9 @@ export function registerChatCodeBlockActions() {
 					agentId: context.element.agent?.id,
 					command: context.element.slashCommand?.name,
 					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
+					// requestId: context.element.requestId,
+					// TODO(@ghostwriternr): This is obviously wrong, but not critical to fix yet.
+					requestId: context.element.id,
 					result: context.element.result,
 					action: {
 						kind: 'copy',
@@ -162,7 +164,9 @@ export function registerChatCodeBlockActions() {
 				agentId: element.agent?.id,
 				command: element.slashCommand?.name,
 				sessionId: element.sessionId,
-				requestId: element.requestId,
+				// requestId: element.requestId,
+				// TODO(@ghostwriternr): This is obviously wrong, but not critical to fix yet.
+				requestId: element.id,
 				result: element.result,
 				action: {
 					kind: 'copy',
@@ -355,7 +359,9 @@ export function registerChatCodeBlockActions() {
 					agentId: context.element.agent?.id,
 					command: context.element.slashCommand?.name,
 					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
+					// requestId: context.element.requestId,
+					// TODO(@ghostwriternr): This is obviously wrong, but not critical to fix yet.
+					requestId: context.element.id,
 					result: context.element.result,
 					action: {
 						kind: 'insert',
@@ -439,7 +445,9 @@ export function registerChatCodeBlockActions() {
 					agentId: context.element.agent?.id,
 					command: context.element.slashCommand?.name,
 					sessionId: context.element.sessionId,
-					requestId: context.element.requestId,
+					// requestId: context.element.requestId,
+					// TODO(@ghostwriternr): This is obviously wrong, but not critical to fix yet.
+					requestId: context.element.id,
 					result: context.element.result,
 					action: {
 						kind: 'runInTerminal',
@@ -498,7 +506,7 @@ export function registerChatCodeBlockActions() {
 			});
 		}
 
-		run(accessor: ServicesAccessor, ...args: any[]) {
+		run(accessor: ServicesAccessor, ..._args: any[]) {
 			navigateCodeBlocks(accessor);
 		}
 	});

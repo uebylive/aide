@@ -13,7 +13,6 @@ import { Schemas } from '../../../../base/common/network.js';
 import { extUri, isEqual } from '../../../../base/common/resources.js';
 import { isDefined } from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
-import './media/aideAgent.css';
 import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
@@ -25,20 +24,21 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatWidget, IAideAgentWidgetService, IChatWidgetViewContext, IChatWidgetViewOptions, IChatListItemRendererOptions } from './aideAgent.js';
-import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
-import { ChatInputPart } from './aideAgentInputPart.js';
-import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
-import { ChatEditorOptions } from './aideAgentOptions.js';
-import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IAideAgentAgentService } from '../common/aideAgentAgents.js';
+import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
-import { IChatFollowup, IChatLocationData, IAideAgentService } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions } from './aideAgent.js';
+import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
+import { ChatInputPart } from './aideAgentInputPart.js';
+import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
+import { ChatEditorOptions } from './aideAgentOptions.js';
+import './media/aideAgent.css';
 
 const $ = dom.$;
 
@@ -503,10 +503,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.acceptInput(item.message);
 		}));
 		this._register(this.renderer.onDidClickRerunWithAgentOrCommandDetection(item => {
-			const request = this.chatService.getSession(item.sessionId)?.getRequests().find(candidate => candidate.id === item.requestId);
+			/* TODO(@ghostwriternr): Commenting this out definitely breaks rerunning requests. Fix this.
+			const request = this.chatService.getSession(item.sessionId)?.getExchanges().find(candidate => candidate.id === item.requestId);
 			if (request) {
 				this.chatService.resendRequest(request, { noCommandDetection: true, attempt: request.attempt + 1, location: this.location }).catch(e => this.logService.error('FAILED to rerun request', e));
 			}
+			*/
 		}));
 
 		this.tree = this._register(<WorkbenchObjectTree<ChatTreeItem>>scopedInstantiationService.createInstance(
@@ -648,7 +650,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			this.chatService.notifyUserAction({
 				sessionId: this.viewModel.sessionId,
-				requestId: e.response.requestId,
+				// requestId: e.response.requestId,
+				// TODO(@ghostwriternr): This is obviously wrong, but not super critical. Come back to fix this.
+				requestId: e.response.id,
 				agentId: e.response.agent?.id,
 				command: e.response.slashCommand?.name,
 				result: e.response.result,

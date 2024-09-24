@@ -52,6 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
+import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1421,6 +1422,17 @@ export type IChatProgressDto =
 ///////////////////////// END CHAT /////////////////////////
 
 ///////////////////////// START AIDE /////////////////////////
+export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
+	$initSession(handle: number, sessionId: string): void;
+}
+
+export type IAideAgentProgressDto = IChatProgressDto | Dto<IChatEndResponse>;
+
+export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
+	$initResponse(sessionId: string): Promise<string>;
+	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
+}
+
 ///////////////////////// END AIDE /////////////////////////
 
 export interface ExtHostUrlsShape {
@@ -2952,7 +2964,7 @@ export const MainContext = {
 	MainThreadCodeMapper: createProxyIdentifier<MainThreadCodeMapperShape>('MainThreadCodeMapper'),
 	MainThreadChatVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadChatVariables'),
 	MainThreadLanguageModelTools: createProxyIdentifier<MainThreadLanguageModelToolsShape>('MainThreadChatSkills'),
-	MainThreadAideAgentAgents2: createProxyIdentifier<MainThreadChatAgentsShape2>('MainThreadAideAgentAgents2'),
+	MainThreadAideAgentAgents2: createProxyIdentifier<MainThreadAideAgentAgentsShape2>('MainThreadAideAgentAgents2'),
 	MainThreadAideAgentCodeMapper: createProxyIdentifier<MainThreadCodeMapperShape>('MainThreadAideAgentCodeMapper'),
 	MainThreadAideAgentVariables: createProxyIdentifier<MainThreadChatVariablesShape>('MainThreadAideAgentVariables'),
 	MainThreadClipboard: createProxyIdentifier<MainThreadClipboardShape>('MainThreadClipboard'),
@@ -3080,7 +3092,7 @@ export const ExtHostContext = {
 	ExtHostChatVariables: createProxyIdentifier<ExtHostChatVariablesShape>('ExtHostChatVariables'),
 	ExtHostLanguageModelTools: createProxyIdentifier<ExtHostLanguageModelToolsShape>('ExtHostChatSkills'),
 	ExtHostChatProvider: createProxyIdentifier<ExtHostLanguageModelsShape>('ExtHostChatProvider'),
-	ExtHostAideAgentAgents2: createProxyIdentifier<ExtHostChatAgentsShape2>('ExtHostAideAgentAgents'),
+	ExtHostAideAgentAgents2: createProxyIdentifier<ExtHostAideAgentAgentsShape>('ExtHostAideAgentAgents'),
 	ExtHostAideAgentCodeMapper: createProxyIdentifier<ExtHostCodeMapperShape>('ExtHostAideAgentCodeMapper'),
 	ExtHostAideAgentVariables: createProxyIdentifier<ExtHostChatVariablesShape>('ExtHostAideAgentVariables'),
 	ExtHostSpeech: createProxyIdentifier<ExtHostSpeechShape>('ExtHostSpeech'),

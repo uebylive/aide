@@ -14,10 +14,8 @@ import { InLineAgentContextSelection } from '../../sidecar/types';
 import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
-import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
-import { registerTerminalSelection } from './terminalSelection';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;

@@ -6,14 +6,16 @@ import * as os from 'os';
 import { commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
-import { CSChatAgentProvider } from './completions/providers/chatprovider';
+import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
 import { AideProbeProvider } from './completions/providers/probeProvider';
+import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { AideQuickFix } from './quickActions/fix';
+import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
@@ -25,8 +27,6 @@ import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
-import { CSEventHandler } from './csEvents/csEventHandler';
-import { RecentEditsRetriever } from './server/editedFiles';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -176,12 +176,23 @@ export async function activate(context: ExtensionContext) {
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
+	/*
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		uniqueUserId,
 		sidecarClient, currentRepo, projectContext
 	);
 	context.subscriptions.push(chatAgentProvider);
+	*/
+
+	// Register the agent session provider
+	const agentSessionProvider = new AideAgentSessionProvider(
+		currentRepo,
+		projectContext,
+		sidecarClient,
+		rootPath,
+	);
+	context.subscriptions.push(agentSessionProvider);
 
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly
