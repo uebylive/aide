@@ -7,6 +7,7 @@ import * as vscode from 'vscode';
 import postHogClient from '../posthog/client';
 import { getUniqueId } from '../utilities/uniqueId';
 import { getSymbolNavigationActionTypeLabel } from '../utilities/stringifyEvent';
+import { SidecarContextEvent, SidecarRequestRange } from '../server/types';
 
 type UsageRequest = {
 	type: 'InlineCompletion' | 'ChatRequest' | 'InlineCodeEdit' | 'AgenticCodeEdit';
@@ -21,9 +22,12 @@ const RETRY_DELAY_MS = 1000; // 1 second
 export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable {
 	private _disposable: vscode.Disposable;
 	private _subscriptionsAPIBase: string | null = null;
+	// The current recording session which the user is going through over here
+	private _currentSession: SidecarContextEvent[];
 
 	constructor(private readonly _context: vscode.ExtensionContext) {
 		this._disposable = vscode.csevents.registerCSEventHandler(this);
+		this._currentSession = [];
 
 		if (vscode.env.uriScheme === 'aide') {
 			this._subscriptionsAPIBase = 'https://api.codestory.ai';
@@ -33,6 +37,17 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	}
 
 	handleSymbolNavigation(event: vscode.SymbolNavigationEvent): void {
+		this._currentSession.push({
+			LSPContextEvent: {
+				fs_file_path: event.uri.fsPath,
+				position: {
+					line: event.position.line,
+					character: event.position.character,
+					byteOffset: 0,
+				},
+				event_type: getSymbolNavigationActionTypeLabel(event.action),
+			}
+		});
 		const currentWindow = vscode.window.activeTextEditor?.document.uri.fsPath;
 		postHogClient?.capture({
 			distinctId: getUniqueId(),
@@ -115,6 +130,106 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 		} catch (error) {
 			console.error('Failed to send usage events:', error);
 			return true; // Don't retry on error
+		}
+	}
+
+	/**
+	 * Starts recording the user activity over here and keeps track of the set of events the user is doing
+	 */
+	async startRecording() {
+		this._currentSession = [];
+	}
+
+	/**
+	 * Stops recording the user activity and returns an object which can be used for inferencing
+	 */
+	async stopRecording(): Promise<SidecarContextEvent[]> {
+		const currentSession = this._currentSession;
+		this._currentSession = [];
+		return currentSession;
+	}
+
+	/**
+	 * We are changing to a new text document or focussing on something new, its important
+	 * to record this event
+	 */
+	async onDidChangeTextDocument(filePath: string) {
+		this._currentSession.push({
+			OpenFile: {
+				fs_file_path: filePath,
+			}
+		});
+	}
+
+	/**
+	 * We are going to record the fact that the selection was changed in the editor
+	 * This allows the the user to give context to the LLM by literally just doing what
+	 * they would normally do in the editor
+	 */
+	async onDidChangeTextDocumentSelection(filePath: string, selections: readonly vscode.Selection[]) {
+		// we are getting multiple selections for the same file, so figure out what to do
+		// over here
+		if (this._currentSession.length === 0) {
+			this._currentSession.push({
+				Selection: {
+					fs_file_path: filePath,
+					range: this.selectionToSidecarRange(selections[0]),
+				}
+			});
+			return;
+		}
+		const lastEvent = this._currentSession[this._currentSession.length - 1];
+		const currentSelectionRange = this.selectionToSidecarRange(selections[0]);
+		if (lastEvent.Selection !== null && lastEvent.Selection !== undefined) {
+			// we compare both the start and the end position line numbers here
+			// because the selection can be from the top dragging or the bottom
+			// dragging
+			if (lastEvent.Selection.range.startPosition.line === currentSelectionRange.startPosition.line || lastEvent.Selection.range.endPosition.line === currentSelectionRange.endPosition.line) {
+				this._currentSession[this._currentSession.length - 1] = {
+					Selection: {
+						fs_file_path: filePath,
+						range: currentSelectionRange,
+					}
+				};
+				return;
+			}
+		}
+		this._currentSession.push({
+			Selection: {
+				fs_file_path: filePath,
+				range: currentSelectionRange,
+			}
+		});
+		console.log('selectionLenght', selections.length);
+	}
+
+	selectionToSidecarRange(selection: vscode.Selection): SidecarRequestRange {
+		if (selection.isReversed) {
+			return {
+				startPosition: {
+					line: selection.active.line,
+					character: selection.active.character,
+					byteOffset: 0,
+				},
+				endPosition: {
+					line: selection.anchor.line,
+					character: selection.anchor.character,
+					byteOffset: 0,
+				}
+			};
+		} else {
+			return {
+				startPosition: {
+					line: selection.anchor.line,
+					character: selection.anchor.character,
+					byteOffset: 0,
+				},
+				endPosition: {
+					line: selection.active.line,
+					character: selection.active.character,
+					byteOffset: 0,
+				}
+			};
 		}
 	}
 
