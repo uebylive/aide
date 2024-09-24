@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 .monaco-workbench .part.sidebar {
-	border-left: 1px solid var(--vscode-panel-border);
+	/* border-left: 1px solid var(--vscode-panel-border); */
 	border-right: 1px solid var(--vscode-panel-border);
 }
 
