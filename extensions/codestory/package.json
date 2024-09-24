@@ -60,6 +60,14 @@
         "command": "codestory.feedback",
         "title": "Provide feedback on Discord",
         "icon": "assets/discord.svg"
+      },
+      {
+        "command": "codestory.startRecordingContext",
+        "title": "Start Recording context"
+      },
+      {
+        "command": "codestory.stopRecordingContext",
+        "title": "Stop Recording Context"
       }
     ],
     "viewsContainers": {

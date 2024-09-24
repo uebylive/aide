@@ -933,3 +933,28 @@ export type SidecarDiagnosticsResponse = {
 	message: string;
 	range: SidecarResponseRange;
 };
+
+export interface SidecarOpenFileContextEvent {
+	fs_file_path: string;
+}
+
+export interface SidecarLSPContextEvent {
+	fs_file_path: string;
+	position: SidecarRequestPosition;
+	event_type: string;
+}
+
+export interface SidecarSelectionContextEvent {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+}
+
+/**
+ * All the context driven events which can happen in the editor which are useful
+ * and done by the user in a quest to provide additional context to the agent
+ */
+export interface SidecarContextEvent {
+	OpenFile?: SidecarOpenFileContextEvent;
+	LSPContextEvent?: SidecarLSPContextEvent;
+	Selection?: SidecarSelectionContextEvent;
+}
