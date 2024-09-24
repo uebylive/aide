@@ -65,6 +65,7 @@ export async function activate(context: ExtensionContext) {
 		'codestory.stopRecordingContext',
 		async () => {
 			const response = await csEventHandler.stopRecording();
+			await sidecarClient.sendContextRecording(response);
 			console.log(JSON.stringify(response));
 			console.log('stop recording context');
 		}
