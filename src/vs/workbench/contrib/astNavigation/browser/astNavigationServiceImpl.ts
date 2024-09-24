@@ -21,6 +21,7 @@ import { CONTEXT_AST_NAVIGATION_MODE, CONTEXT_CAN_AST_NAVIGATE } from '../../../
 import { IASTNavigationService } from '../../../../workbench/contrib/astNavigation/common/astNavigationService.js';
 import { IEditorService } from '../../../../workbench/services/editor/common/editorService.js';
 import { IOutline, IOutlineService, OutlineTarget } from '../../../../workbench/services/outline/browser/outline.js';
+import './media/astNavigation.css';
 
 class ASTNode {
 	constructor(
@@ -273,7 +274,7 @@ export class ASTNavigationService extends Disposable implements IASTNavigationSe
 			range: this.currentNode.range,
 			options: {
 				description: 'document-symbols-outline-range-highlight',
-				className: 'selected-text',
+				className: 'selected-ast',
 				isWholeLine: true
 			}
 		}]);
