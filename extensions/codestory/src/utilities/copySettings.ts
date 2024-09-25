@@ -8,7 +8,7 @@
 // cp ~/Library/Application\ Support/Code/User/settings.json ~/Library/Application\ Support/Aide/User
 
 import { Logger } from 'winston';
-import { commands, Uri, window } from 'vscode';
+import { commands, env, Uri, window } from 'vscode';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as process from 'process';
@@ -26,7 +26,25 @@ type VsixMetadata = {
 	};
 };
 
+export interface IProductConfiguration {
+	updateUrl: string;
+	commit: string;
+	quality: string;
+	dataFolderName: string;
+	serverApplicationName?: string;
+	serverDataFolderName?: string;
+}
+
+
+function getProductConfiguration(): IProductConfiguration {
+	const content = fs.readFileSync(path.join(env.appRoot, 'product.json')).toString();
+	return JSON.parse(content) as IProductConfiguration;
+}
+
 export const copySettings = async (workingDirectory: string, logger: Logger) => {
+
+	const { dataFolderName } = getProductConfiguration()
+
 	window.showInformationMessage('Copying settings from vscode to aide');
 	// We want to execute the cp command above
 	// First we want to ensure that ~/.aide exists
@@ -65,7 +83,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 		try {
 			if (userProfilePath) {
 				const keybindingsFolder = path.join(userProfilePath, '.vscode', 'extensions');
-				const destinationFolder = path.join(userProfilePath, '.vscode-oss-dev', 'extensions');
+				const destinationFolder = path.join(userProfilePath, dataFolderName, 'extensions');
 				copyFiles(keybindingsFolder, destinationFolder);
 			}
 		} catch (exception) {
@@ -75,7 +93,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 	}
 
 	const homeDir = os.homedir();
-	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.vscode-oss`]);
+	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/${dataFolderName}`]);
 	if (exitCodeMkdir !== 0) {
 		window.showErrorMessage('Error creating ~/.aide directory');
 		logger.error('Error creating ~/.aide directory');
@@ -85,7 +103,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 	// EXTENSIONS
 
 	const srcDir = path.join(homeDir, '.vscode/extensions');
-	const destDir = path.join(homeDir, '.vscode-oss-dev/extensions');
+	const destDir = path.join(homeDir, `${dataFolderName}/extensions`);
 
 	// Get all subdirectories in the source folder
 	const allDirs = fs.readdirSync(srcDir).filter(file => {
@@ -116,6 +134,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 			if (!vsixMetadata) {
 				throw new Error(`No OpenVSX metadata found for ${namespace}.${extension}`);
 			}
+
 			const tempFile = `${namespace}.${extension}.vsix`;
 			const platform = `${os.platform()}-${os.arch()}` as ExtensionPlatorm;
 			if (vsixMetadata.downloads.universal) {
@@ -140,6 +159,8 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 			}
 		}
 	}
+
+	window.showInformationMessage(`Completed installing extensions from OpenVSX`);
 
 	// Now we can copy over keybindings.json and settings.json
 	// We want to ensure that ~/Library/Application\\ Support/Aide/User exists
