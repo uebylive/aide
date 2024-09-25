@@ -43,7 +43,7 @@ function getProductConfiguration(): IProductConfiguration {
 
 export const copySettings = async (workingDirectory: string, logger: Logger) => {
 
-	const { dataFolderName } = getProductConfiguration()
+	const { dataFolderName } = getProductConfiguration();
 
 	window.showInformationMessage('Copying settings from vscode to aide');
 	// We want to execute the cp command above
@@ -148,7 +148,7 @@ export const copySettings = async (workingDirectory: string, logger: Logger) => 
 			if (!openVSXExtensionPath) {
 				throw new Error(`Failed to find a suitabile download URL for the ${namespace}.${extension} extension for ${os.platform()} and ${os.arch()}`);
 			}
-			await commands.executeCommand('workbench.extensions.command.installFromVSIX', Uri.parse(openVSXExtensionPath))
+			await commands.executeCommand('workbench.extensions.command.installFromVSIX', Uri.parse(openVSXExtensionPath));
 			console.log(`Successfully installed ${namespace}.${extension} from OpenVSX`);
 		} catch (error) {
 			console.error(`Failed to install from VSX: ${namespace}.${extension}. Error: ${error.message}`);
