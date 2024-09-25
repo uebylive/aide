@@ -938,9 +938,19 @@ export interface SidecarOpenFileContextEvent {
 	fs_file_path: string;
 }
 
+/**
+ * The destiation after doing a lsp action
+ */
+export interface SidecarLSPDestination {
+	position: SidecarRequestPosition;
+	fs_file_path: string;
+}
+
 export interface SidecarLSPContextEvent {
 	fs_file_path: string;
 	position: SidecarRequestPosition;
+	// destination where we land after invoking a lsp destination
+	destination: SidecarLSPDestination | null;
 	event_type: string;
 }
 

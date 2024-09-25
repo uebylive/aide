@@ -4,8 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import postHogClient from '../posthog/client';
-import { getUniqueId } from '../utilities/uniqueId';
 import { getSymbolNavigationActionTypeLabel } from '../utilities/stringifyEvent';
 import { SidecarContextEvent, SidecarRequestRange } from '../server/types';
 
@@ -45,19 +43,12 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 					character: event.position.character,
 					byteOffset: 0,
 				},
+				destination: null,
 				event_type: getSymbolNavigationActionTypeLabel(event.action),
 			}
 		});
-		const currentWindow = vscode.window.activeTextEditor?.document.uri.fsPath;
-		postHogClient?.capture({
-			distinctId: getUniqueId(),
-			event: 'symbol_navigation',
-			properties: {
-				action: getSymbolNavigationActionTypeLabel(event.action),
-				file_path: event.uri.fsPath,
-				current_window: currentWindow,
-			},
-		});
+		console.log('handleSymbolNavigation');
+		console.log(event);
 	}
 
 	async handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): Promise<void> {
@@ -154,11 +145,12 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	 * to record this event
 	 */
 	async onDidChangeTextDocument(filePath: string) {
-		this._currentSession.push({
-			OpenFile: {
-				fs_file_path: filePath,
-			}
-		});
+		console.log('cs_event_handler::on_did_change_text_document', filePath);
+		// this._currentSession.push({
+		// 	OpenFile: {
+		// 		fs_file_path: filePath,
+		// 	}
+		// });
 	}
 
 	/**
@@ -178,9 +170,19 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			});
 			return;
 		}
-		const lastEvent = this._currentSession[this._currentSession.length - 1];
+		const lastEvent = this._currentSession.at(-1);
 		const currentSelectionRange = this.selectionToSidecarRange(selections[0]);
-		if (lastEvent.Selection !== null && lastEvent.Selection !== undefined) {
+		// If we have a lsp context event then we most likely here have the destination
+		// location over here
+		if (lastEvent !== undefined && lastEvent.LSPContextEvent !== undefined) {
+			lastEvent.LSPContextEvent.destination = {
+				position: currentSelectionRange.startPosition,
+				fs_file_path: filePath,
+			};
+			console.log('onDidChangeTextDocumentSelection::update_destination');
+			return;
+		}
+		if (lastEvent !== undefined && lastEvent.Selection !== null && lastEvent.Selection !== undefined) {
 			// we compare both the start and the end position line numbers here
 			// because the selection can be from the top dragging or the bottom
 			// dragging
