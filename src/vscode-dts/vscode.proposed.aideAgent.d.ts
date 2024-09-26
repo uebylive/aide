@@ -4,8 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
+	export enum AideAgentMode {
+		Edit = 1,
+		Chat = 2
+	}
+
 	export interface AideAgentRequest extends ChatRequest {
 		id: string;
+		mode: AideAgentMode;
 	}
 
 	export interface AideAgentResponseStream extends ChatResponseStream {

@@ -151,8 +151,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
-	private _onDidChangeCurrentAgentMode = new Emitter<string>();
-	private _currentAgentMode: AgentMode = AgentMode.Edit;
+	private _onDidChangeCurrentAgentMode = this._register(new Emitter<string>());
+	private _currentAgentMode: AgentMode = AgentMode.Chat;
 	get currentAgentMode() {
 		return this._currentAgentMode;
 	}
@@ -413,8 +413,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				dom.h('.interactive-input-followups@followupsContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
-						dom.h('.chat-editor-container@editorContainer'),
 						dom.h('.chat-attached-context@attachedContextContainer'),
+						dom.h('.chat-editor-container@editorContainer'),
 						dom.h('.chat-input-toolbars@inputToolbars'),
 					]),
 				]),
@@ -495,16 +495,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
-				if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
-					const itemDelegate: AgentModeSetterDelegate = {
-						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
-						setMode: (modeId: string) => {
-							this._currentAgentMode = modeId as AgentMode;
-						}
-					};
-					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode, itemDelegate);
-				}
-
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
 				}
@@ -527,6 +517,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			actionViewItemProvider: (action, options) => {
 				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
+				}
+
+				if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
+					const itemDelegate: AgentModeSetterDelegate = {
+						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
+						setMode: (modeId: string) => {
+							this._currentAgentMode = modeId as AgentMode;
+						}
+					};
+					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode, itemDelegate);
 				}
 
 				return undefined;

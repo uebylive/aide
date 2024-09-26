@@ -66,7 +66,7 @@ export class SubmitAction extends Action2 {
 }
 
 export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
-MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
 	command: {
 		id: AgentModePickerActionId,
 		title: localize2('aideAgent.setMode.label', "Set Mode"),

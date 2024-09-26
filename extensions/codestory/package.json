@@ -24,6 +24,7 @@
     "defaultChatParticipant",
     "inlineCompletionsAdditions",
     "interactive",
+    "mappedEditsProvider",
     "modelSelection",
     "terminalSelection"
   ],

@@ -24,7 +24,7 @@ import { IProductService } from '../../../../platform/product/common/productServ
 import { asJson, IRequestService } from '../../../../platform/request/common/request.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from './aideAgentContextKeys.js';
-import { IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from './aideAgentModel.js';
+import { AgentMode, IChatProgressResponseContent, IChatRequestVariableData, ISerializableChatAgentData } from './aideAgentModel.js';
 import { IRawChatCommandContribution, RawChatParticipantLocation } from './aideAgentParticipantContribTypes.js';
 import { IChatFollowup, IChatLocationData, IChatResponseErrorDetails, IChatTaskDto } from './aideAgentService.js';
 
@@ -135,6 +135,7 @@ export interface IChatAgentMetadata {
 
 
 export interface IChatAgentRequest {
+	mode: AgentMode;
 	sessionId: string;
 	requestId: string;
 	agentId: string;

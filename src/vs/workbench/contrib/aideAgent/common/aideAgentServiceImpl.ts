@@ -23,7 +23,7 @@ import { IWorkbenchAssignmentService } from '../../../services/assignment/common
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
-import { ChatModel, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
+import { AgentMode, ChatModel, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './aideAgentParserTypes.js';
 import { ChatRequestParser } from './aideAgentRequestParser.js';
 import { IAideAgentService, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';
@@ -574,6 +574,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 						const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
 
 						return {
+							mode: options?.agentMode ?? AgentMode.Chat,
 							sessionId,
 							requestId: request.id,
 							agentId: agent.id,

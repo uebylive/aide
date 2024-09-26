@@ -67,7 +67,7 @@ export async function applyEditsDirectly(
  */
 export async function applyEdits(
 	request: SidecarApplyEditsRequest,
-	response: vscode.AgentResponseStream,
+	response: vscode.AideAgentResponseStream,
 	iterationEdits: vscode.WorkspaceEdit,
 ): Promise<SidecarApplyEditsResponse> {
 	// const limiter = new Limiter(1);
@@ -89,7 +89,7 @@ export async function applyEdits(
 		// we also want to save the file at this point after applying the edit
 		await vscode.workspace.save(fileUri);
 	} else {
-		await response.codeEdit({ edits: workspaceEdit, iterationId: 'mock' });
+		// await response.codeEdit({ edits: workspaceEdit, iterationId: 'mock' });
 	}
 
 

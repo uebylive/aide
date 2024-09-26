@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/*
 import * as http from 'http';
 import * as net from 'net';
 import * as os from 'os';
@@ -95,14 +96,13 @@ export class AideProbeProvider implements vscode.Disposable {
 				onDidUserAction: this.userFollowup.bind(this),
 			}
 		);
-		*/
 	}
 
 	/**
 	 *
 	 * @returns Retuns the optional editor url (which is weird, maybe we should just crash
 	 * if we don't get the editor url as its a necessary component now?)
-	 */
+	 *\/
 	editorUrl(): string | undefined {
 		return this._editorUrl;
 	}
@@ -152,7 +152,6 @@ export class AideProbeProvider implements vscode.Disposable {
 			},
 		});
 	}
-	*/
 
 	async provideEditStreamed(request: EditedCodeStreamingRequest): Promise<{
 		fs_file_path: String;
@@ -317,3 +316,4 @@ function isAnchorBasedEditing(scope: vscode.AideAgentScope): boolean {
 		return false;
 	}
 }
+*/

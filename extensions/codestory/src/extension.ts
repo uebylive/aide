@@ -7,7 +7,6 @@ import { commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSe
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
-import { AideProbeProvider } from './completions/providers/probeProvider';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
@@ -183,23 +182,27 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(chatAgentProvider);
 	*/
 
+	// add the recent edits retriver to the subscriptions
+	// so we can grab the recent edits very quickly
+	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
+	context.subscriptions.push(recentEditsRetriever);
+
 	// Register the agent session provider
 	const agentSessionProvider = new AideAgentSessionProvider(
 		currentRepo,
 		projectContext,
 		sidecarClient,
 		rootPath,
+		recentEditsRetriever
 	);
+	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
 
-	// add the recent edits retriver to the subscriptions
-	// so we can grab the recent edits very quickly
-	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
-	context.subscriptions.push(recentEditsRetriever);
-
+	/*
 	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);
 	const editorUrl = probeProvider.editorUrl();
 	context.subscriptions.push(probeProvider);
+	*/
 
 	// Register feedback commands
 	context.subscriptions.push(
@@ -273,7 +276,7 @@ export async function activate(context: ExtensionContext) {
 		'codestory.stopRecordingContext',
 		async () => {
 			const response = await csEventHandler.stopRecording();
-			await probeProvider.sendContextRecording(response);
+			await agentSessionProvider.sendContextRecording(response);
 			console.log(JSON.stringify(response));
 			console.log('stop recording context');
 		}

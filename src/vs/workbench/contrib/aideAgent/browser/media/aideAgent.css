@@ -510,6 +510,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .chat-input-toolbars .agentmode-picker-item .action-label {
+	font-size: 12px;
 	height: 16px;
 	padding: 3px 0px 3px 6px;
 	display: flex;

@@ -4689,6 +4689,10 @@ export class LanguageModelError extends Error {
 //#endregion
 
 //#region AideChat
+export enum AideAgentMode {
+	Edit = 1,
+	Chat = 2,
+}
 //#endregion
 
 //#region ai

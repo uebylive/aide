@@ -36,6 +36,8 @@ import { IMarkerData, IRelatedInformation, MarkerSeverity, MarkerTag } from '../
 import { ProgressLocation as MainProgressLocation } from '../../../platform/progress/common/progress.js';
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
+import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
+import { AgentMode } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
@@ -2881,12 +2883,29 @@ export namespace LanguageModelToolResult {
 ///////////////////////////// END CHAT /////////////////////////////
 
 ///////////////////////////// START AIDE /////////////////////////////
+export namespace AideAgentMode {
+	export function to(mode: AgentMode): types.AideAgentMode {
+		switch (mode) {
+			case AgentMode.Edit: return types.AideAgentMode.Edit;
+			case AgentMode.Chat: return types.AideAgentMode.Chat;
+		}
+	}
+
+	export function from(mode: types.AideAgentMode): AgentMode {
+		switch (mode) {
+			case types.AideAgentMode.Edit: return AgentMode.Edit;
+			case types.AideAgentMode.Chat: return AgentMode.Chat;
+		}
+	}
+}
+
 export namespace AideAgentRequest {
-	export function to(request: IChatAgentRequest, location2: vscode.ChatRequestEditorData | vscode.ChatRequestNotebookData | undefined): vscode.AideAgentRequest {
+	export function to(request: IAideAgentRequest, location2: vscode.ChatRequestEditorData | vscode.ChatRequestNotebookData | undefined): vscode.AideAgentRequest {
 		const chatAgentRequest = ChatAgentRequest.to(request, location2);
 		return {
 			...chatAgentRequest,
 			id: request.requestId,
+			mode: AideAgentMode.to(request.mode),
 		};
 	}
 }
