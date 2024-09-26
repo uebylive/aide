@@ -189,6 +189,11 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			console.log('onDidChangeTextDocumentSelection::update_destination');
 			return;
 		}
+		// we should not track any events which are just movements, a movement
+		// in the editor shows up as a 0 length selection
+		if (currentSelectionRange.startPosition.line === currentSelectionRange.endPosition.line && currentSelectionRange.startPosition.character === currentSelectionRange.endPosition.character) {
+			return;
+		}
 		if (lastEvent !== undefined && lastEvent.Selection !== null && lastEvent.Selection !== undefined) {
 			// we compare both the start and the end position line numbers here
 			// because the selection can be from the top dragging or the bottom
