@@ -11,7 +11,7 @@ import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../co
 import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, UserContext } from '../server/types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
@@ -953,6 +953,8 @@ export class SideCarClient {
 				language: activeWindowData.language,
 			};
 		}
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const body: CodeEditAgentBody = {
 			user_query: query,
 			editor_url: editorUrl,
@@ -963,6 +965,7 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
 			enable_import_nodes: false,
+			deep_reasoning: deepReasoning,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -976,6 +979,30 @@ export class SideCarClient {
 				yield conversationMessage;
 			}
 		}
+	}
+
+	async sendContextRecording(
+		contextEvents: readonly SidecarContextEvent[],
+		editorUrl: string | undefined,
+	) {
+		if (editorUrl === undefined) {
+			console.log('editorUrl not found');
+			return;
+		}
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/context_recording';
+		const url = baseUrl.toString();
+		const body = {
+			context_events: contextEvents,
+			editor_url: editorUrl,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
 	}
 }
 

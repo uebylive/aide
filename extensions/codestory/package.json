@@ -58,6 +58,14 @@
         "command": "codestory.feedback",
         "title": "Provide feedback on Discord",
         "icon": "assets/discord.svg"
+      },
+      {
+        "command": "codestory.startRecordingContext",
+        "title": "Start Recording context"
+      },
+      {
+        "command": "codestory.stopRecordingContext",
+        "title": "Stop Recording Context"
       }
     ],
     "aideAgents": [
@@ -155,6 +163,11 @@
           "type": "boolean",
           "default": true,
           "description": "Should we allow clip board content to be sent over"
+        },
+        "aide.deepReasoning": {
+          "type": "boolean",
+          "default": false,
+          "description": "Should use deep reasoning before making edits"
         }
       }
     }

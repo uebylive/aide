@@ -8,18 +8,18 @@ import { SymbolNavigationActionType } from 'vscode';
 export function getSymbolNavigationActionTypeLabel(actionType: SymbolNavigationActionType): string {
 	switch (actionType) {
 		case SymbolNavigationActionType.GoToDefinition:
-			return 'Go To Definition';
+			return 'GoToDefinition';
 		case SymbolNavigationActionType.GoToDeclaration:
-			return 'Go To Declaration';
+			return 'GoToDeclaration';
 		case SymbolNavigationActionType.GoToTypeDefinition:
-			return 'Go To Type Definition';
+			return 'GoToTypeDefinition';
 		case SymbolNavigationActionType.GoToImplementation:
-			return 'Go To Implementation';
+			return 'GoToImplementation';
 		case SymbolNavigationActionType.GoToReferences:
-			return 'Go To References';
+			return 'GoToReferences';
 		case SymbolNavigationActionType.GenericGoToLocation:
-			return 'Generic Go To Location';
+			return 'GenericGoToLocation';
 		default:
-			return 'Unknown Action Type';
+			return 'NotTracked';
 	}
 }

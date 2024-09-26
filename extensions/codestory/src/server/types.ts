@@ -50,6 +50,7 @@ export type CodeEditAgentBody = {
 	codebase_search: boolean;
 	anchor_editing: boolean;
 	enable_import_nodes: boolean;
+	deep_reasoning: boolean;
 };
 
 export type AnchorSessionStart = {
@@ -932,3 +933,41 @@ export type SidecarDiagnosticsResponse = {
 	message: string;
 	range: SidecarResponseRange;
 };
+
+export interface SidecarOpenFileContextEvent {
+	fs_file_path: string;
+}
+
+/**
+ * The destiation after doing a lsp action
+ */
+export interface SidecarLSPDestination {
+	position: SidecarRequestPosition;
+	fs_file_path: string;
+	line_content: string;
+}
+
+export interface SidecarLSPContextEvent {
+	fs_file_path: string;
+	position: SidecarRequestPosition;
+	source_word: string | undefined;
+	source_line: string;
+	// destination where we land after invoking a lsp destination
+	destination: SidecarLSPDestination | null;
+	event_type: string;
+}
+
+export interface SidecarSelectionContextEvent {
+	fs_file_path: string;
+	range: SidecarRequestRange;
+}
+
+/**
+ * All the context driven events which can happen in the editor which are useful
+ * and done by the user in a quest to provide additional context to the agent
+ */
+export interface SidecarContextEvent {
+	OpenFile?: SidecarOpenFileContextEvent;
+	LSPContextEvent?: SidecarLSPContextEvent;
+	Selection?: SidecarSelectionContextEvent;
+}

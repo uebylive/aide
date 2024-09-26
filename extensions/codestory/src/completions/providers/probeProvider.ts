@@ -12,7 +12,7 @@ import { AnswerSplitOnNewLineAccumulatorStreaming, reportAgentEventsToChat, Stre
 import postHogClient from '../../posthog/client';
 import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { handleRequest } from '../../server/requestHandler';
-import { EditedCodeStreamingRequest, SidecarApplyEditsRequest } from '../../server/types';
+import { EditedCodeStreamingRequest, SidecarApplyEditsRequest, SidecarContextEvent } from '../../server/types';
 import { SideCarClient } from '../../sidecar/client';
 import { getUniqueId } from '../../utilities/uniqueId';
 import { RecentEditsRetriever } from '../../server/editedFiles';
@@ -96,6 +96,19 @@ export class AideProbeProvider implements vscode.Disposable {
 			}
 		);
 		*/
+	}
+
+	/**
+	 *
+	 * @returns Retuns the optional editor url (which is weird, maybe we should just crash
+	 * if we don't get the editor url as its a necessary component now?)
+	 */
+	editorUrl(): string | undefined {
+		return this._editorUrl;
+	}
+
+	async sendContextRecording(events: SidecarContextEvent[]) {
+		await this._sideCarClient.sendContextRecording(events, this._editorUrl);
 	}
 
 	/*
