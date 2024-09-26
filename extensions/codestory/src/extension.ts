@@ -42,10 +42,6 @@ export async function activate(context: ExtensionContext) {
 		},
 	});
 
-	// Gets access to all the events the editor is throwing our way
-	const csEventHandler = new CSEventHandler(context);
-	context.subscriptions.push(csEventHandler);
-
 	const registerPreCopyCommand = commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
@@ -53,24 +49,6 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(registerPreCopyCommand);
-	const startRecording = commands.registerCommand(
-		'codestory.startRecordingContext',
-		async () => {
-			await csEventHandler.startRecording();
-			console.log('start recording context');
-		}
-	);
-	context.subscriptions.push(startRecording);
-	const stopRecording = commands.registerCommand(
-		'codestory.stopRecordingContext',
-		async () => {
-			const response = await csEventHandler.stopRecording();
-			await sidecarClient.sendContextRecording(response);
-			console.log(JSON.stringify(response));
-			console.log('stop recording context');
-		}
-	);
-	context.subscriptions.push(stopRecording);
 	let rootPath = workspace.rootPath;
 	if (!rootPath) {
 		rootPath = '';
@@ -209,6 +187,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(recentEditsRetriever);
 
 	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);
+	const editorUrl = probeProvider.editorUrl();
 	context.subscriptions.push(probeProvider);
 
 	// Register feedback commands
@@ -218,31 +197,6 @@ export async function activate(context: ExtensionContext) {
 			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
 		})
 	);
-
-	// records when we change to a new text document
-	workspace.onDidChangeTextDocument(async (event) => {
-		console.log('onDidChangeTextDocument');
-		const fileName = event.document.fileName;
-		await csEventHandler.onDidChangeTextDocument(fileName);
-	});
-
-	window.onDidChangeActiveTextEditor(async (editor) => {
-		if (editor) {
-			const activeDocument = editor.document;
-			if (activeDocument) {
-				const activeDocumentUri = activeDocument.uri;
-				if (shouldTrackFile(activeDocumentUri)) {
-					// track that changed document over here
-					await csEventHandler.onDidChangeTextDocument(activeDocumentUri.fsPath);
-					await sidecarClient.documentOpen(
-						activeDocumentUri.fsPath,
-						activeDocument.getText(),
-						activeDocument.languageId
-					);
-				}
-			}
-		}
-	});
 
 	// When the selection changes in the editor we should trigger an event
 	window.onDidChangeTextEditorSelection(async (event) => {
@@ -288,6 +242,54 @@ export async function activate(context: ExtensionContext) {
 				await sidecarClient.sendDiagnostics(uri.toString(), diagnostics);
 			} catch (error) {
 				// console.error(`Failed to send diagnostics for ${uri.toString()}:`, error);
+			}
+		}
+	});
+
+	// Gets access to all the events the editor is throwing our way
+	const csEventHandler = new CSEventHandler(context, editorUrl);
+	context.subscriptions.push(csEventHandler);
+
+	const startRecording = commands.registerCommand(
+		'codestory.startRecordingContext',
+		async () => {
+			await csEventHandler.startRecording();
+			console.log('start recording context');
+		}
+	);
+	context.subscriptions.push(startRecording);
+	const stopRecording = commands.registerCommand(
+		'codestory.stopRecordingContext',
+		async () => {
+			const response = await csEventHandler.stopRecording();
+			await probeProvider.sendContextRecording(response);
+			console.log(JSON.stringify(response));
+			console.log('stop recording context');
+		}
+	);
+	context.subscriptions.push(stopRecording);
+
+	// records when we change to a new text document
+	workspace.onDidChangeTextDocument(async (event) => {
+		console.log('onDidChangeTextDocument');
+		const fileName = event.document.fileName;
+		await csEventHandler.onDidChangeTextDocument(fileName);
+	});
+
+	window.onDidChangeActiveTextEditor(async (editor) => {
+		if (editor) {
+			const activeDocument = editor.document;
+			if (activeDocument) {
+				const activeDocumentUri = activeDocument.uri;
+				if (shouldTrackFile(activeDocumentUri)) {
+					// track that changed document over here
+					await csEventHandler.onDidChangeTextDocument(activeDocumentUri.fsPath);
+					await sidecarClient.documentOpen(
+						activeDocumentUri.fsPath,
+						activeDocument.getText(),
+						activeDocument.languageId
+					);
+				}
 			}
 		}
 	});

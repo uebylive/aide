@@ -23,7 +23,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	// The current recording session which the user is going through over here
 	private _currentSession: SidecarContextEvent[];
 
-	constructor(private readonly _context: vscode.ExtensionContext) {
+	constructor(private readonly _context: vscode.ExtensionContext, _editorUrl: string | undefined) {
 		this._disposable = vscode.csevents.registerCSEventHandler(this);
 		this._currentSession = [];
 
