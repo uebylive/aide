@@ -168,7 +168,13 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	async onDidChangeTextDocumentSelection(filePath: string, selections: readonly vscode.Selection[]) {
 		// we are getting multiple selections for the same file, so figure out what to do
 		// over here
+		const currentSelectionRange = this.selectionToSidecarRange(selections[0]);
 		if (this._currentSession.length === 0) {
+			// we should not track any events which are just movements, a movement
+			// in the editor shows up as a 0 length selection
+			if (currentSelectionRange.startPosition.line === currentSelectionRange.endPosition.line && currentSelectionRange.startPosition.character === currentSelectionRange.endPosition.character) {
+				return;
+			}
 			this._currentSession.push({
 				Selection: {
 					fs_file_path: filePath,
@@ -178,7 +184,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			return;
 		}
 		const lastEvent = this._currentSession.at(-1);
-		const currentSelectionRange = this.selectionToSidecarRange(selections[0]);
 		// If we have a lsp context event then we most likely here have the destination
 		// location over here
 		if (lastEvent !== undefined && lastEvent.LSPContextEvent !== undefined) {
