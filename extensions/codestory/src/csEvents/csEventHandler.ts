@@ -37,6 +37,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	async handleSymbolNavigation(event: vscode.SymbolNavigationEvent): Promise<void> {
 		const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(event.uri.fsPath));
 		const wordRange = textDocument.getWordRangeAtPosition(event.position);
+		const lineContent = textDocument.lineAt(event.position.line).text;
 		let textAtRange = undefined;
 		if (wordRange !== undefined) {
 			textAtRange = textDocument.getText(wordRange);
@@ -50,6 +51,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 					byteOffset: 0,
 				},
 				source_word: textAtRange,
+				source_line: lineContent,
 				destination: null,
 				event_type: getSymbolNavigationActionTypeLabel(event.action),
 			}
@@ -184,12 +186,14 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			return;
 		}
 		const lastEvent = this._currentSession.at(-1);
+		const textDocument = await vscode.workspace.openTextDocument(filePath);
 		// If we have a lsp context event then we most likely here have the destination
 		// location over here
 		if (lastEvent !== undefined && lastEvent.LSPContextEvent !== undefined) {
 			lastEvent.LSPContextEvent.destination = {
 				position: currentSelectionRange.startPosition,
 				fs_file_path: filePath,
+				line_content: textDocument.lineAt(currentSelectionRange.startPosition.line).text,
 			};
 			console.log('onDidChangeTextDocumentSelection::update_destination');
 			return;
