@@ -949,6 +949,7 @@ export interface SidecarLSPDestination {
 export interface SidecarLSPContextEvent {
 	fs_file_path: string;
 	position: SidecarRequestPosition;
+	source_word: string | undefined;
 	// destination where we land after invoking a lsp destination
 	destination: SidecarLSPDestination | null;
 	event_type: string;

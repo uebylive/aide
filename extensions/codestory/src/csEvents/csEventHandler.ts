@@ -34,7 +34,13 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 		}
 	}
 
-	handleSymbolNavigation(event: vscode.SymbolNavigationEvent): void {
+	async handleSymbolNavigation(event: vscode.SymbolNavigationEvent): Promise<void> {
+		const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(event.uri.fsPath));
+		const wordRange = textDocument.getWordRangeAtPosition(event.position);
+		let textAtRange = undefined;
+		if (wordRange !== undefined) {
+			textAtRange = textDocument.getText(wordRange);
+		}
 		this._currentSession.push({
 			LSPContextEvent: {
 				fs_file_path: event.uri.fsPath,
@@ -43,6 +49,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 					character: event.position.character,
 					byteOffset: 0,
 				},
+				source_word: textAtRange,
 				destination: null,
 				event_type: getSymbolNavigationActionTypeLabel(event.action),
 			}
