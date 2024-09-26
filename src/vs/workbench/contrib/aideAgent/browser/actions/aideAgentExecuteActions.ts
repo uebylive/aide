@@ -10,7 +10,7 @@ import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_LANGUAGE_MODELS_ARE_USER_SELECTABLE, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
@@ -65,15 +65,15 @@ export class SubmitAction extends Action2 {
 	}
 }
 
-export const ChatModelPickerActionId = 'workbench.action.aideAgent.pickModel';
-MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
+export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
+MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
 	command: {
-		id: ChatModelPickerActionId,
-		title: localize2('chat.pickModel.label', "Pick Model"),
+		id: AgentModePickerActionId,
+		title: localize2('aideAgent.setMode.label', "Set Mode"),
 	},
 	order: 1,
 	group: 'navigation',
-	when: ContextKeyExpr.and(CONTEXT_LANGUAGE_MODELS_ARE_USER_SELECTABLE, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel')),
+	when: ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'),
 });
 
 export class CancelAction extends Action2 {

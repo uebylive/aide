@@ -9,8 +9,10 @@ import { IHistoryNavigationWidget } from '../../../../base/browser/history.js';
 import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import * as aria from '../../../../base/browser/ui/aria/aria.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
+import { renderLabelWithIcons } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
+import { IAction } from '../../../../base/common/actions.js';
 import { Codicon } from '../../../../base/common/codicons.js';
-import { Emitter } from '../../../../base/common/event.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { HistoryNavigator2 } from '../../../../base/common/history.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
@@ -35,24 +37,27 @@ import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/a
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
+import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { FileKind } from '../../../../platform/files/common/files.js';
 import { registerAndCreateHistoryNavigationContext } from '../../../../platform/history/browser/contextScopedHistoryWidget.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
+import { INotificationService } from '../../../../platform/notification/common/notification.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { ResourceLabels } from '../../../browser/labels.js';
 import { AccessibilityVerbositySettingId } from '../../accessibility/browser/accessibilityConfiguration.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { AgentMode, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
+import { AgentModePickerActionId, CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -144,6 +149,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		// Map the internal id to the metadata id
 		const metadataId = this._currentLanguageModel ? this.languageModelsService.lookupLanguageModel(this._currentLanguageModel)?.id : undefined;
 		return metadataId;
+	}
+
+	private _onDidChangeCurrentAgentMode = new Emitter<string>();
+	private _currentAgentMode: AgentMode = AgentMode.Edit;
+	get currentAgentMode() {
+		return this._currentAgentMode;
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;
@@ -484,6 +495,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
+				if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
+					const itemDelegate: AgentModeSetterDelegate = {
+						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
+						setMode: (modeId: string) => {
+							this._currentAgentMode = modeId as AgentMode;
+						}
+					};
+					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode, itemDelegate);
+				}
+
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
 				}
@@ -715,6 +736,74 @@ const historyKeyFn = (entry: IChatHistoryEntry) => JSON.stringify(entry);
 
 function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
+}
+
+interface AgentModeSetterDelegate {
+	onDidChangeMode: Event<string>;
+	setMode(selectedModeId: string): void;
+}
+
+class AgentModeActionViewItem extends MenuEntryActionViewItem {
+	constructor(
+		action: MenuItemAction,
+		private currentAgentMode: AgentMode,
+		private delegate: AgentModeSetterDelegate,
+		@IKeybindingService keybindingService: IKeybindingService,
+		@INotificationService notificationService: INotificationService,
+		@IContextKeyService contextKeyService: IContextKeyService,
+		@IThemeService themeService: IThemeService,
+		@IContextMenuService contextMenuService: IContextMenuService,
+		@IAccessibilityService _accessibilityService: IAccessibilityService
+	) {
+		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
+
+		this._register(delegate.onDidChangeMode(modeId => {
+			this.currentAgentMode = modeId as AgentMode;
+			this.updateLabel();
+		}));
+	}
+
+	override async onClick(): Promise<void> {
+		this._openContextMenu();
+	}
+
+	override render(container: HTMLElement): void {
+		super.render(container);
+		container.classList.add('agentmode-picker-item');
+	}
+
+	protected override updateLabel(): void {
+		if (this.label) {
+			this.label.textContent = this.currentAgentMode;
+			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
+		}
+	}
+
+	private _openContextMenu() {
+		const setAgentModeAction = (mode: string): IAction => {
+			return {
+				id: mode,
+				label: mode,
+				tooltip: '',
+				class: undefined,
+				enabled: true,
+				checked: mode === this.currentAgentMode,
+				run: () => {
+					this.currentAgentMode = mode as AgentMode;
+					this.delegate.setMode(mode);
+					this.updateLabel();
+				}
+			};
+		};
+
+		this._contextMenuService.showContextMenu({
+			getAnchor: () => this.element!,
+			getActions: () => [
+				setAgentModeAction('Edit'),
+				setAgentModeAction('Chat'),
+			]
+		});
+	}
 }
 
 const chatInputEditorContainerSelector = '.interactive-input-editor';

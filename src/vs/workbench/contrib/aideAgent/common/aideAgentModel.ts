@@ -748,6 +748,11 @@ export enum ChatModelInitState {
 	Initialized
 }
 
+export enum AgentMode {
+	Chat = 'Chat',
+	Edit = 'Edit'
+}
+
 export class ChatModel extends Disposable implements IChatModel {
 	static getDefaultTitle(requests: (ISerializableChatRequestData | IChatExchangeModel)[]): string {
 		const firstRequestMessage = requests.find(r => isRequestModel(r));
