@@ -984,12 +984,18 @@ export class SideCarClient {
 
 	async sendContextRecording(
 		contextEvents: readonly SidecarContextEvent[],
+		editorUrl: string | undefined,
 	) {
+		if (editorUrl === undefined) {
+			console.log('editorUrl not found');
+			return;
+		}
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/context_recording';
 		const url = baseUrl.toString();
 		const body = {
 			context_events: contextEvents,
+			editor_url: editorUrl,
 		};
 		await fetch(url, {
 			method: 'POST',
