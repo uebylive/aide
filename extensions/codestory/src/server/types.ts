@@ -944,12 +944,14 @@ export interface SidecarOpenFileContextEvent {
 export interface SidecarLSPDestination {
 	position: SidecarRequestPosition;
 	fs_file_path: string;
+	line_content: string;
 }
 
 export interface SidecarLSPContextEvent {
 	fs_file_path: string;
 	position: SidecarRequestPosition;
 	source_word: string | undefined;
+	source_line: string;
 	// destination where we land after invoking a lsp destination
 	destination: SidecarLSPDestination | null;
 	event_type: string;
