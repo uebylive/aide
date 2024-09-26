@@ -3,12 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { $, append } from '../../../../base/browser/dom.js';
-import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
-import { Action } from '../../../../base/common/actions.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
-import { Emitter, Event } from '../../../../base/common/event.js';
-import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -37,47 +33,8 @@ interface IViewPaneState extends IChatViewState {
 	sessionId?: string;
 }
 
-class ModeSwitcher extends Disposable {
-	private _onChange = this._register(new Emitter<{ id: string | null; focus: boolean }>());
-	get onChange(): Event<{ id: string | null; focus: boolean }> { return this._onChange.event; }
-
-	private _currentId: string | null = null;
-	get currentId(): string | null { return this._currentId; }
-
-	private actions: Action[];
-	private actionbar: ActionBar;
-
-	constructor(container: HTMLElement) {
-		super();
-		const element = append(container, $('.mode-switcher'));
-		this.actions = [];
-		this.actionbar = this._register(new ActionBar(element));
-	}
-
-	push(id: string, label: string, tooltip: string): void {
-		const action = new Action(id, label, undefined, true, () => this.update(id, true));
-
-		action.tooltip = tooltip;
-
-		this.actions.push(action);
-		this.actionbar.push(action);
-
-		if (this.actions.length === 1) {
-			this.update(id);
-		}
-	}
-
-	private update(id: string, focus?: boolean): void {
-		this._currentId = id;
-		this._onChange.fire({ id, focus: !!focus });
-		this.actions.forEach(a => a.checked = a.id === id);
-	}
-}
-
 export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.aideAgentSidebar';
 export class ChatViewPane extends ViewPane {
-	private modeSwitcher!: ModeSwitcher;
-
 	private _widget!: ChatWidget;
 	get widget(): ChatWidget { return this._widget; }
 
@@ -180,13 +137,6 @@ export class ChatViewPane extends ViewPane {
 	protected override renderBody(parent: HTMLElement): void {
 		try {
 			super.renderBody(parent);
-
-			this.modeSwitcher = this._register(new ModeSwitcher(parent));
-			this.modeSwitcher.push('edit', 'Edit', 'Edit code using the agent');
-			this.modeSwitcher.push('chat', 'Chat', 'Chat with the agent');
-			this.modeSwitcher.onChange(e => {
-				console.log('modeSwitcher.onChange', e);
-			});
 
 			const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
 			const locationBasedColors = this.getLocationBasedColors();
