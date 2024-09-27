@@ -180,7 +180,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				streamProcessor: new StreamProcessor(
-					this._openResponseStream,
+					this._openResponseStream as vscode.ProbeResponseStream,
 					documentLines,
 					undefined,
 					vscode.Uri.file(editStreamEvent.fs_file_path),
