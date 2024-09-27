@@ -3,25 +3,29 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { basename } from '../../../../base/common/path.js';
 import { coalesce } from '../../../../base/common/arrays.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { onUnexpectedExternalError } from '../../../../base/common/errors.js';
 import { Iterable } from '../../../../base/common/iterator.js';
 import { IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
-import { URI } from '../../../../base/common/uri.js';
-import { Location } from '../../../../editor/common/languages.js';
-import { IAideAgentWidgetService, showChatView } from './aideAgent.js';
-import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
-import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { ChatRequestDynamicVariablePart, ChatRequestToolPart, ChatRequestVariablePart, IParsedChatRequest } from '../common/aideAgentParserTypes.js';
-import { IChatContentReference } from '../common/aideAgentService.js';
-import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IAideAgentVariablesService, IDynamicVariable } from '../common/aideAgentVariables.js';
-import { ChatContextAttachments } from './contrib/aideAgentContextAttachments.js';
-import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { IAideAgentLMToolsService } from '../common/languageModelToolsService.js';
+import { basename } from '../../../../base/common/path.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { Location } from '../../../../editor/common/languages.js';
+import { IModelService } from '../../../../editor/common/services/model.js';
+import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { IPinnedContextService } from '../../pinnedContext/common/pinnedContext.js';
+import { ChatAgentLocation } from '../common/aideAgentAgents.js';
+import { AgentMode, AgentScope, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { ChatRequestDynamicVariablePart, ChatRequestToolPart, ChatRequestVariablePart, IParsedChatRequest } from '../common/aideAgentParserTypes.js';
+import { IChatContentReference, IChatSendRequestOptions } from '../common/aideAgentService.js';
+import { IAideAgentVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IDynamicVariable } from '../common/aideAgentVariables.js';
+import { IAideAgentLMToolsService } from '../common/languageModelToolsService.js';
+import { IAideAgentWidgetService, showChatView } from './aideAgent.js';
+import { ChatContextAttachments } from './contrib/aideAgentContextAttachments.js';
+import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
 
 interface IChatData {
 	data: IChatVariableData;
@@ -34,13 +38,16 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 	private _resolver = new Map<string, IChatData>();
 
 	constructor(
-		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
-		@IViewsService private readonly viewsService: IViewsService,
 		@IAideAgentLMToolsService private readonly toolsService: IAideAgentLMToolsService,
+		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
+		@IEditorService private readonly editorService: IEditorService,
+		@IModelService private readonly modelService: IModelService,
+		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
+		@IViewsService private readonly viewsService: IViewsService,
 	) {
 	}
 
-	async resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData> {
+	async resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, options: IChatSendRequestOptions | undefined, token: CancellationToken): Promise<IChatRequestVariableData> {
 		let resolvedVariables: IChatRequestVariableEntry[] = [];
 		const jobs: Promise<any>[] = [];
 
@@ -97,6 +104,79 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 			});
 
 		await Promise.allSettled(jobs);
+
+		// Attach pinned context, if the scope is set to 'Pinned Context'
+		if (options?.agentMode === AgentMode.Edit) {
+			if (options.agentScope === AgentScope.Selection) {
+				const activeEditor = this.editorService.activeTextEditorControl;
+				if (isCodeEditor(activeEditor)) {
+					const model = activeEditor.getModel();
+					const selection = activeEditor.getSelection();
+					if (model && selection) {
+						resolvedAttachedContext.push({
+							id: 'selection',
+							name: 'file',
+							value: JSON.stringify({
+								uri: model.uri,
+								range: {
+									startLineNumber: selection.startLineNumber - 1,
+									startColumn: selection.startColumn - 1,
+									endLineNumber: selection.endLineNumber - 1,
+									endColumn: selection.endColumn - 1,
+								},
+							})
+						});
+					}
+				}
+			} else if (options.agentScope === AgentScope.PinnedContext) {
+				const pinnedContexts = this.pinnedContextService.getPinnedContexts();
+				pinnedContexts.forEach(context => {
+					const model = this.modelService.getModel(context);
+					if (model) {
+						const range = model.getFullModelRange();
+						const valueObj = {
+							uri: context,
+							range: {
+								startLineNumber: range.startLineNumber,
+								startColumn: range.startColumn,
+								endLineNumber: range.endLineNumber,
+								endColumn: range.endColumn,
+							}
+						};
+						resolvedAttachedContext.push({
+							id: 'selection',
+							name: 'file',
+							value: JSON.stringify(valueObj)
+						});
+					}
+				});
+			} else if (options.agentScope === AgentScope.Codebase) {
+				const openEditors = this.editorService.editors;
+				openEditors.forEach(editor => {
+					const resource = editor.resource;
+					if (resource) {
+						const model = this.modelService.getModel(resource);
+						if (model) {
+							const range = model.getFullModelRange();
+							const valueObj = {
+								uri: resource,
+								range: {
+									startLineNumber: range.startLineNumber,
+									startColumn: range.startColumn,
+									endLineNumber: range.endLineNumber,
+									endColumn: range.endColumn,
+								}
+							};
+							resolvedAttachedContext.push({
+								id: 'selection',
+								name: 'file',
+								value: JSON.stringify(valueObj),
+							});
+						}
+					}
+				});
+			}
+		}
 
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);

@@ -76,6 +76,17 @@ MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
 	when: ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'),
 });
 
+export const AgentScopePickerActionId = 'workbench.action.aideAgent.setScope';
+MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+	command: {
+		id: AgentScopePickerActionId,
+		title: localize2('aideAgent.setScope.label', "Set Scope"),
+	},
+	order: 2,
+	group: 'navigation',
+	when: ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'),
+});
+
 export class CancelAction extends Action2 {
 	static readonly ID = 'workbench.action.aideAgent.cancel';
 	constructor() {

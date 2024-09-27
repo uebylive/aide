@@ -4693,6 +4693,12 @@ export enum AideAgentMode {
 	Edit = 1,
 	Chat = 2,
 }
+
+export enum AideAgentScope {
+	Selection = 1,
+	PinnedContext = 2,
+	Codebase = 3
+}
 //#endregion
 
 //#region ai

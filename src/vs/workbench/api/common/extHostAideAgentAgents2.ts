@@ -143,7 +143,7 @@ class AideAgentResponseStream {
 				reference(value, iconPath) {
 					return this.reference2(value, iconPath);
 				},
-				reference2(_value, _iconPath, _options) {
+				reference2(value, iconPath, options) {
 					throwIfDone(this.reference);
 
 					/* TODO(@ghostwriternr): Temporarily remove this until we have a way to pass the request object to the agent
@@ -169,12 +169,11 @@ class AideAgentResponseStream {
 						} else {
 							// Something went wrong- that variable doesn't actually exist
 						}
-					} else {
-						const part = new extHostTypes.ChatResponseReferencePart(value, iconPath, options);
-						const dto = typeConvert.ChatResponseReferencePart.from(part);
-						_report(dto);
-					}
-					*/
+					} else {*/
+					const part = new extHostTypes.ChatResponseReferencePart(value, iconPath, options);
+					const dto = typeConvert.ChatResponseReferencePart.from(part);
+					_report(dto);
+					//}
 
 					return this;
 				},

@@ -52,12 +52,12 @@ import { AccessibilityCommandId } from '../../accessibility/common/accessibility
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { AgentMode, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { AgentModePickerActionId, CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
+import { AgentModePickerActionId, AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -155,6 +155,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _currentAgentMode: AgentMode = AgentMode.Chat;
 	get currentAgentMode() {
 		return this._currentAgentMode;
+	}
+
+	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
+	private _currentAgentScope: AgentScope = AgentScope.Selection;
+	get currentAgentScope() {
+		return this._currentAgentScope;
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;
@@ -495,6 +501,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
+				if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
+					const scopeDelegate: AgentScopeSetterDelegate = {
+						onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
+						setScope: (scopeId: AgentScope) => {
+							this._currentAgentScope = scopeId;
+						}
+					};
+					return this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+				}
+
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
 				}
@@ -801,6 +817,75 @@ class AgentModeActionViewItem extends MenuEntryActionViewItem {
 			getActions: () => [
 				setAgentModeAction('Edit'),
 				setAgentModeAction('Chat'),
+			]
+		});
+	}
+}
+
+export interface AgentScopeSetterDelegate {
+	onDidChangeScope: Event<string>;
+	setScope: (scopeId: AgentScope) => void;
+}
+
+export class AgentScopeActionViewItem extends MenuEntryActionViewItem {
+	constructor(
+		action: MenuItemAction,
+		private currentAgentScope: string,
+		private delegate: AgentScopeSetterDelegate,
+		@IKeybindingService keybindingService: IKeybindingService,
+		@INotificationService notificationService: INotificationService,
+		@IContextKeyService contextKeyService: IContextKeyService,
+		@IThemeService themeService: IThemeService,
+		@IContextMenuService contextMenuService: IContextMenuService,
+		@IAccessibilityService _accessibilityService: IAccessibilityService
+	) {
+		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
+
+		this._register(delegate.onDidChangeScope(scopeId => {
+			this.currentAgentScope = scopeId;
+			this.updateLabel();
+		}));
+	}
+
+	override async onClick(event: MouseEvent): Promise<void> {
+		this._openContextMenu();
+	}
+
+	override render(container: HTMLElement): void {
+		super.render(container);
+		container.classList.add('agentscope-picker-item');
+	}
+
+	protected override updateLabel(): void {
+		if (this.label) {
+			this.label.textContent = this.currentAgentScope;
+			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentScope}$(chevron-down)`));
+		}
+	}
+
+	private _openContextMenu() {
+		const setAgentScopeAction = (scope: string): IAction => {
+			return {
+				id: scope,
+				label: scope,
+				tooltip: '',
+				class: undefined,
+				enabled: true,
+				checked: scope === this.currentAgentScope,
+				run: () => {
+					this.currentAgentScope = scope;
+					this.delegate.setScope(scope as AgentScope);
+					this.updateLabel();
+				}
+			};
+		};
+
+		this._contextMenuService.showContextMenu({
+			getAnchor: () => this.element!,
+			getActions: () => [
+				setAgentScopeAction('Selection'),
+				setAgentScopeAction('Pinned Context'),
+				setAgentScopeAction('Codebase'),
 			]
 		});
 	}

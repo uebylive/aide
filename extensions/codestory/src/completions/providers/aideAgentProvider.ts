@@ -247,11 +247,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references, this.projectContext.labels);
 			await reportFromStreamToSearchProgress(followupResponse, responseStream, cts.token, this.workingDirectory);
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
-			// TODO(@ghostwriternr): Get the right values after implementing scopes again.
-			const isAnchorEditing = true;
-			const isWholeCodebase = false;
-			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, event.id, isWholeCodebase, isAnchorEditing);
-			await reportAgentEventsToChat(true, probeResponse, responseStream, event.id, cts.token, this.sidecarClient, this.iterationEdits, this.limiter);
+			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
+			const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
+			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
+			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, cts.token, this.sidecarClient, this.iterationEdits, this.limiter);
 		}
 		responseStream.close();
 	}

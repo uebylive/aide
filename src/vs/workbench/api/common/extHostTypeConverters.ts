@@ -37,7 +37,7 @@ import { ProgressLocation as MainProgressLocation } from '../../../platform/prog
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
-import { AgentMode } from '../../contrib/aideAgent/common/aideAgentModel.js';
+import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
@@ -2899,6 +2899,24 @@ export namespace AideAgentMode {
 	}
 }
 
+export namespace AideAgentScope {
+	export function to(scope: AgentScope): types.AideAgentScope {
+		switch (scope) {
+			case AgentScope.Selection: return types.AideAgentScope.Selection;
+			case AgentScope.PinnedContext: return types.AideAgentScope.PinnedContext;
+			case AgentScope.Codebase: return types.AideAgentScope.Codebase;
+		}
+	}
+
+	export function from(scope: types.AideAgentScope): AgentScope {
+		switch (scope) {
+			case types.AideAgentScope.Selection: return AgentScope.Selection;
+			case types.AideAgentScope.PinnedContext: return AgentScope.PinnedContext;
+			case types.AideAgentScope.Codebase: return AgentScope.Codebase;
+		}
+	}
+}
+
 export namespace AideAgentRequest {
 	export function to(request: IAideAgentRequest, location2: vscode.ChatRequestEditorData | vscode.ChatRequestNotebookData | undefined): vscode.AideAgentRequest {
 		const chatAgentRequest = ChatAgentRequest.to(request, location2);
@@ -2906,6 +2924,7 @@ export namespace AideAgentRequest {
 			...chatAgentRequest,
 			id: request.requestId,
 			mode: AideAgentMode.to(request.mode),
+			scope: AideAgentScope.to(request.scope),
 		};
 	}
 }

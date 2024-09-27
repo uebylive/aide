@@ -9,9 +9,16 @@ declare module 'vscode' {
 		Chat = 2
 	}
 
+	export enum AideAgentScope {
+		Selection = 1,
+		PinnedContext = 2,
+		Codebase = 3
+	}
+
 	export interface AideAgentRequest extends ChatRequest {
 		id: string;
 		mode: AideAgentMode;
+		scope: AideAgentScope;
 	}
 
 	export interface AideAgentResponseStream extends ChatResponseStream {

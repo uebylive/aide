@@ -23,7 +23,7 @@ import { IWorkbenchAssignmentService } from '../../../services/assignment/common
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
-import { AgentMode, ChatModel, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
+import { AgentMode, AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, ChatWelcomeMessageModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './aideAgentParserTypes.js';
 import { ChatRequestParser } from './aideAgentRequestParser.js';
 import { IAideAgentService, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';
@@ -567,14 +567,22 @@ export class ChatService extends Disposable implements IAideAgentService {
 						request = chatRequest ?? model.addRequest(parsedRequest, initVariableData, attempt, agent, command, options?.confirmation, options?.locationData, options?.attachedContext);
 
 						// Variables may have changed if the agent and slash command changed, so resolve them again even if we already had a chatRequest
-						// TODO(@ghostwriternr): Do we still need this? The lifecycle of the request object is unclear, and the cancellation token too.
-						const variableData = await this.chatVariablesService.resolveVariables(parsedRequest, request.attachedContext, model, (part) => this.progressCallback(model, undefined, part, token), token);
+						const variableData = await this.chatVariablesService.resolveVariables(
+							parsedRequest,
+							request.attachedContext,
+							model,
+							// TODO(@ghostwriternr): Do we still need this? The lifecycle of the request object is unclear, and the cancellation token too.
+							(part) => this.progressCallback(model, undefined, part, token),
+							options,
+							token
+						);
 						model.updateRequest(request, variableData);
 						const promptTextResult = getPromptText(request.message);
 						const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
 
 						return {
 							mode: options?.agentMode ?? AgentMode.Chat,
+							scope: options?.agentScope ?? AgentScope.Selection,
 							sessionId,
 							requestId: request.id,
 							agentId: agent.id,

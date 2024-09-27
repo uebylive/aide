@@ -16,7 +16,7 @@ import { FileType } from '../../../../platform/files/common/files.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
-import { AgentMode, ChatModel, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
+import { AgentMode, AgentScope, ChatModel, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { IChatParserContext } from './aideAgentRequestParser.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
@@ -380,6 +380,7 @@ export type IChatLocationData = IChatEditorLocationData | IChatNotebookLocationD
 
 export interface IChatSendRequestOptions {
 	agentMode?: AgentMode;
+	agentScope?: AgentScope;
 	userSelectedModelId?: string;
 	location?: ChatAgentLocation;
 	locationData?: IChatLocationData;

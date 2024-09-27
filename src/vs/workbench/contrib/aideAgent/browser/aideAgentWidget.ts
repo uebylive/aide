@@ -807,6 +807,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			const isUserQuery = !opts || 'prefix' in opts;
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
 				agentMode: this.inputPart.currentAgentMode,
+				agentScope: this.inputPart.currentAgentScope,
 				userSelectedModelId: this.inputPart.currentLanguageModel,
 				location: this.location,
 				locationData: this._location.resolveData?.(),

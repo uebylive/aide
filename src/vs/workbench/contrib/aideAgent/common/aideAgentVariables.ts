@@ -13,7 +13,7 @@ import { createDecorator } from '../../../../platform/instantiation/common/insta
 import { ChatAgentLocation } from './aideAgentAgents.js';
 import { IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
-import { IChatContentReference, IChatProgressMessage } from './aideAgentService.js';
+import { IChatContentReference, IChatProgressMessage, IChatSendRequestOptions } from './aideAgentService.js';
 
 export interface IChatVariableData {
 	id: string;
@@ -50,7 +50,7 @@ export interface IAideAgentVariablesService {
 	/**
 	 * Resolves all variables that occur in `prompt`
 	 */
-	resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableData>;
+	resolveVariables(prompt: IParsedChatRequest, attachedContextVariables: IChatRequestVariableEntry[] | undefined, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, options: IChatSendRequestOptions | undefined, token: CancellationToken): Promise<IChatRequestVariableData>;
 	resolveVariable(variableName: string, promptText: string, model: IChatModel, progress: (part: IChatVariableResolverProgress) => void, token: CancellationToken): Promise<IChatRequestVariableValue | undefined>;
 }
 
