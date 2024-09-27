@@ -505,6 +505,14 @@ export interface CodeSymbolImportantWideSearch {
 	file_extension_filters: Set<string>;
 }
 
+export type SidecarCreateFilResponse = {
+	success: boolean;
+};
+
+export type SidecarCreateFileRequest = {
+	fs_file_path: string;
+};
+
 export type SidecarOutlineNodesWithContentRequest = {
 	content: string;
 	file_extension: string;
