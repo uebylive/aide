@@ -114,7 +114,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		fs_file_path: String;
 		success: boolean;
 	}> {
-		if (!this.openResponseStream) {
+		if (!request.apply_directly && !this.openResponseStream) {
 			console.log('editing_streamed::no_open_response_stream');
 			return {
 				fs_file_path: '',
@@ -140,7 +140,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				streamProcessor: new StreamProcessor(
-					this.openResponseStream,
+					this.openResponseStream!,
 					documentLines,
 					undefined,
 					vscode.Uri.file(editStreamEvent.fs_file_path),
