@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Emitter, Event } from '../../../../base/common/event.js';
+import { hash } from '../../../../base/common/hash.js';
 import { IMarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import * as marked from '../../../../base/common/marked/marked.js';
@@ -11,14 +12,13 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { annotateVulnerabilitiesInText } from './annotations.js';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideAgentAgentNameService, IChatAgentResult } from './aideAgentAgents.js';
+import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatTask, IChatUsedContext } from './aideAgentService.js';
 import { countWords } from './aideAgentWordCounter.js';
+import { annotateVulnerabilitiesInText } from './annotations.js';
 import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
-import { hash } from '../../../../base/common/hash.js';
 
 export function isRequestVM(item: unknown): item is IChatRequestViewModel {
 	return !!item && typeof item === 'object' && 'message' in item;

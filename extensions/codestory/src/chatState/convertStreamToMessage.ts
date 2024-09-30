@@ -17,7 +17,7 @@ import { AdjustedLineContent, LineContent, LineIndentManager } from '../completi
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	response: vscode.ChatResponseStream,
+	response: vscode.AideAgentResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -197,7 +197,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.AideAgentResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -229,7 +229,7 @@ export const reportCodeReferencesToChat = (response: vscode.ChatResponseStream, 
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.ChatResponseStream,
+	progress: vscode.AideAgentResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {
@@ -288,6 +288,8 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
+		// TODO(@ghostwriternr): Remove this before merging to cs-main
+		console.log(event);
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
 				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
@@ -383,13 +385,9 @@ export const reportAgentEventsToChat = async (
 				if (editEvent.CodeCorrectionTool) { }
 
 				if (editEvent.ThinkingForEdit) {
-					// response.breakdown({
-					// 	reference: {
-					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-					// 		name: symbol_identifier.symbol_name
-					// 	},
-					// 	response: new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking),
-					// });
+					// TODO(@skcd42): This event currently gets sent multiple times, and doesn't contain the text we'd ideally like to show the user.
+					// It also seems to contain the search/replace block in the text, which we don't want to show.
+					// response.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking));
 				}
 				if (editEvent.RangeSelectionForEdit) {
 					// response.breakdown({
@@ -602,7 +600,7 @@ export class StreamProcessor {
 	documentLineIndex: number;
 	sentEdits: boolean;
 	documentLineLimit: number;
-	constructor(progress: vscode.ChatResponseStream,
+	constructor(progress: vscode.AideAgentResponseStream,
 		lines: string[],
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
@@ -714,7 +712,7 @@ export class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.ChatResponseStream;
+	progress: vscode.AideAgentResponseStream;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
@@ -724,7 +722,7 @@ class DocumentManager {
 	applyDirectly: boolean;
 
 	constructor(
-		progress: vscode.ChatResponseStream,
+		progress: vscode.AideAgentResponseStream,
 		lines: string[],
 		// Fix the way we provide context over here?
 		range: SidecarRequestRange,
@@ -797,10 +795,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return index + 1;
@@ -812,10 +810,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return index + 1;
@@ -847,10 +845,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return startIndex + 1;
@@ -874,10 +872,10 @@ class DocumentManager {
 			await vscode.workspace.applyEdit(edits);
 		}
 		else if (this.limiter === null) {
-			// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			await this.progress.codeEdit(edits);
 		} else {
 			await this.limiter.queue(async () => {
-				// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			});
 		}
 		return this.lines.length;
@@ -900,10 +898,10 @@ class DocumentManager {
 			await vscode.workspace.applyEdit(edits);
 		}
 		else if (this.limiter === null) {
-			// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			await this.progress.codeEdit(edits);
 		} else {
 			await this.limiter.queue(async () => {
-				// await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			});
 		}
 		return index + 2;

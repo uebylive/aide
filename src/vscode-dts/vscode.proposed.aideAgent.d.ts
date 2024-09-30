@@ -21,7 +21,16 @@ declare module 'vscode' {
 		scope: AideAgentScope;
 	}
 
+	export class ChatResponseCodeEditPart {
+		edits: WorkspaceEdit;
+		constructor(edits: WorkspaceEdit);
+	}
+
+	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
+
 	export interface AideAgentResponseStream extends ChatResponseStream {
+		codeEdit(edits: WorkspaceEdit): void;
+		push(part: AideAgentResponsePart): void;
 		close(): void;
 	}
 

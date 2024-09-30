@@ -89,7 +89,7 @@ export async function applyEdits(
 		// we also want to save the file at this point after applying the edit
 		await vscode.workspace.save(fileUri);
 	} else {
-		// await response.codeEdit({ edits: workspaceEdit, iterationId: 'mock' });
+		await response.codeEdit(workspaceEdit);
 	}
 
 

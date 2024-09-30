@@ -11,7 +11,7 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IRange, Range } from '../../../../editor/common/core/range.js';
 import { ISelection } from '../../../../editor/common/core/selection.js';
-import { Command, Location, TextEdit } from '../../../../editor/common/languages.js';
+import { Command, Location, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { FileType } from '../../../../platform/files/common/files.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
@@ -182,6 +182,11 @@ export interface IChatTextEdit {
 	kind: 'textEdit';
 }
 
+export interface IChatCodeEdit {
+	edits: WorkspaceEdit;
+	kind: 'codeEdit';
+}
+
 export interface IChatConfirmation {
 	title: string;
 	message: string;
@@ -210,6 +215,7 @@ export type IChatProgress =
 	| IChatCommandButton
 	| IChatWarningMessage
 	| IChatTextEdit
+	| IChatCodeEdit
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation

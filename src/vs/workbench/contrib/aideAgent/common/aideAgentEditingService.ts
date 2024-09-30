@@ -9,7 +9,6 @@ import { TextEdit } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
 export const IAideAgentEditingService = createDecorator<IAideAgentEditingService>('aideAgentEditingService');
-
 export interface IAideAgentEditingService {
 	_serviceBrand: undefined;
 

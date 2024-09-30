@@ -52,7 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1287,7 +1287,7 @@ export interface MainThreadChatAgentsShape2 extends IDisposable {
 	$unregisterAgentCompletionsProvider(handle: number, id: string): void;
 	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void;
 	$unregisterAgent(handle: number): void;
-	$handleProgressChunk(requestId: string, chunk: IChatProgressDto, handle?: number): Promise<number | void>;
+	$handleProgressChunk(requestId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
 
 	$transferActiveChatSession(toWorkspace: UriComponents): void;
 }
@@ -1426,7 +1426,8 @@ export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
 }
 
-export type IAideAgentProgressDto = IChatProgressDto | Dto<IChatEndResponse>;
+export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
+export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
 	$initResponse(sessionId: string): Promise<string>;

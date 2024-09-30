@@ -495,7 +495,7 @@ export const taskComplete = (): ToolingEvent => {
 };
 
 type ChatProgress = {
-	response: vscode.ChatResponseStream;
+	response: vscode.AideAgentResponseStream;
 	cancellationToken: vscode.CancellationToken;
 };
 

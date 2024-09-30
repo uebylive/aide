@@ -4699,6 +4699,13 @@ export enum AideAgentScope {
 	PinnedContext = 2,
 	Codebase = 3
 }
+
+export class ChatResponseCodeEditPart {
+	edits: vscode.WorkspaceEdit;
+	constructor(edits: vscode.WorkspaceEdit) {
+		this.edits = edits;
+	}
+}
 //#endregion
 
 //#region ai

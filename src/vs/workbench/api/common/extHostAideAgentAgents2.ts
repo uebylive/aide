@@ -192,6 +192,14 @@ class AideAgentResponseStream {
 					_report(dto);
 					return this;
 				},
+				codeEdit(edits) {
+					throwIfDone(this.codeEdit);
+
+					const part = new extHostTypes.ChatResponseCodeEditPart(edits);
+					const dto = typeConvert.ChatResponseCodeEditPart.from(part);
+					_report(dto);
+					return this;
+				},
 				detectedParticipant(participant, command) {
 					throwIfDone(this.detectedParticipant);
 
@@ -213,6 +221,7 @@ class AideAgentResponseStream {
 
 					if (
 						part instanceof extHostTypes.ChatResponseTextEditPart ||
+						part instanceof extHostTypes.ChatResponseCodeEditPart ||
 						part instanceof extHostTypes.ChatResponseMarkdownWithVulnerabilitiesPart ||
 						part instanceof extHostTypes.ChatResponseDetectedParticipantPart ||
 						part instanceof extHostTypes.ChatResponseWarningPart ||
@@ -225,7 +234,7 @@ class AideAgentResponseStream {
 						// Ensure variable reference values get fixed up
 						this.reference2(part.value, part.iconPath, part.options);
 					} else {
-						const dto = typeConvert.ChatResponsePart.from(part, that._commandsConverter, that._sessionDisposables);
+						const dto = typeConvert.AideAgentResponsePart.from(part, that._commandsConverter, that._sessionDisposables);
 						_report(dto);
 					}
 
@@ -428,7 +437,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			res.push(turn);
 
 			// RESPONSE turn
-			const parts = coalesce(h.response.map(r => typeConvert.ChatResponsePart.toContent(r, this._commands.converter)));
+			const parts = coalesce(h.response.map(r => typeConvert.AideAgentResponsePart.toContent(r, this._commands.converter)));
 			res.push(new extHostTypes.ChatResponseTurn(parts, result, h.request.agentId, h.request.command));
 		}
 

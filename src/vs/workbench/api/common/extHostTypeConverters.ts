@@ -2670,9 +2670,10 @@ export namespace ChatResponseCodeCitationPart {
 	}
 }
 
+type ChatResponsePartType = vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseMarkdownWithVulnerabilitiesPart | vscode.ChatResponseDetectedParticipantPart | vscode.ChatResponseWarningPart | vscode.ChatResponseConfirmationPart | vscode.ChatResponseReferencePart2 | vscode.ChatResponseMovePart;
 export namespace ChatResponsePart {
 
-	export function from(part: vscode.ChatResponsePart | vscode.ChatResponseTextEditPart | vscode.ChatResponseMarkdownWithVulnerabilitiesPart | vscode.ChatResponseDetectedParticipantPart | vscode.ChatResponseWarningPart | vscode.ChatResponseConfirmationPart | vscode.ChatResponseReferencePart2 | vscode.ChatResponseMovePart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IChatProgressDto {
+	export function from(part: ChatResponsePartType, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IChatProgressDto {
 		if (part instanceof types.ChatResponseMarkdownPart) {
 			return ChatResponseMarkdownPart.from(part);
 		} else if (part instanceof types.ChatResponseAnchorPart) {
@@ -2926,6 +2927,43 @@ export namespace AideAgentRequest {
 			mode: AideAgentMode.to(request.mode),
 			scope: AideAgentScope.to(request.scope),
 		};
+	}
+}
+
+export namespace ChatResponseCodeEditPart {
+	export function from(part: vscode.ChatResponseCodeEditPart): extHostProtocol.IChatCodeEditDto {
+		return {
+			kind: 'codeEdit',
+			edits: WorkspaceEdit.from(part.edits),
+		};
+	}
+
+	export function to(part: extHostProtocol.IChatCodeEditDto): vscode.ChatResponseCodeEditPart {
+		return new types.ChatResponseCodeEditPart(WorkspaceEdit.to(part.edits));
+	}
+}
+
+export namespace AideAgentResponsePart {
+	export function from(part: ChatResponsePartType | vscode.ChatResponseCodeEditPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): extHostProtocol.IAideAgentProgressDto {
+		if (part instanceof types.ChatResponseCodeEditPart) {
+			return ChatResponseCodeEditPart.from(part);
+		} else {
+			const chatResponsePart = part as ChatResponsePartType;
+			return ChatResponsePart.from(chatResponsePart, commandsConverter, commandDisposables);
+		}
+	}
+
+	export function to(part: extHostProtocol.IAideAgentProgressDto, commandsConverter: CommandsConverter): vscode.AideAgentResponsePart | undefined {
+		if (part.kind === 'codeEdit') {
+			return ChatResponseCodeEditPart.to(part);
+		} else {
+			const chatResponsePart = part as extHostProtocol.IChatProgressDto;
+			return ChatResponsePart.to(chatResponsePart, commandsConverter);
+		}
+	}
+
+	export function toContent(part: extHostProtocol.IChatContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
+		return ChatResponsePart.toContent(part, commandsConverter);
 	}
 }
 
