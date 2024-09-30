@@ -55,7 +55,7 @@ export class BottomBarPart extends Part implements IDisposable {
 
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 36;
+	readonly minimumHeight: number = 90;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
