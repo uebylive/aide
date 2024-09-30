@@ -39,6 +39,7 @@ import { registerChatActions } from './actions/aideAgentActions.js';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from './actions/aideAgentClearActions.js';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from './actions/aideAgentCodeblockActions.js';
 import { registerChatContextActions } from './actions/aideAgentContextActions.js';
+import { registerAideControlsActions } from './actions/aideAgentControlsActions.js';
 import { registerChatCopyActions } from './actions/aideAgentCopyActions.js';
 import { registerChatDeveloperActions } from './actions/aideAgentDeveloperActions.js';
 import { SubmitAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
@@ -55,6 +56,8 @@ import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgen
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
 import { ChatVariablesService } from './aideAgentVariables.js';
 import { ChatWidgetService } from './aideAgentWidget.js';
+import { AideControls } from './aideControls.js';
+import { AideControlsService, IAideControlsService } from './aideControlsService.js';
 import { AideAgentCodeBlockContextProviderService } from './codeBlockContextProviderService.js';
 import './contrib/aideAgentContextAttachments.js';
 import './contrib/aideAgentInputCompletions.js';
@@ -261,6 +264,7 @@ registerWorkbenchContribution2(ChatExtensionPointHandler.ID, ChatExtensionPointH
 registerWorkbenchContribution2(LanguageModelToolsExtensionPointHandler.ID, LanguageModelToolsExtensionPointHandler, WorkbenchPhase.BlockRestore);
 registerWorkbenchContribution2(ChatCompatibilityNotifier.ID, ChatCompatibilityNotifier, WorkbenchPhase.Eventually);
 registerWorkbenchContribution2(ChatGettingStartedContribution.ID, ChatGettingStartedContribution, WorkbenchPhase.Eventually);
+registerWorkbenchContribution2(AideControls.ID, AideControls, WorkbenchPhase.Eventually);
 
 registerChatActions();
 registerChatCopyActions();
@@ -272,6 +276,7 @@ registerChatExecuteActions();
 registerNewChatActions();
 registerChatContextActions();
 registerChatDeveloperActions();
+registerAideControlsActions();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
@@ -287,3 +292,4 @@ registerSingleton(IAideAgentLMToolsService, LanguageModelToolsService, Instantia
 registerSingleton(IAideAgentCodeBlockContextProviderService, AideAgentCodeBlockContextProviderService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationType.Delayed);
 registerSingleton(IAideAgentEditingService, ChatEditingService, InstantiationType.Delayed);
+registerSingleton(IAideControlsService, AideControlsService, InstantiationType.Delayed);
