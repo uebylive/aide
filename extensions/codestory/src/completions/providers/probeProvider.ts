@@ -157,7 +157,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		fs_file_path: String;
 		success: boolean;
 	}> {
-		if (!this._openResponseStream) {
+		if (!request.apply_directly && !this._openResponseStream) {
 			console.log('editing_streamed::no_open_response_stream');
 			return {
 				fs_file_path: '',
@@ -183,7 +183,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				streamProcessor: new StreamProcessor(
-					this._openResponseStream,
+					this._openResponseStream as vscode.ProbeResponseStream,
 					documentLines,
 					undefined,
 					vscode.Uri.file(editStreamEvent.fs_file_path),
