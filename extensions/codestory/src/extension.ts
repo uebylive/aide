@@ -245,7 +245,7 @@ export async function activate(context: ExtensionContext) {
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		uniqueUserId,
-		sidecarClient, currentRepo, projectContext, editorUrl, context
+		sidecarClient, currentRepo, projectContext, probeProvider
 	);
 	context.subscriptions.push(chatAgentProvider);
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(

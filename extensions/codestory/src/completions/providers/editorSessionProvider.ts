@@ -242,6 +242,7 @@ export async function provideInteractiveEditorResponse(
 			file_content_map: [],
 			terminal_selection: undefined,
 			folder_paths: [],
+			is_plan_generation: false,
 		}
 	};
 	const messages = await sidecarClient.getInLineEditorResponse(context);

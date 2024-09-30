@@ -22,6 +22,7 @@ import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, Id
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { Diagnostic } from 'vscode';
 import { GENERATE_PLAN } from '../completions/providers/generatePlan';
+import { AideProbeProvider } from '../completions/providers/probeProvider';
 
 export enum CompletionStopReason {
 	/**
@@ -225,7 +226,7 @@ export class SideCarClient {
 		threadId: string,
 		variables: readonly vscode.ChatPromptReference[],
 		projectLabels: string[],
-		editorUrl: string | undefined,
+		probeProvider: AideProbeProvider,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -245,7 +246,7 @@ export class SideCarClient {
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
 			system_instruction: agentSystemInstruction,
-			editor_url: editorUrl,
+			editor_url: probeProvider.editorUrl(),
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
