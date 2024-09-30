@@ -1117,6 +1117,15 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		}
 	}
 
+	let isPlanAppend = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'APPEND_TO_PLAN') {
+			isPlanAppend = true;
+		}
+	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -1130,6 +1139,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
+		is_plan_append: isPlanAppend,
 	};
 }
 
@@ -1224,6 +1234,7 @@ async function convertVSCodeVariableToSidecar(
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: null,
+		is_plan_append: false,
 	};
 }
 
