@@ -17,7 +17,7 @@ import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
-// import { registerGeneratePlan } from './generatePlan';
+import { registerGeneratePlan } from './generatePlan';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -88,6 +88,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		repoRef: RepoRef,
 		projectContext: ProjectContext,
 		editorUrl: string | undefined,
+		extensionContext: vscode.ExtensionContext,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._repoHash = repoHash;
@@ -123,7 +124,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		registerOpenFiles();
 		registerTerminalSelection();
 		// TODO(skcd): Toggle this at will to debug the planning module
-		// registerGeneratePlan();
+		// registerGeneratePlan(extensionContext);
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 

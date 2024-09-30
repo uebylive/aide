@@ -21,6 +21,7 @@ import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPO
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { Diagnostic } from 'vscode';
+import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 
 export enum CompletionStopReason {
 	/**
@@ -1089,6 +1090,15 @@ async function convertVSCodeVariableToSidecar(
 		}
 	}
 
+	let isPlanGeneration = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === GENERATE_PLAN) {
+			isPlanGeneration = true;
+		}
+	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -1100,6 +1110,7 @@ async function convertVSCodeVariableToSidecar(
 		}),
 		terminal_selection: terminalSelection,
 		folder_paths: folders,
+		is_plan_generation: isPlanGeneration,
 	};
 }
 
