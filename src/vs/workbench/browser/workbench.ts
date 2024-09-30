@@ -16,7 +16,7 @@ import { isWindows, isLinux, isWeb, isNative, isMacintosh } from '../../base/com
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../common/contributions.js';
 import { IEditorFactoryRegistry, EditorExtensions } from '../common/editor.js';
 import { getSingletonServiceDescriptors } from '../../platform/instantiation/common/extensions.js';
-import { Position, Parts, IWorkbenchLayoutService, positionToString } from '../services/layout/browser/layoutService.js';
+import { Position, Parts, IWorkbenchLayoutService, positionToString, OverlayedParts } from '../services/layout/browser/layoutService.js';
 import { IStorageService, WillSaveStateReason, StorageScope, StorageTarget } from '../../platform/storage/common/storage.js';
 import { IConfigurationChangeEvent, IConfigurationService } from '../../platform/configuration/common/configuration.js';
 import { IInstantiationService } from '../../platform/instantiation/common/instantiation.js';
@@ -379,7 +379,7 @@ export class Workbench extends Layout {
 			{ id: Parts.SIDEBAR_PART, role: 'none', classes: ['sidebar', this.getSideBarPosition() === Position.LEFT ? 'left' : 'right'] },
 			{ id: Parts.EDITOR_PART, role: 'main', classes: ['editor'], options: { restorePreviousState: this.willRestoreEditors() } },
 			{ id: Parts.PANEL_PART, role: 'none', classes: ['panel', 'basepanel', positionToString(this.getPanelPosition())] },
-			{ id: Parts.BOTTOMBAR_PART, role: 'none', classes: ['bottombar'] },
+			// { id: Parts.BOTTOMBAR_PART, role: 'none', classes: ['bottombar'] },
 			{ id: Parts.AUXILIARYBAR_PART, role: 'none', classes: ['auxiliarybar', 'basepanel', this.getSideBarPosition() === Position.LEFT ? 'right' : 'left'] },
 			{ id: Parts.STATUSBAR_PART, role: 'status', classes: ['statusbar'] }
 		]) {
@@ -391,7 +391,7 @@ export class Workbench extends Layout {
 
 		// Create overlayed parts
 		for (const { id, role, classes } of [
-			// { id: OverlayedParts.BOTTOMBAR_PART_DEPRECATED, role: 'none', classes: ['bottombar'] },
+			{ id: OverlayedParts.BOTTOMBAR_PART, role: 'none', classes: ['bottombar'] },
 		]) {
 			const partContainer = this.createPart(id, role, classes);
 			mark(`code/willOverlayedPart/${id}`);
