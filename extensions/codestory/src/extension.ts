@@ -29,6 +29,7 @@ import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { GENERATE_PLAN } from './completions/providers/generatePlan';
+import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -248,6 +249,7 @@ export async function activate(context: ExtensionContext) {
 		sidecarClient, currentRepo, projectContext, probeProvider
 	);
 	context.subscriptions.push(chatAgentProvider);
+	// register generate plan variable
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		GENERATE_PLAN,
 		GENERATE_PLAN,
@@ -264,6 +266,55 @@ export async function activate(context: ExtensionContext) {
 		},
 		'Open files',
 		vscode.ThemeIcon.Folder
+	));
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		'EXECUTE_UNTIL',
+		'EXECUTE_UNTIL',
+		'Executes the plan until a checkpoint, follow your #EXECUTE_UNTIL with a number so the input should look like: #EXECUTE_UNTIL {number}',
+		'Executes the plan until a checkpoint, follow your #EXECUTE_UNTIL with a number so the input should look like: #EXECUTE_UNTIL {number}',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'executeUntil',
+				}];
+			}
+		},
+		'Execute the plan until a step',
+		vscode.ThemeIcon.Folder,
+	));
+	// generate open file variable
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		OPEN_FILES_VARIABLE,
+		OPEN_FILES_VARIABLE,
+		'Open files in the workspace',
+		'Open files in the workspace',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				const openFiles = vscode.workspace.textDocuments;
+				return openFiles
+					.filter(file => file.uri.scheme === 'file')
+					.map(file => {
+						const objVal = {
+							uri: file.uri,
+							range: {
+								startLineNumber: 1,
+								startColumn: 1,
+								endLineNumber: file.lineCount,
+								endColumn: 1,
+							}
+						};
+						return {
+							level: vscode.ChatVariableLevel.Full,
+							value: JSON.stringify(objVal)
+						};
+					});
+			}
+		},
+		'Open files',
+		vscode.ThemeIcon.File
 	));
 
 	// Gets access to all the events the editor is throwing our way
