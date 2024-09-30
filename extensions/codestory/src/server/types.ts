@@ -19,6 +19,7 @@ export type UserContext = {
 	terminal_selection: string | undefined;
 	folder_paths: string[];
 	is_plan_generation: boolean;
+	is_plan_execution_until: number | null;
 };
 
 export type SymbolIdentifier = {
