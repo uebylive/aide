@@ -17,6 +17,7 @@ import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
+import { registerGeneratePlan } from './generatePlan';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -118,6 +119,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		// register the extra variables here
 		registerOpenFiles();
 		registerTerminalSelection();
+		registerGeneratePlan();
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
