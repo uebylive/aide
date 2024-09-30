@@ -48,7 +48,7 @@ import { AuxiliaryBarPart } from './parts/auxiliarybar/auxiliaryBarPart.js';
 import { ITelemetryService } from '../../platform/telemetry/common/telemetry.js';
 import { IAuxiliaryWindowService } from '../services/auxiliaryWindow/browser/auxiliaryWindowService.js';
 import { CodeWindow, mainWindow } from '../../base/browser/window.js';
-import { IOverlayedView, OverlayedPart } from './overlayedPart.js';
+import { OverlayedPart } from './overlayedPart.js';
 import { IBottomBarPartService } from '../services/bottomBarPart/browser/bottomBarPartService.js';
 
 //#region Layout Implementation
@@ -261,8 +261,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 	private activityBarPartView!: ISerializableView;
 	private sideBarPartView!: ISerializableView;
 	private panelPartView!: ISerializableView;
-	private bottomBarPartView!: IOverlayedView;
-	// private bottomBarPartView!: ISerializableView;
+	// private bottomBarPartViewDeprecated!: IOverlayedView;
+	private bottomBarPartView!: ISerializableView;
 	private auxiliaryBarPartView!: ISerializableView;
 	private editorPartView!: IObservableView;
 	private statusBarPartView!: ISerializableView;
@@ -1515,8 +1515,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const editorPart = this.getPart(Parts.EDITOR_PART);
 		const activityBar = this.getPart(Parts.ACTIVITYBAR_PART);
 		const panelPart = this.getPart(Parts.PANEL_PART);
-		const bottomBar = this.getOverlayedPart(OverlayedParts.BOTTOMBAR_PART);
-		// const bottomBar = this.getPart(Parts.BOTTOMBAR_PART);
+		// const bottomBarDeprecated = this.getOverlayedPart(OverlayedParts.BOTTOMBAR_PART_DEPRECATED);
+		const bottomBar = this.getPart(Parts.BOTTOMBAR_PART);
 		const auxiliaryBarPart = this.getPart(Parts.AUXILIARYBAR_PART);
 		const sideBar = this.getPart(Parts.SIDEBAR_PART);
 		const statusBar = this.getPart(Parts.STATUSBAR_PART);
@@ -1541,8 +1541,8 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			[Parts.PANEL_PART]: this.panelPartView,
 			[Parts.SIDEBAR_PART]: this.sideBarPartView,
 			[Parts.STATUSBAR_PART]: this.statusBarPartView,
-			[OverlayedParts.BOTTOMBAR_PART]: this.bottomBarPartView,
-			// [Parts.BOTTOMBAR_PART]: this.bottomBarPartView,
+			// [OverlayedParts.BOTTOMBAR_PART_DEPRECATED]: this.bottomBarPartViewDeprecated,
+			[Parts.BOTTOMBAR_PART]: this.bottomBarPartView,
 			[Parts.AUXILIARYBAR_PART]: this.auxiliaryBarPartView
 		};
 
@@ -1615,7 +1615,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			this.workbenchGrid.layout(this._mainContainerDimension.width, this._mainContainerDimension.height);
 			this.initialized = true;
 
-			// Deprecated: Add aide controls
+			/* // Deprecated: Add aide controls
 			try {
 				const editorParentElement = this.editorPartView.element.parentElement;
 				if (editorParentElement) {
@@ -1628,7 +1628,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			} catch (error) {
 				console.error(`Could not initialize Aide controls: ${error}`);
-			}
+			} */
 
 			// Emit as event
 			this.handleContainerDidLayout(this.mainContainer, this._mainContainerDimension);
@@ -2259,6 +2259,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.workbenchGrid.setViewVisible(this.titleBarPartView, shouldShowCustomTitleBar(this.configurationService, mainWindow, this.state.runtime.menuBar.toggled, this.isZenModeActive()));
 	}
 
+	/*
 	private arrangeBottomBar() {
 		// TODO(@g-danna) Make an abstraction about overlayed part positioning?
 		const margin = 14; // Allow for scrollbars
@@ -2267,6 +2268,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		this.bottomBarPartView.setPosition({ bottom: margin, left: margin });
 		this.bottomBarPartView.layout();
 	}
+	*/
 
 	private arrangeEditorNodes(nodes: { editor: ISerializedNode; sideBar?: ISerializedNode; auxiliaryBar?: ISerializedNode }, availableHeight: number, availableWidth: number): ISerializedNode {
 		if (!nodes.sideBar && !nodes.auxiliaryBar) {
@@ -2302,7 +2304,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		};
 	}
 
-	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
+	private arrangeMiddleSectionNodes(nodes: { editor: ISerializedNode; panel: ISerializedNode; activityBar: ISerializedNode; sideBar: ISerializedNode; bottomBar: ISerializedNode; auxiliaryBar: ISerializedNode }, availableWidth: number, availableHeight: number): ISerializedNode[] {
 		const activityBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.ACTIVITYBAR_HIDDEN) ? 0 : nodes.activityBar.size;
 		const sideBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN) ? 0 : nodes.sideBar.size;
 		const auxiliaryBarSize = this.stateModel.getRuntimeValue(LayoutStateKeys.AUXILIARYBAR_HIDDEN) ? 0 : nodes.auxiliaryBar.size;
@@ -2345,7 +2347,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 
 			result.push({
 				type: 'branch',
-				data: panelPostion === Position.BOTTOM ? [editorNodes, /*nodes.bottomBar,*/ nodes.panel] : [nodes.panel, editorNodes],
+				data: panelPostion === Position.BOTTOM ? [editorNodes, nodes.bottomBar, nodes.panel] : [nodes.panel, editorNodes],
 				size: editorSectionWidth
 			});
 
@@ -2416,14 +2418,12 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 			visible: !this.stateModel.getRuntimeValue(LayoutStateKeys.SIDEBAR_HIDDEN)
 		};
 
-		/*
 		const bottomBarNode: ISerializedLeafNode = {
 			type: 'leaf',
 			data: { type: Parts.BOTTOMBAR_PART },
 			size: 36,
 			visible: true
 		};
-		*/
 
 		const auxiliaryBarNode: ISerializedLeafNode = {
 			type: 'leaf',
@@ -2449,7 +2449,7 @@ export abstract class Layout extends Disposable implements IWorkbenchLayoutServi
 		const middleSection: ISerializedNode[] = this.arrangeMiddleSectionNodes({
 			activityBar: activityBarNode,
 			auxiliaryBar: auxiliaryBarNode,
-			// bottomBar: bottomBarNode,
+			bottomBar: bottomBarNode,
 			editor: editorNode,
 			panel: panelNode,
 			sideBar: sideBarNode

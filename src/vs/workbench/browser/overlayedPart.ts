@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IDimension } from '../../base/browser/dom.js';
-import { IViewSize } from '../../base/browser/ui/grid/gridview.js';
-import { Emitter, Event } from '../../base/common/event.js';
+import { Emitter } from '../../base/common/event.js';
 import { IStorageService } from '../../platform/storage/common/storage.js';
 import { IColorTheme, IThemeService } from '../../platform/theme/common/themeService.js';
 import { Component } from '../common/component.js';
@@ -37,8 +36,6 @@ export interface IOverlayedView {
 	readonly position: IOverlayedPartPosition;
 	setPosition(position: IOverlayedPartPosition): void;
 	layout(width?: number, height?: number): void;
-	toJSON(): object;
-	readonly onDidChange: Event<IViewSize | undefined>;
 }
 
 export interface IOverlayedPartPosition {
@@ -49,11 +46,9 @@ export interface IOverlayedPartPosition {
 }
 
 export abstract class OverlayedPart extends Component implements IOverlayedView {
+
 	protected _onDidVisibilityChange = this._register(new Emitter<boolean>());
 	readonly onDidVisibilityChange = this._onDidVisibilityChange.event;
-
-	protected _onDidChange = this._register(new Emitter<IViewSize | undefined>());
-	get onDidChange(): Event<IViewSize | undefined> { return this._onDidChange.event; }
 
 	private parent: HTMLElement | undefined;
 	element!: HTMLElement;
@@ -139,6 +134,9 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 		this._width = newWidth;
 		this._height = newHeight;
 
+
+
+
 		this.element.style.width = `${this._width}px`;
 		this.element.style.height = `${this._height}px`;
 	}
@@ -146,6 +144,4 @@ export abstract class OverlayedPart extends Component implements IOverlayedView 
 	setVisible(visible: boolean) {
 		this._onDidVisibilityChange.fire(visible);
 	}
-
-	abstract toJSON(): object;
 }

@@ -44,7 +44,7 @@ export class AideControls extends Disposable {
 		this.aideControlsService.registerControls(this);
 
 		const element = this.element = $('.aide-controls');
-		this.part.element.appendChild(element);
+		this.part.content.appendChild(element);
 
 		const scopedInstantiationService = this._register(this.instantiationService.createChild(
 			new ServiceCollection([
@@ -84,10 +84,10 @@ export class AideControls extends Disposable {
 
 	layout(width?: number, height?: number) {
 		if (width === undefined) {
-			width = this.part.width ?? 0;
+			width = this.part.dimension?.width ?? 0;
 		}
 		if (height === undefined) {
-			height = this.part.height ?? 0;
+			height = this.part.dimension?.height ?? 0;
 		}
 
 		if (!width || !height) {
