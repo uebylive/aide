@@ -548,7 +548,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 
 		codeEdits.hunkData.ignoreTextModelNChanges = true;
-		codeEdits.textModelN.applyEdits([workspaceEdit.textEdit]);
+		codeEdits.textModelN.pushEditOperations(null, [workspaceEdit.textEdit], () => null);
 		const { editState, diff } = await this.calculateDiff(codeEdits.textModel0, codeEdits.textModelN);
 		await codeEdits.hunkData.recompute(editState, diff);
 		codeEdits.hunkData.ignoreTextModelNChanges = false;
