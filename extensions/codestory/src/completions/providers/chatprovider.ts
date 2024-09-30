@@ -17,7 +17,7 @@ import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 import { registerTerminalSelection } from './terminalSelection';
-import { registerGeneratePlan } from './generatePlan';
+import { AideProbeProvider } from './probeProvider';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -77,7 +77,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _currentRepoRef: RepoRef;
 	private _projectContext: ProjectContext;
-	private _editorUrl: string | undefined;
+	private _probeProvider: AideProbeProvider;
 
 	constructor(
 		workingDirectory: string,
@@ -87,8 +87,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		sideCarClient: SideCarClient,
 		repoRef: RepoRef,
 		projectContext: ProjectContext,
-		editorUrl: string | undefined,
-		extensionContext: vscode.ExtensionContext,
+		probeProvider: AideProbeProvider,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._repoHash = repoHash;
@@ -97,7 +96,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._sideCarClient = sideCarClient;
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
-		this._editorUrl = editorUrl;
+		this._probeProvider = probeProvider;
 
 		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
@@ -186,7 +185,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const projectLabels = this._projectContext.labels;
-			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels, this._editorUrl);
+			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels, this._probeProvider);
 			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}
