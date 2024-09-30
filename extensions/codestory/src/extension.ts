@@ -174,13 +174,6 @@ export async function activate(context: ExtensionContext) {
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
-	const chatAgentProvider = new CSChatAgentProvider(
-		rootPath, repoName, repoHash,
-		uniqueUserId,
-		sidecarClient, currentRepo, projectContext
-	);
-	context.subscriptions.push(chatAgentProvider);
-
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly
 	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
@@ -245,6 +238,14 @@ export async function activate(context: ExtensionContext) {
 			}
 		}
 	});
+
+	// Register the chat agent
+	const chatAgentProvider = new CSChatAgentProvider(
+		rootPath, repoName, repoHash,
+		uniqueUserId,
+		sidecarClient, currentRepo, projectContext, editorUrl
+	);
+	context.subscriptions.push(chatAgentProvider);
 
 	// Gets access to all the events the editor is throwing our way
 	const csEventHandler = new CSEventHandler(context, editorUrl);
