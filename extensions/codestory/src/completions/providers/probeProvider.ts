@@ -157,14 +157,15 @@ export class AideProbeProvider implements vscode.Disposable {
 		fs_file_path: String;
 		success: boolean;
 	}> {
-		if (!request.apply_directly && !this._openResponseStream) {
-			console.log('editing_streamed::no_open_response_stream');
-			return {
-				fs_file_path: '',
-				success: false,
-			};
-		}
+		// if (!request.apply_directly && !this._openResponseStream) {
+		// 	console.log('editing_streamed::no_open_response_stream');
+		// 	return {
+		// 		fs_file_path: '',
+		// 		success: false,
+		// 	};
+		// }
 		const editStreamEvent = request;
+		editStreamEvent.apply_directly = true;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
 			const timeNow = Date.now();

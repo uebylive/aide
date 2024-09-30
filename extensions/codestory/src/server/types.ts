@@ -19,6 +19,7 @@ export type UserContext = {
 	terminal_selection: string | undefined;
 	folder_paths: string[];
 	is_plan_generation: boolean;
+	is_plan_execution_until: number | null;
 };
 
 export type SymbolIdentifier = {
@@ -415,6 +416,11 @@ interface CodeEdit {
 export type LSPDiagnostics = {
 	fs_file_path: string;
 	range: SidecarRequestRange;
+	editor_url: string;
+};
+
+export type LSPFileDiagnostics = {
+	fs_file_path: string;
 	editor_url: string;
 };
 

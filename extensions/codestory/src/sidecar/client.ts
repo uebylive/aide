@@ -238,7 +238,7 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecar(variables),
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
 			model_config: sideCarModelConfiguration,
@@ -1020,6 +1020,117 @@ interface CodeSelectionUriRange {
 	};
 }
 
+/**
+ * This is a copy of the function below we are using this to use the chat window as a plan generation cli
+ */
+async function convertVSCodeVariableToSidecarHackingForPlan(
+	variables: readonly vscode.ChatPromptReference[],
+	query: string,
+): Promise<UserContext> {
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	let terminalSelection: string | undefined = undefined;
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+	const resolvedFileCache: Map<string, [string, string]> = new Map();
+
+	const resolveFileReference = async (variableName: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
+		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
+		const filePath = vscode.Uri.parse(parsedJson.uri.path);
+		const cachedFile = fileCache.get(filePath.fsPath);
+		if (cachedFile === undefined) {
+			const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
+			fileCache.set(filePath.fsPath, fileDocument);
+		}
+		const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
+		const startRange = {
+			line: parsedJson.range.startLineNumber,
+			character: parsedJson.range.startColumn,
+			byteOffset: 0,
+		};
+		const endRange = {
+			line: parsedJson.range.endLineNumber,
+			character: parsedJson.range.endColumn,
+			byteOffset: 0,
+		};
+		const variableType = getVariableType(
+			variableName,
+			startRange,
+			endRange,
+			fileDocument,
+		);
+		const content = fileDocument.getText(new vscode.Range(
+			new vscode.Position(startRange.line, startRange.character),
+			new vscode.Position(endRange.line, endRange.character),
+		));
+		resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
+		if (variableType !== null) {
+			sidecarVariables.push({
+				name: variableName,
+				start_position: startRange,
+				end_position: endRange,
+				fs_file_path: filePath.fsPath,
+				type: variableType,
+				content,
+				language: fileDocument.languageId,
+			});
+		}
+	};
+
+	const folders: string[] = [];
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const value = variable.value;
+		const name = variableName.split(':')[0];
+		if (name === TERMINAL_SELECTION_VARIABLE) {
+			// we are looking at the terminal selection and we have some value for it
+			terminalSelection = value as string;
+		} else if (name === OPEN_FILES_VARIABLE) {
+			await resolveFileReference('file', value);
+		} else if (name === 'file' || name === 'code') {
+			await resolveFileReference(name, value);
+		} else if (name === 'folder') {
+			const folderPath = value as vscode.Uri;
+			folders.push(folderPath.fsPath);
+		}
+	}
+
+	let isPlanGeneration = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === GENERATE_PLAN) {
+			isPlanGeneration = true;
+		}
+	}
+
+	let isPlanExecutionUntil = null;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'EXECUTE_UNTIL') {
+			const queryParts = query.split(' ');
+			if (queryParts.length === 2) {
+				isPlanExecutionUntil = parseInt(queryParts[1]);
+			}
+			// if we have execute until then we need to grab the number right after the range where we are at
+		}
+	}
+
+	return {
+		variables: sidecarVariables,
+		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
+			return {
+				file_path: filePath,
+				file_content: fileContent[0],
+				language: fileContent[1],
+			};
+		}),
+		terminal_selection: terminalSelection,
+		folder_paths: folders,
+		is_plan_generation: isPlanGeneration,
+		is_plan_execution_until: isPlanExecutionUntil,
+	};
+}
+
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatPromptReference[],
 ): Promise<UserContext> {
@@ -1110,6 +1221,7 @@ async function convertVSCodeVariableToSidecar(
 		terminal_selection: terminalSelection,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
+		is_plan_execution_until: null,
 	};
 }
 

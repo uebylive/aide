@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics } from './types';
 import { Position, Range } from 'vscode';
-import { getDiagnosticsFromEditor } from './diagnostics';
+import { getDiagnosticsFromEditor, getFileDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
@@ -47,7 +47,19 @@ export function handleRequest(
 ) {
 	return async (req: http.IncomingMessage, res: http.ServerResponse) => {
 		try {
-			if (req.method === 'POST' && req.url === '/diagnostics') {
+			if (req.method === 'POST' && req.url === '/file_diagnostics') {
+				const body = await readRequestBody(req);
+				console.log('getting file_diagnostics');
+				const diagnosticsBody: LSPFileDiagnostics = JSON.parse(body);
+				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path);
+				const response = {
+					'diagnostics': diagnosticsFromEditor,
+				};
+
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			}
+			else if (req.method === 'POST' && req.url === '/diagnostics') {
 				const body = await readRequestBody(req);
 				// console.log('body from post request for diagnostics');
 				// console.log(body);

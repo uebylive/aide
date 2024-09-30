@@ -3,11 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-import { aideAgent, CancellationToken, ChatVariableContext, ChatVariableLevel, commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, ThemeIcon, window, workspace, } from 'vscode';
+import * as vscode from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
 import { GENERATE_PLAN } from './completions/providers/generatePlan';
+import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
@@ -30,7 +31,7 @@ import { ProjectContext } from './utilities/workspaceContext';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
-export async function activate(context: ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	// Project root here
 	const uniqueUserId = getUniqueId();
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
@@ -42,20 +43,20 @@ export async function activate(context: ExtensionContext) {
 		},
 	});
 
-	const registerPreCopyCommand = commands.registerCommand(
+	const registerPreCopyCommand = vscode.commands.registerCommand(
 		'webview.preCopySettings',
 		async () => {
-			await copySettings(env.appRoot, logger);
+			await copySettings(vscode.env.appRoot, logger);
 		}
 	);
 	context.subscriptions.push(registerPreCopyCommand);
-	let rootPath = workspace.rootPath;
+	let rootPath = vscode.workspace.rootPath;
 	if (!rootPath) {
 		rootPath = '';
 	}
 
 	// Create the copy settings from vscode command for the extension
-	const registerCopySettingsCommand = commands.registerCommand(
+	const registerCopySettingsCommand = vscode.commands.registerCommand(
 		'webview.copySettings',
 		async () => {
 			await copySettings(rootPath ?? '', logger);
@@ -64,7 +65,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(registerCopySettingsCommand);
 	const readonlyFS = checkReadonlyFSMode();
 	if (readonlyFS) {
-		window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
+		vscode.window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
 		return;
 	}
 	const agentSystemInstruction = readCustomSystemInstruction();
@@ -97,9 +98,9 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	// Get model selection configuration
-	const modelConfiguration = await modelSelection.getConfiguration();
+	const modelConfiguration = await vscode.modelSelection.getConfiguration();
 	// Setup the sidecar client here
-	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, env.appRoot);
+	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, vscode.env.appRoot);
 	// allow-any-unicode-next-line
 	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
 	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
@@ -120,7 +121,7 @@ export async function activate(context: ExtensionContext) {
 		RepoRefBackend.local,
 	);
 	// setup the callback for the model configuration
-	modelSelection.onDidChangeConfiguration((config) => {
+	vscode.modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
 		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
@@ -149,7 +150,7 @@ export async function activate(context: ExtensionContext) {
 
 
 	// Register the semantic search command here
-	commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
+	vscode.commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
 		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
 		postHogClient?.capture({
 			distinctId: await getUniqueId(),
@@ -172,11 +173,11 @@ export async function activate(context: ExtensionContext) {
 
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();
-	languages.registerCodeActionsProvider('*', aideQuickFix);
+	vscode.languages.registerCodeActionsProvider('*', aideQuickFix);
 
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly
-	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
+	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, vscode.workspace);
 	context.subscriptions.push(recentEditsRetriever);
 
 	// Register the agent session provider
@@ -189,22 +190,22 @@ export async function activate(context: ExtensionContext) {
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
-	context.subscriptions.push(aideAgent.registerChatVariableResolver(
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
 		GENERATE_PLAN,
 		GENERATE_PLAN,
 		'Generates a plan for execution',
 		'Generates a plan for execution',
 		false,
 		{
-			resolve: (_name: string, _context: ChatVariableContext, _token: CancellationToken) => {
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
 				return [{
-					level: ChatVariableLevel.Full,
+					level: vscode.ChatVariableLevel.Full,
 					value: 'generatePlan',
 				}];
 			}
 		},
 		'Open files',
-		ThemeIcon.Folder
+		vscode.ThemeIcon.Folder
 	));
 
 	/*
@@ -215,14 +216,14 @@ export async function activate(context: ExtensionContext) {
 
 	// Register feedback commands
 	context.subscriptions.push(
-		commands.registerCommand('codestory.feedback', async () => {
+		vscode.commands.registerCommand('codestory.feedback', async () => {
 			// Redirect to Discord server link
-			await commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
+			await vscode.commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
 		})
 	);
 
 	// When the selection changes in the editor we should trigger an event
-	window.onDidChangeTextEditorSelection(async (event) => {
+	vscode.window.onDidChangeTextEditorSelection(async (event) => {
 		const textEditor = event.textEditor;
 		if (shouldTrackFile(textEditor.document.uri)) {
 			console.log('onDidChangeTextEditorSelection');
@@ -236,7 +237,7 @@ export async function activate(context: ExtensionContext) {
 	});
 
 	// Listen to all the files which are changing, so we can keep our tree sitter cache hot
-	workspace.onDidChangeTextDocument(async (event) => {
+	vscode.workspace.onDidChangeTextDocument(async (event) => {
 		const documentUri = event.document.uri;
 		// if its a schema type, then skip tracking it
 		if (documentUri.scheme === 'vscode') {
@@ -253,11 +254,11 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
-	const diagnosticsListener = languages.onDidChangeDiagnostics(async (event) => {
+	const diagnosticsListener = vscode.languages.onDidChangeDiagnostics(async (event) => {
 		for (const uri of event.uris) {
 			// filter out diagnostics which are ONLY errors and warnings
-			const diagnostics = languages.getDiagnostics(uri).filter((diagnostic) => {
-				return (diagnostic.severity === DiagnosticSeverity.Error || diagnostic.severity === DiagnosticSeverity.Warning);
+			const diagnostics = vscode.languages.getDiagnostics(uri).filter((diagnostic) => {
+				return (diagnostic.severity === vscode.DiagnosticSeverity.Error || diagnostic.severity === vscode.DiagnosticSeverity.Warning);
 			});
 
 			// Send diagnostics to sidecar
@@ -269,11 +270,79 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
+	// register generate plan variable
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		GENERATE_PLAN,
+		GENERATE_PLAN,
+		'Generates a plan for execution',
+		'Generates a plan for execution',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'generatePlan',
+				}];
+			}
+		},
+		'Open files',
+		vscode.ThemeIcon.Folder
+	));
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		'EXECUTE_UNTIL',
+		'EXECUTE_UNTIL',
+		'Executes the plan until a checkpoint, follow your #EXECUTE_UNTIL with a number so the input should look like: #EXECUTE_UNTIL {number}',
+		'Executes the plan until a checkpoint, follow your #EXECUTE_UNTIL with a number so the input should look like: #EXECUTE_UNTIL {number}',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'executeUntil',
+				}];
+			}
+		},
+		'Execute the plan until a step',
+		vscode.ThemeIcon.Folder,
+	));
+	// generate open file variable
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		OPEN_FILES_VARIABLE,
+		OPEN_FILES_VARIABLE,
+		'Open files in the workspace',
+		'Open files in the workspace',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				const openFiles = vscode.workspace.textDocuments;
+				return openFiles
+					.filter(file => file.uri.scheme === 'file')
+					.map(file => {
+						const objVal = {
+							uri: file.uri,
+							range: {
+								startLineNumber: 1,
+								startColumn: 1,
+								endLineNumber: file.lineCount,
+								endColumn: 1,
+							}
+						};
+						return {
+							level: vscode.ChatVariableLevel.Full,
+							value: JSON.stringify(objVal)
+						};
+					});
+			}
+		},
+		'Open files',
+		vscode.ThemeIcon.File
+	));
+
 	// Gets access to all the events the editor is throwing our way
 	const csEventHandler = new CSEventHandler(context, editorUrl);
 	context.subscriptions.push(csEventHandler);
 
-	const startRecording = commands.registerCommand(
+	const startRecording = vscode.commands.registerCommand(
 		'codestory.startRecordingContext',
 		async () => {
 			await csEventHandler.startRecording();
@@ -281,7 +350,7 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(startRecording);
-	const stopRecording = commands.registerCommand(
+	const stopRecording = vscode.commands.registerCommand(
 		'codestory.stopRecordingContext',
 		async () => {
 			const response = await csEventHandler.stopRecording();
@@ -293,13 +362,13 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(stopRecording);
 
 	// records when we change to a new text document
-	workspace.onDidChangeTextDocument(async (event) => {
+	vscode.workspace.onDidChangeTextDocument(async (event) => {
 		console.log('onDidChangeTextDocument');
 		const fileName = event.document.fileName;
 		await csEventHandler.onDidChangeTextDocument(fileName);
 	});
 
-	window.onDidChangeActiveTextEditor(async (editor) => {
+	vscode.window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor) {
 			const activeDocument = editor.document;
 			if (activeDocument) {
