@@ -7,8 +7,9 @@ import * as vscode from 'vscode';
 
 export const GENERATE_PLAN = 'generatePlan';
 
-export function registerGeneratePlan() {
-	vscode.aideChat.registerChatVariableResolver(
+export function registerGeneratePlan(extensionContext: vscode.ExtensionContext) {
+	console.log('registerGeneratePlan');
+	extensionContext.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		GENERATE_PLAN,
 		GENERATE_PLAN,
 		'Generates a plan for execution',
@@ -24,5 +25,5 @@ export function registerGeneratePlan() {
 		},
 		'Open files',
 		vscode.ThemeIcon.Folder
-	);
+	));
 }

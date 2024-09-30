@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
+import * as vscode from 'vscode';
 import { commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
@@ -27,6 +28,7 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
+import { GENERATE_PLAN } from './completions/providers/generatePlan';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -243,9 +245,26 @@ export async function activate(context: ExtensionContext) {
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		uniqueUserId,
-		sidecarClient, currentRepo, projectContext, editorUrl
+		sidecarClient, currentRepo, projectContext, editorUrl, context
 	);
 	context.subscriptions.push(chatAgentProvider);
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		GENERATE_PLAN,
+		GENERATE_PLAN,
+		'Generates a plan for execution',
+		'Generates a plan for execution',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'generatePlan',
+				}];
+			}
+		},
+		'Open files',
+		vscode.ThemeIcon.Folder
+	));
 
 	// Gets access to all the events the editor is throwing our way
 	const csEventHandler = new CSEventHandler(context, editorUrl);
