@@ -3,14 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { $, append } from '../../../../base/browser/dom.js';
 import { IDisposable } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
-import { IWorkbenchLayoutService, OverlayedParts, Parts } from '../../../services/layout/browser/layoutService.js';
-import { OverlayedPart } from '../../overlayedPart.js';
-import { MultiWindowParts } from '../../part.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
+import { MultiWindowParts, Part } from '../../part.js';
 
 export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implements IBottomBarPartService {
 	declare _serviceBrand: undefined;
@@ -44,18 +45,13 @@ export type BottomBarPosition = {
 	left: number;
 };
 
-export class BottomBarPart extends OverlayedPart implements IDisposable {
+export class BottomBarPart extends Part implements IDisposable {
 	static readonly activePanelSettingsKey = 'workbench.bottombar.activepanelid';
 
-	/*
 	private _content!: HTMLElement;
 	get content(): HTMLElement {
 		return this._content;
 	}
-	*/
-
-	readonly preferredHeight = 36;
-	readonly preferredWidth = Number.POSITIVE_INFINITY; // Take whole width
 
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
@@ -69,18 +65,13 @@ export class BottomBarPart extends OverlayedPart implements IDisposable {
 	) {
 		super(
 			Parts.BOTTOMBAR_PART,
-			// { hasTitle: false },
+			{ hasTitle: false },
 			themeService,
 			storageService,
 			layoutService
 		);
 	}
 
-	override layout(width?: number, height?: number): void {
-		super.layout(width, height);
-	}
-
-	/*
 	protected override createContentArea(parent: HTMLElement): HTMLElement {
 		this.element = parent;
 
@@ -94,11 +85,10 @@ export class BottomBarPart extends OverlayedPart implements IDisposable {
 		super.layout(width, height, top, left);
 		super.layoutContents(width, height);
 	}
-	*/
 
 	toJSON(): object {
 		return {
-			type: OverlayedParts.BOTTOMBAR_PART,
+			type: Parts.BOTTOMBAR_PART,
 		};
 	}
 }
