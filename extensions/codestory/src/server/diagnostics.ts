@@ -6,6 +6,46 @@
 import * as vscode from 'vscode';
 import { SidecarDiagnosticsResponse } from './types';
 
+interface DiagnosticFilter {
+	(diagnostic: vscode.Diagnostic): boolean
+}
+
+export async function getFileDiagnosticsFromEditor(
+	filePath: string,
+	filters: DiagnosticFilter[] = []
+): Promise<SidecarDiagnosticsResponse[]> {
+	const fileUri = vscode.Uri.file(filePath);
+	let diagnostics = vscode.languages.getDiagnostics(fileUri);
+
+	// Apply filters if provided
+	filters.forEach(filter => {
+		diagnostics = diagnostics.filter(filter);
+	});
+
+	const sidecarDiagnostics = await Promise.all(
+		diagnostics.map(async (diagnostic) => {
+			const full_message = await getFullDiagnosticMessage(diagnostic);
+			return {
+				message: diagnostic.message,
+				range: {
+					startPosition: {
+						line: diagnostic.range.start.line,
+						character: diagnostic.range.start.character,
+						byteOffset: 0,
+					},
+					endPosition: {
+						line: diagnostic.range.end.line,
+						character: diagnostic.range.end.character,
+						byteOffset: 0,
+					},
+				},
+				full_message,
+			};
+		})
+	);
+	return sidecarDiagnostics;
+}
+
 export async function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): Promise<SidecarDiagnosticsResponse[]> {
 	const fileUri = vscode.Uri.file(filePath);
 	const diagnostics = vscode.languages.getDiagnostics(fileUri);
