@@ -179,7 +179,7 @@ export async function provideInteractiveEditorResponse(
 	repoRef: RepoRef,
 	sidecarClient: SideCarClient,
 	workingDirectory: string,
-	request: vscode.ChatRequest,
+	request: vscode.AideAgentRequest,
 	progress: vscode.ChatResponseStream,
 	token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
@@ -209,7 +209,7 @@ export async function provideInteractiveEditorResponse(
 	const context: InEditorRequest = {
 		repoRef: repoRef.getRepresentation(),
 		query: request.prompt,
-		threadId: request.threadId,
+		threadId: request.id,
 		language: textDocument.languageId,
 		snippetInformation: {
 			startPosition: {
@@ -242,6 +242,7 @@ export async function provideInteractiveEditorResponse(
 			file_content_map: [],
 			terminal_selection: undefined,
 			folder_paths: [],
+			is_plan_generation: false,
 		}
 	};
 	const messages = await sidecarClient.getInLineEditorResponse(context);

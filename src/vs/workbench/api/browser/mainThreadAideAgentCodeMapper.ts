@@ -22,7 +22,7 @@ export class MainThreadChatCodemapper extends Disposable implements MainThreadCo
 		@IAideAgentCodeMapperService private readonly codeMapperService: IAideAgentCodeMapperService
 	) {
 		super();
-		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostCodeMapper);
+		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAideAgentCodeMapper);
 	}
 
 	$registerCodeMapperProvider(handle: number): void {

@@ -244,7 +244,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const cts = new vscode.CancellationTokenSource();
 		const query = event.prompt;
 		if (event.mode === vscode.AideAgentMode.Chat) {
-			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references, this.projectContext.labels);
+			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references, this.projectContext.labels, this.editorUrl);
 			await reportFromStreamToSearchProgress(followupResponse, responseStream, cts.token, this.workingDirectory);
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
 			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;

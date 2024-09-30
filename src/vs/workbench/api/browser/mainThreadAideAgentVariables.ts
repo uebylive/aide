@@ -20,7 +20,7 @@ export class MainThreadChatVariables implements MainThreadChatVariablesShape {
 		extHostContext: IExtHostContext,
 		@IAideAgentVariablesService private readonly _chatVariablesService: IAideAgentVariablesService,
 	) {
-		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostChatVariables);
+		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostAideAgentVariables);
 	}
 
 	dispose(): void {

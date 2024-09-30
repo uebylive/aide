@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
+import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
@@ -223,6 +224,7 @@ export class SideCarClient {
 		threadId: string,
 		variables: readonly vscode.ChatPromptReference[],
 		projectLabels: string[],
+		editorUrl: string,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
@@ -242,6 +244,7 @@ export class SideCarClient {
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
 			system_instruction: agentSystemInstruction,
+			editor_url: editorUrl,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1086,6 +1089,15 @@ async function convertVSCodeVariableToSidecar(
 		}
 	}
 
+	let isPlanGeneration = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === GENERATE_PLAN) {
+			isPlanGeneration = true;
+		}
+	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -1097,6 +1109,7 @@ async function convertVSCodeVariableToSidecar(
 		}),
 		terminal_selection: terminalSelection,
 		folder_paths: folders,
+		is_plan_generation: isPlanGeneration,
 	};
 }
 

@@ -3,10 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
-import { commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, window, workspace, } from 'vscode';
+import { aideAgent, CancellationToken, ChatVariableContext, ChatVariableLevel, commands, DiagnosticSeverity, env, ExtensionContext, languages, modelSelection, ThemeIcon, window, workspace, } from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
+import { GENERATE_PLAN } from './completions/providers/generatePlan';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
@@ -173,15 +174,6 @@ export async function activate(context: ExtensionContext) {
 	const aideQuickFix = new AideQuickFix();
 	languages.registerCodeActionsProvider('*', aideQuickFix);
 
-	/*
-	const chatAgentProvider = new CSChatAgentProvider(
-		rootPath, repoName, repoHash,
-		uniqueUserId,
-		sidecarClient, currentRepo, projectContext
-	);
-	context.subscriptions.push(chatAgentProvider);
-	*/
-
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly
 	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, workspace);
@@ -197,6 +189,23 @@ export async function activate(context: ExtensionContext) {
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
+	context.subscriptions.push(aideAgent.registerChatVariableResolver(
+		GENERATE_PLAN,
+		GENERATE_PLAN,
+		'Generates a plan for execution',
+		'Generates a plan for execution',
+		false,
+		{
+			resolve: (_name: string, _context: ChatVariableContext, _token: CancellationToken) => {
+				return [{
+					level: ChatVariableLevel.Full,
+					value: 'generatePlan',
+				}];
+			}
+		},
+		'Open files',
+		ThemeIcon.Folder
+	));
 
 	/*
 	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);

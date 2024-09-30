@@ -18,6 +18,7 @@ export type UserContext = {
 	file_content_map: SidecarFileContent[];
 	terminal_selection: string | undefined;
 	folder_paths: string[];
+	is_plan_generation: boolean;
 };
 
 export type SymbolIdentifier = {
