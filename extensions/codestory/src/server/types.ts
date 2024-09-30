@@ -20,6 +20,7 @@ export type UserContext = {
 	folder_paths: string[];
 	is_plan_generation: boolean;
 	is_plan_execution_until: number | null;
+	is_plan_append: boolean;
 };
 
 export type SymbolIdentifier = {

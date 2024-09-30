@@ -284,6 +284,23 @@ export async function activate(context: ExtensionContext) {
 		'Execute the plan until a step',
 		vscode.ThemeIcon.Folder,
 	));
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		'APPEND_TO_PLAN',
+		'APPEND_TO_PLAN',
+		'Append the user context to the plan',
+		'Append the user context to the plan',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'executeUntil',
+				}];
+			}
+		},
+		'Append a step to the plan',
+		vscode.ThemeIcon.Folder,
+	));
 	// generate open file variable
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		OPEN_FILES_VARIABLE,
