@@ -1147,6 +1147,16 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		}
 	}
 
+	let isIncludeLSP = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'LSP') {
+			console.log("lspppppp ")
+			isIncludeLSP = true;
+		}
+	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -1161,6 +1171,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
 		is_plan_append: isPlanAppend,
+		is_lsp_run: isIncludeLSP,
 	};
 }
 
@@ -1242,6 +1253,15 @@ async function convertVSCodeVariableToSidecar(
 		}
 	}
 
+	let isIncludeLSP = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'LSP') {
+			isIncludeLSP = true;
+		}
+	}
+
 	return {
 		variables: sidecarVariables,
 		file_content_map: Array.from(resolvedFileCache.entries()).map(([filePath, fileContent]) => {
@@ -1256,6 +1276,7 @@ async function convertVSCodeVariableToSidecar(
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: null,
 		is_plan_append: false,
+		is_lsp_run: false,
 	};
 }
 

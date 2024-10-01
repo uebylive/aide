@@ -285,6 +285,23 @@ export async function activate(context: ExtensionContext) {
 		vscode.ThemeIcon.Folder,
 	));
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		'LSP',
+		'LSP',
+		'Generates step using #LSP diagnostics',
+		'Generates step using #LSP diagnostics',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'lsp',
+				}];
+			}
+		},
+		'Generates steps using LSP diagnostics',
+		vscode.ThemeIcon.Folder,
+	));
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		'APPEND_TO_PLAN',
 		'APPEND_TO_PLAN',
 		'Append the user context to the plan',

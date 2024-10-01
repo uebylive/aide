@@ -21,6 +21,7 @@ export type UserContext = {
 	is_plan_generation: boolean;
 	is_plan_execution_until: number | null;
 	is_plan_append: boolean;
+	is_lsp_run: boolean;
 };
 
 export type SymbolIdentifier = {
