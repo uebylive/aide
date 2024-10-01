@@ -34,3 +34,5 @@ export const CONTEXT_CHAT_LOCATION = new RawContextKey<ChatAgentLocation>('aideA
 
 export const CONTEXT_LANGUAGE_MODELS_ARE_USER_SELECTABLE = new RawContextKey<boolean>('aideAgentModelsAreUserSelectable', false, { type: 'boolean', description: localize('chatModelsAreUserSelectable', "True when the chat model can be selected manually by the user.") });
 export const CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER = new RawContextKey<boolean>('aideAgentParticipantSupportsModelPicker', true, { type: 'boolean', description: localize('chatParticipantSupportsModelPicker', "True when the current chat participant supports picking the model manually.") });
+
+export const CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE = new RawContextKey<boolean>('aideAgentFloatingWidgetVisible', false, { type: 'boolean', description: localize('chatFloatingWidgetVisible', "True when the chat floating widget is visible.") });

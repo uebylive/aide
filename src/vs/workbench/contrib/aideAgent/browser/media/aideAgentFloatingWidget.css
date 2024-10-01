@@ -1,0 +1,33 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.command-palette-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	position: fixed;
+	z-index: 40;
+}
+
+.command-palette-container > .drag-area {
+	cursor: grab;
+}
+
+.command-palette-container:active > .drag-area {
+	cursor: grabbing;
+}
+
+.command-palette-container > .interactive-session {
+	position: relative;
+	cursor: revert;
+}
+
+.command-palette-container > .interactive-session .chat-input-container {
+	border-color: var(--vscode-focusBorder);
+}
+
+.command-palette-container > .interactive-session > .interactive-input-part.compact {
+	padding: 0;
+}

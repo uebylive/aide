@@ -43,12 +43,14 @@ import { registerChatCopyActions } from './actions/aideAgentCopyActions.js';
 import { registerChatDeveloperActions } from './actions/aideAgentDeveloperActions.js';
 import { SubmitAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
+import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloatingWidgetActions.js';
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
 import { ChatEditingService } from './aideAgentEditingService.js';
 import { ChatEditor, IChatEditorOptions } from './aideAgentEditor.js';
 import { ChatEditorInput, ChatEditorInputSerializer } from './aideAgentEditorInput.js';
+import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from './aideAgentFloatingWidgetService.js';
 import { ChatGettingStartedContribution } from './aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
@@ -272,6 +274,7 @@ registerChatExecuteActions();
 registerNewChatActions();
 registerChatContextActions();
 registerChatDeveloperActions();
+registerAideAgentFloatingWidgetActions();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
@@ -287,3 +290,4 @@ registerSingleton(IAideAgentLMToolsService, LanguageModelToolsService, Instantia
 registerSingleton(IAideAgentCodeBlockContextProviderService, AideAgentCodeBlockContextProviderService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationType.Delayed);
 registerSingleton(IAideAgentEditingService, ChatEditingService, InstantiationType.Delayed);
+registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);

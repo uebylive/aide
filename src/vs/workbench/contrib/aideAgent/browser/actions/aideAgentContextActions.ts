@@ -7,21 +7,19 @@ import { FileAccess, Schemas } from '../../../../../base/common/network.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { Position } from '../../../../../editor/common/core/position.js';
 import { EditorType } from '../../../../../editor/common/editorCommon.js';
 import { Command } from '../../../../../editor/common/languages.js';
-import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
 import { IGotoSymbolQuickPickItem } from '../../../../../editor/contrib/quickAccess/browser/gotoSymbolQuickAccess.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { IQuickPickItem } from '../../../../../platform/quickinput/common/quickInput.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
-import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { ISymbolQuickPickItem } from '../../../search/browser/symbolsQuickAccess.js';
 import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
-import { chatVariableLeader } from '../../common/aideAgentParserTypes.js';
 import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
-import { showChatView } from '../aideAgent.js';
+import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerChatContextActions() {
@@ -154,36 +152,23 @@ class TriggerContextProvider extends Action2 {
 	}
 
 	override async run(accessor: ServicesAccessor, ...args: any[]): Promise<void> {
-		const viewsService = accessor.get(IViewsService);
-		const languageFeaturesService = accessor.get(ILanguageFeaturesService);
-
-		const chatWidget = await showChatView(viewsService);
-		if (!chatWidget) {
+		const widgetService = accessor.get(IAideAgentWidgetService);
+		const context: { widget?: IChatWidget } | undefined = args[0];
+		const widget = context?.widget ?? widgetService.lastFocusedWidget;
+		if (!widget) {
 			return;
 		}
 
-		const inputEditor = chatWidget.inputEditor;
-		const suggestController = SuggestController.get(inputEditor);
-		if (!suggestController) {
-			return;
+		const suggestCtrl = SuggestController.get(widget.inputEditor);
+		if (suggestCtrl) {
+			const curText = widget.inputEditor.getValue();
+			const newValue = curText ? `@ ${curText}` : '@';
+			if (!curText.startsWith('@')) {
+				widget.inputEditor.setValue(newValue);
+			}
+
+			widget.inputEditor.setPosition(new Position(1, 2));
+			suggestCtrl.triggerSuggest(undefined, true);
 		}
-
-		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-
-		// get the current position from chatWidget and insert the context
-		const position = inputEditor.getPosition();
-		if (!position) {
-			return;
-		}
-		const range = {
-			startLineNumber: position.lineNumber,
-			startColumn: position.column,
-			endLineNumber: position.lineNumber,
-			endColumn: position.column
-		};
-
-		inputEditor.executeEdits('insertContextTrigger', [{ range, text: chatVariableLeader }]);
-		chatWidget.focusInput();
-		suggestController.triggerSuggest(new Set(completionProviders));
 	}
 }
