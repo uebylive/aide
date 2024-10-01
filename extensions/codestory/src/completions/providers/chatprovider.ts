@@ -13,10 +13,10 @@ import { InLineAgentContextSelection } from '../../sidecar/types';
 import { getSelectedCodeContextForExplain } from '../../utilities/getSelectionContext';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
-import { registerOpenFiles } from './openFiles';
+// import { registerOpenFiles } from './openFiles';
 import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse } from './editorSessionProvider';
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
-import { registerTerminalSelection } from './terminalSelection';
+// import { registerTerminalSelection } from './terminalSelection';
 import { AideProbeProvider } from './probeProvider';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
@@ -120,8 +120,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		};
 
 		// register the extra variables here
-		registerOpenFiles();
-		registerTerminalSelection();
+		// registerOpenFiles();
+		// registerTerminalSelection();
 		// TODO(skcd): Toggle this at will to debug the planning module
 		// registerGeneratePlan(extensionContext);
 		this.chatAgent.editsProvider = this.editsProvider;

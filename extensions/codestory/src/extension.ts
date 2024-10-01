@@ -310,16 +310,20 @@ export async function activate(context: ExtensionContext) {
 		false,
 		{
 			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
-				const openFiles = vscode.workspace.textDocuments;
+				// const openFiles = vscode.workspace.textDocuments;
+				const openFiles = vscode.window.visibleTextEditors;
+				console.log(openFiles);
+				console.log('openFiles length');
+				console.log(openFiles.length);
 				return openFiles
-					.filter(file => file.uri.scheme === 'file')
+					.filter(file => file.document.uri.scheme === 'file')
 					.map(file => {
 						const objVal = {
-							uri: file.uri,
+							uri: file.document.uri,
 							range: {
 								startLineNumber: 1,
 								startColumn: 1,
-								endLineNumber: file.lineCount,
+								endLineNumber: file.document.lineCount,
 								endColumn: 1,
 							}
 						};
