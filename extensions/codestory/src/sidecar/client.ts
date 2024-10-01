@@ -1086,7 +1086,28 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
 		} else if (name === OPEN_FILES_VARIABLE) {
-			await resolveFileReference('file', value);
+			const openFiles = vscode.window.visibleTextEditors;
+			const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
+				return {
+					name: file.document.uri.fsPath,
+					start_position: {
+						line: 0,
+						character: 0,
+						byteOffset: 0,
+					},
+					end_position: {
+						line: file.document.lineCount,
+						character: 1,
+						byteOffset: 0,
+					},
+					fs_file_path: file.document.uri.fsPath,
+					type: getFileType(),
+					content: file.document.getText(),
+					language: file.document.languageId,
+				};
+			});
+			sidecarVariables.push(...openFileVariables);
+			// await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
@@ -1236,6 +1257,10 @@ async function convertVSCodeVariableToSidecar(
 		is_plan_execution_until: null,
 		is_plan_append: false,
 	};
+}
+
+function getFileType(): SidecarVariableType {
+	return 'File';
 }
 
 function getVariableType(

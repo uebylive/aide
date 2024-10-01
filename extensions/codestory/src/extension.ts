@@ -315,7 +315,7 @@ export async function activate(context: ExtensionContext) {
 				console.log(openFiles);
 				console.log('openFiles length');
 				console.log(openFiles.length);
-				return openFiles
+				const response = openFiles
 					.filter(file => file.document.uri.scheme === 'file')
 					.map(file => {
 						const objVal = {
@@ -332,6 +332,7 @@ export async function activate(context: ExtensionContext) {
 							value: JSON.stringify(objVal)
 						};
 					});
+				return response;
 			}
 		},
 		'Open files',
