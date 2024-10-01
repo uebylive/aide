@@ -235,6 +235,8 @@ export class SideCarClient {
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		// console.log(sideCarModelConfiguration);
 		// console.log(JSON.stringify(sideCarModelConfiguration));
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const agentSystemInstruction = readCustomSystemInstruction();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
@@ -247,6 +249,7 @@ export class SideCarClient {
 			user_id: this._userId,
 			system_instruction: agentSystemInstruction,
 			editor_url: probeProvider.editorUrl(),
+			is_deep_reasoning: deepReasoning,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
