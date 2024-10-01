@@ -20,7 +20,6 @@ import { editorBackground } from '../../../../platform/theme/common/colorRegistr
 import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE } from '../common/aideAgentContextKeys.js';
-import { ChatModel } from '../common/aideAgentModel.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
 import { ChatWidget } from './aideAgentWidget.js';
 import './media/aideAgentFloatingWidget.css';
@@ -32,7 +31,6 @@ export class AideAgentFloatingWidget extends Disposable {
 	private isVisible: IContextKey<boolean>;
 
 	private widget: ChatWidget;
-	private model: ChatModel | undefined;
 
 	private get yDefault() {
 		return this.layoutService.mainContainerOffset.top;
@@ -62,7 +60,7 @@ export class AideAgentFloatingWidget extends Disposable {
 			scopedInstantiationService.createInstance(
 				ChatWidget,
 				ChatAgentLocation.Panel,
-				{},
+				{ isPassthrough: true },
 				{
 					renderInputOnTop: true,
 					renderFollowups: false,
@@ -83,6 +81,11 @@ export class AideAgentFloatingWidget extends Disposable {
 		this.widget.setDynamicChatTreeItemLayout(0, 0);
 		this.updateModel();
 		this.layout();
+		this.widget.onDidChangeHeight(() => this.layout());
+		this.widget.onDidAcceptInput(() => {
+			this.widget.input.setValue('', true);
+			this.hide();
+		});
 
 		dom.append(this.container, dom.$('div.drag-area' + ThemeIcon.asCSSSelector(Codicon.gripper)));
 
@@ -148,21 +151,21 @@ export class AideAgentFloatingWidget extends Disposable {
 	}
 
 	private updateModel(): void {
-		this.model ??= this.aideAgentService.startSession(ChatAgentLocation.Panel, CancellationToken.None);
-		if (!this.model) {
+		const model = this.aideAgentService.startSession(ChatAgentLocation.Panel, CancellationToken.None, true);
+		if (!model) {
 			throw new Error('Could not start chat session');
 		}
 
-		this.widget.setModel(this.model, {});
+		this.widget.setModel(model, {});
 	}
 
 	private layout() {
-		const height = 38;
+		const height = Math.max(this.widget.input.contentHeight, 38);
 		const width = Math.max(this.container.offsetWidth, 600);
 
 		this.container.style.width = `${width}px`;
 		this.container.style.height = `${height}px`;
-		this.widget.layout(this.container.offsetHeight, width);
+		this.widget.layout(height, width);
 	}
 
 	private setCoordinates(x?: number, y?: number): void {

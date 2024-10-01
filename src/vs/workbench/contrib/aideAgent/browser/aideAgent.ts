@@ -15,7 +15,7 @@ import { ChatViewPane } from './aideAgentViewPane.js';
 import { IChatViewState, IChatWidgetCompletionContext, IChatWidgetContrib } from './aideAgentWidget.js';
 import { ICodeBlockActionContext } from './codeBlockPart.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
+import { AgentMode, AgentScope, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
@@ -102,7 +102,11 @@ export interface IChatViewViewContext {
 	viewId: string;
 }
 
-export type IChatWidgetViewContext = IChatViewViewContext | {};
+export interface IChatPassthroughContext {
+	isPassthrough: boolean;
+}
+
+export type IChatWidgetViewContext = IChatViewViewContext | IChatPassthroughContext | {};
 
 export interface IChatWidget {
 	readonly onDidChangeViewModel: Event<void>;
@@ -144,6 +148,7 @@ export interface IChatWidget {
 	setContext(overwrite: boolean, ...context: IChatRequestVariableEntry[]): void;
 	clear(): void;
 	getViewState(): IChatViewState;
+	transferQueryState(mode: AgentMode, scope: AgentScope): void;
 }
 
 

@@ -342,13 +342,13 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.saveState();
 	}
 
-	startSession(location: ChatAgentLocation, token: CancellationToken): ChatModel {
+	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough: boolean = false): ChatModel {
 		this.trace('startSession');
-		return this._startSession(undefined, location, token);
+		return this._startSession(undefined, location, isPassthrough, token);
 	}
 
-	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, token: CancellationToken): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location);
+	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, isPassthrough: boolean, token: CancellationToken): ChatModel {
+		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough);
 		this._sessionModels.set(model.sessionId, model);
 		this.initializeSession(model, token);
 		return model;
@@ -391,7 +391,9 @@ export class ChatService extends Disposable implements IAideAgentService {
 				throw new ErrorNoTelemetry('No default agent registered');
 			}
 
-			this.chatAgentService.initSession(defaultAgent.id, model.sessionId);
+			if (!model.isPassthrough) {
+				this.chatAgentService.initSession(defaultAgent.id, model.sessionId);
+			}
 
 			const welcomeMessage = model.welcomeMessage ? undefined : await defaultAgent.provideWelcomeMessage?.(model.initialLocation, token) ?? undefined;
 			const welcomeModel = welcomeMessage && this.instantiationService.createInstance(
@@ -429,11 +431,11 @@ export class ChatService extends Disposable implements IAideAgentService {
 			this._transferredSessionData = undefined;
 		}
 
-		return this._startSession(sessionData, sessionData.initialLocation ?? ChatAgentLocation.Panel, CancellationToken.None);
+		return this._startSession(sessionData, sessionData.initialLocation ?? ChatAgentLocation.Panel, false, CancellationToken.None);
 	}
 
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModel | undefined {
-		return this._startSession(data, data.initialLocation ?? ChatAgentLocation.Panel, CancellationToken.None);
+		return this._startSession(data, data.initialLocation ?? ChatAgentLocation.Panel, false, CancellationToken.None);
 	}
 
 	/* TODO(@ghostwriternr): This method already seems unused. Remove it?

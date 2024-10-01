@@ -10,7 +10,7 @@ import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
@@ -73,7 +73,8 @@ MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
 	},
 	order: 1,
 	group: 'navigation',
-	when: ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'),
+	// TODO(@ghostwriternr): This is a hack to get around the pain (very high) of adding a new entry to the chat location
+	when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(), ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel')),
 });
 
 export const AgentScopePickerActionId = 'workbench.action.aideAgent.setScope';

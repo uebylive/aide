@@ -157,10 +157,20 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return this._currentAgentMode;
 	}
 
+	set currentAgentMode(mode: AgentMode) {
+		this._currentAgentMode = mode;
+		this._onDidChangeCurrentAgentMode.fire(mode);
+	}
+
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
 	private _currentAgentScope: AgentScope = AgentScope.Selection;
 	get currentAgentScope() {
 		return this._currentAgentScope;
+	}
+
+	set currentAgentScope(scope: AgentScope) {
+		this._currentAgentScope = scope;
+		this._onDidChangeCurrentAgentScope.fire(scope);
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;

@@ -24,10 +24,11 @@
 	cursor: revert;
 }
 
-.command-palette-container > .interactive-session .chat-input-container {
-	border-color: var(--vscode-focusBorder);
+.command-palette-container > .interactive-session > .interactive-input-part {
+	margin: 0;
+	padding: 0;
 }
 
-.command-palette-container > .interactive-session > .interactive-input-part.compact {
-	padding: 0;
+.command-palette-container > .interactive-session .chat-input-container {
+	border-color: var(--vscode-focusBorder);
 }

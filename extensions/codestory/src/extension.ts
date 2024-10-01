@@ -190,23 +190,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
-	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
-		GENERATE_PLAN,
-		GENERATE_PLAN,
-		'Generates a plan for execution',
-		'Generates a plan for execution',
-		false,
-		{
-			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
-				return [{
-					level: vscode.ChatVariableLevel.Full,
-					value: 'generatePlan',
-				}];
-			}
-		},
-		'Open files',
-		vscode.ThemeIcon.Folder
-	));
 
 	/*
 	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);

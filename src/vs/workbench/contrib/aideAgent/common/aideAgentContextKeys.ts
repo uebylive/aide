@@ -36,3 +36,4 @@ export const CONTEXT_LANGUAGE_MODELS_ARE_USER_SELECTABLE = new RawContextKey<boo
 export const CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER = new RawContextKey<boolean>('aideAgentParticipantSupportsModelPicker', true, { type: 'boolean', description: localize('chatParticipantSupportsModelPicker', "True when the current chat participant supports picking the model manually.") });
 
 export const CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE = new RawContextKey<boolean>('aideAgentFloatingWidgetVisible', false, { type: 'boolean', description: localize('chatFloatingWidgetVisible', "True when the chat floating widget is visible.") });
+export const CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET = new RawContextKey<boolean>('aideAgentInPassthroughWidget', false, { type: 'boolean', description: localize('chatInPassthroughWidget', "True when the chat is in a passthrough widget.") });

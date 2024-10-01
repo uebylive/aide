@@ -634,6 +634,7 @@ export interface IChatModel {
 	readonly onDidDispose: Event<void>;
 	readonly onDidChange: Event<IChatChangeEvent>;
 	readonly sessionId: string;
+	readonly isPassthrough: boolean;
 	readonly initState: ChatModelInitState;
 	readonly initialLocation: ChatAgentLocation;
 	readonly title: string;
@@ -964,6 +965,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	constructor(
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
+		readonly isPassthrough: boolean,
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService,

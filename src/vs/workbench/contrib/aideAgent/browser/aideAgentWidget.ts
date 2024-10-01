@@ -24,16 +24,17 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
-import { ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
+import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
 import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions } from './aideAgent.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -206,6 +207,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@ILogService private readonly logService: ILogService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IAideAgentSlashCommandService private readonly chatSlashCommandService: IAideAgentSlashCommandService,
+		@IViewsService private readonly viewsService: IViewsService,
 	) {
 		super();
 
@@ -217,6 +219,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this._location = { location };
 		}
 
+		CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.bindTo(contextKeyService).set('isPassthrough' in this.viewContext && this.viewContext.isPassthrough);
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
 		CONTEXT_CHAT_LOCATION.bindTo(contextKeyService).set(this._location.location);
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
@@ -797,9 +800,21 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
-			this._onDidAcceptInput.fire();
-
 			const editorValue = this.getInput();
+			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
+				const widget = await showChatView(this.viewsService);
+				if (!widget?.viewModel || !this.viewModel) {
+					return;
+				}
+
+				widget.transferQueryState(AgentMode.Edit, this.inputPart.currentAgentScope);
+				widget.acceptInput(editorValue);
+				widget.focusInput();
+				this._onDidAcceptInput.fire();
+				return;
+			}
+
+			this._onDidAcceptInput.fire();
 			const requestId = this.chatAccessibilityService.acceptRequest();
 			const input = !opts ? editorValue :
 				'query' in opts ? opts.query :
@@ -834,6 +849,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 		}
 		return undefined;
+	}
+
+	transferQueryState(mode: AgentMode, scope: AgentScope): void {
+		this.inputPart.currentAgentMode = mode;
+		this.inputPart.currentAgentScope = scope;
 	}
 
 	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {

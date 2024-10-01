@@ -286,8 +286,6 @@ class QuickChat extends Disposable {
 
 		for (const request of this.model.getRequests()) {
 			if (request.response?.response.value || request.response?.result) {
-
-
 				const message: IChatProgress[] = [];
 				for (const item of request.response.response.value) {
 					if (item.kind === 'textEditGroup') {
