@@ -19,7 +19,7 @@ import { IStorageService, StorageScope, StorageTarget } from '../../../../platfo
 import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED, CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE } from '../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
 import { ChatWidget } from './aideAgentWidget.js';
 import './media/aideAgentFloatingWidget.css';
@@ -29,7 +29,7 @@ const FLOATING_WIDGET_Y_KEY = 'aideAgent.floatingWidget.y';
 
 export class AideAgentFloatingWidget extends Disposable {
 	private isVisible: IContextKey<boolean>;
-
+	private isFocused: IContextKey<boolean>;
 	private widget: ChatWidget;
 
 	private get yDefault() {
@@ -50,6 +50,7 @@ export class AideAgentFloatingWidget extends Disposable {
 		super();
 
 		this.isVisible = CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE.bindTo(contextKeyService);
+		this.isFocused = CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED.bindTo(contextKeyService);
 		const scopedInstantiationService = this._register(this.instantiationService.createChild(
 			new ServiceCollection([
 				IContextKeyService,
@@ -81,11 +82,21 @@ export class AideAgentFloatingWidget extends Disposable {
 		this.widget.setDynamicChatTreeItemLayout(0, 0);
 		this.updateModel();
 		this.layout();
-		this.widget.onDidChangeHeight(() => this.layout());
-		this.widget.onDidAcceptInput(() => {
+		this._register(this.widget.onDidChangeHeight((height) => {
+			if (this.container.offsetHeight !== height + 6 /* padding + border */) {
+				this.layout();
+			}
+		}));
+		this._register(this.widget.onDidAcceptInput(() => {
 			this.widget.input.setValue('', true);
 			this.hide();
-		});
+		}));
+		this._register(this.widget.input.onDidFocus(() => {
+			this.isFocused.set(true);
+		}));
+		this._register(this.widget.input.onDidBlur(() => {
+			this.isFocused.set(false);
+		}));
 
 		dom.append(this.container, dom.$('div.drag-area' + ThemeIcon.asCSSSelector(Codicon.gripper)));
 
@@ -146,8 +157,18 @@ export class AideAgentFloatingWidget extends Disposable {
 	}
 
 	hide(): void {
-		this.isVisible.set(false);
-		dom.hide(this.container);
+		if (!this.isVisible.get()) {
+			return;
+		}
+
+		this.container.classList.add('hiding');
+
+		// Wait for the animation to finish before hiding the container
+		setTimeout(() => {
+			this.isVisible.set(false);
+			dom.hide(this.container);
+			this.container.classList.remove('hiding');
+		}, 200); // Duration of the animation
 	}
 
 	private updateModel(): void {
@@ -163,8 +184,8 @@ export class AideAgentFloatingWidget extends Disposable {
 		const height = Math.max(this.widget.input.contentHeight, 38);
 		const width = Math.max(this.container.offsetWidth, 600);
 
-		this.container.style.width = `${width}px`;
-		this.container.style.height = `${height}px`;
+		this.container.style.width = `${width + 2 /* border */}px`;
+		this.container.style.height = `${height + 6 /* padding + border */}px`;
 		this.widget.layout(height, width);
 	}
 

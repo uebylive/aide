@@ -8,6 +8,7 @@ import { localize2 } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentFloatingWidgetService } from '../aideAgentFloatingWidgetService.js';
 
 export function registerAideAgentFloatingWidgetActions() {
@@ -19,7 +20,7 @@ export function registerAideAgentFloatingWidgetActions() {
 				f1: true,
 				keybinding: {
 					primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-					weight: KeybindingWeight.WorkbenchContrib
+					weight: KeybindingWeight.WorkbenchContrib + 1
 				}
 			});
 		}
@@ -35,9 +36,10 @@ export function registerAideAgentFloatingWidgetActions() {
 				id: 'workbench.action.aideAgent.hideChatFloatingWidget',
 				title: localize2('interactiveSessions.hideChatFloatingWidget', "Hide Chat Floating Widget"),
 				f1: true,
+				precondition: CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED,
 				keybinding: {
-					primary: KeyMod.CtrlCmd | KeyCode.KeyK,
-					weight: KeybindingWeight.WorkbenchContrib
+					primary: KeyCode.Escape,
+					weight: KeybindingWeight.WorkbenchContrib,
 				}
 			});
 		}
