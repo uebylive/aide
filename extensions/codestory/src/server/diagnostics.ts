@@ -24,9 +24,10 @@ export async function getFileDiagnosticsFromEditor(
 
 	const sidecarDiagnostics = await Promise.all(
 		diagnostics.map(async (diagnostic) => {
+			// attempt to get full message - could be null
 			const full_message = await getFullDiagnosticMessage(diagnostic);
 			return {
-				message: diagnostic.message,
+				message: full_message ?? diagnostic.message, // message is full_message if exists
 				range: {
 					startPosition: {
 						line: diagnostic.range.start.line,
@@ -39,7 +40,6 @@ export async function getFileDiagnosticsFromEditor(
 						byteOffset: 0,
 					},
 				},
-				full_message,
 			};
 		})
 	);
@@ -60,7 +60,7 @@ export async function getDiagnosticsFromEditor(filePath: string, interestedRange
 			.map(async (diagnostic) => {
 				const full_message = await getFullDiagnosticMessage(diagnostic);
 				return {
-					message: diagnostic.message,
+					message: full_message ?? diagnostic.message, // message is full_message if exists
 					range: {
 						startPosition: {
 							line: diagnostic.range.start.line,
@@ -73,7 +73,6 @@ export async function getDiagnosticsFromEditor(filePath: string, interestedRange
 							byteOffset: 0,
 						},
 					},
-					full_message,
 				};
 			})
 	);
@@ -88,7 +87,9 @@ async function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic): Promise<
 		if (targetUri) {
 			try {
 				const document = await vscode.workspace.openTextDocument(targetUri);
-				return document.getText();
+				console.log('Diagnostic document found. Happy.')
+				const document_text = document.getText();
+				return document_text;
 			} catch (error) {
 				console.error(`Error opening document: ${error}`);
 				return null;
