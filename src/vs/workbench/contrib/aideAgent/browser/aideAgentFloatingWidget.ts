@@ -82,10 +82,8 @@ export class AideAgentFloatingWidget extends Disposable {
 		this.widget.setDynamicChatTreeItemLayout(0, 0);
 		this.updateModel();
 		this.layout();
-		this._register(this.widget.onDidChangeHeight((height) => {
-			if (this.container.offsetHeight !== height + 6 /* padding + border */) {
-				this.layout();
-			}
+		this._register(this.widget.input.onDidChangeHeight((height) => {
+			this.layout();
 		}));
 		this._register(this.widget.onDidAcceptInput(() => {
 			this.widget.input.setValue('', true);
