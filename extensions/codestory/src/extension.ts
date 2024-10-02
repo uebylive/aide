@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
-import { GENERATE_PLAN } from './completions/providers/generatePlan';
 import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
@@ -253,10 +252,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// register generate plan variable
+	// Registers all the plan variables
 	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
-		GENERATE_PLAN,
-		GENERATE_PLAN,
+		'generatePlan',
+		'generatePlan',
 		'Generates a plan for execution',
 		'Generates a plan for execution',
 		false,
@@ -288,6 +287,58 @@ export async function activate(context: vscode.ExtensionContext) {
 		'Execute the plan until a step',
 		vscode.ThemeIcon.Folder,
 	));
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		'LSP',
+		'LSP',
+		'Generates step using #LSP diagnostics',
+		'Generates step using #LSP diagnostics',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'lsp',
+				}];
+			}
+		},
+		'Generates steps using LSP diagnostics',
+		vscode.ThemeIcon.Folder,
+	));
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		'APPEND_TO_PLAN',
+		'APPEND_TO_PLAN',
+		'Append the user context to the plan',
+		'Append the user context to the plan',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'executeUntil',
+				}];
+			}
+		},
+		'Append a step to the plan',
+		vscode.ThemeIcon.Folder,
+	));
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		'DROP_PLAN_STEP_FROM',
+		'DROP_PLAN_STEP_FROM',
+		'Drops the plan from an index, YOU HAVE TO UNDO MANUALLY, the input should look like this: #DROP_PLAN_STEP_FROM {plan_step_index_to_drop_from}',
+		'Drops the plan from an index, YOU HAVE TO UNDO MANUALLY, the input should look like this: #DROP_PLAN_STEP_FROM {plan_step_index_to_drop_from}',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'dropPlanFrom',
+				}];
+			}
+		},
+		'Drops the plan steps from an index',
+		vscode.ThemeIcon.Folder,
+	));
+
 	// generate open file variable
 	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
 		OPEN_FILES_VARIABLE,
@@ -297,16 +348,20 @@ export async function activate(context: vscode.ExtensionContext) {
 		false,
 		{
 			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
-				const openFiles = vscode.workspace.textDocuments;
-				return openFiles
-					.filter(file => file.uri.scheme === 'file')
+				// const openFiles = vscode.workspace.textDocuments;
+				const openFiles = vscode.window.visibleTextEditors;
+				console.log(openFiles);
+				console.log('openFiles length');
+				console.log(openFiles.length);
+				const response = openFiles
+					.filter(file => file.document.uri.scheme === 'file')
 					.map(file => {
 						const objVal = {
-							uri: file.uri,
+							uri: file.document.uri,
 							range: {
 								startLineNumber: 1,
 								startColumn: 1,
-								endLineNumber: file.lineCount,
+								endLineNumber: file.document.lineCount,
 								endColumn: 1,
 							}
 						};
@@ -315,6 +370,7 @@ export async function activate(context: vscode.ExtensionContext) {
 							value: JSON.stringify(objVal)
 						};
 					});
+				return response;
 			}
 		},
 		'Open files',

@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
-import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
@@ -233,6 +232,8 @@ export class SideCarClient {
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		// console.log(sideCarModelConfiguration);
 		// console.log(JSON.stringify(sideCarModelConfiguration));
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const agentSystemInstruction = readCustomSystemInstruction();
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
@@ -245,6 +246,7 @@ export class SideCarClient {
 			user_id: this._userId,
 			system_instruction: agentSystemInstruction,
 			editor_url: editorUrl,
+			is_deep_reasoning: deepReasoning,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1084,7 +1086,28 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
 		} else if (name === OPEN_FILES_VARIABLE) {
-			await resolveFileReference('file', value);
+			const openFiles = vscode.window.visibleTextEditors;
+			const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
+				return {
+					name: file.document.uri.fsPath,
+					start_position: {
+						line: 0,
+						character: 0,
+						byteOffset: 0,
+					},
+					end_position: {
+						line: file.document.lineCount,
+						character: 1,
+						byteOffset: 0,
+					},
+					fs_file_path: file.document.uri.fsPath,
+					type: getFileType(),
+					content: file.document.getText(),
+					language: file.document.languageId,
+				};
+			});
+			sidecarVariables.push(...openFileVariables);
+			// await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
@@ -1097,7 +1120,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
-		if (name === GENERATE_PLAN) {
+		if (name === 'generatePlan') {
 			isPlanGeneration = true;
 		}
 	}
@@ -1110,6 +1133,38 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 			const queryParts = query.split(' ');
 			if (queryParts.length === 2) {
 				isPlanExecutionUntil = parseInt(queryParts[1]);
+			}
+			// if we have execute until then we need to grab the number right after the range where we are at
+		}
+	}
+
+	let isPlanAppend = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'APPEND_TO_PLAN') {
+			isPlanAppend = true;
+		}
+	}
+
+	let isIncludeLSP = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'LSP') {
+			console.log('lspppppp');
+			isIncludeLSP = true;
+		}
+	}
+
+	let isPlanDropFrom = null;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'DROP_PLAN_STEP_FROM') {
+			const queryParts = query.split(' ');
+			if (queryParts.length === 2) {
+				isPlanDropFrom = parseInt(queryParts[1]);
 			}
 			// if we have execute until then we need to grab the number right after the range where we are at
 		}
@@ -1128,6 +1183,9 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
+		is_plan_append: isPlanAppend,
+		is_lsp_run: isIncludeLSP,
+		is_plan_drop_from: isPlanDropFrom,
 	};
 }
 
@@ -1204,8 +1262,17 @@ async function convertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
-		if (name === GENERATE_PLAN) {
+		if (name === 'generatePlan') {
 			isPlanGeneration = true;
+		}
+	}
+
+	let isIncludeLSP = false;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'LSP') {
+			isIncludeLSP = true;
 		}
 	}
 
@@ -1222,7 +1289,14 @@ async function convertVSCodeVariableToSidecar(
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: null,
+		is_plan_append: false,
+		is_lsp_run: isIncludeLSP,
+		is_plan_drop_from: null,
 	};
+}
+
+function getFileType(): SidecarVariableType {
+	return 'File';
 }
 
 function getVariableType(
