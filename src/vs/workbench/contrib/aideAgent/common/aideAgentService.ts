@@ -428,9 +428,11 @@ export interface IAideAgentService {
 	// resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void>;
 	// TODO(@ghostwriternr): Remove this if we no longer need to remove requests.
 	// removeRequest(sessionid: string, requestId: string): Promise<void>;
-	cancelCurrentRequestForSession(sessionId: string): void;
 
-	initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void }>;
+	cancelExchange(exchangeId: string): void;
+	cancelAllExchangesForSession(): void;
+
+	initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void; token: CancellationToken }>;
 
 	clearSession(sessionId: string): void;
 	addCompleteRequest(sessionId: string, message: IParsedChatRequest | string, variableData: IChatRequestVariableData | undefined, attempt: number | undefined, response: IChatCompleteResponse): void;

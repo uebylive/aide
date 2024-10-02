@@ -123,7 +123,7 @@ export class CancelAction extends Action2 {
 
 		const chatService = accessor.get(IAideAgentService);
 		if (widget.viewModel) {
-			chatService.cancelCurrentRequestForSession(widget.viewModel.sessionId);
+			chatService.cancelAllExchangesForSession();
 		}
 	}
 }

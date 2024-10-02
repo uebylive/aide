@@ -45,10 +45,10 @@ const SESSION_TRANSFER_EXPIRATION_IN_MILLISECONDS = 1000 * 60;
 
 const maxPersistedSessions = 25;
 
-class CancellableRequest implements IDisposable {
+class CancellableExchange implements IDisposable {
 	constructor(
 		public readonly cancellationTokenSource: CancellationTokenSource,
-		public requestId?: string | undefined
+		public exchangeId?: string | undefined
 	) { }
 
 	dispose() {
@@ -65,7 +65,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 	private readonly _sessionModels = this._register(new DisposableMap<string, ChatModel>());
 	// TODO(@ghostwriternr): Does this continue to make sense? How do we interpret 'pending requests' when we're no longer using a request-response model?
-	private readonly _pendingRequests = this._register(new DisposableMap<string, CancellableRequest>());
+	private readonly _pendingExchanges = this._register(new DisposableMap<string, CancellableExchange>());
 	private _persistedSessions: ISerializableChatsData;
 
 	/** Just for empty windows, need to enforce that a chat was deleted, even though other windows still have it */
@@ -483,10 +483,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 		await model.waitForInitialization();
 
+		/* TODO(@ghostwriternr): This is perhaps essential if we can't process requests in parallel. Think about this again when it becomes a problem.
 		if (this._pendingRequests.has(sessionId)) {
 			this.trace('sendRequest', `Session ${sessionId} already has a pending request`);
 			return;
 		}
+		*/
 
 		const location = options?.location ?? model.initialLocation;
 		const attempt = options?.attempt ?? 0;
@@ -622,10 +624,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 					const requestProps = await prepareChatAgentRequest(agent, command, enableCommandDetection, request /* Reuse the request object if we already created it for participant detection */, !!detectedAgent);
 					requestProps.userSelectedModelId = options?.userSelectedModelId;
-					const pendingRequest = this._pendingRequests.get(sessionId);
-					if (pendingRequest && !pendingRequest.requestId) {
-						pendingRequest.requestId = requestProps.requestId;
+					/* TODO(@ghostwriternr): This is from the request-response world. Remove this when we no longer need to track pending requests.
+					const pendingRequest = this._pendingExchanges.get(sessionId);
+					if (pendingRequest && !pendingRequest.exchangeId) {
+						pendingRequest.exchangeId = requestProps.requestId;
 					}
+					*/
 					completeResponseCreated();
 					const agentResult = await this.chatAgentService.invokeAgent(agent.id, requestProps, token);
 					rawResult = agentResult;
@@ -695,10 +699,12 @@ export class ChatService extends Disposable implements IAideAgentService {
 			}
 		};
 		const rawResponsePromise = sendRequestInternal();
-		this._pendingRequests.set(model.sessionId, new CancellableRequest(source));
+		/* TODO(@ghostwriternr): This is from the request-response world. Remove this when we no longer need to track pending requests.
+		this._pendingExchanges.set(model.sessionId, new CancellableExchange(source));
 		rawResponsePromise.finally(() => {
-			this._pendingRequests.deleteAndDispose(model.sessionId);
+			this._pendingExchanges.deleteAndDispose(model.sessionId);
 		});
+		*/
 		return {
 			responseCreatedPromise: responseCreated.p,
 			responseCompletePromise: rawResponsePromise,
@@ -724,7 +730,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 	*/
 
-	async initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void }> {
+	async initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void; token: CancellationToken }> {
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {
 			throw new Error(`Unknown session: ${sessionId}`);
@@ -733,11 +739,18 @@ export class ChatService extends Disposable implements IAideAgentService {
 		await model.waitForInitialization();
 
 		const response = model.addResponse();
+		const cts = new CancellationTokenSource();
+		this._pendingExchanges.set(response.id, new CancellableExchange(cts));
+		this._register(cts.token.onCancellationRequested(() => {
+			this.trace('initiateResponse', `Response ${response.id} was cancelled`);
+			model.cancelResponse(response);
+		}));
+
 		const progressCallback = (p: IChatProgress) => {
-			// TODO(@ghostwriternr): Figure out the right cancellation token to use here
-			this.progressCallback(model, response, p, CancellationToken.None);
+			// TODO(@ghostwriternr): Remove this comment once we get the cancellation to work
+			this.progressCallback(model, response, p, cts.token);
 		};
-		return { responseId: response.id, callback: progressCallback };
+		return { responseId: response.id, callback: progressCallback, token: cts.token };
 	}
 
 	async addCompleteRequest(_sessionId: string, message: IParsedChatRequest | string, _variableData: IChatRequestVariableData | undefined, _attempt: number | undefined, _response: IChatCompleteResponse): Promise<void> {
@@ -770,10 +783,18 @@ export class ChatService extends Disposable implements IAideAgentService {
 		*/
 	}
 
-	cancelCurrentRequestForSession(sessionId: string): void {
-		this.trace('cancelCurrentRequestForSession', `sessionId: ${sessionId}`);
-		this._pendingRequests.get(sessionId)?.cancel();
-		this._pendingRequests.deleteAndDispose(sessionId);
+	cancelExchange(exchangeId: string): void {
+		const exchange = this._pendingExchanges.get(exchangeId);
+		if (exchange) {
+			exchange.cancel();
+			this._pendingExchanges.deleteAndDispose(exchangeId);
+		}
+	}
+
+	cancelAllExchangesForSession(): void {
+		for (const [exchangeId] of this._pendingExchanges) {
+			this.cancelExchange(exchangeId);
+		}
 	}
 
 	clearSession(sessionId: string): void {
@@ -792,8 +813,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		}
 
 		this._sessionModels.deleteAndDispose(sessionId);
-		this._pendingRequests.get(sessionId)?.cancel();
-		this._pendingRequests.deleteAndDispose(sessionId);
+		this.cancelAllExchangesForSession();
 		this._onDidDisposeSession.fire({ sessionId, reason: 'cleared' });
 	}
 

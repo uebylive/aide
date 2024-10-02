@@ -1212,13 +1212,11 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 	*/
 
-	/* TODO(@ghostwriternr): How should a user cancel a request in the async response world? Revisit this.
-	cancelRequest(request: ChatRequestModel): void {
-		if (request.response) {
-			request.response.cancel();
+	cancelResponse(response: ChatResponseModel): void {
+		if (response) {
+			response.cancel();
 		}
 	}
-	*/
 
 	/* TODO(@ghostwriternr): This method was used to link a response with a request. We may need this, but I'm assuming the shape will be a bit different?
 	setResponse(request: ChatRequestModel, result: IChatAgentResult): void {

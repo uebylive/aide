@@ -34,9 +34,14 @@ declare module 'vscode' {
 		close(): void;
 	}
 
+	export interface AideAgentEventSenderResponse {
+		stream: AideAgentResponseStream;
+		token: CancellationToken;
+	}
+
 	export type AideSessionHandler = (id: string) => void;
 	export type AideSessionEventHandler = (event: AideAgentRequest, token: CancellationToken) => ProviderResult<ChatResult | void>;
-	export type AideSessionEventSender = (sessionId: string) => Thenable<AideAgentResponseStream | undefined>;
+	export type AideSessionEventSender = (sessionId: string) => Thenable<AideAgentEventSenderResponse | undefined>;
 
 	export interface AideSessionParticipant {
 		newSession: AideSessionHandler;

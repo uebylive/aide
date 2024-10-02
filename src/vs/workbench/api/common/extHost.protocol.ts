@@ -1430,7 +1430,7 @@ export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspace
 export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
-	$initResponse(sessionId: string): Promise<string>;
+	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;
 	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
 }
 

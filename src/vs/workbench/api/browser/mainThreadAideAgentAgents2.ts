@@ -210,10 +210,10 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 		this._chatAgentService.updateAgent(data.id, revive(metadataUpdate));
 	}
 
-	async $initResponse(sessionId: string): Promise<string> {
-		const { responseId, callback } = await this._chatService.initiateResponse(sessionId);
+	async $initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }> {
+		const { responseId, callback, token } = await this._chatService.initiateResponse(sessionId);
 		this._pendingProgress.set(responseId, callback);
-		return responseId;
+		return { responseId, token };
 	}
 
 	async $handleProgressChunk(responseId: string, progress: IAideAgentProgressDto, responsePartHandle?: number): Promise<number | void> {

@@ -225,32 +225,31 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			return;
 		}
 
-		const responseStream = this.openResponseStream = await this.aideAgent.initResponse(this.sessionId);
-		if (!responseStream) {
+		const response = await this.aideAgent.initResponse(this.sessionId);
+		if (!response) {
 			return;
 		}
 
-		await this.generateResponse(this.sessionId, event, responseStream);
+		const { stream, token } = response;
+		await this.generateResponse(this.sessionId, event, stream, token);
 		this.processingEvents.delete(event.id);
 	}
 
-	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream) {
+	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream, token: vscode.CancellationToken) {
 		if (!this.editorUrl) {
 			responseStream.close();
 			return;
 		}
 
-		// TODO(@ghostwriternr): This is a temporary value, the token should ideally be passed to the request/response lifecycle.
-		const cts = new vscode.CancellationTokenSource();
 		const query = event.prompt;
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references, this.projectContext.labels, this.editorUrl);
-			await reportFromStreamToSearchProgress(followupResponse, responseStream, cts.token, this.workingDirectory);
+			await reportFromStreamToSearchProgress(followupResponse, responseStream, token, this.workingDirectory);
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
 			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
 			const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
-			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, cts.token, this.sidecarClient, this.iterationEdits, this.limiter);
+			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		}
 		responseStream.close();
 	}

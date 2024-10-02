@@ -17,7 +17,7 @@
 	display: none !important;
 }
 
-.interactive-item-container {
+.aideagent-item-container {
 	padding: 12px 16px;
 	display: flex;
 	flex-direction: column;
@@ -29,18 +29,18 @@
 	-webkit-user-select: text;
 }
 
-.interactive-item-container .header {
+.aideagent-item-container .header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	position: relative;
 }
 
-.interactive-item-container .header.hidden {
+.aideagent-item-container .header.hidden {
 	display: none;
 }
 
-.interactive-item-container .header .user {
+.aideagent-item-container .header .user {
 	display: flex;
 	align-items: center;
 	gap: 8px;
@@ -52,29 +52,29 @@
 	margin: -2px;
 }
 
-.interactive-item-container .header .username {
+.aideagent-item-container .header .username {
 	margin: 0;
 	font-size: 13px;
 	font-weight: 600;
 }
 
-.interactive-item-container .detail-container {
+.aideagent-item-container .detail-container {
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 	overflow: hidden;
 }
 
-.interactive-item-container .detail-container .detail .agentOrSlashCommandDetected A {
+.aideagent-item-container .detail-container .detail .agentOrSlashCommandDetected A {
 	cursor: pointer;
 	color: var(--vscode-textLink-foreground);
 }
 
-.interactive-item-container .chat-animated-ellipsis {
+.aideagent-item-container .chat-animated-ellipsis {
 	display: inline-block;
 	width: 11px;
 }
 
-.interactive-item-container:not(.show-detail-progress) .chat-animated-ellipsis {
+.aideagent-item-container:not(.show-detail-progress) .chat-animated-ellipsis {
 	display: none;
 }
 
@@ -96,7 +96,7 @@
 	}
 }
 
-.interactive-item-container .chat-animated-ellipsis::after {
+.aideagent-item-container .chat-animated-ellipsis::after {
 	content: '';
 	white-space: nowrap;
 	overflow: hidden;
@@ -104,13 +104,13 @@
 	animation: ellipsis steps(4, end) 1s infinite;
 }
 
-.interactive-item-container .header .avatar-container {
+.aideagent-item-container .header .avatar-container {
 	display: flex;
 	pointer-events: none;
 	user-select: none;
 }
 
-.interactive-item-container .header .avatar {
+.aideagent-item-container .header .avatar {
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -120,72 +120,74 @@
 	outline: 1px solid var(--vscode-chat-requestBorder);
 }
 
-.interactive-item-container .header .avatar.codicon-avatar {
+.aideagent-item-container .header .avatar.codicon-avatar {
 	background: var(--vscode-chat-avatarBackground);
 }
 
-.interactive-item-container .header .avatar+.avatar {
+.aideagent-item-container .header .avatar+.avatar {
 	margin-left: -8px;
 }
 
-.interactive-item-container .header .avatar .icon {
+.aideagent-item-container .header .avatar .icon {
 	width: 24px;
 	height: 24px;
 	border-radius: 50%;
 	background-color: var(--vscode-chat-list-background);
 }
 
-.interactive-item-container .header .avatar .codicon {
+.aideagent-item-container .header .avatar .codicon {
 	color: var(--vscode-chat-avatarForeground) !important;
 	font-size: 14px;
 }
 
-.monaco-list-row:not(.focused) .interactive-item-container:not(:hover) .header .monaco-toolbar,
-.monaco-list:not(:focus-within) .monaco-list-row .interactive-item-container:not(:hover) .header .monaco-toolbar,
-.monaco-list-row:not(.focused) .interactive-item-container:not(:hover) .header .monaco-toolbar .action-label,
-.monaco-list:not(:focus-within) .monaco-list-row .interactive-item-container:not(:hover) .header .monaco-toolbar .action-label {
+/*
+.monaco-list-row:not(.focused) .aideagent-item-container:not(:hover) .header .monaco-toolbar,
+.monaco-list:not(:focus-within) .monaco-list-row .aideagent-item-container:not(:hover) .header .monaco-toolbar,
+.monaco-list-row:not(.focused) .aideagent-item-container:not(:hover) .header .monaco-toolbar .action-label,
+.monaco-list:not(:focus-within) .monaco-list-row .aideagent-item-container:not(:hover) .header .monaco-toolbar .action-label {
 	/* Also apply this rule to the .action-label directly to work around a strange issue- when the
 	toolbar is hidden without that second rule, tabbing from the list container into a list item doesn't work
-	and the tab key doesn't do anything. */
+	and the tab key doesn't do anything. *\/
 	display: none;
 }
+*/
 
-.interactive-item-container .header .monaco-toolbar .monaco-action-bar .actions-container {
+.aideagent-item-container .header .monaco-toolbar .monaco-action-bar .actions-container {
 	gap: 4px;
 }
 
-.interactive-item-container .header .monaco-toolbar .action-label {
+.aideagent-item-container .header .monaco-toolbar .action-label {
 	border: 1px solid transparent;
 	padding: 2px;
 }
 
-.interactive-item-container .header .monaco-toolbar {
+.aideagent-item-container .header .monaco-toolbar {
 	position: absolute;
 	right: 0px;
 	background-color: var(--vscode-chat-list-background);
 }
 
-.interactive-item-container.interactive-request .header .monaco-toolbar {
+.aideagent-item-container.interactive-request .header .monaco-toolbar {
 	/* Take the partially-transparent background color override for request rows */
 	background-color: inherit;
 }
 
-.interactive-item-container .header .monaco-toolbar .checked.action-label,
-.interactive-item-container .header .monaco-toolbar .checked.action-label:hover {
+.aideagent-item-container .header .monaco-toolbar .checked.action-label,
+.aideagent-item-container .header .monaco-toolbar .checked.action-label:hover {
 	color: var(--vscode-inputOption-activeForeground) !important;
 	border-color: var(--vscode-inputOption-activeBorder);
 	background-color: var(--vscode-inputOption-activeBackground);
 }
 
-.interactive-item-container .value {
+.aideagent-item-container .value {
 	width: 100%;
 }
 
-.interactive-item-container > .value .chat-used-context {
+.aideagent-item-container > .value .chat-used-context {
 	margin-bottom: 8px;
 }
 
-.interactive-item-container .value .rendered-markdown blockquote {
+.aideagent-item-container .value .rendered-markdown blockquote {
 	margin: 0px;
 	padding: 0px 16px 0 10px;
 	border-left-width: 5px;
@@ -195,37 +197,37 @@
 	border-color: var(--vscode-textBlockQuote-border);
 }
 
-.interactive-item-container .value .rendered-markdown table {
+.aideagent-item-container .value .rendered-markdown table {
 	width: 100%;
 	text-align: left;
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .value .rendered-markdown table,
-.interactive-item-container .value .rendered-markdown table td,
-.interactive-item-container .value .rendered-markdown table th {
+.aideagent-item-container .value .rendered-markdown table,
+.aideagent-item-container .value .rendered-markdown table td,
+.aideagent-item-container .value .rendered-markdown table th {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-collapse: collapse;
 	padding: 4px 6px;
 }
 
-.interactive-item-container .value .rendered-markdown a,
-.interactive-item-container .value .interactive-session-followups,
-.interactive-item-container .value .rendered-markdown a code {
+.aideagent-item-container .value .rendered-markdown a,
+.aideagent-item-container .value .interactive-session-followups,
+.aideagent-item-container .value .rendered-markdown a code {
 	color: var(--vscode-textLink-foreground);
 }
 
-.interactive-item-container .value .rendered-markdown a {
+.aideagent-item-container .value .rendered-markdown a {
 	user-select: text;
 }
 
-.interactive-item-container .value .rendered-markdown a:hover,
-.interactive-item-container .value .rendered-markdown a:active {
+.aideagent-item-container .value .rendered-markdown a:hover,
+.aideagent-item-container .value .rendered-markdown a:active {
 	color: var(--vscode-textLink-activeForeground);
 }
 
-.hc-black .interactive-item-container .value .rendered-markdown a code,
-.hc-light .interactive-item-container .value .rendered-markdown a code {
+.hc-black .aideagent-item-container .value .rendered-markdown a code,
+.hc-light .aideagent-item-container .value .rendered-markdown a code {
 	color: var(--vscode-textPreformat-foreground);
 }
 
@@ -244,100 +246,100 @@
 	border-right: 3px solid var(--vscode-chat-requestBorder);
 }
 
-.interactive-item-container .value {
+.aideagent-item-container .value {
 	white-space: normal;
 	overflow-wrap: anywhere;
 }
 
-.interactive-item-container .value > :last-child.rendered-markdown > :last-child {
+.aideagent-item-container .value > :last-child.rendered-markdown > :last-child {
 	margin-bottom: 0px;
 }
 
-.interactive-item-container .value .rendered-markdown hr {
+.aideagent-item-container .value .rendered-markdown hr {
 	border-color: rgba(0, 0, 0, 0.18);
 }
 
-.vs-dark .interactive-item-container .value .rendered-markdown hr {
+.vs-dark .aideagent-item-container .value .rendered-markdown hr {
 	border-color: rgba(255, 255, 255, 0.18);
 }
 
-.interactive-item-container .value .rendered-markdown h1 {
+.aideagent-item-container .value .rendered-markdown h1 {
 	font-size: 20px;
 	font-weight: 600;
 	margin: 16px 0;
 
 }
 
-.interactive-item-container .value .rendered-markdown h2 {
+.aideagent-item-container .value .rendered-markdown h2 {
 	font-size: 16px;
 	font-weight: 600;
 	margin: 16px 0;
 }
 
-.interactive-item-container .value .rendered-markdown h3 {
+.aideagent-item-container .value .rendered-markdown h3 {
 	font-size: 14px;
 	font-weight: 600;
 	margin: 16px 0;
 }
 
-.interactive-item-container .value .rendered-markdown p {
+.aideagent-item-container .value .rendered-markdown p {
 	line-height: 1.5em;
 }
 
-.interactive-item-container .value > .rendered-markdown p {
+.aideagent-item-container .value > .rendered-markdown p {
 	margin: 0 0 16px 0;
 }
 
-.interactive-item-container .value > .rendered-markdown li > p {
+.aideagent-item-container .value > .rendered-markdown li > p {
 	margin: 0;
 }
 
 /* #region list indent rules */
-.interactive-item-container .value .rendered-markdown ul {
+.aideagent-item-container .value .rendered-markdown ul {
 	/* Keep this in sync with the values for dedented codeblocks below */
 	padding-inline-start: 24px;
 }
 
-.interactive-item-container .value .rendered-markdown ol {
+.aideagent-item-container .value .rendered-markdown ol {
 	/* Keep this in sync with the values for dedented codeblocks below */
 	padding-inline-start: 28px;
 }
 
 /* NOTE- We want to dedent codeblocks in lists specifically to give them the full width. No more elegant way to do this, these values
 have to be updated for changes to the rules above, or to support more deeply nested lists. */
-.interactive-item-container .value .rendered-markdown ul .interactive-result-code-block {
+.aideagent-item-container .value .rendered-markdown ul .interactive-result-code-block {
 	margin-left: -24px;
 }
 
-.interactive-item-container .value .rendered-markdown ul ul .interactive-result-code-block {
+.aideagent-item-container .value .rendered-markdown ul ul .interactive-result-code-block {
 	margin-left: -48px;
 }
 
-.interactive-item-container .value .rendered-markdown ol .interactive-result-code-block {
+.aideagent-item-container .value .rendered-markdown ol .interactive-result-code-block {
 	margin-left: -28px;
 }
 
-.interactive-item-container .value .rendered-markdown ol ol .interactive-result-code-block {
+.aideagent-item-container .value .rendered-markdown ol ol .interactive-result-code-block {
 	margin-left: -56px;
 }
 
-.interactive-item-container .value .rendered-markdown ol ul .interactive-result-code-block,
-.interactive-item-container .value .rendered-markdown ul ol .interactive-result-code-block {
+.aideagent-item-container .value .rendered-markdown ol ul .interactive-result-code-block,
+.aideagent-item-container .value .rendered-markdown ul ol .interactive-result-code-block {
 	margin-left: -52px;
 }
 
 /* #endregion list indent rules */
 
-.interactive-item-container .value .rendered-markdown li {
+.aideagent-item-container .value .rendered-markdown li {
 	line-height: 1.3rem;
 }
 
-.interactive-item-container .value .rendered-markdown img {
+.aideagent-item-container .value .rendered-markdown img {
 	max-width: 100%;
 }
 
-.interactive-item-container .monaco-tokenized-source,
-.interactive-item-container code {
+.aideagent-item-container .monaco-tokenized-source,
+.aideagent-item-container code {
 	font-family: var(--monaco-monospace-font);
 	font-size: 12px;
 	color: var(--vscode-textPreformat-foreground);
@@ -346,86 +348,86 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border-radius: 4px;
 }
 
-.interactive-item-container.interactive-item-compact {
+.aideagent-item-container.interactive-item-compact {
 	padding: 8px 20px;
 }
 
-.interactive-item-container.interactive-item-compact.no-padding {
+.aideagent-item-container.interactive-item-compact.no-padding {
 	padding: unset;
 	gap: unset;
 }
 
-.interactive-item-container.interactive-item-compact .header {
+.aideagent-item-container.interactive-item-compact .header {
 	height: 16px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar {
+.aideagent-item-container.interactive-item-compact .header .avatar {
 	width: 18px;
 	height: 18px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar .icon {
+.aideagent-item-container.interactive-item-compact .header .avatar .icon {
 	width: 16px;
 	height: 16px;
 }
 
-.interactive-item-container.interactive-item-compact .header .codicon-avatar .codicon {
+.aideagent-item-container.interactive-item-compact .header .codicon-avatar .codicon {
 	font-size: 12px;
 }
 
-.interactive-item-container.interactive-item-compact .header .avatar+.avatar {
+.aideagent-item-container.interactive-item-compact .header .avatar+.avatar {
 	margin-left: -4px;
 }
 
-.interactive-item-container.interactive-item-compact .value {
+.aideagent-item-container.interactive-item-compact .value {
 	min-height: 0;
 }
 
-.interactive-item-container.interactive-item-compact .value > .rendered-markdown p {
+.aideagent-item-container.interactive-item-compact .value > .rendered-markdown p {
 	margin: 0 0 8px 0;
 }
 
-.interactive-item-container.interactive-item-compact .value > .rendered-markdown li > p {
+.aideagent-item-container.interactive-item-compact .value > .rendered-markdown li > p {
 	margin: 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h1 {
+.aideagent-item-container.interactive-item-compact .value .rendered-markdown h1 {
 	margin: 8px 0;
 
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h2 {
+.aideagent-item-container.interactive-item-compact .value .rendered-markdown h2 {
 	margin: 8px 0;
 }
 
-.interactive-item-container.interactive-item-compact .value .rendered-markdown h3 {
+.aideagent-item-container.interactive-item-compact .value .rendered-markdown h3 {
 	margin: 8px 0;
 }
 
-.interactive-item-container.minimal {
+.aideagent-item-container.minimal {
 	flex-direction: row;
 }
 
-.interactive-item-container.minimal .column.left {
+.aideagent-item-container.minimal .column.left {
 	padding-top: 2px;
 	display: inline-block;
 	flex-grow: 0;
 }
 
-.interactive-item-container.minimal .column.right {
+.aideagent-item-container.minimal .column.right {
 	display: inline-block;
 	flex-grow: 1;
 }
 
-.interactive-item-container.minimal .user > .username {
+.aideagent-item-container.minimal .user > .username {
 	display: none;
 }
 
-.interactive-item-container.minimal .detail-container {
+.aideagent-item-container.minimal .detail-container {
 	font-size: unset;
 }
 
-.interactive-item-container.minimal > .header {
+.aideagent-item-container.minimal > .header {
 	position: absolute;
 	right: 0;
 }
@@ -543,7 +545,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0 0 8px 0;
 }
 
-.interactive-item-container .interactive-result-code-block .monaco-toolbar .monaco-action-bar .actions-container {
+.aideagent-item-container .interactive-result-code-block .monaco-toolbar .monaco-action-bar .actions-container {
 	padding-inline-start: unset;
 }
 
@@ -555,7 +557,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	gap: 8px;
 }
 
-.interactive-item-container .value .chat-notification-widget .rendered-markdown p {
+.aideagent-item-container .value .chat-notification-widget .rendered-markdown p {
 	margin: 0;
 }
 
@@ -671,7 +673,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	flex-wrap: wrap;
 }
 
-.interactive-session .interactive-item-container.interactive-request .chat-attached-context {
+.interactive-session .aideagent-item-container.interactive-request .chat-attached-context {
 	margin-top: -8px;
 }
 
@@ -683,7 +685,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	max-width: 100%;
 }
 
-.interactive-session .interactive-item-container.interactive-request .chat-attached-context .chat-attached-context-attachment {
+.interactive-session .aideagent-item-container.interactive-request .chat-attached-context .chat-attached-context-attachment {
 	padding-right: 6px;
 }
 
@@ -704,7 +706,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin-top: 1px;
 }
 
-.interactive-item-container .interactive-response-followups .monaco-button {
+.aideagent-item-container .interactive-response-followups .monaco-button {
 	padding: 4px 8px;
 }
 
@@ -742,7 +744,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .monaco-toolbar .codicon {
+.aideagent-item-container .monaco-toolbar .codicon {
 	/* Very aggressive list styles try to apply focus colors to every codicon in a list row. */
 	color: var(--vscode-icon-foreground) !important;
 }
@@ -787,17 +789,17 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border-color: var(--vscode-focusBorder, transparent);
 }
 
-.interactive-item-container .value .interactive-response-placeholder-codicon .codicon {
+.aideagent-item-container .value .interactive-response-placeholder-codicon .codicon {
 	color: var(--vscode-editorGhostText-foreground);
 }
 
-.interactive-item-container .value .interactive-response-placeholder-content {
+.aideagent-item-container .value .interactive-response-placeholder-content {
 	color: var(--vscode-editorGhostText-foreground);
 	font-size: 12px;
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .value .interactive-response-placeholder-content p {
+.aideagent-item-container .value .interactive-response-placeholder-content p {
 	margin: 0;
 }
 
@@ -813,18 +815,18 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	width: auto;
 }
 
-.interactive-item-container .chat-resource-widget {
+.aideagent-item-container .chat-resource-widget {
 	background-color: var(--vscode-chat-slashCommandBackground);
 	color: var(--vscode-chat-slashCommandForeground);
 }
 
-.interactive-item-container .chat-resource-widget,
-.interactive-item-container .chat-agent-widget .monaco-button {
+.aideagent-item-container .chat-resource-widget,
+.aideagent-item-container .chat-agent-widget .monaco-button {
 	border-radius: 4px;
 	padding: 1px 3px;
 }
 
-.interactive-item-container .chat-agent-widget .monaco-text-button {
+.aideagent-item-container .chat-agent-widget .monaco-text-button {
 	display: inline;
 	border: none;
 }
@@ -840,7 +842,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-response-progress-tree,
-.interactive-item-container .chat-notification-widget,
+.aideagent-item-container .chat-notification-widget,
 .interactive-session .chat-used-context-list {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 4px;
@@ -848,7 +850,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding: 4px 6px;
 }
 
-.interactive-item-container .chat-notification-widget {
+.aideagent-item-container .chat-notification-widget {
 	padding: 8px 12px;
 }
 
@@ -896,13 +898,13 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0 0 0 4px;
 }
 
-.interactive-item-container .rendered-markdown.progress-step {
+.aideagent-item-container .rendered-markdown.progress-step {
 	display: flex;
 	margin-left: 4px;
 	white-space: normal;
 }
 
-.interactive-item-container .rendered-markdown.progress-step > p {
+.aideagent-item-container .rendered-markdown.progress-step > p {
 	color: var(--vscode-descriptionForeground);
 	font-size: 12px;
 	display: flex;
@@ -911,34 +913,34 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin-bottom: 6px;
 }
 
-.interactive-item-container .rendered-markdown.progress-step > p .codicon {
+.aideagent-item-container .rendered-markdown.progress-step > p .codicon {
 	/* Very aggressive list styles try to apply focus colors to every codicon in a list row. */
 	color: var(--vscode-icon-foreground) !important;
 }
 
-.interactive-item-container .rendered-markdown.progress-step > p .codicon.codicon-check {
+.aideagent-item-container .rendered-markdown.progress-step > p .codicon.codicon-check {
 	color: var(--vscode-debugIcon-startForeground) !important;
 }
 
-.interactive-item-container .chat-command-button {
+.aideagent-item-container .chat-command-button {
 	display: flex;
 	margin-bottom: 16px;
 }
 
-.interactive-item-container .chat-notification-widget {
+.aideagent-item-container .chat-notification-widget {
 	display: flex;
 	flex-direction: row;
 	gap: 6px;
 }
 
-.interactive-item-container .chat-command-button .monaco-button,
+.aideagent-item-container .chat-command-button .monaco-button,
 .chat-confirmation-widget .chat-confirmation-buttons-container .monaco-button {
 	text-align: left;
 	width: initial;
 	padding: 4px 8px;
 }
 
-.interactive-item-container .chat-command-button .monaco-button .codicon {
+.aideagent-item-container .chat-command-button .monaco-button .codicon {
 	margin-left: 0;
 	margin-top: 1px;
 }

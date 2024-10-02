@@ -280,6 +280,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 
 	createChatAgent(extension: IExtensionDescription, id: string, handler: vscode.AideSessionParticipant): vscode.AideSessionAgent {
 		const handle = ExtHostAideAgentAgents2._idPool++;
+		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
 		const agent = new ExtHostChatAgent(
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
@@ -288,7 +289,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		);
 		this._agents.set(handle, agent);
 
-		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
 		return agent.apiAgent;
 	}
 
@@ -405,15 +405,15 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 	}
 
-	private async initResponse(sessionId: string): Promise<vscode.AideAgentResponseStream | undefined> {
+	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken } | undefined> {
 		const sessionDisposables = this._sessionDisposables.get(sessionId);
 		if (!sessionDisposables) {
 			return undefined;
 		}
 
-		const responseId = await this._proxy.$initResponse(sessionId);
+		const { responseId, token } = await this._proxy.$initResponse(sessionId);
 		const stream = new AideAgentResponseStream(responseId, this._proxy, this._commands.converter, sessionDisposables);
-		return stream.apiObject;
+		return { stream: stream.apiObject, token };
 	}
 
 	private async prepareHistoryTurns(agentId: string, context: { history: IChatAgentHistoryEntryDto[] }): Promise<(vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]> {
