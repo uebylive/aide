@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
-import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';

@@ -446,7 +446,6 @@ class BuiltinDynamicCompletions extends Disposable {
 		});
 	}
 
-
 	private async cacheFileEntries() {
 		if (this.cacheKey && Date.now() - this.cacheKey.time > 60000) {
 			this.searchService.clearCache(this.cacheKey.key);

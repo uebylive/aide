@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
-import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
@@ -337,44 +336,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		},
 		'Drops the plan steps from an index',
 		vscode.ThemeIcon.Folder,
-	));
-
-	// generate open file variable
-	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
-		OPEN_FILES_VARIABLE,
-		OPEN_FILES_VARIABLE,
-		'Open files in the workspace',
-		'Open files in the workspace',
-		false,
-		{
-			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
-				// const openFiles = vscode.workspace.textDocuments;
-				const openFiles = vscode.window.visibleTextEditors;
-				console.log(openFiles);
-				console.log('openFiles length');
-				console.log(openFiles.length);
-				const response = openFiles
-					.filter(file => file.document.uri.scheme === 'file')
-					.map(file => {
-						const objVal = {
-							uri: file.document.uri,
-							range: {
-								startLineNumber: 1,
-								startColumn: 1,
-								endLineNumber: file.document.lineCount,
-								endColumn: 1,
-							}
-						};
-						return {
-							level: vscode.ChatVariableLevel.Full,
-							value: JSON.stringify(objVal)
-						};
-					});
-				return response;
-			}
-		},
-		'Open files',
-		vscode.ThemeIcon.File
 	));
 
 	// Gets access to all the events the editor is throwing our way

@@ -12,6 +12,7 @@ import { basename } from '../../../../base/common/path.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { IRange } from '../../../../editor/common/core/range.js';
 import { Location } from '../../../../editor/common/languages.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
@@ -111,20 +112,25 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 				const activeEditor = this.editorService.activeTextEditorControl;
 				if (isCodeEditor(activeEditor)) {
 					const model = activeEditor.getModel();
-					const selection = activeEditor.getSelection();
-					if (model && selection) {
+					if (model) {
+						const selection = activeEditor.getSelection();
+
+						let range: IRange;
+						if (selection && !selection.isEmpty()) {
+							range = {
+								startLineNumber: selection.startLineNumber - 1,
+								startColumn: selection.startColumn - 1,
+								endLineNumber: selection.endLineNumber - 1,
+								endColumn: selection.endColumn - 1,
+							};
+						} else {
+							range = model.getFullModelRange();
+						}
+
 						resolvedAttachedContext.push({
 							id: 'selection',
 							name: 'file',
-							value: JSON.stringify({
-								uri: model.uri,
-								range: {
-									startLineNumber: selection.startLineNumber - 1,
-									startColumn: selection.startColumn - 1,
-									endLineNumber: selection.endLineNumber - 1,
-									endColumn: selection.endColumn - 1,
-								},
-							})
+							value: JSON.stringify({ uri: model.uri, range })
 						});
 					}
 				}
