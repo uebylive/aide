@@ -249,7 +249,9 @@ export async function activate(context: ExtensionContext) {
 		sidecarClient, currentRepo, projectContext, probeProvider
 	);
 	context.subscriptions.push(chatAgentProvider);
-	// register generate plan variable
+
+
+	// Registers all the plan variables
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		GENERATE_PLAN,
 		GENERATE_PLAN,
@@ -318,6 +320,24 @@ export async function activate(context: ExtensionContext) {
 		'Append a step to the plan',
 		vscode.ThemeIcon.Folder,
 	));
+	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
+		'DROP_PLAN_STEP_FROM',
+		'DROP_PLAN_STEP_FROM',
+		'Drops the plan from an index, YOU HAVE TO UNDO MANUALLY, the input should look like this: #DROP_PLAN_STEP_FROM {plan_step_index_to_drop_from}',
+		'Drops the plan from an index, YOU HAVE TO UNDO MANUALLY, the input should look like this: #DROP_PLAN_STEP_FROM {plan_step_index_to_drop_from}',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'dropPlanFrom',
+				}];
+			}
+		},
+		'Drops the plan steps from an index',
+		vscode.ThemeIcon.Folder,
+	));
+
 	// generate open file variable
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
 		OPEN_FILES_VARIABLE,
