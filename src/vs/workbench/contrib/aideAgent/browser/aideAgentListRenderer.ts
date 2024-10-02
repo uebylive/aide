@@ -18,7 +18,6 @@ import { IMarkdownString, MarkdownString } from '../../../../base/common/htmlCon
 import { Disposable, DisposableStore, IDisposable, dispose, toDisposable } from '../../../../base/common/lifecycle.js';
 import { ResourceMap } from '../../../../base/common/map.js';
 import { FileAccess } from '../../../../base/common/network.js';
-import { clamp } from '../../../../base/common/numbers.js';
 import { autorun } from '../../../../base/common/observable.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -44,7 +43,6 @@ import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAge
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
-import { getNWords } from '../common/aideAgentWordCounter.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions } from './aideAgent.js';
@@ -167,25 +165,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else {
 			this.logService.trace(`ChatListItemRenderer#${method}: ${message}`);
 		}
-	}
-
-	/**
-	 * Compute a rate to render at in words/s.
-	 */
-	private getProgressiveRenderRate(element: IChatResponseViewModel): number {
-		if (element.isComplete) {
-			return 80;
-		}
-
-		if (element.contentUpdateTimings && element.contentUpdateTimings.impliedWordLoadRate) {
-			const minRate = 5;
-			const maxRate = 80;
-
-			const rate = element.contentUpdateTimings.impliedWordLoadRate;
-			return clamp(rate, minRate, maxRate);
-		}
-
-		return 8;
 	}
 
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[] {
@@ -580,28 +559,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return true;
 		}
 
-		let isFullyRendered = false;
 		this.traceLayout('doNextProgressiveRender', `START progressive render, index=${index}, renderData=${JSON.stringify(element.renderData)}`);
 		const contentForThisTurn = this.getNextProgressiveRenderContent(element);
 		const partsToRender = this.diff(templateData.renderedParts ?? [], contentForThisTurn, element);
-		isFullyRendered = partsToRender.every(part => part === null);
 
-		if (isFullyRendered) {
-			if (element.isComplete) {
-				// Response is done and content is rendered, so do a normal render
-				this.traceLayout('doNextProgressiveRender', `END progressive render, index=${index} and clearing renderData, response is complete`);
-				element.renderData = undefined;
-				this.basicRenderElement(element, index, templateData);
-				return true;
-			}
-
-			// Nothing new to render, not done, keep waiting
-			this.traceLayout('doNextProgressiveRender', 'caught up with the stream- no new content to render');
-			return false;
-		}
-
-		// Do an actual progressive render
-		this.traceLayout('doNextProgressiveRender', `doing progressive render, ${partsToRender.length} parts to render`);
+		// Render all parts
 		this.renderChatContentDiff(partsToRender, contentForThisTurn, element, templateData);
 
 		const height = templateData.rowContainer.offsetHeight;
@@ -610,7 +572,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			this._onDidChangeItemHeight.fire({ element, height: templateData.rowContainer.offsetHeight });
 		}
 
-		return false;
+		// Always return true to indicate rendering is complete
+		return true;
 	}
 
 	private renderChatContentDiff(partsToRender: ReadonlyArray<IChatRendererContent | null>, contentForThisTurn: ReadonlyArray<IChatRendererContent>, element: IChatResponseViewModel, templateData: IChatListItemTemplate): void {
@@ -659,64 +622,31 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	 * Returns all content parts that should be rendered, and trimmed markdown content. We will diff this with the current rendered set.
 	 */
 	private getNextProgressiveRenderContent(element: IChatResponseViewModel): IChatRendererContent[] {
-		const data = this.getDataForProgressiveRender(element);
-
 		const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
 
-		this.traceLayout('getNextProgressiveRenderContent', `Want to render ${data.numWordsToRender} at ${data.rate} words/s, counting...`);
-		let numNeededWords = data.numWordsToRender;
 		const partsToRender: IChatRendererContent[] = [];
 		if (element.contentReferences.length) {
 			partsToRender.push({ kind: 'references', references: element.contentReferences });
 		}
 
-		for (let i = 0; i < renderableResponse.length; i++) {
-			const part = renderableResponse[i];
-			if (numNeededWords <= 0) {
-				break;
-			}
+		// Simply add all parts to render
+		partsToRender.push(...renderableResponse);
 
+		// Update the render data
+		const newRenderedWordCount = renderableResponse.reduce((count, part) => {
 			if (part.kind === 'markdownContent') {
-				const wordCountResult = getNWords(part.content.value, numNeededWords);
-				if (wordCountResult.isFullString) {
-					partsToRender.push(part);
-				} else {
-					partsToRender.push({ kind: 'markdownContent', content: new MarkdownString(wordCountResult.value, part.content) });
-				}
-
-				this.traceLayout('getNextProgressiveRenderContent', `  Chunk ${i}: Want to render ${numNeededWords} words and found ${wordCountResult.returnedWordCount} words. Total words in chunk: ${wordCountResult.totalWordCount}`);
-				numNeededWords -= wordCountResult.returnedWordCount;
-			} else {
-				partsToRender.push(part);
+				return count + part.content.value.split(/\s+/).length;
 			}
-		}
+			return count;
+		}, 0);
 
-		const lastWordCount = element.contentUpdateTimings?.lastWordCount ?? 0;
-		const newRenderedWordCount = data.numWordsToRender - numNeededWords;
-		const bufferWords = lastWordCount - newRenderedWordCount;
-		this.traceLayout('getNextProgressiveRenderContent', `Want to render ${data.numWordsToRender} words. Rendering ${newRenderedWordCount} words. Buffer: ${bufferWords} words`);
-		if (newRenderedWordCount > 0 && newRenderedWordCount !== element.renderData?.renderedWordCount) {
-			// Only update lastRenderTime when we actually render new content
-			element.renderData = { lastRenderTime: Date.now(), renderedWordCount: newRenderedWordCount, renderedParts: partsToRender };
-		}
+		element.renderData = {
+			lastRenderTime: Date.now(),
+			renderedWordCount: newRenderedWordCount,
+			renderedParts: partsToRender
+		};
 
 		return partsToRender;
-	}
-
-	private getDataForProgressiveRender(element: IChatResponseViewModel) {
-		const renderData = element.renderData ?? { lastRenderTime: 0, renderedWordCount: 0 };
-
-		const rate = this.getProgressiveRenderRate(element);
-		const numWordsToRender = renderData.lastRenderTime === 0 ?
-			1 :
-			renderData.renderedWordCount +
-			// Additional words to render beyond what's already rendered
-			Math.floor((Date.now() - renderData.lastRenderTime) / 1000 * rate);
-
-		return {
-			numWordsToRender,
-			rate
-		};
 	}
 
 	private diff(renderedParts: ReadonlyArray<IChatContentPart>, contentToRender: ReadonlyArray<IChatRendererContent>, element: ChatTreeItem): ReadonlyArray<IChatRendererContent | null> {
