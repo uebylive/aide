@@ -245,6 +245,8 @@ export async function provideInteractiveEditorResponse(
 			is_plan_generation: false,
 			is_plan_execution_until: null,
 			is_plan_append: false,
+			is_lsp_run: false,
+			is_plan_drop_from: null,
 		}
 	};
 	const messages = await sidecarClient.getInLineEditorResponse(context);
