@@ -1155,8 +1155,21 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
 		if (name === 'LSP') {
-			console.log("lspppppp ")
+			console.log('lspppppp');
 			isIncludeLSP = true;
+		}
+	}
+
+	let isPlanDropFrom = null;
+	for (const variable of variables) {
+		const variableName = variable.name;
+		const name = variableName.split(':')[0];
+		if (name === 'DROP_PLAN_STEP_FROM') {
+			const queryParts = query.split(' ');
+			if (queryParts.length === 2) {
+				isPlanDropFrom = parseInt(queryParts[1]);
+			}
+			// if we have execute until then we need to grab the number right after the range where we are at
 		}
 	}
 
@@ -1175,6 +1188,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		is_plan_execution_until: isPlanExecutionUntil,
 		is_plan_append: isPlanAppend,
 		is_lsp_run: isIncludeLSP,
+		is_plan_drop_from: isPlanDropFrom,
 	};
 }
 
@@ -1279,7 +1293,8 @@ async function convertVSCodeVariableToSidecar(
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: null,
 		is_plan_append: false,
-		is_lsp_run: false,
+		is_lsp_run: isIncludeLSP,
+		is_plan_drop_from: null,
 	};
 }
 
