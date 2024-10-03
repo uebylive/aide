@@ -13,11 +13,13 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
+import { AidePlanTimer } from '../utilities/planTimer';
 
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
 	response: vscode.AideAgentResponseStream,
+	_aidePlanTimer: AidePlanTimer,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {

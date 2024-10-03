@@ -67,6 +67,10 @@
       {
         "command": "codestory.stopRecordingContext",
         "title": "Stop Recording Context"
+      },
+      {
+        "command": "codestory.enableDeepReasoning",
+        "title": "deep reasoning"
       }
     ],
     "aideAgents": [

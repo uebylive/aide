@@ -19,6 +19,11 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
+import { Diagnostic } from 'vscode';
+import { GENERATE_PLAN } from '../completions/providers/generatePlan';
+import { AideProbeProvider } from '../completions/providers/probeProvider';
+import { AidePlanTimer } from '../utilities/planTimer';
 
 export enum CompletionStopReason {
 	/**
@@ -223,14 +228,19 @@ export class SideCarClient {
 		variables: readonly vscode.AideAgentPromptReference[],
 		projectLabels: string[],
 		editorUrl: string,
+		probeProvider: AideProbeProvider,
+		aidePlanTimer: AidePlanTimer,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
-		// console.log(sideCarModelConfiguration);
-		// console.log(JSON.stringify(sideCarModelConfiguration));
+		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+		// starts the plan timer at this point if we are at plan generation step
+		if (userContext.is_plan_generation) {
+			aidePlanTimer.startPlanTimer();
+		}
 		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
 		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const agentSystemInstruction = readCustomSystemInstruction();
