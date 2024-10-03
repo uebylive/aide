@@ -18,6 +18,7 @@ import { IndentStyleSpaces, IndentationHelper, provideInteractiveEditorResponse 
 import { AdjustedLineContent, AnswerSplitOnNewLineAccumulator, AnswerStreamContext, AnswerStreamLine, LineContent, LineIndentManager, StateEnum } from './reportEditorSessionAnswerStream';
 // import { registerTerminalSelection } from './terminalSelection';
 import { AideProbeProvider } from './probeProvider';
+import { AidePlanTimer } from '../../utilities/planTimer';
 
 class CSChatParticipant implements vscode.ChatRequesterInformation {
 	name: string;
@@ -78,6 +79,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 	private _currentRepoRef: RepoRef;
 	private _projectContext: ProjectContext;
 	private _probeProvider: AideProbeProvider;
+	private _aidePlanTimer: AidePlanTimer;
 
 	constructor(
 		workingDirectory: string,
@@ -88,6 +90,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		repoRef: RepoRef,
 		projectContext: ProjectContext,
 		probeProvider: AideProbeProvider,
+		aidePlanTimer: AidePlanTimer,
 	) {
 		this._workingDirectory = workingDirectory;
 		this._repoHash = repoHash;
@@ -97,6 +100,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._currentRepoRef = repoRef;
 		this._projectContext = projectContext;
 		this._probeProvider = probeProvider;
+		this._aidePlanTimer = aidePlanTimer;
 
 		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.isDefault = true;
@@ -161,7 +165,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				return new CSChatResponseForProgress();
 			} else {
 				const explainResponse = this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
-				await reportFromStreamToSearchProgress(explainResponse, response, token, this._workingDirectory);
+				await reportFromStreamToSearchProgress(explainResponse, response, this._aidePlanTimer, token, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
 		} else if (requestType === 'search') {
@@ -173,7 +177,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			);
 			const searchString = request.prompt.toString().slice('/search'.length).trim();
 			const searchResponse = this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
-			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
+			await reportFromStreamToSearchProgress(searchResponse, response, this._aidePlanTimer, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
 		} else {
@@ -185,8 +189,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				this._uniqueUserId,
 			);
 			const projectLabels = this._projectContext.labels;
-			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels, this._probeProvider);
-			await reportFromStreamToSearchProgress(followupResponse, response, token, this._workingDirectory);
+			const followupResponse = this._sideCarClient.followupQuestion(query, this._currentRepoRef, request.threadId, request.references, projectLabels, this._probeProvider, this._aidePlanTimer);
+			await reportFromStreamToSearchProgress(followupResponse, response, this._aidePlanTimer, token, this._workingDirectory);
 			return new CSChatResponseForProgress();
 		}
 	};
