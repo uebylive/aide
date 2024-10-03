@@ -30,6 +30,7 @@ import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { GENERATE_PLAN } from './completions/providers/generatePlan';
 import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
+import { AidePlanTimer } from './utilities/planTimer';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -242,11 +243,14 @@ export async function activate(context: ExtensionContext) {
 		}
 	});
 
+	// starts the aide timer
+	const aideTimer = new AidePlanTimer();
+	context.subscriptions.push(aideTimer.statusBar());
 	// Register the chat agent
 	const chatAgentProvider = new CSChatAgentProvider(
 		rootPath, repoName, repoHash,
 		uniqueUserId,
-		sidecarClient, currentRepo, projectContext, probeProvider
+		sidecarClient, currentRepo, projectContext, probeProvider, aideTimer
 	);
 	context.subscriptions.push(chatAgentProvider);
 
@@ -398,6 +402,26 @@ export async function activate(context: ExtensionContext) {
 		}
 	);
 	context.subscriptions.push(stopRecording);
+
+	// toggle deep reasoning
+	const deepReasoningBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+	deepReasoningBarItem.show();
+	deepReasoningBarItem.text = 'o1:false';
+	const deepReasoning = commands.registerCommand(
+		'codestory.enableDeepReasoning',
+		async () => {
+			const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+			const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
+			if (deepReasoning) {
+				await codestoryConfiguration.update('deepReasoning', false);
+				deepReasoningBarItem.text = 'o1:false';
+			} else {
+				await codestoryConfiguration.update('deepReasoning', true);
+				deepReasoningBarItem.text = 'o1:true';
+			}
+		}
+	);
+	context.subscriptions.push(deepReasoning);
 
 	// records when we change to a new text document
 	workspace.onDidChangeTextDocument(async (event) => {

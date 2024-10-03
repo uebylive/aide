@@ -23,6 +23,7 @@ import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEve
 import { Diagnostic } from 'vscode';
 import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 import { AideProbeProvider } from '../completions/providers/probeProvider';
+import { AidePlanTimer } from '../utilities/planTimer';
 
 export enum CompletionStopReason {
 	/**
@@ -227,14 +228,18 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		projectLabels: string[],
 		probeProvider: AideProbeProvider,
+		aidePlanTimer: AidePlanTimer,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
-		// console.log(sideCarModelConfiguration);
-		// console.log(JSON.stringify(sideCarModelConfiguration));
+		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+		// starts the plan timer at this point if we are at plan generation step
+		if (userContext.is_plan_generation) {
+			aidePlanTimer.startPlanTimer();
+		}
 		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
 		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const agentSystemInstruction = readCustomSystemInstruction();
