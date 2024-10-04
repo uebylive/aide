@@ -425,6 +425,7 @@ export type LSPDiagnostics = {
 export type LSPFileDiagnostics = {
 	fs_file_path: string;
 	editor_url: string;
+	with_suggestions: boolean;
 };
 
 export interface FindCodeSnippets {

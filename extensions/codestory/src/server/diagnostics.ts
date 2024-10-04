@@ -4,7 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarDiagnosticsResponse } from './types';
+import { SidecarDiagnosticsResponse, SidecarQuickFixResponse } from './types';
+import { quickFixList } from './quickFix';
+import { SidecarQuickFixRequest } from './types';
 
 interface DiagnosticFilter {
 	(diagnostic: vscode.Diagnostic): boolean;
@@ -12,38 +14,68 @@ interface DiagnosticFilter {
 
 export async function getFileDiagnosticsFromEditor(
 	filePath: string,
-	filters: DiagnosticFilter[] = []
-): Promise<SidecarDiagnosticsResponse[]> {
+	filters: DiagnosticFilter[] = [],
+	withSuggestions: boolean = false
+): Promise<EnhancedSidecarDiagnosticsResponse[]> {
 	const fileUri = vscode.Uri.file(filePath);
 	let diagnostics = vscode.languages.getDiagnostics(fileUri);
 
 	// Apply filters if provided
-	filters.forEach(filter => {
-		diagnostics = diagnostics.filter(filter);
-	});
+	diagnostics = filters.reduce((filtered, filter) => filtered.filter(filter), diagnostics);
 
-	const sidecarDiagnostics = await Promise.all(
+	const enhancedDiagnostics = await Promise.all(
 		diagnostics.map(async (diagnostic) => {
-			// attempt to get full message - could be null
-			const full_message = await getFullDiagnosticMessage(diagnostic);
-			return {
-				message: full_message ?? diagnostic.message, // message is full_message if exists
-				range: {
-					startPosition: {
-						line: diagnostic.range.start.line,
-						character: diagnostic.range.start.character,
-						byteOffset: 0,
-					},
-					endPosition: {
-						line: diagnostic.range.end.line,
-						character: diagnostic.range.end.character,
-						byteOffset: 0,
-					},
+			const fullMessage = await getFullDiagnosticMessage(diagnostic);
+			const range = {
+				startPosition: {
+					line: diagnostic.range.start.line,
+					character: diagnostic.range.start.character,
+					byteOffset: 0,
 				},
+				endPosition: {
+					line: diagnostic.range.end.line,
+					character: diagnostic.range.end.character,
+					byteOffset: 0,
+				},
+			};
+
+			let quick_fix_request: SidecarQuickFixRequest = {
+				fs_file_path: fileUri.fsPath,
+				editor_url: "editor url",
+				range,
+				request_id: "request_id",
+			};
+
+			const quickFixes = await quickFixList(quick_fix_request);
+			const suggestions = withSuggestions ? await getSuggestions(fileUri, diagnostic.range) : [];
+
+			return {
+				message: fullMessage ?? diagnostic.message,
+				range,
+				quickFixes,
+				suggestions,
 			};
 		})
 	);
-	return sidecarDiagnostics;
+
+	console.log({ enhancedDiagnostics });
+
+	return enhancedDiagnostics;
+}
+
+async function getSuggestions(fileUri: vscode.Uri, range: vscode.Range): Promise<vscode.CompletionItem[]> {
+	const suggestions = await vscode.commands.executeCommand<vscode.CompletionList>(
+		'vscode.executeCompletionItemProvider',
+		fileUri,
+		range.start
+	);
+	console.log({ suggestions })
+	return suggestions?.items ?? [];
+}
+
+interface EnhancedSidecarDiagnosticsResponse extends SidecarDiagnosticsResponse {
+	quickFixes: SidecarQuickFixResponse;
+	suggestions: vscode.CompletionItem[];
 }
 
 export async function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): Promise<SidecarDiagnosticsResponse[]> {
