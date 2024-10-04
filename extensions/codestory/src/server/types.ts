@@ -21,7 +21,7 @@ export type UserContext = {
 	is_plan_generation: boolean;
 	is_plan_execution_until: number | null;
 	is_plan_append: boolean;
-	is_lsp_run: boolean;
+	with_lsp_enrichment: boolean;
 	is_plan_drop_from: number | null;
 };
 
@@ -425,7 +425,7 @@ export type LSPDiagnostics = {
 export type LSPFileDiagnostics = {
 	fs_file_path: string;
 	editor_url: string;
-	with_suggestions: boolean;
+	with_enrichment: boolean;
 };
 
 export interface FindCodeSnippets {

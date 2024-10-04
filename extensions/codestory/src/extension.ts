@@ -291,20 +291,20 @@ export async function activate(context: ExtensionContext) {
 		vscode.ThemeIcon.Folder,
 	));
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
-		'LSP',
-		'LSP',
-		'Generates step using #LSP diagnostics',
-		'Generates step using #LSP diagnostics',
+		'enrichLSP',
+		'enrichLSP',
+		'Generates step using #enrichLSP diagnostics',
+		'Generates step using #enrichLSP diagnostics',
 		false,
 		{
 			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
 				return [{
 					level: vscode.ChatVariableLevel.Full,
-					value: 'lsp',
+					value: 'enrichLSP',
 				}];
 			}
 		},
-		'Generates steps using LSP diagnostics',
+		'Generates steps using enriched LSP diagnostics',
 		vscode.ThemeIcon.Folder,
 	));
 	context.subscriptions.push(vscode.aideChat.registerChatVariableResolver(
