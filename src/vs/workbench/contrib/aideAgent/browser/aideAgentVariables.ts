@@ -114,7 +114,6 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 					const model = activeEditor.getModel();
 					if (model) {
 						const selection = activeEditor.getSelection();
-
 						let range: IRange;
 						if (selection && !selection.isEmpty()) {
 							range = {
@@ -128,9 +127,9 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 						}
 
 						resolvedAttachedContext.push({
-							id: 'selection',
-							name: 'file',
-							value: JSON.stringify({ uri: model.uri, range })
+							id: 'vscode.file',
+							name: basename(model.uri.fsPath),
+							value: { uri: model.uri, range },
 						});
 					}
 				}
@@ -140,19 +139,10 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 					const model = this.modelService.getModel(context);
 					if (model) {
 						const range = model.getFullModelRange();
-						const valueObj = {
-							uri: context,
-							range: {
-								startLineNumber: range.startLineNumber,
-								startColumn: range.startColumn,
-								endLineNumber: range.endLineNumber,
-								endColumn: range.endColumn,
-							}
-						};
 						resolvedAttachedContext.push({
-							id: 'selection',
-							name: 'file',
-							value: JSON.stringify(valueObj)
+							id: 'vscode.file',
+							name: basename(model.uri.fsPath),
+							value: { uri: model.uri, range }
 						});
 					}
 				});
@@ -164,19 +154,10 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 						const model = this.modelService.getModel(resource);
 						if (model) {
 							const range = model.getFullModelRange();
-							const valueObj = {
-								uri: resource,
-								range: {
-									startLineNumber: range.startLineNumber,
-									startColumn: range.startColumn,
-									endLineNumber: range.endLineNumber,
-									endColumn: range.endColumn,
-								}
-							};
 							resolvedAttachedContext.push({
-								id: 'selection',
-								name: 'file',
-								value: JSON.stringify(valueObj),
+								id: 'vscode.file',
+								name: basename(model.uri.fsPath),
+								value: { uri: model.uri, range }
 							});
 						}
 					}

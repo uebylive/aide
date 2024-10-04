@@ -8,6 +8,7 @@ import { Iterable } from '../../../../base/common/iterator.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { EditOperation, ISingleEditOperation } from '../../../../editor/common/core/editOperation.js';
 import { LineRange } from '../../../../editor/common/core/lineRange.js';
+import { Position } from '../../../../editor/common/core/position.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { IDocumentDiff } from '../../../../editor/common/diff/documentDiffProvider.js';
 import { DetailedLineRangeMapping, RangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
@@ -16,11 +17,18 @@ import { ModelDecorationOptions } from '../../../../editor/common/model/textMode
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelContentChangedEvent } from '../../../../editor/common/textModelEvents.js';
 
-const enum HunkState {
+export const enum HunkState {
 	Pending = 0,
 	Accepted = 1,
 	Rejected = 2
 }
+
+export type HunkDisplayData = {
+	decorationIds: string[];
+	hunk: HunkInformation;
+	position: Position;
+	remove(): void;
+};
 
 class RawHunk {
 	constructor(
@@ -42,7 +50,7 @@ type RawHunkData = {
 	editState: IChatTextEditGroupState;
 };
 
-interface HunkInformation {
+export interface HunkInformation {
 	/**
 	 * The first element [0] is the whole modified range and subsequent elements are word-level changes
 	 */

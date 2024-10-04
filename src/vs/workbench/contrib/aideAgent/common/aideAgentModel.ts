@@ -4,12 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { asArray } from '../../../../base/common/arrays.js';
-import { DeferredPromise, Queue } from '../../../../base/common/async.js';
+import { DeferredPromise } from '../../../../base/common/async.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IMarkdownString, MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { revive } from '../../../../base/common/marshalling.js';
-import { Schemas } from '../../../../base/common/network.js';
 import { equals } from '../../../../base/common/objects.js';
 import { basename, isEqual } from '../../../../base/common/resources.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
@@ -20,15 +19,11 @@ import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offset
 import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
-import { createTextBufferFactoryFromSnapshot } from '../../../../editor/common/model/textModel.js';
-import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
-import { IModelService } from '../../../../editor/common/services/model.js';
-import { DefaultModelSHA1Computer } from '../../../../editor/common/services/modelService.js';
-import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
+import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
@@ -132,7 +127,6 @@ export interface IChatResponseModel {
 	readonly agent?: IChatAgentData;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
-	readonly codeEdits: ReadonlyMap<string, IAideAgentEdits | undefined>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
@@ -432,11 +426,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
-	private progressiveEditsQueue = this._register(new Queue());
-	private readonly _codeEdits: Map<string, IAideAgentEdits> = new Map();
-	public get codeEdits(): ReadonlyMap<string, IAideAgentEdits | undefined> {
-		return this._codeEdits;
-	}
+	private _editingSession: IAideAgentCodeEditingSession | undefined;
 
 	private readonly _codeCitations: IChatCodeCitation[] = [];
 	public get codeCitations(): ReadonlyArray<IChatCodeCitation> {
@@ -454,9 +444,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	constructor(
-		@IModelService private readonly _modelService: IModelService,
-		@ITextModelService private readonly _textModelService: ITextModelService,
-		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
+		@IAideAgentCodeEditingService private readonly _aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>,
 		private _session: ChatModel,
 		private _agent: IChatAgentData | undefined,
@@ -500,68 +488,19 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		for (const workspaceEdit of codeEdit.edits.edits) {
-			if (isWorkspaceTextEdit(workspaceEdit)) {
-				await this.progressiveEditsQueue.queue(async () => {
-					await this.processWorkspaceEdit(workspaceEdit);
+		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id);
+		for (const edit of codeEdit.edits.edits) {
+			if (isWorkspaceTextEdit(edit)) {
+				this._editingSession.apply(edit);
+				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
+				// in a special manner for edits.
+				const resource = edit.resource;
+				this.applyReference({
+					kind: 'reference',
+					reference: resource
 				});
 			}
 		}
-	}
-
-	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit) {
-		const resource = workspaceEdit.resource;
-		const mapKey = resource.toString();
-
-		let codeEdits: IAideAgentEdits;
-		let firstEdit = false;
-		if (this._codeEdits.has(mapKey)) {
-			codeEdits = this._codeEdits.get(mapKey)!;
-		} else {
-			firstEdit = true;
-			let textModel = this._modelService.getModel(resource);
-			if (!textModel) {
-				const ref = await this._textModelService.createModelReference(resource);
-				textModel = ref.object.textEditorModel;
-				ref.dispose();
-			}
-			const textModelN = textModel;
-
-			const id = generateUuid();
-			const textModel0 = this._register(this._modelService.createModel(
-				createTextBufferFactoryFromSnapshot(textModel.createSnapshot()),
-				{ languageId: textModel.getLanguageId(), onDidChange: Event.None },
-				resource.with({ scheme: Schemas.vscode, authority: 'aide-agent-edits', path: '', query: new URLSearchParams({ id, 'textModel0': '' }).toString() }), true
-			));
-
-			codeEdits = {
-				targetUri: resource.toString(),
-				textModel0,
-				textModelN,
-				hunkData: this._register(new HunkData(this._editorWorkerService, textModel0, textModelN)),
-			};
-			this._codeEdits.set(mapKey, codeEdits);
-		}
-
-		if (firstEdit) {
-			codeEdits.textModelN.pushStackElement();
-		}
-
-		codeEdits.hunkData.ignoreTextModelNChanges = true;
-		codeEdits.textModelN.pushEditOperations(null, [workspaceEdit.textEdit], () => null);
-		const { editState, diff } = await this.calculateDiff(codeEdits.textModel0, codeEdits.textModelN);
-		await codeEdits.hunkData.recompute(editState, diff);
-		codeEdits.hunkData.ignoreTextModelNChanges = false;
-	}
-
-	private async calculateDiff(textModel0: ITextModel, textModelN: ITextModel) {
-		const sha1 = new DefaultModelSHA1Computer();
-		const textModel0Sha1 = sha1.canComputeSHA1(textModel0)
-			? sha1.computeSHA1(textModel0)
-			: generateUuid();
-		const editState: IChatTextEditGroupState = { sha1: textModel0Sha1, applied: 0 };
-		const diff = await this._editorWorkerService.computeDiff(textModel0.uri, textModelN.uri, { computeMoves: true, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, ignoreTrimWhitespace: false }, 'advanced');
-		return { editState, diff };
 	}
 
 	applyCodeCitation(progress: IChatCodeCitation) {
@@ -587,10 +526,23 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			this._response.clear();
 		}
 
-		const editedModels = new Set(Array.from(this._codeEdits.values()).map(edit => edit.textModelN));
-		for (const model of editedModels) {
-			model.pushStackElement();
-		}
+		this._editingSession?.complete();
+		this.updateContent({
+			'kind': 'command',
+			command: {
+				id: 'aideAgent.acceptAll',
+				title: localize('acceptEdits', "Accept all"),
+				arguments: [this.id]
+			}
+		});
+		this.updateContent({
+			'kind': 'command',
+			command: {
+				id: 'aideAgent.rejectAll',
+				title: localize('rejectEdits', "Reject all"),
+				arguments: [this.id]
+			}
+		});
 
 		this._isComplete = true;
 		this._onDidChange.fire();
@@ -968,10 +920,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		readonly isPassthrough: boolean,
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
-		@IEditorWorkerService private readonly editorWorkerService: IEditorWorkerService,
+		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IModelService private readonly modelService: IModelService,
-		@ITextModelService private readonly textModelService: ITextModelService,
 	) {
 		super();
 
@@ -1018,7 +968,7 @@ export class ChatModel extends Disposable implements IChatModel {
 						{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
 					// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
 					const response = new ChatResponseModel(
-						this.modelService, this.textModelService, this.editorWorkerService,
+						this.aideAgentCodeEditingService,
 						raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups
 					);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
@@ -1118,7 +1068,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
 		const response = new ChatResponseModel(
-			this.modelService, this.textModelService, this.editorWorkerService,
+			this.aideAgentCodeEditingService,
 			[], this, chatAgent, slashCommand
 		);
 
@@ -1130,7 +1080,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	addResponse(): ChatResponseModel {
 		const response = new ChatResponseModel(
-			this.modelService, this.textModelService, this.editorWorkerService,
+			this.aideAgentCodeEditingService,
 			[], this, undefined, undefined
 		);
 		this._exchanges.push(response);
@@ -1161,7 +1111,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		// TODO(@ghostwriternr): This will break, because this node is not added to the exchanges.
 		if (!response) {
 			response = new ChatResponseModel(
-				this.modelService, this.textModelService, this.editorWorkerService,
+				this.aideAgentCodeEditingService,
 				[], this, undefined, undefined
 			);
 		}

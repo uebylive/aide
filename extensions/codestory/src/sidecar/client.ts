@@ -963,7 +963,7 @@ export class SideCarClient {
 			user_query: query,
 			editor_url: editorUrl,
 			request_id: threadId,
-			user_context: await convertVSCodeVariableToSidecar(variables),
+			user_context: await newConvertVSCodeVariableToSidecar(variables),
 			active_window_data: activeWindowDataForProbing,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: codebaseSearch,

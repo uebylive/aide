@@ -248,8 +248,31 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
 			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
 			const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
-			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
+			let testEdit = new vscode.WorkspaceEdit();
+			testEdit.replace(
+				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
+				new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 20)),
+				'yoo waddup'
+			);
+			responseStream.codeEdit(testEdit);
+			await new Promise(c => setTimeout(c, 1000));
+			testEdit = new vscode.WorkspaceEdit();
+			testEdit.replace(
+				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
+				new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 0)),
+				'yoo waddup'
+			);
+			responseStream.codeEdit(testEdit);
+			await new Promise(c => setTimeout(c, 1000));
+			testEdit = new vscode.WorkspaceEdit();
+			testEdit.replace(
+				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
+				new vscode.Range(new vscode.Position(2, 0), new vscode.Position(2, 14)),
+				'yoo waddup'
+			);
+			responseStream.codeEdit(testEdit);
+			// const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
+			// await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		}
 		responseStream.close();
 	}

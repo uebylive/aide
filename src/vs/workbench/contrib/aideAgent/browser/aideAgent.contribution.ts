@@ -21,6 +21,7 @@ import { EditorExtensions, IEditorFactoryRegistry } from '../../../common/editor
 import { IEditorResolverService, RegisteredEditorPriority } from '../../../services/editor/common/editorResolverService.js';
 import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
 import { ChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideAgentAgentNameService, IAideAgentAgentService } from '../common/aideAgentAgents.js';
+import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
 import { CodeMapperService, IAideAgentCodeMapperService } from '../common/aideAgentCodeMapperService.js';
 import '../common/aideAgentColors.js';
 import { IAideAgentEditingService } from '../common/aideAgentEditingService.js';
@@ -38,6 +39,7 @@ import { ChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
 import { registerChatActions } from './actions/aideAgentActions.js';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from './actions/aideAgentClearActions.js';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from './actions/aideAgentCodeblockActions.js';
+import { registerCodeEditActions } from './actions/aideAgentCodeEditActions.js';
 import { registerChatContextActions } from './actions/aideAgentContextActions.js';
 import { registerChatCopyActions } from './actions/aideAgentCopyActions.js';
 import { registerChatDeveloperActions } from './actions/aideAgentDeveloperActions.js';
@@ -47,6 +49,7 @@ import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloat
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
+import { AideAgentCodeEditingService } from './aideAgentCodeEditingService.js';
 import { ChatEditingService } from './aideAgentEditingService.js';
 import { ChatEditor, IChatEditorOptions } from './aideAgentEditor.js';
 import { ChatEditorInput, ChatEditorInputSerializer } from './aideAgentEditorInput.js';
@@ -275,6 +278,7 @@ registerNewChatActions();
 registerChatContextActions();
 registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
+registerCodeEditActions();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
@@ -291,3 +295,4 @@ registerSingleton(IAideAgentCodeBlockContextProviderService, AideAgentCodeBlockC
 registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationType.Delayed);
 registerSingleton(IAideAgentEditingService, ChatEditingService, InstantiationType.Delayed);
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
+registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
