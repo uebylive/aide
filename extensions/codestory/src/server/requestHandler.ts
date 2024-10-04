@@ -64,7 +64,15 @@ export function handleRequest(
 				console.log({ diagnosticsFromEditor });
 =======
 				if (with_enrichment) {
+					const startTime = performance.now();
+
+					console.log('Starting enrichment...');
 					file_diagnostics = await getEnrichedDiagnostics(fs_file_path);
+
+					const endTime = performance.now();
+					const elapsedTime = endTime - startTime;
+
+					console.log(`Enrichment completed in ${elapsedTime.toFixed(2)} milliseconds`);
 				}
 >>>>>>> 605828a968c ([ide] fix syntax)
 
