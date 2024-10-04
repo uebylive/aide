@@ -1041,7 +1041,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
-	const resolveFileReference = async (variableName: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
+	const resolveFileReference = async (variableName: string, variableId: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
 		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
 		const filePath = vscode.Uri.parse(parsedJson.uri.path);
 		const cachedFile = fileCache.get(filePath.fsPath);
@@ -1062,6 +1062,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		};
 		const variableType = getVariableType(
 			variableName,
+			variableId,
 			startRange,
 			endRange,
 			fileDocument,
@@ -1088,6 +1089,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const value = variable.value;
+		const variableId = variable.id;
 		const name = variableName.split(':')[0];
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
@@ -1116,7 +1118,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 			// 	sidecarVariables.push(...openFileVariables);
 			// 	// await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
-			await resolveFileReference(name, value);
+			await resolveFileReference(name, variableId, value);
 		} else if (name === 'folder') {
 			const folderPath = value as vscode.Uri;
 			folders.push(folderPath.fsPath);
@@ -1204,7 +1206,7 @@ async function convertVSCodeVariableToSidecar(
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
-	const resolveFileReference = async (variableName: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
+	const resolveFileReference = async (variableName: string, variableId: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
 		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
 		const filePath = vscode.Uri.parse(parsedJson.uri.path);
 		const cachedFile = fileCache.get(filePath.fsPath);
@@ -1225,6 +1227,7 @@ async function convertVSCodeVariableToSidecar(
 		};
 		const variableType = getVariableType(
 			variableName,
+			variableId,
 			startRange,
 			endRange,
 			fileDocument,
@@ -1250,15 +1253,16 @@ async function convertVSCodeVariableToSidecar(
 	const folders: string[] = [];
 	for (const variable of variables) {
 		const variableName = variable.name;
+		const variableId = variable.id;
 		const value = variable.value;
 		const name = variableName.split(':')[0];
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
 			// } else if (name === OPEN_FILES_VARIABLE) {
-			// 	await resolveFileReference('file', value);
+			// 	await resolveFileReference('file', variableId, value);
 		} else if (name === 'file' || name === 'code') {
-			await resolveFileReference(name, value);
+			await resolveFileReference(name, variableId, value);
 		} else if (name === 'folder') {
 			const folderPath = value as vscode.Uri;
 			folders.push(folderPath.fsPath);
@@ -1362,11 +1366,14 @@ async function newConvertVSCodeVariableToSidecar(
 
 function getVariableType(
 	name: string,
+	variableId: string,
 	startPosition: Position,
 	endPosition: Position,
 	textDocument: vscode.TextDocument,
 ): SidecarVariableType | null {
 	if (name === 'currentFile') {
+		return 'File';
+	} else if (variableId === 'vscode.file') {
 		return 'File';
 	} else if (name.startsWith('file')) {
 		// here we have to check if the range is the full file or just a partial
