@@ -17,6 +17,7 @@ import { inlayHints } from './inlayHints';
 import { getOutlineNodes, getOutlineNodesFromContent } from './outlineNodes';
 import { createFileResponse } from './createFile';
 import { getPreviousWordAtPosition } from './previousWordCommand';
+import { goToTypeDefinition } from './goToTypeDefinition';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -208,6 +209,13 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarGetPreviousWordRangeRequest = JSON.parse(body);
 				const response = await getPreviousWordAtPosition(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/go_to_type_definition') {
+				console.log('go_to_type_definition');
+				const body = await readRequestBody(req);
+				const request: SidecarGoToDefinitionRequest = JSON.parse(body);
+				const response = await goToTypeDefinition(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else {
