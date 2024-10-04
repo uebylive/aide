@@ -52,6 +52,9 @@ export function handleRequest(
 				console.log("getting file_diagnostics");
 				const diagnosticsBody: LSPFileDiagnostics = JSON.parse(body);
 				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path, undefined, diagnosticsBody.with_suggestions);
+
+				console.log({ diagnosticsFromEditor })
+
 				const response = {
 					'diagnostics': diagnosticsFromEditor,
 				};
