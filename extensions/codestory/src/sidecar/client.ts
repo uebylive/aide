@@ -242,11 +242,14 @@ export class SideCarClient {
 		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
 		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 		const agentSystemInstruction = readCustomSystemInstruction();
+
+		const user_context = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
 			query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			user_context,
 			project_labels: projectLabels,
 			active_window_data: activeWindowData,
 			model_config: sideCarModelConfiguration,
@@ -254,6 +257,7 @@ export class SideCarClient {
 			system_instruction: agentSystemInstruction,
 			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
+			with_lsp_enrichment: user_context.with_lsp_enrichment,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1156,13 +1160,13 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		}
 	}
 
-	let isIncludeLSP = false;
+	let enrichLSP = false;
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
-		if (name === 'LSP') {
-			console.log('lspppppp');
-			isIncludeLSP = true;
+		if (name === 'enrichLSP') {
+			console.log('LSP will be enriched');
+			enrichLSP = true;
 		}
 	}
 
@@ -1193,7 +1197,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
 		is_plan_append: isPlanAppend,
-		is_lsp_run: isIncludeLSP,
+		with_lsp_enrichment: enrichLSP,
 		is_plan_drop_from: isPlanDropFrom,
 	};
 }
@@ -1301,7 +1305,7 @@ async function convertVSCodeVariableToSidecar(
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: null,
 		is_plan_append: false,
-		is_lsp_run: isIncludeLSP,
+		with_lsp_enrichment: isIncludeLSP,
 		is_plan_drop_from: null,
 	};
 }

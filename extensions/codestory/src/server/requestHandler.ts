@@ -50,12 +50,23 @@ export function handleRequest(
 		try {
 			if (req.method === 'POST' && req.url === '/file_diagnostics') {
 				const body = await readRequestBody(req);
+<<<<<<< HEAD
 				console.log('getting file_diagnostics');
 				const diagnosticsBody: LSPFileDiagnostics = JSON.parse(body);
+=======
+				console.log("getting file_diagnostics");
+				const { fs_file_path, with_enrichment }: LSPFileDiagnostics = JSON.parse(body);
+>>>>>>> 605828a968c ([ide] fix syntax)
 
 				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path, true);
 
+<<<<<<< HEAD
 				console.log({ diagnosticsFromEditor });
+=======
+				if (with_enrichment) {
+					file_diagnostics = await getEnrichedDiagnostics(fs_file_path);
+				}
+>>>>>>> 605828a968c ([ide] fix syntax)
 
 				const response = {
 					'diagnostics': diagnosticsFromEditor,
