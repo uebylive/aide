@@ -519,6 +519,16 @@ export type SidecarCreateFilResponse = {
 	success: boolean;
 };
 
+export type SidecarGetPreviousWordRangeRequest = {
+	fs_file_path: string;
+	current_position: SidecarRequestPosition;
+};
+
+export type SidecarGetPreviousWordRangeResponse = {
+	fs_file_path: string;
+	range: SidecarRequestRange | null;
+};
+
 export type SidecarCreateFileRequest = {
 	fs_file_path: string;
 };

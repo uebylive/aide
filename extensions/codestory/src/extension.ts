@@ -31,6 +31,7 @@ import { RecentEditsRetriever } from './server/editedFiles';
 import { GENERATE_PLAN } from './completions/providers/generatePlan';
 import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 import { AidePlanTimer } from './utilities/planTimer';
+import { getPreviousWordRange } from './utilities/previousWordInText';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 

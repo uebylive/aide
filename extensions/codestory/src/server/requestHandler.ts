@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor, getFileDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -16,6 +16,7 @@ import { goToReferences } from './goToReferences';
 import { inlayHints } from './inlayHints';
 import { getOutlineNodes, getOutlineNodesFromContent } from './outlineNodes';
 import { createFileResponse } from './createFile';
+import { getPreviousWordAtPosition } from './previousWordCommand';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -177,6 +178,13 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarCreateFileRequest = JSON.parse(body);
 				const response = await createFileResponse(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/previous_word_at_position') {
+				console.log('previous_word_at_position');
+				const body = await readRequestBody(req);
+				const request: SidecarGetPreviousWordRangeRequest = JSON.parse(body);
+				const response = await getPreviousWordAtPosition(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else {
