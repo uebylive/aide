@@ -220,7 +220,7 @@ export class SideCarClient {
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: readonly vscode.ChatPromptReference[],
+		variables: readonly vscode.AideAgentPromptReference[],
 		projectLabels: string[],
 		editorUrl: string,
 	): AsyncIterableIterator<ConversationMessage> {
@@ -1290,6 +1290,60 @@ async function convertVSCodeVariableToSidecar(
 		is_plan_execution_until: null,
 		is_plan_append: false,
 		is_lsp_run: isIncludeLSP,
+		is_plan_drop_from: null,
+	};
+}
+
+async function newConvertVSCodeVariableToSidecar(
+	variables: readonly vscode.AideAgentPromptReference[],
+): Promise<UserContext> {
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+
+	async function resolveFile(uri: vscode.Uri) {
+		const cachedFile = fileCache.get(uri.fsPath);
+		if (cachedFile === undefined) {
+			const fileDocument = await vscode.workspace.openTextDocument(uri);
+			fileCache.set(uri.fsPath, fileDocument);
+		}
+		return fileCache.get(uri.fsPath) as vscode.TextDocument;
+	}
+
+	for (const variable of variables) {
+		if (variable.id === 'vscode.file') {
+			const v = variable as vscode.AideAgentFileReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			sidecarVariables.push({
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type: 'File',
+				content: attachedFile.getText(),
+				language: attachedFile.languageId,
+			});
+		}
+	}
+
+	return {
+		variables: sidecarVariables,
+		file_content_map: [],
+		terminal_selection: undefined,
+		folder_paths: [],
+		is_plan_generation: false,
+		is_plan_execution_until: null,
+		is_plan_append: false,
+		is_lsp_run: false,
 		is_plan_drop_from: null,
 	};
 }

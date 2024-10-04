@@ -2918,14 +2918,51 @@ export namespace AideAgentScope {
 	}
 }
 
+export namespace AideAgentPromptReference {
+	export function to(variable: IChatRequestVariableEntry): vscode.AideAgentPromptReference {
+		const value = variable.value;
+		if (!value) {
+			throw new Error('Invalid value reference');
+		}
+
+		switch (variable.id) {
+			case 'vscode.file': {
+				const valueObj = value as { uri: UriComponents; range: editorRange.IRange };
+				return {
+					id: 'vscode.file',
+					name: variable.name,
+					range: variable.range && [variable.range.start, variable.range.endExclusive],
+					value: {
+						uri: URI.revive(valueObj.uri),
+						range: Range.to(valueObj.range)
+					},
+					modelDescription: variable.modelDescription
+				};
+			}
+			default:
+				return {
+					id: variable.id,
+					name: variable.name,
+					range: variable.range && [variable.range.start, variable.range.endExclusive],
+					value: isUriComponents(value) ? URI.revive(value) :
+						value && typeof value === 'object' && 'uri' in value && 'range' in value && isUriComponents(value.uri) ?
+							Location.to(revive(value)) : value,
+					modelDescription: variable.modelDescription
+				};
+		}
+	}
+}
+
 export namespace AideAgentRequest {
 	export function to(request: IAideAgentRequest, location2: vscode.ChatRequestEditorData | vscode.ChatRequestNotebookData | undefined): vscode.AideAgentRequest {
 		const chatAgentRequest = ChatAgentRequest.to(request, location2);
+		const variableReferences = request.variables.variables.filter(v => !v.isTool);
 		return {
 			...chatAgentRequest,
 			id: request.requestId,
 			mode: AideAgentMode.to(request.mode),
 			scope: AideAgentScope.to(request.scope),
+			references: variableReferences.map(AideAgentPromptReference.to)
 		};
 	}
 }

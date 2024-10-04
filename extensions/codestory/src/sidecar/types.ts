@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ModelProviderConfiguration, ModelSelection, ProviderSpecificConfiguration } from 'vscode';
-import { UserContext } from '../server/types';
+import { SidecarResponsePosition, UserContext } from '../server/types';
 
 
 export type OptionString =
@@ -359,8 +359,8 @@ export type SidecarVariableType =
 
 export interface SidecarVariableTypes {
 	name: string;
-	start_position: Position;
-	end_position: Position;
+	start_position: SidecarResponsePosition;
+	end_position: SidecarResponsePosition;
 	fs_file_path: string;
 	type: SidecarVariableType;
 	content: string;

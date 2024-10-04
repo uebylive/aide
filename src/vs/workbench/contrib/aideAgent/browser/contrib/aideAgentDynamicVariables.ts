@@ -24,7 +24,7 @@ export const FileReferenceCompletionProviderName = 'chatInplaceFileReferenceComp
 export const CodeSymbolCompletionProviderName = 'chatInplaceCodeCompletionProvider';
 
 export class ChatDynamicVariableModel extends Disposable implements IChatWidgetContrib {
-	public static readonly ID = 'chatDynamicVariableModel';
+	public static readonly ID = 'aideAgentDynamicVariableModel';
 
 	private _variables: IDynamicVariable[] = [];
 	get variables(): ReadonlyArray<IDynamicVariable> {

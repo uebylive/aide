@@ -16,6 +16,7 @@ import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/cor
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionTriggerKind } from '../../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { IModelService } from '../../../../../editor/common/services/model.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
@@ -347,6 +348,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IModelService private readonly modelService: IModelService,
 	) {
 		super();
 		this.cacheScheduler = this._register(new RunOnceScheduler(() => {
@@ -481,6 +483,12 @@ class BuiltinDynamicCompletions extends Disposable {
 		const makeFileCompletionItem = (resource: URI): CompletionItem => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
 			const insertText = `${chatVariableLeader}${basename}`;
+			let model = this.modelService.getModel(resource);
+			if (!model) {
+				model = this.modelService.createModel('', null, resource, false);
+				this._register(model);
+			}
+			const range = model.getFullModelRange();
 
 			return {
 				label: { label: basename, description: this.labelService.getUriLabel(resource, { relative: true }) },
@@ -493,7 +501,10 @@ class BuiltinDynamicCompletions extends Disposable {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
 						id: 'vscode.file',
 						range: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length },
-						data: resource
+						data: {
+							uri: resource,
+							range
+						}
 					})]
 				}
 			};
