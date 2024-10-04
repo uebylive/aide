@@ -951,7 +951,13 @@ export type SidecarApplyEditsResponse = {
 export type SidecarDiagnosticsResponse = {
 	message: string;
 	range: SidecarResponseRange;
+	quick_fix_labels?: string[];
+	parameter_hints?: string[];
 };
+
+export type SidecarParameterHints = {
+	signature_labels: string[];
+}
 
 export interface SidecarOpenFileContextEvent {
 	fs_file_path: string;

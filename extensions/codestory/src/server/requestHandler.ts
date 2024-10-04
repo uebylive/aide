@@ -5,7 +5,7 @@
 import * as http from 'http';
 import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics } from './types';
 import { Position, Range } from 'vscode';
-import { getDiagnosticsFromEditor, getFileDiagnosticsFromEditor } from './diagnostics';
+import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
@@ -50,14 +50,16 @@ export function handleRequest(
 			if (req.method === 'POST' && req.url === '/file_diagnostics') {
 				const body = await readRequestBody(req);
 				console.log("getting file_diagnostics");
-				const diagnosticsBody: LSPFileDiagnostics = JSON.parse(body);
+				const { fs_file_path, with_suggestions }: LSPFileDiagnostics = JSON.parse(body);
 
-				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path, true);
+				let file_diagnostics = getFileDiagnosticsFromEditor(fs_file_path);
 
-				console.log({ diagnosticsFromEditor })
+				if (with_suggestions) {
+					file_diagnostics = await getEnrichedDiagnostics(fs_file_path);
+				}
 
 				const response = {
-					'diagnostics': diagnosticsFromEditor,
+					'diagnostics': file_diagnostics,
 				};
 
 				res.writeHead(200, { 'Content-Type': 'application/json' });
