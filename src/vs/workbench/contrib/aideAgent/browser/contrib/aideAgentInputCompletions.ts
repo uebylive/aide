@@ -396,8 +396,8 @@ class BuiltinDynamicCompletions extends Disposable {
 					this.addStaticFileEntry(widget, range, result);
 					this.addStaticCodeEntry(widget, range, result);
 				} else if (currentCompletionContext === 'default') {
-					await this.addFileEntries(pattern, widget, result, range, token);
-					await this.addCodeEntries(pattern, widget, result, range, token);
+					// run both the file entries and the code entries in parallel
+					await Promise.all([this.addFileEntries(pattern, widget, result, range, token), this.addCodeEntries(pattern, widget, result, range, token)]);
 				} else if (currentCompletionContext === 'files') {
 					await this.addFileEntries(pattern, widget, result, range, token);
 				} else if (currentCompletionContext === 'code') {
