@@ -4,31 +4,17 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarDiagnosticsResponse, SidecarQuickFixRequest, SidecarQuickFixResponse } from './types';
+import { SidecarDiagnosticsResponse, SidecarParameterHints } from './types';
 import { quickFixList } from './quickFix';
 
-interface DiagnosticFilter {
-	(diagnostic: vscode.Diagnostic): boolean
-}
-
-export async function getFileDiagnosticsFromEditor(
-	filePath: string,
-	filters: DiagnosticFilter[] = [],
-	withSuggestions: boolean = false
-): Promise<EnhancedSidecarDiagnosticsResponse[]> {
+export function getFileDiagnosticsFromEditor(
+	filePath: string
+): SidecarDiagnosticsResponse[] {
 	const fileUri = vscode.Uri.file(filePath);
-	let diagnostics = vscode.languages.getDiagnostics(fileUri);
-
-	// Apply filters if provided
-	diagnostics = filters.reduce((filtered, filter) => filtered.filter(filter), diagnostics);
-
-	const enhancedDiagnostics = await Promise.all(
-		diagnostics.map(async (diagnostic) => {
-			const [fullMessage, enhancements] = await Promise.all([
-				getFullDiagnosticMessage(diagnostic),
-				getEnhancements(fileUri, diagnostic, withSuggestions)
-			]);
-			const range = {
+	const diagnostics = vscode.languages.getDiagnostics(fileUri).map((diagnostic) => {
+		return {
+			message: diagnostic.message, // message is full_message if exists
+			range: {
 				startPosition: {
 					line: diagnostic.range.start.line,
 					character: diagnostic.range.start.character,
@@ -39,85 +25,99 @@ export async function getFileDiagnosticsFromEditor(
 					character: diagnostic.range.end.character,
 					byteOffset: 0,
 				},
-			};
-
-			return {
-				message: fullMessage ?? diagnostic.message,
-				range,
-				...enhancements,
-			};
-		})
-	);
-
-	return enhancedDiagnostics;
-}
-
-async function getEnhancements(
-	fileUri: vscode.Uri,
-	diagnostic: vscode.Diagnostic,
-	withSuggestions: boolean
-): Promise<{
-	quickFixes: SidecarQuickFixResponse | null;
-	suggestions: vscode.CompletionItem[];
-	parameter_hints: vscode.SignatureInformation[];
-}> {
-	if (!withSuggestions) {
-		return {
-			quickFixes: null,
-			suggestions: [],
-			parameter_hints: [],
+			},
 		};
-	}
-	const range = {
-		startPosition: {
-			line: diagnostic.range.start.line,
-			character: diagnostic.range.start.character,
-			byteOffset: 0,
-		},
-		endPosition: {
-			line: diagnostic.range.end.line,
-			character: diagnostic.range.end.character,
-			byteOffset: 0,
-		},
-	};
-	const quick_fix_request: SidecarQuickFixRequest = {
-		fs_file_path: fileUri.fsPath,
-		editor_url: 'editor url', // TODO: Implement proper editor URL
-		range,
-		request_id: 'request_id', // TODO: Implement proper request ID generation
-	};
-	const [quickFixes, suggestions, parameter_hints] = await Promise.all([
-		quickFixList(quick_fix_request),
-		getSuggestions(fileUri, diagnostic.range),
-		getParameterHints(fileUri, diagnostic.range.start),
-	]);
-	return { quickFixes, suggestions, parameter_hints };
+	});
+	return diagnostics
 }
+
+export async function getEnrichedDiagnostics(filePath: string): Promise<SidecarDiagnosticsResponse[]> {
+	const fileUri = vscode.Uri.file(filePath);
+	const diagnostics = vscode.languages.getDiagnostics(fileUri);
+	const enrichedDiagnostics: SidecarDiagnosticsResponse[] = [];
+
+	for (const diagnostic of diagnostics) {
+		// Enrich 1: full message (involves attempting to access the error file stub)
+		const fullMessage = await getFullDiagnosticMessage(diagnostic);
+
+		const range = {
+			startPosition: {
+				line: diagnostic.range.start.line,
+				character: diagnostic.range.start.character,
+				byteOffset: 0,
+			},
+			endPosition: {
+				line: diagnostic.range.end.line,
+				character: diagnostic.range.end.character,
+				byteOffset: 0,
+			},
+		};
+
+		// Enrich 2: quick fix options
+		const quick_fix_labels = await quickFixList({
+			fs_file_path: fileUri.fsPath,
+			editor_url: "editor url",
+			range,
+			request_id: "request_id",
+		}).then((res) => res.options.map((o) => o.label));
+
+		// Enrich 3: trigger parameter hints
+		const parameter_hints = await getParameterHints(
+			fileUri,
+			diagnostic.range.end
+		).then((res) => res.signature_labels);
+
+		enrichedDiagnostics.push({
+			message: fullMessage ?? diagnostic.message,
+			range,
+			quick_fix_labels,
+			parameter_hints,
+		});
+	}
+
+	return enrichedDiagnostics;
+}
+
+// Helper function to get parameter hints
 async function getParameterHints(
 	fileUri: vscode.Uri,
 	position: vscode.Position
-): Promise<vscode.SignatureInformation[]> {
-	const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
-		'vscode.executeSignatureHelpProvider',
-		fileUri,
-		position
-	);
-	return signatureHelp.signatures
-}
-async function getSuggestions(fileUri: vscode.Uri, range: vscode.Range): Promise<vscode.CompletionItem[]> {
-	const suggestions = await vscode.commands.executeCommand<vscode.CompletionList>(
-		'vscode.executeCompletionItemProvider',
-		fileUri,
-		range.start
-	);
-	return suggestions?.items ?? [];
+): Promise<SidecarParameterHints> {
+	try {
+		const signatureHelp = await vscode.commands.executeCommand<
+			vscode.SignatureHelp
+		>("vscode.executeSignatureHelpProvider", fileUri, position);
+
+		return signatureHelp?.signatures.length ? {
+			signature_labels: signatureHelp.signatures.map((signature) => signature.label)
+		} : {
+			signature_labels: []
+		};
+	} catch (error) {
+		console.error("Error fetching signature help:", error);
+		return {
+			signature_labels: []
+		};
+	}
 }
 
-interface EnhancedSidecarDiagnosticsResponse extends SidecarDiagnosticsResponse {
-	quickFixes: SidecarQuickFixResponse | null;  // Changed from SidecarQuickFixResponse to SidecarQuickFixResponse | null
-	suggestions: vscode.CompletionItem[];
-	parameter_hints: vscode.SignatureInformation[];
-}
+// Helper function to get suggestions
+// async function getSuggestions(
+// 	fileUri: vscode.Uri,
+// 	range: vscode.Range
+// ): Promise<vscode.CompletionItem[]> {
+// 	try {
+// 		const suggestions = await vscode.commands.executeCommand<vscode.CompletionList>(
+// 			"vscode.executeCompletionItemProvider",
+// 			fileUri,
+// 			range.start
+// 		);
+// 		return suggestions?.items ?? [];
+// 	} catch (error) {
+// 		console.error("Error fetching suggestions:", error);
+// 		return [];
+// 	}
+// }
 
 export async function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): Promise<SidecarDiagnosticsResponse[]> {
 	const fileUri = vscode.Uri.file(filePath);
@@ -164,7 +164,7 @@ async function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic): Promise<
 				const document_text = document.getText();
 				return document_text;
 			} catch (error) {
-				console.error(`Error opening document: ${error}`);
+				console.log(`Error opening document: ${error}`);
 				return null;
 			}
 		} else {

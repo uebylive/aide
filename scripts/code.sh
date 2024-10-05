@@ -31,7 +31,7 @@ function code() {
 
 	# Manage built-in extensions
 	if [[ "$1" == "--builtin" ]]; then
-		exec "$CODE" build/builtin
+		node "$CODE" build/builtin
 		return
 	fi
 

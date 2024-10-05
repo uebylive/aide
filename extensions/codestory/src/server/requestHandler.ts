@@ -5,7 +5,7 @@
 import * as http from 'http';
 import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest } from './types';
 import { Position, Range } from 'vscode';
-import { getDiagnosticsFromEditor, getFileDiagnosticsFromEditor } from './diagnostics';
+import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
@@ -51,19 +51,11 @@ export function handleRequest(
 		try {
 			if (req.method === 'POST' && req.url === '/file_diagnostics') {
 				const body = await readRequestBody(req);
-<<<<<<< HEAD
 				console.log('getting file_diagnostics');
-				const diagnosticsBody: LSPFileDiagnostics = JSON.parse(body);
-=======
-				console.log("getting file_diagnostics");
 				const { fs_file_path, with_enrichment }: LSPFileDiagnostics = JSON.parse(body);
->>>>>>> 605828a968c ([ide] fix syntax)
 
-				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path, true);
+				let file_diagnostics = getFileDiagnosticsFromEditor(fs_file_path);
 
-<<<<<<< HEAD
-				console.log({ diagnosticsFromEditor });
-=======
 				if (with_enrichment) {
 					const startTime = performance.now();
 
@@ -75,10 +67,9 @@ export function handleRequest(
 
 					console.log(`Enrichment completed in ${elapsedTime.toFixed(2)} milliseconds`);
 				}
->>>>>>> 605828a968c ([ide] fix syntax)
 
 				const response = {
-					'diagnostics': diagnosticsFromEditor,
+					'diagnostics': file_diagnostics,
 				};
 
 				res.writeHead(200, { 'Content-Type': 'application/json' });
