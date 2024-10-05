@@ -13,13 +13,12 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
-import { AidePlanTimer } from '../utilities/planTimer';
+// import { AidePlanTimer } from '../utilities/planTimer';
 
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
 	response: vscode.AideAgentResponseStream,
-	_aidePlanTimer: AidePlanTimer,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -294,14 +293,14 @@ export const reportAgentEventsToChat = async (
 		console.log(event);
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
-				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
-					return {
-						symbolName: item.symbol_name,
-						uri: vscode.Uri.file(item.fs_file_path),
-						isNew: item.is_new,
-						thinking: item.thinking,
-					};
-				});
+				// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
+				// 	return {
+				// 		symbolName: item.symbol_name,
+				// 		uri: vscode.Uri.file(item.fs_file_path),
+				// 		isNew: item.is_new,
+				// 		thinking: item.thinking,
+				// 	};
+				// });
 				// response.initialSearchSymbols(initialSearchSymbolInformation);
 			} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
 				// response.repoMapGeneration(false);
@@ -321,7 +320,7 @@ export const reportAgentEventsToChat = async (
 			} else if (event.event.FrameworkEvent.ReferenceFound) {
 				// response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
 			} else if (event.event.FrameworkEvent.RelevantReference) {
-				const ref = event.event.FrameworkEvent.RelevantReference;
+				// const ref = event.event.FrameworkEvent.RelevantReference;
 				// response.relevantReference({
 				// 	uri: vscode.Uri.file(ref.fs_file_path),
 				// 	symbolName: ref.symbol_name,
@@ -370,11 +369,11 @@ export const reportAgentEventsToChat = async (
 				if (!symbol_identifier.fs_file_path) {
 					continue;
 				}
-				const goToDefinition = symbolEventSubStep.GoToDefinition;
-				const uri = vscode.Uri.file(goToDefinition.fs_file_path);
-				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
-				const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
-				const range = new vscode.Range(startPosition, endPosition);
+				// const goToDefinition = symbolEventSubStep.GoToDefinition;
+				// const uri = vscode.Uri.file(goToDefinition.fs_file_path);
+				// const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
+				// const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
+				// const _range = new vscode.Range(startPosition, endPosition);
 				// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			} else if (symbolEventSubStep.Edit) {
@@ -470,7 +469,7 @@ export const reportAgentEventsToChat = async (
 
 				const subStepType = probeRequestKeys[0];
 				if (!editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
-					const probeAnswer = probeSubStep.ProbeAnswer;
+					// const probeAnswer = probeSubStep.ProbeAnswer;
 					// response.breakdown({
 					// 	reference: {
 					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),

@@ -10,7 +10,6 @@ import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
@@ -20,9 +19,8 @@ import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
-import { Diagnostic } from 'vscode';
-import { GENERATE_PLAN } from '../completions/providers/generatePlan';
-import { AideProbeProvider } from '../completions/providers/probeProvider';
+// import { GENERATE_PLAN } from '../completions/providers/generatePlan';
+// import { AideProbeProvider } from '../completions/providers/probeProvider';
 import { AidePlanTimer } from '../utilities/planTimer';
 
 export enum CompletionStopReason {
@@ -228,7 +226,7 @@ export class SideCarClient {
 		variables: readonly vscode.AideAgentPromptReference[],
 		projectLabels: string[],
 		editorUrl: string,
-		probeProvider: AideProbeProvider,
+		// probeProvider: AideProbeProvider,
 		aidePlanTimer: AidePlanTimer,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
@@ -1094,29 +1092,29 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
-		} else if (name === OPEN_FILES_VARIABLE) {
-			const openFiles = vscode.window.visibleTextEditors;
-			const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
-				return {
-					name: file.document.uri.fsPath,
-					start_position: {
-						line: 0,
-						character: 0,
-						byteOffset: 0,
-					},
-					end_position: {
-						line: file.document.lineCount,
-						character: 1,
-						byteOffset: 0,
-					},
-					fs_file_path: file.document.uri.fsPath,
-					type: getFileType(),
-					content: file.document.getText(),
-					language: file.document.languageId,
-				};
-			});
-			sidecarVariables.push(...openFileVariables);
-			// await resolveFileReference('file', value);
+			// } else if (name === OPEN_FILES_VARIABLE) {
+			// 	const openFiles = vscode.window.visibleTextEditors;
+			// 	const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
+			// 		return {
+			// 			name: file.document.uri.fsPath,
+			// 			start_position: {
+			// 				line: 0,
+			// 				character: 0,
+			// 				byteOffset: 0,
+			// 			},
+			// 			end_position: {
+			// 				line: file.document.lineCount,
+			// 				character: 1,
+			// 				byteOffset: 0,
+			// 			},
+			// 			fs_file_path: file.document.uri.fsPath,
+			// 			type: getFileType(),
+			// 			content: file.document.getText(),
+			// 			language: file.document.languageId,
+			// 		};
+			// 	});
+			// 	sidecarVariables.push(...openFileVariables);
+			// 	// await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
@@ -1257,8 +1255,8 @@ async function convertVSCodeVariableToSidecar(
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
-		} else if (name === OPEN_FILES_VARIABLE) {
-			await resolveFileReference('file', value);
+			// } else if (name === OPEN_FILES_VARIABLE) {
+			// 	await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, value);
 		} else if (name === 'folder') {
@@ -1358,9 +1356,9 @@ async function newConvertVSCodeVariableToSidecar(
 	};
 }
 
-function getFileType(): SidecarVariableType {
-	return 'File';
-}
+// function getFileType(): SidecarVariableType {
+// 	return 'File';
+// }
 
 function getVariableType(
 	name: string,

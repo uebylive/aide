@@ -54,7 +54,7 @@ export function handleRequest(
 
 				const diagnosticsFromEditor = await getFileDiagnosticsFromEditor(diagnosticsBody.fs_file_path, true);
 
-				console.log({ diagnosticsFromEditor })
+				console.log({ diagnosticsFromEditor });
 
 				const response = {
 					'diagnostics': diagnosticsFromEditor,

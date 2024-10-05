@@ -4,16 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarDiagnosticsResponse, SidecarQuickFixResponse } from './types';
+import { SidecarDiagnosticsResponse, SidecarQuickFixRequest, SidecarQuickFixResponse } from './types';
 import { quickFixList } from './quickFix';
-import { SidecarQuickFixRequest } from './types';
 
 interface DiagnosticFilter {
-	(diagnostic: vscode.Diagnostic): boolean;
+	(diagnostic: vscode.Diagnostic): boolean
 }
 
 export async function getFileDiagnosticsFromEditor(
 	filePath: string,
+	filters: DiagnosticFilter[] = [],
 	withSuggestions: boolean = false
 ): Promise<EnhancedSidecarDiagnosticsResponse[]> {
 	const fileUri = vscode.Uri.file(filePath);
@@ -24,7 +24,10 @@ export async function getFileDiagnosticsFromEditor(
 
 	const enhancedDiagnostics = await Promise.all(
 		diagnostics.map(async (diagnostic) => {
-			const fullMessage = await getFullDiagnosticMessage(diagnostic);
+			const [fullMessage, enhancements] = await Promise.all([
+				getFullDiagnosticMessage(diagnostic),
+				getEnhancements(fileUri, diagnostic, withSuggestions)
+			]);
 			const range = {
 				startPosition: {
 					line: diagnostic.range.start.line,
@@ -38,74 +41,69 @@ export async function getFileDiagnosticsFromEditor(
 				},
 			};
 
-			// todo(zi) - consider what to do with editor url and request_id wtf
-			let quick_fix_request: SidecarQuickFixRequest = {
-				fs_file_path: fileUri.fsPath,
-				editor_url: "editor url",
-				range,
-				request_id: "request_id",
-			};
-
-			const quickFixes = await quickFixList(quick_fix_request);
-			const suggestions = withSuggestions ? await getSuggestions(fileUri, diagnostic.range) : [];
-			const parameter_hints = await getParameterHints(fileUri, diagnostic.range.end); // end is the trigger point
-
-			console.log({ parameter_hints })
-
 			return {
 				message: fullMessage ?? diagnostic.message,
 				range,
-				quickFixes,
-				suggestions,
-				signature_help: parameter_hints,
+				...enhancements,
 			};
 		})
 	);
 
-	console.log({ enhancedDiagnostics });
-
 	return enhancedDiagnostics;
 }
 
+async function getEnhancements(
+	fileUri: vscode.Uri,
+	diagnostic: vscode.Diagnostic,
+	withSuggestions: boolean
+): Promise<{
+	quickFixes: SidecarQuickFixResponse | null;
+	suggestions: vscode.CompletionItem[];
+	parameter_hints: vscode.SignatureInformation[];
+}> {
+	if (!withSuggestions) {
+		return {
+			quickFixes: null,
+			suggestions: [],
+			parameter_hints: [],
+		};
+	}
+	const range = {
+		startPosition: {
+			line: diagnostic.range.start.line,
+			character: diagnostic.range.start.character,
+			byteOffset: 0,
+		},
+		endPosition: {
+			line: diagnostic.range.end.line,
+			character: diagnostic.range.end.character,
+			byteOffset: 0,
+		},
+	};
+	const quick_fix_request: SidecarQuickFixRequest = {
+		fs_file_path: fileUri.fsPath,
+		editor_url: 'editor url', // TODO: Implement proper editor URL
+		range,
+		request_id: 'request_id', // TODO: Implement proper request ID generation
+	};
+	const [quickFixes, suggestions, parameter_hints] = await Promise.all([
+		quickFixList(quick_fix_request),
+		getSuggestions(fileUri, diagnostic.range),
+		getParameterHints(fileUri, diagnostic.range.start),
+	]);
+	return { quickFixes, suggestions, parameter_hints };
+}
 async function getParameterHints(
 	fileUri: vscode.Uri,
 	position: vscode.Position
-): Promise<vscode.SignatureHelp | undefined> {
-	try {
-		const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
-			'vscode.executeSignatureHelpProvider',
-			fileUri,
-			position
-		);
-
-		console.log({ signatureHelp })
-
-		if (!signatureHelp || signatureHelp.signatures.length === 0) {
-			console.log('No signature help available at the given position.');
-			return undefined;
-		}
-
-		const activeSignature = signatureHelp.signatures[signatureHelp.activeSignature];
-
-		console.log({
-			activeSignature: signatureHelp.activeSignature,
-			activeParameter: signatureHelp.activeParameter,
-			signatureLabel: activeSignature.label,
-			parameters: activeSignature.parameters.map(param => param.label),
-			documentation: activeSignature.documentation
-				? (typeof activeSignature.documentation === 'string'
-					? activeSignature.documentation
-					: activeSignature.documentation.value)
-				: 'No documentation available'
-		});
-
-		return signatureHelp;
-	} catch (error) {
-		console.error('Error fetching signature help:', error);
-		return undefined;
-	}
+): Promise<vscode.SignatureInformation[]> {
+	const signatureHelp = await vscode.commands.executeCommand<vscode.SignatureHelp>(
+		'vscode.executeSignatureHelpProvider',
+		fileUri,
+		position
+	);
+	return signatureHelp.signatures
 }
-
 async function getSuggestions(fileUri: vscode.Uri, range: vscode.Range): Promise<vscode.CompletionItem[]> {
 	const suggestions = await vscode.commands.executeCommand<vscode.CompletionList>(
 		'vscode.executeCompletionItemProvider',
@@ -116,9 +114,9 @@ async function getSuggestions(fileUri: vscode.Uri, range: vscode.Range): Promise
 }
 
 interface EnhancedSidecarDiagnosticsResponse extends SidecarDiagnosticsResponse {
-	quickFixes: SidecarQuickFixResponse;
+	quickFixes: SidecarQuickFixResponse | null;  // Changed from SidecarQuickFixResponse to SidecarQuickFixResponse | null
 	suggestions: vscode.CompletionItem[];
-	signature_help: vscode.SignatureHelp | undefined;
+	parameter_hints: vscode.SignatureInformation[];
 }
 
 export async function getDiagnosticsFromEditor(filePath: string, interestedRange: vscode.Range): Promise<SidecarDiagnosticsResponse[]> {
@@ -162,7 +160,7 @@ async function getFullDiagnosticMessage(diagnostic: vscode.Diagnostic): Promise<
 		if (targetUri) {
 			try {
 				const document = await vscode.workspace.openTextDocument(targetUri);
-				console.log('Diagnostic document found. Happy.');
+				console.log('Diagnostic document found. Happy.')
 				const document_text = document.getText();
 				return document_text;
 			} catch (error) {

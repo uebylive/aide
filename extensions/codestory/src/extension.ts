@@ -7,14 +7,12 @@ import * as vscode from 'vscode';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
-import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { AideQuickFix } from './quickActions/fix';
-import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
@@ -28,8 +26,8 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
-import { GENERATE_PLAN } from './completions/providers/generatePlan';
-import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
+// import { GENERATE_PLAN } from './completions/providers/generatePlan';
+// import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 import { AidePlanTimer } from './utilities/planTimer';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
@@ -183,12 +181,17 @@ export async function activate(context: vscode.ExtensionContext) {
 	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, vscode.workspace);
 	context.subscriptions.push(recentEditsRetriever);
 
+	// starts the aide timer
+	const aideTimer = new AidePlanTimer();
+	context.subscriptions.push(aideTimer.statusBar());
+
 	// Register the agent session provider
 	const agentSessionProvider = new AideAgentSessionProvider(
 		currentRepo,
 		projectContext,
 		sidecarClient,
 		rootPath,
+		aideTimer,
 		recentEditsRetriever
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
@@ -256,16 +259,13 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// starts the aide timer
-	const aideTimer = new AidePlanTimer();
-	context.subscriptions.push(aideTimer.statusBar());
 	// Register the chat agent
-	const chatAgentProvider = new CSChatAgentProvider(
-		rootPath, repoName, repoHash,
-		uniqueUserId,
-		sidecarClient, currentRepo, projectContext, probeProvider, aideTimer
-	);
-	context.subscriptions.push(chatAgentProvider);
+	// const chatAgentProvider = new CSChatAgentProvider(
+	// 	rootPath, repoName, repoHash,
+	// 	uniqueUserId,
+	// 	sidecarClient, currentRepo, projectContext, probeProvider, aideTimer
+	// );
+	// context.subscriptions.push(chatAgentProvider);
 
 
 	// Registers all the plan variables
@@ -359,30 +359,30 @@ export async function activate(context: vscode.ExtensionContext) {
 	const csEventHandler = new CSEventHandler(context, editorUrl);
 	context.subscriptions.push(csEventHandler);
 
-	const startRecording = vscode.commands.registerCommand(
-		'codestory.startRecordingContext',
-		async () => {
-			await csEventHandler.startRecording();
-			console.log('start recording context');
-		}
-	);
-	context.subscriptions.push(startRecording);
-	const stopRecording = vscode.commands.registerCommand(
-		'codestory.stopRecordingContext',
-		async () => {
-			const response = await csEventHandler.stopRecording();
-			await agentSessionProvider.sendContextRecording(response);
-			console.log(JSON.stringify(response));
-			console.log('stop recording context');
-		}
-	);
-	context.subscriptions.push(stopRecording);
+	// const startRecording = vscode.commands.registerCommand(
+	// 	'codestory.startRecordingContext',
+	// 	async () => {
+	// 		await csEventHandler.startRecording();
+	// 		console.log('start recording context');
+	// 	}
+	// );
+	// context.subscriptions.push(startRecording);
+	// const stopRecording = vscode.commands.registerCommand(
+	// 	'codestory.stopRecordingContext',
+	// 	async () => {
+	// 		const response = await csEventHandler.stopRecording();
+	// 		await agentSessionProvider.sendContextRecording(response);
+	// 		console.log(JSON.stringify(response));
+	// 		console.log('stop recording context');
+	// 	}
+	// );
+	// context.subscriptions.push(stopRecording);
 
 	// toggle deep reasoning
 	const deepReasoningBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
 	deepReasoningBarItem.show();
 	deepReasoningBarItem.text = 'o1:false';
-	const deepReasoning = commands.registerCommand(
+	const deepReasoning = vscode.commands.registerCommand(
 		'codestory.enableDeepReasoning',
 		async () => {
 			const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
