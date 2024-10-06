@@ -135,7 +135,7 @@ class AideAgentResponseStream {
 				},
 				step(value) {
 					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponsePlanPart(value.description, value.index, value.title);
+					const part = new extHostTypes.AideAgentResponsePlanPart(value);
 					const dto = typeConvert.AideAgentResponsePlanPart.from(part);
 					_report(dto);
 					return this;

@@ -2924,6 +2924,7 @@ export namespace AideAgentResponsePlanPart {
 	export function from(part: types.AideAgentResponsePlanPart): Dto<IChatPlanStep> {
 		return {
 			kind: 'planStep',
+			sessionId: part.sessionId,
 			index: part.index,
 			title: part.title,
 			description: MarkdownString.from(part.description)

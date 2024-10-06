@@ -463,6 +463,7 @@ export type PlanStep = {
 };
 export type Plan = {
 	id: string;
+	sessionId: string;
 	name: string;
 	steps: PlanStep[];
 	initial_context: string;

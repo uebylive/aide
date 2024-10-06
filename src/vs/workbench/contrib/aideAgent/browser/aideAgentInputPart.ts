@@ -827,6 +827,7 @@ class AgentModeActionViewItem extends MenuEntryActionViewItem {
 			getActions: () => [
 				setAgentModeAction('Edit'),
 				setAgentModeAction('Chat'),
+				setAgentModeAction('Plan'),
 			]
 		});
 	}

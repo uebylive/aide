@@ -9,10 +9,9 @@ import { AppResourcePath, FileAccess } from '../../base/common/network.js';
 import { IFileService } from '../../platform/files/common/files.js';
 import { createDecorator } from '../../platform/instantiation/common/instantiation.js';
 
-
 export interface ISVGSpriteService {
 	_serviceBrand: undefined;
-	addSpritesheet(href: AppResourcePath): Promise<SVGSVGElement | undefined>;
+	addSpritesheet(href: AppResourcePath, namespace: string): Promise<SVGSVGElement | undefined>;
 }
 
 export const ISVGSpriteService = createDecorator<ISVGSpriteService>('ISVGSpriteService');
@@ -24,7 +23,7 @@ export class SvgSpriteService extends Disposable implements ISVGSpriteService {
 		super();
 	}
 
-	async addSpritesheet(href: AppResourcePath) {
+	async addSpritesheet(href: AppResourcePath, namespace: string) {
 		try {
 			const fileUri = FileAccess.asFileUri(href);
 			const file = await this.fileService.readFile(fileUri);
@@ -32,7 +31,15 @@ export class SvgSpriteService extends Disposable implements ISVGSpriteService {
 			const sanitizedContent = sanitize(content, { RETURN_TRUSTED_TYPE: true });
 			const xmlDoc = new DOMParser().parseFromString(sanitizedContent as unknown as string, 'image/svg+xml');
 			const svg = xmlDoc.querySelector('svg');
+
 			if (svg) {
+				const sprites = svg.querySelectorAll('defs svg[id]');
+				for (const sprite of sprites) {
+					const id = sprite.getAttribute('id');
+					if (id) {
+						sprite.setAttribute('id', `${namespace}:${id}`);
+					}
+				}
 				svg.style.display = 'none';
 				return svg;
 			}

@@ -56,7 +56,11 @@ declare module 'vscode' {
 		/**
 		 * The description of the step
 		 */
-		description: string | MarkdownString;
+		readonly description: string | MarkdownString;
+		/*
+		 * The session id of the plan
+		 */
+		readonly sessionId: string;
 	}
 
 	export interface AideAgentResponseStream extends ChatResponseStream {

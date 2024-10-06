@@ -335,10 +335,15 @@ export class Workbench extends Layout {
 	}
 
 	private async setupSVGSprites(svgSpriteService: ISVGSpriteService) {
-		const svgElement = await svgSpriteService.addSpritesheet('vs/workbench/browser/media/heroicons.svg');
-		if (svgElement) {
-			this.mainContainer.prepend(svgElement);
-		}
+		const spriteSheets = await Promise.allSettled([
+			svgSpriteService.addSpritesheet('vs/workbench/browser/media/heroicons.svg', 'heroicons'),
+			svgSpriteService.addSpritesheet('vs/workbench/browser/media/special-icons.svg', 'special')
+		]);
+		spriteSheets.forEach(result => {
+			if (result.status === 'fulfilled' && result.value) {
+				this.mainContainer.prepend(result.value);
+			}
+		});
 	}
 
 	private renderWorkbench(instantiationService: IInstantiationService, notificationService: NotificationService, storageService: IStorageService, configurationService: IConfigurationService): void {

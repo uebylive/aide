@@ -4703,12 +4703,14 @@ export enum AideAgentScope {
 
 export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
+	sessionId: string;
 	index: number;
 	title: string;
-	constructor(description: string | vscode.MarkdownString, index: number, title: string) {
-		this.description = description;
-		this.index = index;
-		this.title = title;
+	constructor(step: vscode.AideChatStep) {
+		this.description = step.description;
+		this.sessionId = step.sessionId;
+		this.index = step.index;
+		this.title = step.title;
 	}
 }
 

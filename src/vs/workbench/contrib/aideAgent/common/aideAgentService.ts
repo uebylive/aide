@@ -198,6 +198,7 @@ export interface IChatConfirmation {
 
 export interface IChatPlanStep {
 	description: IMarkdownString;
+	sessionId: string;
 	title: string;
 	index: number;
 	kind: 'planStep';

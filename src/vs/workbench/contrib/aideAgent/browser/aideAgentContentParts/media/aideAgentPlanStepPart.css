@@ -1,0 +1,131 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.plan-step {
+	display: flex;
+}
+.plan-step.plan-step-will-be-dropped {
+	opacity: 0.65;
+}
+.plan-step-timeline {
+	display: flex;
+	flex-direction: column;
+}
+.plan-step-content {
+	flex-grow: 1;
+}
+.plan-step-add {
+	width: 32px;
+	flex-grow: 1;
+	display: flex;
+	justify-content: center;
+}
+.plan-step-add::before {
+	content: '';
+	width: 1px;
+	height: 100%;
+	background-color: var(--vscode-tree-indentGuidesStroke);
+}
+.plan-step.plan-step-will-be-dropped .plan-step-add::before {
+	background-color: transparent;
+	background-image: linear-gradient(to bottom, var(--vscode-tree-indentGuidesStroke), var(--vscode-tree-indentGuidesStroke) 50%, transparent 50%, transparent);
+	background-size: 10px 10px;
+}
+.plan-step-header {
+	display: flex;
+}
+.plan-step-summary {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+:is(.plan-step-changes-buttons, .plan-step-loading-buttons) {
+	display: flex;
+}
+.plan-step-stop-button {
+	width: 32px;
+	height: 32px;
+	flex-shrink: 0;
+	display: grid;
+	justify-content: center;
+	align-items: center;
+}
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+.plan-step-stop-button .plan-step-spinner-icon {
+	animation: spin 1s linear infinite;
+}
+.plan-step-stop-button :is(.plan-step-stop-icon, .plan-step-spinner-icon) {
+	grid-area: 1 / -1 / 1 / -1;
+}
+.plan-step-stop-button:is(:focus, :hover) {
+	background-color: var(--vscode-button-hoverBackground);
+}
+.plan-step-stop-button :is(.plan-step-stop-icon, .plan-step-spinner-icon) {
+	transition: opacity ease 0.1s, transform ease 0.1s;
+}
+.plan-step-stop-button:is(:focus, :hover) .plan-step-spinner-icon,
+.plan-step-stop-button .plan-step-stop-icon {
+	opacity: 0;
+	transform: scale(0.6);
+}
+.plan-step-stop-button .plan-step-spinner-icon,
+.plan-step-stop-button:is(:focus, :hover) .plan-step-stop-icon {
+	opacity: 1;
+	transform: scale(1);
+}
+.plan-step-summary {
+	width: 32px;
+	padding-block: 8px;
+	flex-grow: 1;
+}
+.plan-step-feedback {
+	display: flex;
+	align-items: end;
+	gap: 4px;
+}
+.plan-step-submit-feedback {
+	display: flex;
+	align-items: start;
+	gap: 4px;
+	padding-inline: 4px;
+	padding-block: 2px;
+	border-radius: 2px;
+	white-space: nowrap;
+	margin-bottom: 6px;
+	color: var(--vscode-button-foreground);
+	background-color: var(--vscode-button-background);
+}
+.plan-step-submit-feedback .plan-step-retry-icon {
+	margin-top: 1px;
+}
+.plan-step-submit-feedback:hover {
+	background-color: var(--vscode-button-hoverBackground);
+}
+.plan-step-feedback-editor {
+	flex-grow: 1;
+}
+:is(.plan-step-indicator, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback) {
+	width: 32px;
+	height: 32px;
+	flex-shrink: 0;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	border-radius: 1px;
+}
+:is(.plan-step-summary, .plan-step-stop-button, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback):is(:active, :hover) {
+	background-color: var(--vscode-toolbar-hoverBackground);
+	cursor: pointer;
+}
+:is(.plan-step-stop-button, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback):hover svg {
+	filter: brightness(1.1);
+}
