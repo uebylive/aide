@@ -377,6 +377,8 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			}
 
 			const task = agent.invoke(
+				// TODO(skcd): This conversion fails because the range conversion is weird over here
+				// some parts are 1 indexed and some are 0 indexed
 				typeConvert.AideAgentRequest.to(request, location),
 				token
 			);

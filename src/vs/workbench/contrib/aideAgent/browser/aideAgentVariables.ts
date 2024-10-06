@@ -116,11 +116,14 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 						const selection = activeEditor.getSelection();
 						let range: IRange;
 						if (selection && !selection.isEmpty()) {
+							// TODO(skcd): we send over 1 indexed here since we are going to fix
+							// it later on when converting it to a range which is 0 indexed
+							// on the Dto Layer, maybe?
 							range = {
-								startLineNumber: selection.startLineNumber - 1,
-								startColumn: selection.startColumn - 1,
-								endLineNumber: selection.endLineNumber - 1,
-								endColumn: selection.endColumn - 1,
+								startLineNumber: selection.startLineNumber,
+								startColumn: selection.startColumn,
+								endLineNumber: selection.endLineNumber,
+								endColumn: selection.endColumn,
 							};
 						} else {
 							range = model.getFullModelRange();
