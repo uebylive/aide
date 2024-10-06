@@ -1319,7 +1319,8 @@ export interface IChatAgentCompletionItem {
 
 export type IChatContentProgressDto =
 	| Dto<Exclude<IChatProgressResponseContent, IChatTask>>
-	| IChatTaskDto;
+	| IChatTaskDto
+	| Dto<IChatPlanStep>;
 
 export type IChatAgentHistoryEntryDto = {
 	request: IChatAgentRequest;
@@ -1429,7 +1430,6 @@ export type IAideChatAgentHistoryEntryDto = IChatAgentHistoryEntryDto & {
 
 export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
-	provideFollowups(request: Dto<IChatAgentRequest>, handle: number, result: IChatAgentResult, context: { history: IAideChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
 }
 
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
