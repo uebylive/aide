@@ -1081,13 +1081,13 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		}
 		const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
 		const startRange = {
-			line: parsedJson.range.startLineNumber,
-			character: parsedJson.range.startColumn,
+			line: parsedJson.range.startLineNumber - 1,
+			character: parsedJson.range.startColumn === 0 ? parsedJson.range.startColumn : parsedJson.range.startColumn - 1,
 			byteOffset: 0,
 		};
 		const endRange = {
-			line: parsedJson.range.endLineNumber,
-			character: parsedJson.range.endColumn,
+			line: parsedJson.range.endLineNumber - 1,
+			character: parsedJson.range.endColumn === 0 ? parsedJson.range.endColumn : parsedJson.range.endColumn - 1,
 			byteOffset: 0,
 		};
 		const variableType = getVariableType(

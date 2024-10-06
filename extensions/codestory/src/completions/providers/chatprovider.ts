@@ -169,7 +169,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				return new CSChatResponseForProgress();
 			} else {
 				const explainResponse = this._sideCarClient.explainQuery(explainString, this._currentRepoRef, currentSelection, request.threadId);
-				await reportFromStreamToSearchProgress(explainResponse, response, token, this._workingDirectory);
+				await reportFromStreamToSearchProgress(explainResponse, response, this._aidePlanTimer, token, this._workingDirectory);
 				return new CSChatResponseForProgress();
 			}
 		} else if (requestType === 'search') {
@@ -181,7 +181,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			);
 			const searchString = request.prompt.toString().slice('/search'.length).trim();
 			const searchResponse = this._sideCarClient.searchQuery(searchString, this._currentRepoRef, request.threadId);
-			await reportFromStreamToSearchProgress(searchResponse, response, token, this._workingDirectory);
+			await reportFromStreamToSearchProgress(searchResponse, response, this._aidePlanTimer, token, this._workingDirectory);
 			// We get back here a bunch of responses which we have to pass properly to the agent
 			return new CSChatResponseForProgress();
 		} else {
