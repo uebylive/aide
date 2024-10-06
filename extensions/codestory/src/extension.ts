@@ -259,9 +259,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// starts the aide timer
-	const aideTimer = new AidePlanTimer();
-	context.subscriptions.push(aideTimer.statusBar());
 	// Register the chat agent
 	// const chatAgentProvider = new CSChatAgentProvider(
 	// 	rootPath, repoName, repoHash,
@@ -386,26 +383,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	deepReasoningBarItem.show();
 	deepReasoningBarItem.text = 'o1:false';
 	const deepReasoning = vscode.commands.registerCommand(
-		'codestory.enableDeepReasoning',
-		async () => {
-			const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-			const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
-			if (deepReasoning) {
-				await codestoryConfiguration.update('deepReasoning', false);
-				deepReasoningBarItem.text = 'o1:false';
-			} else {
-				await codestoryConfiguration.update('deepReasoning', true);
-				deepReasoningBarItem.text = 'o1:true';
-			}
-		}
-	);
-	context.subscriptions.push(deepReasoning);
-
-	// toggle deep reasoning
-	const deepReasoningBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-	deepReasoningBarItem.show();
-	deepReasoningBarItem.text = 'o1:false';
-	const deepReasoning = commands.registerCommand(
 		'codestory.enableDeepReasoning',
 		async () => {
 			const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
