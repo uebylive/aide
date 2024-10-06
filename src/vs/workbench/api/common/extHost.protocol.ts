@@ -1424,10 +1424,6 @@ export type IChatProgressDto =
 
 ///////////////////////// START AIDE /////////////////////////
 
-export type IAideChatAgentHistoryEntryDto = IChatAgentHistoryEntryDto & {
-	response: ReadonlyArray<IChatContentProgressDto>;
-};
-
 export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
 }
