@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 .monaco-workbench .part.sidebar {
-	border-left: 1px solid var(--vscode-panel-border);
+	/* border-left: 1px solid var(--vscode-panel-border); */
 	border-right: 1px solid var(--vscode-panel-border);
 }
 
@@ -27,6 +27,10 @@
 
 .monaco-workbench .part.sidebar > .title > .title-label h2 {
 	text-transform: uppercase;
+}
+
+.monaco-workbench .part.sidebar .header {
+	border-bottom: 1px solid var(--vscode-panel-border);
 }
 
 .monaco-workbench .viewlet .collapsible.header .title {
@@ -83,7 +87,7 @@
 .monaco-workbench .part.sidebar > .title > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label::before,
 .monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item .action-label::before {
 	position: absolute;
-	left: 6px; /* place icon in center */
+	left: 5px; /* place icon in center */
 }
 
 .monaco-workbench .part.sidebar > .header-or-footer > .composite-bar-container > .composite-bar > .monaco-action-bar .action-item.checked:not(:focus) .active-item-indicator:before,

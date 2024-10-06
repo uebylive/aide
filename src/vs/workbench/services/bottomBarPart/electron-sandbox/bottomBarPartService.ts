@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { registerSingleton, InstantiationType } from 'vs/platform/instantiation/common/extensions';
-import { BottomBarPartService } from 'vs/workbench/browser/parts/bottombar/bottomBarPart';
-import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
+import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { BottomBarPartService } from '../../../browser/parts/bottombar/bottomBarPart.js';
+import { IBottomBarPartService } from '../browser/bottomBarPartService.js';
 
 registerSingleton(IBottomBarPartService, BottomBarPartService, InstantiationType.Eager);

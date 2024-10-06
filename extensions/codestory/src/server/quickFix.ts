@@ -17,7 +17,7 @@ class QuickFixList {
 		this.request_ids.set(requestId, options);
 	}
 
-	getForRequestId(requestId: string, selectedActionId: number): { label: string; command: string; arguments: any; } | undefined {
+	getForRequestId(requestId: string, selectedActionId: number): { label: string; command: string; arguments: any } | undefined {
 		const options = this.request_ids.get(requestId);
 		if (options === undefined) {
 			return undefined;

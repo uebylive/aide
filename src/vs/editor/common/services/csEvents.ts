@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { SymbolNavigationEvent } from 'vs/editor/common/model/csEvents';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { IDisposable } from '../../../base/common/lifecycle.js';
+import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
+import { SymbolNavigationEvent } from '../model/csEvents.js';
 
 export interface ICSEventHandler {
 	reportSymbolNavigation(event: SymbolNavigationEvent): void;

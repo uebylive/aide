@@ -51,7 +51,7 @@ export function handleRequest(
 		try {
 			if (req.method === 'POST' && req.url === '/file_diagnostics') {
 				const body = await readRequestBody(req);
-				console.log("getting file_diagnostics");
+				console.log('getting file_diagnostics');
 				const { fs_file_path, with_enrichment }: LSPFileDiagnostics = JSON.parse(body);
 
 				let file_diagnostics = getFileDiagnosticsFromEditor(fs_file_path);

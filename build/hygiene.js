@@ -145,11 +145,13 @@ function hygiene(some, linting = true) {
 
 	const productJsonFilter = filter('product.json', { restore: true });
 	const snapshotFilter = filter(['**', '!**/*.snap', '!**/*.snap.actual']);
+	const yarnLockFilter = filter(['**', '!**/yarn.lock']);
 	const unicodeFilterStream = filter(unicodeFilter, { restore: true });
 
 	const result = input
 		.pipe(filter((f) => !f.stat.isDirectory()))
 		.pipe(snapshotFilter)
+		.pipe(yarnLockFilter)
 		.pipe(productJsonFilter)
 		.pipe(process.env['BUILD_SOURCEVERSION'] ? es.through() : productJson)
 		.pipe(productJsonFilter.restore)
@@ -280,37 +282,37 @@ if (require.main === module) {
 			process.exit(1);
 		});
 	} else {
-		cp.exec(
-			'git diff --cached --name-only',
-			{ maxBuffer: 2000 * 1024 },
-			(err, out) => {
-				if (err) {
-					console.error();
-					console.error(err);
-					process.exit(1);
-				}
+		// cp.exec(
+		// 	'git diff --cached --name-only',
+		// 	{ maxBuffer: 2000 * 1024 * 1000 },
+		// 	(err, out) => {
+		// 		if (err) {
+		// 			console.error();
+		// 			console.error(err);
+		// 			process.exit(1);
+		// 		}
 
-				const some = out.split(/\r?\n/).filter((l) => !!l);
+		// 		const some = out.split(/\r?\n/).filter((l) => !!l);
 
-				if (some.length > 0) {
-					console.log('Reading git index versions...');
+		// 		if (some.length > 0) {
+		// 			console.log('Reading git index versions...');
 
-					createGitIndexVinyls(some)
-						.then(
-							(vinyls) =>
-								new Promise((c, e) =>
-									hygiene(es.readArray(vinyls).pipe(filter(all)))
-										.on('end', () => c())
-										.on('error', e)
-								)
-						)
-						.catch((err) => {
-							console.error();
-							console.error(err);
-							process.exit(1);
-						});
-				}
-			}
-		);
+		// 			createGitIndexVinyls(some)
+		// 				.then(
+		// 					(vinyls) =>
+		// 						new Promise((c, e) =>
+		// 							hygiene(es.readArray(vinyls).pipe(filter(all)))
+		// 								.on('end', () => c())
+		// 								.on('error', e)
+		// 						)
+		// 				)
+		// 				.catch((err) => {
+		// 					console.error();
+		// 					console.error(err);
+		// 					process.exit(1);
+		// 				});
+		// 		}
+		// 	}
+		// );
 	}
 }

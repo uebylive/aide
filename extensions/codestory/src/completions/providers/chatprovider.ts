@@ -2,7 +2,10 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+
+/*
 import * as vscode from 'vscode';
+import * as uuid from 'uuid';
 
 import { reportFromStreamToSearchProgress } from '../../chatState/convertStreamToMessage';
 import { UserMessageType, deterministicClassifier } from '../../chatState/promptClassifier';
@@ -69,7 +72,7 @@ class CSChatResponseForProgress implements vscode.ChatResult {
 }
 
 export class CSChatAgentProvider implements vscode.Disposable {
-	private chatAgent: vscode.AideChatParticipant;
+	private chatAgent: vscode.ChatParticipant;
 
 	private _workingDirectory: string;
 	private _repoName: string;
@@ -102,8 +105,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this._probeProvider = probeProvider;
 		this._aidePlanTimer = aidePlanTimer;
 
-		this.chatAgent = vscode.aideChat.createChatParticipant('aide', this.defaultAgentRequestHandler);
-		this.chatAgent.isDefault = true;
+		this.chatAgent = vscode.aideAgent.createChatParticipant('aide', this.defaultAgentRequestHandler);
 		this.chatAgent.iconPath = vscode.Uri.joinPath(
 			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
 			'assets',
@@ -114,7 +116,7 @@ export class CSChatAgentProvider implements vscode.Disposable {
 			'assets',
 			'aide-user.png'
 		));
-		this.chatAgent.supportIssueReporting = true;
+		this.chatAgent.supportIssueReporting = false;
 		this.chatAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
 				return [
@@ -131,10 +133,10 @@ export class CSChatAgentProvider implements vscode.Disposable {
 		this.chatAgent.editsProvider = this.editsProvider;
 	}
 
-	defaultAgentRequestHandler: vscode.AideChatExtendedRequestHandler = async (request, _context, response, token) => {
+	defaultAgentRequestHandler: vscode.ChatExtendedRequestHandler = async (request, _context, response, token) => {
 		let requestType: UserMessageType = 'general';
 		const slashCommand = request.command;
-		if (request.location === vscode.AideChatLocation.Editor) {
+		if (request.location === vscode.ChatLocation.Editor) {
 			await provideInteractiveEditorResponse(
 				this._currentRepoRef,
 				this._sideCarClient,
@@ -154,6 +156,8 @@ export class CSChatAgentProvider implements vscode.Disposable {
 				requestType = deterministicRequestType;
 			}
 		}
+
+		const threadId = uuid.v4();
 
 		logger.info(`[codestory][request_type][provideResponseWithProgress] ${requestType}`);
 		if (requestType === 'explain') {
@@ -584,3 +588,4 @@ class DocumentManager {
 		return index + 2;
 	}
 }
+*/

@@ -7,7 +7,6 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
-import { OPEN_FILES_VARIABLE } from '../completions/providers/openFiles';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
@@ -18,11 +17,10 @@ import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
-import { Diagnostic } from 'vscode';
-import { GENERATE_PLAN } from '../completions/providers/generatePlan';
-import { AideProbeProvider } from '../completions/providers/probeProvider';
+// import { GENERATE_PLAN } from '../completions/providers/generatePlan';
+// import { AideProbeProvider } from '../completions/providers/probeProvider';
 import { AidePlanTimer } from '../utilities/planTimer';
 
 export enum CompletionStopReason {
@@ -221,13 +219,40 @@ export class SideCarClient {
 		}
 	}
 
+	async generatePlanRequest(
+		query: string,
+		threadId: string,
+		variables: readonly vscode.ChatPromptReference[],
+		editorUrl: string,
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/reasoning_thread_create';
+		const url = baseUrl.toString();
+		const body = {
+			query: query,
+			thread_id: threadId,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			editor_url: editorUrl,
+		};
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+		return await response.json() as PlanResponse;
+	}
+
 	async *followupQuestion(
 		query: string,
 		repoRef: RepoRef,
 		threadId: string,
-		variables: readonly vscode.ChatPromptReference[],
+		variables: readonly vscode.AideAgentPromptReference[],
 		projectLabels: string[],
-		probeProvider: AideProbeProvider,
+		editorUrl: string,
+		// probeProvider: AideProbeProvider,
 		aidePlanTimer: AidePlanTimer,
 	): AsyncIterableIterator<ConversationMessage> {
 		const baseUrl = new URL(this._url);
@@ -256,7 +281,7 @@ export class SideCarClient {
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
 			system_instruction: agentSystemInstruction,
-			editor_url: probeProvider.editorUrl(),
+			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
 			with_lsp_enrichment: user_context.with_lsp_enrichment,
 		};
@@ -650,7 +675,7 @@ export class SideCarClient {
 
 	async sendDiagnostics(
 		filePath: string,
-		diagnostics: readonly Diagnostic[]
+		diagnostics: readonly vscode.Diagnostic[]
 	): Promise<void> {
 		const textDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath));
 		const baseUrl = new URL(this._url);
@@ -976,7 +1001,7 @@ export class SideCarClient {
 			user_query: query,
 			editor_url: editorUrl,
 			request_id: threadId,
-			user_context: await convertVSCodeVariableToSidecar(variables),
+			user_context: await newConvertVSCodeVariableToSidecar(variables),
 			active_window_data: activeWindowDataForProbing,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: codebaseSearch,
@@ -1099,29 +1124,29 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
-		} else if (name === OPEN_FILES_VARIABLE) {
-			const openFiles = vscode.window.visibleTextEditors;
-			const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
-				return {
-					name: file.document.uri.fsPath,
-					start_position: {
-						line: 0,
-						character: 0,
-						byteOffset: 0,
-					},
-					end_position: {
-						line: file.document.lineCount,
-						character: 1,
-						byteOffset: 0,
-					},
-					fs_file_path: file.document.uri.fsPath,
-					type: getFileType(),
-					content: file.document.getText(),
-					language: file.document.languageId,
-				};
-			});
-			sidecarVariables.push(...openFileVariables);
-			// await resolveFileReference('file', value);
+			// } else if (name === OPEN_FILES_VARIABLE) {
+			// 	const openFiles = vscode.window.visibleTextEditors;
+			// 	const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
+			// 		return {
+			// 			name: file.document.uri.fsPath,
+			// 			start_position: {
+			// 				line: 0,
+			// 				character: 0,
+			// 				byteOffset: 0,
+			// 			},
+			// 			end_position: {
+			// 				line: file.document.lineCount,
+			// 				character: 1,
+			// 				byteOffset: 0,
+			// 			},
+			// 			fs_file_path: file.document.uri.fsPath,
+			// 			type: getFileType(),
+			// 			content: file.document.getText(),
+			// 			language: file.document.languageId,
+			// 		};
+			// 	});
+			// 	sidecarVariables.push(...openFileVariables);
+			// 	// await resolveFileReference('file', value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, variableId, value);
 		} else if (name === 'folder') {
@@ -1134,7 +1159,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
-		if (name === GENERATE_PLAN) {
+		if (name === 'generatePlan') {
 			isPlanGeneration = true;
 		}
 	}
@@ -1264,8 +1289,8 @@ async function convertVSCodeVariableToSidecar(
 		if (name === TERMINAL_SELECTION_VARIABLE) {
 			// we are looking at the terminal selection and we have some value for it
 			terminalSelection = value as string;
-		} else if (name === OPEN_FILES_VARIABLE) {
-			await resolveFileReference('file', variableId, value);
+			// } else if (name === OPEN_FILES_VARIABLE) {
+			// 	await resolveFileReference('file', variableId, value);
 		} else if (name === 'file' || name === 'code') {
 			await resolveFileReference(name, variableId, value);
 		} else if (name === 'folder') {
@@ -1278,7 +1303,7 @@ async function convertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		const variableName = variable.name;
 		const name = variableName.split(':')[0];
-		if (name === GENERATE_PLAN) {
+		if (name === 'generatePlan') {
 			isPlanGeneration = true;
 		}
 	}
@@ -1311,9 +1336,71 @@ async function convertVSCodeVariableToSidecar(
 	};
 }
 
-function getFileType(): SidecarVariableType {
-	return 'File';
+async function newConvertVSCodeVariableToSidecar(
+	variables: readonly vscode.AideAgentPromptReference[],
+): Promise<UserContext> {
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+
+	async function resolveFile(uri: vscode.Uri) {
+		const cachedFile = fileCache.get(uri.fsPath);
+		if (cachedFile === undefined) {
+			const fileDocument = await vscode.workspace.openTextDocument(uri);
+			fileCache.set(uri.fsPath, fileDocument);
+		}
+		return fileCache.get(uri.fsPath) as vscode.TextDocument;
+	}
+
+	for (const variable of variables) {
+		// vscode.editor.selection is a special id which is also present in the editor
+		// this help us understand that this is a selection and not a file reference
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+			const v = variable as vscode.AideAgentFileReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			let type: SidecarVariableType = 'File';
+			if (variable.id === 'vscode.file') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
+			sidecarVariables.push({
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(),
+				language: attachedFile.languageId,
+			});
+		}
+	}
+
+	return {
+		variables: sidecarVariables,
+		file_content_map: [],
+		terminal_selection: undefined,
+		folder_paths: [],
+		is_plan_generation: false,
+		is_plan_execution_until: null,
+		is_plan_append: false,
+		with_lsp_enrichment: false,
+		is_plan_drop_from: null,
+	};
 }
+
+// function getFileType(): SidecarVariableType {
+// 	return 'File';
+// }
 
 function getVariableType(
 	name: string,

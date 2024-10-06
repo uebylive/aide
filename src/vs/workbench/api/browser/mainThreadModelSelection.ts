@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { IAIModelSelectionService, IModelSelectionSettings } from 'vs/platform/aiModel/common/aiModels';
-import { ExtHostContext, ExtHostModelSelectionShape, MainContext, MainThreadModelSelectionShape } from 'vs/workbench/api/common/extHost.protocol';
-import { IExtHostContext, extHostNamedCustomer } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { IAIModelSelectionService, IModelSelectionSettings } from '../../../platform/aiModel/common/aiModels.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { ExtHostContext, ExtHostModelSelectionShape, MainContext, MainThreadModelSelectionShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadModelSelection)
 export class MainThreadModelSelection extends Disposable implements MainThreadModelSelectionShape {

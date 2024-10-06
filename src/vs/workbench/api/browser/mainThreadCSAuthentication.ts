@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from 'vs/base/common/lifecycle';
-import { CSAuthenticationSession, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { MainContext, MainThreadCSAuthenticationShape } from 'vs/workbench/api/common/extHost.protocol';
-import { extHostNamedCustomer, IExtHostContext } from 'vs/workbench/services/extensions/common/extHostCustomers';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { CSAuthenticationSession, ICSAuthenticationService } from '../../../platform/codestoryAccount/common/csAccount.js';
+import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { MainContext, MainThreadCSAuthenticationShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadCSAuthentication)
 export class MainThreadCSAuthentication extends Disposable implements MainThreadCSAuthenticationShape {

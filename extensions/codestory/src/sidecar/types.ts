@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ModelProviderConfiguration, ModelSelection, ProviderSpecificConfiguration } from 'vscode';
-import { UserContext } from '../server/types';
+import { SidecarResponsePosition, UserContext } from '../server/types';
 
 
 export type OptionString =
@@ -359,8 +359,8 @@ export type SidecarVariableType =
 
 export interface SidecarVariableTypes {
 	name: string;
-	start_position: Position;
-	end_position: Position;
+	start_position: SidecarResponsePosition;
+	end_position: SidecarResponsePosition;
 	fs_file_path: string;
 	type: SidecarVariableType;
 	content: string;
@@ -452,6 +452,30 @@ export type ProgressEvent =
 	| { index_percent: number }
 	| { sync_status: SyncStatus };
 
+
+
+export type PlanStep = {
+	id: string;
+	index: number;
+	title: string;
+	files_to_edit: string[];
+	description: string;
+};
+export type Plan = {
+	id: string;
+	sessionId: string;
+	name: string;
+	steps: PlanStep[];
+	initial_context: string;
+	user_query: string;
+	checkpoint: number | null;
+	storage_path: string;
+};
+export type PlanResponse = {
+	plan?: Plan;
+	success: boolean;
+	error_if_any?: string;
+};
 
 export enum LLMType {
 	Mixtral,

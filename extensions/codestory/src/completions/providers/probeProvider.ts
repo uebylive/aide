@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+/*
 import * as http from 'http';
 import * as net from 'net';
 import * as os from 'os';
@@ -20,12 +21,12 @@ import { RecentEditsRetriever } from '../../server/editedFiles';
 export class AideProbeProvider implements vscode.Disposable {
 	private _sideCarClient: SideCarClient;
 	private _editorUrl: string | undefined;
-	private _rootPath: string;
+	// private _rootPath: string;
 	private _limiter = new Limiter(1);
 	private editsMap = new Map();
 
 	private _requestHandler: http.Server | null = null;
-	private _openResponseStream: vscode.ProbeResponseStream | undefined;
+	private _openResponseStream: vscode.AgentResponseStream | undefined;
 	private _iterationEdits = new vscode.WorkspaceEdit();
 
 	private async isPortOpen(port: number): Promise<boolean> {
@@ -63,11 +64,11 @@ export class AideProbeProvider implements vscode.Disposable {
 
 	constructor(
 		sideCarClient: SideCarClient,
-		rootPath: string,
+		_rootPath: string,
 		recentEditsRetriever: RecentEditsRetriever,
 	) {
 		this._sideCarClient = sideCarClient;
-		this._rootPath = rootPath;
+		// this._rootPath = rootPath;
 
 		// Server for the sidecar to talk to the editor
 		this._requestHandler = http.createServer(
@@ -86,6 +87,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			// console.log(this._editorUrl);
 		});
 
+		/*
 		vscode.aideProbe.registerProbeResponseProvider(
 			'aideProbeProvider',
 			{
@@ -100,7 +102,7 @@ export class AideProbeProvider implements vscode.Disposable {
 	 *
 	 * @returns Retuns the optional editor url (which is weird, maybe we should just crash
 	 * if we don't get the editor url as its a necessary component now?)
-	 */
+	 *\/
 	editorUrl(): string | undefined {
 		return this._editorUrl;
 	}
@@ -109,6 +111,7 @@ export class AideProbeProvider implements vscode.Disposable {
 		await this._sideCarClient.sendContextRecording(events, this._editorUrl);
 	}
 
+	/*
 	async sessionFollowup(sessionAction: vscode.AideProbeSessionAction) {
 		if (sessionAction.action.type === 'newIteration') {
 			// @theskcd - This is where we can accept the iteration
@@ -249,13 +252,13 @@ export class AideProbeProvider implements vscode.Disposable {
 		return response;
 	}
 
-	private async provideProbeResponse(request: vscode.ProbeRequest, response: vscode.ProbeResponseStream, token: vscode.CancellationToken) {
+	private async provideProbeResponse(request: vscode.AgentTrigger, response: vscode.AgentResponseStream, token: vscode.CancellationToken) {
 		if (!this._editorUrl) {
 			return;
 		}
 
 		this._openResponseStream = response;
-		let { query } = request;
+		let { message: query } = request;
 
 		query = query.trim();
 
@@ -267,7 +270,7 @@ export class AideProbeProvider implements vscode.Disposable {
 			properties: {
 				platform: os.platform(),
 				query,
-				requestId: request.requestId,
+				requestId: request.id,
 			},
 		});
 
@@ -277,13 +280,13 @@ export class AideProbeProvider implements vscode.Disposable {
 		// let probeResponse: AsyncIterableIterator<SideCarAgentEvent>;
 
 		// if (request.mode === 'AGENTIC' || request.mode === 'ANCHORED') {
-		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, request.references, this._editorUrl, request.requestId, request.scope === 'WholeCodebase', isAnchorEditing);
+		const probeResponse = this._sideCarClient.startAgentCodeEdit(query, [], this._editorUrl, request.id, request.scope === 'WholeCodebase', isAnchorEditing);
 		// } else {
 		// 	probeResponse = this._sideCarClient.startAgentProbe(query, request.references, this._editorUrl, request.requestId,);
 		// }
 
 		// const isEditMode = request.mode === 'AGENTIC' || request.mode === 'ANCHORED';
-		await reportAgentEventsToChat(true, probeResponse, response, request.requestId, token, this._sideCarClient, this._iterationEdits, this._limiter);
+		await reportAgentEventsToChat(true, probeResponse, response, request.id, token, this._sideCarClient, this._iterationEdits, this._limiter);
 
 		const endTime = process.hrtime(startTime);
 		postHogClient?.capture({
@@ -293,12 +296,12 @@ export class AideProbeProvider implements vscode.Disposable {
 				platform: os.platform(),
 				query,
 				timeElapsed: `${endTime[0]}s ${endTime[1] / 1000000}ms`,
-				requestId: request.requestId,
+				requestId: request.id,
 			},
 		});
 
 		return {
-			iterationEdits: this._iterationEdits,
+			errorDetails: undefined,
 		};
 	}
 
@@ -307,10 +310,11 @@ export class AideProbeProvider implements vscode.Disposable {
 	}
 }
 
-function isAnchorBasedEditing(scope: vscode.AideProbeScope): boolean {
+function isAnchorBasedEditing(scope: vscode.AideAgentScope): boolean {
 	if (scope === 'Selection') {
 		return true;
 	} else {
 		return false;
 	}
 }
+*/

@@ -3,14 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Schemas } from 'vs/base/common/network';
-import { DataUri } from 'vs/base/common/resources';
-import { URI, URI as uri } from 'vs/base/common/uri';
-import { PLAINTEXT_LANGUAGE_ID } from 'vs/editor/common/languages/modesRegistry';
-import { ILanguageService } from 'vs/editor/common/languages/language';
-import { IModelService } from 'vs/editor/common/services/model';
-import { FileKind } from 'vs/platform/files/common/files';
-import { ThemeIcon } from 'vs/base/common/themables';
+import { Schemas } from '../../../base/common/network.js';
+import { DataUri } from '../../../base/common/resources.js';
+import { URI, URI as uri } from '../../../base/common/uri.js';
+import { PLAINTEXT_LANGUAGE_ID } from '../languages/modesRegistry.js';
+import { ILanguageService } from '../languages/language.js';
+import { IModelService } from './model.js';
+import { FileKind } from '../../../platform/files/common/files.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
+import { Codicon } from '../../../base/common/codicons.js';
 
 const fileIconDirectoryRegex = /(?:\/|^)(?:([^\/]+)\/)?([^\/]+)$/;
 
@@ -76,7 +77,10 @@ export function getIconClasses(modelService: IModelService, languageService: ILa
 
 			// Detected Mode
 			const detectedLanguageId = detectLanguageId(modelService, languageService, resource);
-			if (detectedLanguageId) {
+			if (detectedLanguageId === 'unknown') {
+				classes.length = 0;
+				classes.push(`codicon-${Codicon.file.id}`, 'predefined-file-icon');
+			} else if (detectedLanguageId) {
 				classes.push(`${cssEscape(detectedLanguageId)}-lang-file-icon`);
 			}
 		}
@@ -123,5 +127,5 @@ function detectLanguageId(modelService: IModelService, languageService: ILanguag
 }
 
 function cssEscape(str: string): string {
-	return str.replace(/[\x11\x12\x14\x15\x40]/g, '/'); // HTML class names can not contain certain whitespace characters, use / instead, which doesn't exist in file names.
+	return str.replace(/[\s]/g, '/'); // HTML class names can not contain certain whitespace characters (https://dom.spec.whatwg.org/#interface-domtokenlist), use / instead, which doesn't exist in file names.
 }

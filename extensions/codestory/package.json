@@ -12,22 +12,21 @@
     "*"
   ],
   "enabledApiProposals": [
-    "inlineCompletionsAdditions",
-    "interactive",
-    "chatProvider",
-    "aideGetInlayHintsProvider",
+    "aideAgent",
     "aideGetCodeLensProvider",
+    "aideGetInlayHintsProvider",
     "chatParticipantAdditions",
     "chatParticipantPrivate",
-    "aideChatParticipant",
-    "aideChatVariableResolver",
-    "aideProbe",
+    "chatProvider",
+    "chatVariableResolver",
+    "csAuthentication",
     "csevents",
     "defaultChatParticipant",
-    "chatVariableResolver",
+    "inlineCompletionsAdditions",
+    "interactive",
+    "mappedEditsProvider",
     "modelSelection",
-    "terminalSelection",
-    "csAuthentication"
+    "terminalSelection"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
@@ -74,35 +73,23 @@
         "title": "deep reasoning"
       }
     ],
-    "viewsContainers": {
-      "activitybar": [
-        {
-          "id": "changeTracker",
-          "title": "Change Tracker",
-          "icon": "assets/versions.svg"
-        }
-      ]
-    },
-    "aideChatParticipants": [
+    "aideAgents": [
       {
         "id": "aide",
-        "name": "Chat",
+        "name": "Aide",
+        "fullName": "Aide",
         "description": "What can I help you with today?",
+        "supportsModelPicker": true,
         "isDefault": true,
+        "metadata": {
+          "icon": "assets/aide-agent.png",
+          "requester": "assets/aide-user.png"
+        },
         "locations": [
           "panel"
         ]
       }
     ],
-    "menus": {
-      "view/title": [
-        {
-          "command": "codestory.feedback",
-          "when": "view == cs-chat",
-          "group": "navigation"
-        }
-      ]
-    },
     "configuration": {
       "type": "object",
       "title": "Aide Extension settings",

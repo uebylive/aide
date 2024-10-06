@@ -3,13 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { getWindow } from 'vs/base/browser/dom';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { autorun, IObservable, observableFromEvent } from 'vs/base/common/observable';
-import { generateUuid } from 'vs/base/common/uuid';
-import 'vs/css!./sidePanelWidget';
-import { ICodeEditor, IOverlayWidget, IOverlayWidgetPosition, OverlayWidgetPositionPreference } from 'vs/editor/browser/editorBrowser';
+import * as dom from '../../../../base/browser/dom.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
+import { autorun, IObservable, observableFromEvent } from '../../../../base/common/observable.js';
+import { generateUuid } from '../../../../base/common/uuid.js';
+import { ICodeEditor, IOverlayWidget, IOverlayWidgetPosition, OverlayWidgetPositionPreference } from '../../../browser/editorBrowser.js';
+import './sidePanelWidget.css';
 
 const $ = dom.$;
 
@@ -69,7 +68,7 @@ export abstract class SidePanelWidget extends Disposable implements IOverlayWidg
 		this.editor.addOverlayWidget(this);
 		this.layout();
 
-		getWindow(this.domNode).requestAnimationFrame(() => {
+		dom.getWindow(this.domNode).requestAnimationFrame(() => {
 			this.setScrollTop(this.editor.getScrollTop());
 		});
 	}

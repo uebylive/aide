@@ -3,17 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { IDisposable } from 'vs/base/common/lifecycle';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { IStorageService } from 'vs/platform/storage/common/storage';
-import { editorBackground } from 'vs/platform/theme/common/colorRegistry';
-import { IThemeService } from 'vs/platform/theme/common/themeService';
-import { MultiWindowParts, Part } from 'vs/workbench/browser/part';
-import { IBottomBarPartService } from 'vs/workbench/services/bottomBarPart/browser/bottomBarPartService';
-import { IWorkbenchLayoutService, Parts } from 'vs/workbench/services/layout/browser/layoutService';
-
-const $ = dom.$;
+import { $, append } from '../../../../base/browser/dom.js';
+import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IBottomBarPartService } from '../../../services/bottomBarPart/browser/bottomBarPartService.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
+import { MultiWindowParts, Part } from '../../part.js';
 
 export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implements IBottomBarPartService {
 	declare _serviceBrand: undefined;
@@ -30,7 +28,8 @@ export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implem
 		this._register(this.registerPart(this.mainPart));
 	}
 
-	createAuxiliaryControlsPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
+	/*
+	createAuxiliaryBottomBarPart(container: HTMLElement, editorContainer: HTMLElement): BottomBarPart {
 		const bottomBarPartContainer = document.createElement('div');
 		const bottomBarPart = this.instantiationService.createInstance(BottomBarPart);
 		this._register(bottomBarPart);
@@ -38,6 +37,7 @@ export class BottomBarPartService extends MultiWindowParts<BottomBarPart> implem
 		container.insertBefore(bottomBarPartContainer, editorContainer.nextSibling);
 		return bottomBarPart;
 	}
+	*/
 }
 
 export type BottomBarPosition = {
@@ -55,7 +55,7 @@ export class BottomBarPart extends Part implements IDisposable {
 
 	readonly minimumWidth: number = 200;
 	readonly maximumWidth: number = Number.POSITIVE_INFINITY;
-	readonly minimumHeight: number = 36;
+	readonly minimumHeight: number = 90;
 	readonly maximumHeight: number = Number.POSITIVE_INFINITY;
 
 	constructor(
@@ -77,7 +77,7 @@ export class BottomBarPart extends Part implements IDisposable {
 
 		this.getColor(editorBackground);
 		this.element.style.backgroundColor = this.getColor(editorBackground)?.toString() || 'transparent';
-		this._content = dom.append(this.element, $('.content'));
+		this._content = append(this.element, $('.content'));
 		return this._content;
 	}
 

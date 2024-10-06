@@ -179,8 +179,8 @@ export async function provideInteractiveEditorResponse(
 	repoRef: RepoRef,
 	sidecarClient: SideCarClient,
 	workingDirectory: string,
-	request: vscode.AideChatRequest,
-	progress: vscode.AideChatResponseStream,
+	request: vscode.AideAgentRequest,
+	progress: vscode.AideAgentResponseStream,
 	token: vscode.CancellationToken,
 ): Promise<vscode.ChatResult> {
 	const variables = request.references;
@@ -209,7 +209,7 @@ export async function provideInteractiveEditorResponse(
 	const context: InEditorRequest = {
 		repoRef: repoRef.getRepresentation(),
 		query: request.prompt,
-		threadId: request.threadId,
+		threadId: request.id,
 		language: textDocument.languageId,
 		snippetInformation: {
 			startPosition: {

@@ -3,19 +3,19 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as dom from 'vs/base/browser/dom';
-import { Button } from 'vs/base/browser/ui/button/button';
-import { Codicon } from 'vs/base/common/codicons';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import 'vs/css!./media/csAccount';
-import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from 'vs/platform/codestoryAccount/common/csAccount';
-import { CS_ACCOUNT_CARD_VISIBLE } from 'vs/platform/codestoryAccount/common/csAccountContextKeys';
-import { IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
-import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
-import { ILayoutService } from 'vs/platform/layout/browser/layoutService';
-import { INotificationService } from 'vs/platform/notification/common/notification';
-import { defaultButtonStyles } from 'vs/platform/theme/browser/defaultStyles';
+import * as dom from '../../../base/browser/dom.js';
+import { Button } from '../../../base/browser/ui/button/button.js';
+import { Codicon } from '../../../base/common/codicons.js';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
+import { IContextKey, IContextKeyService } from '../../contextkey/common/contextkey.js';
+import { IInstantiationService } from '../../instantiation/common/instantiation.js';
+import { ILayoutService } from '../../layout/browser/layoutService.js';
+import { INotificationService } from '../../notification/common/notification.js';
+import { defaultButtonStyles } from '../../theme/browser/defaultStyles.js';
+import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from '../common/csAccount.js';
+import { CS_ACCOUNT_CARD_VISIBLE } from '../common/csAccountContextKeys.js';
+import './media/csAccount.css';
 
 const $ = dom.$;
 

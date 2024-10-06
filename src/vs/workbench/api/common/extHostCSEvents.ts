@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { SymbolNavigationEvent } from 'vs/editor/common/model/csEvents';
-import { IExtensionDescription } from 'vs/platform/extensions/common/extensions';
-import * as TypeConverters from 'vs/workbench/api/common/extHostTypeConverters';
-import { Disposable } from 'vs/workbench/api/common/extHostTypes';
 import type { CSEventHandler, SymbolNavigationEvent as ExtSymbolNavigationEvent } from 'vscode';
-import { ExtHostCSEventsShape, IMainContext, MainContext, MainThreadCSEventsShape } from './extHost.protocol';
+import { SymbolNavigationEvent } from '../../../editor/common/model/csEvents.js';
+import { IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
+import { ExtHostCSEventsShape, IMainContext, MainContext, MainThreadCSEventsShape } from './extHost.protocol.js';
+import * as TypeConverters from './extHostTypeConverters.js';
+import { Disposable } from './extHostTypes.js';
 
 export class ExtHostCSEvents implements ExtHostCSEventsShape {
 	private readonly _proxy: MainThreadCSEventsShape;

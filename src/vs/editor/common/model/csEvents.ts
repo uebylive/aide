@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Position } from 'vs/editor/common/core/position';
-import { URI } from 'vs/base/common/uri';
+import { URI } from '../../../base/common/uri.js';
+import { Position } from '../core/position.js';
 
 export type SymbolNavigationEvent = {
 	position: Position;

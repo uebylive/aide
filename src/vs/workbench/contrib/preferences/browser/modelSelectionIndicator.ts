@@ -3,23 +3,23 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Codicon } from 'vs/base/common/codicons';
-import { MarkdownString } from 'vs/base/common/htmlContent';
-import { getCodiconAriaLabel } from 'vs/base/common/iconLabels';
-import { KeyChord, KeyCode, KeyMod } from 'vs/base/common/keyCodes';
-import { Disposable } from 'vs/base/common/lifecycle';
-import { ThemeIcon } from 'vs/base/common/themables';
-import 'vs/css!./media/modelSelectionIndicator';
-import * as nls from 'vs/nls';
-import { Action2, registerAction2 } from 'vs/platform/actions/common/actions';
-import { IAIModelSelectionService, IModelProviders, ProviderConfig } from 'vs/platform/aiModel/common/aiModels';
-import { KeybindingWeight } from 'vs/platform/keybinding/common/keybindingsRegistry';
-import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from 'vs/platform/quickinput/common/quickInput';
-import { IWorkbenchContribution } from 'vs/workbench/common/contributions';
-import { IModelSelectionEditingService } from 'vs/workbench/services/aiModel/common/aiModelEditing';
-import { getEditorModelItems } from 'vs/workbench/services/preferences/browser/modelSelectionEditorModel';
-import { isModelItemConfigComplete } from 'vs/workbench/services/preferences/common/preferences';
-import { IStatusbarEntry, IStatusbarEntryAccessor, StatusbarEntryKind } from 'vs/workbench/services/statusbar/browser/statusbar';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { getCodiconAriaLabel } from '../../../../base/common/iconLabels.js';
+import { KeyChord, KeyCode, KeyMod } from '../../../../base/common/keyCodes.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
+import * as nls from '../../../../nls.js';
+import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
+import { IAIModelSelectionService, IModelProviders, ProviderConfig } from '../../../../platform/aiModel/common/aiModels.js';
+import { KeybindingWeight } from '../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { IQuickInputService, IQuickPickItem, IQuickPickSeparator, QuickPickItem } from '../../../../platform/quickinput/common/quickInput.js';
+import { IWorkbenchContribution } from '../../../common/contributions.js';
+import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
+import { getEditorModelItems } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
+import { isModelItemConfigComplete } from '../../../services/preferences/common/preferences.js';
+import { IStatusbarEntry, IStatusbarEntryAccessor, StatusbarEntryKind } from '../../../services/statusbar/browser/statusbar.js';
+import './media/modelSelectionIndicator.css';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
 	static readonly SWITCH_MODEL_COMMAND_ID = 'workbench.action.modelSelection.switch';
@@ -192,7 +192,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			return items;
 		};
 
-		const quickPick = this.quickInputService.createQuickPick();
+		const disposables = new DisposableStore();
+		const quickPick = disposables.add(this.quickInputService.createQuickPick({ useSeparators: true }));
 		quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
 		quickPick.title = `Select ${type.replace('Model', '')} model`;
 		quickPick.items = await computeItems();
@@ -200,7 +201,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
-		this._register(quickPick.onDidAccept(async () => {
+		disposables.add(quickPick.onDidAccept(async () => {
 			const item = quickPick.selectedItems[0];
 			const modelKey = item.id as string;
 			await this.modelSelectionEditingService.editModelSelection(type, modelKey);

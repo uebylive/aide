@@ -13,13 +13,12 @@ import { SideCarAgentEvent, SidecarRequestRange } from '../server/types';
 import { Limiter } from '../server/applyEdits';
 import { IndentationHelper, IndentStyleSpaces } from '../completions/providers/editorSessionProvider';
 import { AdjustedLineContent, LineContent, LineIndentManager } from '../completions/providers/reportEditorSessionAnswerStream';
-import { AidePlanTimer } from '../utilities/planTimer';
+// import { AidePlanTimer } from '../utilities/planTimer';
 
 
 export const reportFromStreamToSearchProgress = async (
 	stream: AsyncIterator<ConversationMessage>,
-	response: vscode.AideChatResponseStream,
-	_aidePlanTimer: AidePlanTimer,
+	response: vscode.AideAgentResponseStream,
 	cancellationToken: vscode.CancellationToken,
 	workingDirectory: string,
 ): Promise<string> => {
@@ -199,7 +198,7 @@ export const reportCodeSpansToChat = (codeSpans: CodeSpan[], workingDirectory: s
 	return '## Relevant code snippets\n\n' + codeSpansString + suffixString;
 };
 
-export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
+export const reportCodeReferencesToChat = (response: vscode.AideAgentResponseStream, codeSpans: CodeSpan[], workingDirectory: string) => {
 	const sortedCodeSpans = codeSpans.sort((a, b) => {
 		if (a.score !== null && b.score !== null) {
 			return b.score - a.score;
@@ -231,7 +230,7 @@ export const reportCodeReferencesToChat = (response: vscode.AideChatResponseStre
 
 
 export const reportProcUpdateToChat = (
-	progress: vscode.AideChatResponseStream,
+	progress: vscode.AideAgentResponseStream,
 	proc: AgentStep,
 	workingDirectory: string,
 ) => {
@@ -258,7 +257,7 @@ const pattern = /(?:^|\s)(\w+\s+at\s+[\w/.-]+)?(.*)/s;
 export const reportAgentEventsToChat = async (
 	editMode: boolean,
 	stream: AsyncIterableIterator<SideCarAgentEvent>,
-	response: vscode.ProbeResponseStream,
+	response: vscode.AideAgentResponseStream,
 	threadId: string,
 	token: vscode.CancellationToken,
 	sidecarClient: SideCarClient,
@@ -290,43 +289,43 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
+		// TODO(@ghostwriternr): Remove this before merging to cs-main
+		console.log(event);
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
-				const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
-					return {
-						symbolName: item.symbol_name,
-						uri: vscode.Uri.file(item.fs_file_path),
-						isNew: item.is_new,
-						thinking: item.thinking,
-					};
-				});
-				response.initialSearchSymbols(initialSearchSymbolInformation);
+				// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
+				// 	return {
+				// 		symbolName: item.symbol_name,
+				// 		uri: vscode.Uri.file(item.fs_file_path),
+				// 		isNew: item.is_new,
+				// 		thinking: item.thinking,
+				// 	};
+				// });
+				// response.initialSearchSymbols(initialSearchSymbolInformation);
 			} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
-				response.repoMapGeneration(false);
+				// response.repoMapGeneration(false);
 			} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
-				response.repoMapGeneration(true);
+				// response.repoMapGeneration(true);
 			} else if (event.event.FrameworkEvent.LongContextSearchStart) {
-				response.longContextSearch(false);
+				// response.longContextSearch(false);
 			} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
-				response.longContextSearch(true);
+				// response.longContextSearch(true);
 			} else if (event.event.FrameworkEvent.OpenFile) {
 				const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
 				if (filePath) {
-					response.openFile({
-						uri: vscode.Uri.file(filePath),
-					});
+					response.reference(vscode.Uri.file(filePath));
 				}
 			} else if (event.event.FrameworkEvent.CodeIterationFinished) {
-				response.codeIterationFinished({ edits: iterationEdits });
+				// response.codeIterationFinished({ edits: iterationEdits });
 			} else if (event.event.FrameworkEvent.ReferenceFound) {
-				response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
+				// response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
 			} else if (event.event.FrameworkEvent.RelevantReference) {
-				const ref = event.event.FrameworkEvent.RelevantReference;
-				response.relevantReference({
-					uri: vscode.Uri.file(ref.fs_file_path),
-					symbolName: ref.symbol_name,
-					reason: ref.reason,
-				});
+				// const ref = event.event.FrameworkEvent.RelevantReference;
+				// response.relevantReference({
+				// 	uri: vscode.Uri.file(ref.fs_file_path),
+				// 	symbolName: ref.symbol_name,
+				// 	reason: ref.reason,
+				// });
 			} else if (event.event.FrameworkEvent.GroupedReferences) {
 				const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
 				const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
@@ -338,7 +337,7 @@ export const reportAgentEventsToChat = async (
 						};
 					});
 				}
-				response.followups(followups);
+				// response.followups(followups);
 			} else if (event.event.FrameworkEvent.SearchIteration) {
 				// console.log(event.event.FrameworkEvent.SearchIteration);
 			} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
@@ -355,13 +354,13 @@ export const reportAgentEventsToChat = async (
 			const symbolEventKey = symbolEventKeys[0] as keyof typeof symbolEvent;
 			// If this is a symbol event then we have to make sure that we are getting the probe request over here
 			if (!editMode && symbolEventKey === 'Probe' && symbolEvent.Probe !== undefined) {
-				response.breakdown({
-					reference: {
-						uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
-						name: symbolEvent.Probe.symbol_identifier.symbol_name,
-					},
-					query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
-				});
+				// response.breakdown({
+				// 	reference: {
+				// 		uri: vscode.Uri.file(symbolEvent.Probe.symbol_identifier.fs_file_path ?? 'symbol_not_found'),
+				// 		name: symbolEvent.Probe.symbol_identifier.symbol_name,
+				// 	},
+				// 	query: new vscode.MarkdownString(symbolEvent.Probe.probe_request)
+				// });
 			}
 		} else if (event.event.SymbolEventSubStep) {
 			const { symbol_identifier, event: symbolEventSubStep } = event.event.SymbolEventSubStep;
@@ -370,12 +369,12 @@ export const reportAgentEventsToChat = async (
 				if (!symbol_identifier.fs_file_path) {
 					continue;
 				}
-				const goToDefinition = symbolEventSubStep.GoToDefinition;
-				const uri = vscode.Uri.file(goToDefinition.fs_file_path);
-				const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
-				const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
-				const range = new vscode.Range(startPosition, endPosition);
-				response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
+				// const goToDefinition = symbolEventSubStep.GoToDefinition;
+				// const uri = vscode.Uri.file(goToDefinition.fs_file_path);
+				// const startPosition = new vscode.Position(goToDefinition.range.startPosition.line, goToDefinition.range.startPosition.character);
+				// const endPosition = new vscode.Position(goToDefinition.range.endPosition.line, goToDefinition.range.endPosition.character);
+				// const _range = new vscode.Range(startPosition, endPosition);
+				// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 				continue;
 			} else if (symbolEventSubStep.Edit) {
 				if (!symbol_identifier.fs_file_path) {
@@ -387,21 +386,17 @@ export const reportAgentEventsToChat = async (
 				if (editEvent.CodeCorrectionTool) { }
 
 				if (editEvent.ThinkingForEdit) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						response: new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking),
-					});
+					// TODO(@skcd42): This event currently gets sent multiple times, and doesn't contain the text we'd ideally like to show the user.
+					// It also seems to contain the search/replace block in the text, which we don't want to show.
+					// response.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking));
 				}
 				if (editEvent.RangeSelectionForEdit) {
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name,
-						}
-					});
+					// response.breakdown({
+					// 	reference: {
+					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+					// 		name: symbol_identifier.symbol_name,
+					// 	}
+					// });
 				} else if (editEvent.EditCodeStreaming) {
 					// we have to do some state management over here
 					// we send 3 distinct type of events over here
@@ -474,14 +469,14 @@ export const reportAgentEventsToChat = async (
 
 				const subStepType = probeRequestKeys[0];
 				if (!editMode && subStepType === 'ProbeAnswer' && probeSubStep.ProbeAnswer !== undefined) {
-					const probeAnswer = probeSubStep.ProbeAnswer;
-					response.breakdown({
-						reference: {
-							uri: vscode.Uri.file(symbol_identifier.fs_file_path),
-							name: symbol_identifier.symbol_name
-						},
-						response: new vscode.MarkdownString(probeAnswer)
-					});
+					// const probeAnswer = probeSubStep.ProbeAnswer;
+					// response.breakdown({
+					// 	reference: {
+					// 		uri: vscode.Uri.file(symbol_identifier.fs_file_path),
+					// 		name: symbol_identifier.symbol_name
+					// 	},
+					// 	response: new vscode.MarkdownString(probeAnswer)
+					// });
 				}
 			}
 		} else if (event.event.RequestEvent) {
@@ -606,7 +601,7 @@ export class StreamProcessor {
 	documentLineIndex: number;
 	sentEdits: boolean;
 	documentLineLimit: number;
-	constructor(progress: vscode.ProbeResponseStream,
+	constructor(progress: vscode.AideAgentResponseStream,
 		lines: string[],
 		indentStyle: IndentStyleSpaces | undefined,
 		uri: vscode.Uri,
@@ -718,7 +713,7 @@ export class StreamProcessor {
 
 class DocumentManager {
 	indentStyle: IndentStyleSpaces;
-	progress: vscode.ProbeResponseStream;
+	progress: vscode.AideAgentResponseStream;
 	lines: LineContent[];
 	firstSentLineIndex: number;
 	firstRangeLine: number;
@@ -728,7 +723,7 @@ class DocumentManager {
 	applyDirectly: boolean;
 
 	constructor(
-		progress: vscode.ProbeResponseStream,
+		progress: vscode.AideAgentResponseStream,
 		lines: string[],
 		// Fix the way we provide context over here?
 		range: SidecarRequestRange,
@@ -801,10 +796,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return index + 1;
@@ -816,10 +811,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return index + 1;
@@ -851,10 +846,10 @@ class DocumentManager {
 				await vscode.workspace.applyEdit(edits);
 			}
 			else if (this.limiter === null) {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			} else {
 				await this.limiter.queue(async () => {
-					await this.progress.codeEdit({ edits, iterationId: 'mock' });
+					await this.progress.codeEdit(edits);
 				});
 			}
 			return startIndex + 1;
@@ -878,10 +873,10 @@ class DocumentManager {
 			await vscode.workspace.applyEdit(edits);
 		}
 		else if (this.limiter === null) {
-			await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			await this.progress.codeEdit(edits);
 		} else {
 			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			});
 		}
 		return this.lines.length;
@@ -904,10 +899,10 @@ class DocumentManager {
 			await vscode.workspace.applyEdit(edits);
 		}
 		else if (this.limiter === null) {
-			await this.progress.codeEdit({ edits, iterationId: 'mock' });
+			await this.progress.codeEdit(edits);
 		} else {
 			await this.limiter.queue(async () => {
-				await this.progress.codeEdit({ edits, iterationId: 'mock' });
+				await this.progress.codeEdit(edits);
 			});
 		}
 		return index + 2;
