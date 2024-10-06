@@ -7,8 +7,8 @@ import * as http from 'http';
 import * as net from 'net';
 import * as vscode from 'vscode';
 
-import { AnswerSplitOnNewLineAccumulatorStreaming, reportFromStreamToSearchProgress, StreamProcessor } from '../../chatState/convertStreamToMessage';
-import { applyEdits, applyEditsDirectly } from '../../server/applyEdits';
+import { AnswerSplitOnNewLineAccumulatorStreaming, reportAgentEventsToChat, reportFromStreamToSearchProgress, StreamProcessor } from '../../chatState/convertStreamToMessage';
+import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
 import { EditedCodeStreamingRequest, SidecarApplyEditsRequest, SidecarContextEvent } from '../../server/types';
@@ -25,7 +25,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private requestHandler: http.Server | null = null;
 	private editsMap = new Map();
 	private eventQueue: vscode.AideAgentRequest[] = [];
-	// private limiter = new Limiter(1);
+	private limiter = new Limiter(1);
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
 	private sessionId: string | undefined;
@@ -250,33 +250,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references as vscode.AideAgentFileReference[], this.projectContext.labels, this.editorUrl, this._timer);
 			await reportFromStreamToSearchProgress(followupResponse, responseStream, token, this.workingDirectory);
 		} else if (event.mode === vscode.AideAgentMode.Edit) {
-			// const _isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
-			// const _isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-			let testEdit = new vscode.WorkspaceEdit();
-			testEdit.replace(
-				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
-				new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 20)),
-				'yoo waddup'
-			);
-			responseStream.codeEdit(testEdit);
-			await new Promise(c => setTimeout(c, 1000));
-			testEdit = new vscode.WorkspaceEdit();
-			testEdit.replace(
-				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
-				new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 0)),
-				'yoo waddup'
-			);
-			responseStream.codeEdit(testEdit);
-			await new Promise(c => setTimeout(c, 1000));
-			testEdit = new vscode.WorkspaceEdit();
-			testEdit.replace(
-				vscode.Uri.file('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
-				new vscode.Range(new vscode.Position(2, 0), new vscode.Position(2, 14)),
-				'yoo waddup'
-			);
-			responseStream.codeEdit(testEdit);
-			// const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
-			// await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
+			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
+			const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
+			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
+			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		}
 		responseStream.close();
 	}
