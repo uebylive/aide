@@ -1858,6 +1858,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			LanguageModelError: extHostTypes.LanguageModelError,
 			AideAgentMode: extHostTypes.AideAgentMode,
 			AideAgentScope: extHostTypes.AideAgentScope,
+			AideAgentResponsePlanPart: extHostTypes.AideAgentResponsePlanPart,
 			ChatResponseCodeEditPart: extHostTypes.ChatResponseCodeEditPart,
 			NewSymbolName: extHostTypes.NewSymbolName,
 			NewSymbolNameTag: extHostTypes.NewSymbolNameTag,

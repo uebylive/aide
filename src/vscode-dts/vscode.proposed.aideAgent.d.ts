@@ -6,7 +6,8 @@
 declare module 'vscode' {
 	export enum AideAgentMode {
 		Edit = 1,
-		Chat = 2
+		Plan = 2,
+		Chat = 3
 	}
 
 	export enum AideAgentScope {
@@ -43,9 +44,25 @@ declare module 'vscode' {
 
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
 
+	export interface AideChatStep {
+		/**
+		 * The index of the step in the plan
+		 */
+		readonly index: number;
+		/**
+		 * The title of the step in the plan
+		 */
+		readonly title: string;
+		/**
+		 * The description of the step
+		 */
+		description: string | MarkdownString;
+	}
+
 	export interface AideAgentResponseStream extends ChatResponseStream {
 		codeEdit(edits: WorkspaceEdit): void;
 		push(part: AideAgentResponsePart): void;
+		step(step: AideChatStep): void;
 		close(): void;
 	}
 

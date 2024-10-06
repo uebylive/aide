@@ -41,7 +41,7 @@ import { ChatAgentLocation, IChatAgentMetadata } from '../common/aideAgentAgents
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
@@ -63,6 +63,7 @@ import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsR
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
+import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 
 const $ = dom.$;
 
@@ -687,6 +688,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
+		} else if (content.kind === 'planStep') {
+			return this.renderPlanStep(content, templateData, context);
 		}
 
 		return undefined;
@@ -811,6 +814,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		});
 
 		return markdownPart;
+	}
+
+	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
+		const descriptionPart = this.renderMarkdown(step.description, templateData, context);
+		return this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
 	}
 
 	disposeElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IChatListItemTemplate): void {

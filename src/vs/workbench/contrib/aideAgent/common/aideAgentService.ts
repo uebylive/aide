@@ -196,6 +196,13 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
+export interface IChatPlanStep {
+	description: IMarkdownString;
+	title: string;
+	index: number;
+	kind: 'planStep';
+}
+
 export interface IChatEndResponse {
 	kind: 'endResponse';
 }
@@ -219,6 +226,7 @@ export type IChatProgress =
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
+	| IChatPlanStep
 	| IChatEndResponse;
 
 export interface IChatFollowup {

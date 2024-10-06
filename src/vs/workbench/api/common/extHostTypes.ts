@@ -4691,13 +4691,25 @@ export class LanguageModelError extends Error {
 //#region AideChat
 export enum AideAgentMode {
 	Edit = 1,
-	Chat = 2,
+	Plan = 2,
+	Chat = 3
 }
 
 export enum AideAgentScope {
 	Selection = 1,
 	PinnedContext = 2,
 	Codebase = 3
+}
+
+export class AideAgentResponsePlanPart {
+	description: string | vscode.MarkdownString;
+	index: number;
+	title: string;
+	constructor(description: string | vscode.MarkdownString, index: number, title: string) {
+		this.description = description;
+		this.index = index;
+		this.title = title;
+	}
 }
 
 export class ChatResponseCodeEditPart {

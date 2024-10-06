@@ -17,7 +17,7 @@ import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 // import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 // import { AideProbeProvider } from '../completions/providers/probeProvider';
@@ -217,6 +217,32 @@ export class SideCarClient {
 				yield editFileResponse;
 			}
 		}
+	}
+
+	async generatePlanRequest(
+		query: string,
+		threadId: string,
+		variables: readonly vscode.ChatPromptReference[],
+		editorUrl: string,
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/reasoning_thread_create';
+		const url = baseUrl.toString();
+		const body = {
+			query: query,
+			thread_id: threadId,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			editor_url: editorUrl,
+		};
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+		return await response.json() as PlanResponse;
 	}
 
 	async *followupQuestion(

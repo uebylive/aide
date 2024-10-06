@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -2889,12 +2889,14 @@ export namespace AideAgentMode {
 		switch (mode) {
 			case AgentMode.Edit: return types.AideAgentMode.Edit;
 			case AgentMode.Chat: return types.AideAgentMode.Chat;
+			case AgentMode.Plan: return types.AideAgentMode.Plan;
 		}
 	}
 
 	export function from(mode: types.AideAgentMode): AgentMode {
 		switch (mode) {
 			case types.AideAgentMode.Edit: return AgentMode.Edit;
+			case types.AideAgentMode.Plan: return AgentMode.Plan;
 			case types.AideAgentMode.Chat: return AgentMode.Chat;
 		}
 	}
@@ -2915,6 +2917,17 @@ export namespace AideAgentScope {
 			case types.AideAgentScope.PinnedContext: return AgentScope.PinnedContext;
 			case types.AideAgentScope.Codebase: return AgentScope.Codebase;
 		}
+	}
+}
+
+export namespace AideAgentResponsePlanPart {
+	export function from(part: types.AideAgentResponsePlanPart): Dto<IChatPlanStep> {
+		return {
+			kind: 'planStep',
+			index: part.index,
+			title: part.title,
+			description: MarkdownString.from(part.description)
+		};
 	}
 }
 

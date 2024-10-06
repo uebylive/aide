@@ -52,7 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatCodeEdit, IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1422,17 +1422,25 @@ export type IChatProgressDto =
 ///////////////////////// END CHAT /////////////////////////
 
 ///////////////////////// START AIDE /////////////////////////
+
+export type IAideChatAgentHistoryEntryDto = IChatAgentHistoryEntryDto & {
+	response: ReadonlyArray<IChatContentProgressDto>;
+};
+
 export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
+	provideFollowups(request: Dto<IChatAgentRequest>, handle: number, result: IChatAgentResult, context: { history: IAideChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
 }
 
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
-export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatEndResponse>;
+export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatPlanStep> | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
 	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;
 	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
 }
+
+
 
 ///////////////////////// END AIDE /////////////////////////
 

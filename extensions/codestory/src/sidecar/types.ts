@@ -453,6 +453,29 @@ export type ProgressEvent =
 	| { sync_status: SyncStatus };
 
 
+
+export type PlanStep = {
+	id: string;
+	index: number;
+	title: string;
+	files_to_edit: string[];
+	description: string;
+};
+export type Plan = {
+	id: string;
+	name: string;
+	steps: PlanStep[];
+	initial_context: string;
+	user_query: string;
+	checkpoint: number | null;
+	storage_path: string;
+};
+export type PlanResponse = {
+	plan?: Plan;
+	success: boolean;
+	error_if_any?: string;
+};
+
 export enum LLMType {
 	Mixtral,
 	MistralInstruct,

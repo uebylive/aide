@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -99,6 +99,7 @@ export type IChatProgressResponseContent =
 	| IChatWarningMessage
 	| IChatTask
 	| IChatTextEditGroup
+	| IChatPlanStep
 	| IChatConfirmation;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -325,6 +326,8 @@ export class Response extends Disposable implements IResponse {
 				return '';
 			} else if (part.kind === 'confirmation') {
 				return `${part.title}\n${part.message}`;
+			} else if (part.kind === 'planStep') {
+				return part.description.value;
 			} else {
 				return part.content.value;
 			}
@@ -805,7 +808,8 @@ export enum ChatModelInitState {
 
 export enum AgentMode {
 	Chat = 'Chat',
-	Edit = 'Edit'
+	Edit = 'Edit',
+	Plan = 'Plan'
 }
 
 export enum AgentScope {
@@ -1126,7 +1130,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
-			progress.kind === 'confirmation'
+			progress.kind === 'confirmation' ||
+			progress.kind === 'planStep'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
