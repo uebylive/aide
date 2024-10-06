@@ -1352,11 +1352,19 @@ async function newConvertVSCodeVariableToSidecar(
 	}
 
 	for (const variable of variables) {
-		if (variable.id === 'vscode.file') {
+		// vscode.editor.selection is a special id which is also present in the editor
+		// this help us understand that this is a selection and not a file reference
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
 			const range = value.range;
+			let type: SidecarVariableType = 'File';
+			if (variable.id === 'vscode.file') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
 			sidecarVariables.push({
 				name: v.name,
 				start_position: {
@@ -1370,7 +1378,7 @@ async function newConvertVSCodeVariableToSidecar(
 					byteOffset: 0,
 				},
 				fs_file_path: value.uri.fsPath,
-				type: 'File',
+				type,
 				content: attachedFile.getText(),
 				language: attachedFile.languageId,
 			});

@@ -130,7 +130,7 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 						}
 
 						resolvedAttachedContext.push({
-							id: 'vscode.file',
+							id: 'vscode.editor.selection',
 							name: basename(model.uri.fsPath),
 							value: { uri: model.uri, range },
 						});
