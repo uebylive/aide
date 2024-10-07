@@ -27,19 +27,27 @@ import './media/aideAgentPlanStepPart.css';
 
 const $ = dom.$;
 
-export type StepState = 'generating' | 'applying-changes' | 'idle' | 'error';
+export enum StepState {
+	GeneratingPlan = 'GeneratingPlan',
+	Idle = 'Idle',
+	ApplyingEdits = 'ApplyingEdits',
+	Reviewing = 'Reviewing',
+	Error = 'Error'
+}
+export type IStepState = `${StepState}`;
 
 // TODO(@g-danna) Add intl
 export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
-	private readonly state: StepState = 'idle';
+	private readonly state: IStepState = StepState.Idle;
 	private readonly willBeDropped = false;
 
 	private feedbackMode = false;
 	private showDescription = false;
 
-	private changeButtonsElement: HTMLElement;
-	private loadingButtonsElement: HTMLElement;
+	private reviewButtonsElement: HTMLElement; // Accept/reject changes
+	private planButtonsElement: HTMLElement; // Delete step/start changes implementation
+	private loadingButtonsElement: HTMLElement; // Stop plan generation or edits application
 	private loadingButton: Button;
 
 	private enterFeedbackButton: Button;
@@ -94,10 +102,29 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 			this.rerender();
 		}));
 
-		this.changeButtonsElement = $('.plan-step-changes-buttons');
-		headerElement.appendChild(this.changeButtonsElement);
+		this.planButtonsElement = $('.plan-step-plan-buttons');
+		headerElement.appendChild(this.planButtonsElement);
 
-		const acceptChangesButton = this._register(this.instantiationService.createInstance(Button, this.changeButtonsElement, { title: 'Accept changes' }));
+		const implementButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Accept changes' }));
+		implementButton.element.classList.add('plan-step-implement-until');
+		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
+
+		implementButton.onDidClick(() => {
+			mockEditsService.implementStep(step.index);
+		});
+
+		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Reject changes' }));
+		this._register(this.instantiationService.createInstance(Heroicon, dropPlanStep.element, 'micro/trash'));
+		dropPlanStep.element.classList.add('plan-step-drop-step');
+
+		dropPlanStep.onDidClick(() => {
+			mockPlanService.dropPlanStep(step.index);
+		});
+
+		this.reviewButtonsElement = $('.plan-step-review-buttons');
+		headerElement.appendChild(this.reviewButtonsElement);
+
+		const acceptChangesButton = this._register(this.instantiationService.createInstance(Button, this.reviewButtonsElement, { title: 'Accept changes' }));
 		acceptChangesButton.element.classList.add('plan-step-accept-changes');
 		this._register(this.instantiationService.createInstance(Heroicon, acceptChangesButton.element, 'micro/check'));
 
@@ -105,7 +132,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 			mockEditsService.acceptEdits(step.index);
 		});
 
-		const rejectChangesButton = this._register(this.instantiationService.createInstance(Button, this.changeButtonsElement, { title: 'Reject changes' }));
+		const rejectChangesButton = this._register(this.instantiationService.createInstance(Button, this.reviewButtonsElement, { title: 'Reject changes' }));
 		this._register(this.instantiationService.createInstance(Heroicon, rejectChangesButton.element, 'micro/x-mark'));
 		rejectChangesButton.element.classList.add('plan-step-reject-changes');
 
@@ -117,9 +144,9 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		headerElement.appendChild(this.loadingButtonsElement);
 		this.loadingButton = this._register(this.instantiationService.createInstance(Button, this.loadingButtonsElement, { title: 'Loading' }));
 		this.loadingButton.onDidClick(() => {
-			if (this.state === 'generating') {
+			if (this.state === StepState.GeneratingPlan) {
 				mockPlanService.stopGeneratingStep(step.index);
-			} else if (this.state === 'applying-changes') {
+			} else if (this.state === StepState.ApplyingEdits) {
 				mockEditsService.stopGeneretingEdits(step.index);
 			}
 		});
@@ -131,10 +158,18 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		const stopIcon = this._register(this.instantiationService.createInstance(Heroicon, this.loadingButton.element, 'micro/stop'));
 		stopIcon.svg.classList.add('plan-step-stop-icon');
 
-		if (this.state === 'generating' || this.state === 'applying-changes') {
-			this.showLoadingButton();
-		} else if (this.state === 'idle') {
-			this.showChangesButtons();
+
+		switch (this.state) {
+			case StepState.GeneratingPlan:
+			case StepState.ApplyingEdits:
+				this.showLoadingButton();
+				break;
+			case StepState.Idle:
+				this.showPlanButtons();
+				break;
+			case StepState.Reviewing:
+				this.showReviewButtons();
+				break;
 		}
 
 		// TODO(@g-danna) Add description element
@@ -193,11 +228,11 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.submitFeedbackButton = this._register(this.instantiationService.createInstance(Button, feedbackElement, { title: 'Regenerate step' }));
 		this.submitFeedbackButton.onDidClick(() => {
 			const feedbackValue = this.feedbackEditor.getModel()?.getValue();
-			if (this.state === 'generating') {
+			if (this.state === StepState.GeneratingPlan) {
 				mockPlanService.feedbackForPlanStep(step.index, feedbackValue);
-			} else if (this.state === 'applying-changes' || this.state === 'idle') {
+			} else if (this.state === StepState.ApplyingEdits || this.state === StepState.Idle) {
 				mockEditsService.feedbackForStepEdits(step.index, feedbackValue);
-				if (this.state === 'applying-changes') {
+				if (this.state === StepState.ApplyingEdits) {
 					mockEditsService.stopGeneretingEdits(step.index);
 				}
 			}
@@ -253,15 +288,21 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	}
 
 
-	private showChangesButtons() {
-		dom.hide(this.loadingButtonsElement);
-		dom.show(this.changeButtonsElement);
+	private showReviewButtons() {
+		dom.show(this.reviewButtonsElement);
+		dom.hide(this.loadingButtonsElement, this.planButtonsElement);
 	}
 
 	private showLoadingButton() {
-		dom.hide(this.changeButtonsElement);
 		dom.show(this.loadingButtonsElement);
+		dom.hide(this.reviewButtonsElement, this.planButtonsElement);
 	}
+
+	private showPlanButtons() {
+		dom.show(this.planButtonsElement);
+		dom.hide(this.reviewButtonsElement, this.loadingButtonsElement);
+	}
+
 
 	private layoutFeedbackEditor() {
 		const currentHeight = Math.max(this.feedbackEditor.getContentHeight(), 32);
@@ -298,10 +339,16 @@ const mockPlanService = {
 	},
 	feedbackForPlanStep(index: number, feedback?: string) {
 		console.log('feedbackForPlanStep', index, feedback || 'No feedback');
+	},
+	dropPlanStep(index: number) {
+		console.log('dropPlanStep', index);
 	}
 };
 
 const mockEditsService = {
+	implementStep(index: number) {
+		console.log('implementStep', index);
+	},
 	stopGeneretingEdits(index: number) {
 		console.log('stopGeneretingEdits', index);
 	},
