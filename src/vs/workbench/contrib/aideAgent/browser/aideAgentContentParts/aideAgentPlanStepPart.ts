@@ -120,7 +120,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		// probably works, we do need to set the mode as plan
 		implementButton.onDidClick(() => {
-			this.chatService.sendRequest(step.sessionId, 'Executing plan step', {
+			this.chatService.sendRequest(step.sessionId, `@execute ${step.index}`, {
 				agentMode: AgentMode.Plan,
 			});
 			mockEditsService.implementStep(step.index);
