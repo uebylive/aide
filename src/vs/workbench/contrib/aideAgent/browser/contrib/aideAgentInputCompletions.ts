@@ -328,7 +328,8 @@ class ReferenceArgument {
 
 class BuiltinDynamicCompletions extends Disposable {
 	public static readonly addReferenceCommand = '_addReferenceCmd';
-	public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}[\\w/]*`, 'g'); // -g flag should always be included
+	// public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 	private readonly workspaceSymbolsQuickAccess: SymbolsQuickAccessProvider;
 
 	private readonly queryBuilder: QueryBuilder;
@@ -356,9 +357,25 @@ class BuiltinDynamicCompletions extends Disposable {
 			this.cacheCodeEntries();
 		}, 0));
 
+		const alphabetArray: string[] = [];
+
+		for (let i = 97; i <= 122; i++) {
+			alphabetArray.push(String.fromCharCode(i)); // lowercase letters 'a' to 'z'
+		}
+
+		for (let i = 65; i <= 90; i++) {
+			alphabetArray.push(String.fromCharCode(i)); // uppercase letters 'A' to 'Z'
+		}
+		alphabetArray.push(chatVariableLeader);
+		alphabetArray.push('/');
+
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: chatDynamicCompletions,
-			triggerCharacters: [chatVariableLeader],
+			// this makes the completion trigger everytime no matter what we type
+			// we will have to handle the case so we only trigger it when the word at the current position starts with '@'
+			triggerCharacters: alphabetArray,
+			// This triggers even when we do backspace but the search is broken because we are not searching for the prefix
+			// we do want to show an empty suggestion box somehow or when we have a match
 			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
@@ -411,7 +428,6 @@ class BuiltinDynamicCompletions extends Disposable {
 
 				// cache the entries for the next completion
 				this.cacheScheduler.schedule();
-
 				return result;
 			}
 		}));
@@ -482,6 +498,8 @@ class BuiltinDynamicCompletions extends Disposable {
 	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
 		const makeFileCompletionItem = (resource: URI): CompletionItem => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
+			const fullName = this.labelService.getUriLabel(resource);
+			const filterText = `${chatVariableLeader}${fullName}`;
 			const insertText = `${chatVariableLeader}${basename}`;
 			let model = this.modelService.getModel(resource);
 			if (!model) {
@@ -492,7 +510,8 @@ class BuiltinDynamicCompletions extends Disposable {
 
 			return {
 				label: { label: basename, description: this.labelService.getUriLabel(resource, { relative: true }) },
-				filterText: `${chatVariableLeader}${basename}`,
+				filterText: filterText,
+				// filterText: `${chatVariableLeader}${basename}`,
 				insertText,
 				range: info,
 				kind: CompletionItemKind.File,
@@ -638,7 +657,11 @@ export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
 }
 registerAction2(TriggerSecondaryChatWidgetCompletionAction);
 
-function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp, onlyOnWordStart = false): { insert: Range; replace: Range; varWord: IWordAtPosition | null } | undefined {
+function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp, onlyOnWordStart = false): {
+	insert: Range;
+	replace: Range;
+	varWord: IWordAtPosition | null;
+} | undefined {
 	const varWord = getWordAtText(position.column, reg, model.getLineContent(position.lineNumber), 0);
 	if (!varWord && model.getWordUntilPosition(position).word) {
 		// inside a "normal" word
