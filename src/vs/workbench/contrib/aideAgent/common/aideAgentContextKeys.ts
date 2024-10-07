@@ -40,4 +40,4 @@ export const CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE = new RawContextKey<boolean>('
 export const CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED = new RawContextKey<boolean>('aideAgentFloatingWidgetFocused', false, { type: 'boolean', description: localize('chatFloatingWidgetFocused', "True when the chat floating widget is focused.") });
 export const CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET = new RawContextKey<boolean>('aideAgentInPassthroughWidget', false, { type: 'boolean', description: localize('chatInPassthroughWidget', "True when the chat is in a passthrough widget.") });
 
-export const CONTEXT_AGENT_MODE = new RawContextKey<AgentMode>('aideAgentMode', AgentMode.Chat, { type: 'string', description: localize('agentMode', "The agent mode") });
+export const CONTEXT_AGENT_MODE = new RawContextKey<AgentMode>('aideAgentMode', 'Chat' as AgentMode, { type: 'string', description: localize('agentMode', "The agent mode") });
