@@ -1066,94 +1066,55 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 	variables: readonly vscode.ChatPromptReference[],
 	query: string,
 ): Promise<UserContext> {
-	const sidecarVariables: SidecarVariableTypes[] = [];
-	let terminalSelection: string | undefined = undefined;
-	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
-	const resolveFileReference = async (variableName: string, variableId: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
-		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
-		const filePath = vscode.Uri.parse(parsedJson.uri.path);
-		const cachedFile = fileCache.get(filePath.fsPath);
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+
+	async function resolveFile(uri: vscode.Uri) {
+		const cachedFile = fileCache.get(uri.fsPath);
 		if (cachedFile === undefined) {
-			const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
-			fileCache.set(filePath.fsPath, fileDocument);
+			const fileDocument = await vscode.workspace.openTextDocument(uri);
+			fileCache.set(uri.fsPath, fileDocument);
 		}
-		const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
-		const startRange = {
-			line: parsedJson.range.startLineNumber - 1,
-			character: parsedJson.range.startColumn === 0 ? parsedJson.range.startColumn : parsedJson.range.startColumn - 1,
-			byteOffset: 0,
-		};
-		const endRange = {
-			line: parsedJson.range.endLineNumber - 1,
-			character: parsedJson.range.endColumn === 0 ? parsedJson.range.endColumn : parsedJson.range.endColumn - 1,
-			byteOffset: 0,
-		};
-		const variableType = getVariableType(
-			variableName,
-			variableId,
-			startRange,
-			endRange,
-			fileDocument,
-		);
-		const content = fileDocument.getText(new vscode.Range(
-			new vscode.Position(startRange.line, startRange.character),
-			new vscode.Position(endRange.line, endRange.character),
-		));
-		resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
-		if (variableType !== null) {
+		return fileCache.get(uri.fsPath) as vscode.TextDocument;
+	}
+
+	for (const variable of variables) {
+		// vscode.editor.selection is a special id which is also present in the editor
+		// this help us understand that this is a selection and not a file reference
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+			const v = variable as vscode.AideAgentFileReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			let type: SidecarVariableType = 'File';
+			if (variable.id === 'vscode.file') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
 			sidecarVariables.push({
-				name: variableName,
-				start_position: startRange,
-				end_position: endRange,
-				fs_file_path: filePath.fsPath,
-				type: variableType,
-				content,
-				language: fileDocument.languageId,
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(),
+				language: attachedFile.languageId,
 			});
 		}
-	};
+	}
 
 	const folders: string[] = [];
-	for (const variable of variables) {
-		const variableName = variable.name;
-		const value = variable.value;
-		const variableId = variable.id;
-		const name = variableName.split(':')[0];
-		if (name === TERMINAL_SELECTION_VARIABLE) {
-			// we are looking at the terminal selection and we have some value for it
-			terminalSelection = value as string;
-			// } else if (name === OPEN_FILES_VARIABLE) {
-			// 	const openFiles = vscode.window.visibleTextEditors;
-			// 	const openFileVariables = openFiles.filter(file => file.document.uri.scheme === 'file').map(file => {
-			// 		return {
-			// 			name: file.document.uri.fsPath,
-			// 			start_position: {
-			// 				line: 0,
-			// 				character: 0,
-			// 				byteOffset: 0,
-			// 			},
-			// 			end_position: {
-			// 				line: file.document.lineCount,
-			// 				character: 1,
-			// 				byteOffset: 0,
-			// 			},
-			// 			fs_file_path: file.document.uri.fsPath,
-			// 			type: getFileType(),
-			// 			content: file.document.getText(),
-			// 			language: file.document.languageId,
-			// 		};
-			// 	});
-			// 	sidecarVariables.push(...openFileVariables);
-			// 	// await resolveFileReference('file', value);
-		} else if (name === 'file' || name === 'code') {
-			await resolveFileReference(name, variableId, value);
-		} else if (name === 'folder') {
-			const folderPath = value as vscode.Uri;
-			folders.push(folderPath.fsPath);
-		}
-	}
 
 	let isPlanGeneration = false;
 	for (const variable of variables) {
@@ -1218,7 +1179,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 				language: fileContent[1],
 			};
 		}),
-		terminal_selection: terminalSelection,
+		terminal_selection: null,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
@@ -1231,73 +1192,55 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 async function convertVSCodeVariableToSidecar(
 	variables: readonly vscode.ChatPromptReference[],
 ): Promise<UserContext> {
-	const sidecarVariables: SidecarVariableTypes[] = [];
-	let terminalSelection: string | undefined = undefined;
-	const fileCache: Map<string, vscode.TextDocument> = new Map();
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
-	const resolveFileReference = async (variableName: string, variableId: string, variableValue: string | vscode.Uri | vscode.Location | unknown) => {
-		const parsedJson = JSON.parse(variableValue as string) as CodeSelectionUriRange;
-		const filePath = vscode.Uri.parse(parsedJson.uri.path);
-		const cachedFile = fileCache.get(filePath.fsPath);
+	const sidecarVariables: SidecarVariableTypes[] = [];
+	const fileCache: Map<string, vscode.TextDocument> = new Map();
+
+	async function resolveFile(uri: vscode.Uri) {
+		const cachedFile = fileCache.get(uri.fsPath);
 		if (cachedFile === undefined) {
-			const fileDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(filePath.fsPath));
-			fileCache.set(filePath.fsPath, fileDocument);
+			const fileDocument = await vscode.workspace.openTextDocument(uri);
+			fileCache.set(uri.fsPath, fileDocument);
 		}
-		const fileDocument = fileCache.get(filePath.fsPath) as vscode.TextDocument;
-		const startRange = {
-			line: parsedJson.range.startLineNumber,
-			character: parsedJson.range.startColumn,
-			byteOffset: 0,
-		};
-		const endRange = {
-			line: parsedJson.range.endLineNumber,
-			character: parsedJson.range.endColumn,
-			byteOffset: 0,
-		};
-		const variableType = getVariableType(
-			variableName,
-			variableId,
-			startRange,
-			endRange,
-			fileDocument,
-		);
-		const content = fileDocument.getText(new vscode.Range(
-			new vscode.Position(startRange.line, startRange.character),
-			new vscode.Position(endRange.line, endRange.character),
-		));
-		resolvedFileCache.set(filePath.fsPath, [fileDocument.getText(), fileDocument.languageId]);
-		if (variableType !== null) {
+		return fileCache.get(uri.fsPath) as vscode.TextDocument;
+	}
+
+	for (const variable of variables) {
+		// vscode.editor.selection is a special id which is also present in the editor
+		// this help us understand that this is a selection and not a file reference
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+			const v = variable as vscode.AideAgentFileReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			let type: SidecarVariableType = 'File';
+			if (variable.id === 'vscode.file') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
 			sidecarVariables.push({
-				name: variableName,
-				start_position: startRange,
-				end_position: endRange,
-				fs_file_path: filePath.fsPath,
-				type: variableType,
-				content,
-				language: fileDocument.languageId,
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(),
+				language: attachedFile.languageId,
 			});
 		}
-	};
+	}
 
 	const folders: string[] = [];
-	for (const variable of variables) {
-		const variableName = variable.name;
-		const variableId = variable.id;
-		const value = variable.value;
-		const name = variableName.split(':')[0];
-		if (name === TERMINAL_SELECTION_VARIABLE) {
-			// we are looking at the terminal selection and we have some value for it
-			terminalSelection = value as string;
-			// } else if (name === OPEN_FILES_VARIABLE) {
-			// 	await resolveFileReference('file', variableId, value);
-		} else if (name === 'file' || name === 'code') {
-			await resolveFileReference(name, variableId, value);
-		} else if (name === 'folder') {
-			const folderPath = value as vscode.Uri;
-			folders.push(folderPath.fsPath);
-		}
-	}
 
 	let isPlanGeneration = false;
 	for (const variable of variables) {
@@ -1316,6 +1259,9 @@ async function convertVSCodeVariableToSidecar(
 			isIncludeLSP = true;
 		}
 	}
+
+	// TODO(codestory): Fill this in properly
+	const terminalSelection = undefined;
 
 	return {
 		variables: sidecarVariables,
