@@ -255,9 +255,31 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			const planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
-			// const planResponse = await this.sidecarClient.generatePlanRequest(query, sessionId, event.references, this.editorUrl);
-			if (planResponse.plan) {
+			// change this pls
+			let request: PlanActionRequest = {
+				type: PlanActionType.Create,
+				index: 0,
+			};
+
+			let planResponse;
+
+			switch (request.type) {
+				case PlanActionType.Create:
+					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
+					break;
+				case PlanActionType.Append:
+					// td
+					break;
+				case PlanActionType.Revert:
+					break;
+				case PlanActionType.Execute:
+					planResponse = await this.sidecarClient.executePlanUntilRequest(request.index, sessionId, this.editorUrl);
+					break;
+				default:
+					console.error(`Unhandled plan action type: ${request.type}`); // how do we handle this better?
+			}
+
+			if (planResponse?.plan) {
 				for (const planItem of planResponse.plan.steps) {
 					responseStream.step({ sessionId: planResponse.plan.sessionId, ...planItem });
 				}
@@ -270,4 +292,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	dispose() {
 		this.aideAgent.dispose();
 	}
+}
+
+enum PlanActionType {
+	Create = 'CREATE',
+	Append = 'APPEND',
+	Revert = 'REVERT',
+	Execute = 'EXECUTE',
+}
+
+type PlanActionRequest = {
+	type: PlanActionType,
+	index: number, // for any index-qualified request
 }

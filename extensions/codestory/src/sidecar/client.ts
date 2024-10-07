@@ -252,6 +252,38 @@ export class SideCarClient {
 		return await response.json() as PlanResponse;
 	}
 
+	async executePlanUntilRequest(
+		execution_until: number,
+		threadId: string,
+		editorUrl: string,
+	) {
+		console.log("executing plan...")
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/plan/execute';
+		const url = baseUrl.toString();
+
+		const body = {
+			execution_until,
+			thread_id: threadId,
+			editor_url: editorUrl,
+		};
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+
+		const result = response.json();
+
+		console.log({ result }) // let's see about this
+
+		return await result as PlanResponse;
+	}
+
 	async generatePlanRequest(
 		query: string,
 		threadId: string,
@@ -1086,7 +1118,7 @@ export class SideCarClient {
 /**
  * This is a copy of the function below we are using this to use the chat window as a plan generation cli
  */
-async function convertVSCodeVariableToSidecarHackingForPlan(
+export async function convertVSCodeVariableToSidecarHackingForPlan(
 	variables: readonly vscode.ChatPromptReference[],
 	query: string,
 ): Promise<UserContext> {
