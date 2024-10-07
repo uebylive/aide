@@ -20,8 +20,8 @@ import { ServiceCollection } from '../../../../../platform/instantiation/common/
 import { Heroicon } from '../../../../browser/heroicon.js';
 import { Spinner } from '../../../../browser/spinner.js';
 import { getSimpleEditorOptions, getSimpleCodeEditorWidgetOptions } from '../../../codeEditor/browser/simpleEditorOptions.js';
-import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
-import { IChatPlanStep } from '../../common/aideAgentService.js';
+import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
+import { IAideAgentService, IChatPlanStep } from '../../common/aideAgentService.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
 import './media/aideAgentPlanStepPart.css';
 
@@ -66,7 +66,8 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IModelService private readonly modelService: IModelService,
-		@IConfigurationService private readonly configurationService: IConfigurationService
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IAideAgentService private readonly chatService: IAideAgentService,
 	) {
 		super();
 		this.inputUri = URI.parse(`${ChatPlanStepPart.INPUT_SCHEME}:${step.sessionId}-${step.index}`);
@@ -109,7 +110,11 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		implementButton.element.classList.add('plan-step-implement-until');
 		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
 
+		// probably works, we do need to set the mode as plan
 		implementButton.onDidClick(() => {
+			this.chatService.sendRequest(step.sessionId, 'Executing plan step', {
+				agentMode: AgentMode.Plan,
+			});
 			mockEditsService.implementStep(step.index);
 		});
 

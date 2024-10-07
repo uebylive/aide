@@ -598,6 +598,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				preceedingContentParts,
 				index
 			};
+			// TODO(codestory): The session id is not passed properly, so this
+			// is a big hack and I am lazy, sue me
+			if (partToRender.kind === 'planStep') {
+				partToRender.sessionId = element.sessionId;
+			}
 			const newPart = this.renderChatContentPart(partToRender, templateData, context);
 			if (newPart) {
 				// Maybe the part can't be rendered in this context, but this shouldn't really happen
