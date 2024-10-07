@@ -3,23 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as dom from '../../../../../base/browser/dom.js';
-import { DEFAULT_FONT_FAMILY } from '../../../../../base/browser/fonts.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
-import { Disposable } from '../../../../../base/common/lifecycle.js';
+import { Emitter } from '../../../../../base/common/event.js';
+import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
-import { IEditorConstructionOptions } from '../../../../../editor/browser/config/editorConfiguration.js';
-import { EditorExtensionsRegistry } from '../../../../../editor/browser/editorExtensions.js';
-import { CodeEditorWidget } from '../../../../../editor/browser/widget/codeEditor/codeEditorWidget.js';
-import { IModelService } from '../../../../../editor/common/services/model.js';
-import { ContentHoverController } from '../../../../../editor/contrib/hover/browser/contentHoverController.js';
-import { localize } from '../../../../../nls.js';
-import { IConfigurationService } from '../../../../../platform/configuration/common/configuration.js';
-import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { ServiceCollection } from '../../../../../platform/instantiation/common/serviceCollection.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
 import { Spinner } from '../../../../browser/spinner.js';
-import { getSimpleEditorOptions, getSimpleCodeEditorWidgetOptions } from '../../../codeEditor/browser/simpleEditorOptions.js';
 import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatPlanStep } from '../../common/aideAgentService.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
@@ -42,7 +32,10 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private readonly state: IStepState = StepState.Idle;
 	private readonly willBeDropped = false;
 
-	private feedbackMode = false;
+	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
+	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	// private feedbackMode = false;
 	private showDescription = false;
 
 	private reviewButtonsElement: HTMLElement; // Accept/reject changes
@@ -50,11 +43,11 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private loadingButtonsElement: HTMLElement; // Stop plan generation or edits application
 	private loadingButton: Button;
 
-	private enterFeedbackButton: Button;
-	private cancelFeedbackButton: Button;
-	private submitFeedbackButton: Button;
-	private feedbackEditorElement: HTMLElement;
-	private feedbackEditor: CodeEditorWidget;
+	//private enterFeedbackButton: Button;
+	//private cancelFeedbackButton: Button;
+	//private submitFeedbackButton: Button;
+	//private feedbackEditorElement: HTMLElement;
+	//private feedbackEditor: CodeEditorWidget;
 
 	static readonly INPUT_SCHEME = 'planStepFeedbackInput';
 	readonly inputUri: URI;
@@ -64,9 +57,9 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		readonly step: IChatPlanStep,
 		readonly descriptionPart: IChatContentPart,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IModelService private readonly modelService: IModelService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
+		//@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		//@IModelService private readonly modelService: IModelService,
+		//@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
 	) {
 		super();
@@ -194,7 +187,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.descriptionPart.domNode.classList.add('plan-step-description');
 
 		// FEEDBACK
-
+		/*
 		const feedbackElement = $('.plan-step-feedback');
 		contentElement.appendChild(feedbackElement);
 
@@ -283,6 +276,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		} else {
 			this.exitFeedbackMode();
 		}
+		*/
 
 		this.rerender();
 	}
@@ -300,7 +294,12 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 			dom.hide(this.descriptionPart.domNode);
 		}
 
-		this.layoutFeedbackEditor();
+		this._onDidChangeHeight.fire();
+		// this.layoutFeedbackEditor();
+	}
+
+	addDisposable(disposable: IDisposable): void {
+		this._register(disposable);
 	}
 
 
@@ -320,29 +319,27 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	}
 
 
-	private layoutFeedbackEditor() {
-		const currentHeight = Math.max(this.feedbackEditor.getContentHeight(), 32);
-		this.feedbackEditor.layout({ height: currentHeight, width: this.feedbackEditorElement.clientWidth });
-
-		const model = this.feedbackEditor.getModel();
-		const inputHasText = !!model && model.getValue().trim().length > 0;
-		this.feedbackEditorElement.classList.toggle('has-text', inputHasText);
-	}
-
-	private enterFeedbackMode() {
-		this.feedbackMode = true;
-		dom.show(this.cancelFeedbackButton.element);
-		dom.show(this.submitFeedbackButton.element);
-		dom.hide(this.enterFeedbackButton.element);
-		this.feedbackEditor.focus();
-	}
-
-	private exitFeedbackMode() {
-		this.feedbackMode = false;
-		dom.show(this.enterFeedbackButton.element);
-		dom.hide(this.submitFeedbackButton.element);
-		dom.hide(this.cancelFeedbackButton.element);
-	}
+	//private layoutFeedbackEditor() {
+	//	const currentHeight = Math.max(this.feedbackEditor.getContentHeight(), 32);
+	//	this.feedbackEditor.layout({ height: currentHeight, width: this.feedbackEditorElement.clientWidth });
+	//
+	//	const model = this.feedbackEditor.getModel();
+	//	const inputHasText = !!model && model.getValue().trim().length > 0;
+	//	this.feedbackEditorElement.classList.toggle('has-text', inputHasText);
+	//}
+	//
+	//private enterFeedbackMode() {
+	//	this.feedbackMode = true;
+	//	dom.show(this.cancelFeedbackButton.element, this.submitFeedbackButton.element);
+	//	dom.hide(this.enterFeedbackButton.element);
+	//	this.feedbackEditor.focus();
+	//}
+	//
+	//private exitFeedbackMode() {
+	//	this.feedbackMode = false;
+	//	dom.show(this.enterFeedbackButton.element);
+	//	dom.hide(this.submitFeedbackButton.element, this.cancelFeedbackButton.element);
+	//}
 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'planStep' && other.description === this.step.description;

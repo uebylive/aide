@@ -822,8 +822,13 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
-		const descriptionPart = this.renderMarkdown(step.description, templateData, context);
-		return this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
+		const descriptionPart = this.renderMarkdown(step.description, templateData, context) as ChatMarkdownContentPart;
+		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
+		stepPart.addDisposable(stepPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+			descriptionPart.layout(this._currentLayoutWidth - 32); // Remove timeline width
+		}));
+		return stepPart;
 	}
 
 	disposeElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IChatListItemTemplate): void {

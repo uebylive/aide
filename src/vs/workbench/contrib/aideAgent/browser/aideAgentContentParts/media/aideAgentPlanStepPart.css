@@ -5,10 +5,11 @@
 
 .plan-step {
 	display: flex;
+	margin-bottom: 16px;
 }
 
 .plan-step.plan-step-last {
-	margin-bottom: 16px;
+	margin-bottom: 32px;
 }
 
 .plan-step.plan-step-will-be-dropped {
