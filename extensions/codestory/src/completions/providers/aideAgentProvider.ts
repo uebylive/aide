@@ -246,6 +246,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			return;
 		}
 
+		// always store the responseStream in the openResponseStream variable so we can
+		// assume that the connection is open for way longer after a session has been started
+		this.openResponseStream = responseStream;
 		const query = event.prompt;
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references as vscode.AideAgentFileReference[], this.projectContext.labels, this.editorUrl, this._timer);
