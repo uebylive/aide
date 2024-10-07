@@ -268,7 +268,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
 					break;
 				case PlanActionType.Append:
-					// td...
+					planResponse = await this.sidecarClient.appendPlanRequest(query, sessionId, this.editorUrl, event.references);
 					break;
 				case PlanActionType.Drop:
 					planResponse = await this.sidecarClient.dropPlanFromRequest(request.index, sessionId);

@@ -226,7 +226,7 @@ export class SideCarClient {
 	) {
 		console.log("creating plan...")
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/plan/create'; // diff endpoints here for diff requests
+		baseUrl.pathname = '/api/plan/create';
 		const url = baseUrl.toString();
 
 		// check for deep reasoning
@@ -239,6 +239,43 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // what information in here is actually useful?
 			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
+		};
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+		return await response.json() as PlanResponse;
+	}
+
+	async appendPlanRequest(
+		query: string,
+		threadId: string,
+		editorUrl: string,
+		variables: readonly vscode.ChatPromptReference[],
+	) {
+		console.log("appending to plan...")
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/plan/append';
+		const url = baseUrl.toString();
+
+		// check for deep reasoning
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
+
+		// we need with_lsp_enrichment flag
+
+		const body = {
+			query: query,
+			thread_id: threadId,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // what information in here is actually useful?
+			editor_url: editorUrl,
+			is_deep_reasoning: deepReasoning,
+			with_lsp_enrichment: false, // find a way to pull this
 		};
 
 		const response = await fetch(url, {
@@ -321,7 +358,7 @@ export class SideCarClient {
 		editorUrl: string,
 	) {
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agentic/reasoning_thread_create'; // diff endpoints here for diff requests
+		baseUrl.pathname = '/api/agentic/reasoning_thread_create';
 		const url = baseUrl.toString();
 		const body = {
 			query: query,
