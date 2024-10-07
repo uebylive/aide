@@ -252,6 +252,7 @@ export class SideCarClient {
 		return await response.json() as PlanResponse;
 	}
 
+	// td
 	async appendPlanRequest(
 		query: string,
 		threadId: string,
@@ -314,11 +315,11 @@ export class SideCarClient {
 			body: JSON.stringify(body),
 		});
 
-		const result = response.json();
+		const result = await response.json();
 
 		console.log({ result }) // let's see about this
 
-		return await result as PlanResponse;
+		return result as PlanResponse;
 	}
 
 	async dropPlanFromRequest(
@@ -344,11 +345,11 @@ export class SideCarClient {
 			body: JSON.stringify(body),
 		});
 
-		const result = response.json();
+		const result = await response.json();
 
 		console.log({ result }) // let's see about this
 
-		return await result as PlanResponse;
+		return result as PlanResponse;
 	}
 
 	async generatePlanRequest(
