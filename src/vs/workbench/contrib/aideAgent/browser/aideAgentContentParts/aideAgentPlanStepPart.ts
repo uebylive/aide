@@ -111,12 +111,22 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		implementButton.element.classList.add('plan-step-implement-until');
 		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
 
-		// probably works, we do need to set the mode as plan
 		implementButton.onDidClick(() => {
 			this.chatService.sendRequest(step.sessionId, `@execute ${step.index}`, {
 				agentMode: AgentMode.Plan,
 			});
 			mockEditsService.implementStep(step.index);
+		});
+
+		const appendButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Append steps' }));
+		appendButton.element.classList.add('plan-step-implement-until');
+		this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/arrow-path'));
+
+		appendButton.onDidClick(() => {
+			this.chatService.sendRequest(step.sessionId, `@append`, {
+				agentMode: AgentMode.Plan,
+			});
+			mockEditsService.implementStep(step.index); // not sure what this needs to be for append
 		});
 
 		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Drop plan step' }));

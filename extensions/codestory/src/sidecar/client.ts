@@ -236,7 +236,7 @@ export class SideCarClient {
 		const body = {
 			query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // what information in here is actually useful?
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
 		};
@@ -252,7 +252,6 @@ export class SideCarClient {
 		return await response.json() as PlanResponse;
 	}
 
-	// td
 	async appendPlanRequest(
 		query: string,
 		threadId: string,
@@ -271,12 +270,12 @@ export class SideCarClient {
 		// we need with_lsp_enrichment flag
 
 		const body = {
-			query: query,
+			user_query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // what information in here is actually useful?
 			editor_url: editorUrl,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			is_deep_reasoning: deepReasoning,
-			with_lsp_enrichment: false, // find a way to pull this
+			with_lsp_enrichment: false,
 		};
 
 		const response = await fetch(url, {
@@ -287,9 +286,15 @@ export class SideCarClient {
 			},
 			body: JSON.stringify(body),
 		});
-		return await response.json() as PlanResponse;
+
+		const result = await response.json().catch((e) => console.error(e));
+
+		console.log({ result })
+
+		return result as PlanResponse;
 	}
 
+	// this streams
 	async executePlanUntilRequest(
 		execution_until: number,
 		threadId: string,
@@ -306,7 +311,7 @@ export class SideCarClient {
 			editor_url: editorUrl,
 		};
 
-		const response = await fetch(url, {
+		await fetch(url, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -314,12 +319,6 @@ export class SideCarClient {
 			},
 			body: JSON.stringify(body),
 		});
-
-		const result = await response.json();
-
-		console.log({ result }) // let's see about this
-
-		return result as PlanResponse;
 	}
 
 	async dropPlanFromRequest(
@@ -347,7 +346,7 @@ export class SideCarClient {
 
 		const result = await response.json();
 
-		console.log({ result }) // let's see about this
+		console.log({ result })
 
 		return result as PlanResponse;
 	}

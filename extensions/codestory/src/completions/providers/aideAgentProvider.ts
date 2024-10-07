@@ -16,6 +16,7 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { AidePlanTimer } from '../../utilities/planTimer';
+import { PlanResponse } from '../../sidecar/types';
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
@@ -269,7 +270,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 			console.log({ planActionRequest });
 
-			let planResponse;
+			// we may not receive one back
+			let planResponse: PlanResponse | undefined = undefined;
 
 			switch (planActionRequest.type) {
 				case 'CREATE':
@@ -286,10 +288,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					break;
 				case 'EXECUTE':
 					console.log("execute hit")
-					planResponse = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
+					// this streams, plan is not updated
+					await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
 			}
 
+			// this logic s not relevant for execute, this is shite code.
 			if (planResponse?.plan) {
 				for (const planItem of planResponse.plan.steps) {
 					const { sessionId } = planResponse.plan;
