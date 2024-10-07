@@ -297,7 +297,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream.step({ sessionId, isLast, ...planItem });
 				}
 			}
-			// await reportFromStreamToSearchProgress(mockResponse, response, token, this._workingDirectory);
 		}
 		responseStream.close();
 	}
@@ -307,14 +306,25 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 }
 
-enum PlanActionType {
-	Create = 'CREATE',
-	Append = 'APPEND',
-	Drop = 'DROP',
-	Execute = 'EXECUTE',
-}
+type PlanActionRequest =
+	| { type: 'CREATE' | 'APPEND' }
+	| { type: 'DROP' | 'EXECUTE', index: number };
 
-type PlanActionRequest = {
-	type: PlanActionType,
-	index: number, // for any index-qualified request
+function parsePlanActionCommand(command: string): PlanActionRequest {
+	const match = command.match(/^@(\w+)(?:\s+(\d+))?$/);
+	if (!match) {
+		return { type: 'CREATE' };  // Default action is explicit now
+	}
+
+	const [, action, indexStr] = match;
+	const actionType = action.toUpperCase() as 'CREATE' | 'APPEND' | 'DROP' | 'EXECUTE';
+
+	if (actionType === 'DROP' || actionType === 'EXECUTE') {
+		if (indexStr === undefined) {
+			throw new Error(`Index is required for ${actionType} action`);
+		}
+		return { type: actionType, index: parseInt(indexStr, 10) };
+	}
+
+	return { type: actionType };
 }
