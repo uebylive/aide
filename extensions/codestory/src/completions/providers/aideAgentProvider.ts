@@ -256,30 +256,38 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
 			console.log({ event });
+			let planActionRequest: PlanActionRequest;
+			try {
+				planActionRequest = parsePlanActionCommand(event.prompt);
+			} catch (error) {
+				console.error(error);
+				console.log("this implicitly means that we are doing CREATE")
+				planActionRequest = {
+					type: "CREATE"
+				}
+			}
 
-			// change this pls
-			const request: PlanActionRequest = {
-				type: PlanActionType.Create,
-				index: 0,
-			};
+			console.log({ planActionRequest });
 
 			let planResponse;
 
-			switch (request.type) {
-				case PlanActionType.Create:
+			switch (planActionRequest.type) {
+				case 'CREATE':
+					console.log("create hit")
 					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
 					break;
-				case PlanActionType.Append:
+				case 'APPEND': // this should be explicit, from button action (or command line)
+					console.log("append hit")
 					planResponse = await this.sidecarClient.appendPlanRequest(query, sessionId, this.editorUrl, event.references);
 					break;
-				case PlanActionType.Drop:
-					planResponse = await this.sidecarClient.dropPlanFromRequest(request.index, sessionId);
+				case 'DROP':
+					console.log("drop hit")
+					planResponse = await this.sidecarClient.dropPlanFromRequest(planActionRequest.index, sessionId);
 					break;
-				case PlanActionType.Execute:
-					planResponse = await this.sidecarClient.executePlanUntilRequest(request.index, sessionId, this.editorUrl);
+				case 'EXECUTE':
+					console.log("execute hit")
+					planResponse = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
-				default:
-					console.error(`Unhandled plan action type: ${request.type}`); // how do we handle this better?
 			}
 
 			if (planResponse?.plan) {
@@ -289,7 +297,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream.step({ sessionId, isLast, ...planItem });
 				}
 			}
-			return; // Keep the stream open for plan feedback
+			// await reportFromStreamToSearchProgress(mockResponse, response, token, this._workingDirectory);
 		}
 		responseStream.close();
 	}
@@ -307,6 +315,6 @@ enum PlanActionType {
 }
 
 type PlanActionRequest = {
-	type: PlanActionType;
-	index: number; // for any index-qualified request
-};
+	type: PlanActionType,
+	index: number, // for any index-qualified request
+}
