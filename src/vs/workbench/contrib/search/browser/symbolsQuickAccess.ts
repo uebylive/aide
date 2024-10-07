@@ -34,7 +34,8 @@ export class SymbolsQuickAccessProvider extends PickerQuickAccessProvider<ISymbo
 
 	static PREFIX = '#';
 
-	private static readonly TYPING_SEARCH_DELAY = 200; // this delay accommodates for the user typing a word and then stops typing to start searching
+	// fuck it, we are power users we ball, reducing this down to 0 is bad, so 10 millis
+	private static readonly TYPING_SEARCH_DELAY = 10; // this delay accommodates for the user typing a word and then stops typing to start searching
 
 	private static TREAT_AS_GLOBAL_SYMBOL_TYPES = new Set<SymbolKind>([
 		SymbolKind.Class,
