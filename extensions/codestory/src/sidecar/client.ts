@@ -1099,6 +1099,29 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 				content: attachedFile.getText(),
 				language: attachedFile.languageId,
 			});
+		} else if (variable.id === 'vscode.code') {
+			const v = variable as vscode.AideAgentCodeReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			const type: SidecarVariableType = 'CodeSymbol';
+			sidecarVariables.push({
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(range),
+				language: attachedFile.languageId,
+			});
 		}
 	}
 
@@ -1225,6 +1248,29 @@ async function convertVSCodeVariableToSidecar(
 				content: attachedFile.getText(),
 				language: attachedFile.languageId,
 			});
+		} else if (variable.id === 'vscode.code') {
+			const v = variable as vscode.AideAgentCodeReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			const type: SidecarVariableType = 'CodeSymbol';
+			sidecarVariables.push({
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(range),
+				language: attachedFile.languageId,
+			});
 		}
 	}
 
@@ -1314,6 +1360,29 @@ async function newConvertVSCodeVariableToSidecar(
 				fs_file_path: value.uri.fsPath,
 				type,
 				content: attachedFile.getText(),
+				language: attachedFile.languageId,
+			});
+		} else if (variable.id === 'vscode.code') {
+			const v = variable as vscode.AideAgentCodeReference;
+			const value = v.value;
+			const attachedFile = await resolveFile(value.uri);
+			const range = value.range;
+			const type: SidecarVariableType = 'CodeSymbol';
+			sidecarVariables.push({
+				name: v.name,
+				start_position: {
+					line: range.start.line,
+					character: range.start.character,
+					byteOffset: 0,
+				},
+				end_position: {
+					line: range.end.line,
+					character: range.end.character,
+					byteOffset: 0,
+				},
+				fs_file_path: value.uri.fsPath,
+				type,
+				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
 		}
