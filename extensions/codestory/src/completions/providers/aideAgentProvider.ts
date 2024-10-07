@@ -255,7 +255,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			const planResponse = await this.sidecarClient.generatePlanRequest(query, sessionId, event.references, this.editorUrl);
+			const planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
+			// const planResponse = await this.sidecarClient.generatePlanRequest(query, sessionId, event.references, this.editorUrl);
 			if (planResponse.plan) {
 				for (const planItem of planResponse.plan.steps) {
 					responseStream.step({ sessionId: planResponse.plan.sessionId, ...planItem });

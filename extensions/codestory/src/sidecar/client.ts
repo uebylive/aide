@@ -218,6 +218,40 @@ export class SideCarClient {
 		}
 	}
 
+	async createPlanRequest(
+		query: string,
+		threadId: string,
+		variables: readonly vscode.ChatPromptReference[],
+		editorUrl: string,
+	) {
+		console.log("creating plan...")
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/plan/create'; // diff endpoints here for diff requests
+		const url = baseUrl.toString();
+
+		// check for deep reasoning
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
+
+		const body = {
+			query: query,
+			thread_id: threadId,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // what information in here is actually useful?
+			editor_url: editorUrl,
+			is_deep_reasoning: deepReasoning,
+		};
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+		return await response.json() as PlanResponse;
+	}
+
 	async generatePlanRequest(
 		query: string,
 		threadId: string,
@@ -225,12 +259,12 @@ export class SideCarClient {
 		editorUrl: string,
 	) {
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/agentic/reasoning_thread_create';
+		baseUrl.pathname = '/api/agentic/reasoning_thread_create'; // diff endpoints here for diff requests
 		const url = baseUrl.toString();
 		const body = {
 			query: query,
 			thread_id: threadId,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query), // this contains the variables, such as drop/add etc.
 			editor_url: editorUrl,
 		};
 		const response = await fetch(url, {
@@ -269,6 +303,8 @@ export class SideCarClient {
 		const agentSystemInstruction = readCustomSystemInstruction();
 
 		const user_context = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+
+		console.log({ user_context })
 
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
