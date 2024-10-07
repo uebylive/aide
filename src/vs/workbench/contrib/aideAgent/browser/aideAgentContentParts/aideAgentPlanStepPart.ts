@@ -73,6 +73,9 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.inputUri = URI.parse(`${ChatPlanStepPart.INPUT_SCHEME}:${step.sessionId}-${step.index}`);
 
 		this.domNode = $('.plan-step');
+		if (step.isLast) {
+			this.domNode.classList.add('plan-step-last');
+		}
 
 		// TIMELINE
 
@@ -80,11 +83,16 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		const timelineElement = $('.plan-step-timeline');
 		this.domNode.appendChild(timelineElement);
 		// Contains step number and allows removing this step
-		const stepIndicatorButton = this._register(this.instantiationService.createInstance(Button, timelineElement, { title: `Step ${stepNumber}` }));
-		stepIndicatorButton.element.classList.add('plan-step-indicator');
-		stepIndicatorButton.element.textContent = `${stepNumber}`;
-		const addStepButotn = this._register(this.instantiationService.createInstance(Button, timelineElement, { title: 'Add step' }));
-		addStepButotn.element.classList.add('plan-step-add');
+		const stepIndicator = $('.plan-step-indicator');
+		timelineElement.appendChild(stepIndicator);
+		stepIndicator.textContent = `${stepNumber}`;
+		//const stepIndicatorButton = this._register(this.instantiationService.createInstance(Button, timelineElement, { title: `Step ${stepNumber}` }));
+		//stepIndicatorButton.element.classList.add('plan-step-indicator');
+		//stepIndicatorButton.element.textContent = `${stepNumber}`;
+		const stepTimeline = $('.plan-step-timeline-line');
+		timelineElement.appendChild(stepTimeline);
+		// const addStepButton = this._register(this.instantiationService.createInstance(Button, timelineElement, { title: 'Add step' }));
+		// addStepButton.element.classList.add('plan-step-add');
 
 		const contentElement = $('.plan-step-content');
 		this.domNode.appendChild(contentElement);

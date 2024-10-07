@@ -2926,6 +2926,7 @@ export namespace AideAgentResponsePlanPart {
 			kind: 'planStep',
 			sessionId: part.sessionId,
 			index: part.index,
+			isLast: part.isLast,
 			title: part.title,
 			description: MarkdownString.from(part.description)
 		};

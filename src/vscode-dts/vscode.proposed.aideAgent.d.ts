@@ -59,6 +59,10 @@ declare module 'vscode' {
 		 */
 		readonly index: number;
 		/**
+		 * Wether it's the last step in the plan
+		 */
+		readonly isLast: boolean;
+		/**
 		 * The title of the step in the plan
 		 */
 		readonly title: string;

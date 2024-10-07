@@ -4705,11 +4705,13 @@ export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
 	sessionId: string;
 	index: number;
+	isLast: boolean;
 	title: string;
 	constructor(step: vscode.AideChatStep) {
 		this.description = step.description;
 		this.sessionId = step.sessionId;
 		this.index = step.index;
+		this.isLast = step.isLast;
 		this.title = step.title;
 	}
 }

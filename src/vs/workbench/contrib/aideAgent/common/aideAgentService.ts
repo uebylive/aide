@@ -201,6 +201,7 @@ export interface IChatPlanStep {
 	sessionId: string;
 	title: string;
 	index: number;
+	isLast: boolean;
 	kind: 'planStep';
 }
 

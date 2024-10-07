@@ -284,7 +284,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 			if (planResponse?.plan) {
 				for (const planItem of planResponse.plan.steps) {
-					responseStream.step({ sessionId: planResponse.plan.sessionId, ...planItem });
+					const { sessionId } = planResponse.plan;
+					const isLast = planItem.index === planResponse.plan.steps.length - 1;
+					responseStream.step({ sessionId, isLast, ...planItem });
 				}
 			}
 			// await reportFromStreamToSearchProgress(mockResponse, response, token, this._workingDirectory);
