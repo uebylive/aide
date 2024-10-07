@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
-import { TERMINAL_SELECTION_VARIABLE } from '../completions/providers/terminalSelection';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
@@ -17,7 +16,7 @@ import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
-import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, Position, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 // import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 // import { AideProbeProvider } from '../completions/providers/probeProvider';
@@ -1048,17 +1047,6 @@ export class SideCarClient {
 	}
 }
 
-
-interface CodeSelectionUriRange {
-	uri: vscode.Uri;
-	range: {
-		startLineNumber: number;
-		startColumn: number;
-		endLineNumber: number;
-		endColumn: number;
-	};
-}
-
 /**
  * This is a copy of the function below we are using this to use the chat window as a plan generation cli
  */
@@ -1179,7 +1167,7 @@ async function convertVSCodeVariableToSidecarHackingForPlan(
 				language: fileContent[1],
 			};
 		}),
-		terminal_selection: null,
+		terminal_selection: undefined,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
 		is_plan_execution_until: isPlanExecutionUntil,
@@ -1348,29 +1336,29 @@ async function newConvertVSCodeVariableToSidecar(
 // 	return 'File';
 // }
 
-function getVariableType(
-	name: string,
-	variableId: string,
-	startPosition: Position,
-	endPosition: Position,
-	textDocument: vscode.TextDocument,
-): SidecarVariableType | null {
-	if (name === 'currentFile') {
-		return 'File';
-	} else if (variableId === 'vscode.file') {
-		return 'File';
-	} else if (name.startsWith('file')) {
-		// here we have to check if the range is the full file or just a partial
-		// range in which case its a selection
-		const textLines = textDocument.lineCount;
-		if (startPosition.line === 1 && endPosition.line === textLines) {
-			return 'File';
-		} else {
-			return 'Selection';
-		}
-	}
-	return 'CodeSymbol';
-}
+// function getVariableType(
+// 	name: string,
+// 	variableId: string,
+// 	startPosition: Position,
+// 	endPosition: Position,
+// 	textDocument: vscode.TextDocument,
+// ): SidecarVariableType | null {
+// 	if (name === 'currentFile') {
+// 		return 'File';
+// 	} else if (variableId === 'vscode.file') {
+// 		return 'File';
+// 	} else if (name.startsWith('file')) {
+// 		// here we have to check if the range is the full file or just a partial
+// 		// range in which case its a selection
+// 		const textLines = textDocument.lineCount;
+// 		if (startPosition.line === 1 && endPosition.line === textLines) {
+// 			return 'File';
+// 		} else {
+// 			return 'Selection';
+// 		}
+// 	}
+// 	return 'CodeSymbol';
+// }
 
 function getCurrentActiveWindow(): {
 	file_path: string;
