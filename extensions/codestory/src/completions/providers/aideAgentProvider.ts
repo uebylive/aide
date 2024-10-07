@@ -255,10 +255,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			console.log({ event })
+			console.log({ event });
 
 			// change this pls
-			let request: PlanActionRequest = {
+			const request: PlanActionRequest = {
 				type: PlanActionType.Create,
 				index: 0,
 			};
@@ -289,7 +289,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream.step({ sessionId, isLast, ...planItem });
 				}
 			}
-			// await reportFromStreamToSearchProgress(mockResponse, response, token, this._workingDirectory);
+			return; // Keep the stream open for plan feedback
 		}
 		responseStream.close();
 	}
@@ -307,6 +307,6 @@ enum PlanActionType {
 }
 
 type PlanActionRequest = {
-	type: PlanActionType,
-	index: number, // for any index-qualified request
-}
+	type: PlanActionType;
+	index: number; // for any index-qualified request
+};

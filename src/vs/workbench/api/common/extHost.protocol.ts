@@ -56,7 +56,7 @@ import { IChatCodeEdit, IChatEndResponse, IChatPlanStep } from '../../contrib/ai
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
-import { IChatProgressResponseContent } from '../../contrib/chat/common/chatModel.js';
+import { IAideChatProgressResponseContent, IChatProgressResponseContent } from '../../contrib/chat/common/chatModel.js';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTask, IChatTaskDto, IChatUserActionEvent, IChatVoteAction } from '../../contrib/chat/common/chatService.js';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from '../../contrib/chat/common/chatVariables.js';
 import { IChatMessage, IChatResponseFragment, ILanguageModelChatMetadata, ILanguageModelChatSelector, ILanguageModelsChangeEvent } from '../../contrib/chat/common/languageModels.js';
@@ -1320,7 +1320,7 @@ export interface IChatAgentCompletionItem {
 export type IChatContentProgressDto =
 	| Dto<Exclude<IChatProgressResponseContent, IChatTask>>
 	| IChatTaskDto
-	| Dto<IChatPlanStep>;
+	| Dto<IAideChatProgressResponseContent>;
 
 export type IChatAgentHistoryEntryDto = {
 	request: IChatAgentRequest;

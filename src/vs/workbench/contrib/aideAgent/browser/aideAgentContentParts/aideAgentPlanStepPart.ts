@@ -114,7 +114,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.planButtonsElement = $('.plan-step-plan-buttons');
 		headerElement.appendChild(this.planButtonsElement);
 
-		const implementButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Accept changes' }));
+		const implementButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Implement changes' }));
 		implementButton.element.classList.add('plan-step-implement-until');
 		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
 
@@ -126,7 +126,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 			mockEditsService.implementStep(step.index);
 		});
 
-		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Reject changes' }));
+		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Drop plan step' }));
 		this._register(this.instantiationService.createInstance(Heroicon, dropPlanStep.element, 'micro/trash'));
 		dropPlanStep.element.classList.add('plan-step-drop-step');
 

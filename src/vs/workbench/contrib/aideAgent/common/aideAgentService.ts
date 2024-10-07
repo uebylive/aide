@@ -205,6 +205,11 @@ export interface IChatPlanStep {
 	kind: 'planStep';
 }
 
+export interface IChatPlanUpdate {
+	kind: 'planUpdate';
+	plan: IChatPlanStep[];
+}
+
 export interface IChatEndResponse {
 	kind: 'endResponse';
 }
