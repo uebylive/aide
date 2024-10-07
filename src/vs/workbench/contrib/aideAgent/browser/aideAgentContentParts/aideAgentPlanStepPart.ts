@@ -131,6 +131,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		dropPlanStep.element.classList.add('plan-step-drop-step');
 
 		dropPlanStep.onDidClick(() => {
+			this.chatService.sendRequest(step.sessionId, `@drop ${step.index}`);
 			mockPlanService.dropPlanStep(step.index);
 		});
 
