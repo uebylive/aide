@@ -215,8 +215,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.window.onDidChangeTextEditorSelection(async (event) => {
 		const textEditor = event.textEditor;
 		if (shouldTrackFile(textEditor.document.uri)) {
-			console.log('onDidChangeTextEditorSelection');
-			console.log(event.selections);
 			// track the changed selection over here
 			const selections = event.selections;
 			if (selections.length !== 0) {
