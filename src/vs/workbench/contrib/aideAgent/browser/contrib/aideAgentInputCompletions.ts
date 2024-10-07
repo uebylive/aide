@@ -328,7 +328,7 @@ class ReferenceArgument {
 
 class BuiltinDynamicCompletions extends Disposable {
 	public static readonly addReferenceCommand = '_addReferenceCmd';
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}[\\w/]*`, 'g'); // -g flag should always be included
+	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}[\\w/.-]*`, 'g'); // -g flag should always be included
 	// public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 	private readonly workspaceSymbolsQuickAccess: SymbolsQuickAccessProvider;
 
@@ -368,6 +368,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		}
 		alphabetArray.push(chatVariableLeader);
 		alphabetArray.push('/');
+		alphabetArray.push('.');
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: chatDynamicCompletions,
