@@ -428,6 +428,15 @@ class BuiltinDynamicCompletions extends Disposable {
 
 				// cache the entries for the next completion
 				this.cacheScheduler.schedule();
+				if (result.suggestions.length === 0) {
+					result.suggestions.push({
+						label: 'No results found',
+						kind: CompletionItemKind.Text,
+						filterText: `${chatVariableLeader}${pattern}`,
+						insertText: 'No results found',
+						range: range.insert,
+					});
+				}
 				return result;
 			}
 		}));
