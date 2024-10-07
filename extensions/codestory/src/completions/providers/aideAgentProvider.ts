@@ -268,9 +268,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
 					break;
 				case PlanActionType.Append:
-					// td
+					// td...
 					break;
-				case PlanActionType.Revert:
+				case PlanActionType.Drop:
+					planResponse = await this.sidecarClient.dropPlanFromRequest(request.index, sessionId);
 					break;
 				case PlanActionType.Execute:
 					planResponse = await this.sidecarClient.executePlanUntilRequest(request.index, sessionId, this.editorUrl);
@@ -297,7 +298,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 enum PlanActionType {
 	Create = 'CREATE',
 	Append = 'APPEND',
-	Revert = 'REVERT',
+	Drop = 'DROP',
 	Execute = 'EXECUTE',
 }
 

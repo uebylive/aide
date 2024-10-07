@@ -284,6 +284,36 @@ export class SideCarClient {
 		return await result as PlanResponse;
 	}
 
+	async dropPlanFromRequest(
+		drop_from: number,
+		threadId: string,
+	) {
+		console.log("dropping plan...")
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/plan/drop';
+		const url = baseUrl.toString();
+
+		const body = {
+			drop_from,
+			thread_id: threadId,
+		};
+
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'accept': 'text/event-stream',
+			},
+			body: JSON.stringify(body),
+		});
+
+		const result = response.json();
+
+		console.log({ result }) // let's see about this
+
+		return await result as PlanResponse;
+	}
+
 	async generatePlanRequest(
 		query: string,
 		threadId: string,
