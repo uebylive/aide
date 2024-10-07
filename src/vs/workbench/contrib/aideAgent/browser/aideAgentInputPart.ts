@@ -51,7 +51,7 @@ import { AccessibilityVerbositySettingId } from '../../accessibility/browser/acc
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_AGENT_MODE, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
@@ -152,13 +152,13 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private _onDidChangeCurrentAgentMode = this._register(new Emitter<string>());
-	private _currentAgentMode: AgentMode = AgentMode.Chat;
-	get currentAgentMode() {
-		return this._currentAgentMode;
+	private _currentAgentMode = CONTEXT_AGENT_MODE.bindTo(this.contextKeyService);
+	get currentAgentMode(): AgentMode {
+		return this._currentAgentMode.get() || AgentMode.Chat;
 	}
 
 	set currentAgentMode(mode: AgentMode) {
-		this._currentAgentMode = mode;
+		this._currentAgentMode.set(mode);
 		this._onDidChangeCurrentAgentMode.fire(mode);
 	}
 
@@ -518,7 +518,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 							this._currentAgentScope = scopeId;
 						}
 					};
-					return this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+					const scopeSelect = this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+					return scopeSelect;
 				}
 
 				if (action instanceof MenuItemAction) {
@@ -549,10 +550,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 					const itemDelegate: AgentModeSetterDelegate = {
 						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
 						setMode: (modeId: string) => {
-							this._currentAgentMode = modeId as AgentMode;
+							this._currentAgentMode.set(modeId as AgentMode);
 						}
 					};
-					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode, itemDelegate);
+					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode.get() || AgentMode.Chat, itemDelegate);
 				}
 
 				return undefined;
