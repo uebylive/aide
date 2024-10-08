@@ -45,7 +45,7 @@ import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, ICh
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
-import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions } from './aideAgent.js';
+import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { ChatCommandButtonContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
@@ -105,6 +105,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly fileTreesByResponseId = new Map<string, IChatFileTreeInfo[]>();
 	private readonly focusedFileTreesByResponseId = new Map<string, number>();
+
+	private readonly planStepsByResponseId = new Map<string, IChatPlanStepsInfo[]>();
+	private readonly focusedPlanStepsByResponseId = new Map<string, number>();
 
 	private readonly renderer: MarkdownRenderer;
 	private readonly markdownDecorationsRenderer: ChatMarkdownDecorationsRenderer;
@@ -187,6 +190,20 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const lastFocusedFileTreeIndex = this.focusedFileTreesByResponseId.get(response.id);
 		if (fileTrees?.length && lastFocusedFileTreeIndex !== undefined && lastFocusedFileTreeIndex < fileTrees.length) {
 			return fileTrees[lastFocusedFileTreeIndex];
+		}
+		return undefined;
+	}
+
+	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[] {
+		const planSteps = this.planStepsByResponseId.get(response.id);
+		return planSteps ?? [];
+	}
+
+	getLastFocusePlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined {
+		const planSteps = this.planStepsByResponseId.get(response.id);
+		const lastFocusedFileTreeIndex = this.focusedPlanStepsByResponseId.get(response.id);
+		if (planSteps?.length && lastFocusedFileTreeIndex !== undefined && lastFocusedFileTreeIndex < planSteps.length) {
+			return planSteps[lastFocusedFileTreeIndex];
 		}
 		return undefined;
 	}
@@ -330,6 +347,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		// - And the response is not complete
 		//   - Or, we previously started a progressive rendering of this element (if the element is complete, we will finish progressive rendering with a very fast rate)
 		if (isResponseVM(element) && index === this.delegate.getListLength() - 1 && (!element.isComplete || element.renderData) && element.response.value.length) {
+
 			this.traceLayout('renderElement', `start progressive render ${kind}, index=${index}`);
 
 			const timer = templateData.elementDisposables.add(new dom.WindowIntervalTimer());
@@ -822,12 +840,35 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
+
 		const descriptionPart = this.renderMarkdown(step.description, templateData, context) as ChatMarkdownContentPart;
 		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
+
 		stepPart.addDisposable(stepPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 			descriptionPart.layout(this._currentLayoutWidth - 32); // Remove timeline width
 		}));
+
+		if (isResponseVM(context.element)) {
+			const planStepsFocusInfo: IChatPlanStepsInfo = {
+				sessionId: step.sessionId,
+				stepIndex: step.index,
+				focus() {
+					stepPart.domFocus();
+				}
+			};
+
+			// TODO@roblourens there's got to be a better way to navigate trees
+			stepPart.addDisposable(stepPart.onDidFocus(() => {
+				this.focusedPlanStepsByResponseId.set(context.element.id, planStepsFocusInfo.stepIndex);
+			}));
+
+			const planSteps = this.planStepsByResponseId.get(context.element.id) ?? [];
+			planSteps.push(planStepsFocusInfo);
+			this.planStepsByResponseId.set(context.element.id, distinct(planSteps, (v) => v.stepIndex));
+			stepPart.addDisposable(toDisposable(() => this.planStepsByResponseId.set(context.element.id, planSteps.filter(v => v.sessionId !== step.sessionId))));
+		}
+
 		return stepPart;
 	}
 

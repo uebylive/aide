@@ -34,7 +34,7 @@ import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/a
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -222,6 +222,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.bindTo(contextKeyService).set('isPassthrough' in this.viewContext && this.viewContext.isPassthrough);
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
 		CONTEXT_CHAT_LOCATION.bindTo(contextKeyService).set(this._location.location);
+
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.agentSupportsModelPicker = CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
@@ -874,6 +875,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined {
 		return this.renderer.getLastFocusedFileTreeForResponse(response);
+	}
+
+	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[] {
+		return this.renderer.getPlanStepsInfoForResponse(response);
+	}
+
+	getLastFocusedPlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined {
+		return this.renderer.getLastFocusePlanStepForResponse(response);
 	}
 
 	focusLastMessage(): void {

@@ -5,7 +5,7 @@
 import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { Emitter } from '../../../../../base/common/event.js';
-import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
+import { Disposable, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
@@ -34,6 +34,9 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	private readonly _onDidFocus = this._register(new Emitter<number>());
+	readonly onDidFocus = this._onDidFocus.event;
 
 	// private feedbackMode = false;
 	private showDescription = false;
@@ -66,6 +69,13 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.inputUri = URI.parse(`${ChatPlanStepPart.INPUT_SCHEME}:${step.sessionId}-${step.index}`);
 
 		this.domNode = $('.plan-step');
+		this.domNode.tabIndex = -1;
+
+		this.domNode.addEventListener('focus', () => {
+			this._onDidFocus.fire(this.step.index);
+		});
+		//this._register(toDisposable(() => this.domNode.addEventListener('focus', this.onFocusCallback)));
+
 		if (step.isLast) {
 			this.domNode.classList.add('plan-step-last');
 		}
@@ -350,6 +360,10 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	//	dom.show(this.enterFeedbackButton.element);
 	//	dom.hide(this.submitFeedbackButton.element, this.cancelFeedbackButton.element);
 	//}
+
+	domFocus() {
+		this.domNode.focus();
+	}
 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'planStep' && other.description === this.step.description;

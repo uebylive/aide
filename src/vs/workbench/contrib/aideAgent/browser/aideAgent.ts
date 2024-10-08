@@ -63,6 +63,12 @@ export interface IChatFileTreeInfo {
 	focus(): void;
 }
 
+export interface IChatPlanStepsInfo {
+	sessionId: string;
+	stepIndex: number;
+	focus(): void;
+}
+
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
 
 export interface IChatListItemRendererOptions {
@@ -145,6 +151,8 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
+	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[];
+	getLastFocusedPlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined;
 	setContext(overwrite: boolean, ...context: IChatRequestVariableEntry[]): void;
 	clear(): void;
 	getViewState(): IChatViewState;

@@ -53,7 +53,7 @@ class SlashCommandCompletions extends Disposable {
 	) {
 		super();
 
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+		const slashCommandsCompletionProvider = {
 			_debugDisplayName: 'globalSlashCommands',
 			triggerCharacters: [chatSubcommandLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
@@ -94,7 +94,8 @@ class SlashCommandCompletions extends Disposable {
 					})
 				};
 			}
-		}));
+		};
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, slashCommandsCompletionProvider));
 	}
 }
 
@@ -370,7 +371,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		alphabetArray.push('/');
 		alphabetArray.push('.');
 
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+		const dynamicCompletionsProvider = {
 			_debugDisplayName: chatDynamicCompletions,
 			// this makes the completion trigger everytime no matter what we type
 			// we will have to handle the case so we only trigger it when the word at the current position starts with '@'
@@ -440,7 +441,8 @@ class BuiltinDynamicCompletions extends Disposable {
 				}
 				return result;
 			}
-		}));
+		};
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, dynamicCompletionsProvider));
 
 		this._register(CommandsRegistry.registerCommand(BuiltinDynamicCompletions.addReferenceCommand, (_services, arg) => this.cmdAddReference(arg)));
 		this.queryBuilder = this.instantiationService.createInstance(QueryBuilder);
@@ -720,7 +722,7 @@ class VariableCompletions extends Disposable {
 	) {
 		super();
 
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+		const chatVariablesProvider = {
 			_debugDisplayName: 'chatVariables',
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
@@ -788,7 +790,8 @@ class VariableCompletions extends Disposable {
 					suggestions: [...variableItems, ...toolItems]
 				};
 			}
-		}));
+		};
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, chatVariablesProvider));
 	}
 }
 
