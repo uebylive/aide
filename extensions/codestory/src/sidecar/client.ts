@@ -240,6 +240,8 @@ export class SideCarClient {
 			is_deep_reasoning: deepReasoning,
 		};
 
+		console.log('createPlanRequest');
+
 		const response = await fetch(url, {
 			method: 'POST',
 			headers: {
@@ -1225,8 +1227,12 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				if (lastLine === 0) {
 					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
 				} else {
-					const lastLineLength = textModel.lineAt(lastLine).text.length;
-					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+					const lastLineLength = textModel.lineAt(lastLine - 1).text.length;
+					if (lastLineLength === 0) {
+						range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength));
+					} else {
+						range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+					}
 				}
 			}
 			sidecarVariables.push({
