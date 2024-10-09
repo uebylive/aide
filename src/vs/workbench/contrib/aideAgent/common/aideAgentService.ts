@@ -40,6 +40,11 @@ export interface IChatResponseProgressFileTreeData {
 	children?: IChatResponseProgressFileTreeData[];
 }
 
+export interface IAideAgentCodeEditsItem {
+	uri: URI;
+	range: Range;
+}
+
 export type IDocumentContext = {
 	uri: URI;
 	version: number;

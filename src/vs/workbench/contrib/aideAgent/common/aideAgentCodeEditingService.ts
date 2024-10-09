@@ -3,11 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Event } from '../../../../base/common/event.js';
 import { URI } from '../../../../base/common/uri.js';
 import { Range } from '../../../../editor/common/core/range.js';
-import { Event } from '../../../../base/common/event.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
+import { IAideAgentEdits } from './aideAgentEditingSession.js';
 
 export const enum AideAgentCodeEditingSessionState {
 	Initial = 0,
@@ -18,6 +19,7 @@ export const enum AideAgentCodeEditingSessionState {
 
 export interface IAideAgentCodeEditingSession {
 	readonly sessionId: string;
+	readonly codeEdits: Map<string, IAideAgentEdits>;
 	readonly onDidChange: Event<void>;
 	readonly onDidDispose: Event<void>;
 	apply(edits: IWorkspaceTextEdit): Promise<void>;

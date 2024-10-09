@@ -24,8 +24,8 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from '../../inlineChat/common/inlineChat.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from '../common/aideAgentCodeEditingService.js';
-import { HunkData, HunkDisplayData, HunkInformation, HunkState } from '../common/aideAgentEditingSession.js';
-import { IAideAgentEdits, IChatTextEditGroupState } from '../common/aideAgentModel.js';
+import { HunkData, HunkDisplayData, HunkInformation, HunkState, IAideAgentEdits } from '../common/aideAgentEditingSession.js';
+import { IChatTextEditGroupState } from '../common/aideAgentModel.js';
 
 
 
@@ -206,6 +206,10 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private readonly _workingSet = new Set<string>();
 	// keeps track of the snapshots until a point
 	private _textModelSnapshotUntilPoint: TextModelSnapshotUntilPoint[] = [];
+
+	get codeEdits() {
+		return this._codeEdits;
+	}
 
 	constructor(
 		readonly sessionId: string,
