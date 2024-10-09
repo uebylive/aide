@@ -398,7 +398,6 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// records when we change to a new text document
 	vscode.workspace.onDidChangeTextDocument(async (event) => {
-		console.log('onDidChangeTextDocument');
 		const fileName = event.document.fileName;
 		await csEventHandler.onDidChangeTextDocument(fileName);
 	});

@@ -424,6 +424,9 @@ export const reportAgentEventsToChat = async (
 								limiter,
 								iterationEdits,
 								false,
+								// hack for now, we will figure out the right way to
+								// handle this
+								0,
 							)
 						});
 					} else if ('End' === editStreamEvent.event) {
@@ -609,6 +612,7 @@ export class StreamProcessor {
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 		applyDirectly: boolean,
+		uniqueId: number,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -620,6 +624,7 @@ export class StreamProcessor {
 			limiter,
 			iterationEdits,
 			applyDirectly,
+			uniqueId,
 		);
 		this.documentLineLimit = Math.min(range.endPosition.line, this.document.getLineCount() - 1);
 
@@ -721,6 +726,7 @@ class DocumentManager {
 	limiter: Limiter<any> | null;
 	iterationEdits: vscode.WorkspaceEdit;
 	applyDirectly: boolean;
+	uniqueId: number;
 
 	constructor(
 		progress: vscode.AideAgentResponseStream,
@@ -732,7 +738,9 @@ class DocumentManager {
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 		applyDirectly: boolean,
+		uniqueId: number,
 	) {
+		this.uniqueId = uniqueId;
 		this.limiter = limiter;
 		this.progress = progress; // Progress tracking
 		this.lines = []; // Stores all the lines in the document
@@ -790,7 +798,10 @@ class DocumentManager {
 		const edits = new vscode.WorkspaceEdit();
 		if (newLine.adjustedContent === '') {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
-			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
+			edits.delete(this.uri, new vscode.Range(index, 0, index, 1000), {
+				label: this.uniqueId.toString(),
+				needsConfirmation: false,
+			});
 			this.iterationEdits.delete(this.uri, new vscode.Range(index, 0, index, 1000));
 			if (this.applyDirectly) {
 				await vscode.workspace.applyEdit(edits);
@@ -805,7 +816,10 @@ class DocumentManager {
 			return index + 1;
 		} else {
 			// console.log('What line are we replaceLine', newLine.adjustedContent);
-			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
+			edits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent, {
+				label: this.uniqueId.toString(),
+				needsConfirmation: false,
+			});
 			this.iterationEdits.replace(this.uri, new vscode.Range(index, 0, index, 1000), newLine.adjustedContent);
 			if (this.applyDirectly) {
 				await vscode.workspace.applyEdit(edits);
@@ -840,7 +854,10 @@ class DocumentManager {
 			);
 			const edits = new vscode.WorkspaceEdit();
 			// console.log('sidecar.What line are we replaceLines', newLine.adjustedContent, startIndex, endIndex);
-			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
+			edits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent, {
+				label: this.uniqueId.toString(),
+				needsConfirmation: false,
+			});
 			this.iterationEdits.replace(this.uri, new vscode.Range(startIndex, 0, endIndex, 1000), newLine.adjustedContent);
 			if (this.applyDirectly) {
 				await vscode.workspace.applyEdit(edits);
@@ -867,7 +884,10 @@ class DocumentManager {
 		// 	'content': newLine.adjustedContent,
 		// });
 		// console.log('what line are we appendLine', newLine.adjustedContent);
-		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent, {
+			label: this.uniqueId.toString(),
+			needsConfirmation: false,
+		});
 		this.iterationEdits.replace(this.uri, new vscode.Range(this.lines.length - 2, 1000, this.lines.length - 2, 1000), '\n' + newLine.adjustedContent);
 		if (this.applyDirectly) {
 			await vscode.workspace.applyEdit(edits);
@@ -893,7 +913,10 @@ class DocumentManager {
 		this.lines.splice(index + 1, 0, new LineContent(newLine.adjustedContent, this.indentStyle));
 		const edits = new vscode.WorkspaceEdit();
 		// console.log('what line are we inserting insertLineAfter', newLine.adjustedContent);
-		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
+		edits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent, {
+			label: this.uniqueId.toString(),
+			needsConfirmation: false,
+		});
 		this.iterationEdits.replace(this.uri, new vscode.Range(index, 1000, index, 1000), '\n' + newLine.adjustedContent);
 		if (this.applyDirectly) {
 			await vscode.workspace.applyEdit(edits);

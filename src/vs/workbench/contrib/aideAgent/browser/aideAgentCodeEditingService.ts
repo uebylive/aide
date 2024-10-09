@@ -13,7 +13,7 @@ import { generateUuid } from '../../../../base/common/uuid.js';
 import { ICodeEditor, isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
-import { ITextModel, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { ITextModel, ITextSnapshot, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
@@ -49,6 +49,16 @@ const editLineDecorationOptions = ModelDecorationOptions.register({
 	}
 });
 
+interface TextModelSnapshotUntilPoint {
+	resourceName: string;
+	// refernece here reports to the reference we want to store because we might
+	// revisit it later
+	// we have to be careful to discard all of this very quickly otherwise the memory
+	// grows quite a bit
+	reference: string;
+	textModel: ITextSnapshot;
+}
+
 class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEditingSession {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
@@ -58,10 +68,16 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 
 	private activeEditor: ICodeEditor | undefined;
 
+	// we are mapping out the hunk information with the hunk display data over here
+	// each hunk will have a single hunk display data, this does not imply from the
+	// data type that the ranges will not  be repeated in the hunks which is the major
+	// concern right now
 	private readonly _hunkDisplayData = new Map<HunkInformation, HunkDisplayData>();
 	private readonly _progressiveEditsQueue = this._register(new Queue());
 	private readonly _codeEdits = new Map<string, IAideAgentEdits>();
 	private readonly _workingSet = new Set<string>();
+	// keeps track of the snapshots until a point
+	private _textModelSnapshotUntilPoint: TextModelSnapshotUntilPoint[] = [];
 
 	constructor(
 		readonly exchangeId: string,
@@ -70,6 +86,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
 	) {
+		console.log('AideAgentCodeEditingSession::created', exchangeId);
 		super();
 
 		this.registerActiveEditor();
@@ -78,6 +95,10 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		}));
 	}
 
+	/**
+	 * We try to show the decorations for the active window anytime we change
+	 * the active window and changes have happened on the file
+	 */
 	private registerActiveEditor() {
 		const activeEditor = this.editorService.activeTextEditorControl;
 		if (isCodeEditor(activeEditor)) {
@@ -91,9 +112,12 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	}
 
 	private updateDecorations(editor: ICodeEditor, fileEdits: IAideAgentEdits) {
+		// we might have too many decorations showing up over here, we have to be
+		// careful about which decorations we keep around and which we reject and remove
 		editor.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
 			for (const hunkData of fileEdits.hunkData.getInfo()) {
+				console.log('fileEdits::hunkInformaiton');
 				keysNow.delete(hunkData);
 
 				const hunkRanges = hunkData.getRangesN();
@@ -128,6 +152,10 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				} else if (hunkData.getState() !== HunkState.Pending) {
 					data.remove();
 				} else {
+					// should we not remove the data from before if we have it and redo the decorations
+					// or do we really want to keep them around?? looks and feels weird to me
+					data.remove();
+					// ?? what are we doing over here
 					const modifiedRangeNow = hunkRanges[0];
 					data.position = modifiedRangeNow.getStartPosition().delta(-1);
 				}
@@ -150,8 +178,41 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	}
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit) {
+		const workspaceLabel = workspaceEdit.metadata?.label;
+
+		// the other thing which we want to try is that what happens when
+		// we try to send an undo over here after we have a plan
+		if (workspaceEdit.resource.fsPath === '/undoCheck') {
+			const workspaceLabel = workspaceEdit.textEdit.text;
+			// now find all the snapshots which we have at this point
+			// and set them to the codeEdits value
+			const filteredValues = this._textModelSnapshotUntilPoint.filter((textModelAtSnapshot) => {
+				if (textModelAtSnapshot.reference === workspaceLabel) {
+					return true;
+				} else {
+					return false;
+				}
+			});
+			console.log('repushing buffers over here');
+			console.log(filteredValues);
+			filteredValues.forEach((filteredValue) => {
+				const codeEdits = this._codeEdits.get(filteredValue.resourceName);
+				codeEdits?.textModelN.setValue(filteredValue.textModel);
+			});
+			return;
+		}
+
+		// one possibility to solve this is to use this:
+		// okay so we want to keep a snapshot for the text model as we are making
+		// changes
 		const resource = workspaceEdit.resource;
 		const mapKey = resource.toString();
+		// reset it back to nothing after we are done with it. pass through metadata
+		// is a big hack but whatever rocks our boat
+		workspaceEdit.metadata = undefined;
+		// this is the version Id of the workspace edit we are interested in
+		// when we start making changes we want to keep track of the version id
+		// so we can figure out how far back we want to go
 
 		let codeEdits: IAideAgentEdits;
 		let firstEdit = false;
@@ -187,6 +248,23 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		if (firstEdit) {
 			codeEdits.textModelN.pushStackElement();
 		}
+
+		// Now first check if we have any entry which matches the metadata we are getting
+		// passed if there is nothing then we can start by keeping track of the snapshot
+		// which is textModelN over here
+		const textModelAtSnapshot = this._textModelSnapshotUntilPoint.find((textModelSnapshot) => {
+			return textModelSnapshot.resourceName === resource.toString() && textModelSnapshot.reference === workspaceLabel;
+		});
+		// this allows us to keep track of the text model at that reference location
+		if (textModelAtSnapshot === undefined && workspaceLabel !== undefined) {
+			this._textModelSnapshotUntilPoint.push({
+				resourceName: resource.toString(),
+				textModel: codeEdits.textModelN.createSnapshot(),
+				reference: workspaceLabel,
+			});
+		}
+
+		console.log('snapshots::stored', this._textModelSnapshotUntilPoint.length);
 
 		codeEdits.hunkData.ignoreTextModelNChanges = true;
 		codeEdits.textModelN.pushEditOperations(null, [workspaceEdit.textEdit], () => null);
@@ -288,6 +366,10 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		super();
 	}
 
+	/**
+	 * NOTE: exchangeId here is not really correct, this should be sessionId if we are working
+	 * in the scope of a plan over here
+	 */
 	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession {
 		if (this._sessions.get(exchangeId)) {
 			return this._sessions.get(exchangeId)!;

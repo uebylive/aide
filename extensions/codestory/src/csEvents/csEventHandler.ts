@@ -154,7 +154,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	 * to record this event
 	 */
 	async onDidChangeTextDocument(filePath: string) {
-		console.log('cs_event_handler::on_did_change_text_document', filePath);
 		// this._currentSession.push({
 		// 	OpenFile: {
 		// 		fs_file_path: filePath,
