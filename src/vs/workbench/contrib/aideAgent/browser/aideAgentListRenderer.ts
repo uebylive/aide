@@ -781,7 +781,22 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = isResponseVM(element) && (!element.isComplete || element.isCanceled || element.errorDetails?.responseIsFiltered || element.errorDetails?.responseIsIncomplete || !!element.renderData);
-		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof ChatMarkdownContentPart ? part.codeblocks.length : 0), 0);
+		// we are getting 0 as the codeBlockStartIndex over here which is wrong
+		// cause that implies we will be overwriting all the codeblocks with the same value
+		// which is the one at the very end
+		// or the last entry which will generate a codeblock over here
+		let codeBlockStartIndex = 0;
+		for (const value of context.preceedingContentParts) {
+			if (value instanceof ChatPlanStepPart) {
+				codeBlockStartIndex = codeBlockStartIndex + value.getCodeBlocksPresent();
+			} else {
+				if (value instanceof ChatMarkdownContentPart) {
+					codeBlockStartIndex = codeBlockStartIndex + value.codeblocks.length;
+				} else {
+					console.log('preceedingContentParts::not_instance_of::ChatMarkdownContentPart::ChatMarkdownContentPart');
+				}
+			}
+		}
 		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection, this.rendererOptions);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {

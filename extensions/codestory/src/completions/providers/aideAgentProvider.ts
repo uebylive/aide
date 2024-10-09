@@ -318,8 +318,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// we do not pass on the index from the sidecar side, so we can populate that
 			// over here
 			if (planResponse?.plan) {
+				console.log('planResponse::plan');
+				console.log(planResponse.plan);
 				for (const planItem of planResponse.plan.steps.entries()) {
 					const stepIndex = planItem[0];
+					console.log('plan::index', stepIndex);
+					console.log(planItem[1].description);
 					const planItemStep = planItem[1];
 					// populate the index over here
 					planItemStep.index = stepIndex;
