@@ -223,6 +223,8 @@ export class SideCarClient {
 		threadId: string,
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
+		// TODO(skcd): track the lsp enrichments properly later on
+		withLspEnrichments: boolean,
 	) {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/append';
@@ -233,14 +235,13 @@ export class SideCarClient {
 		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 
 		const body = {
-			query: query,
+			user_query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
+			with_lsp_enrichment: withLspEnrichments,
 		};
-
-		console.log('createPlanRequest');
 
 		const response = await fetch(url, {
 			method: 'POST',

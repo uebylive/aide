@@ -297,7 +297,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			switch (planActionRequest.type) {
 				case 'CREATE':
 					console.log('CreateHit');
-					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
+					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl, false);
 					break;
 				case 'APPEND': // this should be explicit, from button action (or command line)
 					console.log('AppendHit');
