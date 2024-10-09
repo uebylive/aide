@@ -339,6 +339,8 @@ class BuiltinDynamicCompletions extends Disposable {
 	private lastPattern?: string;
 	private fileEntries: IFileMatch<URI>[] = [];
 	private codeEntries: ISymbolQuickPickItem[] = [];
+	// model for uri but its cached
+	private modelForUri: Map<URI, ITextModel> = new Map();
 
 
 	constructor(
@@ -511,9 +513,14 @@ class BuiltinDynamicCompletions extends Disposable {
 			const fullName = this.labelService.getUriLabel(resource);
 			const filterText = `${chatVariableLeader}${fullName}`;
 			const insertText = `${chatVariableLeader}${basename}`;
-			let model = this.modelService.getModel(resource);
-			if (!model) {
+			let model = this.modelForUri.get(resource);
+			if (model === undefined) {
+				model = this.modelService.getModel(resource) ?? undefined;
+			}
+			if (model === undefined) {
 				model = this.modelService.createModel('', null, resource, false);
+				// store it in our hashmap
+				this.modelForUri.set(resource, model);
 				this._register(model);
 			}
 			const range = model.getFullModelRange();
