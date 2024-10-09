@@ -554,6 +554,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidChangeContentHeight(() => {
 			this.onDidChangeTreeContentHeight();
 		}));
+		this._register(this.tree.onDidChangeFocus((event) => {
+			if (event.elements) {
+				const [firstElement] = event.elements;
+				if (isResponseVM(firstElement)) {
+					const hasPlanSteps = firstElement.model.response.value.
+				}
+			}
+		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
 			this.tree.updateElementHeight(e.element, e.height);
 		}));

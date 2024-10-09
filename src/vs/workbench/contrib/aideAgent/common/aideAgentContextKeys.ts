@@ -25,6 +25,8 @@ export const CONTEXT_CHAT_INPUT_HAS_TEXT = new RawContextKey<boolean>('aideAgent
 export const CONTEXT_CHAT_INPUT_HAS_FOCUS = new RawContextKey<boolean>('aideAgentInputHasFocus', false, { type: 'boolean', description: localize('interactiveInputHasFocus', "True when the chat input has focus.") });
 export const CONTEXT_IN_CHAT_INPUT = new RawContextKey<boolean>('inAideAgentInput', false, { type: 'boolean', description: localize('inInteractiveInput', "True when focus is in the chat input, false otherwise.") });
 export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inAideAgent', false, { type: 'boolean', description: localize('inChat', "True when focus is in the chat widget, false otherwise.") });
+export const CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS = new RawContextKey<boolean>('inAideAgentResponseWithPlanSteps', false, { type: 'boolean', description: localize('inAideAgentResponseWithPlanSteps', "True when focus is in the response of a response with plan steps.") });
+export const CONTEXT_IN_CHAT_PLAN_STEP = new RawContextKey<boolean>('inAideAgentPlanStep', false, { type: 'boolean', description: localize('inAideAgentPlanStep', "True when focus is in a step of a plan.") });
 
 export const CONTEXT_CHAT_ENABLED = new RawContextKey<boolean>('aideAgentIsEnabled', false, { type: 'boolean', description: localize('chatIsEnabled', "True when chat is enabled because a default chat participant is activated with an implementation.") });
 export const CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED = new RawContextKey<boolean>('aideAgentPanelParticipantRegistered', false, { type: 'boolean', description: localize('chatParticipantRegistered', "True when a default chat participant is registered for the panel.") });

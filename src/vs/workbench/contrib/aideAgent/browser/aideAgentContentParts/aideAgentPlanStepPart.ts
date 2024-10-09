@@ -7,9 +7,11 @@ import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { Disposable, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
+import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
 import { Spinner } from '../../../../browser/spinner.js';
+import { CONTEXT_IN_CHAT_PLAN_STEP } from '../../common/aideAgentContextKeys.js';
 import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatPlanStep } from '../../common/aideAgentService.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
@@ -60,7 +62,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		readonly step: IChatPlanStep,
 		readonly descriptionPart: IChatContentPart,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		//@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IContextKeyService contextKeyService: IContextKeyService,
 		//@IModelService private readonly modelService: IModelService,
 		//@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
@@ -71,10 +73,20 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.domNode = $('.plan-step');
 		this.domNode.tabIndex = -1;
 
-		this.domNode.addEventListener('focus', () => {
+		const onDidFocusStep = () => {
 			this._onDidFocus.fire(this.step.index);
-		});
-		//this._register(toDisposable(() => this.domNode.addEventListener('focus', this.onFocusCallback)));
+			CONTEXT_IN_CHAT_PLAN_STEP.bindTo(contextKeyService).set(true);
+		};
+
+		const onDidBlurStep = () => {
+			CONTEXT_IN_CHAT_PLAN_STEP.bindTo(contextKeyService).set(false);
+		};
+
+		this.domNode.addEventListener('focus', onDidFocusStep);
+		this._register(toDisposable(() => this.domNode.removeEventListener('focus', onDidFocusStep)));
+
+		this.domNode.addEventListener('blur', onDidBlurStep);
+		this._register(toDisposable(() => this.domNode.removeEventListener('blur', onDidBlurStep)));
 
 		if (step.isLast) {
 			this.domNode.classList.add('plan-step-last');

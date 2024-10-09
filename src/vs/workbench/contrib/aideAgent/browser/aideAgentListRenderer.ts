@@ -333,6 +333,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		dom.clearNode(templateData.detail);
+
 		if (isResponseVM(element)) {
 			this.renderDetail(element, templateData);
 		}
