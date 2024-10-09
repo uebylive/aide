@@ -224,9 +224,8 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
 	) {
-		console.log("creating plan...")
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/plan/create';
+		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
 
 		// check for deep reasoning
