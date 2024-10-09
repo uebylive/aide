@@ -297,11 +297,11 @@ export class SideCarClient {
 	}
 
 	// this streams
-	async executePlanUntilRequest(
+	async *executePlanUntilRequest(
 		execution_until: number,
 		threadId: string,
 		editorUrl: string,
-	) {
+	): AsyncIterableIterator<ConversationMessage> {
 		console.log('executePlanUntilRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/execute';
@@ -311,16 +311,22 @@ export class SideCarClient {
 			execution_until,
 			thread_id: threadId,
 			editor_url: editorUrl,
+			// make this true so we can invoke the llm on its own
+			self_feedback: true,
 		};
 
-		await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'accept': 'text/event-stream',
-			},
-			body: JSON.stringify(body),
-		});
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				yield conversationMessage;
+			}
+		}
 	}
 
 	async dropPlanFromRequest(
