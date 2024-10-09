@@ -503,6 +503,9 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
 				// in a special manner for edits.
 				const resource = edit.resource;
+				if (resource.fsPath === '/undoCheck') {
+					continue;
+				}
 				this.applyReference({
 					kind: 'reference',
 					reference: resource

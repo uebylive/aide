@@ -59,6 +59,90 @@ interface TextModelSnapshotUntilPoint {
 	textModel: ITextSnapshot;
 }
 
+/**
+ * Filter by the refernece:
+ * we check for the prefix: `plan_` or `step_` and then try to compare them together
+ * from there on as `plan_{idx}` and just grab the idx and sort by idx and grab the ones
+ * which are greater than or equal to the idx which we have
+ */
+function filterGreaterThanOrEqualToReference(
+	textModels: TextModelSnapshotUntilPoint[],
+	filterStr: string
+): Map<string, TextModelSnapshotUntilPoint[]> {
+	const validPrefixes = ['plan_', 'step_'];
+	let filterIndex = NaN;
+
+	// Extract the index from filterStr if it starts with a valid prefix
+	for (const prefix of validPrefixes) {
+		if (filterStr.startsWith(prefix)) {
+			const indexStr = filterStr.slice(prefix.length);
+			filterIndex = parseInt(indexStr, 10);
+			if (isNaN(filterIndex)) {
+				// If the index part is not a valid number, return an empty Map
+				return new Map();
+			}
+			break;
+		}
+	}
+
+	if (isNaN(filterIndex)) {
+		// If filterStr doesn't start with 'plan_' or 'step_', return an empty Map
+		return new Map();
+	}
+
+	// Create a Map to hold the results
+	const resultMap = new Map<string, TextModelSnapshotUntilPoint[]>();
+
+	// Filter and group the textModels array
+	for (const model of textModels) {
+		const { resourceName, reference } = model;
+		let index = NaN;
+
+		// Check if reference starts with a valid prefix and extract the index
+		for (const prefix of validPrefixes) {
+			if (reference.startsWith(prefix)) {
+				const indexStr = reference.slice(prefix.length);
+				index = parseInt(indexStr, 10);
+				break;
+			}
+		}
+
+		// Include the model if the index is valid and greater than or equal to filterIndex
+		if (!isNaN(index) && index >= filterIndex) {
+			// Get the array for this resourceName from the Map, or create it if it doesn't exist
+			if (!resultMap.has(resourceName)) {
+				resultMap.set(resourceName, []);
+			}
+			resultMap.get(resourceName)!.push(model);
+		}
+	}
+
+	// Sort the edits in each resourceName group by the numerical index
+	const sortedMap = new Map();
+	for (const [resourceName, edits] of resultMap) {
+		const sortedEdits = edits.sort((a, b) => {
+			let indexA = NaN;
+			let indexB = NaN;
+			for (const prefix of validPrefixes) {
+				if (a.reference.startsWith(prefix)) {
+					indexA = parseInt(a.reference.slice(prefix.length), 10);
+				}
+				if (b.reference.startsWith(prefix)) {
+					indexB = parseInt(b.reference.slice(prefix.length), 10);
+				}
+			}
+			if (isNaN(indexA) || isNaN(indexB)) {
+				return 0;
+			}
+			return indexA - indexB;
+		});
+		sortedMap.set(resourceName, sortedEdits);
+	}
+
+	return sortedMap;
+}
+
+
 class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEditingSession {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
@@ -186,18 +270,18 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 			const workspaceLabel = workspaceEdit.textEdit.text;
 			// now find all the snapshots which we have at this point
 			// and set them to the codeEdits value
-			const filteredValues = this._textModelSnapshotUntilPoint.filter((textModelAtSnapshot) => {
-				if (textModelAtSnapshot.reference === workspaceLabel) {
-					return true;
-				} else {
-					return false;
+			// find all the text models which are after the workspaceLabel
+			// and remove all of them
+			// so what we want to do this the following:
+			// filter by any of the timestamp to be later than the undo one which we are sending
+			// or compare the workspaceLabels somewhow using a comparator
+			const filteredValues = filterGreaterThanOrEqualToReference(this._textModelSnapshotUntilPoint, workspaceLabel);
+			filteredValues.forEach((filteredValues, resourceName) => {
+				if (filteredValues.length === 0) {
+					return;
 				}
-			});
-			console.log('repushing buffers over here');
-			console.log(filteredValues);
-			filteredValues.forEach((filteredValue) => {
-				const codeEdits = this._codeEdits.get(filteredValue.resourceName);
-				codeEdits?.textModelN.setValue(filteredValue.textModel);
+				const codeEdits = this._codeEdits.get(resourceName);
+				codeEdits?.textModelN.setValue(filteredValues[0].textModel);
 			});
 			return;
 		}

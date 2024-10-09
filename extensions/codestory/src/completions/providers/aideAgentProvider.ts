@@ -160,7 +160,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					null,
 					this.iterationEdits,
 					editStreamEvent.apply_directly,
-					this.editCounter,
+					// send an id over here which is unique to this run
+					// over here we want to send the plan-id or a unique reference
+					// which tracks this edit in our system so we can track it as a timeline
+					// for the editor
+					'plan_0',
 				),
 			});
 		} else if ('End' === editStreamEvent.event) {
@@ -269,16 +273,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			console.log({ event });
 			let planActionRequest: PlanActionRequest;
 			try {
 				planActionRequest = parsePlanActionCommand(event.prompt);
 			} catch (error) {
 				console.error(error);
-				console.log("this implicitly means that we are doing CREATE")
 				planActionRequest = {
-					type: "CREATE"
-				}
+					type: 'CREATE',
+				};
 			}
 
 			console.log({ planActionRequest });
@@ -288,25 +290,25 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 			if (planActionRequest.type === 'DROP') {
 				const workspaceEdit = new vscode.WorkspaceEdit();
-				workspaceEdit.insert(vscode.Uri.file('undoCheck'), new vscode.Position(0, 0), `${planActionRequest.index}`);
-				await responseStream.codeEdit(workspaceEdit);
+				workspaceEdit.insert(vscode.Uri.file('undoCheck'), new vscode.Position(0, 0), `plan_${planActionRequest.index}`);
+				responseStream.codeEdit(workspaceEdit);
 			}
 
 			switch (planActionRequest.type) {
 				case 'CREATE':
-					console.log("create hit")
+					console.log('CreateHit');
 					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
 					break;
 				case 'APPEND': // this should be explicit, from button action (or command line)
-					console.log("append hit")
+					console.log('AppendHit');
 					planResponse = await this.sidecarClient.appendPlanRequest(query, sessionId, this.editorUrl, event.references);
 					break;
 				case 'DROP':
-					console.log("drop hit");
+					console.log('DropHit');
 					planResponse = await this.sidecarClient.dropPlanFromRequest(planActionRequest.index, sessionId);
 					break;
 				case 'EXECUTE':
-					console.log("execute hit")
+					console.log('ExecuteHit');
 					// this streams, plan is not updated
 					await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
@@ -331,7 +333,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 type PlanActionRequest =
 	| { type: 'CREATE' | 'APPEND' }
-	| { type: 'DROP' | 'EXECUTE', index: number };
+	| { type: 'DROP' | 'EXECUTE'; index: number };
 
 function parsePlanActionCommand(command: string): PlanActionRequest {
 	const match = command.match(/^@(\w+)(?:\s+(\d+))?$/);

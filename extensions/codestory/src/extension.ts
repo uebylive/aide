@@ -396,12 +396,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	context.subscriptions.push(deepReasoning);
 
-	// records when we change to a new text document
-	vscode.workspace.onDidChangeTextDocument(async (event) => {
-		const fileName = event.document.fileName;
-		await csEventHandler.onDidChangeTextDocument(fileName);
-	});
-
 	vscode.window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor) {
 			const activeDocument = editor.document;
@@ -409,7 +403,6 @@ export async function activate(context: vscode.ExtensionContext) {
 				const activeDocumentUri = activeDocument.uri;
 				if (shouldTrackFile(activeDocumentUri)) {
 					// track that changed document over here
-					await csEventHandler.onDidChangeTextDocument(activeDocumentUri.fsPath);
 					await sidecarClient.documentOpen(
 						activeDocumentUri.fsPath,
 						activeDocument.getText(),

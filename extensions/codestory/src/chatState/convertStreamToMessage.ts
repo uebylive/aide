@@ -426,7 +426,7 @@ export const reportAgentEventsToChat = async (
 								false,
 								// hack for now, we will figure out the right way to
 								// handle this
-								0,
+								'plan_0',
 							)
 						});
 					} else if ('End' === editStreamEvent.event) {
@@ -612,7 +612,7 @@ export class StreamProcessor {
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 		applyDirectly: boolean,
-		uniqueId: number,
+		uniqueId: string,
 	) {
 		// Initialize document with the given parameters
 		this.document = new DocumentManager(
@@ -726,7 +726,7 @@ class DocumentManager {
 	limiter: Limiter<any> | null;
 	iterationEdits: vscode.WorkspaceEdit;
 	applyDirectly: boolean;
-	uniqueId: number;
+	uniqueId: string;
 
 	constructor(
 		progress: vscode.AideAgentResponseStream,
@@ -738,7 +738,7 @@ class DocumentManager {
 		limiter: Limiter<any> | null,
 		iterationEdits: vscode.WorkspaceEdit,
 		applyDirectly: boolean,
-		uniqueId: number,
+		uniqueId: string,
 	) {
 		this.uniqueId = uniqueId;
 		this.limiter = limiter;
