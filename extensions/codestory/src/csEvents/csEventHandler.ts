@@ -150,19 +150,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	}
 
 	/**
-	 * We are changing to a new text document or focussing on something new, its important
-	 * to record this event
-	 */
-	async onDidChangeTextDocument(filePath: string) {
-		console.log('cs_event_handler::on_did_change_text_document', filePath);
-		// this._currentSession.push({
-		// 	OpenFile: {
-		// 		fs_file_path: filePath,
-		// 	}
-		// });
-	}
-
-	/**
 	 * We are going to record the fact that the selection was changed in the editor
 	 * This allows the the user to give context to the LLM by literally just doing what
 	 * they would normally do in the editor
