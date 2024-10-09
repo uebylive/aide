@@ -314,12 +314,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					break;
 			}
 
-			// this logic s not relevant for execute, this is shite code.
+			// this logic is not relevant for execute, this is shite code.
+			// we do not pass on the index from the sidecar side, so we can populate that
+			// over here
 			if (planResponse?.plan) {
-				for (const planItem of planResponse.plan.steps) {
+				for (const planItem of planResponse.plan.steps.entries()) {
+					const stepIndex = planItem[0];
+					const planItemStep = planItem[1];
+					// populate the index over here
+					planItemStep.index = stepIndex;
 					const { sessionId } = planResponse.plan;
-					const isLast = planItem.index === planResponse.plan.steps.length - 1;
-					responseStream.step({ sessionId, isLast, ...planItem });
+					const isLast = planItemStep.index === planResponse.plan.steps.length - 1;
+					responseStream.step({ sessionId, isLast, ...planItemStep });
 				}
 			}
 		}
