@@ -16,7 +16,7 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { AidePlanTimer } from '../../utilities/planTimer';
-import { PlanResponse } from '../../sidecar/types';
+import { ConversationMessage, PlanResponse } from '../../sidecar/types';
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
@@ -294,6 +294,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				responseStream.codeEdit(workspaceEdit);
 			}
 
+			let executionStream: AsyncIterableIterator<ConversationMessage> | undefined = undefined;
+
 			switch (planActionRequest.type) {
 				case 'CREATE':
 					console.log('CreateHit');
@@ -310,8 +312,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				case 'EXECUTE':
 					console.log('ExecuteHit');
 					// this streams, plan is not updated
-					await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
+					executionStream = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
+			}
+
+			if (planActionRequest.type === 'EXECUTE' && executionStream !== undefined) {
+				// take all lsp signals, pass it to o1 or something and have it stream back a question or information to the user
+				// as feedback for work and help
+				await reportFromStreamToSearchProgress(executionStream, this.openResponseStream, token, this.workingDirectory);
+				// go to files outside the scope and try to see what we can fix (either suggest new plan steps or ask for help)
 			}
 
 			// this logic is not relevant for execute, this is shite code.
