@@ -257,7 +257,7 @@ export class SideCarClient {
 		editorUrl: string,
 		variables: readonly vscode.ChatPromptReference[],
 	) {
-		console.log("appending to plan...")
+		console.log('appendPlanRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
@@ -299,7 +299,7 @@ export class SideCarClient {
 		threadId: string,
 		editorUrl: string,
 	) {
-		console.log("executing plan...")
+		console.log('executePlanUntilRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/execute';
 		const url = baseUrl.toString();
@@ -324,7 +324,7 @@ export class SideCarClient {
 		drop_from: number,
 		threadId: string,
 	) {
-		console.log("dropping plan...")
+		console.log('DropPlanFromRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/drop';
 		const url = baseUrl.toString();
@@ -1205,16 +1205,29 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
-			const range = value.range;
+			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file') {
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
+			}
+			// we do this shoe-horning over here to make sure that we do not perform
+			// extensive reads or creation of the text models on the editor layer
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
+				// get the full range over here somehow
+				const lastLine = textModel.lineCount;
+				if (lastLine === 0) {
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+				} else {
+					const lastLineLength = textModel.lineAt(lastLine).text.length;
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+				}
 			}
 			sidecarVariables.push({
 				name: v.name,
@@ -1468,16 +1481,34 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
-			const range = value.range;
+			let range = value.range;
 			let type: SidecarVariableType = 'File';
 			if (variable.id === 'vscode.file') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
+			}
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
+			// we do this shoe-horning over here to make sure that we do not perform
+			// extensive reads or creation of the text models on the editor layer
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
+				// get the full range over here somehow
+				const lastLine = textModel.lineCount;
+				if (lastLine === 0) {
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+				} else {
+					const lastLineLength = textModel.lineAt(lastLine).text.length;
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+				}
 			}
 			sidecarVariables.push({
 				name: v.name,
