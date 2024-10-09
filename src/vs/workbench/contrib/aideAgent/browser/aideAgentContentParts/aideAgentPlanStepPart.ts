@@ -73,6 +73,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		// TIMELINE
 
 		const stepNumber = step.index + 1;
+		console.log('chatPlanStepPart::step_number', stepNumber);
 		const timelineElement = $('.plan-step-timeline');
 		this.domNode.appendChild(timelineElement);
 		// Contains step number and allows removing this step
