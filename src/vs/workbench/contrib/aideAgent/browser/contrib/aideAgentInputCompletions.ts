@@ -508,7 +508,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			const basename = this.labelService.getUriBasenameLabel(resource);
 			const fullName = this.labelService.getUriLabel(resource);
 			const filterText = `${chatVariableLeader}${fullName}`;
-			const insertText = `${chatVariableLeader}${basename}`;
+			const insertText = `${chatVariableLeader}${basename} `;
 			// if the model is null then we create a special range which is very very special
 			// and is filled with 42s
 			// this is a special variableId which signifies that we are not setting the range
@@ -593,8 +593,9 @@ class BuiltinDynamicCompletions extends Disposable {
 			if (uri === undefined || range === undefined) {
 				continue;
 			}
-			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
-			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
+			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name `.
+			// with a space
+			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')} `;
 			result.suggestions.push({
 				label: pick,
 				filterText: `${chatVariableLeader}${pick.label}`,

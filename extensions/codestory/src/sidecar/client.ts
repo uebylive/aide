@@ -288,7 +288,7 @@ export class SideCarClient {
 
 		const result = await response.json().catch((e) => console.error(e));
 
-		console.log({ result })
+		console.log({ result });
 
 		return result as PlanResponse;
 	}
@@ -345,7 +345,7 @@ export class SideCarClient {
 
 		const result = await response.json();
 
-		console.log({ result })
+		console.log({ result });
 
 		return result as PlanResponse;
 	}
@@ -402,7 +402,7 @@ export class SideCarClient {
 
 		const user_context = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
 
-		console.log({ user_context })
+		console.log({ user_context });
 
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
