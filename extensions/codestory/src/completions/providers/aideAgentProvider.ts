@@ -366,6 +366,9 @@ type PlanActionRequest =
 function parsePlanActionCommand(command: string): PlanActionRequest {
 	const match = command.match(/^@(\w+)(?:\s+(\d+))?$/);
 	if (!match) {
+		if (command.startsWith('@REFERENCES')) {
+			return { type: 'REFERENCES' };
+		}
 		return { type: 'CREATE' };  // Default action is explicit now
 	}
 
