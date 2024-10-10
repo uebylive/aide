@@ -46,7 +46,24 @@
 .plan-step-header {
 	display: flex;
 }
+
 .plan-step-summary {
+	display: flex;
+}
+
+.plan-step-chevron {
+	flex-shrink: 0;
+	transition: transform 0.1s;
+	margin-left: 8px;
+	color: var(--vscode-gitDecoration-ignoredResourceForeground);
+	margin-right: 12px;
+}
+
+.plan-step-chevron.plan-step-chevron-flipped {
+	transform: translateY(2px) rotateX(180deg);
+}
+
+.plan-step-title {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;

@@ -44,6 +44,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private inChatPlanStep: IContextKey<boolean>;
 
 	// private feedbackMode = false;
+	private chevronDownIcon: Heroicon;
 	private showDescription = false;
 
 	private reviewButtonsElement: HTMLElement; // Accept/reject changes
@@ -126,7 +127,13 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		// Contains plan step title and can disclose the description
 		const summaryButton = this._register(this.instantiationService.createInstance(Button, headerElement, { title: step.title }));
 		summaryButton.element.classList.add('plan-step-summary');
-		summaryButton.element.textContent = step.title;
+
+		const planStepTitle = $('span.plan-step-title');
+		summaryButton.element.appendChild(planStepTitle);
+		planStepTitle.textContent = step.title;
+		this.chevronDownIcon = this._register(this.instantiationService.createInstance(Heroicon, summaryButton.element, 'micro/chevron-down'));
+		this.chevronDownIcon.svg.classList.add('plan-step-chevron');
+
 		this._register(summaryButton.onDidClick(() => {
 			this.showDescription = !this.showDescription;
 			this.rerender();
@@ -319,8 +326,10 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		if (this.showDescription) {
 			dom.show(this.descriptionPart.domNode);
+			this.chevronDownIcon.svg.classList.add('plan-step-chevron-flipped');
 		} else {
 			dom.hide(this.descriptionPart.domNode);
+			this.chevronDownIcon.svg.classList.remove('plan-step-chevron-flipped');
 		}
 
 		this._onDidChangeHeight.fire();
