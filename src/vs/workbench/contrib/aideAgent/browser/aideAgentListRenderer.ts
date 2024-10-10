@@ -871,7 +871,22 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				stepIndex: step.index,
 				focus() {
 					stepPart.domFocus();
-				}
+				},
+				blur() {
+					stepPart.domBlur();
+				},
+				appendStep() {
+					stepPart.appendStep();
+				},
+				dropStep() {
+					stepPart.dropStep();
+				},
+				implementStep() {
+					stepPart.implementStep();
+				},
+				expandStep() {
+					stepPart.expandStep();
+				},
 			};
 
 			// TODO@roblourens there's got to be a better way to navigate trees

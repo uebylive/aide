@@ -67,6 +67,11 @@ export interface IChatPlanStepsInfo {
 	sessionId: string;
 	stepIndex: number;
 	focus(): void;
+	blur(): void;
+	dropStep(): void;
+	implementStep(): void;
+	appendStep(): void;
+	expandStep(): void;
 }
 
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
