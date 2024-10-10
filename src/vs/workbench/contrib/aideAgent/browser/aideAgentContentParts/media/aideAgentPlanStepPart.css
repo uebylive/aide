@@ -125,7 +125,7 @@
 .plan-step-feedback-editor {
 	flex-grow: 1;
 }
-:is(.plan-step-indicator, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback, .plan-step-implement-until, .plan-step-drop-step) {
+:is(.plan-step-indicator, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback, .plan-step-implement-until, .plan-step-add-step, .plan-step-drop-step) {
 	width: 32px;
 	height: 32px;
 	flex-shrink: 0;
@@ -134,7 +134,7 @@
 	align-items: center;
 	border-radius: 1px;
 }
-:is(.plan-step-summary, .plan-step-stop-button, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback, .plan-step-implement-until, .plan-step-drop-step):is(:active, :hover) {
+:is(.plan-step-summary, .plan-step-stop-button, .plan-step-reject-changes, .plan-step-accept-changes, .plan-step-enter-feedback, .plan-step-cancel-feedback, .plan-step-implement-until, .plan-step-add-step, .plan-step-drop-step):is(:active, :hover) {
 	background-color: var(--vscode-toolbar-hoverBackground);
 	cursor: pointer;
 }

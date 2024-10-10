@@ -121,8 +121,8 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		});
 
 		const appendButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Append steps' }));
-		appendButton.element.classList.add('plan-step-implement-until');
-		this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/arrow-path'));
+		appendButton.element.classList.add('plan-step-add-step');
+		this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/plus'));
 
 		appendButton.onDidClick(() => {
 			this.chatService.sendRequest(step.sessionId, `@append`, {
