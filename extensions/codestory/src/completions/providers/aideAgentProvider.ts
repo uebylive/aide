@@ -16,7 +16,7 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import { AidePlanTimer } from '../../utilities/planTimer';
-import { PlanResponse } from '../../sidecar/types';
+import { ConversationMessage, PlanResponse } from '../../sidecar/types';
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
@@ -31,6 +31,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private processingEvents: Map<string, boolean> = new Map();
 	private sessionId: string | undefined;
 	private _timer: AidePlanTimer;
+	// this is a hack to test the theory that we can keep snapshots and make
+	// that work
+	private editCounter = 0;
 
 	private async isPortOpen(port: number): Promise<boolean> {
 		return new Promise((resolve, _) => {
@@ -144,6 +147,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			console.log(documentLines);
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
+				// Now here we want to pass a proper id as we want to make sure that
+				// things work out so the edit event should send some metadata with the
+				// edits so we can keep track of it and use it, but for now we go
+				// with the iteration numbers on the aideagentsessionprovider itself
 				streamProcessor: new StreamProcessor(
 					this.openResponseStream!,
 					documentLines,
@@ -153,6 +160,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					null,
 					this.iterationEdits,
 					editStreamEvent.apply_directly,
+					// send an id over here which is unique to this run
+					// over here we want to send the plan-id or a unique reference
+					// which tracks this edit in our system so we can track it as a timeline
+					// for the editor
+					'plan_0',
 				),
 			});
 		} else if ('End' === editStreamEvent.event) {
@@ -171,6 +183,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
 			// delete this from our map
 			this.editsMap.delete(editStreamEvent.edit_request_id);
+			// incrementing the counter over here
+			this.editCounter = this.editCounter + 1;
 			// we have the updated code (we know this will be always present, the types are a bit meh)
 		} else if (editStreamEvent.event.Delta) {
 			const editsManager = this.editsMap.get(editStreamEvent.edit_request_id);
@@ -259,22 +273,28 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
 			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
 		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			console.log({ event });
 			let planActionRequest: PlanActionRequest;
 			try {
 				planActionRequest = parsePlanActionCommand(event.prompt);
 			} catch (error) {
 				console.error(error);
-				console.log("this implicitly means that we are doing CREATE")
 				planActionRequest = {
-					type: "CREATE"
-				}
+					type: 'CREATE',
+				};
 			}
 
 			console.log({ planActionRequest });
 
 			// we may not receive one back
 			let planResponse: PlanResponse | undefined = undefined;
+
+			if (planActionRequest.type === 'DROP') {
+				const workspaceEdit = new vscode.WorkspaceEdit();
+				workspaceEdit.insert(vscode.Uri.file('undoCheck'), new vscode.Position(0, 0), `plan_${planActionRequest.index}`);
+				responseStream.codeEdit(workspaceEdit);
+			}
+
+			let executionStream: AsyncIterableIterator<ConversationMessage> | undefined = undefined;
 
 			switch (planActionRequest.type) {
 				case 'CREATE':
@@ -283,30 +303,47 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					//planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl);
 					break;
 				case 'APPEND': // this should be explicit, from button action (or command line)
-					console.log("append hit")
+					console.log('AppendHit');
 					planResponse = await this.sidecarClient.appendPlanRequest(query, sessionId, this.editorUrl, event.references);
 					break;
 				case 'DROP':
-					console.log("drop hit")
+					console.log('DropHit');
 					planResponse = await this.sidecarClient.dropPlanFromRequest(planActionRequest.index, sessionId);
 					break;
 				case 'EXECUTE':
-					console.log("execute hit")
+					console.log('ExecuteHit');
 					// this streams, plan is not updated
-					await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
+					executionStream = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
 			}
 
-			// this logic s not relevant for execute, this is shite code.
+			if (planActionRequest.type === 'EXECUTE' && executionStream !== undefined) {
+				// take all lsp signals, pass it to o1 or something and have it stream back a question or information to the user
+				// as feedback for work and help
+				await reportFromStreamToSearchProgress(executionStream, this.openResponseStream, token, this.workingDirectory);
+				// go to files outside the scope and try to see what we can fix (either suggest new plan steps or ask for help)
+			}
+
+			// this logic is not relevant for execute, this is shite code.
+			// we do not pass on the index from the sidecar side, so we can populate that
+			// over here
 			if (planResponse?.plan) {
-				for (const planItem of planResponse.plan.steps) {
+				console.log('planResponse::plan');
+				console.log(planResponse.plan);
+				for (const planItem of planResponse.plan.steps.entries()) {
+					const stepIndex = planItem[0];
+					console.log('plan::index', stepIndex);
+					console.log(planItem[1].description);
+					const planItemStep = planItem[1];
+					// populate the index over here
+					planItemStep.index = stepIndex;
 					const { sessionId } = planResponse.plan;
-					const isLast = planItem.index === planResponse.plan.steps.length - 1;
-					responseStream.step({ sessionId, isLast, ...planItem });
+					const isLast = planItemStep.index === planResponse.plan.steps.length - 1;
+					responseStream.step({ sessionId, isLast, ...planItemStep });
 				}
 			}
 		}
-		responseStream.close();
+		// responseStream.close();
 	}
 
 	dispose() {
@@ -316,7 +353,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 type PlanActionRequest =
 	| { type: 'CREATE' | 'APPEND' }
-	| { type: 'DROP' | 'EXECUTE', index: number };
+	| { type: 'DROP' | 'EXECUTE'; index: number };
 
 function parsePlanActionCommand(command: string): PlanActionRequest {
 	const match = command.match(/^@(\w+)(?:\s+(\d+))?$/);

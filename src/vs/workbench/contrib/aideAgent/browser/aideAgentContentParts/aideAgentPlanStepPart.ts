@@ -15,6 +15,7 @@ import { CONTEXT_IN_CHAT_PLAN_STEP } from '../../common/aideAgentContextKeys.js'
 import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatPlanStep } from '../../common/aideAgentService.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
+import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import './media/aideAgentPlanStepPart.css';
 
 const $ = dom.$;
@@ -95,6 +96,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		// TIMELINE
 
 		const stepNumber = step.index + 1;
+		console.log('chatPlanStepPart::step_number', stepNumber);
 		const timelineElement = $('.plan-step-timeline');
 		this.domNode.appendChild(timelineElement);
 		// Contains step number and allows removing this step
@@ -348,6 +350,17 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private showPlanButtons() {
 		dom.show(this.planButtonsElement);
 		dom.hide(this.reviewButtonsElement, this.loadingButtonsElement);
+	}
+
+	/**
+	 * Gets the codeblocks for the markdown
+	 */
+	public getCodeBlocksPresent(): number {
+		if (this.descriptionPart instanceof ChatMarkdownContentPart) {
+			return this.descriptionPart.codeblocks.length;
+		} else {
+			return 0;
+		}
 	}
 
 

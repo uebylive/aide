@@ -495,13 +495,17 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id);
+		// here we have to pass sessionId instead of the chat.id
+		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId);
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
 				this._editingSession.apply(edit);
 				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
 				// in a special manner for edits.
 				const resource = edit.resource;
+				if (resource.fsPath === '/undoCheck') {
+					continue;
+				}
 				this.applyReference({
 					kind: 'reference',
 					reference: resource

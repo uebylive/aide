@@ -155,7 +155,23 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		};
 	}
 
+	/**
+	 * Only track files which are of the scheme === 'file', there are many kinds
+	 * which can change, we do not want to confuse our systems
+	 */
+	private shouldTrackFile(fileUri: vscode.Uri): boolean {
+		if (fileUri.scheme === 'file') {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	private onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
+		const shouldTrack = this.shouldTrackFile(event.document.uri);
+		if (!shouldTrack) {
+			return;
+		}
 		let trackedDocument = this.trackedDocuments.get(event.document.uri.toString());
 		if (!trackedDocument) {
 			trackedDocument = this.trackDocument(event.document);
@@ -174,6 +190,10 @@ export class RecentEditsRetriever implements vscode.Disposable {
 
 	private onDidRenameFiles(event: vscode.FileRenameEvent): void {
 		for (const file of event.files) {
+			const shouldTrack = this.shouldTrackFile(file.oldUri);
+			if (!shouldTrack) {
+				continue;
+			}
 			const trackedDocument = this.trackedDocuments.get(file.oldUri.toString());
 			if (trackedDocument) {
 				this.trackedDocuments.set(file.newUri.toString(), trackedDocument);
@@ -184,6 +204,10 @@ export class RecentEditsRetriever implements vscode.Disposable {
 
 	private onDidDeleteFiles(event: vscode.FileDeleteEvent): void {
 		for (const uri of event.files) {
+			const shouldTrack = this.shouldTrackFile(uri);
+			if (!shouldTrack) {
+				continue;
+			}
 			this.trackedDocuments.delete(uri.toString());
 		}
 	}

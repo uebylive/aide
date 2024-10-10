@@ -223,10 +223,11 @@ export class SideCarClient {
 		threadId: string,
 		variables: readonly vscode.ChatPromptReference[],
 		editorUrl: string,
+		// TODO(skcd): track the lsp enrichments properly later on
+		withLspEnrichments: boolean,
 	) {
-		console.log("creating plan...")
 		const baseUrl = new URL(this._url);
-		baseUrl.pathname = '/api/plan/create';
+		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
 
 		// check for deep reasoning
@@ -234,11 +235,12 @@ export class SideCarClient {
 		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
 
 		const body = {
-			query: query,
+			user_query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			editor_url: editorUrl,
 			is_deep_reasoning: deepReasoning,
+			with_lsp_enrichment: withLspEnrichments,
 		};
 
 		const response = await fetch(url, {
@@ -258,7 +260,7 @@ export class SideCarClient {
 		editorUrl: string,
 		variables: readonly vscode.ChatPromptReference[],
 	) {
-		console.log("appending to plan...")
+		console.log('appendPlanRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
@@ -289,18 +291,18 @@ export class SideCarClient {
 
 		const result = await response.json().catch((e) => console.error(e));
 
-		console.log({ result })
+		console.log({ result });
 
 		return result as PlanResponse;
 	}
 
 	// this streams
-	async executePlanUntilRequest(
+	async *executePlanUntilRequest(
 		execution_until: number,
 		threadId: string,
 		editorUrl: string,
-	) {
-		console.log("executing plan...")
+	): AsyncIterableIterator<ConversationMessage> {
+		console.log('executePlanUntilRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/execute';
 		const url = baseUrl.toString();
@@ -309,23 +311,29 @@ export class SideCarClient {
 			execution_until,
 			thread_id: threadId,
 			editor_url: editorUrl,
+			// make this true so we can invoke the llm on its own
+			self_feedback: true,
 		};
 
-		await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'accept': 'text/event-stream',
-			},
-			body: JSON.stringify(body),
-		});
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				yield conversationMessage;
+			}
+		}
 	}
 
 	async dropPlanFromRequest(
 		drop_from: number,
 		threadId: string,
 	) {
-		console.log("dropping plan...")
+		console.log('DropPlanFromRequest');
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/plan/drop';
 		const url = baseUrl.toString();
@@ -346,7 +354,7 @@ export class SideCarClient {
 
 		const result = await response.json();
 
-		console.log({ result })
+		console.log({ result });
 
 		return result as PlanResponse;
 	}
@@ -403,7 +411,7 @@ export class SideCarClient {
 
 		const user_context = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
 
-		console.log({ user_context })
+		console.log({ user_context });
 
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
@@ -1206,16 +1214,33 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
-			const range = value.range;
+			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file') {
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
+			}
+			// we do this shoe-horning over here to make sure that we do not perform
+			// extensive reads or creation of the text models on the editor layer
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
+				// get the full range over here somehow
+				const lastLine = textModel.lineCount;
+				if (lastLine === 0) {
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+				} else {
+					const lastLineLength = textModel.lineAt(lastLine - 1).text.length;
+					if (lastLineLength === 0) {
+						range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength));
+					} else {
+						range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+					}
+				}
 			}
 			sidecarVariables.push({
 				name: v.name,
@@ -1469,16 +1494,34 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
-			const range = value.range;
+			let range = value.range;
 			let type: SidecarVariableType = 'File';
 			if (variable.id === 'vscode.file') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
+			}
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				type = 'File';
+			} else if (variable.id === 'vscode.editor.selection') {
+				type = 'Selection';
+			}
+			// we do this shoe-horning over here to make sure that we do not perform
+			// extensive reads or creation of the text models on the editor layer
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
+				// get the full range over here somehow
+				const lastLine = textModel.lineCount;
+				if (lastLine === 0) {
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
+				} else {
+					const lastLineLength = textModel.lineAt(lastLine).text.length;
+					range = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(lastLine - 1, lastLineLength - 1));
+				}
 			}
 			sidecarVariables.push({
 				name: v.name,

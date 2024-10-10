@@ -44,6 +44,7 @@ export class ChatAttachmentsContentPart extends Disposable {
 			const widget = dom.append(container, dom.$('.chat-attached-context-attachment.show-file-icons'));
 			const label = this._contextResourceLabels.create(widget, { supportIcons: true });
 			const file = URI.isUri(attachment.value) ? attachment.value : attachment.value && typeof attachment.value === 'object' && 'uri' in attachment.value && URI.isUri(attachment.value.uri) ? attachment.value.uri : undefined;
+			// TODO(skcd): Fix the range over here properly, now everything shows up as 42
 			const range = attachment.value && typeof attachment.value === 'object' && 'range' in attachment.value && Range.isIRange(attachment.value.range) ? attachment.value.range : undefined;
 
 			const correspondingContentReference = this.contentReferences.find((ref) => typeof ref.reference === 'object' && 'variableName' in ref.reference && ref.reference.variableName === attachment.name);
@@ -63,10 +64,17 @@ export class ChatAttachmentsContentPart extends Disposable {
 					ariaLabel = range ? localize('chat.fileAttachmentWithRange3', "Attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.fileAttachment3', "Attached: {0}.", friendlyName);
 				}
 
+				let updatedRange = range;
+				// if the range starts and ends at the same line and the variable
+				// id is vscode.file.rangeNotSetProperlyFullFile
+				if (range?.startLineNumber === 42 && range.endLineNumber === 42 || attachment.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+					updatedRange = undefined;
+				}
 				label.setFile(file, {
 					fileKind: FileKind.FILE,
 					hidePath: true,
-					range,
+					// put the updated range over here
+					range: updatedRange,
 					title: correspondingContentReference?.options?.status?.description
 				});
 				widget.ariaLabel = ariaLabel;
@@ -81,7 +89,9 @@ export class ChatAttachmentsContentPart extends Disposable {
 							{
 								fromUserGesture: true,
 								editorOptions: {
-									selection: range
+									// set the selection to the updated range we have
+									// over here
+									selection: updatedRange,
 								} as any
 							});
 					}

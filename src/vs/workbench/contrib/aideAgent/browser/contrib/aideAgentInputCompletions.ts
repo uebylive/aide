@@ -16,7 +16,6 @@ import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/cor
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionTriggerKind } from '../../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
-import { IModelService } from '../../../../../editor/common/services/model.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
@@ -350,7 +349,6 @@ class BuiltinDynamicCompletions extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IModelService private readonly modelService: IModelService,
 	) {
 		super();
 		this.cacheScheduler = this._register(new RunOnceScheduler(() => {
@@ -508,29 +506,30 @@ class BuiltinDynamicCompletions extends Disposable {
 	}
 
 	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
-		const makeFileCompletionItem = (resource: URI): CompletionItem => {
+		const makeFileCompletionItem = async (resource: URI): Promise<CompletionItem> => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
 			const fullName = this.labelService.getUriLabel(resource);
 			const filterText = `${chatVariableLeader}${fullName}`;
-			const insertText = `${chatVariableLeader}${basename}`;
-			let model = this.modelService.getModel(resource);
-			if (!model) {
-				model = this.modelService.createModel('', null, resource, false);
-				this._register(model);
-			}
-			const range = model.getFullModelRange();
+			const insertText = `${chatVariableLeader}${basename} `;
+			// if the model is null then we create a special range which is very very special
+			// and is filled with 42s
+			// this is a special variableId which signifies that we are not setting the range
+			// to full file length over here, since creating the model using
+			// IModelSerivce.createModel('') sets the file content to ''
+			// which was a frequent bug we were noticing when developing
+			const variableId = 'vscode.file.rangeNotSetProperlyFullFile';
+			const range = new Range(42, 42, 42, 42);
 
 			return {
 				label: { label: basename, description: this.labelService.getUriLabel(resource, { relative: true }) },
 				filterText: filterText,
-				// filterText: `${chatVariableLeader}${basename}`,
 				insertText,
 				range: info,
 				kind: CompletionItemKind.File,
 				sortText: '{', // after `z`
 				command: {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
-						id: 'vscode.file',
+						id: variableId,
 						range: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length },
 						data: {
 							uri: resource,
@@ -561,7 +560,7 @@ class BuiltinDynamicCompletions extends Disposable {
 			}
 
 			seen.add(item.resource);
-			const newLen = result.suggestions.push(makeFileCompletionItem(item.resource));
+			const newLen = result.suggestions.push(await makeFileCompletionItem(item.resource));
 			if (newLen - len >= 5) {
 				break;
 			}
@@ -575,7 +574,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					// already included via history
 					continue;
 				}
-				result.suggestions.push(makeFileCompletionItem(match.resource));
+				result.suggestions.push(await makeFileCompletionItem(match.resource));
 			}
 		}
 	}
@@ -596,8 +595,9 @@ class BuiltinDynamicCompletions extends Disposable {
 			if (uri === undefined || range === undefined) {
 				continue;
 			}
-			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
-			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
+			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name `.
+			// with a space
+			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')} `;
 			result.suggestions.push({
 				label: pick,
 				filterText: `${chatVariableLeader}${pick.label}`,
