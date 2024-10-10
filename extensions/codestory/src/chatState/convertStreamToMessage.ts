@@ -57,6 +57,21 @@ export const reportFromStreamToSearchProgress = async (
 	let enteredAnswerGenerationLoop = false;
 
 	for await (const conversationMessage of asyncIterable) {
+		if (conversationMessage.plan !== null && conversationMessage.plan !== undefined) {
+			const plan = conversationMessage.plan;
+			for (const planItem of plan.steps.entries()) {
+				const stepIndex = planItem[0];
+				console.log('plan::index', stepIndex);
+				console.log(planItem[1].description);
+				const planItemStep = planItem[1];
+				// populate the index over here
+				planItemStep.index = stepIndex;
+				const { sessionId } = plan;
+				const isLast = planItemStep.index === plan.steps.length - 1;
+				response.step({ sessionId, isLast, ...planItemStep });
+			}
+
+		}
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
 		// also report the references which we are getting in the conversation message

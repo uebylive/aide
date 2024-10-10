@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse } from './types';
 import { Position, Range } from 'vscode';
-import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor } from './diagnostics';
+import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
 import { SIDECAR_CLIENT } from '../extension';
@@ -52,11 +52,24 @@ export function handleRequest(
 			if (req.method === 'POST' && req.url === '/file_diagnostics') {
 				const body = await readRequestBody(req);
 				console.log('getting file_diagnostics');
-				const { fs_file_path, with_enrichment }: LSPFileDiagnostics = JSON.parse(body);
+				const { fs_file_path, with_enrichment, with_hover_check, full_workspace }: LSPFileDiagnostics = JSON.parse(body);
 
-				let file_diagnostics = getFileDiagnosticsFromEditor(fs_file_path);
+				if (full_workspace) {
+					const diagnostics = await getFullWorkspaceDiagnostics();
+					const response = {
+						'diagnostics': diagnostics,
+					};
 
-				if (with_enrichment) {
+					res.writeHead(200, { 'Content-Type': 'application/json' });
+					res.end(JSON.stringify(response));
+				}
+
+				let file_diagnostics: SidecarDiagnosticsResponse[] = [];
+				if (with_hover_check === null || with_hover_check === undefined) {
+					file_diagnostics = getFileDiagnosticsFromEditor(fs_file_path);
+				}
+
+				if (with_enrichment && with_hover_check !== undefined && with_hover_check !== null) {
 					const startTime = performance.now();
 
 					console.log('Starting enrichment...');
@@ -66,6 +79,14 @@ export function handleRequest(
 					const elapsedTime = endTime - startTime;
 
 					console.log(`Enrichment completed in ${elapsedTime.toFixed(2)} milliseconds`);
+				}
+
+				if (with_hover_check) {
+					console.log('StartingHoverCheck');
+					const hoverDiagnostics = await getHoverInformation(fs_file_path, with_hover_check);
+					// add all the elements to the file diagnostics when we are doing
+					// a hover check
+					file_diagnostics.push(...hoverDiagnostics);
 				}
 
 				const response = {

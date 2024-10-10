@@ -426,6 +426,9 @@ export type LSPFileDiagnostics = {
 	fs_file_path: string;
 	editor_url: string;
 	with_enrichment: boolean;
+	with_hover_check: SidecarRequestPosition | undefined | null;
+	// hacky toggle, but okay for now
+	full_workspace: boolean;
 };
 
 export interface FindCodeSnippets {
@@ -963,6 +966,7 @@ export type SidecarDiagnosticsResponse = {
 	range: SidecarResponseRange;
 	quick_fix_labels?: string[];
 	parameter_hints?: string[];
+	fs_file_path: string;
 };
 
 export type SidecarParameterHints = {

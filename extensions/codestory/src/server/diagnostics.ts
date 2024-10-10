@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { SidecarDiagnosticsResponse, SidecarParameterHints } from './types';
+import { SidecarDiagnosticsResponse, SidecarParameterHints, SidecarRequestPosition } from './types';
 import { quickFixList } from './quickFix';
 
 export function getFileDiagnosticsFromEditor(
@@ -26,9 +26,97 @@ export function getFileDiagnosticsFromEditor(
 					byteOffset: 0,
 				},
 			},
+			fs_file_path: filePath,
 		};
 	});
 	return diagnostics;
+}
+
+export async function getHoverInformation(filePath: string, position: SidecarRequestPosition): Promise<SidecarDiagnosticsResponse[]> {
+	const fileUri = vscode.Uri.file(filePath);
+	const editorPosition = new vscode.Position(position.line, position.character);
+	const locations: vscode.Hover[] = await vscode.commands.executeCommand(
+		'vscode.executeHoverProvider',
+		fileUri,
+		editorPosition,
+	);
+	return locations.filter((location) => {
+		return location.range !== undefined;
+	}).map((location) => {
+		const messages = location.contents;
+		const range = location.range as vscode.Range;
+		return messages.map((message) => {
+			let userMessage = '';
+			if (message instanceof vscode.MarkdownString) {
+				userMessage = message.value;
+			}
+			return {
+				message: userMessage,
+				range: {
+					startPosition: {
+						line: range.start.line,
+						character: range.start.character,
+						byteOffset: 0,
+					},
+					endPosition: {
+						line: range.end.line,
+						character: range.end.character,
+						byteOffset: 0,
+					}
+				},
+				fs_file_path: filePath,
+			};
+		});
+	}).flat();
+}
+
+export async function getFullWorkspaceDiagnostics(): Promise<SidecarDiagnosticsResponse[]> {
+	const enrichedDiagnostics: SidecarDiagnosticsResponse[] = [];
+	const diagnostics = vscode.languages.getDiagnostics();
+	for (const [uri, uriDiagnostics] of diagnostics) {
+		for (const diagnostic of uriDiagnostics) {
+			if (diagnostic.severity !== vscode.DiagnosticSeverity.Error) {
+				continue;
+			}
+			const fullMessage = await getFullDiagnosticMessage(diagnostic);
+
+			const range = {
+				startPosition: {
+					line: diagnostic.range.start.line,
+					character: diagnostic.range.start.character,
+					byteOffset: 0,
+				},
+				endPosition: {
+					line: diagnostic.range.end.line,
+					character: diagnostic.range.end.character,
+					byteOffset: 0,
+				},
+			};
+
+			// Enrich 2: quick fix options
+			const quick_fix_labels = await quickFixList({
+				fs_file_path: uri.fsPath,
+				editor_url: 'editor url',
+				range,
+				request_id: 'request_id',
+			}).then((res) => res.options.map((o) => o.label));
+
+			// Enrich 3: trigger parameter hints
+			const parameter_hints = await getParameterHints(
+				uri,
+				diagnostic.range.end
+			).then((res) => res.signature_labels);
+
+			enrichedDiagnostics.push({
+				message: fullMessage ?? diagnostic.message,
+				range,
+				quick_fix_labels,
+				parameter_hints,
+				fs_file_path: uri.fsPath,
+			});
+		}
+	}
+	return enrichedDiagnostics;
 }
 
 export async function getEnrichedDiagnostics(filePath: string): Promise<SidecarDiagnosticsResponse[]> {
@@ -72,6 +160,7 @@ export async function getEnrichedDiagnostics(filePath: string): Promise<SidecarD
 			range,
 			quick_fix_labels,
 			parameter_hints,
+			fs_file_path: filePath,
 		});
 	}
 
@@ -146,6 +235,7 @@ export async function getDiagnosticsFromEditor(filePath: string, interestedRange
 							byteOffset: 0,
 						},
 					},
+					fs_file_path: filePath,
 				};
 			})
 	);

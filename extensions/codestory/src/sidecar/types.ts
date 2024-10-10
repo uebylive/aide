@@ -89,6 +89,8 @@ export interface ConversationMessage {
 	created_at: number;
 	// checks the variable information which are present in the message
 	user_variables: ConversationMessageVariableInformation[];
+	// plan if it exists
+	plan: Plan | null;
 }
 
 export type ConversationMessageOkay =
