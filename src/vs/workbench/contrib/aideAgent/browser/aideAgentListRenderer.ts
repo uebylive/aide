@@ -797,7 +797,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return textEditPart;
 	}
 
-	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
+	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, withinStep = false): IChatContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = isResponseVM(element) && (!element.isComplete || element.isCanceled || element.errorDetails?.responseIsFiltered || element.errorDetails?.responseIsIncomplete || !!element.renderData);
 		// we are getting 0 as the codeBlockStartIndex over here which is wrong
@@ -816,10 +816,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}
 		}
-		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection, this.rendererOptions);
+
+		const markdownWidth = this._currentLayoutWidth - (withinStep ? 32 : 0); // Remove timeline width
+		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, markdownWidth, this.codeBlockModelCollection, this.rendererOptions);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
-			markdownPart.layout(this._currentLayoutWidth);
+			markdownPart.layout(markdownWidth);
 			this.updateItemHeight(templateData);
 		}));
 
@@ -857,7 +859,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 
-		const descriptionPart = this.renderMarkdown(step.description, templateData, context) as ChatMarkdownContentPart;
+		const descriptionPart = this.renderMarkdown(step.description, templateData, context, true) as ChatMarkdownContentPart;
 		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
 
 		stepPart.addDisposable(stepPart.onDidChangeHeight(() => {
