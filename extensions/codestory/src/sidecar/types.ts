@@ -44,6 +44,14 @@ export interface Answer {
 	delta: string | null;
 }
 
+export interface ConversationMessageVariableInformation {
+	start_position: SidecarResponsePosition;
+	end_position: SidecarResponsePosition;
+	fs_file_path: string;
+	name: string;
+	variable_type: SidecarVariableType;
+}
+
 export type ConversationState =
 	| 'Pending'
 	| 'Started'
@@ -79,6 +87,8 @@ export interface ConversationMessage {
 	last_updated: number;
 	// Created at
 	created_at: number;
+	// checks the variable information which are present in the message
+	user_variables: ConversationMessageVariableInformation[];
 }
 
 export type ConversationMessageOkay =
