@@ -91,6 +91,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// can still grab it by listenting to port 0
 			this.requestHandler?.listen(port);
 			const editorUrl = `http://localhost:${port}`;
+			console.log('editorUrl', editorUrl);
 			this.editorUrl = editorUrl;
 		});
 
@@ -285,6 +286,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 			console.log({ planActionRequest });
 
+			// TODO(skcd): Keep track of @references as the variable and make sure
+			// that this works properly on the sidecar so we can show the model going
+			// to different files and following instructions for long
+
 			// we may not receive one back
 			let planResponse: PlanResponse | undefined = undefined;
 
@@ -314,9 +319,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// this streams, plan is not updated
 					executionStream = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
 					break;
+				case 'REFERENCES':
+					console.log('ReferencesHit');
+					executionStream = await this.sidecarClient.checkReferencesAtErrors(query, sessionId, this.editorUrl, event.references);
+					break;
 			}
 
-			if (planActionRequest.type === 'EXECUTE' && executionStream !== undefined) {
+			if ((planActionRequest.type === 'EXECUTE' || planActionRequest.type === 'REFERENCES') && executionStream !== undefined) {
 				// take all lsp signals, pass it to o1 or something and have it stream back a question or information to the user
 				// as feedback for work and help
 				await reportFromStreamToSearchProgress(executionStream, this.openResponseStream, token, this.workingDirectory);
@@ -351,7 +360,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 }
 
 type PlanActionRequest =
-	| { type: 'CREATE' | 'APPEND' }
+	| { type: 'CREATE' | 'APPEND' | 'REFERENCES' }
 	| { type: 'DROP' | 'EXECUTE'; index: number };
 
 function parsePlanActionCommand(command: string): PlanActionRequest {
@@ -361,7 +370,7 @@ function parsePlanActionCommand(command: string): PlanActionRequest {
 	}
 
 	const [, action, indexStr] = match;
-	const actionType = action.toUpperCase() as 'CREATE' | 'APPEND' | 'DROP' | 'EXECUTE';
+	const actionType = action.toUpperCase() as 'CREATE' | 'APPEND' | 'DROP' | 'EXECUTE' | 'REFERENCES';
 
 	if (actionType === 'DROP' || actionType === 'EXECUTE') {
 		if (indexStr === undefined) {

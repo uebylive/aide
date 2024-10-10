@@ -59,6 +59,17 @@ export const reportFromStreamToSearchProgress = async (
 	for await (const conversationMessage of asyncIterable) {
 		// First we check if we have the answer, if that's the case then we know
 		// we have what we want to repo
+		// also report the references which we are getting in the conversation message
+		const userVariables = conversationMessage.user_variables.map((user_variable) => {
+			return {
+				variableName: user_variable.name,
+				value: new vscode.Location(vscode.Uri.file(user_variable.fs_file_path), new vscode.Range(new vscode.Position(user_variable.start_position.line, user_variable.start_position.character), new vscode.Position(user_variable.end_position.line, user_variable.end_position.character))),
+			};
+		});
+		// update the references which might exist on the conversation message
+		userVariables.forEach((userVariable) => {
+			response.reference(userVariable);
+		});
 
 		// We have hit our done status, so lets skip it
 		if ('done' in conversationMessage) {

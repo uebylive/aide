@@ -296,6 +296,46 @@ export class SideCarClient {
 		return result as PlanResponse;
 	}
 
+	async *checkReferencesAtErrors(
+		query: string,
+		threadId: string,
+		editorUrl: string,
+		variables: readonly vscode.ChatPromptReference[],
+	): AsyncIterableIterator<ConversationMessage> {
+		console.log('appendPlanRequest');
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/plan/check_references';
+		const url = baseUrl.toString();
+
+		// check for deep reasoning
+		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
+		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
+
+		// we need with_lsp_enrichment flag
+
+		const body = {
+			user_query: query,
+			thread_id: threadId,
+			editor_url: editorUrl,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			is_deep_reasoning: deepReasoning,
+			with_lsp_enrichment: false,
+		};
+
+		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as ConversationMessage;
+				yield conversationMessage;
+			}
+		}
+	}
+
 	// this streams
 	async *executePlanUntilRequest(
 		execution_until: number,

@@ -28,7 +28,7 @@ export function getFileDiagnosticsFromEditor(
 			},
 		};
 	});
-	return diagnostics
+	return diagnostics;
 }
 
 export async function getEnrichedDiagnostics(filePath: string): Promise<SidecarDiagnosticsResponse[]> {
@@ -56,9 +56,9 @@ export async function getEnrichedDiagnostics(filePath: string): Promise<SidecarD
 		// Enrich 2: quick fix options
 		const quick_fix_labels = await quickFixList({
 			fs_file_path: fileUri.fsPath,
-			editor_url: "editor url",
+			editor_url: 'editor url',
 			range,
-			request_id: "request_id",
+			request_id: 'request_id',
 		}).then((res) => res.options.map((o) => o.label));
 
 		// Enrich 3: trigger parameter hints
@@ -86,7 +86,7 @@ async function getParameterHints(
 	try {
 		const signatureHelp = await vscode.commands.executeCommand<
 			vscode.SignatureHelp
-		>("vscode.executeSignatureHelpProvider", fileUri, position);
+		>('vscode.executeSignatureHelpProvider', fileUri, position);
 
 		return signatureHelp?.signatures.length ? {
 			signature_labels: signatureHelp.signatures.map((signature) => signature.label)
@@ -94,7 +94,7 @@ async function getParameterHints(
 			signature_labels: []
 		};
 	} catch (error) {
-		console.error("Error fetching signature help:", error);
+		console.error('Error fetching signature help:', error);
 		return {
 			signature_labels: []
 		};

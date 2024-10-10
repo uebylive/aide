@@ -352,6 +352,23 @@ export async function activate(context: vscode.ExtensionContext) {
 		'Drops the plan steps from an index',
 		vscode.ThemeIcon.Folder,
 	));
+	context.subscriptions.push(vscode.aideAgent.registerChatVariableResolver(
+		'REFERENCES_CHECK',
+		'REFERENCES_CHECK',
+		'References check on the files',
+		'References check on the files',
+		false,
+		{
+			resolve: (_name: string, _context: vscode.ChatVariableContext, _token: vscode.CancellationToken) => {
+				return [{
+					level: vscode.ChatVariableLevel.Full,
+					value: 'referencesCheck',
+				}];
+			}
+		},
+		'References check on the files',
+		vscode.ThemeIcon.Folder,
+	));
 
 	// Gets access to all the events the editor is throwing our way
 	const csEventHandler = new CSEventHandler(context, editorUrl);
