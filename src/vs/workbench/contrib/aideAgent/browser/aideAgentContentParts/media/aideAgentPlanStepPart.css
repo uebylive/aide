@@ -23,6 +23,7 @@
 	flex-grow: 1;
 }
 .plan-step-timeline-line {
+	position: relative;
 	width: 32px;
 	flex-grow: 1;
 	display: flex;
@@ -30,8 +31,9 @@
 }
 .plan-step:not(.plan-step.plan-step-last) .plan-step-timeline-line::before {
 	content: '';
+	position: absolute;
 	width: 1px;
-	height: 100%;
+	height: calc(100% + 16px);
 	background-color: var(--vscode-tree-indentGuidesStroke);
 }
 
